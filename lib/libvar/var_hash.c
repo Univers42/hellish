@@ -6,7 +6,13 @@
 /*   By: alcacere <alcacere@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/04 19:35:38 by alcacere          #+#    #+#             */
-/*   Updated: 2025/11/04 19:35:39 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/11/04 20:53:52 by alcacere         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "var.h"
+
+t_var	**hashvar(const char *p)
+{
+	return (&vartab[hashval(p) % VTABSIZE]);
+}
