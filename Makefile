@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/06 21:27:43 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 21:35:15 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -212,6 +212,40 @@ finish:
 rm_branch:
 	git branch -D $(BRANCH)
 	git push origin --delete $(BRANCH)
+
+# Git workflow targets inspired by git-flow
+start_feat:
+	@if [ -z "$(BRANCH)" ]; then \
+		echo "Error: BRANCH is required. Usage: make start_feat BRANCH=my-feature"; \
+		exit 1; \
+	fi; \
+	echo "[git-flow] Creating feature branch feat/$(BRANCH) from develop..."; \
+	git add .
+	git commit
+	git checkout -b feat/$(BRANCH); \
+	echo "[git-flow] Feature branch feat/$(BRANCH) created and checked out."
+
+start_fix:
+	@if [ -z "$(BRANCH)" ]; then \
+		echo "Error: BRANCH is required. Usage: make start_fix BRANCH=my-fix"; \
+		exit 1; \
+	fi; \
+	echo "[git-flow] Creating fix branch fix/$(BRANCH) from develop..."; \
+	git checkout develop; \
+	git pull origin develop --ff-only; \
+	git checkout -b fix/$(BRANCH); \
+	echo "[git-flow] Fix branch fix/$(BRANCH) created and checked out."
+
+start_release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Error: VERSION is required. Usage: make start_release VERSION=1.0.0"; \
+		exit 1; \
+	fi; \
+	echo "[git-flow] Creating release branch release/$(VERSION) from develop..."; \
+	git checkout develop; \
+	git pull origin develop --ff-only; \
+	git checkout -b release/$(VERSION); \
+	echo "[git-flow] Release branch release/$(VERSION) created and checked out."
 
 publish:
 	@export GIT_PUBLISH=1; \
