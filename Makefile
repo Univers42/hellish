@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/02 18:03:03 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 21:08:06 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,6 +20,7 @@ REMOTE_HOME		:= $(shell git remote -v | awk 'NR==3 {print $$1}')
 CURRENT_BRANCH	:= $(shell git branch --show-current)
 REMOTE_CAMPUS	:= $(shell git remote -v | awk 'NR==2 {print $$1}')
 MSG				:=
+BRANCH			?=
 
 include	variables.mk
 -include lib/libft/build/colors.mk
@@ -197,6 +198,33 @@ test-lexer-raw:
 # Pretty console + clean log target:
 test-lexer:
 	@python3 srcs/test/run_lexer_tests.py
+
+finish:
+	git add .
+	git commit
+	git push
+	//we save here the branch before checkout
+	git checkout develop
+	git merge $(BRANCH_CHECKED_OUT)
+	git push
+	MAKE -C rm_branch BRANCH=$(BRANCH_CHECKED_OUT)
+	
+rm_branch:
+	git branch -D $(BRANCH)
+	git push origin --delete $(BRANCH)
+
+publish:
+	@git add .
+	@git commit -m "$(MSG)"
+	@git push
+	@echo "Saving current branch name..."
+	@export BRANCH_CHECKED_OUT=$$(git branch --show-current)
+	@git checkout develop
+	@git merge $${BRANCH_CHECKED_OUT}
+	@git push
+	@git checkout $${BRANCH_CHECKED_OUT}
+	@git branch -D $${BRANCH_CHECKED_OUT}
+	@git push origin --delete $${BRANCH_CHECKED_OUT}
 
 # Auto-run set-hooks on first use (after clone)
 ifeq ($(wildcard .init.stamp),)
