@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/06 21:12:58 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 21:19:06 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -215,6 +215,7 @@ rm_branch:
 
 publish:
 	@set -e; \
+	export GIT_PUBLISH=1; \
 	BR=$$(git branch --show-current); \
 	if [ -z "$$BR" ]; then echo "fatal: branch name required"; exit 128; fi; \
 	if [ -z "$(MSG)" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi; \
@@ -226,6 +227,7 @@ publish:
 	git checkout develop; \
 	git pull --ff-only; \
 	echo "[publish] merging $$BR -> develop"; \
+	# Merge commit will be allowed in publish mode without 250-word requirement
 	git merge --no-ff $$BR; \
 	git push origin develop; \
 	echo "[publish] deleting branch $$BR locally and on origin"; \
