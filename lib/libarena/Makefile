@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/06 20:32:02 by                   #+#    #+#              #
-#    Updated: 2025/11/06 20:32:27 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 20:53:40 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -31,8 +31,7 @@ SRCS        :=	\
 				st_all.c \
 				stack.c \
 				utils.c \
-				wrapper.c \
-				set.c
+				wrapper.c 
 
 OBJDIR      := obj
 OBJS        := $(addprefix $(OBJDIR)/, $(SRCS:.c=.o))
