@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/06 21:19:06 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 21:25:31 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -214,25 +214,28 @@ rm_branch:
 	git push origin --delete $(BRANCH)
 
 publish:
-	@set -e; \
-	export GIT_PUBLISH=1; \
+	@export GIT_PUBLISH=1; \
 	BR=$$(git branch --show-current); \
+	MSG_VAL='$(subst ','\'',$(MSG))'; \
 	if [ -z "$$BR" ]; then echo "fatal: branch name required"; exit 128; fi; \
-	if [ -z "$(MSG)" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi; \
+	if [ -z "$$MSG_VAL" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi; \
 	echo "[publish] current branch: $$BR"; \
 	git add .; \
-	if ! git diff --cached --quiet; then git commit -m "$(MSG)"; else echo "[publish] nothing to commit"; fi; \
-	git push origin $$BR; \
+	if ! git diff --cached --quiet; then \
+		git commit -m "$$MSG_VAL"; \
+	else \
+		echo "[publish] nothing to commit"; \
+	fi; \
+	git push origin "$$BR"; \
 	echo "[publish] switching to develop"; \
 	git checkout develop; \
 	git pull --ff-only; \
 	echo "[publish] merging $$BR -> develop"; \
-	# Merge commit will be allowed in publish mode without 250-word requirement
-	git merge --no-ff $$BR; \
+	git merge --no-ff "$$BR"; \
 	git push origin develop; \
 	echo "[publish] deleting branch $$BR locally and on origin"; \
-	git branch -D $$BR; \
-	git push origin --delete $$BR || true; \
+	git branch -D "$$BR"; \
+	git push origin --delete "$$BR" || true; \
 	echo "[publish] done (on branch: develop)"
 
 # Auto-run set-hooks on first use (after clone)

@@ -11,7 +11,7 @@ if [ -z "$MSG_FILE" ]; then
 	exit 0
 fi
 
-# PUBLISH MODE: only enforce length >= 250 words, nothing else.
+# PUBLISH MODE: only enforce length >= 25 words, nothing else.
 if [ "${GIT_PUBLISH:-}" = "1" ]; then
 	# Skip checks for merge commits to avoid blocking automated merge messages
 	if git rev-parse -q --verify MERGE_HEAD >/dev/null 2>&1; then
@@ -21,7 +21,7 @@ if [ "${GIT_PUBLISH:-}" = "1" ]; then
 	# Count words excluding commented/empty lines
 	word_count=$(awk '!/^[[:space:]]*($|#)/{print}' "$MSG_FILE" | wc -w | tr -d '[:space:]')
 	if [ "$word_count" -lt 25 ]; then
-		log_error "publish mode: commit message must contain at least 250 words (got $word_count)."
+		log_error "publish mode: commit message must contain at least 25 words (got $word_count)."
 		log_info  "Tip: provide a detailed description via: MSG=\"your long message ...\""
 		exit 1
 	fi
