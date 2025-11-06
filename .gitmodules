@@ -1,3 +1,6 @@
 [submodule "lib/libft"]
 	path = lib/libft
 	url = git@github.com:Univers42/libft.git
+[submodule "lib/libmalloc"]
+	path = lib/libmalloc
+	url = git@github.com:Univers42/ft_malloc.git
