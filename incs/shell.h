@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/10/30 18:09:42 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/02 16:43:55 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/06 16:01:57 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,5 +47,27 @@ int handle_pretty_print_mode(int argc, char **argv);
 const char *find_command_string(int argc, char **argv);
 int is_debug_mode(int argc, char **argv);
 int handle_command_string(const char *command_str, int debug);
+
+typedef union u_smt
+{
+	int		i;
+	char	*cp;
+	double	d;
+}	t_smt;
+
+static inline size_t shell_size(void)
+{
+	return(sizeof(t_smt) - 1);
+}
+
+static inline size_t shell_align()
+{
+	size_t  mask;
+
+	mask = shell_size();
+	return ((nbytes + mask) & ~mask);
+}
+
+# 
 
 #endif /* SHELL_H */
