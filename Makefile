@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/06 21:08:06 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/06 21:12:58 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -214,17 +214,24 @@ rm_branch:
 	git push origin --delete $(BRANCH)
 
 publish:
-	@git add .
-	@git commit -m "$(MSG)"
-	@git push
-	@echo "Saving current branch name..."
-	@export BRANCH_CHECKED_OUT=$$(git branch --show-current)
-	@git checkout develop
-	@git merge $${BRANCH_CHECKED_OUT}
-	@git push
-	@git checkout $${BRANCH_CHECKED_OUT}
-	@git branch -D $${BRANCH_CHECKED_OUT}
-	@git push origin --delete $${BRANCH_CHECKED_OUT}
+	@set -e; \
+	BR=$$(git branch --show-current); \
+	if [ -z "$$BR" ]; then echo "fatal: branch name required"; exit 128; fi; \
+	if [ -z "$(MSG)" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi; \
+	echo "[publish] current branch: $$BR"; \
+	git add .; \
+	if ! git diff --cached --quiet; then git commit -m "$(MSG)"; else echo "[publish] nothing to commit"; fi; \
+	git push origin $$BR; \
+	echo "[publish] switching to develop"; \
+	git checkout develop; \
+	git pull --ff-only; \
+	echo "[publish] merging $$BR -> develop"; \
+	git merge --no-ff $$BR; \
+	git push origin develop; \
+	echo "[publish] deleting branch $$BR locally and on origin"; \
+	git branch -D $$BR; \
+	git push origin --delete $$BR || true; \
+	echo "[publish] done (on branch: develop)"
 
 # Auto-run set-hooks on first use (after clone)
 ifeq ($(wildcard .init.stamp),)
@@ -242,4 +249,47 @@ re: _auto_init
 fre: _auto_init
 endif
 
-.PHONY: all clean fclean ffclean re push_campus push_home configure
+.PHONY: all clean fclean ffclean re push_campus push_home configure publish help
+
+help:
+	@echo ""
+	@echo "$(BRIGHT_CYAN)$(BOLD)=== sh42 Makefile Targets ===$(RESET)"
+	@echo ""
+	@echo "$(BOLD)Build Targets:$(RESET)"
+	@echo "  $(GREEN)make$(RESET) or $(GREEN)make all$(RESET)        - Build the minishell binary (default target)"
+	@echo "  $(GREEN)make re$(RESET)                  - Clean and rebuild from scratch"
+	@echo "  $(GREEN)make fre$(RESET)                 - Full clean (includes libft) and rebuild"
+	@echo ""
+	@echo "$(BOLD)Clean Targets:$(RESET)"
+	@echo "  $(GREEN)make clean$(RESET)              - Remove object files and archives"
+	@echo "  $(GREEN)make fclean$(RESET)             - Remove binary and object files"
+	@echo "  $(GREEN)make ffclean$(RESET)            - Full clean (also cleans libft submodule)"
+	@echo ""
+	@echo "$(BOLD)Build Configuration Targets:$(RESET)"
+	@echo "  $(GREEN)make help-only$(RESET)          - Build with FEATURE_HELP_ONLY"
+	@echo "  $(GREEN)make debug-only$(RESET)         - Build with FEATURE_DEBUG_ONLY"
+	@echo "  $(GREEN)make all-features$(RESET)       - Build with all features enabled"
+	@echo "  $(GREEN)make minimal$(RESET)            - Build minimal core (no optional features)"
+	@echo ""
+	@echo "$(BOLD)Testing Targets:$(RESET)"
+	@echo "  $(GREEN)make test-lexer$(RESET)         - Run lexer tests"
+	@echo "  $(GREEN)make test-lexer-verbose$(RESET) - Run lexer tests with verbose output"
+	@echo "    Options: ID=L123 GREP=pattern LOG=path"
+	@echo "  $(GREEN)make test-lexer-raw$(RESET)     - Run raw lexer tests (prints to stdout)"
+	@echo ""
+	@echo "$(BOLD)Git/Push Targets:$(RESET)"
+	@echo "  $(GREEN)make push_home$(RESET)          - Push to home remote (requires MSG=\"...\")"
+	@echo "  $(GREEN)make push_campus$(RESET)        - Push all to campus remote (requires MSG=\"...\")"
+	@echo "  $(GREEN)make publish$(RESET)            - Publish feature branch: commit, merge to develop,"
+	@echo "                            delete branch (requires MSG=\"...\")"
+	@echo ""
+	@echo "$(BOLD)Maintenance Targets:$(RESET)"
+	@echo "  $(GREEN)make configure$(RESET)          - Set up git hooks and scripts"
+	@echo "  $(GREEN)make update$(RESET)             - Update libft submodule to latest"
+	@echo ""
+	@echo "$(BRIGHT_CYAN)$(BOLD)Examples:$(RESET)"
+	@echo "  $(CYAN)make$(RESET)                      # Build the project"
+	@echo "  $(CYAN)make re$(RESET)                   # Clean and rebuild"
+	@echo "  $(CYAN)make publish MSG=\"feat: add feature\"$(RESET)  # Publish feature branch"
+	@echo "  $(CYAN)make test-lexer-verbose ID=L1$(RESET)  # Run specific lexer test"
+	@echo ""
