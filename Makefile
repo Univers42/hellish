@@ -6,7 +6,11 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
+<<<<<<< Updated upstream
 #    Updated: 2025/11/07 13:59:33 by dlesieur         ###   ########.fr        #
+=======
+#    Updated: 2025/11/07 16:57:24 by dlesieur         ###   ########.fr        #
+>>>>>>> Stashed changes
 #                                                                              #
 # **************************************************************************** #
 
@@ -194,10 +198,6 @@ test-lexer-raw:
 	@echo "Please set test-lexer-raw to run your lexer tests"; exit 2
 	# Example:
 	# python3 srcs/test/run_lexer_tests_raw.py
-
-# Pretty console + clean log target:
-test-lexer:
-	@python3 srcs/test/run_lexer_tests.py
 
 finish:
 	git add .
