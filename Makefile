@@ -5,12 +5,8 @@
 #                                                     +:+ +:+         +:+      #
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-<<<<<<< Updated upstream
-#    Updated: 2025/11/07 13:59:33 by dlesieur         ###   ########.fr        #
-=======
-#    Updated: 2025/11/07 16:57:24 by dlesieur         ###   ########.fr        #
->>>>>>> Stashed changes
+#    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
+#    Updated: 2025/11/07 17:01:29 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
