@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/07 00:27:35 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/07 02:33:21 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/07 14:29:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,15 @@
 #include <signal.h>
 #include <stdbool.h>
 #include <sys/types.h>
+
+typedef struct s_list
+{
+	struct s_list	*next;
+	void			*data;
+}	t_list;
+
+# define GLOB_ASCIIRANGE	256
+# define ALLOCA_MAX			100000
 
 enum
 {
@@ -95,7 +104,7 @@ size_t	n_char_class(char const const *cclass_name)
 }
 
 
-# define GLOB_ASCIIRANGE 256
+
 
 typedef struct dirent64 t_dirent64;
 
@@ -109,8 +118,24 @@ typedef struct s_glob
 
 typedef struct s_gglobe
 {
-	int	glob_recursion_depth;
+	int		glob_recursion_depth;
+	int		extended_glob;
+	int		noglob_dot_filenames;
+	int		glon_ignore_case;
+	int		glob_always_skip_dot_and_dotdot;
+	char	*glob_error_return;
+	t_list	*find_dirs_err_return;
 }	t_gglobe;
 
+
+static inline t_gglobe	*get_global(void)
+{
+	static t_gglobe	g = {
+		.noglob_dot_filenames = 1;
+		.glob_always_skip_dot_and_dotdot = 1;
+	};
+
+	return (&g);
+}
 
 #endif

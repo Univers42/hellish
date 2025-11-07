@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/10/23 19:03:21 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/06 21:35:15 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/07 13:59:33 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -112,7 +112,7 @@ configure:
 
 update: configure
 	$(call log_info, updating submodule to latest remote version...)
-	git submodule update --init --recursive --remote --merge $(SUBMODULE_DIR) || exit 1
+	git submodule update --init --recursive --remote --merge $(SUBMODULE_DIR) lib/libmalloc || exit 1
 	git pull
 
 push_home: ffclean
