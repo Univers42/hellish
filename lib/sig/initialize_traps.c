@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/07 23:01:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 04:03:45 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 06:54:47 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ static inline void	init_all_signals(void)
 
 void	init_quit_signal(void)
 {
-	GETORIGSIG(SIGQUIT);
+	get_orig_sig(SIGQUIT);
 	g_sig.sigmodes[SIGQUIT] |= SIG_SPECIAL;
 }
 
@@ -53,7 +53,7 @@ void	init_term_signal(void)
 {
 	if (g_sig.interactive)
 	{
-		GETORIGSIG(SIGTERM);
+		get_orig_sig(SIGTERM);
 		g_sig.sigmodes[SIGTERM] |= SIG_SPECIAL;
 	}
 }

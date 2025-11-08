@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:41:31 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 06:53:18 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,5 +16,5 @@ void	get_original_signal(int sig)
 {
 	if (sig > 0 && sig < NSIG && original_signals[sig]
 		== (SigHandler *)IMPOSSIBLE_TRAP_HANDLER)
-		GETORIGSIG (sig);
+		get_orig_sig(sig);
 }

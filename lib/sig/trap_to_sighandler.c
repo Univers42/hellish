@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:54:19 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:16:45 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 07:05:32 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 /* Return the correct handler for signal SIG according to the values in
 	 sigmodes[SIG]. */
-SigHandler	*trap_to_sighandler(int sig)
+void	*trap_to_sighandler(int sig)
 {
 	if (sigmodes[sig] & (SIG_IGNORED | SIG_HARD_IGNORE))
 		return (SIG_IGN);

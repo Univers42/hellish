@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:23 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:42:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 06:54:13 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 /* Make this signal be ignored. */
 void	ignore_signal(int sig)
 {
-	if (SPECIAL_TRAP (sig) && ((sigmodes[sig] & SIG_IGNORED) == 0))
+	if (spec_trap(sig) && ((sigmodes[sig] & SIG_IGNORED) == 0))
 	{
 		change_signal (sig, (char *)IGNORE_SIG);
 		return ;
 	}
-	GET_ORIGINAL_SIGNAL (sig);
+	get_original_signal(sig);
 	if (sigmodes[sig] & SIG_HARD_IGNORE)
 		return ;
 	if (sigmodes[sig] & SIG_IGNORED)

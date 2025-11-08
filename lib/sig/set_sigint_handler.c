@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:53:31 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:58:34 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 07:00:15 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 /* Reset the SIGINT handler so that subshells that are doing `shellsy'
 	 things, like waiting for command substitution or executing commands
 	 in explicit subshells ( ( cmd ) ), can catch interrupts properly. */
-SigHandler	*set_sigint_handler(void)
+void	*set_sigint_handler(void)
 {
 	if (sigmodes[SIGINT] & SIG_HARD_IGNORE)
 		return ((SigHandler *)SIG_IGN);
