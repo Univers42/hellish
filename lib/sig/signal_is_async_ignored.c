@@ -1,20 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_original_signal.c                              :+:      :+:    :+:   */
+/*   signal_is_async_ignored.c                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:52:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:41:31 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/08 01:04:49 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/08 06:19:07 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	get_original_signal(int sig)
+int	signal_is_async_ignored(int sig)
 {
-	if (sig > 0 && sig < NSIG && original_signals[sig]
-		== (SigHandler *)IMPOSSIBLE_TRAP_HANDLER)
-		GETORIGSIG (sig);
+	return (g_sig.sigmodes[sig] & SIG_ASYNCSIG);
 }

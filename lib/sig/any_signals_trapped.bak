@@ -1,20 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_original_signal.c                              :+:      :+:    :+:   */
+/*   any_signals_trapped.c                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:52:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:41:31 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/08 00:51:46 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/08 05:31:07 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	get_original_signal(int sig)
+// return >  0 if any of the real signals (not fake siganl like EXIT)
+// are trapped
+int	any_signals_trapped (void)
 {
-	if (sig > 0 && sig < NSIG && original_signals[sig]
-		== (SigHandler *)IMPOSSIBLE_TRAP_HANDLER)
-		GETORIGSIG (sig);
-}
+	register int	i;
+
+	i = 0;
+	while (++i < NSIG)
+	if ((g_sig.sigmodes[i] & SIG_TRAPPED)
+		&& (g_sig.sigmodes[i] & SIG_IGNORED) == 0)
+		return (i);
+			return (-1);
+} 

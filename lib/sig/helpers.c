@@ -1,20 +1,38 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_original_signal.c                              :+:      :+:    :+:   */
+/*   helpers.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:52:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:41:31 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/08 05:49:56 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/08 05:50:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	get_original_signal(int sig)
+void	is_term_signal(void)
 {
-	if (sig > 0 && sig < NSIG && original_signals[sig]
-		== (SigHandler *)IMPOSSIBLE_TRAP_HANDLER)
-		GETORIGSIG (sig);
+	return (g_term.terminating_signal != 0);
+}
+
+void	check_termsig(void)
+{
+	if (g_term.terminating_signal)
+		termsig_handler(g_term.terminating_signal);
+}
+
+int	last_signal(void)
+{
+	if (g_term.terminating_signal)
+		return (g_term.terminating_signal);
+	if (g_term.interrupt_state)
+		return (SIGINT);
+	return (0);
+}
+
+void	reset_sigterm(void)
+{
+	g_term.sigterm_received = 0;
 }

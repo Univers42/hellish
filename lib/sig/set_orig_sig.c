@@ -1,20 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   get_original_signal.c                              :+:      :+:    :+:   */
+/*   set_orig_sig.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:52:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:41:31 by dlesieur         ###   ########.fr       */
+/*   Created: 2025/11/08 02:12:24 by dlesieur          #+#    #+#             */
+/*   Updated: 2025/11/08 05:59:13 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	get_original_signal(int sig)
+void	set_orig_sig(int sig, t_sig_handler *handler)
 {
-	if (sig > 0 && sig < NSIG && original_signals[sig]
-		== (SigHandler *)IMPOSSIBLE_TRAP_HANDLER)
-		GETORIGSIG (sig);
+	if (sig <= 0 || sig >= NSIG)
+		return ;
+	g_sig.original_signals[sig] = handler;
+	if (g_sig.original_signals[sig] == SIG_IGN)
+		g_sig.sigmodes[sig] |= SIG_HARD_IGNORE;
 }
