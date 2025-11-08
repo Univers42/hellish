@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
+#    By: alcacere <alcacere@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/07 17:01:29 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/08 02:01:21 by alcacere         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -243,6 +243,7 @@ start_release:
 	git checkout -b release/$(VERSION); \
 	echo "[git-flow] Release branch release/$(VERSION) created and checked out."
 
+# see help for usage
 publish:
 	@export GIT_PUBLISH=1; \
 	BR=$$(git branch --show-current); \
@@ -317,6 +318,14 @@ help:
 	@echo "  $(GREEN)make push_campus$(RESET)        - Push all to campus remote (requires MSG=\"...\")"
 	@echo "  $(GREEN)make publish$(RESET)            - Publish feature branch: commit, merge to develop,"
 	@echo "                            delete branch (requires MSG=\"...\")"
+	@echo "  $(GREEN)make finish$(RESET)             - Finish using a feature branch: commit, push,"
+	@echo "                            merge into develop, push into develop, delete feature branch"
+	@echo "  $(GREEN)make start_feat$(RESET)         - Automates creation of new feature: commit local changes,"
+	@echo "                            create and switch the branch (feat/BRANCH)"
+	@echo "  $(GREEN)make start_fix$(RESET)          - Starts a bugfix branch from develop: Sync with develop,"
+	@echo "                            create and switch the branch (fix/BRANCH)"
+	@echo "  $(GREEN)make start_release$(RESET)      - Automate creation of new release branch: Sync with develop,"
+	@echo "                            create and switch the branch (release/VERSION)"
 	@echo ""
 	@echo "$(BOLD)Maintenance Targets:$(RESET)"
 	@echo "  $(GREEN)make configure$(RESET)          - Set up git hooks and scripts"
