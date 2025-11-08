@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 01:38:58 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:50:34 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 09:16:32 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,16 @@
 
 # include "trap.h"
 
+/* Forward declarations */
+void	termsig_handler(int sig);
+void	throw_to_top_level(void);
+
 struct s_termg
 {
 	volatile sig_atomic_t	interrupt_state;
 	volatile sig_atomic_t	terminating_signal;
 	volatile sig_atomic_t	sigterm_received;
-}	g_term = {0};
+}	static g_term = {0};
 
 static inline void	quit(void)
 {
@@ -47,4 +51,7 @@ static inline void	add_interrupt(void)
 
 void	zreset_if_needed(void);
 void	check_sigterm(void);
+void	check_read_timeout(void);
 #endif
+
+

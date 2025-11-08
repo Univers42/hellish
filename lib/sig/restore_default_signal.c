@@ -1,4 +1,18 @@
-/* ************************************************************************** */
+/* *********************************************void	restore_default_signal(int sig)
+{
+	if (spec_trap(sig))
+	{
+		restore_special_signal(sig);
+		return ;
+	}
+	get_original_signal(sig);
+	if (handle_async_or_untrapped(sig))
+		return ;
+	if ((g_sig.sigmodes[sig] & SIG_NO_TRAP) == 0)
+		set_signal_handler(sig, (t_sig_handler *)SIG_DFL);
+	change_signal(sig, (char *)DEFAULT_SIG);
+	g_sig.sigmodes[sig] &= ~SIG_TRAPPED;
+}************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   restore_default_signal.c                           :+:      :+:    :+:   */
@@ -33,7 +47,7 @@ static int	handle_async_or_untrapped(int sig)
 		|| ((g_sig.sigmodes[sig] & (SIG_TRAPPED | SIG_ASYNCSIG | SIG_NO_TRAP))
 			== SIG_ASYNCSIG))
 	{
-		g_sig.original_signals[sig] = SIG_DFL;
+		g_sig.original_signals[sig] = (void *)SIG_DFL;
 		set_signal_handler(sig, SIG_DFL);
 		change_signal(sig, (char *)DEFAULT_SIG);
 		return (1);
@@ -57,7 +71,7 @@ void	restore_default_signal(int sig)
 	if (handle_async_or_untrapped(sig))
 		return ;
 	if ((g_sig.sigmodes[sig] & SIG_NO_TRAP) == 0)
-		set_signal_handler(sig, g_sig.original_signals[sig]);
+		set_signal_handler(sig, (void (*)(int))g_sig.original_signals[sig]);
 	change_signal(sig, (char *)DEFAULT_SIG);
 	g_sig.sigmodes[sig] &= ~SIG_TRAPPED;
 }

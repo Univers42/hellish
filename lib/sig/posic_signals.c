@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/07 23:46:43 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:48:52 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 09:03:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,14 +41,13 @@ int	ft_sigismember(const t_sigset *set, int sig)
 }
 
 /*
- * BSD-style sigblock()
- * Adds the signals in `mask` to the process’s current signal mask.
+ * ft_sigblock: build a sigset_t from integer mask and block those signals
  * Returns the previous mask (as our integer-based sigset_t).
  */
-int	sigblock(int mask)
+int	ft_sigblock(int mask)
 {
-	t_sigset	blockset;
-	t_sigset	oldset;
+	sigset_t	blockset;
+	sigset_t	oldset;
 	int			sig;
 	int			oldmask;
 
@@ -57,7 +56,7 @@ int	sigblock(int mask)
 	while (sig < NSIG)
 	{
 		if (mask & (1U << (sig - 1)))
-			ft_sigaddset(&blockset, sig);
+			sigaddset(&blockset, sig);
 		sig++;
 	}
 	if (sigprocmask(SIG_BLOCK, &blockset, &oldset) < 0)
@@ -68,12 +67,7 @@ int	sigblock(int mask)
 	{
 		if (sigismember(&oldset, sig))
 			oldmask |= (1U << (sig - 1));
+		sig++;
 	}
 	return (oldmask);
-}
-
-// retrn 1 if the bit is set  otherwise 0.
-int	ft_sigismember(const t_sigset *set, int sig)
-{
-	return ((*set & sigmask(sig)) != 0);
 }

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:29 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:43:56 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 08:48:33 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@ int	next_pending_trap(int start)
 
 	i = start - 1;
 	while (++i < NSIG)
-		if (pending_traps[i])
+		if (g_sig.pending_traps[i])
 			return (i);
 	return (-1);
 }

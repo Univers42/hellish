@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:51 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:06:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 09:01:23 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,5 +17,5 @@
 	 are.  Called by child processes after they are forked. */
 void	restore_original_signals(void)
 {
-	reset_or_restore_signal_handlers (restore_signal);
+	reset_or_restore_signal_handlers(restore_signal);
 }

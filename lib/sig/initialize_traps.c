@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/07 23:01:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:54:47 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 08:48:32 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,7 @@ static inline void	init_special_traps(void)
 		t = traps[i];
 		g_sig.trap_list[t] = NULL;
 		g_sig.sigmodes[t] = SIG_INHERITED;
-		g_sig.original_signals[t] = IMPOSSIBLE_TRAP_HANDLER;
+		g_sig.original_signals[t] = (void *)IMPOSSIBLE_TRAP_HANDLER;
 	}
 }
 
@@ -39,7 +39,7 @@ static inline void	init_all_signals(void)
 		g_sig.pending_traps[i] = 0;
 		g_sig.trap_list[i] = (char *)DEFAULT_SIG;
 		g_sig.sigmodes[i] = SIG_INHERITED;
-		g_sig.original_signals[i] = IMPOSSIBLE_TRAP_HANDLER;
+		g_sig.original_signals[i] = (void *)IMPOSSIBLE_TRAP_HANDLER;
 	}
 }
 

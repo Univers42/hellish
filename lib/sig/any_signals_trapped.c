@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:51:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:43:54 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 08:48:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@ int	any_signals_trapped(void)
 	register int	i;
 
 	i = 0;
-	while (++i < NSIG)
+	while (++i < BASH_NSIG)
 		if ((g_sig.sigmodes[i] & SIG_TRAPPED)
 			&& (g_sig.sigmodes[i] & SIG_IGNORED) == 0)
 			return (i);

@@ -6,37 +6,16 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 05:47:37 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:48:05 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 09:03:37 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-t_sig_handler	*set_signal_handler(int sig, t_sig_handler *handler)
+void	(*set_signal_handler(int sig, void (*handler)(int)))(int)
 {
-	return ((t_sig_handler *)signal(sig, handler));
-}
-
-int	ft_sigpause(int mask)
-{
-	t_sigset	newset;
-	int			sig;
-
-	ft_sigemptyset(&newset);
-	sig = 1;
-	while (sig < NSIG)
-	{
-		if (mask & (1U << (sig - 1)))
-			ft_sigaddset(&newset, sig);
-		sig++;
-	}
-	return (ft_sigsuspend(&newset));
-}
-
-t_sig_handler	*set_signal_handler(int sig, t_sig_handler *handler)
-{
-	t_sigaction	act;
-	t_sigaction	old;
+	struct sigaction act;
+	struct sigaction old;
 
 	act.sa_handler = handler;
 	sigemptyset(&act.sa_mask);
@@ -46,37 +25,39 @@ t_sig_handler	*set_signal_handler(int sig, t_sig_handler *handler)
 	return (old.sa_handler);
 }
 
-int	ft_sigprocmask(int operation, int *newset, int *oldset)
+static void build_sigset_from_mask(int mask, sigset_t *dst)
 {
-	int	old;
-	int	new;
-
-	if (newset)
-		new = *newset;
-	else
-		new = 0;
-	if (operation == SIG_BLOCK)
-		old = ft_sigblock(new);
-	else if (operation == SIG_SET_MASK)
-		old = ft_sigsetmask(new);
-	else
-		return (SIG_ERR);
-	if (oldset)
-		*oldset = old;
+	sigemptyset(dst);
+	for (int sig = 1; sig < NSIG; ++sig)
+		if (mask & (1U << (sig - 1)))
+			sigaddset(dst, sig);
 }
 
-int	ft_sigsuspend(const t_sigset *set)
+int ft_sigprocmask(int operation, int *newset, int *oldset)
 {
-	t_sigset	oldmask;
-	t_sigset	newmask;
-	t_sigset	realset;
-	int			sig;
+	sigset_t nset;
+	sigset_t oset;
+	int mask = newset ? *newset : 0;
 
-	ft_sigemptyset(&realset);
-	sig = 1;
-	while (sig < NSIG)
+	if (newset)
+		build_sigset_from_mask(mask, &nset);
+	if (sigprocmask(operation, newset ? &nset : NULL, &oset) < 0)
+		return (-1);
+	if (oldset)
 	{
-		if (*set & (1U << (sig - 1)))
-			ft_sigaddset(&realset, sig);
+		int omask = 0;
+		for (int sig = 1; sig < NSIG; ++sig)
+			if (sigismember(&oset, sig))
+				omask |= (1U << (sig - 1));
+		*oldset = omask;
 	}
+	return (0);
+}
+
+int ft_sigsuspend(const t_sigset *set)
+{
+	sigset_t rset;
+	int mask = set ? *set : 0;
+	build_sigset_from_mask(mask, &rset);
+	return (sigsuspend(&rset));
 }

@@ -6,13 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 05:49:56 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 05:50:11 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/08 08:51:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
+#include "quit.h"
 
-void	is_term_signal(void)
+int	is_term_signal(void)
 {
 	return (g_term.terminating_signal != 0);
 }
