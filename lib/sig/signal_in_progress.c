@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:51:34 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:19:22 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/10 14:43:02 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,5 +14,5 @@
 
 int	signal_in_progress(int sig)
 {
-	return (g_sig.sigmodes[sig] & SIG_INPROGRESS);
+	return (get_g_sig()->sigmodes[sig] & SIG_INPROGRESS);
 }

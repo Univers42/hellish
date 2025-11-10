@@ -4,15 +4,12 @@
 /*   uw_set_error_trap.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:54:31 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 06:32:12 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	uw_set_error_trap(void *command)
+void uw_set_error_trap(void *command)
 {
-	set_error_trap (command);
+	set_error_trap(command);
 }

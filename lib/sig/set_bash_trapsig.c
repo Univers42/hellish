@@ -2,17 +2,13 @@
 /*                                                                            */
 /*                                                        :::      ::::::::   */
 /*   set_bash_trapsig.c                                 :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/08 00:53:17 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 02:54:27 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "trap.h"
 
-void	set_bash_trapsig(int sig)
+void set_bash_trapsig(int sig)
 {
-	bind_var_to_int ("BASH_TRAPSIG", sig, 0);
+	bind_var_to_int("BASH_TRAPSIG", sig, 0);
 }

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 08:45:09 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/10 14:53:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,5 +18,5 @@ void	clear_pending_traps(void)
 
 	i = 0;
 	while (++i < NSIG)
-		g_sig.pending_traps[i] = 0;
+		get_g_sig()->pending_traps[i] = 0;
 }

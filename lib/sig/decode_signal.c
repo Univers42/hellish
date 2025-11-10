@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:52:05 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 08:48:35 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/10 14:56:13 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,21 +15,6 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-
-static int	valid_number(const char *s, intmax_t *out)
-{
-	char		*end;
-	long long	v;
-
-	if (!s || !*s)
-		return (0);
-	errno = 0;
-	v = strtoll(s, &end, 10);
-	if (errno || *end != '\0')
-		return (0);
-	*out = (intmax_t)v;
-	return (1);
-}
 
 static inline int	decode_numeric_signal(const char *string)
 {
@@ -48,21 +33,19 @@ static inline int	decode_realtime_signal(const char *string, int flags)
 {
 	intmax_t	sig;
 
-	if (strncmp(string, "SIGRTMIN+", 9) == 0
-		|| ((flags & DSIG_NOCASE)
+	if ((strncmp(string, "SIGRTMIN+", 9) == 0) || ((flags & DSIG_NOCASE)
 			&& strncasecmp(string, "SIGRTMIN+", 9) == 0))
 	{
-		if (valid_number(string + 9, &sig)
-			&& sig >= 0 && sig <= SIGRTMAX - SIGRTMIN)
+		if (valid_number(string + 9, &sig) && sig >= 0
+			&& sig <= SIGRTMAX - SIGRTMIN)
 			return (SIGRTMIN + (int)sig);
 		return (NO_SIG);
 	}
-	else if (strncmp(string, "RTMIN+", 6) == 0
-		|| ((flags & DSIG_NOCASE)
+	else if ((strncmp(string, "RTMIN+", 6) == 0) || ((flags & DSIG_NOCASE)
 			&& strncasecmp(string, "RTMIN+", 6) == 0))
 	{
-		if (valid_number(string + 6, &sig)
-			&& sig >= 0 && sig <= SIGRTMAX - SIGRTMIN)
+		if (valid_number(string + 6, &sig) && sig >= 0
+			&& sig <= SIGRTMAX - SIGRTMIN)
 			return (SIGRTMIN + (int)sig);
 		return (NO_SIG);
 	}
@@ -70,8 +53,8 @@ static inline int	decode_realtime_signal(const char *string, int flags)
 }
 
 static inline int	match_signal_name(const char *string,
-										const char *name,
-										int flags)
+									const char *name,
+									int flags)
 {
 	const char	*trimmed;
 
@@ -102,17 +85,13 @@ static inline int	decode_named_signal(const char *string, int flags)
 	sig = -1;
 	while (++sig < BASH_NSIG_TOTAL)
 	{
-		name = g_sig.signal_name[sig];
+		name = get_g_sig()->signal_name[sig];
 		if (match_signal_name(string, name, flags))
 			return (sig);
 	}
 	return (NO_SIG);
 }
 
-/* Turn a string into a signal number, or a number into
-   a signal number.  If STRING is "2", "SIGINT", or "INT",
-   then (int)2 is returned.  Return NO_SIG if STRING doesn't
-   contain a valid signal descriptor. */
 int	decode_signal(const char *string, int flags)
 {
 	int	sig;

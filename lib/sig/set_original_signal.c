@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/08 00:53:26 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/08 08:48:34 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/10 17:59:26 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,8 @@
 
 void	set_original_signal(int sig, t_sig_handler *handler)
 {
-	if (sig > 0 && sig < NSIG && g_sig.original_signals[sig]
+	if (sig > 0 && sig < NSIG
+		&& get_g_sig()->original_signals[sig]
 		== (void *)IMPOSSIBLE_TRAP_HANDLER)
-		SETORIGSIG (sig, handler);
+		set_orig_sig(sig, handler);
 }
