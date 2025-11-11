@@ -42,5 +42,6 @@ groff -Tutf8 -man docs/manual/man.1 | less -R
 - [bash GNU](https://www.gnu.org/software/bash/manual/bash.html#Reserved-Words)
 - [shlex](https://rico-schmidt.name/pymotw-3/shlex/)
 - [new version of shell definition POSIX 2024](https://pubs.opengroup.org/onlinepubs/9799919799/)
+dfdsadffadsdfdfssa
 **about something else:**
 somethin just ot seee to delete after
