@@ -1,0 +1,51 @@
+# Introduction
+
+Welcome into our own shell repository!
+
+A shell is the program that interpretes what we type into the terminal. it reads our commands, run programs, and prints their output.
+here are a non exhaustive list of shell:
+- dash
+- ash
+- bash
+- cash
+- fish
+- etc..
+
+# What exactly we have built ?
+we have started by implementing the core building blocks of every shell:
+- Reading and parsing user input
+- Built-in commands like `pwd` and `cd`
+- launching external programs
+
+at this stage, our shell will already feel usable, we'll be able to type commands into it, see their output and navigate within our filesystem.
+
+As we progress, we'll implement advanced features like:
+- piping and redirection
+- command history
+- autocompletion
+- ...
+
+# What exactly we have learnt ?
+- how a shell reads, parses, and runs commands.
+- What a REPL is and howit works under the hood.
+- How commands like `echo`run, vs. external onces (like `cursor`)
+- What `$PATH` means and its role in identifying executable files
+- How running commands require spawning process and exits
+
+> in the advances stages, we have been forces to structure and refactore it to avvoid 
+regressions and to make adding new features easier.
+
+
+# Why should we build such a project ?
+
+Building our own shell blends system design, advanced programming practice, and real-world computing knowledge (shelll + OS). it we've mostly only working on web
+or application code, we'll get a change to be close to how our cojmputer actually runs
+software.
+
+Beyon technical depth, there's something satisfying about understanding a tool we use
+every day.
+
+We'll come uot of it as a more confident and interesting developer.
+
+# What are the pre-requisites for project ?
+We ought to be comfortable writing coe in any language and using Git. Most of the concepts we would need to learn will be pick up as we go. What matters is curiosity, rigor of organizations and architecture of project. we'll develop intuition by exploring, debugging, and discoverign solutions ourself.
