@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: alcacere <alcacere@student.42.fr>          +#+  +:+       +#+         #
+#    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/08 02:01:21 by alcacere         ###   ########.fr        #
+#    Updated: 2025/11/11 14:58:04 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -268,6 +268,7 @@ publish:
 	git branch -D "$$BR"; \
 	git push origin --delete "$$BR" || true; \
 	echo "[publish] done (on branch: develop)"
+
 
 # Auto-run set-hooks on first use (after clone)
 ifeq ($(wildcard .init.stamp),)
