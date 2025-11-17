@@ -1,18 +1,16 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   var_hash.c                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/04 19:35:38 by alcacere          #+#    #+#             */
-/*   Updated: 2025/11/04 20:53:52 by alcacere         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
+#include "libvar.h"
 
-#include "var.h"
-
-t_var	**hashvar(const char *p)
+struct s_var	**var_hash(const char *p)
 {
-	return (&vartab[hashval(p) % VTABSIZE]);
+	unsigned int	hashval;
+	t_var_state		*state;
+
+	state = get_var_state();
+	hashval = ((unsigned char)*p) << 4;
+	while (*p && *p != '=')
+	{
+		hashval += (unsigned char)*p;
+		p++;
+	}
+	return (&state->vartab[hashval % VTABSIZE]);
 }
