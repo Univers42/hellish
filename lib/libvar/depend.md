@@ -1,0 +1,56 @@
+
+## Dependencias Externas
+
+### 1. Gestión de Memoria
+* `ckmalloc(size_t size)`: Un `malloc` que comprueba si falla (y llama a `sh_error`).
+* `ckfree(void *ptr)`: Un `free` seguro.
+* `savestr(const char *s)`: Un `strdup` que usa `ckmalloc`.
+
+### 2. Utilidades de Cadenas
+* `endofname(const char *s)`: Encuentra el fin de un nombre de variable.
+* `strchrnul(const char *s, int c)`: Un `strchr` que devuelve el puntero al `\0` si no encuentra `c`.
+* `fmtstr(char *buf, int size, const char *fmt, ...)`: Una versión segura de `sprintf`.
+* `atomax(const char *s, int base)`: `atoi_base` pero para `intmax_t`.
+* `nullstr`: Una macro o variable global de solo lectura que apunta a `""`.
+
+### 3. Salida y Errores (`output.h`, `error.h`)
+* `sh_error(const char *fmt, ...)`: La función principal para reportar errores.
+* `out1fmt(const char *fmt, ...)`: La función principal para imprimir (como `printf`).
+* `spcstr`: Una macro o variable global que apunta a `" "`.
+
+### 4. Sistema de "Stack String"
+* `STARTSTACKSTR(ep)`
+* `stackstrend()`
+* `growstackstr()`
+* `grabstackstr(ep)`
+
+### 5. Sistema de Expansión (`expand.h`)
+* `single_quote(const char *s)`: Envuelve una cadena en comillas simples para `showvars`.
+
+### 6. Control del Shell (`shell.h`)
+* `INTOFF`: Macro para deshabilitar interrupciones.
+* `INTON`: Macro para habilitar interrupciones.
+
+### 7. Funciones de Callback
+El `var_state.c` que creamos *asume* que estas funciones existen en el *scope* global para asignarlas como *callbacks* a las variables:
+* `changemail`
+* `changepath`
+* `getoptsreset`
+* `sethistsize`
+
+---
+
+## Dependencias Internas
+
+Dentro de nuestra propia librería, las funciones ahora dependen unas de otras de esta manera (además de `get_var_state()`, que es usada por casi todas):
+
+* **`setvar`**: Depende de `setvareq`.
+* **`setvarint`**: Depende de `setvar`.
+* **`setvareq`**: Depende de `var_hash` y `var_find`.
+* **`lookupvar`**: Depende de `var_hash` y `var_find`.
+* **`lookupvarint`**: Depende de `lookupvar`.
+* **`listvars`**: No tiene dependencias internas
+* **`showvars`**: Depende de `listvars` y `var_vpcmp`
+* **`var_vpcmp`**: Depende de `libvar_varcmp`.
+* **`exportcmd`**: Depende de `setvar`, `var_hash`, `var_find` y `showvars`.
+

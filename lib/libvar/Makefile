@@ -5,7 +5,7 @@ CFLAGS		= 		-Wall -Wextra -Werror -pedantic -Wshadow -std=c99 -I.
 DEPFLAGS	= 		-MMD -MP
 NAME_LIB	= 		var
 NAME		= 		$(NAME_LIB).a
-SRCS		=  		var_cmp.c
+SRCS		=  		$(wildcard *.c)
 
 OBJ_DIR		=		obj
 TEST_DIR	=		unit_test

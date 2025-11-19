@@ -1,27 +1,14 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   var_find.c                                         :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42.fr>          +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/11/04 19:35:34 by alcacere          #+#    #+#             */
-/*   Updated: 2025/11/04 20:02:18 by alcacere         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
-#include "var.h"
+#include "libvar.h"
 
-t_var	**findvar(const char *name)
+struct s_var	**var_find(struct s_var **vpp, const char *name)
 {
-	t_var	**vpp;
-
-	vpp = hashvar(name);
 	while (*vpp)
 	{
-		if (varequal((*vpp)->text, name))
+		if (libvar_varcmp((*vpp)->text, name) == 0)
 			break ;
 		vpp = &(*vpp)->next;
 	}
 	return (vpp);
 }
+
