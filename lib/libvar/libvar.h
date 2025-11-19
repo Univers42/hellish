@@ -79,15 +79,15 @@ struct s_var_state
 	struct s_var *vartab[VTABSIZE];
 	struct s_localvar_list *localvar_stack;
 	char optlist[NOPTS];
-	struct s_var varinit[16];           // Adjust size as needed for your shell
+	struct s_var varinit[16]; // Adjust size as needed for your shell
 	int varinit_size;
 	const char *defpathvar;
 	const char *defifsvar;
 	const char *defoptindvar;
 	char linenovar[16];
 	struct s_var *vlineno_ptr;
-	char oplist[NOPTS];                 // For compatibility with ft_memset(state.oplist, ...)
-	// ...other members are private...
+	char oplist[NOPTS]; // For compatibility with ft_memset(state.oplist, ...)
+						// ...other members are private...
 };
 
 /*
