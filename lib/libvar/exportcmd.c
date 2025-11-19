@@ -1,4 +1,5 @@
 #include "libvar.h"
+#include <string.h>
 
 static void	process_export_arg(char *arg, int flag)
 {

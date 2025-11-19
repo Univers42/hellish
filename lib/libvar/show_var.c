@@ -1,10 +1,18 @@
 #include "libvar.h"
 
-static void	print_var_list(char **ep, char **epend, const char *prefix)
+// External dependencies
+extern const char *spcstr;
+extern const char *nullstr;
+extern char *strchrnul(const char *s, int c);
+extern const char *single_quote(const char *s);
+extern void out1fmt(const char *fmt, ...);
+extern void ft_qsort(void *base, int nmemb, int size, int (*compar)(const void *, const void *));
+
+static void print_var_list(char **ep, char **epend, const char *prefix)
 {
-	const char	*sep;
-	const char	*p;
-	const char	*q;
+	const char *sep;
+	const char *p;
+	const char *q;
 
 	if (*prefix)
 		sep = spcstr;
@@ -21,11 +29,11 @@ static void	print_var_list(char **ep, char **epend, const char *prefix)
 	}
 }
 
-int	showvars(const char *prefix, int on, int off)
+int showvars(const char *prefix, int on, int off)
 {
-	char	**ep;
-	char	**epend;
-	int		count;
+	char **ep;
+	char **epend;
+	int count;
 
 	ep = listvars(on, off, &epend);
 	count = epend - ep;

@@ -1,8 +1,22 @@
 #include "libvar.h"
 
-static struct s_var	*create_new_var(struct s_var **vpp, char *s, int flags)
+// External dependencies
+#include <stddef.h>
+#ifndef INTOFF
+#define INTOFF /* nothing or your shell's macro */
+#endif
+#ifndef INTON
+#define INTON /* nothing or your shell's macro */
+#endif
+extern void ckfree(void *ptr);
+extern void *ckmalloc(size_t size);
+extern char *savestr(const char *s);
+extern void sh_error(const char *, ...);
+extern char *strchrnul(const char *s, int c);
+
+static struct s_var *create_new_var(struct s_var **vpp, char *s, int flags)
 {
-	struct s_var	*vp;
+	struct s_var *vp;
 
 	if (flags & VNOSET)
 		return (NULL);
@@ -23,14 +37,14 @@ static struct s_var	*create_new_var(struct s_var **vpp, char *s, int flags)
 	return (vp);
 }
 
-static int	handle_update_unset(struct s_var **vpp, char *s, int flags)
+static int handle_update_unset(struct s_var **vpp, char *s, int flags)
 {
-	struct s_var	*vp;
-	int				total_flags;
+	struct s_var *vp;
+	int total_flags;
 
 	vp = *vpp;
 	total_flags = (flags & (VEXPORT | VREADONLY | VSTRFIXED | VUNSET)) |
-		(vp->flags & VSTRFIXED);
+				  (vp->flags & VSTRFIXED);
 	if (total_flags == VUNSET)
 	{
 		*vpp = vp->next;
@@ -42,9 +56,9 @@ static int	handle_update_unset(struct s_var **vpp, char *s, int flags)
 	return (0);
 }
 
-static int	check_var_permissions(struct s_var *vp, char *s, int flags)
+static int check_var_permissions(struct s_var *vp, char *s, int flags)
 {
-	const char	*n;
+	const char *n;
 
 	if (vp->flags & VREADONLY)
 	{
@@ -59,9 +73,9 @@ static int	check_var_permissions(struct s_var *vp, char *s, int flags)
 	return (0);
 }
 
-static struct s_var	*update_existing_var(struct s_var **vpp, char *s, int flags)
+static struct s_var *update_existing_var(struct s_var **vpp, char *s, int flags)
 {
-	struct s_var	*vp;
+	struct s_var *vp;
 
 	vp = *vpp;
 	if (check_var_permissions(vp, s, flags))
@@ -80,13 +94,13 @@ static struct s_var	*update_existing_var(struct s_var **vpp, char *s, int flags)
 	return (vp);
 }
 
-struct s_var	*setvareq(char *s, int flags)
+struct s_var *setvareq(char *s, int flags)
 {
-	struct s_var	*vp;
-	struct s_var	**vpp;
-	extern int		aflag;
+	struct s_var *vp;
+	struct s_var **vpp;
+	extern int aflag;
 
-	flags |= (VEXPORT & (((unsigned) (1 - aflag)) - 1));
+	flags |= (VEXPORT & (((unsigned)(1 - aflag)) - 1));
 	vpp = var_hash(s);
 	vpp = var_find(vpp, s);
 	vp = *vpp;

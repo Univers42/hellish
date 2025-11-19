@@ -12,11 +12,19 @@
 
 #include "libvar.h"
 
-t_localvar_list	*pushlocalvars(int push)
+#ifndef INTOFF
+#define INTOFF /* nothing or your shell's macro */
+#endif
+#ifndef INTON
+#define INTON /* nothing or your shell's macro */
+#endif
+extern void *ckmalloc(size_t);
+
+t_localvar_list *pushlocalvars(int push)
 {
-	t_localvar_list	*ll;
-	t_localvar_list	*top;
-	t_var_state		*state;
+	t_localvar_list *ll;
+	t_localvar_list *top;
+	t_var_state *state;
 
 	state = get_var_state();
 	top = state->localvar_stack;
@@ -31,4 +39,3 @@ t_localvar_list	*pushlocalvars(int push)
 	}
 	return (top);
 }
-

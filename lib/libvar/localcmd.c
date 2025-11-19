@@ -1,9 +1,11 @@
 #include "libvar.h"
 
-int	localcmd(int argc, char **argv)
+extern void sh_error(const char *, ...); // Add this line
+
+int localcmd(int argc, char **argv)
 {
-	struct s_var_state	*state;
-	int					i;
+	struct s_var_state *state;
+	int i;
 
 	state = get_var_state();
 	if (!state->localvar_stack)

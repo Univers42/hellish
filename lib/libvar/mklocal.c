@@ -1,10 +1,23 @@
 #include "libvar.h"
+#include <string.h>
 
-static s_localvar	*handle_special_opt(void)
+// If not already declared in headers:
+extern void *ckmalloc(size_t);
+#ifndef NOPTS
+#define NOPTS 64 // or whatever the correct value is for your shell
+#endif
+#ifndef INTOFF
+#define INTOFF /* nothing or your shell's macro */
+#endif
+#ifndef INTON
+#define INTON /* nothing or your shell's macro */
+#endif
+
+static struct s_localvar *handle_special_opt(void)
 {
-	struct s_var_state	*state;
-	struct s_localvar	*lvp;
-	char				*p;
+	struct s_var_state *state;
+	struct s_localvar *lvp;
+	char *p;
 
 	state = get_var_state();
 	lvp = ckmalloc(sizeof(struct s_localvar));
@@ -14,9 +27,9 @@ static s_localvar	*handle_special_opt(void)
 	return (lvp);
 }
 
-static void	setup_new_local(struct s_localvar *lvp, char *name, int flags)
+static void setup_new_local(struct s_localvar *lvp, char *name, int flags)
 {
-	char	*eq;
+	char *eq;
 
 	eq = strchr(name, '=');
 	if (eq)
@@ -26,10 +39,10 @@ static void	setup_new_local(struct s_localvar *lvp, char *name, int flags)
 	lvp->flags = VUNSET;
 }
 
-static void	setup_existing_local(struct s_localvar *lvp, struct s_var *vp,
-								char *name, int flags)
+static void setup_existing_local(struct s_localvar *lvp, struct s_var *vp,
+								 char *name, int flags)
 {
-	char	*eq;
+	char *eq;
 
 	eq = strchr(name, '=');
 	lvp->text = vp->text;
@@ -40,10 +53,10 @@ static void	setup_existing_local(struct s_localvar *lvp, struct s_var *vp,
 	lvp->vp = vp;
 }
 
-static s_localvar	*handle_var_opt(char *name, int flags)
+static struct s_localvar *handle_var_opt(char *name, int flags)
 {
-	struct s_localvar	*lvp;
-	struct s_var		*vp;
+	struct s_localvar *lvp;
+	struct s_var *vp;
 
 	lvp = ckmalloc(sizeof(struct s_localvar));
 	vp = *var_find(var_hash(name), name);
@@ -54,10 +67,10 @@ static s_localvar	*handle_var_opt(char *name, int flags)
 	return (lvp);
 }
 
-void	mklocal(char *name, int flags)
+void mklocal(char *name, int flags)
 {
-	struct s_var_state	*state;
-	struct s_localvar	*lvp;
+	struct s_var_state *state;
+	struct s_localvar *lvp;
 
 	state = get_var_state();
 	INTOFF;

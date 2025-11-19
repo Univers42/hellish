@@ -1,6 +1,6 @@
 #include "libvar.h"
 
-void	unwindlocalvars(struct localvar_list *stop)
+void	unwindlocalvars(t_localvar_list *stop)
 {
 	t_var_state	*state;
 

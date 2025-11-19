@@ -1,6 +1,15 @@
 #include "libvar.h"
 
-static char	**process_var_bucket(struct s_var *vp, char **ep, int mask, int on)
+// Forward declaration for pointer usage
+struct s_var_state;
+
+// External stack string helpers (provided by shell/libft)
+extern char **stackstrend(void);
+extern char **growstackstr(void);
+extern char **grabstackstr(char **);
+extern void STARTSTACKSTR(char **);
+
+static char **process_var_bucket(struct s_var *vp, char **ep, int mask, int on)
 {
 	while (vp)
 	{
@@ -15,14 +24,15 @@ static char	**process_var_bucket(struct s_var *vp, char **ep, int mask, int on)
 	return (ep);
 }
 
-char	**listvars(int on, int off, char ***end)
+char **listvars(int on, int off, char ***end)
 {
-	struct s_var_state	*state;
-	struct s_var		**vpp;
-	char				**ep;
-	int					mask;
+	struct s_var_state *state;
+	struct s_var **vpp;
+	char **ep;
+	int mask;
 
 	state = get_var_state();
+	ep = NULL; // Initialize to avoid uninitialized warning
 	STARTSTACKSTR(ep);
 	vpp = state->vartab;
 	mask = on | off;
