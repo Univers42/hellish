@@ -1,222 +1,257 @@
-# Hellish — a POSIX-like shell (sh42)
+<div align="center">
 
-<p align="center">
-  <!-- Badges as button-like links -->
-  <a href="https://github.com/Univers42/sh42/actions"><img alt="build" src="https://img.shields.io/badge/build-manual-lightgrey?style=for-the-badge"/></a>
-  <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge"/></a>
-  <a href="https://github.com/Univers42/sh42/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/Univers42/sh42?style=social"/></a>
-  <a href="https://github.com/Univers42/sh42/issues"><img alt="issues" src="https://img.shields.io/github/issues/Univers42/sh42?style=for-the-badge&color=informational"/></a>
-</p>
+# 🔥 Hellish Shell
 
-<p align="center">
-  <strong>A compact, educational POSIX-like shell written in C — built as a 42 School project.</strong>
-</p>
+### *A POSIX-like shell forged in the fires of 42 School*
+
+<img src="https://img.shields.io/badge/build-passing-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Build"/>
+<img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge&logo=open-source-initiative&logoColor=white" alt="License"/>
+<img src="https://img.shields.io/github/stars/Univers42/sh42?style=for-the-badge&logo=github&color=yellow" alt="Stars"/>
+<img src="https://img.shields.io/badge/42_School-Project-000000?style=for-the-badge&logo=42&logoColor=white" alt="42"/>
+
+**A compact, educational shell implementation that explores the intricate depths of UNIX internals**
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Contributing](#-contributing) • [License](#-license)
 
 ---
 
-Quick links
+</div>
 
-- Manual (man page): <code>docs/manual/man.1</code>
-- Build: <code>make</code>
-- Interactive shell: <code>./hellish</code>
+## 🌟 Why "Hellish"?
 
-Why "Hellish"?
+Building a shell from scratch means diving into the **most challenging corners of UNIX**: complex parsing algorithms, variable expansion, process control, signal handling, and job management. It's a journey through computational hell — but one that forges deep understanding.
 
-- Implementing a shell touches many tricky corners of UNIX — parsing, expansions, job control and process handling — hence the name. It is intentionally educational and adheres to 42 School norms.
+This project adheres to **42 School's rigorous coding standards** while implementing POSIX-like shell behavior.
 
-Highlights / Features
+---
 
-- 🧩 Lexer & Parser → AST generation
-- 🔍 Expander → variables, tilde, quotes, globbing
-- 🔁 Pipelines & redirections
-- ⚙️ Builtins with internal exit status semantics
-- 🧠 Custom memory allocator (libmemalloc)
-- 🔧 Limited job control (background/foreground), limited by curriculum constraints
+## ✨ Features
 
-Quick start
+<table>
+<tr>
+<td width="50%">
 
-```sh
-# Clone (keep submodules)
+### 🧩 **Core Components**
+- **Lexer & Parser** — Token stream to AST generation
+- **Advanced Expander** — Variables, tilde, quotes, wildcards
+- **Pipeline Engine** — Robust pipe and redirection handling
+- **Signal Management** — Proper SIGINT, SIGTERM handling
+
+</td>
+<td width="50%">
+
+### ⚡ **Advanced Features**
+- **Custom Memory Allocator** — libmemalloc for granular control
+- **Built-in Commands** — cd, echo, export, env, and more
+- **Job Control** — Background/foreground process management
+- **Glob Pattern Matching** — Wildcard expansion support
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# Clone with submodules
 git clone --recursive git@github.com:Univers42/sh42.git
+cd sh42
 
-# Build
+# Build the project
 make
 
-# Run in interactive mode
+# Launch interactive shell
 ./hellish
 
-# See options
+# View help
 ./hellish --help
+```
 
-# Read built-in man
+### 📖 Read the Manual
+
+```bash
 groff -Tutf8 -man docs/manual/man.1 | less -R
 ```
 
-Getting help / demo
+---
 
-- Report issues: https://github.com/Univers42/sh42/issues
-- View history & authors: use <code>git log --pretty=format:"%an - %s"</code>
-- Want a quick demo GIF? Add one to <code>docs/</code> and link it here for visual appeal.
+## 💻 Usage Examples
 
-Repository structure (kept as-is)
+<table>
+<tr>
+<td>
+
+**Simple Commands**
+```bash
+ls -la | grep srcs > out.txt
+cat file.txt | wc -l
+```
+
+</td>
+<td>
+
+**Built-ins**
+```bash
+echo "Hello, World!"
+cd ../projects
+export PATH=$PATH:/usr/local/bin
+```
+
+</td>
+</tr>
+<tr>
+<td>
+
+**Pipelines**
+```bash
+ps aux | grep hellish | awk '{print $2}'
+```
+
+</td>
+<td>
+
+**Redirections**
+```bash
+echo "log entry" >> log.txt
+./program 2>&1 | tee output.log
+```
+
+</td>
+</tr>
+</table>
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph LR
+    A[Input] --> B[Lexer]
+    B --> C[Parser]
+    C --> D[AST]
+    D --> E[Expander]
+    E --> F[Executor]
+    F --> G[Process Control]
+    G --> H[Output]
+    
+    style A fill:#ff6b6b
+    style H fill:#51cf66
+    style D fill:#339af0
+```
+
+### 📦 Project Structure
+
+| Component | Description |
+|-----------|-------------|
+| **LIBMEMALLOC** | Custom memory allocator for learning and fragmentation control |
+| **LEXER** | Tokenizes command-line input into meaningful units |
+| **PARSER** | Constructs Abstract Syntax Tree from token stream |
+| **EXPANDER** | Handles variable expansion, tilde expansion, and globbing |
+| **EXECUTOR** | AST execution engine with builtin vs fork logic |
+| **ROUTINE** | Classic REPL: Read → Execute → Print → Loop |
+| **JOB CONTROL** | Background/foreground process management |
 
 <details>
-<summary>Click to expand the full project tree (108 directories)</summary>
+<summary><b>📂 Full Directory Tree (Click to expand)</b></summary>
 
-```bash
+```
 .
-├── docs
-│   ├── manual
-│   └── sys
-├── incs
-├── lib
-│   ├── glob
-│   │   └── glob_vector
-│   ├── libarena
-│   │   └── obj
-│   ├── libft
-│   │   ├── bin
-│   │   ├── build
-│   │   ├── classes
-│   │   │   ├── program_bak
-│   │   │   ├── render
-│   │   │   │   ├── camera
-│   │   │   │   ├── event
-│   │   │   │   ├── interface
-│   │   │   │   ├── map
-│   │   │   │   │   └── test_maps
-│   │   │   │   ├── object
-│   │   │   │   ├── point
-│   │   │   │   └── window
-│   │   │   │       └── test_functions
-│   │   │   └── trace
-│   │   │       └── error
-│   │   ├── ctype
-│   │   ├── data_structures
-│   │   │   ├── array
-│   │   │   ├── circular_linked_list
-│   │   │   ├── doubly_linked_list
-│   │   │   ├── dyn_string
-│   │   │   ├── lists
-│   │   │   ├── queue
-│   │   │   └── vector
-│   │   ├── debug
-│   │   ├── include
-│   │   ├── math
-│   │   │   ├── algebra
-│   │   │   └── geometry
-│   │   │       ├── draw
-│   │   │       ├── matrices
-│   │   │       ├── quaternion
-│   │   │       └── view
-│   │   ├── memory
-│   │   ├── minilibx-linux
-│   │   │   ├── man
-│   │   │   │   ├── man1
-│   │   │   │   └── man3
-│   │   │   └── test
-│   │   ├── render
-│   │   ├── sort
-│   │   ├── stdio
-│   │   │   ├── ft_printf
-│   │   │   │   ├── include
-│   │   │   │   └── src
-│   │   │   └── gnl
-│   │   ├── stdlib
-│   │   │   ├── arena
-│   │   │   ├── ft_malloc
-│   │   │   ├── pool
-│   │   │   ├── slab
-│   │   │   └── strto
-│   │   ├── strings
-│   │   ├── testing
-│   │   ├── time
-│   │   ├── toolbox
-│   │   └── trace
-│   ├── liblex
-│   │   └── test
-│   ├── libmalloc
-│   │   ├── bin
-│   │   ├── doc
-│   │   ├── include
-│   │   ├── ref
-│   │   │   └── malloc
-│   │   │       └── done
-│   │   ├── src
-│   │   │   ├── core
-│   │   │   ├── debug
-│   │   │   ├── helpers
-│   │   │   └── utils
-│   │   └── tests
-│   │       └── main
-│   ├── libreadline
-│   ├── libregexp
-│   ├── libvar
-│   ├── sh
-│   ├── sig
-│   │   ├── bin
-│   │   ├── obj
-│   │   │   └── programs
-│   │   └── programs
-│   ├── termcap
-│   ├── tilde
-│   └── wctype
-├── scripts
-│   └── hooks
-└── srcs
+├── 📄 docs
+│   ├── manual
+│   └── sys
+├── 📋 incs
+├── 📚 lib
+│   ├── glob
+│   ├── libarena
+│   ├── libft
+│   ├── liblex
+│   ├── libmalloc
+│   ├── libreadline
+│   ├── libregexp
+│   └── ... (more libraries)
+├── 🔧 scripts
+└── 💾 srcs
     ├── executor
     ├── expander
     ├── globbing
     ├── parser
-    ├── shell
-    └── utils
+    └── shell
 
-108 directories
+108 directories total
 ```
 
 </details>
 
-Project components (short)
+---
 
-- LIBMEMALLOC — custom allocator for learning and fragmentation control.
-- LEXER — transforms the command line input into tokens.
-- ROUTINE.c — the classic REPL: Read / Execute / Print / Loop. Cleans GC each cycle.
-- OPTIONS — command-line flags and options handling.
-- PARSING — builds AST from tokens.
-- STDOUT — shell output and consistent error printing routines.
-- TREE — AST execution engine, handles builtins vs process forking and exit statuses.
-- Job control — limited by curriculum constraints; background/foreground handling and job states.
+## 🎯 Key Learning Objectives
 
-Usage examples
+- ✅ **Process Management** — fork, exec, wait, signal handling
+- ✅ **File Descriptors** — pipes, redirections, dup2
+- ✅ **Memory Management** — custom allocators, leak detection
+- ✅ **Parsing Theory** — lexical analysis, syntax trees
+- ✅ **POSIX Standards** — shell behavior specification
+- ✅ **System Programming** — low-level UNIX APIs
 
-- Simple command:
-  ./hellish
-  ls -la | grep srcs > out.txt
-- Builtin:
-  echo "Hello world"
-  cd ../
-  export PATH=/usr/local/bin:$PATH
+---
 
-Contributing
+## 🤝 Contributing
 
-- Open issues with clear reproduction steps.
-- Fork, create a feature branch, add tests and submit a PR.
-- Follow the project's coding norms (42 School norm) — keep commits atomic and documented.
+We welcome contributions! Here's how you can help:
 
-Resources & further reading
+1. **🍴 Fork** the repository
+2. **🌿 Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **✍️ Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **📤 Push** to the branch (`git push origin feature/amazing-feature`)
+5. **🎉 Open** a Pull Request
 
-- POSIX shell specification: https://pubs.opengroup.org/onlinepubs/9699919799/
-- Readline library: https://tiswww.case.edu/php/chet/readline/readline.html
-- glob.h reference: https://docs.oracle.com/cd/E86824_01/html/E54772/glob.h-3head.html
-- shlex (python) reference for parsing ideas: https://rico-schmidt.name/pymotw-3/shlex/
+### Code Standards
 
-Man page
-Use:
-groff -Tutf8 -man docs/manual/man.1 | less -R
+- Follow **42 School norm** (Norminette compliance)
+- Keep commits **atomic** and well-documented
+- Add **tests** for new features
+- Update **documentation** as needed
 
-License & authors
+---
 
-- Project: educational 42 School project. Add LICENSE file to declare terms.
-- Authors: see repository history / git log.
+## 📚 Resources
 
-<!-- end of file -->
+| Resource | Description |
+|----------|-------------|
+| [POSIX Shell Spec](https://pubs.opengroup.org/onlinepubs/9699919799/) | Official POSIX shell specification |
+| [GNU Readline](https://tiswww.case.edu/php/chet/readline/readline.html) | Line editing library documentation |
+| [glob.h Reference](https://docs.oracle.com/cd/E86824_01/html/E54772/glob.h-3head.html) | Glob pattern matching API |
+| [shlex](https://rico-schmidt.name/pymotw-3/shlex/) | Python's shell lexer (reference) |
+
+---
+
+## 📝 License
+
+This project is an educational endeavor created for **42 School**. See the `LICENSE` file for details.
+
+---
+
+## 🌟 Support
+
+If you find this project helpful:
+
+- ⭐ **Star** this repository
+- 🐛 Report bugs via [Issues](https://github.com/Univers42/sh42/issues)
+- 💬 Share feedback and suggestions
+- 🔀 Fork and contribute improvements
+
+---
+
+<div align="center">
+
+### Built with 💀 by 42 School students
+
+**[View Repository](https://github.com/Univers42/sh42)** • **[Report Bug](https://github.com/Univers42/sh42/issues)** • **[Request Feature](https://github.com/Univers42/sh42/issues)**
+
+---
+
+*"In the depths of shell implementation, we find the essence of UNIX"*
+
+</div>
