@@ -6,11 +6,40 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/11 14:58:04 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/11/21 00:21:10 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 # Generic project Makefile — discovers sources in srcs, builds objects in .objs/, and includes dependency files
+CC				:=	cc
+NAME			:=	shell
+DPDCS			:=	libft.a
+# Language standard and feature macros
+STD				:=	-std=gnu99
+DEFINES			:=	-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
+
+# Warning and hardening flags (keep strictness)
+WARN_FLAGS		:=	-Wall -Wextra -Werror -pedantic \
+					-Wshadow -Wpointer-arith -Wcast-align -Wvolatile-register-var \
+					-Wdangling-else -Wenum-compare -Wexpansion-to-defined -Waddress \
+					-Wno-shift-count-overflow -Wstrict-overflow -Wfatal-errors
+
+# Analyzer / sanitizers (kept as a dedicated variable)
+ANAFLAGS		:=	-fsanitize=address,undefined,leak
+
+# Preprocessor flags (kept empty — dependency flags are emitted per-compile)
+PREPROCFLAGS	:=	-MMD -MP -MF
+CPPFLAGS		:=	$(DEFINES)
+
+# Debug flags (overridable) and optimization flags
+DEBFLAGS		?=	-g3 -O0 -ggdb
+OPTFLAGS		:=	-Ofast -pipe
+
+# Final CFLAGS composition (keeps strict warnings and optional analyzers)
+CFLAGS			:=	$(STD) $(WARN_FLAGS) $(DEBFLAGS) $(CPPFLAGS) $(ANAFLAGS)
+
+# Linker flags
+LDFLAGS			:=	-lreadline -pthread -lm $(ANAFLAGS)
 
 # Submodule / dependency management
 SUBMODULE_DIR	:= lib/libft
@@ -22,7 +51,6 @@ REMOTE_CAMPUS	:= $(shell git remote -v | awk 'NR==2 {print $$1}')
 MSG				:=
 BRANCH			?=
 
-include	variables.mk
 -include lib/libft/build/colors.mk
 -include lib/libft/build/common.mk
 -include lib/libft/build/debug.mk
