@@ -1,0 +1,147 @@
+/* Base */
+.hellish-footer {
+  position: relative;
+  padding: 40px 18px 28px;
+  margin-top: 0;
+  color: var(--muted);
+  background: linear-gradient(180deg, rgba(6,10,20,0.94), rgba(3,6,12,0.96));
+  border-top: 1px solid rgba(255,255,255,0.03);
+  overflow: hidden;
+}
+
+/* neon top border */
+.hellish-footer::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2));
+  pointer-events: none;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+}
+
+/* subtle ember wash */
+.hellish-footer__embers {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(700px 120px at 10% 18%, rgba(255,123,80,0.02), transparent 10%),
+    radial-gradient(520px 90px at 88% 80%, rgba(255,45,45,0.02), transparent 12%);
+  opacity: 0.65;
+  mix-blend-mode: screen;
+  filter: blur(14px) saturate(120%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* inner content sits above embers */
+.hellish-footer__inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 12px;
+}
+
+/* grid columns */
+.hellish-footer__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+/* column headings & lists */
+.footer-col h4 {
+  margin: 0 0 12px;
+  color: var(--page-text);
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+.footer-list { list-style: none; padding: 0; margin: 0; }
+.footer-list li { margin-bottom: 8px; }
+
+.footer-list a,
+.footer-col a {
+  color: var(--muted);
+  text-decoration: none;
+  position: relative;
+  padding-bottom: 2px;
+  display: inline-block;
+  transition: color 200ms ease, transform 160ms ease, text-shadow 220ms ease;
+}
+.footer-list a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0%;
+  height: 2px;
+  background: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2));
+  transition: width 260ms cubic-bezier(.2,.9,.3,1);
+}
+.footer-list a:hover {
+  color: #fff;
+  transform: translateY(-2px);
+  text-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.footer-list a:hover::after { width: 60%; }
+
+/* brand column */
+.footer-col--brand .brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.brand__logo { width: 48px; height: 48px; flex: 0 0 48px; }
+.brand__title { font-size: 1.15rem; color: var(--page-text); display:block; }
+.brand__tag { margin: 0; color: var(--muted); font-size: 0.92rem; }
+.brand__small { margin-top: 10px; color: var(--muted); font-size: 0.9rem; }
+
+/* socials */
+.footer-socials { display:flex; gap:10px; margin-top:12px; }
+.social {
+  width:36px; height:36px; display:inline-grid; place-items:center;
+  border-radius:10px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.03);
+  color: var(--muted);
+  transition: transform .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.social svg { width:18px; height:18px; fill: currentColor; }
+.social:hover { color: var(--flame-color-1); transform: translateY(-3px); box-shadow: 0 8px 26px rgba(0,0,0,0.6); }
+
+/* bottom row */
+.hellish-footer__bottom {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  border-top: 1px solid rgba(255,255,255,0.03);
+  padding-top: 14px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.hellish-footer__bottom .legal a { color: var(--muted); text-decoration:none; margin:0 6px; }
+.hellish-footer__bottom .legal a:hover { color: var(--flame-color-1); }
+.sep { margin: 0 8px; opacity: 0.5; }
+
+/* responsive */
+@media (max-width: 900px) {
+  .hellish-footer__grid { grid-template-columns: 1fr 1fr; gap: 20px; }
+}
+@media (max-width: 560px) {
+  .hellish-footer__grid { grid-template-columns: 1fr; }
+  .hellish-footer__bottom { flex-direction: column; align-items: center; text-align: center; gap: 8px; }
+}
+
+/* light mode */
+[data-theme='light'] .hellish-footer {
+  background: linear-gradient(180deg, rgba(250,250,250,0.98), rgba(244,244,246,0.98));
+  color: var(--muted);
+  border-top-color: rgba(2,6,23,0.05);
+}
+[data-theme='light'] .hellish-footer::before { opacity: 0.9; }
+[data-theme='light'] .footer-list a:hover { color: var(--page-text); }

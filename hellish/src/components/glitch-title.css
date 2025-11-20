@@ -1,0 +1,631 @@
+/* GlitchTitle container */
+.glitch-title-container {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* Main title */
+.glitch-title {
+  position: relative;
+  display: inline-block;
+  font-weight: 800;
+  z-index: 6;
+  white-space: nowrap;
+  color: transparent;
+  margin: 0;
+  font-size: clamp(3.6rem, 10vw, 8rem);
+  letter-spacing: -0.025em;
+  line-height: 0.95;
+  text-shadow: 0 12px 42px rgba(0,0,0,0.55);
+  background: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: transform 0.2s ease;
+}
+
+.glitch-title:hover {
+  transform: scale(1.02);
+}
+
+/* Subtle "s" - now possessed and moving like a ghost, wanting to speak */
+.glitch-s {
+  font-size: 0.75em; /* smaller */
+  opacity: 0.6; /* faded */
+  vertical-align: baseline;
+  animation: ghost-possessed 3s infinite ease-in-out;
+  cursor: pointer;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.3)); /* ghostly glow */
+  transition: opacity 0.3s ease, font-size 0.3s ease;
+}
+
+@keyframes ghost-possessed {
+  0% { transform: translateX(0px) translateY(0px) rotate(0deg) scale(1); opacity: 0.6; }
+  10% { transform: translateX(8px) translateY(-4px) rotate(10deg) scale(1.1); opacity: 0.8; }
+  20% { transform: translateX(-6px) translateY(6px) rotate(-8deg) scale(0.9); opacity: 0.7; }
+  30% { transform: translateX(4px) translateY(-8px) rotate(6deg) scale(1.05); opacity: 0.9; }
+  40% { transform: translateX(-10px) translateY(2px) rotate(-12deg) scale(0.95); opacity: 0.6; }
+  50% { transform: translateX(6px) translateY(4px) rotate(8deg) scale(1.1); opacity: 0.8; }
+  60% { transform: translateX(-4px) translateY(-6px) rotate(-4deg) scale(0.9); opacity: 0.7; }
+  70% { transform: translateX(10px) translateY(8px) rotate(12deg) scale(1.05); opacity: 0.9; }
+  80% { transform: translateX(-8px) translateY(-2px) rotate(-10deg) scale(0.95); opacity: 0.6; }
+  90% { transform: translateX(2px) translateY(6px) rotate(4deg) scale(1.1); opacity: 0.8; }
+  100% { transform: translateX(0px) translateY(0px) rotate(0deg) scale(1); opacity: 0.6; }
+}
+
+/* Glitch squares for reinforcement */
+.glitch-square-1 {
+  animation: glitch-square-1 1.5s infinite alternate;
+}
+
+.glitch-square-2 {
+  animation: glitch-square-2 2s infinite alternate;
+}
+
+@keyframes glitch-square-1 {
+  0% { transform: translateX(0) rotate(0deg); opacity: 0.7; }
+  100% { transform: translateX(10px) rotate(5deg); opacity: 0.9; }
+}
+
+@keyframes glitch-square-2 {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+  100% { transform: translateY(-5px) rotate(-3deg); opacity: 0.8; }
+}
+
+/* Joke bubble */
+.joke-bubble {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 20px;
+  z-index: 100;
+  opacity: 0;
+  animation: bubble-appear 0.4s ease forwards;
+  pointer-events: none;
+}
+
+.joke-bubble-content {
+  background: linear-gradient(135deg, rgba(0,0,0,0.9), rgba(0,0,0,0.7));
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 16px 20px;
+  max-width: 320px;
+  font-size: 0.9rem;
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+  line-height: 1.4;
+}
+
+.joke-highlight {
+  color: var(--flame-color-1);
+  font-weight: bold;
+}
+
+.joke-bubble-arrow {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid rgba(0,0,0,0.9);
+}
+
+/* Animation */
+@keyframes bubble-appear {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Light theme adjustments */
+[data-theme='light'] .joke-bubble-content {
+  background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(250,250,250,0.9));
+  color: #333;
+  border-color: rgba(0,0,0,0.1);
+}
+
+[data-theme='light'] .joke-bubble-arrow {
+  border-bottom-color: rgba(255,255,255,0.95);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .glitch-title {
+    font-size: clamp(2.8rem, 12vw, 6rem);
+  }
+  .joke-bubble-content {
+    max-width: 280px;
+    font-size: 0.85rem;
+    padding: 12px 16px;
+  }
+}
+
+/* Accessibility */
+.glitch-title:focus {
+  outline: 2px solid var(--flame-color-1);
+  outline-offset: 4px;
+}
+
+/* ------------------- Possessed S styles -------------------- */
+/* container already .glitch-title-container (position: relative set in existing layout) */
+
+/* Base S element: visually distinct, clickable, layered for chromatic aberration */
+.possessed-s {
+  --size: 48px;
+  position: fixed; /* JS will set exact translated coordinates */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--size) * 1.1);
+  height: calc(var(--size) * 1.1);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  transform-origin: center;
+  will-change: transform, filter, text-shadow, opacity;
+  transition: box-shadow 220ms ease, transform 240ms ease;
+  pointer-events: auto;
+}
+
+/* core letter styling: layered gradient & big weight */
+.possessed-s-core {
+  display: inline-block;
+  font-weight: 900;
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 6px 18px rgba(0,0,0,0.55),
+    2px 0 8px rgba(255,120,80,0.06); /* subtle base depth */
+  font-size: inherit;
+  padding: 2px 6px;
+  border-radius: 6px;
+  position: relative;
+  z-index: 2;
+  transition: transform 160ms ease, text-shadow 160ms ease;
+  display: inline-block;
+}
+
+/* subtle breathing / call-to-click pulse */
+.possessed-s.settled .possessed-s-core,
+.possessed-s.approach .possessed-s-core {
+  animation: possesed-pulse 2000ms infinite ease-in-out;
+}
+@keyframes possesed-pulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+  50% { transform: scale(1.04); filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(0,0,0,0)); }
+}
+
+/* approach snap visual */
+.possessed-s-snap {
+  animation: possessed-snap 420ms ease;
+}
+@keyframes possessed-snap {
+  0% { transform: scale(0.9) translateZ(0); filter: blur(0.8px); }
+  60% { transform: scale(1.12) translateZ(0); filter: blur(0); }
+  100% { transform: scale(1) translateZ(0); filter: none; }
+}
+
+/* click feedback */
+.possessed-s.possessed-s-clicked .possessed-s-core {
+  transform: scale(0.96) rotate(-6deg);
+  text-shadow: 0 12px 24px rgba(0,0,0,0.6);
+}
+
+/* chromatic aberration and micro-slices during glitch bursts */
+.possessed-s::before,
+.possessed-s::after {
+  content: attr(data-s);
+  position: absolute;
+  inset: 0;
+  display: block;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+  mix-blend-mode: screen;
+}
+
+/* when glitching, reveal colored offsets and slice */
+.possessed-s.glitch-burst::before {
+  opacity: 1;
+  left: -3px;
+  text-shadow: -6px 0 6px #00bfff66; /* cyan fringe */
+  filter: hue-rotate(10deg) saturate(140%) blur(.2px);
+  transform: translateX(-3px) translateY(-2px);
+}
+.possessed-s.glitch-burst::after {
+  opacity: 1;
+  right: -3px;
+  text-shadow: 6px 0 6px #ff7b5066; /* warm fringe */
+  filter: hue-rotate(-6deg) saturate(140%) blur(.2px);
+  transform: translateX(3px) translateY(2px);
+}
+
+/* slice distortion overlay */
+.possessed-s .possessed-s-core::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+  mix-blend-mode: overlay;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 260ms ease;
+}
+.possessed-s.glitch-burst .possessed-s-core::after {
+  clip-path: inset(10% 0 40% 0);
+  transform: skewX(-3deg);
+}
+
+/* jittery micro-movements when glitching */
+.possessed-s.glitch-burst {
+  animation: possessed-jitter 280ms steps(3) 1;
+  filter: contrast(1.08) saturate(1.08);
+}
+@keyframes possessed-jitter {
+  0% { transform: translate3d(0,0,0) rotate(0deg); }
+  20% { transform: translate3d(-4px,2px,0) rotate(-2deg); }
+  40% { transform: translate3d(3px,-2px,0) rotate(2deg); }
+  60% { transform: translate3d(-2px,2px,0) rotate(-1deg); }
+  80% { transform: translate3d(2px,-1px,0) rotate(1deg); }
+  100% { transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+/* tiny error flash overlay */
+.possessed-s.glitch-burst .possessed-s-core {
+  box-shadow: 0 18px 48px rgba(255,80,40,0.08), inset 0 -2px 8px rgba(255,255,255,0.02);
+}
+
+/* hover / focus cue to signal clickability (magnet-like) */
+.possessed-s:hover .possessed-s-core,
+.possessed-s:focus .possessed-s-core {
+  transform: translateY(-6px) scale(1.06);
+  text-shadow: 0 16px 44px rgba(0,0,0,0.6), 0 0 28px rgba(255,120,80,0.06);
+  outline: none;
+}
+
+/* small pulsing glow to attract attention */
+.possessed-s.settled {
+  box-shadow: 0 10px 30px rgba(255,40,40,0.06), 0 0 40px rgba(255,100,60,0.03);
+  animation: possessed-glow 3.6s ease-in-out infinite;
+}
+@keyframes possessed-glow {
+  0% { box-shadow: 0 10px 30px rgba(255,40,40,0.04); }
+  50% { box-shadow: 0 18px 40px rgba(255,60,40,0.12); transform: translateY(-1px); }
+  100% { box-shadow: 0 10px 30px rgba(255,40,40,0.04); transform: translateY(0); }
+}
+
+/* accessibility: focus ring */
+.possessed-s:focus {
+  box-shadow: 0 0 0 6px rgba(255,120,80,0.06), 0 18px 44px rgba(0,0,0,0.5);
+}
+
+/* bubble (click reveals) */
+.possessed-s-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 110%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 1200;
+  pointer-events: auto;
+}
+.possessed-s-bubble-inner {
+  background: linear-gradient(180deg, rgba(6,8,12,0.96), rgba(14,18,28,0.92));
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  box-shadow: 0 16px 46px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
+}
+.possessed-s-bubble-arrow {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid rgba(6,8,12,0.96);
+}
+
+/* ================= Possessed S & Ghost (appended) ================= */
+
+/* root S container (positioned with inline style by component) */
+.possessed-s {
+  --s-size: 48px;
+  width: calc(var(--s-size) * 1.15);
+  height: calc(var(--s-size) * 1.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transform-origin: center;
+  will-change: transform, filter;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* main letter */
+.possessed-s-core {
+  font-weight: 900;
+  line-height: 1;
+  position: relative;
+  z-index: 3;
+  font-size: var(--s-size);
+  display: inline-block;
+  padding: 2px 6px;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  background-image: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2));
+  -webkit-text-fill-color: transparent;
+  transition: transform .16s ease, text-shadow .16s ease;
+  text-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+
+/* subtle invitation pulse while approaching/settled */
+.possessed-s.approach .possessed-s-core,
+.possessed-s.settled .possessed-s-core {
+  animation: s-invite 2000ms ease-in-out infinite;
+}
+@keyframes s-invite {
+  0% { transform: scale(1); filter: none; }
+  50% { transform: scale(1.03) translateY(-2px); filter: drop-shadow(0 12px 30px rgba(0,0,0,0.28)); }
+  100% { transform: scale(1); filter: none; }
+}
+
+/* snap animation when arriving */
+.possessed-s-snap {
+  animation: s-snap 420ms cubic-bezier(.2,.9,.3,1);
+}
+@keyframes s-snap {
+  0% { transform: scale(.86) translateZ(0); filter: blur(0.8px); }
+  60% { transform: scale(1.12) translateZ(0); filter: blur(0); }
+  100% { transform: scale(1) translateZ(0); filter: none; }
+}
+
+/* ghost element: hidden behind S until possession/peek; positioned relative inside container */
+.possessed-ghost {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translate(-50%, -100%) scale(0.92);
+  width: 22px;
+  height: 22px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 260ms ease, transform 260ms ease;
+  color: var(--flame-color-ghost-1);
+  filter: drop-shadow(0 6px 18px rgba(0,0,0,0.45));
+}
+
+/* ghost visible during possession & peek */
+.possessed-s.possess .possessed-ghost,
+.possessed-s.ghost-peek .possessed-ghost,
+.possessed-s.approach .possessed-ghost,
+.possessed-s.settled .possessed-ghost {
+  opacity: 1;
+}
+
+/* ghost idle hover behind the S (subtle) */
+.possessed-ghost .ghost-body {
+  transform-origin: center;
+  transition: transform 220ms ease, opacity 200ms ease;
+  fill: currentColor;
+  opacity: 0.98;
+}
+.possessed-ghost .ghost-eye {
+  transition: transform 160ms ease;
+  transform-origin: center;
+}
+
+/* tiny hover bob - loop while hidden behind S */
+.possessed-s.settled .possessed-ghost { animation: ghost-hover 2200ms ease-in-out infinite; }
+@keyframes ghost-hover {
+  0% { transform: translate(-50%,-100%) translateY(0) scale(0.92); }
+  50% { transform: translate(-50%,-100%) translateY(-4px) scale(0.94); }
+  100% { transform: translate(-50%,-100%) translateY(0) scale(0.92); }
+}
+
+/* ghost peek (pops out after settle) */
+.possessed-s.ghost-peek .possessed-ghost {
+  transform: translate(-50%, -160%) scale(1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+  transition: transform 260ms cubic-bezier(.2,.9,.3,1), opacity 180ms ease;
+}
+
+/* ghost reactive when hovered/clicked */
+.possessed-s:hover .possessed-ghost,
+.possessed-s:focus .possessed-ghost {
+  transform: translate(-50%, -170%) scale(1.06);
+}
+.possessed-s:hover .possessed-ghost .ghost-eye,
+.possessed-s:focus .possessed-ghost .ghost-eye {
+  transform: translateY(-1px) scale(1.08);
+}
+
+/* chromatic aberration layers: ::before cyan, ::after warm */
+.possessed-s::before,
+.possessed-s::after {
+  content: 'S';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  font-weight: 900;
+  font-size: var(--s-size);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease, transform 120ms ease, filter 120ms ease;
+  mix-blend-mode: screen;
+}
+
+/* cyan fringe left */
+.possessed-s::before {
+  color: rgba(0,191,255,0.26);
+  transform: translateX(-2px);
+  text-shadow: -6px 0 12px rgba(0,191,255,0.06);
+}
+
+/* warm fringe right */
+.possessed-s::after {
+  color: rgba(255,110,60,0.24);
+  transform: translateX(2px);
+  text-shadow: 6px 0 12px rgba(255,110,60,0.05);
+}
+
+/* reveal fringes during glitch burst */
+.possessed-s.glitch-burst::before,
+.possessed-s.glitch-burst::after {
+  opacity: 1;
+}
+
+/* slice effect overlay on the core letter */
+.possessed-s-core::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  transition: clip-path 180ms ease;
+  clip-path: inset(0 0 100% 0);
+}
+.possessed-s.glitch-burst .possessed-s-core::after {
+  clip-path: inset(12% 0 40% 0);
+  transform: skewX(-3deg);
+}
+
+/* jitter during glitch burst */
+.possessed-s.glitch-burst {
+  animation: s-jitter 220ms steps(3) 1;
+}
+@keyframes s-jitter {
+  0% { transform: translate3d(0,0,0) rotate(0deg); }
+  25% { transform: translate3d(-4px,2px,0) rotate(-2deg); }
+  50% { transform: translate3d(3px,-3px,0) rotate(3deg); }
+  75% { transform: translate3d(-2px,2px,0) rotate(-1deg); }
+  100% { transform: translate3d(0,0,0) rotate(0deg); }
+}
+
+/* slight glow when settled to indicate interactivity */
+.possessed-s.settled {
+  animation: s-glow 3.8s ease-in-out infinite;
+}
+@keyframes s-glow {
+  0% { box-shadow: 0 8px 28px rgba(255,60,40,0.04); }
+  50% { box-shadow: 0 18px 48px rgba(255,80,40,0.12); transform: translateY(-1px); }
+  100% { box-shadow: 0 8px 28px rgba(255,60,40,0.04); transform: translateY(0); }
+}
+
+/* focus ring for accessibility */
+.possessed-s:focus {
+  outline: none;
+  box-shadow: 0 0 0 6px rgba(255,110,60,0.06), 0 16px 40px rgba(0,0,0,0.45);
+}
+
+/* bubble (click reveal) styles (already present earlier but reinforced) */
+.possessed-s-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 110%;
+  transform: translateX(-50%) translateY(-6px);
+  z-index: 1200;
+  pointer-events: auto;
+}
+.possessed-s-bubble-inner {
+  background: linear-gradient(180deg, rgba(6,8,12,0.96), rgba(14,18,28,0.92));
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.04);
+  white-space: nowrap;
+}
+.possessed-s-bubble-arrow { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid rgba(6,8,12,0.96); }
+
+/* Light theme adjustments for ghost/aberration to keep contrast readable */
+[data-theme='light'] .possessed-ghost { color: var(--flame-color-ghost-2); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.08)); }
+[data-theme='light'] .possessed-s-core { -webkit-text-fill-color: transparent; background-image: linear-gradient(90deg, var(--flame-color-1), var(--flame-color-2)); }
+[data-theme='light'] .possessed-s-bubble-inner { background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(250,250,250,0.9)); color: #111; border-color: rgba(0,0,0,0.06); }
+
+/* Respect reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  .possessed-s,
+  .possessed-s-core,
+  .possessed-ghost,
+  .possessed-s-bubble {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Free ghost (standalone) tweaks */
+.free-ghost-root { /* not required by component (inline styles used) — kept for future hooks */ }
+.free-ghost-svg {
+  will-change: transform, filter;
+  transition: transform 160ms ease, filter 160ms ease;
+}
+.free-ghost-bubble {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  line-height: 1;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .free-ghost-svg {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Ghost animations */
+.ghost-svg {
+  will-change: transform, filter, color;
+  display: block;
+}
+
+/* gentle bobbing when calm/idle */
+@keyframes ghost-bob {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(1px) scale(1.01); }
+  100% { transform: translateY(0) scale(1); }
+}
+.ghost-bob {
+  animation: ghost-bob 3000ms ease-in-out infinite;
+}
+
+/* removed ghost-shiver to stop vibration */
+
+/* respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ghost-bob {
+    animation: none !important;
+    transform: none !important;
+  }
+}

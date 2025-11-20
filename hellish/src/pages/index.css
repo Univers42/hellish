@@ -1,0 +1,409 @@
+/* Import main theme tokens and modular css (fixed paths) */
+@import '../css/custom.css';
+@import '../css/particles.css';
+@import '../css/glitch.css';
+
+/* Page wrapper */
+.page-hellish {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* make the main content area flexible so footer stays at bottom when page is short */
+.page-hellish .hero__content {
+  flex: 1 0 auto;
+}
+
+/* Hide Docusaurus default navbar & footer so we use our custom ones */
+.navbar, .navbar__inner, .navbar__items, .docusaurus-footer, .footer {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Ember canvas — make more visible */
+.ember-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: normal;
+  opacity: 1;
+  transition: opacity .35s ease;
+  background: transparent;
+
+  /* Hint for smooth GPU transforms used by the parallax effect */
+  will-change: transform;
+  transform: translate3d(0,0,0);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* slightly stronger, softer overlay to combine with moving embers */
+.overlay-grad {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(420px 140px at 10% 18%, rgba(255,90,50,0.035), transparent 12%),
+    radial-gradient(320px 110px at 88% 80%, rgba(255,50,30,0.025), transparent 14%),
+    linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.04));
+  mix-blend-mode: normal;
+  filter: blur(6px) saturate(115%);
+  opacity: 0.88;
+  transition: opacity .5s ease, transform .5s ease;
+}
+
+/* ---------- Topbar (slightly more compact / responsive) ---------- */
+.hellish-topbar {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: min(1050px, calc(100% - 40px));
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.22), rgba(0,0,0,0.06));
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+  backdrop-filter: blur(6px) saturate(120%);
+}
+
+/* brand */
+.hellish-brand { display:flex; gap:10px; align-items:center; }
+.hellish-logo { width:36px; height:36px; flex:0 0 36px; }
+.brand-text { color: var(--page-text); font-weight:700; letter-spacing: -0.02em; }
+
+/* nav links */
+.hellish-links { display:flex; gap:12px; align-items:center; }
+.nav-link {
+  color: var(--muted);
+  font-weight:600;
+  padding:7px 10px;
+  border-radius:8px;
+  transition: transform .14s ease, box-shadow .14s ease, color .14s ease;
+  text-decoration:none;
+}
+.nav-link:hover { transform: translateY(-4px); color:#fff; box-shadow: 0 12px 28px rgba(0,0,0,0.45); }
+.nav-ghost { opacity: 0.9; border: 1px solid rgba(255,255,255,0.04); padding:7px 10px; }
+
+/* ---------- Hero ---------- */
+.hero--custom { padding-top: 120px; padding-bottom: 64px; min-height: 86vh; display:flex; align-items:center; justify-content:center; }
+.hero__content { max-width: 1100px; padding: 28px; text-align:center; z-index: 10; }
+
+/* Glitch title - pseudo-elements for ghosts, always clipped to glyphs */
+.hero__title {
+  position: relative;
+  display: inline-block;
+  font-weight: 800;
+  z-index: 6;
+  white-space: nowrap;
+  color: transparent;
+}
+
+/* main visible text */
+.hero__title.glitch span {
+  display: inline-block;
+  position: relative;
+  z-index: 9;
+  background: linear-gradient(90deg, var(--lava-1, #ff7b50), var(--lava-2, #ff2d2d));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Enlarged and more responsive title */
+  font-size: clamp(3.6rem, 10vw, 8rem); /* increased min and max for a much bigger title */
+  letter-spacing: -0.025em; /* slightly tighter for larger size */
+  line-height: 0.95; /* tighter to keep the title compact */
+  text-shadow: 0 12px 42px rgba(0,0,0,0.55);
+}
+
+/* ghost layers via pseudo-elements, overlaying the text */
+.hero__title.glitch::before,
+.hero__title.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-block;
+  pointer-events: none;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  transform-origin: center;
+  mix-blend-mode: screen;
+  opacity: 1;
+  will-change: transform, clip-path, opacity;
+  z-index: 8;
+}
+
+/* warm glow ghost */
+.hero__title.glitch::before {
+  background: linear-gradient(90deg, rgba(255,200,120,1), rgba(255,130,60,0.95));
+  transform: translate(3px, 0);
+  filter: blur(0.45px) saturate(115%);
+  animation: ghost-slice-1 2.2s infinite linear;
+}
+
+/* cooler ghost */
+.hero__title.glitch::after {
+  background: linear-gradient(90deg, rgba(255,150,90,0.95), rgba(255,90,50,0.86));
+  transform: translate(-3px, 0);
+  filter: blur(0.55px) saturate(105%);
+  animation: ghost-slice-2 3.0s infinite linear;
+}
+
+/* slice animations */
+@keyframes ghost-slice-1 {
+  0% { clip-path: inset(0 0 0 0); transform: translate(3px,0); opacity: 1 }
+  12% { clip-path: inset(6% 0 68% 0); transform: translate(5px,-1px); opacity: .92 }
+  28% { clip-path: inset(10% 0 52% 0); transform: translate(2px,1px); opacity: .96 }
+  52% { clip-path: inset(24% 0 18% 0); transform: translate(4px,1px); opacity: .9 }
+  80% { clip-path: inset(8% 0 60% 0); transform: translate(3px,-1px); opacity: .95 }
+  100% { clip-path: inset(0 0 0 0); transform: translate(3px,0); opacity: 1 }
+}
+@keyframes ghost-slice-2 {
+  0% { clip-path: inset(0 0 0 0); transform: translate(-3px,0); opacity: 1 }
+  18% { clip-path: inset(40% 0 0 0); transform: translate(-2px,2px); opacity: .9 }
+  45% { clip-path: inset(0 0 36% 0); transform: translate(1px,-2px); opacity: .94 }
+  72% { clip-path: inset(6% 0 18% 0); transform: translate(-3px,0); opacity: .88 }
+  100% { clip-path: inset(0 0 0 0); transform: translate(-3px,0); opacity: 1 }
+}
+
+/* Ensure subtitle remains above ghosts */
+.hero__subtitle { position: relative; z-index: 11; color: var(--muted); }
+
+/* ---------- Rebalance hero spacing/sizes for consistency ---------- */
+.hero--custom { padding-top: 120px; padding-bottom: 64px; min-height: 86vh; display:flex; align-items:center; justify-content:center; }
+.hero__content { max-width: 1100px; padding: 28px; text-align:center; z-index: 10; }
+
+/* CTA and cards slightly tightened for modern feel */
+.hero__cta { margin-top: 20px; display:flex; gap:10px; justify-content:center; }
+.showcase__card { width: 300px; padding: 18px; border-radius: 14px; }
+
+/* Reduced heavy blends on footer/other overlays */
+.hero__footer, .hellish-footer__bg { mix-blend-mode: normal; opacity: 0.96; }
+
+/* Smooth theme/background transitions: animate key surface layers with more properties */
+html, body, #__docusaurus, .overlay-grad, .ember-canvas, .hero__bg, .hellish-topbar, .hero__content, .showcase__card {
+  transition: background-color .6s ease, background .6s ease, color .35s ease, opacity .35s ease, filter .45s ease, border-color .6s ease, box-shadow .6s ease;
+}
+
+/* Light-theme adjustments so the glitch and shadows remain legible */
+[data-theme='light'] .hero__title.glitch::before,
+[data-theme='light'] .hero__title.glitch::after {
+  filter: blur(0.5px) saturate(90%);
+  opacity: 0.85;
+}
+[data-theme='light'] .hero__title.glitch span {
+  /* make gradient warmer on light background for contrast */
+  background: linear-gradient(90deg, var(--lava-1), var(--lava-2));
+}
+
+/* ---------- CTA styles refined */
+.hero__cta { margin-top: 22px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+.btn { --padY:10px; --padX:16px; padding:var(--padY) var(--padX); border-radius: 12px; font-weight:700; cursor:pointer; border:none; }
+.btn--glow { background: linear-gradient(90deg, var(--lava-1), var(--lava-2)); color: #07102a; box-shadow: 0 12px 46px rgba(255,60,40,0.12), 0 0 48px rgba(255,40,40,0.06); transition: transform .18s ease, box-shadow .18s ease; }
+.btn--glow:hover { transform: translateY(-6px) scale(1.02); animation: micro-shake .36s ease-in-out 1; }
+@keyframes micro-shake { 20% { transform: translateY(-6px) rotate(-1deg) } 60% { transform: translateY(-6px) rotate(1deg) } 100% { transform: translateY(-6px) rotate(0) } }
+
+/* ---------- Showcase cards ---------- */
+.showcase { margin-top:48px; }
+.showcase__grid { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; align-items:flex-start; }
+.showcase__card {
+  width: 320px; padding: 22px; border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 14px 46px rgba(2,6,23,0.55);
+  transition: transform .4s cubic-bezier(.2,.9,.3,1), box-shadow .28s, opacity .42s;
+  transform-origin: center;
+  opacity: 1; /* visible by default */
+}
+.showcase__card.reveal-in { opacity: 1; transform: translateY(-6px) scale(1); }
+.interactive-card:hover { transform: translateY(-8px) scale(1.01); box-shadow: 0 26px 58px rgba(0,0,0,0.6); }
+
+/* floating subtle idle motion */
+.showcase__card { animation: floatY 6s ease-in-out infinite; }
+@keyframes floatY { 0% { transform: translateY(0) } 50% { transform: translateY(-8px) } 100% { transform: translateY(0) } }
+
+/* card buttons */
+.btn-row { display:flex; gap:10px; margin-top:12px; }
+.btn.sample { padding:8px 12px; border-radius:10px; background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)); color:var(--page-text); border:1px solid rgba(255,255,255,0.06); }
+.btn.sample.outline { background: transparent; border:1px solid rgba(255,255,255,0.08); }
+.btn.sample.alt { background: linear-gradient(90deg, var(--accent), var(--accent-2)); color: #07102a; }
+
+/* ---------- Footer & marquee ---------- */
+.hero__footer { margin-top: 48px; z-index:2; position: relative; }
+.marquee { overflow:hidden; padding:12px 0; }
+.marquee__inner { display:flex; gap:32px; animation: marquee 16s linear infinite; white-space:nowrap; color:var(--muted); }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+.footer-row { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-top:18px; color:var(--muted); }
+.footer-brand { display:flex; gap:12px; align-items:center; }
+.footer-logo { width:30px; height:30px; }
+.footer-links { display:flex; gap:12px; align-items:center; }
+
+/* Accessibility & responsive */
+.visually-hidden { position:absolute !important; height:1px; width:1px; overflow:hidden; clip:rect(1px,1px,1px,1px); white-space:nowrap; }
+@media (max-width:900px) {
+  .glitch-main { font-size: 2.6rem; }
+  .hellish-topbar { left: 12px; transform: none; width: calc(100% - 24px); }
+  .hero__content { padding: 18px; }
+}
+
+/* Theme-dependent flame colors */
+:root {
+  --flame-color-1: #ff7b50;
+  --flame-color-2: #ff2d2d;
+  --flame-color-ghost-1: rgba(255,200,120,1);
+  --flame-color-ghost-2: rgba(255,150,90,0.95);
+}
+
+[data-theme='dark'] {
+  --flame-color-1: #00bfff;
+  --flame-color-2: #1e90ff;
+  --flame-color-ghost-1: rgba(0,191,255,1);
+  --flame-color-ghost-2: rgba(30,144,255,0.95);
+}
+
+[data-theme='light'] {
+  --flame-color-1: #ff7b50;
+  --flame-color-2: #ff2d2d;
+  --flame-color-ghost-1: rgba(255,200,120,1);
+  --flame-color-ghost-2: rgba(255,150,90,0.95);
+}
+
+/* SVG Glitch Title */
+.glitch-svg {
+  width: 100%;
+  max-width: 720px; /* allow larger SVG/title to breathe */
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  font-family: inherit;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Main text */
+.glitch-main-text {
+  position: relative;
+  z-index: 9;
+}
+
+/* Ghosts with slower, less abrupt animations for less headache */
+.glitch-ghost-1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 8;
+  mix-blend-mode: screen;
+  opacity: 0.85;
+  animation: svg-ghost-slice-1 2s infinite linear; /* slower */
+}
+
+.glitch-ghost-2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 7;
+  mix-blend-mode: screen;
+  opacity: 0.75;
+  animation: svg-ghost-slice-2 3s infinite linear; /* slower */
+}
+
+/* Slower, less abrupt clip-path changes */
+@keyframes svg-ghost-slice-1 {
+  0% { clip-path: inset(0 0 0 0); transform: translate(2px, 0); opacity: 0.9; }
+  25% { clip-path: inset(10% 0 80% 0); transform: translate(4px, -1px); opacity: 0.8; }
+  50% { clip-path: inset(0 0 0 0); transform: translate(-1px, 1px); opacity: 0.95; }
+  75% { clip-path: inset(30% 0 50% 0); transform: translate(3px, 0); opacity: 0.85; }
+  100% { clip-path: inset(0 0 0 0); transform: translate(2px, 0); opacity: 0.9; }
+}
+
+@keyframes svg-ghost-slice-2 {
+  0% { clip-path: inset(0 0 0 0); transform: translate(-2px, 0); opacity: 0.8; }
+  33% { clip-path: inset(50% 0 20% 0); transform: translate(-3px, 1px); opacity: 0.75; }
+  66% { clip-path: inset(0 0 0 0); transform: translate(1px, -1px); opacity: 0.85; }
+  100% { clip-path: inset(0 0 0 0); transform: translate(-2px, 0); opacity: 0.8; }
+}
+
+/* Color mode toggle button */
+.color-mode-toggle {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 7px 10px;
+  border-radius: 8px;
+  transition: color .14s ease, background .14s ease;
+}
+
+.color-mode-toggle:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Spiral transition overlay */
+.spiral-overlay {
+  pointer-events: none; /* becomes visible but not blocking (animation covers and we control navigation) */
+  position: fixed;
+  inset: 0;
+  z-index: 1200; /* above topbar/footer/particles */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 240ms ease;
+}
+.spiral-overlay.active {
+  opacity: 1;
+  pointer-events: auto; /* while active avoid accidental clicks */
+}
+
+/* full-screen canvas used to draw spiral */
+.spiral-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: transparent;
+  will-change: transform, opacity;
+}
+
+/* a subtle fade to black between pages (used by canvas animation) */
+.spiral-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.25) 50%, rgba(0,0,0,0.7) 100%);
+  opacity: 0;
+  transition: opacity 420ms ease;
+  pointer-events: none;
+}
+.spiral-overlay.active::after {
+  opacity: 1;
+}
+
+/* ensure overlay respects light theme; color mixing is handled in canvas drawing with CSS vars */
+@media (prefers-reduced-motion: reduce) {
+  .spiral-overlay,
+  .spiral-overlay::after {
+    transition: none;
+  }
+}
