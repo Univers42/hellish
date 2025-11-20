@@ -1,0 +1,26 @@
+/* Hero */
+.hero { padding: 3.5rem 0; display:flex; align-items:center; justify-content:center; min-height: 420px; background: linear-gradient(135deg,#2b0208 0%,#7f1d1d 100%); color:#fff; border-bottom:4px solid var(--h-primary); }
+.hero .hero-content { max-width: var(--content-max-width); text-align: center; padding: 1rem; z-index:2; position:relative; }
+.hero .hero-title { font-size: clamp(2rem, 5vw, 3.6rem); font-weight: 900; margin-bottom: .6rem; letter-spacing: -0.02em; }
+.hero .hero-subtitle { color: rgba(255,230,230,0.9); font-size: clamp(1rem, 2.4vw, 1.25rem); margin: 0 auto 1.6rem; max-width: 60ch; }
+
+/* CTA buttons grouped */
+.hero .hero-cta { display:inline-flex; gap: 1rem; justify-content:center; align-items:center; }
+
+/* gradient text utility */
+.gradient-text {
+  background: linear-gradient(90deg, #ffdede 0%, #fff 40%, rgba(255,255,255,0.8) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Feature card subtle variant (used by entry tiles too) */
+.feature-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-primary);
+}
+
+/* small helpers */
+.badge-primary { background-color: rgba(255,77,79,0.12); color: var(--hellish-primary); font-weight:700; padding:.35rem .6rem; border-radius:999px; }
