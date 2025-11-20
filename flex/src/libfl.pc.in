@@ -1,8 +1,0 @@
-prefix=@prefix@
-exec_prefix=@exec_prefix@
-libdir=@libdir@
-
-Name: libfl
-Description: Flex (the fast lexical analyzer) support library
-Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lfl

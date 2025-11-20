@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/11/19 15:04:51 by dlesieur          #+#    #+#             */
-/*   Updated: 2025/11/19 15:10:48 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/11/19 15:22:49 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,8 @@
 # define SH_H
 #include <unistd.h>
 
+//Those functions has to be maybe placed into the libarena implementation
+// it's more related to mmemory management, for strings or data structures
 typedef union u_smt
 {
 	int		i;
@@ -21,6 +23,7 @@ typedef union u_smt
 	double	d;
 }	t_smt;
 
+// return the size of union - 1. This value is for allocation granurality
 static inline size_t	shell_size()
 {
 	return (sizeof(t_smt) - 1);
