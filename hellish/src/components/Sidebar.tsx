@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { useLocation, Link } from '@docusaurus/router';
+import { useLocation } from '@docusaurus/router';
+import Link from '@docusaurus/Link';
 import './sidebar.css';
-import * as Lucide from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 type DocLink = {
@@ -28,21 +28,64 @@ type Props = {
   compact?: boolean;
 };
 
+/**
+ * Try to load lucide-react at runtime. If it's not available, return null and
+ * fall back to built-in inline SVG icons.
+ */
+let LucideCache: Record<string, any> | null = null;
+function tryLoadLucide() {
+  if (LucideCache !== null) return LucideCache;
+  try {
+    // require at runtime to avoid bundler failing if lucide-react isn't installed
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const lucide = require('lucide-react');
+    LucideCache = lucide || null;
+  } catch {
+    LucideCache = null;
+  }
+  return LucideCache;
+}
+
 function renderIconByName(name?: string, fallback?: React.ReactNode) {
   if (!name) return fallback ?? null;
-  // lucide-react exports are PascalCase (e.g., FileText, ChevronDown)
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Lucide = tryLoadLucide();
+  if (Lucide && (Lucide as any)[name]) {
     const IconComp = (Lucide as any)[name];
-    if (IconComp) return <IconComp className="sid-icon-svg" aria-hidden />;
-  } catch {
-    // ignore
+    return <IconComp className="sid-icon-svg" aria-hidden />;
   }
-  return fallback ?? null;
+  // fallback: simple inline icons for a few common names
+  switch (name) {
+    case 'FileText':
+    case 'File':
+      return (
+        <svg className="sid-icon-svg" viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+          <path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        </svg>
+      );
+    case 'ChevronDown':
+    case 'ChevronRight':
+      return (
+        <svg className="sid-icon-svg" viewBox="0 0 24 24" width="14" height="14" aria-hidden>
+          <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d={name === 'ChevronDown' ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'} />
+        </svg>
+      );
+    case 'Code':
+      return (
+        <svg className="sid-icon-svg" viewBox="0 0 24 24" width="16" height="16" aria-hidden>
+          <path fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" d="M16 18l6-6-6-6M8 6l-6 6 6 6" />
+        </svg>
+      );
+    default:
+      return fallback ?? null;
+  }
 }
 
 function DefaultDocIcon() {
-  return renderIconByName('FileText', <svg width="14" height="14" viewBox="0 0 24 24" className="sid-icon-svg"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="currentColor"/></svg>);
+  return renderIconByName('FileText', (
+    <svg width="14" height="14" viewBox="0 0 24 24" className="sid-icon-svg" aria-hidden>
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="currentColor" />
+    </svg>
+  ));
 }
 
 function CaretIcon({ open }: { open: boolean }) {
