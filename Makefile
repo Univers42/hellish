@@ -40,7 +40,7 @@ $(SUBMODULE_LIB):
 		if [ -d "$(SUBMODULE_DIR)" ]; then																								\
 			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
 				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
-				$(MAKE) -C $(SUBMODULE_DIR) all || true;																		\
+				$(MAKE) -C $(SUBMODULE_DIR) -j$(nproc) all || true;																		\
 			else																														\
 				echo "[deps] libft directory exists but no Makefile — cannot build automatically";										\
 			fi;																															\
@@ -55,7 +55,7 @@ $(SUBMODULE_LIB):
 			git submodule add $(SUBMODULE_REPO) $(SUBMODULE_DIR) || true;																\
 			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
 				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
-				$(MAKE) -C $(SUBMODULE_DIR) all || true;																		\
+				$(MAKE) -C $(SUBMODULE_DIR) all -j$(nproc) || true;																		\
 			fi;																															\
 		fi;																																\
 	fi
@@ -76,7 +76,7 @@ update: configure
 	git pull
 
 configure:
-	@chmod +x scripts/* scripts/*/* 2>/dev/null || true
+		@chmod +x scripts/* scripts/*/* 2>/dev/null || true
 	@bash -c 'if [ -x "scripts/install-hooks.sh" ]; then																																				\
 		./scripts/install-hooks.sh >/dev/null 2>&1 && printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_OK)$(BOLD)OK$(RESET)] : Project hooks configured successfully!";			\
 	else																																																\
