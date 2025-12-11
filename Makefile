@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/12/11 20:49:24 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/11 22:13:59 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -40,7 +40,7 @@ $(SUBMODULE_LIB):
 		if [ -d "$(SUBMODULE_DIR)" ]; then																								\
 			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
 				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
-				$(MAKE) -C $(SUBMODULE_DIR) all -j$(nproc) || true;																		\
+				$(MAKE) -C $(SUBMODULE_DIR) all || true;																		\
 			else																														\
 				echo "[deps] libft directory exists but no Makefile — cannot build automatically";										\
 			fi;																															\
@@ -55,7 +55,7 @@ $(SUBMODULE_LIB):
 			git submodule add $(SUBMODULE_REPO) $(SUBMODULE_DIR) || true;																\
 			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
 				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
-				$(MAKE) -C $(SUBMODULE_DIR) all -j$(nproc) || true;																		\
+				$(MAKE) -C $(SUBMODULE_DIR) all || true;																		\
 			fi;																															\
 		fi;																																\
 	fi
