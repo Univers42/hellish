@@ -224,6 +224,7 @@ We welcome contributions! Here's how you can help:
 | [GNU Readline](https://tiswww.case.edu/php/chet/readline/readline.html) | Line editing library documentation |
 | [glob.h Reference](https://docs.oracle.com/cd/E86824_01/html/E54772/glob.h-3head.html) | Glob pattern matching API |
 | [shlex](https://rico-schmidt.name/pymotw-3/shlex/) | Python's shell lexer (reference) |
+| [learn git flow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) | Git workflow with atlassian, manage commits, release features, do new tags|
 
 ---
 

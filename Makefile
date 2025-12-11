@@ -6,172 +6,113 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/11/21 00:21:10 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/11 20:49:24 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
+include incs/libft/mk/global_conf.mk
+include incs/libft/mk/functions.mk
+
 # Generic project Makefile — discovers sources in srcs, builds objects in .objs/, and includes dependency files
-CC				:=	cc
 NAME			:=	shell
-DPDCS			:=	libft.a
-# Language standard and feature macros
-STD				:=	-std=gnu99
-DEFINES			:=	-D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
-
-# Warning and hardening flags (keep strictness)
-WARN_FLAGS		:=	-Wall -Wextra -Werror -pedantic \
-					-Wshadow -Wpointer-arith -Wcast-align -Wvolatile-register-var \
-					-Wdangling-else -Wenum-compare -Wexpansion-to-defined -Waddress \
-					-Wno-shift-count-overflow -Wstrict-overflow -Wfatal-errors
-
-# Analyzer / sanitizers (kept as a dedicated variable)
-ANAFLAGS		:=	-fsanitize=address,undefined,leak
-
-# Preprocessor flags (kept empty — dependency flags are emitted per-compile)
-PREPROCFLAGS	:=	-MMD -MP -MF
-CPPFLAGS		:=	$(DEFINES)
-
-# Debug flags (overridable) and optimization flags
-DEBFLAGS		?=	-g3 -O0 -ggdb
-OPTFLAGS		:=	-Ofast -pipe
-
-# Final CFLAGS composition (keeps strict warnings and optional analyzers)
-CFLAGS			:=	$(STD) $(WARN_FLAGS) $(DEBFLAGS) $(CPPFLAGS) $(ANAFLAGS)
+LIBFT			:=	libft.a
 
 # Linker flags
-LDFLAGS			:=	-lreadline -pthread -lm $(ANAFLAGS)
+LDFLAGS			:=	-lreadline -pthread -lm
 
 # Submodule / dependency management
-SUBMODULE_DIR	:= lib/libft
+SUBMODULE_DIR	:= incs/libft
 SUBMODULE_REPO	:= git@github.com:Univers42/libft.git
 SUBMODULE_LIB	:= $(SUBMODULE_DIR)/libft.a
 REMOTE_HOME		:= $(shell git remote -v | awk 'NR==3 {print $$1}')
 CURRENT_BRANCH	:= $(shell git branch --show-current)
 REMOTE_CAMPUS	:= $(shell git remote -v | awk 'NR==2 {print $$1}')
-MSG				:=
+MSG				?=
 BRANCH			?=
 
--include lib/libft/build/colors.mk
--include lib/libft/build/common.mk
--include lib/libft/build/debug.mk
-
-SRCDIR := srcs
-OBJDIR := .objs
-DEPDIR := .deps
-
-SRCS := $(shell find $(SRCDIR) -type f -name '*.c' -print)
-OBJS := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS))
-DEPS := $(patsubst $(OBJDIR)/%.o,$(DEPDIR)/%.d,$(OBJS))
-
-# detect libft archive at link-time (evaluated when used)
-LIBFT_A = $(firstword $(wildcard $(SUBMODULE_DIR)/libft.a $(SUBMODULE_DIR)/build/libft.a $(SUBMODULE_DIR)/lib/libft.a))
-
-MINISHELL_A := libminishell.a
-
-# Default target: build the program (libft will be ensured first)
 all: $(NAME)
-
-# Ensure libft.a exists; if not, try to build it using the libft Makefile (simple and explicit)
-LIBFT_STAMP := .libft.stamp
-
-$(LIBFT_STAMP): $(SUBMODULE_LIB)
-	@if [ ! -f "$@" ]; then \
-		echo "[deps] libft.a is now available"; \
-		touch $@; \
-	fi
 
 $(SUBMODULE_LIB):
 	echo "[DEPS] ensuring libft.a..."
-	@if [ -f "$(SUBMODULE_LIB)" ]; then																										\
-		echo "[deps] libft.a found: $(SUBMODULE_LIB)";																						\
-	else 																																	\
-		if [ -d "$(SUBMODULE_DIR)" ]; then																									\
-			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																						\
-				echo "[deps] building libft in $(SUBMODULE_DIR)";																			\
-				$(MAKE) -C $(SUBMODULE_DIR) || true;																						\
-			else																															\
-				echo "[deps] libft directory exists but no Makefile — cannot build automatically";											\
-			fi;																																\
-		else 																																\
-			echo "[deps] libft not present — trying to init submodule"; 																	\
-			git submodule update --init --recursive $(SUBMODULE_DIR) || git submodule add $(SUBMODULE_REPO) $(SUBMODULE_DIR) || true;		\
-			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then 																					\
-				echo "[deps] building libft in $(SUBMODULE_DIR)";																			\
-				$(MAKE) -C $(SUBMODULE_DIR) || true;																						\
-			fi;																																\
-		fi;																																	\
-	fi;																																		\
-	if [ ! -f "$(SUBMODULE_LIB)" ]; then																									\
-		echo "[deps] libft.a still missing — continuing without libft (link may fail)";														\
-	fi;																																		\
-	if [ -z "$$MAKE_RESTARTED" ] && { [ -f "$(SUBMODULE_DIR)/build/common.mk" ] || [ -f "$(SUBMODULE_DIR)/build/colors.mk" ]; }; then		\
-		echo "[deps] libft: build helpers available; re-running make to load them (once)";													\
-		$(MAKE) MAKE_RESTARTED=1 all;																										\
-		exit 0;																																\
+	@if [ -f "$(SUBMODULE_LIB)" ]; then																									\
+		echo "[deps] libft.a found: $(SUBMODULE_LIB)";																					\
+	else																																\
+		if [ -d "$(SUBMODULE_DIR)" ]; then																								\
+			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
+				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
+				$(MAKE) -C $(SUBMODULE_DIR) all -j$(nproc) || true;																		\
+			else																														\
+				echo "[deps] libft directory exists but no Makefile — cannot build automatically";										\
+			fi;																															\
+		else																															\
+			echo "[deps] libft not present — trying to init submodule";																	\
+			if [ -d "$(SUBMODULE_DIR)/.git" ] && ! git -C "$(SUBMODULE_DIR)" rev-parse --is-inside-work-tree >/dev/null 2>&1; then		\
+				echo "[ERROR] libft submodule appears broken. Please run:";																\
+				echo "  rm -rf $(SUBMODULE_DIR) && git submodule update --init --recursive";											\
+				exit 1;																													\
+			fi;																															\
+			git submodule update --init --recursive $(SUBMODULE_DIR) ||																	\
+			git submodule add $(SUBMODULE_REPO) $(SUBMODULE_DIR) || true;																\
+			if [ -f "$(SUBMODULE_DIR)/Makefile" ]; then																					\
+				echo "[deps] building libft in $(SUBMODULE_DIR)";																		\
+				$(MAKE) -C $(SUBMODULE_DIR) all -j$(nproc) || true;																		\
+			fi;																															\
+		fi;																																\
 	fi
 
-# Build static library from all project objects
-$(MINISHELL_A): $(OBJS)
-	@echo "[AR] $@"
-	@ar rcs $@ $(OBJS)
-
-# Link the final binary from your static lib and libft
-$(NAME): $(LIBFT_STAMP) $(MINISHELL_A)
+$(NAME): $(SUBMODULE_LIB) $(OBJS)
 	$(call print_status,$(GREEN),LINK,$@)
 	@echo "[link] linking $(NAME)"
-	$(CC) $(CFLAGS) -o $@ $(MINISHELL_A) $(LIBFT_A) $(LDFLAGS)
+	$(CC) $(CFLAGS) -I./incs -I./incs/libft/include -o $@ $(OBJS) $(SUBMODULE_LIB) $(LDFLAGS)
 
-# Compile C source to object files and emit dependency files
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir -p $(dir $@) $(DEPDIR)/$(dir $*)
 	$(call print_status,$(CYAN),COMPILING,$<)
-	@$(CC) $(CFLAGS) $(OPTFLAGS) -c $< -o $@ $(PREPROCFLAGS) $(DEPDIR)/$*.d -I$(SUBMODULE_DIR)/include -I./incs
-
-# Include dependency files if present
--include $(DEPS)
-
-configure:
-	@chmod +x scripts/* scripts/*/* 2>/dev/null || true
-	@bash -c 'if [ -x "scripts/install-hooks.sh" ]; then \
-		./scripts/install-hooks.sh >/dev/null 2>&1 && printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_OK)$(BOLD)OK$(RESET)] : Project hooks configured successfully!"; \
-	else \
-		printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_WARN)$(BOLD)WARN$(RESET)] : scripts/install-hooks.sh not found or not executable."; \
-	fi'
+	@$(CC) $(CFLAGS) $(OPTFLAGS) -I./incs -I./incs/libft/include  -c $< -o $@ $(PREPROCFLAGS) $(DEPDIR)/$*.d -I$(SUBMODULE_DIR)/include -I./incs
 
 update: configure
 	$(call log_info, updating submodule to latest remote version...)
 	git submodule update --init --recursive --remote --merge $(SUBMODULE_DIR) lib/libmalloc || exit 1
 	git pull
 
+configure:
+	@chmod +x scripts/* scripts/*/* 2>/dev/null || true
+	@bash -c 'if [ -x "scripts/install-hooks.sh" ]; then																																				\
+		./scripts/install-hooks.sh >/dev/null 2>&1 && printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_OK)$(BOLD)OK$(RESET)] : Project hooks configured successfully!";			\
+	else																																																\
+		printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_WARN)$(BOLD)WARN$(RESET)] : scripts/install-hooks.sh not found or not executable.";									\
+	fi'
+
 push_home: ffclean
 	@# require MSG to be provided to avoid accidental empty commits
-	@if [ -z "$(MSG)" ]; then \
-		printf "ERROR: pass a commit message with MSG=\"your message\"\n"; \
-		exit 1; \
+	@if [ -z "$(MSG)" ]; then																				\
+		printf "ERROR: pass a commit message with MSG=\"your message\"\n";									\
+		exit 1;																								\
 	fi
 	@git add .
 	@git commit -m "$(MSG)"
 	@git push $(REMOTE_HOME) $(CURRENT_BRANCH)
 
 push_campus: ffclean
-	@if [ -z "$(MSG)" ]; then \
-		printf "ERROR: pass a commit message with MSG=\"your message\"\n"; \
-		exit 1; \
+	@if [ -z "$(MSG)" ]; then																				\
+		printf "ERROR: pass a commit message with MSG=\"your message\"\n";									\
+		exit 1;																								\
 	fi
 	@git add .
 	@git commit -m "$(MSG)"
 	@git push $(REMOTE_CAMPUS) --all
 
+
+
+
 clean:
-	$(call print_status,$(RED),CLEAN,Removing objects and archives)
-	@rm -rf $(OBJDIR) $(DEPDIR) $(MINISHELL_A)
-	$(call log_info,$(NAME) cleaned up : you can use $(BOLD_CYAN)$(UNDERLINE)$(ITALIC)$(NAME)$(RESET))
+	@rm -rf $(OBJDIR) $(DEPDIR)
 
 fclean: clean
-	$(call print_status,$(RED),FCLEAN,Removing binary)
-	@rm -f $(NAME) .libft.stamp
-	$(call log_warn,$(NAME) cleaned up : you cannot use anymore $(NAME), you have to)
+	@$(RM) $(NAME)
+	$(call log_ok, $(NAME) and \ -> Cleaned up Do make if you want to recompile')
 
+re: fclean all
 ffclean: fclean
 	$(call print_status,$(RED),FFCLEAN,Removing all gen files)
 	@if [ -d "$(SUBMODULE_DIR)" ]; then					\
@@ -179,190 +120,121 @@ ffclean: fclean
 	fi
 	$(call log_ok, the libft.a was erased succesfully)
 	$(call log_note, use $(GREEN)make$(RESET) to start the project)
-
-re: fclean all
-
 fre: ffclean all
-
-# Build configurations
-.PHONY: help-only debug-only all-features minimal test-lexer
-
-# Minimal build with only help
-help-only:
-	$(MAKE) CFLAGS="$(CFLAGS) -DFEATURE_HELP_ONLY" all
-
-# Debug-only build
-debug-only:
-	$(MAKE) CFLAGS="$(CFLAGS) -DFEATURE_DEBUG_ONLY" all
-
-# Full-featured build (default)
-all-features:
-	$(MAKE) CFLAGS="$(CFLAGS) -DFEATURE_HELP -DFEATURE_DEBUG -DFEATURE_LOGIN -DFEATURE_POSIX -DFEATURE_PRETTY_PRINT" all
-
-# Minimal core only
-minimal:
-	$(MAKE) CFLAGS="$(CFLAGS) -UFEATURE_HELP -UFEATURE_DEBUG -UFEATURE_LOGIN -UFEATURE_POSIX -UFEATURE_PRETTY_PRINT" all
-
-test-lexer: $(NAME)
-	@echo "[test] running lexer tests..."
-	@python3 srcs/test/run_lexer_tests.py
-
-# Verbose runner with optional filters:
-# make test-lexer-verbose [ID=L123] [GREP=pattern] [LOG=path]
-test-lexer-verbose: $(NAME)
-	@echo "[test] running lexer tests (verbose)..."
-	@python3 srcs/test/run_lexer_tests.py \
-		$(if $(ID),--id $(ID),) \
-		$(if $(GREP),--grep "$(GREP)",) \
-		--verbose $(if $(LOG),--log-file "$(LOG)",)
-
-# Customize this to whatever runs your tests without the tee:
-# Example: a raw test target that prints to stdout (colors or not)
-test-lexer-raw:
-	@echo "Please set test-lexer-raw to run your lexer tests"; exit 2
-	# Example:
-	# python3 srcs/test/run_lexer_tests_raw.py
-
-finish:
-	git add .
-	git commit
-	git push
-	//we save here the branch before checkout
-	git checkout develop
-	git merge $(BRANCH_CHECKED_OUT)
-	git push
-	MAKE -C rm_branch BRANCH=$(BRANCH_CHECKED_OUT)
-	
 rm_branch:
 	git branch -D $(BRANCH)
 	git push origin --delete $(BRANCH)
 
-# Git workflow targets inspired by git-flow
+
 start_feat:
-	@if [ -z "$(BRANCH)" ]; then \
-		echo "Error: BRANCH is required. Usage: make start_feat BRANCH=my-feature"; \
-		exit 1; \
-	fi; \
-	echo "[git-flow] Creating feature branch feat/$(BRANCH) from develop..."; \
+	@if [ -z "$(BRANCH)" ]; then																	\
+		echo "Error: BRANCH is required. Usage: make start_feat BRANCH=my-feature";					\
+		exit 1;																						\
+	fi;																								\
+	echo "[git-flow] Creating feature branch feat/$(BRANCH) from develop...";						\
 	git add .
 	git commit
-	git checkout -b feat/$(BRANCH); \
+	git checkout -b feat/$(BRANCH);																	\
 	echo "[git-flow] Feature branch feat/$(BRANCH) created and checked out."
 
 start_fix:
-	@if [ -z "$(BRANCH)" ]; then \
-		echo "Error: BRANCH is required. Usage: make start_fix BRANCH=my-fix"; \
-		exit 1; \
-	fi; \
-	echo "[git-flow] Creating fix branch fix/$(BRANCH) from develop..."; \
-	git checkout develop; \
-	git pull origin develop --ff-only; \
-	git checkout -b fix/$(BRANCH); \
+	@if [ -z "$(BRANCH)" ]; then																	\
+		echo "Error: BRANCH is required. Usage: make start_fix BRANCH=my-fix";						\
+		exit 1;																						\
+	fi;																								\
+	echo "[git-flow] Creating fix branch fix/$(BRANCH) from develop...";							\
+	git checkout develop;																			\
+	git pull origin develop --ff-only;																\
+	git checkout -b fix/$(BRANCH);																	\
 	echo "[git-flow] Fix branch fix/$(BRANCH) created and checked out."
 
 start_release:
-	@if [ -z "$(VERSION)" ]; then \
-		echo "Error: VERSION is required. Usage: make start_release VERSION=1.0.0"; \
-		exit 1; \
-	fi; \
-	echo "[git-flow] Creating release branch release/$(VERSION) from develop..."; \
-	git checkout develop; \
-	git pull origin develop --ff-only; \
-	git checkout -b release/$(VERSION); \
+	@if [ -z "$(VERSION)" ]; then																	\
+		echo "Error: VERSION is required. Usage: make start_release VERSION=1.0.0";					\
+		exit 1;																						\
+	fi;																								\
+	echo "[git-flow] Creating release branch release/$(VERSION) from develop...";					\
+	git checkout develop;																			\
+	git pull origin develop --ff-only;																\
+	git checkout -b release/$(VERSION);																\
 	echo "[git-flow] Release branch release/$(VERSION) created and checked out."
 
-# see help for usage
+
 publish:
-	@export GIT_PUBLISH=1; \
-	BR=$$(git branch --show-current); \
-	MSG_VAL='$(subst ','\'',$(MSG))'; \
-	if [ -z "$$BR" ]; then echo "fatal: branch name required"; exit 128; fi; \
-	if [ -z "$$MSG_VAL" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi; \
-	echo "[publish] current branch: $$BR"; \
-	git add .; \
-	if ! git diff --cached --quiet; then \
-		git commit -m "$$MSG_VAL"; \
-	else \
-		echo "[publish] nothing to commit"; \
-	fi; \
-	git push origin "$$BR"; \
-	echo "[publish] switching to develop"; \
-	git checkout develop; \
-	git pull --ff-only; \
-	echo "[publish] merging $$BR -> develop"; \
-	git merge --no-ff "$$BR"; \
-	git push origin develop; \
-	echo "[publish] deleting branch $$BR locally and on origin"; \
-	git branch -D "$$BR"; \
-	git push origin --delete "$$BR" || true; \
+	@export GIT_PUBLISH=1;																			\
+	BR=$$(git branch --show-current);																\
+	MSG_VAL='$(subst ','\'',$(MSG))';																\
+	if [ -z "$$BR" ]; then echo "fatal: branch name required"; exit 128; fi;						\
+	if [ -z "$$MSG_VAL" ]; then echo "fatal: provide commit message via MSG=\"...\""; exit 2; fi;	\
+	echo "[publish] current branch: $$BR";															\
+	git add .;																						\
+	if ! git diff --cached --quiet; then															\
+		git commit -m "$$MSG_VAL";																	\
+	else																							\
+		echo "[publish] nothing to commit";															\
+	fi;																								\
+	git push origin "$$BR";																			\
+	echo "[publish] switching to develop";															\
+	git checkout develop;																			\
+	git pull --ff-only;																				\
+	echo "[publish] merging $$BR -> develop";														\
+	git merge --no-ff "$$BR";																		\
+	git push origin develop;																		\
+	echo "[publish] deleting branch $$BR locally and on origin";									\
+	git branch -D "$$BR";																			\
+	git push origin --delete "$$BR" || true;														\
 	echo "[publish] done (on branch: develop)"
 
-
-# Auto-run set-hooks on first use (after clone)
-ifeq ($(wildcard .init.stamp),)
-.PHONY: _auto_init
-_auto_init:
-	#$(MAKE) set-hooks
-	@touch .init.stamp
-
-# Prepend _auto_init to all main targets
-all: _auto_init $(NAME)
-clean: _auto_init
-fclean: _auto_init
-ffclean: _auto_init
-re: _auto_init
-fre: _auto_init
-endif
-
-.PHONY: all clean fclean ffclean re push_campus push_home configure publish help
-
 help:
+	$(call log_title,MINISHELL BUILD SYSTEM)
+	$(call log_section,Build Targets)
+	$(call log_definition,make / make all,Build the minishell binary (default))
+	$(call log_definition,make re,Clean and rebuild from scratch)
+	$(call log_definition,make fre,Full clean includes libft and rebuild)
+	
+	$(call log_section,Clean Targets)
+	$(call log_definition,make clean,Remove object files and archives)
+	$(call log_definition,make fclean,Remove binary and object files)
+	$(call log_definition,make ffclean,Full clean also cleans libft submodule)
+	
+	$(call log_section,Build Configuration)
+	$(call log_definition,make help-only,Build with FEATURE_HELP_ONLY)
+	$(call log_definition,make debug-only,Build with FEATURE_DEBUG_ONLY)
+	$(call log_definition,make all-features,Build with all features enabled)
+	$(call log_definition,make minimal,Build minimal core no optional features)
+	
+	$(call log_section,Testing Targets)
+	$(call log_definition,make test-lexer,Run lexer tests)
+	$(call log_definition,make test-lexer-verbose,Run lexer tests with verbose output)
+	$(call log_description,Options: ID=L123 GREP=pattern LOG=path)
+	$(call log_definition,make test-lexer-raw,Run raw lexer tests prints to stdout)
+	
+	$(call log_section,Git and Push Targets)
+	$(call log_definition,make push_home,Push to home remote requires MSG)
+	$(call log_definition,make push_campus,Push to campus remote requires MSG)
+	$(call log_definition,make publish,Publish feature commit merge to develop delete)
+	$(call log_description,Options: MSG=your-commit-message)
+	$(call log_description,Options: MSG=your-commit-message)
+	$(call log_description,Options: MSG=your-commit-message)
+	$(call log_description,Options: MSG=your-commit-message)
+	$(call log_description,Options: MSG=your-commit-message)
+	$(call log_definition,make finish,Finish feature commit merge to develop delete)
+	$(call log_definition,make start_feat,Create feature branch feat/BRANCH)
+	$(call log_definition,make start_fix,Create fix branch fix/BRANCH)
+	$(call log_definition,make start_release,Create release branch release/VERSION)
+	
+	$(call log_section,Maintenance Targets)
+	$(call log_definition,make configure,Set up git hooks and scripts)
+	$(call log_definition,make update,Update libft submodule to latest)
+	
+	$(call log_section,Examples)
+	$(call log_definition,make,Build the project)
+	$(call log_definition,make re,Clean and rebuild)
+	$(call log_definition,make publish MSG=...,Publish with commit message)
+	$(call log_definition,make test-lexer-verbose ID=L1,Run specific lexer test)
 	@echo ""
-	@echo "$(BRIGHT_CYAN)$(BOLD)=== sh42 Makefile Targets ===$(RESET)"
+	$(call log_ok,For more info check the Makefile itself)
 	@echo ""
-	@echo "$(BOLD)Build Targets:$(RESET)"
-	@echo "  $(GREEN)make$(RESET) or $(GREEN)make all$(RESET)        - Build the minishell binary (default target)"
-	@echo "  $(GREEN)make re$(RESET)                  - Clean and rebuild from scratch"
-	@echo "  $(GREEN)make fre$(RESET)                 - Full clean (includes libft) and rebuild"
-	@echo ""
-	@echo "$(BOLD)Clean Targets:$(RESET)"
-	@echo "  $(GREEN)make clean$(RESET)              - Remove object files and archives"
-	@echo "  $(GREEN)make fclean$(RESET)             - Remove binary and object files"
-	@echo "  $(GREEN)make ffclean$(RESET)            - Full clean (also cleans libft submodule)"
-	@echo ""
-	@echo "$(BOLD)Build Configuration Targets:$(RESET)"
-	@echo "  $(GREEN)make help-only$(RESET)          - Build with FEATURE_HELP_ONLY"
-	@echo "  $(GREEN)make debug-only$(RESET)         - Build with FEATURE_DEBUG_ONLY"
-	@echo "  $(GREEN)make all-features$(RESET)       - Build with all features enabled"
-	@echo "  $(GREEN)make minimal$(RESET)            - Build minimal core (no optional features)"
-	@echo ""
-	@echo "$(BOLD)Testing Targets:$(RESET)"
-	@echo "  $(GREEN)make test-lexer$(RESET)         - Run lexer tests"
-	@echo "  $(GREEN)make test-lexer-verbose$(RESET) - Run lexer tests with verbose output"
-	@echo "    Options: ID=L123 GREP=pattern LOG=path"
-	@echo "  $(GREEN)make test-lexer-raw$(RESET)     - Run raw lexer tests (prints to stdout)"
-	@echo ""
-	@echo "$(BOLD)Git/Push Targets:$(RESET)"
-	@echo "  $(GREEN)make push_home$(RESET)          - Push to home remote (requires MSG=\"...\")"
-	@echo "  $(GREEN)make push_campus$(RESET)        - Push all to campus remote (requires MSG=\"...\")"
-	@echo "  $(GREEN)make publish$(RESET)            - Publish feature branch: commit, merge to develop,"
-	@echo "                            delete branch (requires MSG=\"...\")"
-	@echo "  $(GREEN)make finish$(RESET)             - Finish using a feature branch: commit, push,"
-	@echo "                            merge into develop, push into develop, delete feature branch"
-	@echo "  $(GREEN)make start_feat$(RESET)         - Automates creation of new feature: commit local changes,"
-	@echo "                            create and switch the branch (feat/BRANCH)"
-	@echo "  $(GREEN)make start_fix$(RESET)          - Starts a bugfix branch from develop: Sync with develop,"
-	@echo "                            create and switch the branch (fix/BRANCH)"
-	@echo "  $(GREEN)make start_release$(RESET)      - Automate creation of new release branch: Sync with develop,"
-	@echo "                            create and switch the branch (release/VERSION)"
-	@echo ""
-	@echo "$(BOLD)Maintenance Targets:$(RESET)"
-	@echo "  $(GREEN)make configure$(RESET)          - Set up git hooks and scripts"
-	@echo "  $(GREEN)make update$(RESET)             - Update libft submodule to latest"
-	@echo ""
-	@echo "$(BRIGHT_CYAN)$(BOLD)Examples:$(RESET)"
-	@echo "  $(CYAN)make$(RESET)                      # Build the project"
-	@echo "  $(CYAN)make re$(RESET)                   # Clean and rebuild"
-	@echo "  $(CYAN)make publish MSG=\"feat: add feature\"$(RESET)  # Publish feature branch"
-	@echo "  $(CYAN)make test-lexer-verbose ID=L1$(RESET)  # Run specific lexer test"
-	@echo ""
+
+
+.PHONY: all update configure push_home push_campus clean fclean re ffclean fre rm_branch start_feat start_fix start_release publich help
