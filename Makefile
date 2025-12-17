@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/12/17 02:22:18 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/17 02:27:13 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -76,12 +76,20 @@ update: configure
 	git pull
 
 configure:
-		@chmod +x scripts/* scripts/*/* 2>/dev/null || true
-	@bash -c 'if [ -x "scripts/install-hooks.sh" ]; then																																				\
-		./scripts/install-hooks.sh >/dev/null 2>&1 && printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_OK)$(BOLD)OK$(RESET)] : Project hooks configured successfully!";			\
-	else																																																\
-		printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_WARN)$(BOLD)WARN$(RESET)] : scripts/install-hooks.sh not found or not executable.";									\
-	fi'
+	@# Make shell scripts executable and run install-hooks from .scripts or scripts (prefer .scripts)
+	@bash -lc '\
+	for d in .scripts scripts; do \
+	if [ -d "$$d" ]; then \
+		find "$$d" -type f -name "*.sh" -exec chmod +x {} + 2>/dev/null || true; \
+		if [ -x "$$d/install-hooks.sh" ]; then \
+			"$$d/install-hooks.sh" >/dev/null 2>&1 && printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_OK)$(BOLD)OK$(RESET)] : Project hooks configured successfully!"; \
+		else \
+			printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_WARN)$(BOLD)WARN$(RESET)] : %s/install-hooks.sh not found or not executable." "$$d"; \
+		fi; \
+		exit 0; \
+	fi; \
+	done; \
+	printf "%s\n" "$(BRIGHT_CYAN)$(BOLD)$(LOG_PREFIX)$(RESET) [$(STATE_COLOR_WARN)$(BOLD)WARN$(RESET)] : no .scripts or scripts directory found."'
 
 push_home: ffclean
 	@# require MSG to be provided to avoid accidental empty commits
