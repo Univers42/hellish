@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/12/11 22:13:59 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/17 02:22:18 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -72,7 +72,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.c
 
 update: configure
 	$(call log_info, updating submodule to latest remote version...)
-	git submodule update --init --recursive --remote --merge $(SUBMODULE_DIR) lib/libmalloc || exit 1
+	git submodule update --init --recursive --remote --merge $(SUBMODULE_DIR) || exit 1
 	git pull
 
 configure:
