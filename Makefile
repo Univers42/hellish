@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/12/17 02:27:13 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/17 03:45:57 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -29,6 +29,11 @@ CURRENT_BRANCH	:= $(shell git branch --show-current)
 REMOTE_CAMPUS	:= $(shell git remote -v | awk 'NR==2 {print $$1}')
 MSG				?=
 BRANCH			?=
+
+# Find all .c files recursively in srcs/
+SRCS := $(shell find srcs -type f -name '*.c')
+# Map each .c to .objs/ path
+OBJS := $(patsubst srcs/%.c,.objs/%.o,$(SRCS))
 
 all: $(NAME)
 
@@ -63,12 +68,12 @@ $(SUBMODULE_LIB):
 $(NAME): $(SUBMODULE_LIB) $(OBJS)
 	$(call print_status,$(GREEN),LINK,$@)
 	@echo "[link] linking $(NAME)"
-	$(CC) $(CFLAGS) -I./incs -I./incs/libft/include -o $@ $(OBJS) $(SUBMODULE_LIB) $(LDFLAGS)
+	$(CC) $(CFLAGS) -Iincs/libft -Iincs -I/incs/libft/include/internals -Iincs/libft/include -o $@ $(OBJS) $(SUBMODULE_LIB) $(LDFLAGS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@mkdir -p $(dir $@) $(DEPDIR)/$(dir $*)
+.objs/%.o: srcs/%.c
+	@mkdir -p $(dir $@)
 	$(call print_status,$(CYAN),COMPILING,$<)
-	@$(CC) $(CFLAGS) $(OPTFLAGS) -I./incs -I./incs/libft/include  -c $< -o $@ $(PREPROCFLAGS) $(DEPDIR)/$*.d -I$(SUBMODULE_DIR)/include -I./incs
+	$(CC) $(CFLAGS) $(OPTFLAGS) -I./incs -I./incs/libft -I./incs/libft/include -I./incs/libft/include/internals -c $< -o $@
 
 update: configure
 	$(call log_info, updating submodule to latest remote version...)
