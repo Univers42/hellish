@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/11/07 17:01:26 by dlesieur          #+#    #+#              #
-#    Updated: 2025/12/17 03:45:57 by dlesieur         ###   ########.fr        #
+#    Updated: 2025/12/18 21:05:55 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -115,9 +115,6 @@ push_campus: ffclean
 	@git commit -m "$(MSG)"
 	@git push $(REMOTE_CAMPUS) --all
 
-
-
-
 clean:
 	@rm -rf $(OBJDIR) $(DEPDIR)
 
@@ -171,7 +168,6 @@ start_release:
 	git pull origin develop --ff-only;																\
 	git checkout -b release/$(VERSION);																\
 	echo "[git-flow] Release branch release/$(VERSION) created and checked out."
-
 
 publish:
 	@export GIT_PUBLISH=1;																			\
