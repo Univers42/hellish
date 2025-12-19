@@ -2,6 +2,7 @@
 
 # 🔥 Hellish Shell
 
+TEST
 ### *A POSIX-like shell forged in the fires of 42 School*
 
 <img src="https://img.shields.io/badge/build-passing-success?style=for-the-badge&logo=github-actions&logoColor=white" alt="Build"/>
