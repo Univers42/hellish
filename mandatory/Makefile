@@ -15,6 +15,7 @@ SRCS = $(LEXER_DIR)/dyn_str.c \
 	   $(LEXER_DIR)/lexer_classifiers.c \
 	   $(LEXER_DIR)/lexer_redirect_handler.c \
 	   $(LEXER_DIR)/lexer_quote_handlers.c \
+	   $(LEXER_DIR)/test_main.c
 
 OBJS = $(SRCS:.c=.o)
 
