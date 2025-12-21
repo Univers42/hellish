@@ -2,7 +2,6 @@
 
 void    handle_redirect(t_lexer_state *state)
 {
-    finalize_word(state);
     if (state->input[*state->i] == '>')
     {
         d_str_append_char(state->current_token_str, state->input[*state->i]);

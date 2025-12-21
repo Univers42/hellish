@@ -1,20 +1,10 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   lexer.h                                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/19 17:36:03 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/19 17:36:39 by alcacere         ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #ifndef LEXER_H
 #define LEXER_H
 
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
+
 //#include "libft.h"
 
 typedef enum e_token_type
