@@ -3,8 +3,7 @@
 int handle_quotes(t_lexer_state *state)
 {
     char    quote;
-
-    finalize_word(state);
+    
     quote = state->input[*state->i];
     (*state->i)++;
     while (state->input[*state->i] && state->input[*state->i] != quote)

@@ -4,9 +4,6 @@ int		add_token_to_vector(t_token_vector *vector, t_dynamic_str *d_str, t_token_t
 {
 	t_token	*token;
 
-	if (d_str->len == 0)
-		return (1);
-
 	token = malloc(sizeof(t_token));
 	if (!token)
 		return (0);
