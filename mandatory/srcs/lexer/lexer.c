@@ -1,10 +1,22 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   lexer.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/12/21 14:50:46 by alcacere          #+#    #+#             */
+/*   Updated: 2025/12/21 15:35:16 by alcacere         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "lexer.h"
 
-int		add_token_to_vector(t_token_vector *vector, t_dynamic_str *d_str, t_token_type type)
+int	add_token_to_vec(t_tok_vec *vector, t_d_str *d_str, t_tok_type type)
 {
-	t_token	*token;
+	t_tok	*token;
 
-	token = malloc(sizeof(t_token));
+	token = malloc(sizeof(t_tok));
 	if (!token)
 		return (0);
 	if (d_str_init(&token->value, d_str->len + 1) == -1)
@@ -24,7 +36,7 @@ int		add_token_to_vector(t_token_vector *vector, t_dynamic_str *d_str, t_token_t
 	return (1);
 }
 
-static int lexer_process_char(t_lexer_state *state)
+static int	lexer_process_char(t_lexer_st *state)
 {
 	char	current_char;
 
@@ -44,34 +56,34 @@ static int lexer_process_char(t_lexer_state *state)
 	}
 	else
 	{
-		d_str_append_char(state->current_token_str, current_char);
+		d_str_append_char(state->curr_tok_str, current_char);
 		(*state->i)++;
 	}
 	return (1);
 }
 
-t_token_vector	*lexer(const char *input)
+t_tok_vec	*lexer(const char *input)
 {
-	t_lexer_state	state;
-	t_token_vector	*vector;
-	t_dynamic_str	current_token_str;
-	size_t			i;
+	t_lexer_st	state;
+	t_tok_vec	*vector;
+	t_d_str		curr_token_str;
+	size_t		i;
 
 	vector = vector_init(16);
-	if (!vector || d_str_init(&current_token_str, 16) == -1)
+	if (!vector || d_str_init(&curr_token_str, 16) == -1)
 		return (NULL);
 	i = 0;
-	state = (t_lexer_state){input, vector, &current_token_str, &i};
+	state = (t_lexer_st){input, vector, &curr_token_str, &i};
 	while (state.input[i])
 	{
 		if (!lexer_process_char(&state))
 		{
 			vector_free(vector);
-			d_str_free(&current_token_str);
+			d_str_free(&curr_token_str);
 			return (NULL);
 		}
 	}
 	finalize_word(&state);
-	d_str_free(&current_token_str);
+	d_str_free(&curr_token_str);
 	return (vector);
 }
