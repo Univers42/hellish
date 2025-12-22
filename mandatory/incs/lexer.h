@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   lexer.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:22:58 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 15:33:33 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 17:21:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,13 +20,53 @@
 typedef enum e_tok_type
 {
     TOK_WORD,
+	TOK_DQ,
+	TOK_SQ,
     TOK_PIPE,
-    TOK_REDIR_IN,
+    TOK_LESS,
     TOK_REDIR_OUT,
     TOK_REDIR_APPEND,
     TOK_HEREDOC,
+	TOK_DOLLAR,
     TOK_EOF
 }	t_tok_type;
+
+
+hello || <("something")
+
+[[hello][[TOKEN_LOGIALC_OR][||]][<][(]["something"][)][][][][][][]]
+
+# define ALLOC_MINI 64
+
+t_token	**tokenize(char *input)
+{
+	char	*curr;
+	t_token	**map_toks;
+
+	map_toks = NULL;
+	map(&map_toks, sizeof(t_token **) * ALLOC_MINI);
+	while (*input)
+	{
+		// skip traililng space
+		// if a character is discovered i's time to find whicch type of token it is
+		curr = input;
+		switch(curr)
+		{
+			case ft_strncmp(curr, "||", 2):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "||"), &map_toks));
+			case ft_strncmp(curr, "|", 1):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "|"), &map_toks));
+			case ft_strncmp(curr, "<", 1):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "<"), &map_toks));
+			case ft_strncmp(curr, "<<", 2):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "<<"), &map_toks));
+			case ft_strncmp(curr, ">>", 2):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, ">>"), &map_toks));
+			case ft_strncmp(curr, "||", 2):
+				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "||"), &map_toks));	
+		}
+	}
+}
 
 typedef struct s_d_str
 {
