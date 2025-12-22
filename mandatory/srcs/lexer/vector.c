@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   vector.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 17:36:20 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 15:15:37 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 16:24:20 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ int	vector_append(t_tok_vec *vector, t_tok *token)
 	{
 		new_capacity = vector->capacity * 2;
 		if (new_capacity == 0)
-			new_capacity = 1;
+			new_capacity = 128;
 		new_tokens = malloc(new_capacity * sizeof(t_tok *));
 		if (new_tokens == NULL)
 			return (-1);
