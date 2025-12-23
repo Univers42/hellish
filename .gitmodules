@@ -1,3 +1,6 @@
 [submodule "incs/libft"]
 	path = incs/libft
 	url = git@github.com:Univers42/libft.git
+[submodule "mandatory/incs/libft"]
+	path = mandatory/incs/libft
+	url = git@github.com:Univers42/libft.git
