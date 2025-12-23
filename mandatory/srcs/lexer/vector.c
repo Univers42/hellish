@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   vector.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 17:36:20 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/23 01:24:45 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/12/23 20:59:47 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,15 +41,9 @@ int	vector_append(t_tok_vec *vector, t_toke *token)
 	{
 		new_capacity = vector->capacity * 2;
 		if (new_capacity == 0)
-<<<<<<< HEAD
 			new_capacity = 8;
-		new_tokens = malloc(new_capacity * sizeof(t_tok *));
-		if (!new_tokens)
-=======
-			new_capacity = 128;
 		new_tokens = malloc(new_capacity * sizeof(t_toke *));
-		if (new_tokens == NULL)
->>>>>>> e53b02176b3f6ad9ae9941b822dd05b6f1f1e694
+		if (!new_tokens)
 			return (-1);
 		memcpy(new_tokens, vector->tokens, vector->count * sizeof(t_toke *));
 		free(vector->tokens);
