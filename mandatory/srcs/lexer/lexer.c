@@ -3,20 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   lexer.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 14:50:46 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 15:35:16 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:50:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 int	add_token_to_vec(t_tok_vec *vector, t_d_str *d_str, t_tok_type type)
 {
-	t_tok	*token;
+	t_toke	*token;
 
-	token = malloc(sizeof(t_tok));
+	token = malloc(sizeof(t_toke));
 	if (!token)
 		return (0);
 	if (d_str_init(&token->value, d_str->len + 1) == -1)

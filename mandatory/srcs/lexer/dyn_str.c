@@ -6,11 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 17:35:53 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/22 16:25:24 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:42:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 static int	d_str_ensure_capacity(t_d_str *d_str, size_t needed_capacity)
 {

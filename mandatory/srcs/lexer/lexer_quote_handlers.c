@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   lexer_quote_handlers.c                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:08:21 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 16:12:01 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:42:13 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 int	handle_quotes(t_lexer_st *state)
 {

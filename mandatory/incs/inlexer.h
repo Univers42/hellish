@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   lexer.h                                            :+:      :+:    :+:   */
+/*   inlexer.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:22:58 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/22 17:21:01 by dlesieur         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:49:45 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef INLEXER_H
+#define INLEXER_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -23,50 +23,13 @@ typedef enum e_tok_type
 	TOK_DQ,
 	TOK_SQ,
     TOK_PIPE,
-    TOK_LESS,
+    TOK_REDIR_IN,
     TOK_REDIR_OUT,
     TOK_REDIR_APPEND,
     TOK_HEREDOC,
 	TOK_DOLLAR,
     TOK_EOF
 }	t_tok_type;
-
-
-hello || <("something")
-
-[[hello][[TOKEN_LOGIALC_OR][||]][<][(]["something"][)][][][][][][]]
-
-# define ALLOC_MINI 64
-
-t_token	**tokenize(char *input)
-{
-	char	*curr;
-	t_token	**map_toks;
-
-	map_toks = NULL;
-	map(&map_toks, sizeof(t_token **) * ALLOC_MINI);
-	while (*input)
-	{
-		// skip traililng space
-		// if a character is discovered i's time to find whicch type of token it is
-		curr = input;
-		switch(curr)
-		{
-			case ft_strncmp(curr, "||", 2):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "||"), &map_toks));
-			case ft_strncmp(curr, "|", 1):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "|"), &map_toks));
-			case ft_strncmp(curr, "<", 1):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "<"), &map_toks));
-			case ft_strncmp(curr, "<<", 2):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "<<"), &map_toks));
-			case ft_strncmp(curr, ">>", 2):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, ">>"), &map_toks));
-			case ft_strncmp(curr, "||", 2):
-				(add_to_map((t_token *)make_token(TOK_LOGICAL_OR, "||"), &map_toks));	
-		}
-	}
-}
 
 typedef struct s_d_str
 {
@@ -75,15 +38,15 @@ typedef struct s_d_str
 	size_t	d_str_cap;
 }	t_d_str;
 
-typedef struct s_tok
+typedef struct s_toke
 {
 	t_tok_type	type;
 	t_d_str		value;
-}	t_tok;
+}	t_toke;
 
 typedef struct s_tok_vec
 {
-	t_tok	**tokens;
+	t_toke	**tokens;
 	size_t	count;
 	size_t	capacity;
 }	t_tok_vec;
@@ -97,7 +60,7 @@ typedef struct s_lexer_st
 }	t_lexer_st;
 
 t_tok_vec	*vector_init(size_t initial_capacity);
-int			vector_append(t_tok_vec *vector, t_tok *token);
+int			vector_append(t_tok_vec *vector, t_toke *token);
 void		vector_free(t_tok_vec *vector);
 int			add_token_to_vec(t_tok_vec *vector, t_d_str *d_str, t_tok_type type);
 

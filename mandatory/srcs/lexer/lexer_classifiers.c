@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   lexer_classifiers.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:26:00 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 16:15:52 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:42:04 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 int	is_whitespace(char c)
 {
