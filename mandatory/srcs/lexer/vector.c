@@ -35,15 +35,15 @@ int	vector_append(t_tok_vec *vector, t_tok *token)
 	size_t	new_capacity;
 	t_tok	**new_tokens;
 
-	if (vector == NULL || token == NULL)
+	if (!vector || !token)
 		return (-1);
 	if (vector->count == vector->capacity)
 	{
 		new_capacity = vector->capacity * 2;
 		if (new_capacity == 0)
-			new_capacity = 1;
+			new_capacity = 8;
 		new_tokens = malloc(new_capacity * sizeof(t_tok *));
-		if (new_tokens == NULL)
+		if (!new_tokens)
 			return (-1);
 		memcpy(new_tokens, vector->tokens, vector->count * sizeof(t_tok *));
 		free(vector->tokens);
