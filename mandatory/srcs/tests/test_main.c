@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "inlexer.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@ void print_table_header(const char *input)
     printf("|-----|-----------------|----------------------|-----------------|----------------------|--------|\n");
 }
 
-void print_test_result_row(int i, t_expected_token *expected, t_tok *obtained, int is_ok)
+void print_test_result_row(int i, t_expected_token *expected, t_toke *obtained, int is_ok)
 {
     char expected_type_str[20] = "N/A";
     char expected_value_str[21] = "N/A";
@@ -90,7 +90,7 @@ int run_test(const char *input, t_expected_token expected[], int expected_count)
     for (size_t i = 0; i < max_tokens; i++)
     {
         t_expected_token *p_expected = (i < (size_t)expected_count) ? &expected[i] : NULL;
-        t_tok *p_obtained = (i < vec->count) ? vec->tokens[i] : NULL;
+        t_toke *p_obtained = (i < vec->count) ? vec->tokens[i] : NULL;
         int row_ok = 1;
 
         if (!p_expected || !p_obtained || p_obtained->type != p_expected->type || strcmp(p_obtained->value.str, p_expected->value) != 0) {

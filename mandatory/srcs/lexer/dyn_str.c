@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   dyn_str.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 17:35:53 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 16:14:44 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:42:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 static int	d_str_ensure_capacity(t_d_str *d_str, size_t needed_capacity)
 {
@@ -39,7 +39,7 @@ int	d_str_init(t_d_str *d_str, size_t dyn_initial_capacity)
 	if (!d_str)
 		return (-1);
 	if (dyn_initial_capacity == 0)
-		dyn_initial_capacity = 8;
+		dyn_initial_capacity = 1024;
 	d_str->str = malloc(dyn_initial_capacity * sizeof(char));
 	if (!d_str->str)
 	{

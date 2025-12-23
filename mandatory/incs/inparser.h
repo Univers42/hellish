@@ -1,7 +1,7 @@
-#ifndef PARSER_H
-#define PARSER_H
+#ifndef INPARSER_H
+#define INPARSER_H
 
-#include "lexer.h"
+#include "inlexer.h"
 
 
 typedef enum e_node_type

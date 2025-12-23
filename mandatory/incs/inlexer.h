@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   lexer.h                                            :+:      :+:    :+:   */
+/*   inlexer.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:22:58 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 15:33:33 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:49:45 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef INLEXER_H
+#define INLEXER_H
 
 #include <stdlib.h>
 #include <string.h>
@@ -20,11 +20,14 @@
 typedef enum e_tok_type
 {
     TOK_WORD,
+	TOK_DQ,
+	TOK_SQ,
     TOK_PIPE,
     TOK_REDIR_IN,
     TOK_REDIR_OUT,
     TOK_REDIR_APPEND,
     TOK_HEREDOC,
+	TOK_DOLLAR,
     TOK_EOF
 }	t_tok_type;
 
@@ -35,15 +38,15 @@ typedef struct s_d_str
 	size_t	d_str_cap;
 }	t_d_str;
 
-typedef struct s_tok
+typedef struct s_toke
 {
 	t_tok_type	type;
 	t_d_str		value;
-}	t_tok;
+}	t_toke;
 
 typedef struct s_tok_vec
 {
-	t_tok	**tokens;
+	t_toke	**tokens;
 	size_t	count;
 	size_t	capacity;
 }	t_tok_vec;
@@ -57,7 +60,7 @@ typedef struct s_lexer_st
 }	t_lexer_st;
 
 t_tok_vec	*vector_init(size_t initial_capacity);
-int			vector_append(t_tok_vec *vector, t_tok *token);
+int			vector_append(t_tok_vec *vector, t_toke *token);
 void		vector_free(t_tok_vec *vector);
 int			add_token_to_vec(t_tok_vec *vector, t_d_str *d_str, t_tok_type type);
 
