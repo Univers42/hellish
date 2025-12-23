@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   lexer_redirect_handler.c                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 15:13:41 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 16:58:03 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:42:18 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 static void	handle_redir_out(t_lexer_st *state)
 {
