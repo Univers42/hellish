@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   dyn_str_utils.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/21 16:16:52 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 16:16:55 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/22 20:41:57 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 void	d_str_reset(t_d_str *d_str)
 {

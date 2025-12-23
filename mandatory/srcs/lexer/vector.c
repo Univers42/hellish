@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   vector.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: alcacere <alcacere@student.42madrid.com>   +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/19 17:36:20 by alcacere          #+#    #+#             */
-/*   Updated: 2025/12/21 15:15:37 by alcacere         ###   ########.fr       */
+/*   Updated: 2025/12/23 01:24:45 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "lexer.h"
+#include "inlexer.h"
 
 t_tok_vec	*vector_init(size_t initial_capacity)
 {
@@ -19,7 +19,7 @@ t_tok_vec	*vector_init(size_t initial_capacity)
 	vector = malloc(sizeof(t_tok_vec));
 	if (vector == NULL)
 		return (NULL);
-	vector->tokens = malloc(sizeof(t_tok *) * initial_capacity);
+	vector->tokens = malloc(sizeof(t_toke *) * initial_capacity);
 	if (vector->tokens == NULL)
 	{
 		free(vector);
@@ -30,10 +30,10 @@ t_tok_vec	*vector_init(size_t initial_capacity)
 	return (vector);
 }
 
-int	vector_append(t_tok_vec *vector, t_tok *token)
+int	vector_append(t_tok_vec *vector, t_toke *token)
 {
 	size_t	new_capacity;
-	t_tok	**new_tokens;
+	t_toke	**new_tokens;
 
 	if (!vector || !token)
 		return (-1);
@@ -41,11 +41,17 @@ int	vector_append(t_tok_vec *vector, t_tok *token)
 	{
 		new_capacity = vector->capacity * 2;
 		if (new_capacity == 0)
+<<<<<<< HEAD
 			new_capacity = 8;
 		new_tokens = malloc(new_capacity * sizeof(t_tok *));
 		if (!new_tokens)
+=======
+			new_capacity = 128;
+		new_tokens = malloc(new_capacity * sizeof(t_toke *));
+		if (new_tokens == NULL)
+>>>>>>> e53b02176b3f6ad9ae9941b822dd05b6f1f1e694
 			return (-1);
-		memcpy(new_tokens, vector->tokens, vector->count * sizeof(t_tok *));
+		memcpy(new_tokens, vector->tokens, vector->count * sizeof(t_toke *));
 		free(vector->tokens);
 		vector->tokens = new_tokens;
 		vector->capacity = new_capacity;
