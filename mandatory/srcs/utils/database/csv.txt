@@ -1,0 +1,9 @@
+id,first_name,last_name,age,salary,department,notes
+1,John,Doe,30,75000.50,Engineering,"Senior engineer, backend"
+2,Jane,Smith,25,82000.00,Marketing,"Leads social campaigns"
+3,Bob,Johnson,40,95000.75,Sales,"Top performer; region: APAC"
+4,Alice,Williams,35,88000.25,HR,"Handles recruitment"
+5,Chloé,Åström,291564545,71000.00,Design,"International — Malmö office"
+6,,Unknown,534564,0.00,Contract,"Missing first name and age"
+7,"O'Connor","Mc,Test",31,60000.00,DevOps,"Contains comma and apostrophe"
+8,"Quoted ""Field""","Example",45,120000.00,Management,"Field with embedded quotes"
