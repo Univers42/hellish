@@ -27,7 +27,6 @@
 // Customized libraries
 # include "dsa.h"
 # include "utils.h"
-# include "libft/libft.h"
 # include "sigs.h"
 # include "ft_printf/ft_printf.h"
 

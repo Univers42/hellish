@@ -6,12 +6,11 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:32 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:34 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:38:25 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_printf.h"
-#include "../libft.h"
 #include <stdarg.h>
 
 void	printf_string(va_list args, t_fmt_spec spec, t_buffer *buff)
@@ -33,7 +32,7 @@ void	printf_string(va_list args, t_fmt_spec spec, t_buffer *buff)
 	if (spec.precision != -1)
 		len = ft_strnlen(s, spec.precision);
 	else
-		len = ft_strlen(s);
+		len = strlen(s);
 	if (spec.flags & FL_MINUS)
 		writer_strn(buff, s, len);
 	if (spec.width)

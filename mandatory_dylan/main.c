@@ -17,7 +17,7 @@
 
 int	main(int argc, char **argv, char **envp)
 {
-	
+	ft_printf
 }
 
 // Definition of prototypes that are decaled above

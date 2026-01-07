@@ -119,7 +119,7 @@ static inline char *exe_path(char **path_dirs, char *exe_name)
 	return (free(temp.buff, NULL));
 }
 
-bool	check_is_a_dir(char *path, bool *enoent)
+static inline bool	check_is_a_dir(char *path, bool *enoent)
 {
 	t_stat	info;
 

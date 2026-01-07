@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:02 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:03 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:37:46 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "../utils/utils.h"
+#include "../utils.h"
 
 int	ft_vfdprintf(int fd, const char *str, va_list args)
 {

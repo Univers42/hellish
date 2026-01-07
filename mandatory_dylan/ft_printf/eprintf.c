@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:42:57 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:00 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:37:57 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "ft_printf.h"
-#include "../utils/utils.h"
+#include "../utils.h"
 
 char	*ft_vaseprintf(const char *str, va_list args)
 {

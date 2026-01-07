@@ -37,7 +37,7 @@ typedef struct s_rl
 }	t_rl;
 
 
-void bg_readline(int outfd, char *prompt)
+static inline void bg_readline(int outfd, char *prompt)
 {
 	char *ret;
 
@@ -54,24 +54,7 @@ void bg_readline(int outfd, char *prompt)
 	exit(0);
 }
 
-void	dyn_str_append_fd(int fd, t_dyn_str *ret)
-{
-	char	buff[1024];
-	int		len;
-
-	while (1)
-	{
-		len = read(fd, buff, sizeof(buff));
-		if (len == 0)
-			break ;
-		if (len > 0)
-			dyn_str_pushnstr(ret, buff, len);
-		else
-			critical_error_errno_context("read");
-	}
-}
-
-int attach_input_readline(t_rl *l, int pp[2], int pid)
+static inline int attach_input_readline(t_rl *l, int pp[2], int pid)
 {
 	int status;
 
@@ -90,7 +73,7 @@ int attach_input_readline(t_rl *l, int pp[2], int pid)
 	return (WEXITSTATUS(status));
 }
 
-int get_more_input_readline(t_rl *l, char *prompt)
+static inline int get_more_input_readline(t_rl *l, char *prompt)
 {
 	int pp[2];
 	int pid;
@@ -123,12 +106,12 @@ int get_more_input_readline(t_rl *l, char *prompt)
 	return (0);
 }
 
-void buff_readline_update(t_rl *l)
+static inline void buff_readline_update(t_rl *l)
 {
 	l->has_line = l->cursor != l->str.len;
 }
 
-void buff_readline_reset(t_rl *l)
+static inline void buff_readline_reset(t_rl *l)
 {
 	ft_memmove(l->str.buff, l->str.buff + l->cursor, l->str.len - l->cursor);
 	l->str.len -= l->cursor;
@@ -138,12 +121,12 @@ void buff_readline_reset(t_rl *l)
 	buff_readline_update(l);
 }
 
-void buff_readline_init(t_rl *ret)
+static inline void buff_readline_init(t_rl *ret)
 {
 	*ret = (t_rl){0};
 }
 
-void update_context(t_rl *rl, char **context, char **base_context)
+static inline void update_context(t_rl *rl, char **context, char **base_context)
 {
 	char *new_ctx;
 	int len;
@@ -160,7 +143,7 @@ void update_context(t_rl *rl, char **context, char **base_context)
 	*context = new_ctx;
 }
 
-int get_more_input_notty(t_rl *rl)
+static inline int get_more_input_notty(t_rl *rl)
 {
 	char buff[4096 * 2];
 	int ret;
