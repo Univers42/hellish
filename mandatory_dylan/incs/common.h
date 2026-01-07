@@ -13,7 +13,7 @@
 #ifndef COMMON_H
 # define COMMON_H
 
-// standard libraries
+/* standard libraries */
 # include <unistd.h>
 # include <stdio.h>
 # include <ctype.h>
@@ -24,33 +24,26 @@
 # include <dirent.h>
 # include <errno.h>
 
-// Customized libraries
-# include "dsa.h"
-# include "utils.h"
-# include "sigs.h"
-# include "ft_printf/ft_printf.h"
-
-
-typedef t_vec	t_string;		// a single dynamic string
-typedef t_vec	t_obj_str;		// elements objects of string
-typedef t_vec	t_strings;		// array of C-string pointers (references)
-typedef t_vec	t_env;
-typedef t_vec	t_ints;
-
-/**
- * For now exit state but can have other purposes
- */
+/* For now exit state but can have other purposes */
 typedef enum s_state
 {
 	/* success */
 	ST_OK = 0,
 	/* base failure code */
 	ST_BASE_ERR = 1,
+	ST_SCANNING,
 	ST_WAIT,
 	ST_INIT,
 	ST_MORE_INPUT,
 	ST_FATAL_ERR
 }	t_state;
+
+/* Customized libraries: utils must come first so helpers/types are available */
+# include "utils.h"
+# include "ft_printf/ft_printf.h"
+# include "dsa.h"
+# include "sigs.h"
+
 
 
 #endif

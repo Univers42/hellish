@@ -1,43 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   prompt.h                                           :+:      :+:    :+:   */
+/*   prompt.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/06 22:15:26 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/06 22:15:26 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/07 15:44:40 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/07 15:44:40 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef PROMPT_H
-# define PROMPT_H
+# include "../incs/prompt.h"
 
-#include "common.h"
-#include "readline/readline.h"
-
-# define ANSI_RED "\001\033[31m\002"
-# define ANSI_GREEN "\001\033[32m\002"
-# define ANSI_RESET "\001\033[0m\002"
-
-# define RL_SPACER_1 "\x03"
-
-# define SQUOTE_PROMPT "squote>"
-# define DQUOTE_PROMPT "dquote> "
-# define BQUOTE_PROMPT "bquote> "
-
-typedef struct s_rl
-{
-	bool	has_line;
-	bool	should_update_context;
-	bool	has_finished;
-	int		line;
-	t_string	buff;
-	size_t	cursor;
-}	t_rl;
-
-
-static inline void bg_readline(int outfd, char *prompt)
+void bg_readline(int outfd, char *prompt)
 {
 	char *ret;
 
@@ -54,7 +29,7 @@ static inline void bg_readline(int outfd, char *prompt)
 	exit(0);
 }
 
-static inline int attach_input_readline(t_rl *l, int pp[2], int pid)
+int attach_input_readline(t_rl *l, int pp[2], int pid)
 {
 	int status;
 
@@ -73,7 +48,7 @@ static inline int attach_input_readline(t_rl *l, int pp[2], int pid)
 	return (WEXITSTATUS(status));
 }
 
-static inline int get_more_input_readline(t_rl *l, char *prompt)
+int get_more_input_readline(t_rl *l, char *prompt)
 {
 	int pp[2];
 	int pid;
@@ -106,12 +81,12 @@ static inline int get_more_input_readline(t_rl *l, char *prompt)
 	return (0);
 }
 
-static inline void buff_readline_update(t_rl *l)
+void buff_readline_update(t_rl *l)
 {
 	l->has_line = l->cursor != l->str.len;
 }
 
-static inline void buff_readline_reset(t_rl *l)
+void buff_readline_reset(t_rl *l)
 {
 	ft_memmove(l->str.buff, l->str.buff + l->cursor, l->str.len - l->cursor);
 	l->str.len -= l->cursor;
@@ -121,12 +96,12 @@ static inline void buff_readline_reset(t_rl *l)
 	buff_readline_update(l);
 }
 
-static inline void buff_readline_init(t_rl *ret)
+void buff_readline_init(t_rl *ret)
 {
 	*ret = (t_rl){0};
 }
 
-static inline void update_context(t_rl *rl, char **context, char **base_context)
+void update_context(t_rl *rl, char **context, char **base_context)
 {
 	char *new_ctx;
 	int len;
@@ -143,7 +118,7 @@ static inline void update_context(t_rl *rl, char **context, char **base_context)
 	*context = new_ctx;
 }
 
-static inline int get_more_input_notty(t_rl *rl)
+int get_more_input_notty(t_rl *rl)
 {
 	char buff[4096 * 2];
 	int ret;
@@ -169,4 +144,3 @@ static inline int get_more_input_notty(t_rl *rl)
 	buff_readline_update(rl);
 	return (status);
 }
-#endif

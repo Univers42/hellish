@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:06 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 14:39:04 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:43:33 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 #include <unistd.h>
 # include <sys/types.h>
 # include <stdarg.h>
-# include "../utils.h"
+# include "../utils.h" /* ensure path points to project root utils.h */
 
 typedef enum e_fmt_spec_type
 {
