@@ -15,5 +15,17 @@
 
 # include "common.h"
 
+/* Lexer debug helpers */
+# ifdef DEBUG_LEXER
+char	*tt_to_str(t_tt tt);
+void	print_tokens(t_deque *tokens);
+# endif
 
-#endif
+/* AST debug helpers */
+# ifdef DEBUG_AST
+char	*node_name(t_ast_type tn);
+void	print_node(t_ast_node *node);
+void	print_ast_dot(t_prng_state *prng, t_ast_node *node);
+# endif
+
+#endif /* DEBUG_H */
