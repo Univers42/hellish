@@ -44,6 +44,5 @@ typedef struct s_exe_st
 typedef t_vec		t_exe_res;
 typedef struct stat	t_stat;
 
-/* ... stub helpers only; implementations in executor.c ... */
 
 #endif

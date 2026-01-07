@@ -23,7 +23,5 @@ typedef struct s_env_entry
 	char	*value;
 }	t_env_entry;
 
-/* t_env is a vector container (t_vec) holding t_env_entry elements */
-/* typedef t_vec t_env;  -- already defined in dsa.h */
 
 #endif

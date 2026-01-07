@@ -31,13 +31,14 @@
 
 typedef struct s_rl
 {
-	bool	has_line;
-	bool	should_update_context;
-	bool	has_finished;
-	int		line;
+	bool		has_line;
+	bool		should_update_context;
+	bool		has_finished;
+	int			line;
 	t_string	buff;
-	size_t	cursor;
+	size_t		cursor;
 }	t_rl;
+
 
 void bg_readline(int outfd, char *prompt);
 int attach_input_readline(t_rl *l, int pp[2], int pid);
