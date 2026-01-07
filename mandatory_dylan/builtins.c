@@ -12,7 +12,7 @@
 
 #include "builtins.h"
 
-int	parse_flags(t_vec_str argv, int *n, int *e)
+static inline int	parse_flags(t_vec_str argv, int *n, int *e)
 {
 	size_t	i;
 	size_t	j;
@@ -41,7 +41,7 @@ int	parse_flags(t_vec_str argv, int *n, int *e)
 	return (i);
 }
 
-int	print_args(int e, t_vec_str argv, size_t i)
+static inline int	print_args(int e, t_vec_str argv, size_t i)
 {
 	while (i < argv.len)
 	{
@@ -59,7 +59,7 @@ int	print_args(int e, t_vec_str argv, size_t i)
 }
 
 
-void	update_pwd_vars(t_state *state)
+static inline void	update_pwd_vars(t_state *state)
 {
 	t_env	*pwd;
 
@@ -75,7 +75,7 @@ void	update_pwd_vars(t_state *state)
 		.value = ft_strdup(state->cwd.buff)});
 }
 
-int	cd_check_args(t_state *state, t_vec_str argv)
+static inline int	cd_check_args(t_state *state, t_vec_str argv)
 {
 	if (argv.len >= 3)
 	{
@@ -86,7 +86,7 @@ int	cd_check_args(t_state *state, t_vec_str argv)
 	return (0);
 }
 
-int	cd_do_chdir(t_state *state, t_vec_str argv, int *e)
+static inline int	cd_do_chdir(t_state *state, t_vec_str argv, int *e)
 {
 	char	*oldpwd;
 
@@ -112,7 +112,7 @@ int	cd_do_chdir(t_state *state, t_vec_str argv, int *e)
 	return (0);
 }
 
-void	cd_refresh_cwd(t_state *state, t_vec_str argv, char *cwd)
+static inline void	cd_refresh_cwd(t_state *state, t_vec_str argv, char *cwd)
 {
 	if (cwd)
 	{
@@ -131,7 +131,7 @@ void	cd_refresh_cwd(t_state *state, t_vec_str argv, char *cwd)
 	}
 }
 
-void	parse_export_arg(char *str, char **ident, char **val)
+static inline void	parse_export_arg(char *str, char **ident, char **val)
 {
 	char	*eq;
 
@@ -177,7 +177,7 @@ static int	process_arg(t_state *st, t_vec_str av, int i)
 	return (0);
 }
 
-int	cd_home(int *e, t_state *state)
+static inline int	cd_home(int *e, t_state *state)
 {
 	char	*home;
 

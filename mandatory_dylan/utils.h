@@ -38,7 +38,7 @@ static inline bool is_special_char(int c)
 
 /* Initialize pseudo-random generator state.
    Uses MT19937-style seeding to fill the state array deterministically. */
-void	prng_init_state(t_prng_state *state, uint32_t seed)
+static inline void	prng_init_state(t_prng_state *state, uint32_t seed)
 {
 	int i;
 
@@ -60,7 +60,7 @@ void	prng_init_state(t_prng_state *state, uint32_t seed)
    To keep implementation compact we use a simple xorshift step cycling
    over the state array (seeded above). Not a full MT19937 extract, but
    deterministic and adequate for pragmatic use in this codebase. */
-uint32_t	random_uint32(t_prng_state *state)
+static inline uint32_t	random_uint32(t_prng_state *state)
 {
 	uint32_t x;
 	int idx;
@@ -137,8 +137,7 @@ static inline  void	parse_numeric_escape(char **str)
 	write(1, &c, 1);
 }
 
-
-static int backslash_writer(char *s)
+static inline int backslash_writer(char *s)
 {
 	static bool	inited = false;
 	static t_hash	map;
@@ -167,7 +166,7 @@ static int backslash_writer(char *s)
 	return (ST_OK);
 }
 
-int	e_parser(char *s)
+static inline int	e_parser(char *s)
 {
 	while (*s)
 	{
@@ -194,7 +193,7 @@ int	e_parser(char *s)
 	return (ST_OK);
 }
 
-void	exit_clean(t_state *state, int code)
+static inline oid	exit_clean(t_state *state, int code)
 {
 	char	*pid_s;
 
@@ -208,7 +207,7 @@ void	exit_clean(t_state *state, int code)
 	exit(code);
 }
 
-static bool	is_valid_ident(char *id)
+static inline bool	is_valid_ident(char *id)
 {
 	int	i;
 
@@ -220,7 +219,7 @@ static bool	is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-bool	is_var_name_p1(char c)
+static inline bool	is_var_name_p1(char c)
 {
 	if (ft_isalpha(c) || c == '_')
 		return (true);
@@ -228,14 +227,14 @@ bool	is_var_name_p1(char c)
 }
 
 //[a-zA-Z0-9_]
-bool	is_var_name_p2(char c)
+static inline bool	is_var_name_p2(char c)
 {
 	if (ft_isalnum(c) || c == '_')
 		return (true);
 	return (false);
 }
 
-int	write_to_file(char *str, int fd)
+static inline int	write_to_file(char *str, int fd)
 {
 	int	wrote_total;
 	int	wrote;
@@ -252,4 +251,103 @@ int	write_to_file(char *str, int fd)
 	}
 	return (0);
 }
+
+static inline void	ft_assert(int cond)
+{
+	volatile char	*ft_nullptr;
+
+	if (!cond)
+	{
+		ft_nullptr = 0;
+		*ft_nullptr = 42;
+	}
+}
+
+# ifndef MATH_H
+#  define MATH_H
+
+static inline ssize_t	ft_abs(ssize_t n)
+{
+	if (n < 0)
+		return (-n);
+	else
+		return (n);
+}
+
+static inline ssize_t	ft_smin(ssize_t a, ssize_t b)
+{
+	return ((a > b) * b + (a <= b) * a);
+}
+
+static inline size_t	ft_min(size_t a, size_t b)
+{
+	return ((a > b) * b + (a <= b) * a);
+}
+
+static inline size_t	ft_max(size_t a, size_t b)
+{
+	return ((a < b) * b + (a >= b) * a);
+}
+
+static inline ssize_t	ft_smax(ssize_t a, ssize_t b)
+{
+	return ((a < b) * b + (a >= b) * a);
+}
+
+static inline ssize_t	ft_smod(ssize_t a, ssize_t b)
+{
+	if (a > 0)
+		return (a % b);
+	else
+		return ((b + (a % b)) % b);
+}
+
+static inline int	ft_strnlen(char *s, int n)
+{
+	int	i;
+
+	i = 0;
+	while (i < n && s[i])
+		i++;
+	return (i);
+}
+
+static inline void	ft_fdputmem(int fd, char *s, int n)
+{
+	int	i;
+	int	written;
+
+	written = 0;
+	while (written < n)
+	{
+		i = write(fd, s + written, n - written);
+		if (i <= 0)
+			break ;
+		written += i;
+	}
+}
+
+static inline void	ft_putmem(char *s, int n)
+{
+	ft_fdputmem(1, s, n);
+}
+
+static inline void	ft_eputmem(char *s, int n)
+{
+	ft_fdputmem(2, s, n);
+}
+
+static inline bool	str_slice_eq_str(char *s, size_t len, char *s2)
+{
+	size_t	len_s2;
+
+	len_s2 = ft_strlen(s2);
+	if (len != len_s2)
+		return (false);
+	if (ft_strncmp(s, s2, len) == 0)
+		return (true);
+	return (false);
+}
+
+#endif
 # endif

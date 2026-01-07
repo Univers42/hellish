@@ -14,7 +14,7 @@
 # define SIGNALS_H
 
 # include "common.h"
-# include <signals.h>
+# include <signal.h>
 typedef sigaction t_sigaction;
 
 typedef struct s_sig
@@ -22,37 +22,37 @@ typedef struct s_sig
 	uint32_t	should_unwind;
 }	t_sigs;
 
-void	get_unwind(int sig)
+static inline void	get_unwind(int sig)
 {
 	static t_sigs	sigs = {0};
 
 	sigs.should_unwind = sig;
 }
 
-void	default_signal_handlers(void)
+static inline void	default_signal_handlers(void)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGINT, SIG_DFL);
 }
 
-void	readline_bg_signals(void)
+static inline void	readline_bg_signals(void)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	set_unwind(int sig)
+static inline void	set_unwind(int sig)
 {
 	(void)sig;
 	get_unwind(SIGINT);
 }
 
-void	set_unwind_sig(void)
+static inline void	set_unwind_sig(void)
 {
 	(void);
 }
 
-void	set_unwind_sig_norestart(void)
+static inline void	set_unwind_sig_norestart(void)
 {
 	t_sigaction	act;
 
@@ -64,7 +64,7 @@ void	set_unwind_sig_norestart(void)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	set_unwind_sig_norestart(void)
+static inline void	set_unwind_sig_norestart(void)
 {
 	t_sigaction	act;
 

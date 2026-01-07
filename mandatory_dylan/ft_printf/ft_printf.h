@@ -6,15 +6,20 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:06 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:07 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:39:04 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef FT_PRINTF_H
 # define FT_PRINTF_H
 # include <stdio.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 # include <sys/types.h>
 # include <stdarg.h>
+# include "../utils.h"
 
 typedef enum e_fmt_spec_type
 {

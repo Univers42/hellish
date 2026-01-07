@@ -6,16 +6,11 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:37 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:39 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:38:53 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include "ft_printf.h"
-#include "../utils/utils.h"
 
 void	print_spec(va_list args, t_fmt_spec spec, t_buffer *buff)
 {

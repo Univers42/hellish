@@ -21,9 +21,9 @@ typedef enum e_input_method
 	INPUT_STDIN_NOTTY
 }	t_input_method;
 
-t_dyn_str	prompt_more_input(t_parser *parser)
+static inline t_string prompt_more_input(t_parser *parser)
 {
-	t_dyn_str	ret;
+	t_string	ret;
 	t_tt		curr;
 	size_t		i;
 
@@ -49,7 +49,7 @@ t_dyn_str	prompt_more_input(t_parser *parser)
 	return (ret);
 }
 
-t_string	prompt_normal(t_state *state)
+static inline t_string	prompt_normal(t_state *state)
 {
 	t_string	ret;
 
