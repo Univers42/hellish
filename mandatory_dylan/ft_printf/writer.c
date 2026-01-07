@@ -6,14 +6,14 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:43:56 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:43:58 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:43:34 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_printf.h"
 #include <unistd.h>
 #include <stdlib.h>
-#include "../utils/utils.h"
+#include "../utils.h"
 
 int	writer_buffer_double(t_buffer *ret)
 {

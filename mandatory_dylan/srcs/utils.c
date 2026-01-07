@@ -1,35 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   utils.h                                            :+:      :+:    :+:   */
+/*   utils.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/06 17:29:02 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/06 17:29:02 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/07 15:44:28 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/07 15:44:28 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef UTILS_H
-# define UTILS_H
+# include "utils.h"
 
-# include "common.h"
-# include <stdint.h>
-# include <stdio.h>
-# include <fcntl.h>
-
-typedef struct s_prng_state
-{
-	uint32_t	state_array[624];
-	int			state_index;
-}	t_prng_state;
-
-static inline bool is_space(int c)
+bool is_space(int c)
 {
 	return (c == ' ' || c == '\t');
 }
 
-static inline bool is_special_char(int c)
+bool is_special_char(int c)
 {
 	const char	*specials = ";$'\"<>|&()\n";
 
@@ -38,7 +26,7 @@ static inline bool is_special_char(int c)
 
 /* Initialize pseudo-random generator state.
    Uses MT19937-style seeding to fill the state array deterministically. */
-static inline void	prng_init_state(t_prng_state *state, uint32_t seed)
+void	prng_init_state(t_prng_state *state, uint32_t seed)
 {
 	int i;
 
@@ -60,7 +48,7 @@ static inline void	prng_init_state(t_prng_state *state, uint32_t seed)
    To keep implementation compact we use a simple xorshift step cycling
    over the state array (seeded above). Not a full MT19937 extract, but
    deterministic and adequate for pragmatic use in this codebase. */
-static inline uint32_t	random_uint32(t_prng_state *state)
+uint32_t	random_uint32(t_prng_state *state)
 {
 	uint32_t x;
 	int idx;
@@ -79,7 +67,7 @@ static inline uint32_t	random_uint32(t_prng_state *state)
 }
 
 /* Return PID as newly allocated string. Simpler and safer than reading /proc. */
-static inline char	*getpid_hack(void)
+char	*getpid_hack(void)
 {
 	pid_t	pid;
 	char	buf[32];
@@ -90,7 +78,7 @@ static inline char	*getpid_hack(void)
 }
 
 
-static inline int	mini_atoi_base(char **str, int base, int len)
+int	mini_atoi_base(char **str, int base, int len)
 {
 	int		i;
 	int		res;
@@ -112,7 +100,7 @@ static inline int	mini_atoi_base(char **str, int base, int len)
 	return (res);
 }
 
-static inline  void	parse_numeric_escape(char **str)
+ void	parse_numeric_escape(char **str)
 {
 	int				base;
 	int				len;
@@ -137,36 +125,30 @@ static inline  void	parse_numeric_escape(char **str)
 	write(1, &c, 1);
 }
 
-static inline int backslash_writer(char *s)
+/* Simple backslash map implementation — no hash table dependency. */
+/* returns 0 on success, non-zero on error */
+int backslash_writer(char *s)
 {
-	static bool	inited = false;
-	static t_hash	map;
-
-	const char *keys[] = {"n", "t", "a", "b", "f", "r", "v", "\\", "e"};
-	const char *vals[] = {"\n", "\t", "\a", "\b", "\f", "\r", "\v", "\\", "\033"};
-	char		keybuf[2];
-	const char	*out;
-
 	if (s == NULL || *s == '\0')
-		return (ST_BASE_ERR);
-	if (!inited)
+		return (1);
+	switch (*s)
 	{
-		if (!hash_init(&map, 16))
-			return (ST_BASE_ERR);
-		for (size_t i = 0; i < sizeof(keys) / sizeof(keys[0]); ++i)
-			hash_set(&map, keys[i], (void *)vals[i]);
-		inited = true;
+		case 'n': write(1, "\n", 1); return (0);
+		case 't': write(1, "\t", 1); return (0);
+		case 'a': write(1, "\a", 1); return (0);
+		case 'b': write(1, "\b", 1); return (0);
+		case 'f': write(1, "\f", 1); return (0);
+		case 'r': write(1, "\r", 1); return (0);
+		case 'v': write(1, "\v", 1); return (0);
+		case '\\': write(1, "\\", 1); return (0);
+		case 'e': write(1, "\033", 1); return (0);
+		default:
+			return (1);
 	}
-	keybuf[0] = *s;
-	keybuf[1] = '\0';
-	out = (const char *)hash_get(&map, keybuf);
-	if (!out)
-		return (ST_BASE_ERR);
-	write(1, out, strlen(out));
-	return (ST_OK);
 }
 
-static inline int	e_parser(char *s)
+/* e_parser: return 0 on success, non-zero to signal caller to stop/output error */
+int	e_parser(char *s)
 {
 	while (*s)
 	{
@@ -174,13 +156,13 @@ static inline int	e_parser(char *s)
 		{
 			s++;
 			if (*s == 'c')
-				return (ST_BASE_ERR); /* signal caller to stop output */
+				return (1); /* signal caller to stop output */
 			else if (*s == '0' || *s == 'x')
 			{
 				parse_numeric_escape(&s);
 				continue ;
 			}
-			else if (backslash_writer(s) != ST_OK)
+			else if (backslash_writer(s) != 0)
 			{
 				write(1, "\\", 1);
 				write(1, s, 1);
@@ -190,24 +172,13 @@ static inline int	e_parser(char *s)
 		else
 			write(1, s++, 1);
 	}
-	return (ST_OK);
+	return (0);
 }
 
-static inline oid	exit_clean(t_state *state, int code)
-{
-	char	*pid_s;
+/* forward prototypes so is_valid_ident can call them before their definition */
 
-	pid_s = getpid_hack();
-	if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
-	{
-		manage_history(state);
-		free_all_state(state);
-	}
-	free(pid_s);
-	exit(code);
-}
 
-static inline bool	is_valid_ident(char *id)
+bool	is_valid_ident(char *id)
 {
 	int	i;
 
@@ -219,7 +190,7 @@ static inline bool	is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-static inline bool	is_var_name_p1(char c)
+bool	is_var_name_p1(char c)
 {
 	if (ft_isalpha(c) || c == '_')
 		return (true);
@@ -227,14 +198,14 @@ static inline bool	is_var_name_p1(char c)
 }
 
 //[a-zA-Z0-9_]
-static inline bool	is_var_name_p2(char c)
+bool	is_var_name_p2(char c)
 {
 	if (ft_isalnum(c) || c == '_')
 		return (true);
 	return (false);
 }
 
-static inline int	write_to_file(char *str, int fd)
+int	write_to_file(char *str, int fd)
 {
 	int	wrote_total;
 	int	wrote;
@@ -252,7 +223,7 @@ static inline int	write_to_file(char *str, int fd)
 	return (0);
 }
 
-static inline void	ft_assert(int cond)
+void	ft_assert(int cond)
 {
 	volatile char	*ft_nullptr;
 
@@ -266,7 +237,7 @@ static inline void	ft_assert(int cond)
 # ifndef MATH_H
 #  define MATH_H
 
-static inline ssize_t	ft_abs(ssize_t n)
+ssize_t	ft_abs(ssize_t n)
 {
 	if (n < 0)
 		return (-n);
@@ -274,27 +245,27 @@ static inline ssize_t	ft_abs(ssize_t n)
 		return (n);
 }
 
-static inline ssize_t	ft_smin(ssize_t a, ssize_t b)
+ssize_t	ft_smin(ssize_t a, ssize_t b)
 {
 	return ((a > b) * b + (a <= b) * a);
 }
 
-static inline size_t	ft_min(size_t a, size_t b)
+size_t	ft_min(size_t a, size_t b)
 {
 	return ((a > b) * b + (a <= b) * a);
 }
 
-static inline size_t	ft_max(size_t a, size_t b)
+size_t	ft_max(size_t a, size_t b)
 {
 	return ((a < b) * b + (a >= b) * a);
 }
 
-static inline ssize_t	ft_smax(ssize_t a, ssize_t b)
+ssize_t	ft_smax(ssize_t a, ssize_t b)
 {
 	return ((a < b) * b + (a >= b) * a);
 }
 
-static inline ssize_t	ft_smod(ssize_t a, ssize_t b)
+ssize_t	ft_smod(ssize_t a, ssize_t b)
 {
 	if (a > 0)
 		return (a % b);
@@ -302,7 +273,7 @@ static inline ssize_t	ft_smod(ssize_t a, ssize_t b)
 		return ((b + (a % b)) % b);
 }
 
-static inline int	ft_strnlen(char *s, int n)
+int	ft_strnlen(char *s, int n)
 {
 	int	i;
 
@@ -312,7 +283,7 @@ static inline int	ft_strnlen(char *s, int n)
 	return (i);
 }
 
-static inline void	ft_fdputmem(int fd, char *s, int n)
+void	ft_fdputmem(int fd, char *s, int n)
 {
 	int	i;
 	int	written;
@@ -327,17 +298,17 @@ static inline void	ft_fdputmem(int fd, char *s, int n)
 	}
 }
 
-static inline void	ft_putmem(char *s, int n)
+void	ft_putmem(char *s, int n)
 {
 	ft_fdputmem(1, s, n);
 }
 
-static inline void	ft_eputmem(char *s, int n)
+void	ft_eputmem(char *s, int n)
 {
 	ft_fdputmem(2, s, n);
 }
 
-static inline bool	str_slice_eq_str(char *s, size_t len, char *s2)
+bool	str_slice_eq_str(char *s, size_t len, char *s2)
 {
 	size_t	len_s2;
 
@@ -350,4 +321,3 @@ static inline bool	str_slice_eq_str(char *s, size_t len, char *s2)
 }
 
 #endif
-# endif

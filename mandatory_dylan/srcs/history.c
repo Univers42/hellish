@@ -1,31 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   history.h                                          :+:      :+:    :+:   */
+/*   history.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/06 20:10:20 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/06 20:10:20 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/07 15:44:53 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/07 15:44:53 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef HISTORY_H
-# define HISTORY_H
+# include "../incs/history.h"
 
-# include "common.h"
-# include "env.h"
-
-# define HIST_FILE ".minishell_history"
-
-typedef struct s_hist
-{
-	bool	active;
-	int		append_fd;
-	t_vec	hist_cmds;
-}	t_hist;
-
-static inline t_string	parse_single_cmd(t_string hist, size_t *cur)
+t_string	parse_single_cmd(t_string hist, size_t *cur)
 {
 	t_string	cmd;
 	bool bs;
@@ -54,7 +41,7 @@ static inline t_string	parse_single_cmd(t_string hist, size_t *cur)
 	return (cmd);
 }
 
-static inline t_strings	parse_hist_file(t_string hist)
+t_strings	parse_hist_file(t_string hist)
 {
 	size_t		cur;
 	t_strings	ret;
@@ -73,7 +60,7 @@ static inline t_strings	parse_hist_file(t_string hist)
 	return (ret);
 }
 
-static inline char	*get_hist_file_path(t_envs *_env)
+char	*get_hist_file_path(t_envs *_env)
 {
 	t_env		*env;
 	t_string	full_path;
@@ -92,7 +79,7 @@ static inline char	*get_hist_file_path(t_envs *_env)
 	return (full_path.buff);
 }
 
-static inline void	parse_history_file(t_hist *_hist, t_envs *env)
+void	parse_history_file(t_hist *_hist, t_envs *env)
 {
 	t_string	hist;
 	int			fd;
@@ -119,7 +106,7 @@ static inline void	parse_history_file(t_hist *_hist, t_envs *env)
 	free(hist.buff);
 }
 
-static inline t_string encode_cmd_hist(char *cmd)
+t_string encode_cmd_hist(char *cmd)
 {
 	t_string ret;
 
@@ -137,7 +124,7 @@ static inline t_string encode_cmd_hist(char *cmd)
 	return (ret);
 }
 
-static inline bool worthy_of_being_remembered(t_hist *hist, t_rl *rl)
+bool worthy_of_being_remembered(t_hist *hist, t_rl *rl)
 {
 	// Determine actual entered command length:
 	// - prefer rl->cursor (cursor points after last typed char),
@@ -164,7 +151,7 @@ static inline bool worthy_of_being_remembered(t_hist *hist, t_rl *rl)
 	return (false);
 }
 
-static inline void manage_history(t_hist *hist, t_rl *rl)
+void manage_history(t_hist *hist, t_rl *rl)
 {
 	char *hist_entry;
 	char *enc_hist_entry;
@@ -202,11 +189,11 @@ static inline void manage_history(t_hist *hist, t_rl *rl)
 	}
 }
 
-static inline void manage_history_input(t_hist *hist, t_rl *rl, t_dyn_str *input)
+void manage_history_input(t_hist *hist, t_rl *rl, t_string *input)
 {
-	char *hist_entry;
-	char *enc_hist_entry;
-	size_t entry_len;
+	char	*hist_entry;
+	char	*enc_hist_entry;
+	size_t	entry_len;
 
 	entry_len = input->len;
 	/* trim trailing newline if present */
@@ -237,13 +224,13 @@ static inline void manage_history_input(t_hist *hist, t_rl *rl, t_dyn_str *input
 	}
 }
 
-static inline void init_history(t_hist *hist, t_vec *env)
+void init_history(t_hist *hist, t_vec *env)
 {
 	*hist = (t_hist){.append_fd = -1, .active = true};
 	parse_history_file(hist, env);
 }
 
-static inline void free_hist(t_hist *hist)
+void free_hist(t_hist *hist)
 {
 	size_t i;
 
@@ -256,4 +243,3 @@ static inline void free_hist(t_hist *hist)
 	free(hist->cmds.buff);
 	vec_init(&hist->cmds, &(t_vec_config){0});
 }
-# endif

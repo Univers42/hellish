@@ -6,13 +6,13 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/07 13:44:00 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/07 13:44:01 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/07 14:43:35 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_printf.h"
 #include <stdlib.h>
-#include "../utils/utils.h"
+#include "../utils.h"
 
 void	writer_hex_lowcase(t_buffer *buff, size_t n, int add_prefix, int digits)
 {
