@@ -70,27 +70,6 @@ t_vec	parse_hist_file(t_string hist)
 	return (ret);
 }
 
-char	*get_hist_file_path(t_state *state)
-{
-	t_env		*env;
-	t_string	full_path;
-
-	env = env_get(&state->env, "HOME");
-	if (!env || !env->value)
-	{
-		warning_error("HOME is not set, can't get the history");
-		return (0);
-	}
-	vec_init(&full_path);
-	full_path.elem_size = 1;
-	vec_push_str(&full_path, env->value);
-	if (!vec_str_ends_with_str(&full_path, "/")) {
-		char tmp = '/'; vec_push(&full_path, &tmp);
-	}
-	vec_push_str(&full_path, HIST_FILE);
-	return (char *)full_path.ctx;
-}
-
 void	parse_history_file(t_state *state)
 {
 	t_string	hist;
@@ -145,3 +124,33 @@ t_string	encode_cmd_hist(char *cmd)
 	((char *)ret.ctx)[ret.len] = '\0';
 	return (ret);
 }
+
+void	manage_history(t_state *state)
+{
+	char	*hist_entry;
+	char	*enc_hist_entry;
+
+	if (worthy_of_being_remembered(state))
+	{
+		// Ensure null-termination before using ft_strndup
+		if (state->readline_buff.cursor > 0 && state->readline_buff.buff.ctx)
+			((char *)state->readline_buff.buff.ctx)[state->readline_buff.cursor - 1] = '\0';
+		hist_entry = ft_strndup((char *)state->readline_buff.buff.ctx,
+				state->readline_buff.cursor - 1);
+		add_history(hist_entry);
+		vec_push(&state->hist.hist_cmds, &hist_entry);
+		if (state->hist.append_fd >= 0)
+		{
+			enc_hist_entry = (char *)encode_cmd_hist(hist_entry).ctx;
+			if (write_to_file(enc_hist_entry, state->hist.append_fd))
+			{
+				warning_error("Failed to write to the history file");
+				close(state->hist.append_fd);
+				state->hist.append_fd = -1;
+			}
+			free(enc_hist_entry);
+		}
+	}
+	buff_readline_reset(&state->readline_buff);
+}
+

@@ -13,7 +13,9 @@
 #include "shell.h"
 #include <stdlib.h>
 
-#include "libft/dsa/dyn_str.h"
+# include "shell.h"
+
+// TODO: need to split this function to make it clear the boundaries..
 
 int	main(int argc, char **argv, char **envp)
 {

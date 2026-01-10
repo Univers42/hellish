@@ -11,11 +11,7 @@
 /* ************************************************************************** */
 
 # include "../shell.h"
-# include <errno.h>
-# include <string.h>
-# include <fcntl.h>
-# include <unistd.h>
-# include <stdio.h> // for debug printing
+ // for debug printing
 
 /* Initialize vector (no allocation). */
 bool	vec_init(t_vec *ret)

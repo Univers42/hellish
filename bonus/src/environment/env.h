@@ -16,6 +16,13 @@
 # include <unistd.h>
 # include "../shell.h"
 
+typedef struct s_env
+{
+	bool	exported;
+	char	*key;
+	char	*value;
+}	t_env;
+
 t_env		str_to_env(char *str);
 t_vec_env	env_to_vec_env(t_state *state, char **envp);
 char		*env_expand_n(t_state *state, char *key, int len);

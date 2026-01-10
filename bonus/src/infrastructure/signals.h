@@ -1,38 +1,39 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   signals.c                                          :+:      :+:    :+:   */
+/*   signals.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/09 23:34:51 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/09 23:34:51 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/10 02:11:08 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/10 02:11:08 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
-#include <signal.h>
-#include <stdlib.h>
+#ifndef SIGNALS_H
+# define SIGNALS_H
 
-void	default_signal_handlers(void)
+# include "common.h"
+
+static inline void	default_signal_handlers(void)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_DFL);
 }
 
-void	readline_bg_signals(void)
+static inline void	readline_bg_signals(void)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	set_unwind(int sig)
+static inline void	set_unwind(int sig)
 {
 	(void)sig;
 	g_should_unwind = SIGINT;
 }
 
-void	set_unwind_sig(void)
+static inline void	set_unwind_sig(void)
 {
 	struct sigaction	new_action;
 
@@ -44,7 +45,7 @@ void	set_unwind_sig(void)
 	signal(SIGQUIT, SIG_IGN);
 }
 
-void	set_unwind_sig_norestart(void)
+static inline void	set_unwind_sig_norestart(void)
 {
 	struct sigaction	new_action;
 
@@ -55,3 +56,5 @@ void	set_unwind_sig_norestart(void)
 	sigaction(SIGINT, &new_action, NULL);
 	signal(SIGQUIT, SIG_IGN);
 }
+
+# endif

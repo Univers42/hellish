@@ -1,18 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   history2.c                                         :+:      :+:    :+:   */
+/*   sys.h                                              :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/09 23:33:47 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/09 23:33:47 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/10 01:37:14 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/10 01:37:14 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#ifndef SYS_H
+# define SYS_H
 
-#include <readline/history.h>
-#include <unistd.h>
+// debug printing of the tree structure
+# ifndef PRINT_AST
+#  define PRINT_AST 0
+# endif
+
+// Debug printing of the token queue
+# ifndef PRINT_TOKENS
+#  define PRINT_TOKENS 1
+# endif
+
+# define TRACE_DEBUG 0
 
 
+
+#endif
