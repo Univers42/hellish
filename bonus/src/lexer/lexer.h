@@ -1,19 +1,90 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   debug_tokens.c                                     :+:      :+:    :+:   */
+/*   lexer.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/09 23:33:08 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/09 23:33:08 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/10 02:20:12 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/10 02:20:12 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
-#include <stdio.h>
+#ifndef LEXER_H
+# define LEXER_H
 
-char	*tt_to_str_p2(t_tt tt)
+# include "common.h"
+# include "infrastructure.h"
+
+typedef enum e_tt
+{
+	TT_NONE = 0,
+	TT_WORD,			// asfkaslfkj
+	TT_REDIRECT_LEFT,	// <
+	TT_REDIRECT_RIGHT,	// >
+	TT_APPEND,			// >>
+	TT_PIPE,			// |
+	TT_BRACE_LEFT,		// (
+	TT_BRACE_RIGHT,		// )
+	TT_OR,				// ||
+	TT_AND,				// &&
+	TT_SEMICOLON,		// ;
+	TT_HEREDOC,			// << | <<-
+	TT_NEWLINE,			// '\n'
+	TT_END,
+	TT_SQWORD,
+	TT_DQWORD,
+	TT_ENVVAR,
+	TT_DQENVVAR,
+}	t_tt;
+
+typedef struct s_token_old
+{
+	bool	present;
+	char	*start;
+	int		len;
+}	t_token_old;
+
+typedef struct s_token
+{
+	char		*start;
+	int			len;
+	t_tt		tt;
+	t_token_old	full_word;
+	bool		allocated;
+}	t_token;
+
+typedef struct s_deque_tt
+{
+	ft_deque	deqtok;	// void *buff ==> t_token 
+	char		looking_for;
+}	t_deque_tt;
+
+typedef struct s_op_map
+{
+	char	*str;
+	t_tt	t;
+}	t_op_map;
+
+
+static inline bool	is_space(char c)
+{
+	if (c == ' ' || c == '\t')
+		return (true);
+	return (false);
+}
+
+static inline bool	is_special_char(char c)
+{
+	char	*specials;
+
+	specials = ";$'\"<>|&()\n";
+	if (ft_strchr(specials, c) || is_space(c))
+		return (true);
+	return (false);
+}
+
+static inline char	*tt_to_str_p2(t_tt tt)
 {
 	if (tt == TT_END)
 		return ("TT_END");
@@ -39,7 +110,7 @@ char	*tt_to_str_p2(t_tt tt)
 	return (0);
 }
 
-char	*tt_to_str(t_tt tt)
+static inline char	*tt_to_str(t_tt tt)
 {
 	if (tt == TT_SEMICOLON)
 		return ("TT_SEMICOLON");
@@ -59,7 +130,7 @@ char	*tt_to_str(t_tt tt)
 }
 
 /* changed: accept the token-wrapper and read from its internal deque */
-void	print_tokens(t_deque_tt tokens)
+static inline void	print_tokens(t_deque_tt tokens)
 {
 	t_token	curr;
 	int		i;
@@ -74,3 +145,11 @@ void	print_tokens(t_deque_tt tokens)
 	}
 	ft_printf("------- DONE --------\n");
 }
+
+char		*tokenizer(char *str, t_deque_tt *ret);
+int			advance_dquoted(char **str);
+int			advance_squoted(char **str);
+void		free_all_state(t_state *state);
+
+
+#endif

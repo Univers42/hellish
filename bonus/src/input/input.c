@@ -1,53 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   process_input.c                                    :+:      :+:    :+:   */
+/*   get_more_tokens.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/09 23:34:17 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/09 23:34:17 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/09 23:33:32 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/09 23:33:32 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../shell.h"
 #include <stdbool.h>
-
-bool	is_empty_token_list(t_deque_tt *tokens)
-{
-	/* tokens->deqtok is the internal ft_deque */
-	if (tokens->deqtok.len < 2)
-		return (true);
-	if (tokens->deqtok.len == 2
-		&& ((t_token *)ft_deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
-		return (true);
-	return (false);
-}
-
-bool	try_parse_tokens(t_state *state, t_parser *parser,
-	t_deque_tt *tt, char **prompt)
-{
-	if (is_empty_token_list(tt))
-	{
-		buff_readline_reset(&state->readline_buff);
-		return (false);
-	}
-	parser->parse_stack.len = 0;
-	state->tree = parse_tokens(state, parser, tt);
-#if TRACE_DEBUG
-	ft_eprintf("%s: debug: parser.res=%d\n", state->context, (int)parser->res);
-#endif
-	if (parser->res == RES_OK)
-		return (true);
-	else if (parser->res == RES_MoreInput)
-	{
-		*prompt = (char *)prompt_more_input(parser).ctx;
-	}
-	else if (parser->res == RES_FatalError)
-		set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
-	free_ast(&state->tree);
-	return (true);
-}
 
 static void	get_more_input_parser(t_state *state,
 			t_parser *parser, char **prompt, t_deque_tt *tt)
@@ -61,6 +25,36 @@ static void	get_more_input_parser(t_state *state,
 			break ;
 		if (!try_parse_tokens(state, parser, tt, prompt))
 			break ;
+	}
+}
+
+
+void	get_more_tokens(t_state *state, char **prompt, t_deque_tt *tt)
+{
+	int		stat;
+
+	while (*prompt)
+	{
+		stat = readline_cmd(state, prompt);
+		if (stat == 1)
+		{
+			if (tt->looking_for && state->input.len)
+				ft_eprintf("%s: unexpected EOF while looking for "
+					"matching `%c'\n", state->context, tt->looking_for);
+			else if (state->input.len)
+				ft_eprintf("%s: syntax error: unexpected end of file\n",
+					state->context);
+			if (state->input_method == INP_READLINE)
+				ft_eprintf("exit\n");
+			if (!state->last_cmd_status_res.status && state->input.len)
+				set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+			state->should_exit = true;
+		}
+		if (stat)
+			return ;
+		*prompt = (extend_bs(state), tokenizer((char *)state->input.ctx, tt));
+		if (*prompt)
+			*prompt = ft_strdup(*prompt);
 	}
 }
 
