@@ -33,12 +33,28 @@
 # include "../src/parser/parser.h"
 # include "../src/reparser/reparser.h"
 
+typedef enum e_option
+{
+	OPT_DEBUG,
+	OPT_DEBUGGER,
+	OPT_HELP,
+	OPT_INIT_FILE,
+	OPT_LOGIN,
+	OPT_POSIX,
+	OPT_PRETTY_PRINT,
+	OPT_RCFILE,
+	OPT_RESTRICTED,
+	OPT_VERBOSE,
+	OPT_COMMAND
+}	t_option;
+
 typedef struct s_state
 {
 	t_string		input;
 	t_vec_env		env;
 	t_string		cwd;
 	t_ast_node		tree;
+	//t_option		opt;		register the needs of the opt wanted, this way we can short-circuit in running time
 	int				input_method;
 	char			*base_context;
 	char			*context;
