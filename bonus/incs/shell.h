@@ -103,6 +103,6 @@ typedef struct s_shell
 }	t_shell;
 
 
-void		init_setup(t_shell *state, char **argv, char **envp);
+void		on(t_shell *state, char **argv, char **envp);
 
 #endif

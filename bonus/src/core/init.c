@@ -83,7 +83,7 @@ void	init_cwd(t_shell *state)
 	free(cwd);
 }
 
-void	init_setup(t_shell *state, char **argv, char **envp)
+void	on(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();
 	*state = (t_shell){0};
@@ -106,4 +106,5 @@ void	init_setup(t_shell *state, char **argv, char **envp)
 	else
 		init_history(state);
 	prng_initialize_state(&state->prng, 19650218UL);
+	state->redirects.elem_size = sizeof(t_redir);
 }
