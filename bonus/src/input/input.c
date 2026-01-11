@@ -13,6 +13,9 @@
 #include "shell.h"
 #include "input.h"
 #include <stdbool.h>
+# include "lexer.h"
+# include "parser.h"
+# include "prompt.h"
 
 // Add prototypes for static inline functions used from input.h
 bool ends_with_bs_nl(t_string s);

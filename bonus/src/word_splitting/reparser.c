@@ -14,6 +14,10 @@
 #include <stdbool.h>
 # include "libft.h"
 #include <stddef.h>
+# include "decomposer.h"
+# include "lexer.h"
+# include "ast.h"
+# include "parser.h"
 
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {

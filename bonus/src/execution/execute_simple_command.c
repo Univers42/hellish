@@ -16,8 +16,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "../libft/libft.h"
+#include "libft.h"
 #include <stdint.h>
+# include "env.h"
+# include "expander.h"
 
 // returns status
 int	actually_run(t_shell *state, t_vec *args)
@@ -74,6 +76,25 @@ int	actually_run(t_shell *state, t_vec *args)
 			free(newargv);
 		}
 		/* if we fall through, the /bin/sh exec failed as well */
+	}
+	/* Preserve errno, optionally print permission error, then free allocations */
+	{
+		int _saved_errno = errno;
+		if (_saved_errno == EACCES)
+			ft_eprintf("%s: %s: %s\n", state->context, path_of_exe, strerror(_saved_errno));
+		/* free argv strings and buffer (child only) */
+		if (args->ctx) {
+			size_t _i = 0;
+			char **_arr = (char **)args->ctx;
+			while (_i < args->len) {
+				if (_arr[_i]) free(_arr[_i]);
+				_i++;
+			}
+			free(args->ctx);
+		}
+		free(path_of_exe);
+		free_tab(envp);
+		errno = _saved_errno;
 	}
 	// Match bash exit codes for execve errors
 	if (errno == EACCES)

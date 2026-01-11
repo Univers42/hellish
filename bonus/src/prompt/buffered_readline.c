@@ -15,6 +15,7 @@
 #include <stdbool.h>
 #include <sys/wait.h>
 #include <unistd.h>
+# include "input.h"
 
 uint32_t	g_should_unwind = 0;
 

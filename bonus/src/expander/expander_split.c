@@ -12,6 +12,7 @@
 
 #include "../libft/libft.h"
 #include "shell.h"
+# include "env.h"
 
 void	expand_token(t_shell *state, t_token	*curr_tt)
 {

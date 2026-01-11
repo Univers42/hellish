@@ -16,6 +16,8 @@
 #include <readline/history.h>
 #include <stdbool.h>
 #include <unistd.h>
+# include "helpers.h"
+# include "env.h"
 
 t_string	parse_single_cmd(t_string hist, size_t *cur)
 {

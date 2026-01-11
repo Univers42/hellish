@@ -14,6 +14,7 @@
 #include "shell.h"
 #include <unistd.h>
 # include "redir.h"
+# include "helpers.h"
 
 bool	get_line_heredoc(t_shell *state,
 		t_heredoc_req *req, t_string *alloc_line)

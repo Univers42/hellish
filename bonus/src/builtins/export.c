@@ -12,6 +12,7 @@
 
 
 #include "builtins.h"
+# include "env.h"
 
 void	parse_export_arg(char *str, char **ident, char **val)
 {

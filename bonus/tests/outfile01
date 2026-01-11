@@ -1,9 +1,8 @@
 
 &&
 *
-README.md
-bash.supp
 bash_outfiles
+bash.supp
 bonus
 bonus_bonus
 builtins
@@ -17,8 +16,9 @@ outfile01
 outfile02
 outfiles
 pipes
+README.md
 redirects
 syntax
-test_files
 tester
+test_files
 wildcards

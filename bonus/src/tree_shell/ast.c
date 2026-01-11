@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdlib.h>
+# include "parser.h"
 
 void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 {

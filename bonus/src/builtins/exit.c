@@ -10,8 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "../../incs/input.h"
 #include "builtins.h"
-#include "../input/input.h"
+# include "helpers.h"
 
 void	exit_clean(t_shell *state, int code)
 {

@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include "../libft/libft.h"
 #include <stddef.h>
+# include "parser.h"
+# include "decomposer.h"
 
 void	reparse_dq_bs(t_ast_node *ret, int *i, t_token t)
 {

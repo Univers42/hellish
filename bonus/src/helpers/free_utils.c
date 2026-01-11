@@ -13,6 +13,7 @@
 
 #include "shell.h"
 #include <unistd.h>
+# include "env.h"
 
 void	free_redirects(t_vec_redir *v)
 {

@@ -13,6 +13,7 @@
 #include "../libft/libft.h"
 #include "shell.h"
 #include <stdbool.h>
+# include "env.h"
 
 bool	token_starts_with(t_token t, char *str)
 {

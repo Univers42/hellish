@@ -11,12 +11,20 @@
 /* ************************************************************************** */
 
 #include "shell.h"
-#include "../infrastructure/error.h"
+#include "error.h"
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+# include "sh_error.h"
+# include "env.h"
+
+
+/* helper prototypes (ensure visible despite include-order */
+void	critical_error_errno_context(const char *msg);
+char	*env_expand(t_shell *state, char *key);
+void	free_tab(char **tab);
 
 // Forward-declare error helpers to avoid implicit-declaration due to include-order
 void	err_1_errno(t_shell *state, char *p1);

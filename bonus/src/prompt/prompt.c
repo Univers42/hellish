@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include <readline/readline.h>
+# include "parser.h"
 
 t_string	prompt_more_input(t_parser *parser)
 {

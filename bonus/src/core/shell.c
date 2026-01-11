@@ -14,9 +14,12 @@
 #include <stdlib.h>
 
 # include "shell.h"
+# include "helpers.h"
+# include "env.h"
 
 // TODO: need to split this function to make it clear the boundaries..
 
+void	on(t_shell *state, char **argv, char **envp);
 static void repl_shell(t_shell *state);
 static void off(t_shell *state);
 

@@ -12,6 +12,7 @@
 
 #include "shell.h"
 #include <stdbool.h>
+# include "parser.h"
 
 bool	is_compund_list_op(t_tt tt)
 {
