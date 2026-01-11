@@ -1,3 +1,7 @@
 #!/bin/bash
 
-printf "hello"
+if true; then
+	printf "hello"
+else
+	printf "wrong"
+fi;
