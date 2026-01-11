@@ -89,8 +89,8 @@ void	parse_op(t_deque_tt *tokens, char **str)
 	operators[3] = (t_op_map){">>", TT_APPEND};
 	operators[4] = (t_op_map){"(", TT_BRACE_LEFT};
 	operators[5] = (t_op_map){")", TT_BRACE_RIGHT};
-	operators[6] = (t_op_map){">", TT_REDIRECT_RIGHT};
-	operators[7] = (t_op_map){"<", TT_REDIRECT_LEFT};
+	operators[6] = (t_op_map){"<", TT_REDIRECT_LEFT};
+	operators[7] = (t_op_map){">", TT_REDIRECT_RIGHT};
 	operators[8] = (t_op_map){"&&", TT_AND};
 	/* treat single '&' as a simple list separator (like ';') so
 	   inputs without spacing (e.g. "<file&cmd") are parsed */
@@ -118,6 +118,13 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 	deque_clear(&ret->deqtok, NULL);
 	while (str && *str)
 	{
+		/* skip shell-style comments (including shebang) until end of line */
+		if (*str == '#')
+		{
+			while (*str && *str != '\n')
+				str++;
+			continue;
+		}
 		if (*str == '\'' || *str == '"' || *str == '$'
 			|| !(is_special_char(*str)))
 			prompt = parse_word(ret, &str);
