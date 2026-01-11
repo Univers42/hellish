@@ -59,7 +59,7 @@ typedef enum e_input_method
 # include "../src/lexer/lexer.h"
 # include "infrastructure.h"
 # include "../src/parser/parser.h"
-# include "../src/reparser/reparser.h"
+# include "../src/word_splitting/decomposer.h"
 # include "../src/input/input.h"
 # include "../src/expander/expander.h"
 
