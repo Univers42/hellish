@@ -45,5 +45,7 @@ void		bg_readline(int outfd, char *prompt);
 int		attach_input_readline(t_buff_readline *l, int pp[2], int pid);
 t_string	prompt_normal(t_shell *state);
 t_string	prompt_more_input(struct s_parser *parser);
+void	buff_readline_init(t_buff_readline *ret);
+void	update_context(t_shell *state);
 
 # endif
