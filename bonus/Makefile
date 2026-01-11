@@ -35,7 +35,7 @@ LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
 all: $(NAME)
 
 # Link the final binary
-$(NAME): $(OBJS)
+$(NAME): $(LIBFT_A) $(OBJS)
 	$(CC) $(CFLAGS) $(INCLUDES) $^ -L$(LIBFT_DIR) -lft -lreadline -o $@
 
 # Compile .c -> .o and generate side-by-side .d dependency file
@@ -55,9 +55,6 @@ fclean: clean
 re: fclean all
 
 $(LIBFT_A):
-	$(MAKE) -C $(LIBFT_DIR)
-
-$(LIBFTPRINTF_A):
-	$(MAKE) -C $(LIBFT_DIR)
+	$(MAKE) -C $(LIBFT_DIR) -j20
 
 $(OBJ): | $(LIBFT_A) $(LIBFTPRINTF_A)
