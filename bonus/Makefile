@@ -47,7 +47,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 -include $(DEPS)
 
 clean:
-	@rm -rf $(OBJ_DIR)
+	@rm -rf build
 
 fclean: clean
 	@rm -f $(NAME)
