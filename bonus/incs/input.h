@@ -35,7 +35,7 @@ typedef enum e_input_method
 
 bool	ends_with_bs_nl(t_string s);
 void	extend_bs(t_shell *state);
-void	get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt);
+int		get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt);
 void	parse_and_execute_input(t_shell *state);
 
 # endif
