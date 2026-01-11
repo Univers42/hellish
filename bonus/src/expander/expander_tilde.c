@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
 
 bool	token_starts_with(t_token t, char *str)
@@ -21,7 +21,7 @@ bool	token_starts_with(t_token t, char *str)
 	return (ft_strncmp(t.start, str, ft_strlen(str)) == 0);
 }
 
-void	expand_tilde_token(t_state *state, t_token *t)
+void	expand_tilde_token(t_shell *state, t_token *t)
 {
 	int			template_len;
 	char		*env_val;
@@ -48,7 +48,7 @@ void	expand_tilde_token(t_state *state, t_token *t)
 	t->len = s.len;
 }
 
-void	expand_tilde_word(t_state *state, t_ast_node *curr)
+void	expand_tilde_word(t_shell *state, t_ast_node *curr)
 {
 	t_token	*first;
 	bool	should_expand;

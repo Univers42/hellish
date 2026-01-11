@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
-#include "../libft/utils/utils.h"
+# include "libft.h"
 #include <stddef.h>
 
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)

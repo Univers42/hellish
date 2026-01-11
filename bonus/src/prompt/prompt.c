@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdio.h>
 
 #include <readline/readline.h>
@@ -25,7 +25,7 @@ t_string	prompt_more_input(t_parser *parser)
 	vec_init(&ret);
 	while (i < parser->parse_stack.len)
 	{
-		curr = vec_int_idx(&parser->parse_stack, i++);
+		curr = *(int *)vec_idx(&parser->parse_stack, i++);
 		if (curr == TT_BRACE_LEFT)
 			vec_push_str(&ret, "subsh");
 		else if (curr == TT_PIPE)
@@ -43,7 +43,7 @@ t_string	prompt_more_input(t_parser *parser)
 	return (ret);
 }
 
-t_string	prompt_normal(t_state *state)
+t_string	prompt_normal(t_shell *state)
 {
 	t_string	ret;
 

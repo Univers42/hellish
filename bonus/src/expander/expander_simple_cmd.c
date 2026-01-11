@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/libft.h"
-#include "../shell.h"
+#include "libft.h"
+#include "shell.h"
 #include <stdbool.h>
 
 bool	is_export(t_ast_node word)
@@ -28,7 +28,7 @@ bool	is_export(t_ast_node word)
 	return (true);
 }
 
-int	expand_simple_cmd_assignment(t_state *state,
+int	expand_simple_cmd_assignment(t_shell *state,
 		t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
 	if (!exp->found_first)
@@ -49,7 +49,7 @@ int	expand_simple_cmd_assignment(t_state *state,
 	return (0);
 }
 
-int	expand_simple_cmd_redir(t_state *state,
+int	expand_simple_cmd_redir(t_shell *state,
 		t_expander_simple_cmd *exp, t_vec_int *redirects)
 {
 	int			redir_idx;
@@ -59,11 +59,11 @@ int	expand_simple_cmd_redir(t_state *state,
 		g_should_unwind = 0; // ensure not treated as canceled
 		return (AMBIGUOUS_REDIRECT);
 	}
-	vec_int_push(redirects, redir_idx);
+	{ int idx = redir_idx; vec_push(redirects, &idx); } // <-- changed
 	return (0);
 }
 
-int	expand_simple_cmd_word(t_state *state,
+int	expand_simple_cmd_word(t_shell *state,
 		t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
 	if (!exp->found_first && is_export(*exp->curr))
@@ -75,7 +75,7 @@ int	expand_simple_cmd_word(t_state *state,
 	return (0);
 }
 
-int	expand_simple_command(t_state *state, t_ast_node *node,
+int	expand_simple_command(t_shell *state, t_ast_node *node,
 		t_executable_cmd *ret, t_vec_int *redirects)
 {
 	t_expander_simple_cmd	exp;

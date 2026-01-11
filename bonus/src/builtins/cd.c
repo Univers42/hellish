@@ -13,7 +13,7 @@
 #include "builtins.h"
 #include <stdlib.h>
 
-static void	update_pwd_vars(t_state *state)
+static void	update_pwd_vars(t_shell *state)
 {
 	t_env	*pwd;
 
@@ -29,7 +29,7 @@ static void	update_pwd_vars(t_state *state)
 		.value = ft_strdup((char *)state->cwd.ctx)});
 }
 
-static int	cd_check_args(t_state *state, t_vec argv)
+static int	cd_check_args(t_shell *state, t_vec argv)
 {
 	if (argv.len >= 3)
 	{
@@ -40,7 +40,7 @@ static int	cd_check_args(t_state *state, t_vec argv)
 	return (0);
 }
 
-static int	cd_do_chdir(t_state *state, t_vec argv, int *e)
+static int	cd_do_chdir(t_shell *state, t_vec argv, int *e)
 {
 	char	*oldpwd;
 
@@ -66,7 +66,7 @@ static int	cd_do_chdir(t_state *state, t_vec argv, int *e)
 	return (0);
 }
 
-static void	cd_refresh_cwd(t_state *state, t_vec argv, char *cwd)
+static void	cd_refresh_cwd(t_shell *state, t_vec argv, char *cwd)
 {
 	if (cwd)
 	{
@@ -85,7 +85,7 @@ static void	cd_refresh_cwd(t_state *state, t_vec argv, char *cwd)
 	}
 }
 
-int	builtin_cd(t_state *state, t_vec argv)
+int	builtin_cd(t_shell *state, t_vec argv)
 {
 	char	*cwd;
 	int		e;

@@ -10,9 +10,9 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
-#include "../libft/dsa/dyn_str.h"
+#include "shell.h"
 #include "../libft/libft.h"
+#include "glob.h"
 #include <dirent.h>
 #include <stdio.h>
 

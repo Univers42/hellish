@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdio.h>
 
 #include <readline/readline.h>

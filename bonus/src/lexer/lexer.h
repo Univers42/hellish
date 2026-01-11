@@ -13,8 +13,10 @@
 #ifndef LEXER_H
 # define LEXER_H
 
-# include "common.h"
-# include "infrastructure.h"
+struct s_shell; // <-- add this forward declaration
+
+# include "libft.h"
+
 
 typedef enum e_tt
 {
@@ -56,7 +58,7 @@ typedef struct s_token
 
 typedef struct s_deque_tt
 {
-	ft_deque	deqtok;	// void *buff ==> t_token 
+	t_deque	deqtok;	// void *buff ==> t_token 
 	char		looking_for;
 }	t_deque_tt;
 
@@ -139,7 +141,7 @@ static inline void	print_tokens(t_deque_tt tokens)
 	ft_printf("------- PRINTING TOKENS --------\n");
 	while ((size_t)i < tokens.deqtok.len)
 	{
-		curr = *(t_token *)ft_deque_idx(&tokens.deqtok, i);
+		curr = *(t_token *)deque_idx(&tokens.deqtok, i);
 		ft_printf("%s: >%.*s<\n", tt_to_str(curr.tt), curr.len, curr.start);
 		i++;
 	}
@@ -149,7 +151,7 @@ static inline void	print_tokens(t_deque_tt tokens)
 char		*tokenizer(char *str, t_deque_tt *ret);
 int			advance_dquoted(char **str);
 int			advance_squoted(char **str);
-void		free_all_state(t_state *state);
+void		free_all_state(struct s_shell *state);
 
 
 #endif

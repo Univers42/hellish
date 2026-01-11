@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -60,7 +60,7 @@ void	forward_exit_status(t_exe_res res)
 	_exit(res.status);
 }
 
-void	set_cmd_status(t_state *state, t_exe_res res)
+void	set_cmd_status(t_shell *state, t_exe_res res)
 {
 	state->last_cmd_status_res = res;
 	free(state->last_cmd_status_s);

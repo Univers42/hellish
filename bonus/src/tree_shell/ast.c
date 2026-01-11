@@ -1,50 +1,48 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ast.h                                              :+:      :+:    :+:   */
+/*   tree_utils.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/10 01:48:00 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/10 01:48:00 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/09 23:34:55 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/09 23:34:55 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef AST_H
-# define AST_H
+#include "shell.h"
+#include "ast.h"
+#include <stdint.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-# include "common.h"
-# include "alias.h"
-# include "sh"
-typedef enum e_ast_t
+void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 {
-	AST_SIMPLE_LIST,
-	AST_COMMAND_PIPELINE,
-	AST_REDIRECT,
-	AST_SIMPLE_COMMAND,
-	AST_SUBSHELL,
-	AST_COMPOUND_LIST,
-	AST_COMMAND,
-	AST_WORD,
-	AST_ASSIGNMENT_WORD,
-	AST_TOKEN,
-}	t_ast_t;
+	size_t	i;
 
-typedef struct s_ast_node
+	i = 0;
+	while (i < node->children.len)
+	{
+		ast_postorder_traversal(vec_idx(&node->children, i), f);
+		i++;
+	}
+	f(node);
+}
+
+void	free_node(t_ast_node *node)
 {
-	t_ast_t		node_type;
-	t_token		token;
-	bool		has_redirect;
-	int			redir_idx;
-	t_vec_nd	children;
-}	t_ast_node;
+	if (node->node_type == AST_TOKEN && node->token.allocated)
+		free(node->token.start);
+	free(node->children.ctx);
+	*node = (t_ast_node){};
+}
 
-
-void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node));
-void	free_node(t_ast_node *node);
 void	free_ast(t_ast_node *node)
+{
+	ast_postorder_traversal(node, free_node);
+}
 
-static inline char	*node_name(t_ast_t tn)
+char	*node_name(t_ast_t tn)
 {
 	if (tn == AST_COMMAND_PIPELINE)
 		return ("AST_COMMAND_PIPELINE");
@@ -70,7 +68,7 @@ static inline char	*node_name(t_ast_t tn)
 	return (0);
 }
 
-static inline void	print_node(t_ast_node node)
+void	print_node(t_ast_node node)
 {
 	size_t	i;
 
@@ -83,7 +81,7 @@ static inline void	print_node(t_ast_node node)
 	ft_printf(")");
 }
 
-static inline void	print_token_str(t_ast_node node, int outfd)
+void	print_token_str(t_ast_node node, int outfd)
 {
 	int		i;
 	char	c;
@@ -104,7 +102,7 @@ static inline void	print_token_str(t_ast_node node, int outfd)
 	}
 }
 
-static inline void	print_dot_node(t_state *state, t_ast_node node, uint32_t id, int outfd)
+void	print_dot_node(t_shell *state, t_ast_node node, uint32_t id, int outfd)
 {
 	size_t		i;
 	uint32_t	r;
@@ -127,7 +125,7 @@ static inline void	print_dot_node(t_state *state, t_ast_node node, uint32_t id, 
 	}
 }
 
-static inline void	print_ast_dot(t_state *state, t_ast_node node)
+void	print_ast_dot(t_shell *state, t_ast_node node)
 {
 	int	outfd;
 
@@ -139,16 +137,3 @@ static inline void	print_ast_dot(t_state *state, t_ast_node node)
 	ft_fdprintf(outfd, "}\n");
 	close(outfd);
 }
-
-void		print_node(t_ast_node node);
-void		print_ast_dot(t_state *state, t_ast_node node);
-void		ast_postorder_traversal(t_ast_node *node,
-				void (*f)(t_ast_node *node));
-void		free_ast(t_ast_node *node);
-
-char		*tt_to_str(t_tt tt);
-void		free_ast(t_ast_node *node);
-
-void		print_tokens(t_deque_tt tokens);
-
-#endif

@@ -11,8 +11,9 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
+#include "../input/input.h"
 
-void	exit_clean(t_state *state, int code)
+void	exit_clean(t_shell *state, int code)
 {
 	char	*pid_s;
 
@@ -26,7 +27,7 @@ void	exit_clean(t_state *state, int code)
 	exit(code);
 }
 
-int	builtin_exit(t_state *state, t_vec argv)
+int	builtin_exit(t_shell *state, t_vec argv)
 {
 	int	ret;
 

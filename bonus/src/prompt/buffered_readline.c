@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <readline/readline.h>
 #include <stdbool.h>
 #include <sys/wait.h>
@@ -18,7 +18,7 @@
 
 uint32_t	g_should_unwind = 0;
 
-int	return_last_line(t_state *state, t_string *ret)
+int	return_last_line(t_shell *state, t_string *ret)
 {
 	int		len;
 
@@ -33,7 +33,7 @@ int	return_last_line(t_state *state, t_string *ret)
 	return (4);
 }
 
-int	return_new_line(t_state *state, t_string *ret)
+int	return_new_line(t_shell *state, t_string *ret)
 {
 	char	*temp;
 	int		len;
@@ -59,7 +59,7 @@ int	return_new_line(t_state *state, t_string *ret)
 	return (4);
 }
 
-int	buff_readline(t_state *state, t_string *ret, char *prompt)
+int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 {
 	int		code;
 

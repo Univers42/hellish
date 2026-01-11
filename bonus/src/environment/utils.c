@@ -49,7 +49,7 @@ t_env	*env_get(t_vec_env *env, char *key)
 	return (0);
 }
 
-char	**get_envp(t_state *state, char *exe_path)
+char	**get_envp(t_shell *state, char *exe_path)
 {
 	char		**ret;
 	size_t		i;

@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
 #include <errno.h>
 #include <stdio.h>
@@ -20,7 +20,7 @@
 #include <stdint.h>
 
 // returns status
-int	actually_run(t_state *state, t_vec *args)
+int	actually_run(t_shell *state, t_vec *args)
 {
 	char	*path_of_exe;
 	char	**envp;
@@ -101,7 +101,7 @@ int	actually_run(t_state *state, t_vec *args)
 	return 1;
 }
 
-void	set_up_redirection(t_state *state, t_executable_node *exe)
+void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
 	t_redir	redir;
 	size_t	i;
@@ -110,19 +110,73 @@ void	set_up_redirection(t_state *state, t_executable_node *exe)
 		close(exe->next_infd);
 	dup2(exe->outfd, 1);
 	dup2(exe->infd, 0);
-	i = 0;
-	while (i < exe->redirs.len)
+
+	/* nothing to do */
+	if (exe->redirs.len == 0)
+		return ;
+
+	/* Case A: redir indices available in exe->redirs.ctx */
+	if (exe->redirs.ctx)
 	{
-		redir = ((t_redir *)state->redirects.ctx)[exe->redirs.buff[i++]];
-		if (redir.direction_in)
-			dup2(redir.fd, 0);
-		else
-			dup2(redir.fd, 1);
-		close (redir.fd);
+		i = 0;
+		while (i < exe->redirs.len)
+		{
+			int idx = *(int *)vec_idx(&exe->redirs, i++);
+			if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
+			{
+				ft_eprintf("%s: internal error: invalid redirect index %d\n",
+					state->context ? state->context : "minishell", idx);
+				_exit(1);
+			}
+			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
+			if (redir.direction_in)
+				dup2(redir.fd, 0);
+			else
+				dup2(redir.fd, 1);
+			close(redir.fd);
+		}
+		return ;
 	}
+
+	/* Case B: no redirs buffer available — fallback: scan AST children for redirects */
+	if (exe->node)
+	{
+		/* children[0] is command/subshell, redirects start at index 1 */
+		for (i = 1; i < exe->node->children.len; ++i)
+		{
+			t_ast_node *curr = (t_ast_node *)vec_idx(&exe->node->children, i);
+			if (curr->node_type != AST_REDIRECT)
+				continue;
+			int idx;
+			if (redirect_from_ast_redir(state, curr, &idx))
+			{
+				/* ambiguous redirect or error: abort child */
+				ft_eprintf("%s: ambiguous redirect\n", state->context);
+				_exit(1);
+			}
+			if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
+			{
+				ft_eprintf("%s: internal error: invalid redirect index %d\n",
+					state->context ? state->context : "minishell", idx);
+				_exit(1);
+			}
+			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
+			if (redir.direction_in)
+				dup2(redir.fd, 0);
+			else
+				dup2(redir.fd, 1);
+			close(redir.fd);
+		}
+		return ;
+	}
+
+	/* If we reach here, redirection info is inconsistent */
+	ft_eprintf("%s: internal error: redirects present but no redirect data\n",
+		state->context ? state->context : "minishell");
+	_exit(1);
 }
 
-t_exe_res	execute_builtin_cmd_fg(t_state *state, t_executable_cmd *cmd,
+t_exe_res	execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
 	t_executable_node *exe)
 {
 	int		stdin_bak;
@@ -142,7 +196,7 @@ t_exe_res	execute_builtin_cmd_fg(t_state *state, t_executable_cmd *cmd,
 	return (res_status(status));
 }
 
-t_exe_res	execute_cmd_bg(t_state *state,
+t_exe_res	execute_cmd_bg(t_shell *state,
 		t_executable_node *exe, t_executable_cmd *cmd)
 {
 	int	pid;
@@ -160,7 +214,7 @@ t_exe_res	execute_cmd_bg(t_state *state,
 	return (res_pid(pid));
 }
 
-t_exe_res	execute_simple_command(t_state *state, t_executable_node *exe)
+t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe)
 {
 	t_executable_cmd	cmd;
 	size_t				i;

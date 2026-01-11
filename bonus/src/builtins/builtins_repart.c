@@ -11,9 +11,8 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
-#include "../dsa/hash.h"
 
-typedef int (*builtin_fn_t)(t_state *, t_vec);
+typedef int (*builtin_fn_t)(t_shell *, t_vec);
 
 static void	init_builtin_hash(t_hash *h)
 {
@@ -27,7 +26,7 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "unset", (void *)builtin_unset);
 }
 
-int	(*builtin_func(char *name))(t_state *state, t_vec argv)
+int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
 {
 	static t_hash h = {0};
 

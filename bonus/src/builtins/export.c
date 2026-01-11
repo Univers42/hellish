@@ -42,7 +42,7 @@ static bool	is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-static int	process_arg(t_state *st, t_vec av, int i)
+static int	process_arg(t_shell *st, t_vec av, int i)
 {
 	char	*id;
 	t_env	*e;
@@ -71,7 +71,7 @@ static int	process_arg(t_state *st, t_vec av, int i)
 	return (0);
 }
 
-int	builtin_export(t_state *st, t_vec av)
+int	builtin_export(t_shell *st, t_vec av)
 {
 	size_t	i;
 	int		status;

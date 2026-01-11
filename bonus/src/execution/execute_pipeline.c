@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <unistd.h>
 #include "../libft/libft.h"
 
@@ -31,37 +31,62 @@ void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 	}
 }
 
-void	execute_pipeline_children(t_state *state, t_executable_node *exe,
+void	execute_pipeline_children(t_shell *state, t_executable_node *exe,
 	t_vec_exe_res *results)
 {
 	size_t				i;
 	t_executable_node	curr_exe;
 	int					pp[2];
+	int					prev_infd;
 
+	/* start input for first child from exe->infd (dup so parent can close safely) */
+	prev_infd = dup(exe->infd);
 	i = 0;
-	curr_exe = (t_executable_node){};
-	curr_exe.infd = dup(exe->infd);
-	curr_exe.modify_parent_context = exe->node->children.len == 1;
 	while (i < exe->node->children.len)
 	{
+		/* copy template and set per-child fields */
+		curr_exe = *exe;
+		/* fresh redirs vector for the child */
+		vec_init(&curr_exe.redirs);
+		curr_exe.redirs.elem_size = sizeof(int);
+		/* set child's input from preserved fd */
+		curr_exe.infd = prev_infd;
+		/* only the last child may modify parent context (when the pipeline
+		   as a whole was allowed to modify parent) */
+		curr_exe.modify_parent_context = (i == exe->node->children.len - 1)
+			&& exe->modify_parent_context;
+
 		curr_exe.node = vec_idx(&exe->node->children, i);
 		ft_assert(curr_exe.node->node_type == AST_COMMAND);
+
+		/* set up pipe for this child (if not last) */
 		set_up_redir_pipeline_child(i == exe->node->children.len - 1,
 			exe, &curr_exe, &pp);
+
 		/* execute_command returns a t_exe_res; push its copy into results */
 		{
 			t_exe_res r = execute_command(state, &curr_exe);
 			vec_push(results, &r);
 		}
-		close(curr_exe.outfd);
-		close(curr_exe.infd);
-		curr_exe.infd = pp[0];
+
+		/* In parent: close the child's outfd (writer end) and its infd (the
+		   read end we passed as input), then prepare prev_infd for next child */
+		if (curr_exe.outfd >= 0)
+			close(curr_exe.outfd);
+		if (curr_exe.infd >= 0)
+			close(curr_exe.infd);
+
+		if (i == exe->node->children.len - 1)
+			prev_infd = -1;
+		else
+			prev_infd = pp[0];
+
 		i++;
 	}
 }
 
 // Always returns status
-t_exe_res	execute_pipeline(t_state *state, t_executable_node *exe)
+t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
 	t_vec_exe_res		results;
 	t_exe_res			res;

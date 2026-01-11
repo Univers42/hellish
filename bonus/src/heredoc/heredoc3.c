@@ -10,16 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
+# include "redir.h"
 
-bool	is_escapable(char c)
-{
-	if (c == '\\' || c == '$')
-		return (true);
-	return (false);
-}
-
-void	expand_dolar(t_state *state, int *i, t_string *full_file, char *line)
+void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
 	char	*env;
@@ -57,7 +51,7 @@ void	expand_bs(int *i, t_string *full_file, char *line)
 	(*i)++;
 }
 
-void	expand_line(t_state *state, t_string *full_file, char *line)
+void	expand_line(t_shell *state, t_string *full_file, char *line)
 {
 	int		i;
 	bool	bs;

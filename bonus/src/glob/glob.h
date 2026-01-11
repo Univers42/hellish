@@ -13,8 +13,8 @@
 #ifndef GLOBBER_H
 # define GLOBBER_H
 
-# include "common.h"
-# include "dsa.h"
+# include "libft.h"
+# include "shell.h"
 
 typedef enum e_glob
 {

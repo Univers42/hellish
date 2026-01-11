@@ -11,10 +11,11 @@
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 #include <unistd.h>
+# include "redir.h"
 
-bool	get_line_heredoc(t_state *state,
+bool	get_line_heredoc(t_shell *state,
 		t_heredoc_req *req, t_string *alloc_line)
 {
 	int			stat;
@@ -57,7 +58,7 @@ static bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
 }
 
 // should brake
-void	process_line(t_state *state, t_heredoc_req *req)
+void	process_line(t_shell *state, t_heredoc_req *req)
 {
 	t_string	alloc_line;
 	char		*line;
@@ -80,7 +81,7 @@ void	process_line(t_state *state, t_heredoc_req *req)
 	free(alloc_line.ctx);
 }
 
-void	write_heredoc(t_state *state, int wr_fd, t_heredoc_req *req)
+void	write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req)
 {
 	while (!req->finished)
 	{

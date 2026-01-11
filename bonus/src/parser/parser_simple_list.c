@@ -10,8 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
+
+t_ast_node unexpected(t_shell *state, t_parser *parser, t_ast_node ret, t_deque_tt *tokens);
 
 bool	is_simple_list_op(t_tt tt)
 {
@@ -25,18 +27,18 @@ bool	is_simple_list_op(t_tt tt)
 // 0 continue
 // 1 break
 // 2 return on fail
-int	parse_simple_list_s(t_state *state, t_parser *parser,
+int	parse_simple_list_s(t_shell *state, t_parser *parser,
 	t_deque_tt *tokens, t_ast_node *ret)
 {
 	t_tt		next;
 	t_token		tmp;
 
-	tmp = *(t_token *)ft_deque_peek(&tokens->deqtok);
+	tmp = *(t_token *)deque_peek(&tokens->deqtok);
 	next = tmp.tt;
 	if (!is_simple_list_op(next))
 		return (1);
-	vec_int_push(&parser->parse_stack, next);
-	tmp = *(t_token *)ft_deque_pop_start(&tokens->deqtok);
+	{ int val = next; vec_push(&parser->parse_stack, &val); }
+	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
 	{
 		t_ast_node tmp_node = (t_ast_node){.node_type = AST_TOKEN, .token = tmp};
 		vec_init(&tmp_node.children);
@@ -45,11 +47,11 @@ int	parse_simple_list_s(t_state *state, t_parser *parser,
 	}
 	if (parser->res != RES_OK)
 		return (2);
-	while ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
-		(void)ft_deque_pop_start(&tokens->deqtok);
-	if (next == TT_SEMICOLON && (*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_END)
+	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
+		(void)deque_pop_start(&tokens->deqtok);
+	if (next == TT_SEMICOLON && (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (2);
-	if ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_END)
+	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (parser->res = RES_MoreInput, 2);
 	{
 		t_ast_node tmp_node = parse_pipeline(state, parser, tokens);
@@ -57,11 +59,11 @@ int	parse_simple_list_s(t_state *state, t_parser *parser,
 	}
 	if (parser->res != RES_OK)
 		return (2);
-	vec_int_pop(&parser->parse_stack);
+	vec_pop(&parser->parse_stack);
 	return (0);
 }
 
-t_ast_node	parse_simple_list(t_state *state,
+t_ast_node	parse_simple_list(t_shell *state,
 	t_parser *parser, t_deque_tt *tokens)
 {
 	t_ast_node	ret;
@@ -71,7 +73,7 @@ t_ast_node	parse_simple_list(t_state *state,
 	ret = (t_ast_node){.node_type = AST_SIMPLE_LIST};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	next = (*(t_token *)ft_deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT)
 		return (unexpected(state, parser, ret, tokens));
 	{
@@ -88,9 +90,9 @@ t_ast_node	parse_simple_list(t_state *state,
 		if (status == 2)
 			return (ret);
 	}
-	if ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
-		(void)ft_deque_pop_start(&tokens->deqtok);
-	else if ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt != TT_END)
+	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
+		(void)deque_pop_start(&tokens->deqtok);
+	else if ((*(t_token *)deque_peek(&tokens->deqtok)).tt != TT_END)
 		return (unexpected(state, parser, ret, tokens));
 	return (ret);
 }

@@ -12,7 +12,7 @@
 
 #include "builtins.h"
 
-int	builtin_env(t_state *state, t_vec argv)
+int	builtin_env(t_shell *state, t_vec argv)
 {
 	size_t	i;
 

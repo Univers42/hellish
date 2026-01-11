@@ -12,7 +12,7 @@
 
 # include "env.h"
 
-char	*env_expand_n(t_state *state, char *key, int len)
+char	*env_expand_n(t_shell *state, char *key, int len)
 {
 	t_env	*curr;
 
@@ -28,7 +28,7 @@ char	*env_expand_n(t_state *state, char *key, int len)
 	return (curr->value);
 }
 
-char	*env_expand(t_state *state, char *key)
+char	*env_expand(t_shell *state, char *key)
 {
 	return (env_expand_n(state, key, ft_strlen(key)));
 }
