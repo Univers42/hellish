@@ -13,6 +13,8 @@
 #include "libft.h"
 #include "shell.h"
 #include <stdio.h>
+# include "env.h"
+# include "expander.h"
 
 t_string	word_to_string(t_ast_node node)
 {

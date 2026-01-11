@@ -14,8 +14,8 @@
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include "../libft/libft.h"
-#include "../glob/glob.h"
+# include "expander.h"
+#include "glob.h"
 
 char	*expand_word_single(t_shell *state, t_ast_node *curr)
 {

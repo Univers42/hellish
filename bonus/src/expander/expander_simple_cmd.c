@@ -13,6 +13,8 @@
 #include "libft.h"
 #include "shell.h"
 #include <stdbool.h>
+# include "expander.h"
+# include "env.h"
 
 bool	is_export(t_ast_node word)
 {

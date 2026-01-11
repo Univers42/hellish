@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
+# include "env.h"
 
 int	builtin_env(t_shell *state, t_vec argv)
 {

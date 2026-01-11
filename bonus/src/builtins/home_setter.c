@@ -12,7 +12,7 @@
 
 #include "builtins.h"
 #include <stdlib.h>
-
+# include "env.h"
 int	cd_home(int *e, t_shell *state)
 {
 	char	*home;

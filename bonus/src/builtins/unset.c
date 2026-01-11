@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
+# include "env.h"
 
 void	try_unset(t_shell *state, char *key)
 {

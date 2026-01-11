@@ -13,6 +13,7 @@
 #include "../libft/libft.h"
 #include "shell.h"
 #include <stdbool.h>
+# include "parser.h"
 
 //[a-zA-Z_]
 bool	is_var_name_p1(char c)

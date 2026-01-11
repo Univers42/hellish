@@ -11,10 +11,9 @@
 /* ************************************************************************** */
 
 #include "shell.h"
-#include <errno.h>
-#include <fcntl.h>
-#include <string.h>
-#include <unistd.h>
+# include "helpers.h"
+# include "input.h"
+#include "env.h"
 
 void	init_arg(t_shell *state, char **argv)
 {

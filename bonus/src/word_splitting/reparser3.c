@@ -12,6 +12,9 @@
 
 #include "../libft/libft.h"
 #include "shell.h"
+# include "parser.h"
+# include "decomposer.h"
+# include "helpers.h"
 
 void	reparse_words(t_ast_node	*node)
 {

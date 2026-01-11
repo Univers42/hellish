@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "shell.h"
-#include "../heredoc/redir.h"
+#include "redir.h"
 
 #include <fcntl.h>
 #include <stddef.h>
@@ -22,7 +22,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../ft_printf/ft_printf.h"
+#include "ft_printf.h"
+# include "helpers.h"
+# include "expander.h"
+# include "input.h"
 
 // returns pid
 t_exe_res	execute_subshell(t_shell *state, t_executable_node *exe)

@@ -15,6 +15,7 @@
 
 # include "libft.h"
 # include "shell.h"
+# include "helpers.h"
 
 int		mini_atoi_base(char **str, int base, int len);
 int		cd_home(int *e, t_shell *state);

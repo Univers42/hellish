@@ -12,6 +12,7 @@
 
 #include "shell.h"
 # include "redir.h"
+# include "env.h"
 
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {

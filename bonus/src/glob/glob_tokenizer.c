@@ -12,7 +12,8 @@
 
 #include "../libft/libft.h"
 #include "shell.h"
-# include "../glob/glob.h"
+# include "glob.h"
+# include "lexer.h"
 
 void	tokenize_star_glob(t_vec_glob *ret, t_token t, int *i)
 {

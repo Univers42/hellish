@@ -13,6 +13,10 @@
 #include <stdio.h>
 #include "../libft/libft.h"
 #include "shell.h"
+# include "parser.h"
+# include "ast.h"
+# include "decomposer.h"
+# include "sys.h"
 
 t_ast_node unexpected(t_shell *state, t_parser *parser, t_ast_node ret, t_deque_tt *tokens);
 

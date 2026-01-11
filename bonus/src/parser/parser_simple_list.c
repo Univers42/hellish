@@ -12,6 +12,7 @@
 
 #include "shell.h"
 #include <stdbool.h>
+# include "parser.h"
 
 t_ast_node unexpected(t_shell *state, t_parser *parser, t_ast_node ret, t_deque_tt *tokens);
 

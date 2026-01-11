@@ -10,11 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../ft_printf/ft_printf.h"
+#include "ft_printf.h"
 #include "shell.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+# include "lexer.h"
+# include "expander.h"
 
 bool	create_redir(t_tt tt, char *fname, t_redir *ret)
 {

@@ -13,7 +13,7 @@
 # Compiler and flags
 CC := gcc
 CFLAGS := -Wall -Wextra -Werror -g3 -ggdb -fsanitize=address,leak -std=gnu11
-INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals
+INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
 
 # Source and object files
 SRC_DIR := src
@@ -48,9 +48,11 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 clean:
 	@rm -rf build
+	
 
 fclean: clean
 	@rm -f $(NAME)
+	$(MAKE) -C $(LIBFT_DIR) $^
 
 re: fclean all
 
