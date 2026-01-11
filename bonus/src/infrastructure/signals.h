@@ -13,7 +13,11 @@
 #ifndef SIGNALS_H
 # define SIGNALS_H
 
-# include "common.h"
+# include <signal.h>
+# include <stdint.h>
+
+/* global unwind flag */
+extern uint32_t	g_should_unwind;
 
 static inline void	default_signal_handlers(void)
 {
@@ -33,28 +37,7 @@ static inline void	set_unwind(int sig)
 	g_should_unwind = SIGINT;
 }
 
-static inline void	set_unwind_sig(void)
-{
-	struct sigaction	new_action;
-
-	new_action = (struct sigaction){};
-	new_action.sa_handler = set_unwind;
-	sigemptyset(&new_action.sa_mask);
-	new_action.sa_flags = SA_RESTART;
-	sigaction(SIGINT, &new_action, NULL);
-	signal(SIGQUIT, SIG_IGN);
-}
-
-static inline void	set_unwind_sig_norestart(void)
-{
-	struct sigaction	new_action;
-
-	new_action = (struct sigaction){};
-	new_action.sa_handler = set_unwind;
-	sigemptyset(&new_action.sa_mask);
-	new_action.sa_flags = 0;
-	sigaction(SIGINT, &new_action, NULL);
-	signal(SIGQUIT, SIG_IGN);
-}
+void	set_unwind_sig(void);
+void	set_unwind_sig_norestart(void);
 
 # endif

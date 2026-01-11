@@ -10,8 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/utils/utils.h"
-#include "../shell.h"
+#include "shell.h"
 
 bool	should_execute(t_exe_res prev_status, t_tt prev_op)
 {
@@ -29,7 +28,7 @@ bool	should_execute(t_exe_res prev_status, t_tt prev_op)
 	return (false);
 }
 
-t_exe_res	execute_simple_list(t_state *state, t_executable_node *exe)
+t_exe_res	execute_simple_list(t_shell *state, t_executable_node *exe)
 {
 	t_exe_res			status;
 	t_tt				op;

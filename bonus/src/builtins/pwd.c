@@ -12,7 +12,7 @@
 
 #include "builtins.h"
 
-int	builtin_pwd(t_state *state, t_vec argv)
+int	builtin_pwd(t_shell *state, t_vec argv)
 {
 	(void)argv;
 	if (state->cwd.ctx == NULL)

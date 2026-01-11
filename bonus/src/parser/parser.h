@@ -13,7 +13,11 @@
 #ifndef PARSER_H
 # define PARSER_H
 
-# include "common.h"
+# include "libft.h"
+# include "shell.h"
+# include "../execution/executor.h"
+# include "../tree_shell/ast.h"
+# include "../lexer/lexer.h"
 
 typedef struct s_parser
 {
@@ -29,23 +33,23 @@ bool	is_simple_cmd_token(t_tt tt);
 
 // process of parsing
 t_ast_node	parse_word(t_deque_tt *tokens);
-t_ast_node	parse_redirect(t_state *state, t_parser *parser, t_deque_tt *tokens);
-t_ast_node	parse_simple_command(t_state *state, t_parser *res,
+t_ast_node	parse_redirect(t_shell *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node	parse_simple_command(t_shell *state, t_parser *res,
 				t_deque_tt *tokens);
-t_ast_node	parse_command(t_state *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tt *tokens);
 bool		is_compund_list_op(t_tt tt);
-bool		parse_compound_list_s(t_state *state, t_parser *parser,
+bool		parse_compound_list_s(t_shell *state, t_parser *parser,
 				t_deque_tt *tokens, t_ast_node *ret);
-t_ast_node	parse_compound_list(t_state *state,
+t_ast_node	parse_compound_list(t_shell *state,
 				t_parser *parser, t_deque_tt *tokens);
-int			parse_simple_list_s(t_state *state, t_parser *parser,
+int			parse_simple_list_s(t_shell *state, t_parser *parser,
 				t_deque_tt *tokens, t_ast_node *ret);
-t_ast_node	parse_simple_list(t_state *state,
+t_ast_node	parse_simple_list(t_shell *state,
 				t_parser *parser, t_deque_tt *tokens);
 t_ast_node	create_subtoken_node(t_token t, int offset, int end_offset, t_tt tt);
-t_ast_node	parse_subshell(t_state *state, t_parser *parser, t_deque_tt *tokens);
-t_ast_node	parse_pipeline(t_state *state, t_parser *parser, t_deque_tt *tokens);
-t_ast_node	parse_tokens(t_state *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node	parse_subshell(t_shell *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node	parse_pipeline(t_shell *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tt *tokens);
 
 
 

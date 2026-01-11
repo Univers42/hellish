@@ -29,13 +29,20 @@
 # define CANCELED 130
 # define SYNTAX_ERR 2
 # define AMBIGUOUS_REDIRECT 1
-# define PROMPT "\001❯ \002"
+
+# ifndef PROMPT
+#  define PROMPT "\001❯ \002"
+# endif
+
 # define HIST_FILE ".minishell_history"
 
 # define ANSI_RED "\001\033[31m\002"
 # define ANSI_GREEN "\001\033[32m\002"
 # define ANSI_RESET "\001\033[0m\002"
-# define RL_SPACER_1 "\x03"
+
+# ifndef RL_SPACER_1
+#  define RL_SPACER_1 "\x03"
+# endif
 
 # define LEXER_SQUOTE_PROMPT "squote> "
 # define LEXER_DQUOTE_PROMPT "dquote> "

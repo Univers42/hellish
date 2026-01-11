@@ -12,8 +12,9 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-#include "../shell.h"
-#include "../libft/libft.h"
+#include "shell.h"
+#include "libft.h"
+# include "glob.h"
 
 bool	finished_pattern(t_vec_glob patt, size_t offset)
 {

@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
 
 bool	is_compund_list_op(t_tt tt)
@@ -23,17 +23,17 @@ bool	is_compund_list_op(t_tt tt)
 	return (false);
 }
 
-bool	parse_compound_list_s(t_state *state, t_parser *parser,
+bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	t_deque_tt *tokens, t_ast_node *ret)
 {
 	t_tt		op;
 	t_token		tmp;
 
-	tmp = *(t_token *)ft_deque_peek(&tokens->deqtok);
+	tmp = *(t_token *)deque_peek(&tokens->deqtok);
 	op = tmp.tt;
 	if (!is_compund_list_op(op))
 		return (true);
-	tmp = *(t_token *)ft_deque_pop_start(&tokens->deqtok);
+	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
 	{
 		t_ast_node tmp_node = (t_ast_node){.node_type = AST_TOKEN, .token = tmp};
 		vec_init(&tmp_node.children);
@@ -43,14 +43,14 @@ bool	parse_compound_list_s(t_state *state, t_parser *parser,
 	/* check last pushed token using generic ctx */
 	if ((((t_ast_node *)ret->children.ctx)[ret->children.len - 1].token.tt == TT_SEMICOLON
 			|| ((t_ast_node *)ret->children.ctx)[ret->children.len - 1].token.tt == TT_NEWLINE)
-		&& (*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
+		&& (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
 		return (true);
-	vec_int_push(&parser->parse_stack, op);
-	while ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
-		(void)ft_deque_pop_start(&tokens->deqtok);
-	if ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
+	{ int val = op; vec_push(&parser->parse_stack, &val); }
+	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
+		(void)deque_pop_start(&tokens->deqtok);
+	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
 		return (true);
-	if ((*(t_token *)ft_deque_peek(&tokens->deqtok)).tt == TT_END)
+	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (parser->res = RES_MoreInput, true);
 	{
 		t_ast_node tmp_node = parse_pipeline(state, parser, tokens);
@@ -58,11 +58,11 @@ bool	parse_compound_list_s(t_state *state, t_parser *parser,
 	}
 	if (parser->res != RES_OK)
 		return (true);
-	vec_int_pop(&parser->parse_stack);
+	vec_pop(&parser->parse_stack);
 	return (false);
 }
 
-t_ast_node	parse_compound_list(t_state *state,
+t_ast_node	parse_compound_list(t_shell *state,
 	t_parser *parser, t_deque_tt *tokens)
 {
 	t_ast_node	ret;

@@ -10,9 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/dsa/dyn_str.h"
-#include "../libft/libft.h"
-#include "../shell.h"
+#include "libft.h"
+#include "shell.h"
 #include <stdio.h>
 
 t_string	word_to_string(t_ast_node node)
@@ -73,7 +72,7 @@ t_string	word_to_hrdoc_string(t_ast_node node)
 	return (s);
 }
 
-t_env	assignment_to_env(t_state *state, t_ast_node *node)
+t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 {
 	t_vec	args;
 	t_env		ret;

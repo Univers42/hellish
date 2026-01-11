@@ -10,17 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/dsa/dyn_str.h"
-#include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 #include <fcntl.h>
 #include <readline/readline.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "../libft/libft.h"
+# include "redir.h"
 
 // returns writable fd
-int	ft_mktemp(t_state *state, t_ast_node *node)
+int	ft_mktemp(t_shell *state, t_ast_node *node)
 {
 	t_redir		ret;
 	char		*temp;
@@ -56,7 +54,7 @@ char	*first_non_tab(char *line)
 	return (line);
 }
 
-void	gather_heredoc(t_state *state, t_ast_node *node)
+void	gather_heredoc(t_shell *state, t_ast_node *node)
 {
 	int				wr_fd;
 	t_string		sep;
@@ -79,7 +77,7 @@ void	gather_heredoc(t_state *state, t_ast_node *node)
 	}
 }
 
-int	gather_heredocs(t_state *state, t_ast_node *node)
+int	gather_heredocs(t_shell *state, t_ast_node *node)
 {
 	size_t	i;
 

@@ -10,9 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <errno.h>
 #include <unistd.h>
+
+char	*ft_asprintf(const char *fmt, ...);
 
 void	buff_readline_update(t_buff_readline *l)
 {
@@ -34,16 +36,16 @@ void	buff_readline_init(t_buff_readline *ret)
 	*ret = (t_buff_readline){};
 }
 
-void	update_context(t_state *state)
+void	update_context(t_shell *state)
 {
 	if (!state->readline_buff.should_update_context)
 		return ;
 	free(state->context);
-	state->context = ft_asprintf("%s: line %i",
+	state->context = (char *)ft_asprintf("%s: line %i",
 			state->base_context, state->readline_buff.line);
 }
 
-int	get_more_input_notty(t_state *state)
+int	get_more_input_notty(t_shell *state)
 {
 	char	buff[4096 * 2];
 	int		ret;

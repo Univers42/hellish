@@ -26,7 +26,7 @@ t_env	str_to_env(char *str)
 	return (ret);
 }
 
-t_vec_env	env_to_vec_env(t_state *state, char **envp)
+t_vec_env	env_to_vec_env(t_shell *state, char **envp)
 {
 	t_vec_env	ret;
 

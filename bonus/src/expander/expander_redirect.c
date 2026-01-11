@@ -10,9 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/ft_printf/ft_printf.h"
-#include "../libft/utils/utils.h"
-#include "../shell.h"
+#include "../ft_printf/ft_printf.h"
+#include "shell.h"
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
@@ -36,7 +35,7 @@ bool	create_redir(t_tt tt, char *fname, t_redir *ret)
 	return (true);
 }
 
-static void	print_redir_err(t_state *state,
+static void	print_redir_err(t_shell *state,
 		t_token_old full_token, char *expanded_name)
 {
 	if (!expanded_name)
@@ -47,7 +46,7 @@ static void	print_redir_err(t_state *state,
 			expanded_name, strerror(errno));
 }
 
-int	redirect_from_ast_redir(t_state *state, t_ast_node *curr, int *redir_idx)
+int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 {
 	t_redir		new_redir;
 	t_tt		tt;

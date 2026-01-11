@@ -13,7 +13,7 @@
 
 #include "builtins.h"
 
-int	builtin_echo(t_state *state, t_vec argv)
+int	builtin_echo(t_shell *state, t_vec argv)
 {
 	int		n;
 	int		e;

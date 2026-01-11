@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
 #include "../libft/libft.h"
 #include <stddef.h>

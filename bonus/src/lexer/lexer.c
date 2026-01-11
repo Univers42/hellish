@@ -48,7 +48,7 @@ static char	*parse_word(t_deque_tt *tokens, char **str)
 			break ;
 	}
 	tmp = (t_token){.start = start, .len = (int)(*str - start), .tt = TT_WORD};
-	ft_deque_push_end(&tokens->deqtok, &tmp);
+	deque_push_end(&tokens->deqtok, &tmp);
 	return (0);
 }
 
@@ -105,7 +105,7 @@ void	parse_op(t_deque_tt *tokens, char **str)
 	tmp = (t_token){.start = start,
 		.len = (int)(*str - start),
 		.tt = operators[op_idx].t};
-	ft_deque_push_end(&tokens->deqtok, &tmp);
+	deque_push_end(&tokens->deqtok, &tmp);
 }
 
 // If returns 0, it finished properly, if it returns a ptr, make a prompt
@@ -115,7 +115,7 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 	char	*prompt;
 
 	prompt = 0;
-	ft_deque_clear(&ret->deqtok, NULL);
+	deque_clear(&ret->deqtok, NULL);
 	while (str && *str)
 	{
 		if (*str == '\'' || *str == '"' || *str == '$'
@@ -124,7 +124,7 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 		else if (*str == '\n')
 		{
 			t_token tmp = (t_token){.start = str, .len = 1, .tt = TT_NEWLINE};
-			ft_deque_push_end(&ret->deqtok, &tmp);
+			deque_push_end(&ret->deqtok, &tmp);
 			str++;
 		}
 		else if (is_space(*str))
@@ -134,6 +134,6 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 		if (prompt)
 			break ;
 	}
-	{ t_token tmp = {.tt = TT_END, .start = 0, .len = 0}; ft_deque_push_end(&ret->deqtok, &tmp); }
+	{ t_token tmp = {.tt = TT_END, .start = 0, .len = 0}; deque_push_end(&ret->deqtok, &tmp); }
 	return (prompt);
 }

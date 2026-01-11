@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 
 void	reparse_words(t_ast_node	*node)
 {

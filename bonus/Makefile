@@ -10,57 +10,54 @@
 #                                                                              #
 # **************************************************************************** #
 
-NAME		:= shell
-CC 			:= CC
-RM			:= rm -rf 
-WFLAGS		:= -Wall -Wextra -Werror
-LDFLAGS		:= -L ./vendor/libft -lft -lreadline -lpthread
-OPTFLAGS	:= -fPIE -O3 -flto
-DEBUGFLAG	:= -g3 -ggdb -fsanitize=address,leak
-LIBFT_PATH	:= vendor/libft
-LIBFT_A		:= $(LIBFT_PATH)/libft.a
+# Compiler and flags
+CC := gcc
+CFLAGS := -Wall -Wextra -Werror -g3 -ggdb -fsanitize=address,leak -std=gnu11
+INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals
 
-ifdef OPT
-	CFLAGS := ${WFLAGS} ${OPTFLAGS}
-ifdef SCHOOL
-	CFLAGS := ${WFLAGS}
-else
-	CFLAGS := ${WFLAGS} ${DEBUGFLAG}
-endif
+# Source and object files
+SRC_DIR := src
+OBJ_DIR := build/obj
 
-HEADERS := -I./incs -I./$(LIBFT_PATH)/include
+SRCS := $(shell find $(SRC_DIR) -type f -name '*.c')
+OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
+DEPS := $(OBJS:.o=.d)
 
-SRCS_DIR := .
-OUT_DIR := build
-OBJ_DIR	:= build/obj
-BIN_DIR	:= build/bin
+# Target
+NAME := minishell
 
-SOURCES := $(shell find src -type f -name "*.c" ! -path "src/libft/*")
-OBJS := ${SOURCES:%.c=${OUT_DIR}/%.o}
+LIBFT_DIR = vendor/libft
+LIBFT_A = $(LIBFT_DIR)/libft.a
+LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
 
-all: ${NAME}
+.PHONY: all clean fclean re
 
-${NAME}: ${LIBFT_A} $(OBJS)
-	${CC} ${CFLAGS} -o $^ ${OBJS} ${LIBS}
+all: $(NAME)
 
-${OUT_DIR}/%.o: ${SRCS_DIR}/%.c ${HEADERS}
-	mkdir -p $$(dirname $@)
-	${CC} ${CFLAGS} -c $< -o $@
+# Link the final binary
+$(NAME): $(OBJS)
+	$(CC) $(CFLAGS) $(INCLUDES) $^ -L$(LIBFT_DIR) -lft -lreadline -o $@
 
-${OUT_DIR}:
-	mkdir -p $<
-	mkdir -p ${OBJ_DIR}
-	mkdir -p ${BIN_DIR}
+# Compile .c -> .o and generate side-by-side .d dependency file
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+
+# Include dependency files if present
+-include $(DEPS)
 
 clean:
-	${RM} ${OUT_DIR}
+	@rm -rf $(OBJ_DIR)
 
 fclean: clean
-	${RM} ${NAME}
-
-test:
-# for now nothing to be done
+	@rm -f $(NAME)
 
 re: fclean all
 
-.PHONY: re fclean clean all test
+$(LIBFT_A):
+	$(MAKE) -C $(LIBFT_DIR)
+
+$(LIBFTPRINTF_A):
+	$(MAKE) -C $(LIBFT_DIR)
+
+$(OBJ): | $(LIBFT_A) $(LIBFTPRINTF_A)

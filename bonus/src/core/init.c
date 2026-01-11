@@ -10,13 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
 
-void	init_arg(t_state *state, char **argv)
+void	init_arg(t_shell *state, char **argv)
 {
 	if (!argv[2])
 	{
@@ -31,7 +31,7 @@ void	init_arg(t_state *state, char **argv)
 	state->input_method = INP_ARG;
 }
 
-void	init_file(t_state *state, char **argv)
+void	init_file(t_shell *state, char **argv)
 {
 	int	fd;
 
@@ -57,13 +57,13 @@ void	init_file(t_state *state, char **argv)
 	state->input_method = INP_FILE;
 }
 
-void	init_stdin_notty(t_state *state)
+void	init_stdin_notty(t_shell *state)
 {
 	state->input_method = INP_STDIN_NOTTY;
 	state->readline_buff.should_update_context = true;
 }
 
-void	init_cwd(t_state *state)
+void	init_cwd(t_shell *state)
 {
 	char	*cwd;
 
@@ -83,10 +83,10 @@ void	init_cwd(t_state *state)
 	free(cwd);
 }
 
-void	init_setup(t_state *state, char **argv, char **envp)
+void	init_setup(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();
-	*state = (t_state){0};
+	*state = (t_shell){0};
 	state->pid = getpid_hack();
 	state->context = ft_strdup(argv[0]);
 	state->base_context = ft_strdup(argv[0]);
@@ -94,6 +94,8 @@ void	init_setup(t_state *state, char **argv, char **envp)
 	state->last_cmd_status_res = res_status(0);
 	init_cwd(state);
 	state->env = env_to_vec_env(state, envp);
+	/* initialize redirects vector so later vec_push/vec_idx are safe */
+	vec_init(&state->redirects);
 	state->redirects.elem_size = sizeof(t_redir);
 	if (argv[1] && ft_strcmp(argv[1], "-c") == 0)
 		init_arg(state, argv);

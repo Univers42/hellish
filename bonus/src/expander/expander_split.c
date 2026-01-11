@@ -11,9 +11,9 @@
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 
-void	expand_token(t_state *state, t_token	*curr_tt)
+void	expand_token(t_shell *state, t_token	*curr_tt)
 {
 	char	*temp;
 
@@ -26,7 +26,7 @@ void	expand_token(t_state *state, t_token	*curr_tt)
 	curr_tt->allocated = false;
 }
 
-void	expand_env_vars(t_state *state, t_ast_node *node)
+void	expand_env_vars(t_shell *state, t_ast_node *node)
 {
 	t_token	*curr_tt;
 	size_t	i;
@@ -69,7 +69,7 @@ t_ast_node	new_env_node(char *new_start)
 	return (ret);
 }
 
-void	split_envvar(t_state *state, t_token *curr_t,
+void	split_envvar(t_shell *state, t_token *curr_t,
 			t_ast_node *curr_node, t_vec_nd *ret)
 {
 	char	**things;
@@ -111,7 +111,7 @@ void	split_envvar(t_state *state, t_token *curr_t,
 }
 
 // node -> split node
-t_vec_nd	split_words(t_state *state, t_ast_node *node)
+t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 {
 	t_vec_nd	ret;
 	t_token		*curr_t;

@@ -12,7 +12,7 @@
 
 #include "builtins.h"
 
-void	try_unset(t_state *state, char *key)
+void	try_unset(t_shell *state, char *key)
 {
 	t_env	*e;
 	size_t	idx;
@@ -40,7 +40,7 @@ void	try_unset(t_state *state, char *key)
 	/* keep allocated capacity (no shrink) */
 }
 
-int	builtin_unset(t_state *state, t_vec argv)
+int	builtin_unset(t_shell *state, t_vec argv)
 {
 	size_t	i;
 

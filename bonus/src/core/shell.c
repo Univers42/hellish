@@ -19,7 +19,7 @@
 
 int	main(int argc, char **argv, char **envp)
 {
-	t_state	state;
+	t_shell	state;
 
 	(void)argc;
 	init_setup(&state, argv, envp);

@@ -10,12 +10,17 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
+#include "../infrastructure/error.h"
 #include <stdbool.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+
+// Forward-declare error helpers to avoid implicit-declaration due to include-order
+void	err_1_errno(t_shell *state, char *p1);
+void	err_2(t_shell *state, char *p1, char *p2);
 
 char	*exe_path(char **path_dirs, char *exe_name)
 {
@@ -65,14 +70,14 @@ bool	check_is_a_dir(char *path, bool *enoent)
 	return (S_ISDIR(info.st_mode));
 }
 
-static int	cmd_not_found(t_state *state, char *cmd_name)
+static int	cmd_not_found(t_shell *state, char *cmd_name)
 {
 	err_2(state, cmd_name, "command not found");
 	free_all_state(state);
 	return (COMMAND_NOT_FOUND);
 }
 
-static int	no_such_file_or_dir(t_state *state,
+static int	no_such_file_or_dir(t_shell *state,
 				char *cmd_name, char *path_of_exe)
 {
 	errno = ENOENT;
@@ -82,7 +87,7 @@ static int	no_such_file_or_dir(t_state *state,
 	return (COMMAND_NOT_FOUND);
 }
 
-int	find_cmd_path(t_state *state, char *cmd_name, char **path_of_exe)
+int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 {
 	char	*path;
 	char	**path_dirs;

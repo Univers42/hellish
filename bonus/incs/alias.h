@@ -13,7 +13,7 @@
 #ifndef ALIAS_H
 # define ALIAS_H
 
-# include "infrastructure.h"
+# include "libft.h"
 
 typedef t_vec	t_vec_glob;		// ctx => t_glob
 typedef t_vec	t_string;		//  ctx => char **

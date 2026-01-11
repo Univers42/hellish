@@ -10,13 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <fcntl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include "../libft/libft.h"
+#include "../glob/glob.h"
 
-char	*expand_word_single(t_state *state, t_ast_node *curr)
+char	*expand_word_single(t_shell *state, t_ast_node *curr)
 {
 	t_vec	args;
 	size_t		i;
@@ -83,7 +84,7 @@ void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
 	free_ast(node);
 }
 
-void	expand_word(t_state *state, t_ast_node *node,
+void	expand_word(t_shell *state, t_ast_node *node,
 	t_vec *args, bool keep_as_one)
 {
 	t_vec_nd	words;

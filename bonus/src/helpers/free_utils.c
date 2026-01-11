@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 
-#include "../shell.h"
+#include "shell.h"
 #include <unistd.h>
 
 void	free_redirects(t_vec_redir *v)
@@ -36,7 +36,7 @@ void	free_redirects(t_vec_redir *v)
 	v->elem_size = sizeof(t_redir);
 }
 
-void	free_all_state(t_state *state)
+void	free_all_state(t_shell *state)
 {
 	free(state->input.ctx);
 	state->input = (t_string){};
@@ -77,6 +77,7 @@ void	free_executable_cmd(t_executable_cmd cmd)
 
 void	free_executable_node(t_executable_node *node)
 {
-	free(node->redirs.buff);
-	vec_int_init(&node->redirs);
+	/* free redirs buffer (t_vec of ints) and reset vector */
+	free(node->redirs.ctx);
+	vec_init(&node->redirs);
 }

@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "../libft/libft.h"
-#include "../shell.h"
+#include "shell.h"
 #include <stdbool.h>
 
 //[a-zA-Z_]

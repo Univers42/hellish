@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include <fcntl.h>
 #include <stdio.h>
 #include <readline/history.h>
@@ -70,7 +70,7 @@ t_vec	parse_hist_file(t_string hist)
 	return (ret);
 }
 
-void	parse_history_file(t_state *state)
+void	parse_history_file(t_shell *state)
 {
 	t_string	hist;
 	int			fd;
@@ -125,7 +125,7 @@ t_string	encode_cmd_hist(char *cmd)
 	return (ret);
 }
 
-void	manage_history(t_state *state)
+void	manage_history(t_shell *state)
 {
 	char	*hist_entry;
 	char	*enc_hist_entry;
@@ -152,5 +152,62 @@ void	manage_history(t_state *state)
 		}
 	}
 	buff_readline_reset(&state->readline_buff);
+}
+
+bool	worthy_of_being_remembered(t_shell *state)
+{
+	if (state->readline_buff.cursor > 1 && state->hist.hist_active
+		&& (!state->hist.hist_cmds.len
+			|| !str_slice_eq_str((char *)state->readline_buff.buff.ctx,
+				state->readline_buff.cursor - 1,
+				((char **)state->hist.hist_cmds.ctx)[state->hist.hist_cmds.len - 1]
+			)
+		)
+	)
+	{
+		return (true);
+	}
+	return (false);
+}
+
+void	init_history(t_shell *state)
+{
+	state->hist = (t_history){.append_fd = -1, .hist_active = true};
+	parse_history_file(state);
+}
+
+void	free_hist(t_shell *state)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < state->hist.hist_cmds.len)
+	{
+		free(((char **)state->hist.hist_cmds.ctx)[i]);
+		i++;
+	}
+	free(state->hist.hist_cmds.ctx);
+	vec_init(&state->hist.hist_cmds);
+}
+
+char	*get_hist_file_path(t_shell *state)
+{
+	t_env		*env;
+	t_string	full_path;
+
+	env = env_get(&state->env, "HOME");
+	if (!env || !env->value)
+	{
+		warning_error("HOME is not set, can't get the history");
+		return (0);
+	}
+	vec_init(&full_path);
+	full_path.elem_size = 1;
+	vec_push_str(&full_path, env->value);
+	if (!vec_str_ends_with_str(&full_path, "/")) {
+		char tmp = '/'; vec_push(&full_path, &tmp);
+	}
+	vec_push_str(&full_path, HIST_FILE);
+	return (char *)full_path.ctx;
 }
 

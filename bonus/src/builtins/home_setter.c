@@ -13,7 +13,7 @@
 #include "builtins.h"
 #include <stdlib.h>
 
-int	cd_home(int *e, t_state *state)
+int	cd_home(int *e, t_shell *state)
 {
 	char	*home;
 

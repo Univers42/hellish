@@ -12,9 +12,12 @@
 
 #ifndef ENV_H
 # define ENV_H
-# include <stdbool.h>
-# include <unistd.h>
-# include "../shell.h"
+
+# include "shell.h"
+
+// Forward declarations to avoid circular deps
+bool is_var_name_p1(char c);
+bool is_var_name_p2(char c);
 
 typedef struct s_env
 {
@@ -24,13 +27,13 @@ typedef struct s_env
 }	t_env;
 
 t_env		str_to_env(char *str);
-t_vec_env	env_to_vec_env(t_state *state, char **envp);
-char		*env_expand_n(t_state *state, char *key, int len);
-char		*env_expand(t_state *state, char *key);
+t_vec_env	env_to_vec_env(t_shell *state, char **envp);
+char		*env_expand_n(t_shell *state, char *key, int len);
+char		*env_expand(t_shell *state, char *key);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);
-char		**get_envp(t_state *state, char *exe_path);
+char		**get_envp(t_shell *state, char *exe_path);
 t_env		*env_nget(t_vec_env *env, char *key, int len);
 
 static inline char	*env_get_ifs(t_vec_env *v)

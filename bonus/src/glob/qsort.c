@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../shell.h"
+#include "shell.h"
 #include "../libft/libft.h"
 
 void	swap_sort_point(char **p1, char **p2)
