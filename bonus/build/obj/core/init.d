@@ -42,7 +42,8 @@ build/obj/core/init.o: src/core/init.c incs/shell.h incs/alias.h \
  incs/public/ft_printf.h incs/public/signals.h incs/public/error.h \
  incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/helpers.h incs/input.h incs/env.h incs/helpers.h
+ incs/prompt.h incs/helpers.h incs/input.h incs/env.h incs/helpers.h \
+ incs/lexer.h incs/public/token.h
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -112,3 +113,5 @@ incs/helpers.h:
 incs/input.h:
 incs/env.h:
 incs/helpers.h:
+incs/lexer.h:
+incs/public/token.h:
