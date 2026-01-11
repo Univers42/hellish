@@ -1,0 +1,19 @@
+ls >outfile01 && cat outfile01
+cat <minishell.h&ls
+||
+|| echo oi
+&
+&&
+|& #-> não precisa
+*
+> *
+>> *
+> & # valido para < e >>
+> &&
+> ||
+echo oi || echo tchau
+env | grep USER || grep lucas
+> *
+>> *
+< *
+<< *
