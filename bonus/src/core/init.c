@@ -86,6 +86,10 @@ void	on(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();
 	*state = (t_shell){0};
+	/* initialize readline buffer structure and its inner string buffer */
+	buff_readline_init(&state->readline_buff);
+	vec_init(&state->readline_buff.buff);
+	state->readline_buff.buff.elem_size = 1;
 	state->pid = getpid_hack();
 	state->context = ft_strdup(argv[0]);
 	state->base_context = ft_strdup(argv[0]);
