@@ -1,0 +1,24 @@
+# tests for empty env expansion and command substitution
+
+echo $''
+echo $(echo hi)
+echo "$(echo hi)"
+echo $""
+echo " $"
+
+echo "$''"
+echo "prefix$''suffix"
+echo "$NOTSET""
+echo "$NOTSET" ""
+echo $''foo
+
+echo "mix $'' and $(echo x)"
+
+echo "$USER$''"
+
+echo "$(echo)"
+
+echo "$(echo '')"
+
+echo "$(echo \"\")"
+
