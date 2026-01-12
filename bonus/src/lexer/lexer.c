@@ -30,6 +30,40 @@ static char	*parse_word(t_deque_tt *tokens, char **str)
 	start = *str;
 	while (**str)
 	{
+		/* Handle $() command-substitution as part of the word token */
+		if (**str == '$' && (*str)[1] == '(')
+		{
+			int depth = 0;
+			/* consume the '$' */
+			(*str)++;
+			/* consume the opening '(' and enter balanced loop */
+			(*str)++;
+			depth = 1;
+			while (**str && depth > 0)
+			{
+				if (**str == '\\')
+					advance_bs(str);
+				else if (**str == '\'')
+				{
+					if (advance_squoted(str))
+						return (tokens->looking_for = '\'', LEXER_SQUOTE_PROMPT);
+				}
+				else if (**str == '"')
+				{
+					if (advance_dquoted(str))
+						return (tokens->looking_for = '"', LEXER_DQUOTE_PROMPT);
+				}
+				else
+				{
+					if (**str == '(')
+						depth++;
+					else if (**str == ')')
+						depth--;
+					(*str)++;
+				}
+			}
+			continue;
+		}
 		if (**str == '\\')
 			advance_bs(str);
 		else if (!is_special_char(**str) || **str == '$')

@@ -42,7 +42,8 @@ build/obj/expander/expander.o: src/expander/expander.c incs/shell.h \
  incs/public/ft_printf.h incs/public/signals.h incs/public/error.h \
  incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/expander.h incs/glob.h
+ incs/prompt.h incs/expander.h incs/glob.h incs/env.h incs/helpers.h \
+ incs/helpers.h
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -110,3 +111,6 @@ incs/shell.h:
 incs/prompt.h:
 incs/expander.h:
 incs/glob.h:
+incs/env.h:
+incs/helpers.h:
+incs/helpers.h:

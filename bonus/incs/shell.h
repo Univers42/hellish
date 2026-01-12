@@ -13,8 +13,20 @@
 #ifndef MINISHELL_H
 # define MINISHELL_H
 
+/**
+ * 
+ */
 # include "alias.h"
+
+/**
+ * cldjlkasdfklj
+ */
 # include "public/ft_printf.h"
+
+/**
+ * 
+ * ksldfksajkl
+ */
 # include "public/signals.h"
 # include "public/error.h"
 # include "ast.h"

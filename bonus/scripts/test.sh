@@ -1,7 +1,3 @@
 #!/bin/bash
 
-if true; then
-	printf "hello"
-else
-	printf "wrong"
-fi;
+printf "hello my name is $USER\n"
