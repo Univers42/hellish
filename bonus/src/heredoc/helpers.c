@@ -23,9 +23,13 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 	len = env_len(line + *i);
 	if (len)
 	{
+		if (!full_file->ctx)
+			vec_init(full_file);
 		env = env_expand_n(state, line + *i, len);
 		if (env)
 			vec_push_str(full_file, env);
+		else
+			vec_push_nstr(full_file, "", 0);
 	}
 	else
 	{

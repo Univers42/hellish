@@ -77,7 +77,7 @@ void	gather_heredoc(t_shell *state, t_ast_node *node)
 	}
 }
 
-static void process_redirect_group(t_shell *state, t_ast_node *parent, size_t start, size_t end)
+static void process_redirect_group(t_shell *state, t_ast_node *parent, size_t start, size_t end, bool in_pipeline)
 {
     size_t k;
     int shared_idx = -1;
@@ -97,15 +97,21 @@ static void process_redirect_group(t_shell *state, t_ast_node *parent, size_t st
                 if (wr >= 0)
                 {
                     shared_idx = curr->redir_idx;
+                    /* set prompt label if in pipeline */
+                    if (in_pipeline)
+                        setenv("MINISHELL_HEREDOC_PROMPT", "pipe heredoc> ", 1);
                     /* read heredoc and write into the newly created temp */
                     t_string sep = word_to_hrdoc_string(((t_ast_node *)curr->children.ctx)[1]);
                     t_heredoc_req req = (t_heredoc_req){
                         .sep = (char *)sep.ctx,
                         .expand = !contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
-                        .remove_tabs = ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start, "<<-", 3) == 0
+                        .remove_tabs = ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start, "<<-", 3) == 0,
+                        .is_pipe_heredoc = (parent->node_type == AST_COMMAND_PIPELINE)
                     };
                     write_heredoc(state, wr, &req);
                     free(sep.ctx);
+                    if (in_pipeline)
+                        unsetenv("MINISHELL_HEREDOC_PROMPT");
                 }
             }
             else
@@ -121,14 +127,19 @@ static void process_redirect_group(t_shell *state, t_ast_node *parent, size_t st
                 int append_fd = open(r->fname, O_WRONLY | O_APPEND);
                 if (append_fd < 0)
                     critical_error_errno_context(r->fname);
+                if (in_pipeline)
+                    setenv("MINISHELL_HEREDOC_PROMPT", "pipe heredoc> ", 1);
                 t_string sep = word_to_hrdoc_string(((t_ast_node *)curr->children.ctx)[1]);
                 t_heredoc_req req = (t_heredoc_req){
                     .sep = (char *)sep.ctx,
                     .expand = !contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
-                    .remove_tabs = ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start, "<<-", 3) == 0
+                    .remove_tabs = ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start, "<<-", 3) == 0,
+                    .is_pipe_heredoc = (parent->node_type == AST_COMMAND_PIPELINE)
                 };
                 write_heredoc(state, append_fd, &req);
                 free(sep.ctx);
+                if (in_pipeline)
+                    unsetenv("MINISHELL_HEREDOC_PROMPT");
             }
         }
         else
@@ -139,7 +150,7 @@ static void process_redirect_group(t_shell *state, t_ast_node *parent, size_t st
     }
 }
 
-int	gather_heredocs(t_shell *state, t_ast_node *node)
+int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 {
 	size_t	i;
 
@@ -151,15 +162,44 @@ int	gather_heredocs(t_shell *state, t_ast_node *node)
 		t_ast_node *child = &((t_ast_node *)node->children.ctx)[i];
 		if (child->node_type != AST_REDIRECT)
 		{
-			gather_heredocs(state, child);
+			/* propagate pipeline flag downward: if current node is a pipeline, set flag */
+			bool child_in_pipeline = in_pipeline;
+			if (node->node_type == AST_COMMAND_PIPELINE)
+				child_in_pipeline = true;
+			gather_heredocs(state, child, child_in_pipeline);
 			i++;
 			continue;
 		}
-		/* found a run of redirect children; find its end */
+		/* found a run of redirect children */
+		/* Only group heredocs when the parent is a simple command (or an AST_COMMAND whose
+		   first child is a simple command). Otherwise process redirects individually so we
+		   don't cross pipeline or other command boundaries. */
+		bool can_group = false;
+		if (node->node_type == AST_SIMPLE_COMMAND)
+			can_group = true;
+		else if (node->node_type == AST_COMMAND && node->children.len > 0)
+		{
+			t_ast_node *first = &((t_ast_node *)node->children.ctx)[0];
+			if (first->node_type == AST_SIMPLE_COMMAND)
+				can_group = true;
+		}
+		if (!can_group)
+		{
+			/* process this single redirect normally */
+			/* if this redirect belongs to a command in pipeline, mark prompt */
+			if (in_pipeline || node->node_type == AST_COMMAND_PIPELINE)
+				setenv("MINISHELL_HEREDOC_PROMPT", "pipe heredoc> ", 1);
+			gather_heredoc(state, child);
+			if (in_pipeline || node->node_type == AST_COMMAND_PIPELINE)
+				unsetenv("MINISHELL_HEREDOC_PROMPT");
+			i++;
+			continue;
+		}
+		/* group contiguous redirects belonging to this command */
 		size_t j = i;
 		while (j < node->children.len && ((t_ast_node *)node->children.ctx)[j].node_type == AST_REDIRECT)
 			j++;
-		process_redirect_group(state, node, i, j);
+		process_redirect_group(state, node, i, j, in_pipeline || node->node_type == AST_COMMAND_PIPELINE);
 		i = j;
 	}
 	/* if this node itself is a redirect (when called on redirect nodes), handle it */

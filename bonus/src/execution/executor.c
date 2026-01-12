@@ -115,7 +115,7 @@ void	execute_top_level(t_shell *state)
 	exe.redirs.elem_size = sizeof(int);
 	state->heredoc_idx = 0;
 	if (!g_should_unwind)
-		gather_heredocs(state, &state->tree);
+		gather_heredocs(state, &state->tree, false);
 	if (!g_should_unwind)
 		res = execute_tree_node(state, &exe);
 	else
