@@ -89,7 +89,16 @@ void	write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req)
 		process_line(state, req);
 	}
 	if (req->full_file.len)
+	{
+		/* ensure NUL-termination before passing to write_to_file */
+		if (!vec_ensure_space_n(&req->full_file, 1))
+		{
+			// allocation failure, handle gracefully
+			return;
+		}
+		((char *)req->full_file.ctx)[req->full_file.len] = '\0';
 		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
+	}
 	close(wr_fd);
 	free(req->full_file.ctx);
 }
