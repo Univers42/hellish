@@ -1,0 +1,95 @@
+# Echo/quoting edge cases
+# combinations of quotes, escapes, env expansion, flags
+
+echo ""
+echo ''
+echo "hello world"
+echo 'hello world'
+echo hello" world"
+echo hello' world'
+echo "a\"b"   # embedded double quote
+echo 'a\'b'      # backslash in single quotes (should be literal)
+echo "a\\b"   # backslash in double quotes
+
+echo -n "no newline"
+echo -n -n hello
+
+envvar=world
+export envvar
+echo $envvar
+unset envvar
+
+echo "$USER$HOME"
+echo '$USER$HOME'
+echo "'$USER'"
+
+echo ""-n run_echo
+
+echo "-n" run_echo
+
+echo "-nnn" run_echo
+
+echo "-n -nn" run_echo
+
+echo "\$USER"
+
+echo "\$UNSET"
+
+echo "\$(echo hi)"
+
+echo "foo\nbar" # literal \n inside double quotes
+
+echo $''
+
+echo '"'
+
+echo "'"
+
+echo "a'b"c
+
+echo "a\"b\"c"
+
+echo "\"-n\""
+
+echo -n "line1\nline2"
+
+# tricky concatenations
+echo ""$USER"""end"
+echo "$USER""end"
+echo "$USER''end"
+
+echo "  spaced   "
+echo "    "
+
+echo "\""
+echo '\"'
+
+echo $NOTSET default
+
+echo "$NOTSET default"
+
+echo "$?"
+
+echo 'a"b\'c'
+
+# complex: nested mix
+export kk="echo -n msg1"
+$kk msg2
+export kk="-n -nnn"
+echo $kk hi
+
+# edge: multiple -n flags and quoted -n
+echo -n -n -n hello
+echo "-n" -n hello
+
+echo "trailing=")
+
+echo "=start"
+echo "==double"
+
+echo "===triple"
+
+# ensure lines are diverse
+""
+''
+"test 'mix' and \"esc\""
