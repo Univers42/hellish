@@ -81,6 +81,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 
 	ret = (t_env){.exported = false};
 	vec_init(&args);
+	args.elem_size = sizeof(char *);
 	ft_assert(node->children.len == 2);
 	expand_word(state, &((t_ast_node *)node->children.ctx)[1], &args, true);
 	ft_assert(((t_ast_node *)node->children.ctx)[1].children.ctx == 0);
@@ -91,8 +92,14 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 	if (args.len)
 	{
 		ft_assert(args.len == 1);
-		ret.value = ((char **)args.ctx)[0];
-		if (!ret.value)
+		/* Duplicate the value so ownership is clear regardless of args.ctx */
+		char *val = ((char **)args.ctx)[0];
+		if (val)
+		{
+			ret.value = ft_strdup(val);
+			free(val);
+		}
+		else
 			ret.value = ft_strdup("");
 	}
 	free(args.ctx);

@@ -15,14 +15,15 @@
 t_env	str_to_env(char *str)
 {
 	t_env	ret;
-	char	*key_pos;
+	char	*eq;
+	size_t	keylen;
 
-	key_pos = ft_strchr(str, '=') + 1;
-	ft_assert(key_pos != 0);
+	eq = ft_strchr(str, '=');
+	ft_assert(eq != 0);
+	keylen = (size_t)(eq - str);
 	ret.exported = true;
-	ret.key = malloc(key_pos - str);
-	ft_strlcpy(ret.key, str, key_pos - str);
-	ret.value = ft_strdup(key_pos);
+	ret.key = ft_strndup(str, keylen);
+	ret.value = ft_strdup(eq + 1);
 	return (ret);
 }
 
