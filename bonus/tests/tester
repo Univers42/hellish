@@ -4,16 +4,18 @@ MINISHELL_PATH="../minishell"
 
 # Run a specific test if the file name was specified
 if [[ $1 ]]; then
-	test_lists=(
-		$1
-	)
+    test_lists=(
+        $1
+    )
 else
-	test_lists=(
-		"builtins"
-		"pipes"
-		"redirects"
-		"extras"
-	)
+    test_lists=(
+        "builtins"
+        "pipes"
+        "redirects"
+        "extras"
+        "edge_cases"
+        "echo_edge_cases"
+    )
 fi
 
 if [[ $1 == "wildcards"  || $1 == "bonus" ]]; then
@@ -37,6 +39,7 @@ chmod 000 ./test_files/invalid_permission
 mkdir ./outfiles
 mkdir ./mini_outfiles
 mkdir ./bash_outfiles
+mkdir ./zsh_outfiles
 
 printf $RED
 echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥";
@@ -77,6 +80,7 @@ for testfile in ${test_lists[*]}; do
 		MINI_OUTFILES=$(cp ./outfiles/* ./mini_outfiles &>/dev/null)
 		MINI_ERROR_MSG=$(trap "" PIPE && echo "$teste" | $MINISHELL_PATH 2>&1 > /dev/null | grep -o '[^:]*$' )
 
+		# Capture bash reference
 		rm -rf ./outfiles/*
 		rm -rf ./bash_outfiles/*
 		BASH_OUTPUT=$(echo -e "$teste" | bash 2> /dev/null)
@@ -84,22 +88,48 @@ for testfile in ${test_lists[*]}; do
 		BASH_OUTFILES=$(cp ./outfiles/* ./bash_outfiles &>/dev/null)
 		BASH_ERROR_MSG=$(trap "" PIPE && echo "$teste" | bash 2>&1 > /dev/null | grep -o '[^:]*$' | head -n1)
 
-		OUTFILES_DIFF=$(diff --brief ./mini_outfiles ./bash_outfiles)
+		# Capture zsh reference (if zsh available)
+		rm -rf ./outfiles/*
+		rm -rf ./zsh_outfiles/*
+		if command -v zsh >/dev/null 2>&1; then
+			ZSH_OUTPUT=$(echo -e "$teste" | zsh 2> /dev/null)
+			ZSH_EXIT_CODE=$(echo $?)
+			cp ./outfiles/* ./zsh_outfiles 2>/dev/null || true
+			ZSH_ERROR_MSG=$(trap "" PIPE && echo "$teste" | zsh 2>&1 > /dev/null | grep -o '[^:]*$' | head -n1)
+		else
+			ZSH_OUTPUT="$BASH_OUTPUT"
+			ZSH_EXIT_CODE=$BASH_EXIT_CODE
+			cp ./bash_outfiles/* ./zsh_outfiles 2>/dev/null || true
+			ZSH_ERROR_MSG="$BASH_ERROR_MSG"
+		fi
+
+		OUTFILES_DIFF_BASH=$(diff --brief ./mini_outfiles ./bash_outfiles)
+		OUTFILES_DIFF_ZSH=$(diff --brief ./mini_outfiles ./zsh_outfiles)
 
 		printf $YELLOW
 		printf "Test %3s: " $i
-		if [[ "$MINI_OUTPUT" == "$BASH_OUTPUT" && "$MINI_EXIT_CODE" == "$BASH_EXIT_CODE" && -z "$OUTFILES_DIFF" ]]; then
+		matched=false
+		if [[ "$MINI_OUTPUT" == "$BASH_OUTPUT" && "$MINI_EXIT_CODE" == "$BASH_EXIT_CODE" && -z "$OUTFILES_DIFF_BASH" ]]; then
+			matched=true
+			ref="bash"
+		elif [[ "$MINI_OUTPUT" == "$ZSH_OUTPUT" && "$MINI_EXIT_CODE" == "$ZSH_EXIT_CODE" && -z "$OUTFILES_DIFF_ZSH" ]]; then
+			matched=true
+			ref="zsh"
+		fi
+		if $matched; then
 			printf ✅
 			((ok++))
-			if [ "$MINI_ERROR_MSG" != "$BASH_ERROR_MSG" ]; then
+			if [ "$ref" == "bash" ] && [ "$MINI_ERROR_MSG" != "$BASH_ERROR_MSG" ]; then
+				printf "⚠️ "
+			elif [ "$ref" == "zsh" ] && [ "$MINI_ERROR_MSG" != "$ZSH_ERROR_MSG" ]; then
 				printf "⚠️ "
 			fi
 		else
 			printf ❌
 		fi
 		printf "$GREY $teste \n$END"
-		if [ "$OUTFILES_DIFF" ]; then
-			echo "$OUTFILES_DIFF"
+		if [ "$OUTFILES_DIFF_BASH" ]; then
+			echo "$OUTFILES_DIFF_BASH"
 			echo mini outfiles:
 			cat ./mini_outfiles/*
 			echo bash outfiles:
@@ -124,6 +154,7 @@ chmod 666 ./test_files/invalid_permission
 rm -rf ./outfiles
 rm -rf ./mini_outfiles
 rm -rf ./bash_outfiles
+rm -rf ./zsh_outfiles
 
 printf $PURPLE
 printf $BOLD

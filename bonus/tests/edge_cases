@@ -1,0 +1,48 @@
+# assignments and expansion edge cases
+aa==vv
+aa======vv
+a=v
+echo $aa
+echo $a
+
+# cd edge cases
+cd
+cd ~
+cd $PWD
+unset HOME
+cd ~
+
+# export/env interactions
+export hello
+env | grep hello || true
+export hello=world
+env | grep hello || true
+unset hello
+export hello=
+env | grep hello || true
+
+# unset / local variable forms
+aa==vv
+echo $aa
+A=B C==D
+ echo $A $C
+
+# invalid redirects and pipes
+ls |
+ls | |
+echo hi |    |  < >>
+> '
+echo hi |  < >>   |  |
+
+# heredoc and redirects
+cat <<EOF
+EOF
+
+# glob / wildcard oddities
+echo *.md
+
+# builtin oddities
+export =
+export 123
+unset
+exit 0
