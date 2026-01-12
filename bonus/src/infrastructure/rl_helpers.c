@@ -18,15 +18,28 @@ char	*ft_asprintf(const char *fmt, ...);
 
 void	buff_readline_update(t_buff_readline *l)
 {
+	/* defensive clamp: ensure cursor within buffer bounds */
+	if (!l->buff.ctx || l->buff.len == 0)
+	{
+		l->cursor = 0;
+		l->has_line = false;
+		return ;
+	}
+	if (l->cursor > l->buff.len)
+		l->cursor = l->buff.len;
 	l->has_line = l->cursor != l->buff.len;
 }
 
 void	buff_readline_reset(t_buff_readline *l)
 {
-	ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor, l->buff.len - l->cursor);
+	if (l->buff.len > l->cursor)
+		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor, l->buff.len - l->cursor);
+	else if (l->buff.len > 0)
+		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx, l->buff.len);
 	l->buff.len -= l->cursor;
 	if (l->buff.ctx)
 		((char *)l->buff.ctx)[l->buff.len] = 0;
+	/* reset cursor to prompt start */
 	l->cursor = 0;
 	buff_readline_update(l);
 }

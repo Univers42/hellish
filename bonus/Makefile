@@ -12,7 +12,7 @@
 
 # Compiler and flags
 CC := gcc
-CFLAGS := -Wall -Wextra -Werror -g3 -ggdb -fsanitize=address,leak -std=gnu11
+CFLAGS := -Wall -Wextra -Werror -g3 -ggdb -fsanitize=address,leak -std=gnu11 -D_XOPEN_SOURCE=700
 INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
 
 # Directories
