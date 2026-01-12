@@ -101,6 +101,16 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 		}
 		else
 			ret.value = ft_strdup("");
+		/* Trim leading '=' characters to mimic zsh behavior (aa==vv -> vv) */
+		if (ret.value && ret.value[0] == '=')
+		{
+			size_t k = 0;
+			while (ret.value[k] == '=')
+				k++;
+			char *trimmed = ft_strdup(ret.value + k);
+			free(ret.value);
+			ret.value = trimmed ? trimmed : ft_strdup("");
+		}
 	}
 	free(args.ctx);
 	return (ret);
