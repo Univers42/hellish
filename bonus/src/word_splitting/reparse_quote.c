@@ -63,11 +63,32 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	{
 		(*i)++;
 	}
-	if (prev_start == *i + 1)
+	if (prev_start == *i)
 	{
-		t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
+		/* No variable name after '$'.
+		   - If we're inside double-quotes (tt == TT_DQENVVAR) and the next
+		     character is the closing double-quote, treat as literal '$'.
+		   - If the next character is a quote (single or double) in other
+		     contexts, treat as empty envvar so $'' and $"" become empty.
+		   - Otherwise treat as literal '$'. */
+		if (tt == TT_DQENVVAR && prev_start < t.len && t.start[prev_start] == '"')
+		{
+			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, prev_start, TT_WORD);
+			tmp.children.elem_size = sizeof(t_ast_node);
+			vec_push(&ret->children, &tmp);
+		}
+		else if (prev_start < t.len && (t.start[prev_start] == '\'' || t.start[prev_start] == '"'))
+		{
+			t_ast_node tmp = create_subtoken_node(t, prev_start, prev_start, TT_ENVVAR);
+			tmp.children.elem_size = sizeof(t_ast_node);
+			vec_push(&ret->children, &tmp);
+		}
+		else
+		{
+			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
+			tmp.children.elem_size = sizeof(t_ast_node);
+			vec_push(&ret->children, &tmp);
+		}
 	}
 	else
 	{
@@ -76,3 +97,65 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 		vec_push(&ret->children, &tmp);
 	}
 }
+
+// void reparse_dquote(t_ast_node *ret, int *i, t_token t)
+// {
+// 	int	prev_start;
+// 	bool	special;
+
+// 	ft_assert(t.start[(*i)++] == '"');
+// 	prev_start = *i;
+// 	while (*i < t.len && t.start[*i] != '"')
+// 	{
+// 		special = t.start[*i] == '\\' || t.start[*i] == '$';
+// 		if (special)
+// 		{
+// 			t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
+// 			tmp.children.elem_size = sizeof(t_ast_node);
+// 			vec_push(&ret->children, &tmp);
+// 		}
+// 		if (t.start[*i] == '\\')
+// 		{
+// 			/* handle backslash inside double quotes inline */
+// 			ft_assert(t.start[*i] == '\\');
+// 			(*i)++;
+// 			if (*i < t.len)
+// 			{
+// 				if (ft_strchr("\"$\\", t.start[*i]))
+// 				{
+// 					t_ast_node tmp2 = create_subtoken_node(t, *i, *i + 1, TT_DQWORD);
+// 					tmp2.children.elem_size = sizeof(t_ast_node);
+// 					vec_push(&ret->children, &tmp2);
+// 				}
+// 				else
+// 				{
+// 					t_ast_node tmp2 = create_subtoken_node(t, *i - 1, *i + 1, TT_DQWORD);
+// 					tmp2.children.elem_size = sizeof(t_ast_node);
+// 					vec_push(&ret->children, &tmp2);
+// 				}
+// 				(*i)++;
+// 			}
+// 			else
+// 			{
+// 				/* lone backslash at end -> treat as single-char DQ fragment */
+// 				t_ast_node tmp2 = create_subtoken_node(t, *i - 1, *i, TT_DQWORD);
+// 				tmp2.children.elem_size = sizeof(t_ast_node);
+// 				vec_push(&ret->children, &tmp2);
+// 			}
+// 		}
+// 		else if (t.start[*i] == '$')
+// 			reparse_envvar(ret, i, t, TT_DQENVVAR);
+// 		if (special)
+// 		{
+// 			prev_start = *i;
+// 			continue ;
+// 		}
+// 		(*i)++;
+// 	}
+// 	{
+// 		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
+// 		tmp.children.elem_size = sizeof(t_ast_node);
+// 		vec_push(&ret->children, &tmp);
+// 	}
+// 	ft_assert(t.start[(*i)++] == '"');
+// }

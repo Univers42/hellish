@@ -22,7 +22,8 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 	else if (ft_strncmp(key, "$", len) == 0 && state->pid && len == 1)
 		return (state->pid);
 	else if (len == 0)
-		return ("$");
+		/* empty variable name (e.g. $'' or $"") should expand to empty string */
+		return ("");
 	curr = env_nget(&state->env, key, len);
 	if (curr == 0 || curr->key == 0)
 		return (0);

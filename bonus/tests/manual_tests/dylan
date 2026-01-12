@@ -17,3 +17,9 @@ heredoc> HER2
 one
 two
 
+c1r13s5% printf "echo $\necho "$"\necho " $"\necho $''\necho "$(echo hi)"\n" | ./minishell 2>&1 | sed -n '1,200p'
+$
+$
+
+
+printf 'echo "$"\n' | ./minishell 2>&1 | sed -n '1,200p'

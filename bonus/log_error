@@ -1,0 +1,41 @@
+Test 206: ❌ echo ""   # backslash in double quotes 
+mini output = (a\b)
+bash output = ()
+
+
+
+Test 232: ❌ echo "$(echo hi)" 
+mini output = ($(echo hi))
+bash output = (hi)
+
+Test 235: ✅  
+Test 236: ❌ echo $'' 
+mini output = ($)
+bash output = ()
+
+mini output = ((echo hi))
+bash output = (hi)
+
+Test 206: ❌ echo ""   # backslash in double quotes 
+mini output = (a\b)
+bash output = ()
+
+Test 144: ❌ $ 
+mini exit code = 0
+bash exit code = 127
+mini error = ()
+bash error = ( command not found)
+
+Test  19: ❌ echo $ 
+mini output = ()
+bash output = ($)
+
+Test  17: ❌ echo "$" 
+mini output = ()
+bash output = ($)
+
+Test  13: ❌ echo "> >> < * ? [ ] | ; [ ] || && ( ) & # $  <<" 
+ && * bash_outfiles bash.supp bonus bonus_bonus builtins echo_edge_cases echo_more_edge_cases edge_cases extras local.supp loop.out manual_tests mini_outfiles os_specific outfile01 outfile02 outfiles pipes README.md re * [ ] | ; [ ] || && ( ) & # <<) test_japo test_japo2_echo wildcards zsh_outfiles 
+ && * bash_outfiles bash.supp bonus bonus_bonus builtins echo_edge_cases echo_more_edge_cases edge_cases extras local.supp loop.out manual_tests mini_outfiles os_specific outfile01 outfile02 outfiles pipes README.md re * [ ] | ; [ ] || && ( ) & # $ <<)est_japo test_japo2_echo wildcards zsh_outfiles 
+
+ 
