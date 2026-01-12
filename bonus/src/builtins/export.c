@@ -43,13 +43,44 @@ static bool	is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-static int	process_arg(t_shell *st, t_vec av, int i)
+static int	process_arg(t_shell *st, t_vec av, int *ip)
 {
 	char	*id;
 	t_env	*e;
 	char	*val;
+	int     i = *ip;
 
+	if (!av.ctx || !((char **)av.ctx)[i])
+	{
+		ft_eprintf("[DEBUG export] missing argv element at index %d\n", i);
+		return (1);
+	}
 	parse_export_arg(((char **)av.ctx)[i], &id, &val);
+#	ifdef DEBUG_EXPORT
+	ft_eprintf("[DEBUG export] arg='%s' -> id='%s' val='%s'\n", ((char **)av.ctx)[i], id ? id : "(null)", val ? val : "(null)");
+#	endif
+	/* If the parsed value is quoted ("..." or '...'), remove surrounding quotes */
+	if (val && val[0] && val[1])
+	{
+		size_t vlen = ft_strlen(val);
+		if ((val[0] == '"' && val[vlen - 1] == '"') || (val[0] == '\'' && val[vlen - 1] == '\''))
+		{
+			char *clean = ft_strndup(val + 1, vlen - 2);
+			free(val);
+			val = clean;
+		}
+	}
+	/* If value missing (argument ended with '='), and next argv exists, consume it as value */
+	if ((!val || val[0] == '\0') && i + 1 < (int)av.len)
+	{
+		char *next = ((char **)av.ctx)[i + 1];
+		if (next && !ft_strchr(next, '='))
+		{
+			val = ft_strdup(next);
+			/* advance caller index to skip consumed value */
+			*ip = i + 1;
+		}
+	}
 	if (is_valid_ident(id))
 	{
 		if (!val)
@@ -74,17 +105,36 @@ static int	process_arg(t_shell *st, t_vec av, int i)
 
 int	builtin_export(t_shell *st, t_vec av)
 {
-	size_t	i;
-	int		status;
+    size_t	i;
+    int		status;
 
-	i = 1;
-	status = 0;
-	if (av.len == 1)
-		return (builtin_env(st, av));
-	while (i < av.len)
-	{
-		status = process_arg(st, av, i) || status;
-		i++;
-	}
-	return (status ? 1 : 0);
+    /* Debug: print argv elements (use %d and avoid NULL %s) */
+#	ifdef DEBUG_EXPORT
+    size_t	di;
+    ft_eprintf("[DEBUG builtin_export] argv.len=%d\n", (int)av.len);
+    if (!av.ctx)
+    {
+        ft_eprintf("  argv.ctx = NULL\n");
+    }
+    else
+    {
+        for (di = 0; di < av.len; ++di)
+        {
+            char *s = ((char **)av.ctx)[di];
+            ft_eprintf("  argv[%d] = '%s'\n", (int)di, s ? s : "(null)");
+        }
+    }
+#	endif
+
+    i = 1;
+    status = 0;
+    if (av.len == 1)
+        return (builtin_env(st, av));
+    while (i < av.len)
+    {
+        int idx = (int)i;
+        status = process_arg(st, av, &idx) || status;
+        i = (size_t)idx + 1;
+    }
+    return (status ? 1 : 0);
 }
