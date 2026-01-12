@@ -129,7 +129,37 @@ int	builtin_export(t_shell *st, t_vec av)
     i = 1;
     status = 0;
     if (av.len == 1)
-        return (builtin_env(st, av));
+    {
+        /* Collect exported entries into a vector of strings, sort and print */
+        t_vec list;
+        size_t j;
+
+        vec_init(&list);
+        list.elem_size = sizeof(char *);
+        j = 0;
+        while (j < st->env.len)
+        {
+            t_env *e = &((t_env *)st->env.ctx)[j];
+            if (e->exported)
+            {
+                char *s = ft_asprintf("declare -x %s=\"%s\"", e->key, e->value ? e->value : "");
+                vec_push(&list, &s);
+            }
+            j++;
+        }
+        if (list.len > 1)
+            ft_quicksort(&list);
+        j = 0;
+        while (j < list.len)
+        {
+            char *s = ((char **)list.ctx)[j];
+            ft_printf("%s\n", s);
+            free(s);
+            j++;
+        }
+        free(list.ctx);
+        return (0);
+    }
     while (i < av.len)
     {
         int idx = (int)i;
