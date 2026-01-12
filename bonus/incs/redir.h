@@ -39,9 +39,10 @@ typedef struct s_heredoc_req
 	char		*sep;
 	bool		expand;
 	bool		remove_tabs;
+	bool		is_pipe_heredoc;
 }	t_heredoc_req;
 
-int			gather_heredocs(t_shell *state, t_ast_node *node);
+int			gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline);
 bool		contains_quotes(t_ast_node node);
 void		write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req);
 int			ft_mktemp(t_shell *state, t_ast_node *node);

@@ -20,9 +20,10 @@ bool	get_line_heredoc(t_shell *state,
 		t_heredoc_req *req, t_string *alloc_line)
 {
 	int			stat;
+	char *prompt = req->is_pipe_heredoc ? "pipe heredoc> " : "heredoc> ";
 
 	vec_init(alloc_line);
-	stat = buff_readline(state, alloc_line, "heredoc> ");
+	stat = buff_readline(state, alloc_line, prompt);
 	state->readline_buff.has_finished = false;
 	if (stat == 0)
 		ft_eprintf("%s: warning: here-document at"
