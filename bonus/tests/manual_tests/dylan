@@ -1,0 +1,19 @@
+(false && echo "AND_SHOULD_NOT") || echo "OR_TRIGGERED"; (true || echo "OR_SHOULD_NOT") && echo "AND_TRIGGERED";(echo SUBSHELL && false) || echo "AFTER_SUBSHELL"; echo foo | (grep foo && echo "PIPE_AND") || echo "PIPE
+_OR"
+
+$ cat <<HER1 <<HER2
+heredoc> one
+heredoc> HER1
+heredoc> two
+heredoc> HER2
+two
+
+
+$ (cat <<HER1; cat <<HER2) | cat
+heredoc> one
+heredoc> HER1
+heredoc> two
+heredoc> HER2
+one
+two
+

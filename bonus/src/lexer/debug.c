@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/12 01:54:58 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/12 02:20:20 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/12 03:53:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,49 +56,43 @@ bool	is_special_char(char c)
 	return (false);
 }
 
-char	*tt_to_str_p2(t_tt tt)
+/* function-scoped singleton for token-name table (no global variables) */
+static const char **get_tt_names(void)
 {
-	if (tt == TT_END)
-		return ("TT_END");
-	if (tt == TT_WORD)
-		return ("TT_WORD");
-	if (tt == TT_REDIRECT_LEFT)
-		return ("TT_REDIRECT_LEFT");
-	if (tt == TT_REDIRECT_RIGHT)
-		return ("TT_REDIRECT_RIGHT");
-	if (tt == TT_APPEND)
-		return ("TT_APPEND");
-	if (tt == TT_PIPE)
-		return ("TT_PIPE");
-	if (tt == TT_BRACE_LEFT)
-		return ("TT_BRACE_LEFT");
-	if (tt == TT_BRACE_RIGHT)
-		return ("TT_BRACE_RIGHT");
-	if (tt == TT_OR)
-		return ("TT_OR");
-	if (tt == TT_AND)
-		return ("TT_AND");
-	ft_assert(false);
-	return (0);
+    static const char *names[256];
+    static int inited = 0;
+    if (!inited)
+    {
+        for (size_t i = 0; i < 256; ++i)
+            names[i] = "TT_UNKNOWN";
+        names[TT_END] = "TT_END";
+        names[TT_WORD] = "TT_WORD";
+        names[TT_REDIRECT_LEFT] = "TT_REDIRECT_LEFT";
+        names[TT_REDIRECT_RIGHT] = "TT_REDIRECT_RIGHT";
+        names[TT_APPEND] = "TT_APPEND";
+        names[TT_PIPE] = "TT_PIPE";
+        names[TT_BRACE_LEFT] = "TT_BRACE_LEFT";
+        names[TT_BRACE_RIGHT] = "TT_BRACE_RIGHT";
+        names[TT_OR] = "TT_OR";
+        names[TT_AND] = "TT_AND";
+        names[TT_SEMICOLON] = "TT_SEMICOLON";
+        names[TT_HEREDOC] = "TT_HEREDOC";
+        names[TT_NEWLINE] = "TT_NEWLINE";
+        names[TT_SQWORD] = "TT_SQWORD";
+        names[TT_DQWORD] = "TT_DQWORD";
+        names[TT_ENVVAR] = "TT_ENVVAR";
+        names[TT_DQENVVAR] = "TT_DQENVVAR";
+        inited = 1;
+    }
+    return names;
 }
 
-char	*tt_to_str(t_tt tt)
+char *tt_to_str(t_tt tt)
 {
-	if (tt == TT_SEMICOLON)
-		return ("TT_SEMICOLON");
-	if (tt == TT_HEREDOC)
-		return ("TT_HEREDOC");
-	if (tt == TT_NEWLINE)
-		return ("TT_NEWLINE");
-	if (tt == TT_SQWORD)
-		return ("TT_QWORD");
-	if (tt == TT_DQWORD)
-		return ("TT_DQWORD");
-	if (tt == TT_ENVVAR)
-		return ("TT_ENVVAR");
-	if (tt == TT_DQENVVAR)
-		return ("TT_DQENVVAR");
-	return (tt_to_str_p2(tt));
+    const char **names = get_tt_names();
+    if ((unsigned)tt < 256)
+        return (char *)names[tt];
+    return "TT_INVALID";
 }
 
 static const char *token_color(t_tt tt)
@@ -230,40 +224,51 @@ void print_tokens(t_deque_tt *tokens)
 	while (i < tokens->deqtok.len)
 	{
 		curr = (t_token *)deque_idx(&tokens->deqtok, i);
+		/* If tokenizer didn't mark quoted words, detect them here for debugging display */
 		const char *name = tt_to_str(curr->tt);
+		/* detect quoted lexemes: if TT_WORD but starts and ends with matching quotes */
+		if (curr->tt == TT_WORD && curr->len >= 2)
+		{
+			unsigned char fst = ((unsigned char *)curr->start)[0];
+			unsigned char lst = ((unsigned char *)curr->start)[curr->len - 1];
+			if (fst == '"' && lst == '"')
+				name = "TT_DQWORD";
+			else if (fst == '\'' && lst == '\'')
+				name = "TT_SQWORD";
+		}
 		const char *color = token_color(curr->tt);
-		/* print row with consistent separators/padding as header */
-		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
-		/* type column */
-		ft_printf("%s%-*s%s ", color, (int)w_name, name, RESET_TERM);
-		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
-		/* len column */
-		ft_printf("%*d ", (int)w_len, curr->len);
-		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
-		/* lexeme column: print visible content then pad */
-		if (curr->len > 0)
-		{
-			ft_printf("%s", ASCII_GREY);
-			print_visible_lexeme_noquotes(curr);
-			ft_printf("%s", RESET_TERM);
-			size_t vis = visible_lexeme_len(curr);
-			if (vis < w_lexeme)
-			{
-				for (size_t _p = 0; _p < w_lexeme - vis; ++_p)
-					ft_printf(" ");
-			}
-		}
-		else
-		{
-			const char *emp = "(empty)";
-			ft_printf("%s%s%s", ASCII_GREY, emp, RESET_TERM);
-			size_t vis = ft_strlen(emp);
-			if (vis < w_lexeme)
-				for (size_t _p = 0; _p < w_lexeme - vis; ++_p) ft_printf(" ");
-		}
-		/* closing column separator */
-		ft_printf(ASCII_MAGENTA " ║" RESET_TERM "\n");
-		i++;
+ 		/* print row with consistent separators/padding as header */
+ 		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
+ 		/* type column */
+ 		ft_printf("%s%-*s%s ", color, (int)w_name, name, RESET_TERM);
+ 		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
+ 		/* len column */
+ 		ft_printf("%*d ", (int)w_len, curr->len);
+ 		ft_printf(ASCII_MAGENTA "║ " RESET_TERM);
+ 		/* lexeme column: print visible content then pad */
+ 		if (curr->len > 0)
+ 		{
+ 			ft_printf("%s", ASCII_GREY);
+ 			print_visible_lexeme_noquotes(curr);
+ 			ft_printf("%s", RESET_TERM);
+ 			size_t vis = visible_lexeme_len(curr);
+ 			if (vis < w_lexeme)
+ 			{
+ 				for (size_t _p = 0; _p < w_lexeme - vis; ++_p)
+ 					ft_printf(" ");
+ 			}
+ 		}
+ 		else
+ 		{
+ 			const char *emp = "(empty)";
+ 			ft_printf("%s%s%s", ASCII_GREY, emp, RESET_TERM);
+ 			size_t vis = ft_strlen(emp);
+ 			if (vis < w_lexeme)
+ 				for (size_t _p = 0; _p < w_lexeme - vis; ++_p) ft_printf(" ");
+ 		}
+ 		/* closing column separator */
+ 		ft_printf(ASCII_MAGENTA " ║" RESET_TERM "\n");
+ 		i++;
 	}
 	print_table_footer(w_name, w_len, w_lexeme);
 	ft_printf("------- DONE --------\n");
