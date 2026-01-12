@@ -93,3 +93,22 @@ echo "===triple"
 ""
 ''
 "test 'mix' and \"esc\""
+
+# Double-quote escape matrix (compare against bash --posix semantics)
+# Each line tests different numbers of backslashes before a character
+echo "a\\n"        # backslash + n should remain literal (a\n)
+echo "a\\\\n"    # two backslashes -> one literal backslash + n (a\\n)
+echo "a\\\\\\n"# three backslashes -> two literal backslashes + n (a\\\\n)
+echo "a\\\\\\\\n" # four backslashes
+
+echo "a\\r"        # backslash + r (a\r)
+echo "a\\t"        # backslash + t (a\t)
+echo "a\\b"        # backslash + b (a\b)
+echo "a\\e"        # backslash + e (a\e)
+
+echo "a\\\\"      # trailing double-backslash inside quotes
+
+echo "\"quoted\""  # escaped double quotes inside double quotes
+echo "dollar:\$USER"  # escaped dollar sign should prevent expansion
+
+echo "mix \\\"end" # mix of backslashes and escaped quote

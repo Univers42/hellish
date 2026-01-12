@@ -23,3 +23,71 @@ $
 
 
 printf 'echo "$"\n' | ./minishell 2>&1 | sed -n '1,200p'
+
+c1r13s5% bash
+bash: .config/build/fastfetch: No such file or directory
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\n"
+a\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\n"
+a\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\\\\\n"
+a\\\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\n"
+a\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\n"
+a\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\n"
+a\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\n"
+a\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\\n"
+a\\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\\\n"
+a\\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\\\\\n"
+a\\\\\n
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ echo "a\\\\\\\\\\n"^C
+dlesieur@c1r13s5:~/Documents/sh42/bonus/tests$ zsh
+/home/dlesieur/.zshrc:1: no such file or directory: .config/build/fastfetch
+c1r13s5% echo "a\\\n"
+a\n
+c1r13s5% echo "a\\\\n" 
+a\n
+c1r13s5% echo "a\\\\\n"
+a\
+
+c1r13s5% echo "a\\\\\\n"
+a\
+
+c1r13s5% echo "a\\\\\\\n"
+a\\n
+c1r13s5% echo "a\\\\\\\\n"
+a\\n
+c1r13s5% echo "a\\\\\\\\\n"
+a\\
+
+c1r13s5% echo "a\\\\\\\\\\n"
+a\\
+
+c1r13s5% echo "a\\\\\\\\\\\n"
+a\\\n
+c1r13s5% echo "a\\\\\\\\\\\n"
+a\\\n
+c1r13s5% echo "a\\\\\\\\\\\\n"
+a\\\n
+c1r13s5% echo "a\\\\\\\\\\\\\n"
+a\\\
+
+c1r13s5% echo "a\\\\\\\\\\\\\\n"
+a\\\
+
+c1r13s5% echo "a\\\\\\\\\\\\\\\\n"
+a\\\\n
+c1r13s5% echo "a\\\\\\\\\\\\\\\\\n"
+a\\\\
+
+c1r13s5% echo "a\\\\\\\\\\\\\\\\\\n"
+a\\\\
+
+c1r13s5% echo "a\\\\\\\\\\\\\\\\\\\n"
+a\\\\\n
