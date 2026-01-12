@@ -42,7 +42,7 @@ build/obj/environment/expand.o: src/environment/expand.c incs/env.h \
  incs/public/ft_printf.h incs/public/signals.h incs/public/error.h \
  incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/prompt.h \
- incs/helpers.h
+ incs/helpers.h incs/shell.h
 incs/env.h:
 incs/shell.h:
 incs/alias.h:
@@ -109,3 +109,4 @@ incs/redir.h:
 incs/history.h:
 incs/prompt.h:
 incs/helpers.h:
+incs/shell.h:

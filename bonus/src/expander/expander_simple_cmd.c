@@ -216,5 +216,21 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 			return (exp.exit_stat);
 		exp.i++;
 	}
+	/* If expansion produced only assignments and no argv (assignment-only form),
+	   apply those to the shell environment now to take ownership of their strings.
+	   This prevents leaks and double-free later when the temporary cmd is freed. */
+	if (ret->argv.len == 0 && ret->pre_assigns.len > 0)
+	{
+		/* Pop each pre_assign and insert it into the shell env (transfer ownership) */
+		while (ret->pre_assigns.len)
+		{
+			t_env tmp = *(t_env *)vec_pop(&ret->pre_assigns);
+			/* ensure exported flag is preserved */
+			env_set(&state->env, tmp);
+		}
+		/* free the backing storage and reinit vector */
+		free(ret->pre_assigns.ctx);
+		vec_init(&ret->pre_assigns);
+	}
 	return (0);
 }
