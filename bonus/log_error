@@ -38,4 +38,12 @@ Test  13: ❌ echo "> >> < * ? [ ] | ; [ ] || && ( ) & # $  <<"
  && * bash_outfiles bash.supp bonus bonus_bonus builtins echo_edge_cases echo_more_edge_cases edge_cases extras local.supp loop.out manual_tests mini_outfiles os_specific outfile01 outfile02 outfiles pipes README.md re * [ ] | ; [ ] || && ( ) & # <<) test_japo test_japo2_echo wildcards zsh_outfiles 
  && * bash_outfiles bash.supp bonus bonus_bonus builtins echo_edge_cases echo_more_edge_cases edge_cases extras local.supp loop.out manual_tests mini_outfiles os_specific outfile01 outfile02 outfiles pipes README.md re * [ ] | ; [ ] || && ( ) & # $ <<)est_japo test_japo2_echo wildcards zsh_outfiles 
 
- 
+ ╭─ dlesieur ─ /home/dlesieur/Documents/sh42/bonus ─ short_circuit                                                                                                  ⏳19:21:40
+$ echo $(echo hi)
+^C^Z
+[1]+  Stopped(SIGTSTP)        ./minishell
+
+
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42/bonus ─ short_circuit                 ⏳19:30:23
+$ htop &
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42/bonus ─ short_circuit # doesnt' work

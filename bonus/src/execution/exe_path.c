@@ -110,7 +110,7 @@ int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 		free_tab(path_dirs);
 	if (!*path_of_exe)
 		return (cmd_not_found(state, cmd_name));
-	if (check_is_a_dir(*path_of_exe, &enoent))
+	if (!check_is_a_dir(*path_of_exe, &enoent))
 	{
 		errno = EISDIR;
 		err_1_errno(state, cmd_name);

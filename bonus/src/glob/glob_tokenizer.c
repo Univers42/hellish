@@ -47,7 +47,12 @@ void	tokenize_pattern(t_vec_glob *ret, t_token t, int *i)
 	while (*i < t.len && t.start[*i] != '/'
 		&& (t.start[*i] != '*' || !expandable))
 		(*i)++;
-	t_glob g = {.ty = G_PATTERN, .start = start, .len = t.start + *i - start};
+	t_glob g = {
+			.ty = G_PATTERN,
+			.start = start,
+			.len = t.start + *i - start
+	};
+	//t_glob	g = create_glob(G_PATTERN, start, t.start + *i - start);
 	vec_push(ret, &g);
 }
 
