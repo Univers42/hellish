@@ -18,35 +18,35 @@
 #include <unistd.h>
 #include "libft.h"
 #include <stdint.h>
-# include "env.h"
-# include "expander.h"
+#include "env.h"
+#include "expander.h"
 
 static void update_underscore_var(t_shell *state, t_executable_cmd *cmd)
 {
-	if (cmd->argv.len > 0) {
+	if (cmd->argv.len > 0)
+	{
 		char *last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
 		if (last)
 			env_set(&state->env, (t_env){
-				.exported = true,
-				.key = ft_strdup("_"),
-				.value = ft_strdup(last)
-			});
+									 .exported = true,
+									 .key = ft_strdup("_"),
+									 .value = ft_strdup(last)});
 	}
 }
 
 // returns status
-int	actually_run(t_shell *state, t_vec *args)
+int actually_run(t_shell *state, t_vec *args)
 {
-	char	*path_of_exe;
-	char	**envp;
-	int		status;
+	char *path_of_exe;
+	char **envp;
+	int status;
 
 	ft_assert(args->len >= 1);
 
 #if TRACE_DEBUG
 	// debug
 	ft_eprintf("%s: debug: actually_run argv[0]=%s argc=%lu\n",
-		state->context, ((char **)args->ctx)[0], (unsigned long)args->len);
+			   state->context, ((char **)args->ctx)[0], (unsigned long)args->len);
 #endif
 
 	if (builtin_func(((char **)(args->ctx))[0]))
@@ -62,10 +62,9 @@ int	actually_run(t_shell *state, t_vec *args)
 
 	/* Ensure the child environment uses the executable path for _ (bash-like) */
 	env_set(&state->env, (t_env){
-		.exported = true,
-		.key = ft_strdup("_"),
-		.value = ft_strdup(path_of_exe)
-	});
+							 .exported = true,
+							 .key = ft_strdup("_"),
+							 .value = ft_strdup(path_of_exe)});
 
 #if TRACE_DEBUG
 	ft_eprintf("%s: debug: exec path=%s\n", state->context, path_of_exe);
@@ -77,10 +76,10 @@ int	actually_run(t_shell *state, t_vec *args)
 	/* If execve failed with ENOEXEC (Exec format error), try /bin/sh file args... */
 	if (errno == ENOEXEC)
 	{
-		size_t	orig_elems;
-		size_t	new_elems;
-		char	**newargv;
-		size_t	i;
+		size_t orig_elems;
+		size_t new_elems;
+		char **newargv;
+		size_t i;
 
 		orig_elems = args->len - 1; /* exclude final NULL sentinel pushed above */
 		new_elems = orig_elems + 1; /* add "/bin/sh" at front */
@@ -107,11 +106,14 @@ int	actually_run(t_shell *state, t_vec *args)
 		if (_saved_errno == EACCES)
 			ft_eprintf("%s: %s: %s\n", state->context, path_of_exe, strerror(_saved_errno));
 		/* free argv strings and buffer (child only) */
-		if (args->ctx) {
+		if (args->ctx)
+		{
 			size_t _i = 0;
 			char **_arr = (char **)args->ctx;
-			while (_i < args->len) {
-				if (_arr[_i]) free(_arr[_i]);
+			while (_i < args->len)
+			{
+				if (_arr[_i])
+					free(_arr[_i]);
 				_i++;
 			}
 			free(args->ctx);
@@ -146,10 +148,10 @@ int	actually_run(t_shell *state, t_vec *args)
 	return 1;
 }
 
-void	set_up_redirection(t_shell *state, t_executable_node *exe)
+void set_up_redirection(t_shell *state, t_executable_node *exe)
 {
-	t_redir	redir;
-	size_t	i;
+	t_redir redir;
+	size_t i;
 
 	if (exe->next_infd != -1)
 		close(exe->next_infd);
@@ -158,7 +160,7 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 
 	/* nothing to do */
 	if (exe->redirs.len == 0)
-		return ;
+		return;
 
 	/* Case A: redir indices available in exe->redirs.ctx */
 	if (exe->redirs.ctx)
@@ -170,7 +172,7 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 			if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
 			{
 				ft_eprintf("%s: internal error: invalid redirect index %d\n",
-					state->context ? state->context : "minishell", idx);
+						   state->context ? state->context : "minishell", idx);
 				_exit(1);
 			}
 			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
@@ -180,7 +182,7 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 				dup2(redir.fd, 1);
 			close(redir.fd);
 		}
-		return ;
+		return;
 	}
 
 	/* Case B: no redirs buffer available — fallback: scan AST children for redirects */
@@ -202,7 +204,7 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 			if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
 			{
 				ft_eprintf("%s: internal error: invalid redirect index %d\n",
-					state->context ? state->context : "minishell", idx);
+						   state->context ? state->context : "minishell", idx);
 				_exit(1);
 			}
 			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
@@ -212,21 +214,21 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 				dup2(redir.fd, 1);
 			close(redir.fd);
 		}
-		return ;
+		return;
 	}
 
 	/* If we reach here, redirection info is inconsistent */
 	ft_eprintf("%s: internal error: redirects present but no redirect data\n",
-		state->context ? state->context : "minishell");
+			   state->context ? state->context : "minishell");
 	_exit(1);
 }
 
-t_exe_res	execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
-	t_executable_node *exe)
+t_exe_res execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
+								 t_executable_node *exe)
 {
-	int		stdin_bak;
-	int		stdout_bak;
-	int		status;
+	int stdin_bak;
+	int stdout_bak;
+	int status;
 
 	stdin_bak = dup(0);
 	stdout_bak = dup(1);
@@ -247,21 +249,21 @@ t_exe_res	execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
 	return (res_status(status));
 }
 
-t_exe_res	execute_cmd_bg(t_shell *state,
-		t_executable_node *exe, t_executable_cmd *cmd)
+t_exe_res execute_cmd_bg(t_shell *state,
+						 t_executable_node *exe, t_executable_cmd *cmd)
 {
-	int	pid;
+	int pid;
 
 	/* Ensure '_' is set in parent (and therefore inherited by the forked child)
 	   to the last argument of the command (POSIX/bash behaviour). */
-	if (cmd->argv.len > 0) {
+	if (cmd->argv.len > 0)
+	{
 		char *last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
 		if (last)
 			env_set(&state->env, (t_env){
-				.exported = true,
-				.key = ft_strdup("_"),
-				.value = ft_strdup(last)
-			});
+									 .exported = true,
+									 .key = ft_strdup("_"),
+									 .value = ft_strdup(last)});
 	}
 
 	pid = fork();
@@ -277,10 +279,10 @@ t_exe_res	execute_cmd_bg(t_shell *state,
 	return (res_pid(pid));
 }
 
-t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe)
+t_exe_res execute_simple_command(t_shell *state, t_executable_node *exe)
 {
-	t_executable_cmd	cmd;
-	size_t				i;
+	t_executable_cmd cmd;
+	size_t i;
 
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
@@ -307,8 +309,7 @@ t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe)
 		}
 		i++;
 	}
-	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0])
-		&& exe->modify_parent_context)
+	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0]) && exe->modify_parent_context)
 		return (execute_builtin_cmd_fg(state, &cmd, exe));
 	else if (cmd.argv.len)
 		return (execute_cmd_bg(state, exe, &cmd));

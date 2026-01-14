@@ -47,5 +47,10 @@ void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node));
 void	free_ast(t_ast_node *node);
 void	print_ast_dot(t_shell *state, t_ast_node node);
 void	print_dot_node(t_shell *state, t_ast_node node, uint32_t id, int outfd);
+char	*node_name(t_ast_t tn);
+void	print_node(t_ast_node node);
+void	print_token_str(t_ast_node node, int outfd);
+void	print_dot_node(t_shell *state, t_ast_node node, uint32_t id, int outfd);
+void	print_ast_dot(t_shell *state, t_ast_node node);
 
 # endif

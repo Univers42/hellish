@@ -13,18 +13,19 @@
 #include "shell.h"
 #include "input.h"
 #include <stdbool.h>
-# include "lexer.h"
-# include "parser.h"
-# include "prompt.h"
+#include "lexer.h"
+#include "parser.h"
+#include "prompt.h"
+#include "ast.h"
 
 // Add prototypes for static inline functions used from input.h
 bool ends_with_bs_nl(t_string s);
 bool is_empty_token_list(t_deque_tt *tokens);
 
-bool	ends_with_bs_nl(t_string s)
+bool ends_with_bs_nl(t_string s)
 {
-	size_t	i;
-	bool	unterminated;
+	size_t i;
+	bool unterminated;
 
 	if (s.len == 0)
 		return (false);
@@ -38,25 +39,24 @@ bool	ends_with_bs_nl(t_string s)
 		if (((char *)s.ctx)[i] == '\\')
 			unterminated = !unterminated;
 		else
-			break ;
+			break;
 	}
 	return (unterminated);
 }
 
-bool	is_empty_token_list(t_deque_tt *tokens)
+bool is_empty_token_list(t_deque_tt *tokens)
 {
 	/* tokens->deqtok is the internal t_deque */
 	if (tokens->deqtok.len < 2)
 		return (true);
-	if (tokens->deqtok.len == 2
-		&& ((t_token *)deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
+	if (tokens->deqtok.len == 2 && ((t_token *)deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
 		return (true);
 	return (false);
 }
 
-int	readline_cmd(t_shell *state, char **prompt)
+int readline_cmd(t_shell *state, char **prompt)
 {
-	int		stat;
+	int stat;
 
 	/* defensive: ensure readline buffer vector initialized */
 	if (!state->readline_buff.buff.ctx)
@@ -86,9 +86,9 @@ int	readline_cmd(t_shell *state, char **prompt)
 	return (0);
 }
 
-void	extend_bs(t_shell *state)
+void extend_bs(t_shell *state)
 {
-	char	*prompt;
+	char *prompt;
 
 	while (ends_with_bs_nl(state->input))
 	{
@@ -96,13 +96,13 @@ void	extend_bs(t_shell *state)
 		vec_pop(&state->input);
 		prompt = ft_strdup("> ");
 		if (readline_cmd(state, &prompt))
-			return ;
+			return;
 	}
 }
 
-int	get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt)
+int get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt)
 {
-	int		stat;
+	int stat;
 
 	while (*prompt)
 	{
@@ -111,10 +111,11 @@ int	get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt)
 		{
 			if (tt->looking_for && state->input.len)
 				ft_eprintf("%s: unexpected EOF while looking for "
-					"matching `%c'\n", state->context, tt->looking_for);
+						   "matching `%c'\n",
+						   state->context, tt->looking_for);
 			else if (state->input.len)
 				ft_eprintf("%s: syntax error: unexpected end of file\n",
-					state->context);
+						   state->context);
 			if (state->input_method == INP_READLINE)
 				ft_eprintf("exit\n");
 			if (!state->last_cmd_status_res.status && state->input.len)
@@ -130,8 +131,8 @@ int	get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt)
 	return 0;
 }
 
-bool	try_parse_tokens(t_shell *state, t_parser *parser,
-	t_deque_tt *tt, char **prompt)
+bool try_parse_tokens(t_shell *state, t_parser *parser,
+					  t_deque_tt *tt, char **prompt)
 {
 	if (is_empty_token_list(tt))
 	{
@@ -155,9 +156,103 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-static void	get_more_input_parser(t_shell *state,
-							t_parser *parser, char **prompt, t_deque_tt *tt)
+static void get_more_input_parser(t_shell *state,
+								  t_parser *parser, char **prompt, t_deque_tt *tt)
 {
+	/* Debug parser mode: drive lexer+parser, print AST (textual), do NOT execute */
+	if (state->option_flags & OPT_FLAG_DEBUG_PARSER)
+	{
+		while (parser->res == RES_MoreInput || parser->res == RES_Init)
+		{
+			/* ensure status reset for new input cycle */
+			set_cmd_status(state, res_status(0));
+			int s = get_more_tokens(state, prompt, tt);
+			if (s == 1)
+			{
+				/* EOF */
+				state->should_exit = true;
+				break;
+			}
+			if (s == 2)
+			{
+				/* interrupted (ctrl-c) -> reset buffers similar to lexer-debug path */
+				buff_readline_reset(&state->readline_buff);
+				if (tt->deqtok.buff)
+					deque_clear(&tt->deqtok, NULL);
+				tt->looking_for = 0;
+				if (state->input.ctx)
+					state->input.len = 0;
+				set_cmd_status(state, (t_exe_res){.status = 130, .c_c = true});
+				if (*prompt)
+					free(*prompt);
+				{
+					t_string _p = prompt_normal(state);
+					*prompt = ft_strdup(_p.ctx);
+					free(_p.ctx);
+				}
+				buff_readline_update(&state->readline_buff);
+				/* attempt to immediately read next input (like lexer debug) */
+				s = get_more_tokens(state, prompt, tt);
+				if (s == 1)
+				{
+					state->should_exit = true;
+					break;
+				}
+				if (s == 2)
+				{
+					/* another interrupt: continue waiting */
+					continue;
+				}
+			}
+			/* normal input read: ensure status reset immediately */
+			set_cmd_status(state, res_status(0));
+			if (g_should_unwind)
+				set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+			if (state->should_exit || g_should_unwind)
+				break;
+			/* empty token list -> nothing to do for parser debug */
+			if (is_empty_token_list(tt))
+			{
+				buff_readline_reset(&state->readline_buff);
+				continue;
+			}
+			/* Parse tokens and print AST (textual) but don't execute */
+			parser->parse_stack.len = 0;
+			{
+				t_ast_node parsed = parse_tokens(state, parser, tt);
+#if TRACE_DEBUG
+				ft_eprintf("%s: debug: parser.res=%d\n", state->context, (int)parser->res);
+#endif
+				if (parser->res == RES_OK)
+				{
+					/* produce DOT + pretty tree using the AST printer (writes out.dot + prints tree) */
+					print_ast_dot(state, parsed);
+					free_ast(&parsed);
+				}
+				else if (parser->res == RES_FatalError)
+					set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+			}
+			/* cleanup token deque and input similar to lexer debug path */
+			if (tt->deqtok.buff)
+				deque_clear(&tt->deqtok, NULL);
+			tt->looking_for = 0;
+			manage_history(state);
+			buff_readline_reset(&state->readline_buff);
+			buff_readline_update(&state->readline_buff);
+			state->input.len = 0;
+			if (*prompt)
+				free(*prompt);
+			{
+				t_string _p = prompt_normal(state);
+				*prompt = ft_strdup(_p.ctx);
+				free(_p.ctx);
+			}
+			/* ensure parser won't execute the parsed AST in the caller */
+			parser->res = RES_Init;
+		}
+		return;
+	}
+
 	/* If caller requested lexer-only debug, drive the readline/tokenizer
 	   infrastructure but do not parse/execute: print tokens and continue. */
 	if (state->option_flags & OPT_FLAG_DEBUG_LEXER)
@@ -171,7 +266,7 @@ static void	get_more_input_parser(t_shell *state,
 			{
 				/* EOF */
 				state->should_exit = true;
-				break ;
+				break;
 			}
 			if (s == 2)
 			{
@@ -185,19 +280,23 @@ static void	get_more_input_parser(t_shell *state,
 				set_cmd_status(state, (t_exe_res){.status = 130, .c_c = true});
 				if (*prompt)
 					free(*prompt);
-				{ t_string _p = prompt_normal(state); *prompt = ft_strdup(_p.ctx); free(_p.ctx); }
+				{
+					t_string _p = prompt_normal(state);
+					*prompt = ft_strdup(_p.ctx);
+					free(_p.ctx);
+				}
 				buff_readline_update(&state->readline_buff);
 				/* attempt to immediately read the next input so it is not lost */
 				s = get_more_tokens(state, prompt, tt);
 				if (s == 1)
 				{
 					state->should_exit = true;
-					break ;
+					break;
 				}
 				if (s == 2)
 				{
 					/* another interrupt: continue waiting */
-					continue ;
+					continue;
 				}
 				/* if we received a normal input immediately after Ctrl-C, process it now */
 				if (!is_empty_token_list(tt))
@@ -218,9 +317,13 @@ static void	get_more_input_parser(t_shell *state,
 					/* refresh prompt */
 					if (*prompt)
 						free(*prompt);
-					{ t_string _p = prompt_normal(state); *prompt = ft_strdup(_p.ctx); free(_p.ctx); }
+					{
+						t_string _p = prompt_normal(state);
+						*prompt = ft_strdup(_p.ctx);
+						free(_p.ctx);
+					}
 					/* continue loop */
-					continue ;
+					continue;
 				}
 				/* reset status for the newly read input so it's not affected by previous Ctrl-C */
 				set_cmd_status(state, res_status(0));
@@ -231,17 +334,17 @@ static void	get_more_input_parser(t_shell *state,
 			if (g_should_unwind)
 				set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 			if (state->should_exit || g_should_unwind)
-				break ;
+				break;
 			if (is_empty_token_list(tt))
 			{
 				buff_readline_reset(&state->readline_buff);
-				continue ;
+				continue;
 			}
 			/* print tokens for debugging */
 			print_tokens(tt);
 			/* set successful status for this debug run */
 		 set_cmd_status(state, res_status(0));
-			/* clear token deque */
+		 /* clear token deque */
 			deque_clear(&tt->deqtok, NULL);
 			tt->looking_for = 0;
 			/* record history then reset/readline update */
@@ -253,9 +356,13 @@ static void	get_more_input_parser(t_shell *state,
 			/* refresh prompt */
 			if (*prompt)
 				free(*prompt);
-			{ t_string _p = prompt_normal(state); *prompt = ft_strdup(_p.ctx); free(_p.ctx); }
+			{
+				t_string _p = prompt_normal(state);
+				*prompt = ft_strdup(_p.ctx);
+				free(_p.ctx);
+			}
 		}
-		return ;
+		return;
 	}
 
 	/* default behavior: parse tokens and proceed to execution when ready */
@@ -265,27 +372,27 @@ static void	get_more_input_parser(t_shell *state,
 		if (s == 1)
 		{
 			state->should_exit = true;
-			break ;
+			break;
 		}
 		if (s == 2)
 		{
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
-			continue ;
+			continue;
 		}
 		if (g_should_unwind)
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 		if (state->should_exit || g_should_unwind)
-			break ;
+			break;
 		if (!try_parse_tokens(state, parser, tt, prompt))
-			break ;
+			break;
 	}
 }
 
-void	parse_and_execute_input(t_shell *state)
+void parse_and_execute_input(t_shell *state)
 {
-	t_deque_tt	tt;
-	char		*prompt;
-	t_parser	parser;
+	t_deque_tt tt;
+	char *prompt;
+	t_parser parser;
 
 	parser = (t_parser){.res = RES_Init};
 	/* Initialize parse_stack as a vec of int (legacy vec_int) */
@@ -318,7 +425,5 @@ void	parse_and_execute_input(t_shell *state)
 		free(prompt);
 	if (tt.deqtok.buff)
 		free(tt.deqtok.buff);
-	state->should_exit |= (g_should_unwind
-			&& state->input_method != INP_READLINE)
-		|| state->readline_buff.has_finished;
+	state->should_exit |= (g_should_unwind && state->input_method != INP_READLINE) || state->readline_buff.has_finished;
 }
