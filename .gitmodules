@@ -7,3 +7,6 @@
 [submodule "bonus/vendor/libft"]
 	path = bonus/vendor/libft
 	url = git@github.com:Univers42/libft.git
+[submodule "vendor/libft"]
+	path = vendor/libft
+	url = git@github.com:Univers42/libft.git
