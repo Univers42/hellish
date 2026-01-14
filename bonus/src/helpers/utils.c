@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "env.h"
 
 void	free_tab(char **tab)
 {
@@ -66,3 +67,4 @@ void	set_cmd_status(t_shell *state, t_exe_res res)
 	free(state->last_cmd_status_s);
 	state->last_cmd_status_s = ft_itoa(res.status);
 }
+

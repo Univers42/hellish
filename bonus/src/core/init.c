@@ -115,6 +115,79 @@ void	init_cwd(t_shell *state)
 	free(cwd);
 }
 
+void ensure_essential_env_vars(t_shell *state)
+{
+	char *cwd = NULL;
+	t_env *e;
+
+	// HOME
+	e = env_get(&state->env, "HOME");
+	if (!e || !e->value || !e->value[0]) {
+		cwd = getcwd(NULL, 0);
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("HOME"),
+			.value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")
+		});
+		free(cwd);
+	}
+
+	// PWD
+	e = env_get(&state->env, "PWD");
+	if (!e || !e->value || !e->value[0]) {
+		cwd = getcwd(NULL, 0);
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("PWD"),
+			.value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")
+		});
+		free(cwd);
+	}
+
+	// SHLVL
+	e = env_get(&state->env, "SHLVL");
+	if (!e || !e->value || !e->value[0]) {
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("SHLVL"),
+			.value = ft_strdup("1")
+		});
+	} else {
+		int lvl = 1;
+		if (ft_checked_atoi(e->value, &lvl, 42) == 0)
+			lvl++;
+		else
+			lvl = 1;
+		char buf[16];
+		snprintf(buf, sizeof(buf), "%d", lvl);
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("SHLVL"),
+			.value = ft_strdup(buf)
+		});
+	}
+
+	// PATH
+	e = env_get(&state->env, "PATH");
+	if (!e || !e->value || !e->value[0]) {
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("PATH"),
+			.value = ft_strdup("/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
+		});
+	}
+
+	// _ (underscore)
+	e = env_get(&state->env, "_");
+	if (!e || !e->value || !e->value[0]) {
+		env_set(&state->env, (t_env){
+			.exported = true,
+			.key = ft_strdup("_"),
+			.value = ft_strdup(state->context ? state->context : "./minishell")
+		});
+	}
+}
+
 void	on(t_shell *state, char **argv, char **envp)
 {
     set_unwind_sig();
@@ -145,6 +218,7 @@ void	on(t_shell *state, char **argv, char **envp)
      state->last_cmd_status_res = res_status(0);
      init_cwd(state);
      state->env = env_to_vec_env(state, envp);
+     ensure_essential_env_vars(state);
      /* initialize redirects vector so later vec_push/vec_idx are safe */
 	vec_init(&state->redirects);
 	state->redirects.elem_size = sizeof(t_redir);
