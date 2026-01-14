@@ -11,49 +11,49 @@
 /* ************************************************************************** */
 
 #include "shell.h"
-# include "helpers.h"
-# include "input.h"
+#include "helpers.h"
+#include "input.h"
 #include "env.h"
 #include <string.h>
- #include "lexer.h"
- #include <fcntl.h>
- #include <errno.h>
- #include <unistd.h>
- 
- /* Parse argv early to set option flags without performing heavy initialization. */
- static uint32_t select_mode_from_argv(char **argv)
- {
-     uint32_t flags = 0;
-     if (!argv || !argv[0])
-         return 0;
-     for (int i = 1; argv[i]; ++i)
-     {
-         if (ft_strcmp(argv[i], "-c") == 0)
-             flags |= OPT_FLAG_VERBOSE; /* treat -c as request to run provided command */
-         else if (ft_strcmp(argv[i], "--help") == 0 || ft_strcmp(argv[i], "-h") == 0)
-             flags |= OPT_FLAG_HELP;
-         else if (ft_strcmp(argv[i], "--verbose") == 0)
-             flags |= OPT_FLAG_VERBOSE;
-         else if (ft_strncmp(argv[i], "--debug=", 8) == 0)
-         {
-             char *v = argv[i] + 8;
-             if (ft_strcmp(v, "lexer") == 0)
-                 flags |= OPT_FLAG_DEBUG_LEXER;
-             else if (ft_strcmp(v, "parser") == 0)
-                 flags |= OPT_FLAG_DEBUG_PARSER;
-             else if (ft_strcmp(v, "ast") == 0)
-                 flags |= OPT_FLAG_DEBUG_AST;
-         }
-     }
-     return flags;
- }
- 
- void	init_arg(t_shell *state, char **argv)
- {
-     if (!argv[2])
-     {
+#include "lexer.h"
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+
+/* Parse argv early to set option flags without performing heavy initialization. */
+static uint32_t select_mode_from_argv(char **argv)
+{
+	uint32_t flags = 0;
+	if (!argv || !argv[0])
+		return 0;
+	for (int i = 1; argv[i]; ++i)
+	{
+		if (ft_strcmp(argv[i], "-c") == 0)
+			flags |= OPT_FLAG_VERBOSE; /* treat -c as request to run provided command */
+		else if (ft_strcmp(argv[i], "--help") == 0 || ft_strcmp(argv[i], "-h") == 0)
+			flags |= OPT_FLAG_HELP;
+		else if (ft_strcmp(argv[i], "--verbose") == 0)
+			flags |= OPT_FLAG_VERBOSE;
+		else if (ft_strncmp(argv[i], "--debug=", 8) == 0)
+		{
+			char *v = argv[i] + 8;
+			if (ft_strcmp(v, "lexer") == 0)
+				flags |= OPT_FLAG_DEBUG_LEXER;
+			else if (ft_strcmp(v, "parser") == 0)
+				flags |= OPT_FLAG_DEBUG_PARSER;
+			else if (ft_strcmp(v, "ast") == 0)
+				flags |= OPT_FLAG_DEBUG_AST;
+		}
+	}
+	return flags;
+}
+
+void init_arg(t_shell *state, char **argv)
+{
+	if (!argv[2])
+	{
 		ft_eprintf("%s: -c: option requires an argument\n",
-			state->base_context);
+				   state->base_context);
 		free_all_state(state);
 		exit(SYNTAX_ERR);
 	}
@@ -61,17 +61,17 @@
 	buff_readline_update(&state->readline_buff);
 	state->readline_buff.should_update_context = true;
 	state->input_method = INP_ARG;
- }
+}
 
-void	init_file(t_shell *state, char **argv)
+void init_file(t_shell *state, char **argv)
 {
-	int	fd;
+	int fd;
 
 	fd = open(argv[1], O_RDONLY);
 	if (fd < 0)
 	{
 		ft_eprintf("%s: %s: %s\n", state->base_context,
-			argv[1], strerror(errno));
+				   argv[1], strerror(errno));
 		free_all_state(state);
 		if (errno == EISDIR)
 			exit(127);
@@ -79,7 +79,10 @@ void	init_file(t_shell *state, char **argv)
 	}
 	vec_append_fd(fd, &state->readline_buff.buff);
 	close(fd);
-	{ char ch = '\n'; vec_push(&state->readline_buff.buff, &ch); }
+	{
+		char ch = '\n';
+		vec_push(&state->readline_buff.buff, &ch);
+	}
 	buff_readline_update(&state->readline_buff);
 	state->readline_buff.should_update_context = true;
 	free(state->base_context);
@@ -89,15 +92,15 @@ void	init_file(t_shell *state, char **argv)
 	state->input_method = INP_FILE;
 }
 
-void	init_stdin_notty(t_shell *state)
+void init_stdin_notty(t_shell *state)
 {
 	state->input_method = INP_STDIN_NOTTY;
 	state->readline_buff.should_update_context = true;
 }
 
-void	init_cwd(t_shell *state)
+void init_cwd(t_shell *state)
 {
-	char	*cwd;
+	char *cwd;
 
 	vec_init(&state->cwd);
 	cwd = getcwd(NULL, 0);
@@ -108,9 +111,9 @@ void	init_cwd(t_shell *state)
 	else
 	{
 		ft_eprintf("shell-init: error retrieving current directory:"
-			" getcwd: cannot access parent directories:"
-			" No such file or directory\nsh: 0: "
-			"getcwd() failed: No such file or directory\n");
+				   " getcwd: cannot access parent directories:"
+				   " No such file or directory\nsh: 0: "
+				   "getcwd() failed: No such file or directory\n");
 	}
 	free(cwd);
 }
@@ -122,37 +125,39 @@ void ensure_essential_env_vars(t_shell *state)
 
 	// HOME
 	e = env_get(&state->env, "HOME");
-	if (!e || !e->value || !e->value[0]) {
+	if (!e || !e->value || !e->value[0])
+	{
 		cwd = getcwd(NULL, 0);
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("HOME"),
-			.value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")
-		});
+								 .exported = true,
+								 .key = ft_strdup("HOME"),
+								 .value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")});
 		free(cwd);
 	}
 
 	// PWD
 	e = env_get(&state->env, "PWD");
-	if (!e || !e->value || !e->value[0]) {
+	if (!e || !e->value || !e->value[0])
+	{
 		cwd = getcwd(NULL, 0);
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("PWD"),
-			.value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")
-		});
+								 .exported = true,
+								 .key = ft_strdup("PWD"),
+								 .value = cwd ? ft_strdup(cwd) : ft_strdup("/tmp")});
 		free(cwd);
 	}
 
 	// SHLVL
 	e = env_get(&state->env, "SHLVL");
-	if (!e || !e->value || !e->value[0]) {
+	if (!e || !e->value || !e->value[0])
+	{
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("SHLVL"),
-			.value = ft_strdup("1")
-		});
-	} else {
+								 .exported = true,
+								 .key = ft_strdup("SHLVL"),
+								 .value = ft_strdup("1")});
+	}
+	else
+	{
 		int lvl = 1;
 		if (ft_checked_atoi(e->value, &lvl, 42) == 0)
 			lvl++;
@@ -161,75 +166,74 @@ void ensure_essential_env_vars(t_shell *state)
 		char buf[16];
 		snprintf(buf, sizeof(buf), "%d", lvl);
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("SHLVL"),
-			.value = ft_strdup(buf)
-		});
+								 .exported = true,
+								 .key = ft_strdup("SHLVL"),
+								 .value = ft_strdup(buf)});
 	}
 
 	// PATH
 	e = env_get(&state->env, "PATH");
-	if (!e || !e->value || !e->value[0]) {
+	if (!e || !e->value || !e->value[0])
+	{
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("PATH"),
-			.value = ft_strdup("/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
-		});
+								 .exported = true,
+								 .key = ft_strdup("PATH"),
+								 .value = ft_strdup("/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")});
 	}
 
 	// _ (underscore)
 	e = env_get(&state->env, "_");
-	if (!e || !e->value || !e->value[0]) {
+	if (!e || !e->value || !e->value[0])
+	{
 		env_set(&state->env, (t_env){
-			.exported = true,
-			.key = ft_strdup("_"),
-			.value = ft_strdup(state->context ? state->context : "./minishell")
-		});
+								 .exported = true,
+								 .key = ft_strdup("_"),
+								 .value = ft_strdup(state->context ? state->context : "./minishell")});
 	}
 }
 
-void	on(t_shell *state, char **argv, char **envp)
+void on(t_shell *state, char **argv, char **envp)
 {
-    set_unwind_sig();
-    *state = (t_shell){0};
-    /* parse argv to detect requested runtime mode before heavy init */
-    state->option_flags = select_mode_from_argv(argv);
-     /* If only help requested, print help and exit early (no further init) */
-    if (state->option_flags & OPT_FLAG_HELP)
-    {
-        ft_printf("Usage: %s [options] [file]\n", argv[0]);
-        ft_printf("  --help           Show this help\n");
-        ft_printf("  -c <script>      Execute script string\n");
-        ft_printf("  --verbose        Verbose mode\n");
-        ft_printf("  --debug=lexer    Debug lexer only\n");
-        ft_printf("  --debug=parser   Debug parser only\n");
-        ft_printf("  --debug=ast      Debug AST only\n");
-        free_all_state(state);
-        exit(0);
-    }
-     /* initialize readline buffer structure and its inner string buffer */
+	set_unwind_sig();
+	*state = (t_shell){0};
+	/* parse argv to detect requested runtime mode before heavy init */
+	state->option_flags = select_mode_from_argv(argv);
+	/* If only help requested, print help and exit early (no further init) */
+	if (state->option_flags & OPT_FLAG_HELP)
+	{
+		ft_printf("Usage: %s [options] [file]\n", argv[0]);
+		ft_printf("  --help           Show this help\n");
+		ft_printf("  -c <script>      Execute script string\n");
+		ft_printf("  --verbose        Verbose mode\n");
+		ft_printf("  --debug=lexer    Debug lexer only\n");
+		ft_printf("  --debug=parser   Debug parser only\n");
+		ft_printf("  --debug=ast      Debug AST only\n");
+		free_all_state(state);
+		exit(0);
+	}
+	/* initialize readline buffer structure and its inner string buffer */
 	buff_readline_init(&state->readline_buff);
 	vec_init(&state->readline_buff.buff);
 	state->readline_buff.buff.elem_size = 1;
 	state->pid = getpid_hack();
-     state->context = ft_strdup(argv[0]);
-     state->base_context = ft_strdup(argv[0]);
-     set_cmd_status(state, res_status(0));
-     state->last_cmd_status_res = res_status(0);
-     init_cwd(state);
-     state->env = env_to_vec_env(state, envp);
-     ensure_essential_env_vars(state);
-     /* initialize redirects vector so later vec_push/vec_idx are safe */
+	state->context = ft_strdup(argv[0]);
+	state->base_context = ft_strdup(argv[0]);
+	set_cmd_status(state, res_status(0));
+	state->last_cmd_status_res = res_status(0);
+	init_cwd(state);
+	state->env = env_to_vec_env(state, envp);
+	ensure_essential_env_vars(state);
+	/* initialize redirects vector so later vec_push/vec_idx are safe */
 	vec_init(&state->redirects);
 	state->redirects.elem_size = sizeof(t_redir);
 	if (argv[1] && ft_strcmp(argv[1], "-c") == 0)
 		init_arg(state, argv);
 	else if (argv[1] && argv[1][0] != '-')
-         init_file(state, argv);
-     else if (!isatty(0))
-         init_stdin_notty(state);
-     else
-         init_history(state);
-     prng_initialize_state(&state->prng, 19650218UL);
-     state->redirects.elem_size = sizeof(t_redir);
+		init_file(state, argv);
+	else if (!isatty(0))
+		init_stdin_notty(state);
+	else
+		init_history(state);
+	prng_initialize_state(&state->prng, 19650218UL);
+	state->redirects.elem_size = sizeof(t_redir);
 }
