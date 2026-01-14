@@ -1,1 +1,0 @@
->out.txt echo "hello"
