@@ -10,11 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "env.h"
+#include "env.h"
 
-int	env_set(t_vec_env *env, t_env el)
+int env_set(t_vec_env *env, t_env el)
 {
-	t_env	*old;
+	t_env *old;
 
 	ft_assert(el.key != 0);
 	old = env_get(env, el.key);
@@ -33,10 +33,10 @@ int	env_set(t_vec_env *env, t_env el)
 	return (0);
 }
 
-t_env	*env_get(t_vec_env *env, char *key)
+t_env *env_get(t_vec_env *env, char *key)
 {
-	t_env	*curr;
-	size_t	i;
+	t_env *curr;
+	size_t i;
 
 	i = 0;
 	while (i < env->len)
@@ -49,16 +49,44 @@ t_env	*env_get(t_vec_env *env, char *key)
 	return (0);
 }
 
-char	**get_envp(t_shell *state, char *exe_path)
-{
-	char		**ret;
-	size_t		i;
-	size_t		j;
-	t_string	s;
+// char	**get_envp(t_shell *state, char *exe_path)
+// {
+// 	char		**ret;
+// 	size_t		i;
+// 	size_t		j;
+// 	t_string	s;
 
-	env_set(&state->env, (t_env){.key = ft_strdup("_"),
-		.value = ft_strdup(exe_path),
-		.exported = true});
+// 	env_set(&state->env, (t_env){.key = ft_strdup("_"),
+// 		.value = ft_strdup(exe_path),
+// 		.exported = true});
+// 	ret = ft_calloc(state->env.len + 1, sizeof(char *));
+// 	i = 0;
+// 	j = 0;
+// 	while (i < state->env.len)
+// 	{
+// 		t_env *e = &((t_env *)state->env.ctx)[i];
+// 		if (e->exported)
+// 		{
+// 			vec_init(&s);
+// 			s.elem_size = 1;
+// 			vec_push_str(&s, e->key);
+// 			{ char ch = '='; vec_push(&s, &ch); }
+// 			vec_push_str(&s, e->value);
+// 			ret[j++] = (char *)s.ctx;
+// 		}
+// 		i++;
+// 	}
+// 	return (ret);
+// }
+
+char **get_envp(t_shell *state, char *exe_path)
+{
+	(void)exe_path;
+	char **ret;
+	size_t i;
+	size_t j;
+	t_string s;
+
 	ret = ft_calloc(state->env.len + 1, sizeof(char *));
 	i = 0;
 	j = 0;
@@ -70,7 +98,10 @@ char	**get_envp(t_shell *state, char *exe_path)
 			vec_init(&s);
 			s.elem_size = 1;
 			vec_push_str(&s, e->key);
-			{ char ch = '='; vec_push(&s, &ch); }
+			{
+				char ch = '=';
+				vec_push(&s, &ch);
+			}
 			vec_push_str(&s, e->value);
 			ret[j++] = (char *)s.ctx;
 		}
@@ -79,11 +110,10 @@ char	**get_envp(t_shell *state, char *exe_path)
 	return (ret);
 }
 
-
-t_env	*env_nget(t_vec_env *env, char *key, int len)
+t_env *env_nget(t_vec_env *env, char *key, int len)
 {
-	t_env	*curr;
-	int		i;
+	t_env *curr;
+	int i;
 
 	i = env->len - 1;
 	while (i >= 0)
@@ -95,4 +125,3 @@ t_env	*env_nget(t_vec_env *env, char *key, int len)
 	}
 	return (0);
 }
-
