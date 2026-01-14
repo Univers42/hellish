@@ -19,7 +19,7 @@ DEBFLAGS	:= -g3 -ggdb -fsanitize=address,leak
 
 # Choose flags: default = debug; pass OPT when calling make to enable optimizations
 ifdef OPT
-ALLFLAGS := $(CFLAGS) $(OPTFLAGS)
+ALLFLAGS := $(CFLAGS) $(OPTFLAGS) $(LDFLAGS)
 else
 ALLFLAGS := $(CFLAGS) $(DEBFLAGS)
 endif

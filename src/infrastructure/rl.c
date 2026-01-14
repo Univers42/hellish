@@ -29,7 +29,7 @@ static int visible_width_cstr(const char *s);
 *
 * 2 - ctrl-c / ctrl-\
 */
-void	bg_readline(int outfd, char *prompt)
+void bg_readline(int outfd, char *prompt)
 {
 	char	*ret;
 
@@ -50,6 +50,7 @@ void	bg_readline(int outfd, char *prompt)
 		exit (1);
 	}
 	write_to_file(ret, outfd);
+	free(ret);
 	close(outfd);
 	exit(0);
 }

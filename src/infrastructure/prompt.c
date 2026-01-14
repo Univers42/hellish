@@ -208,6 +208,8 @@ t_string prompt_normal(t_shell *state)
     int time_width;
     int pad;
 
+    (void)state;
+
     ensure_locale();
     vec_init(&ret);
     ret.elem_size = 1;
@@ -330,28 +332,11 @@ t_string prompt_normal(t_shell *state)
      */
     
     vec_push_str(&ret, "\n");
-    
-    /* Status-colored prompt symbol */
-    if (state->last_cmd_status_res.c_c)
-        vec_push_ansi(&ret, "\033[35m");
-    else if (state->last_cmd_status_res.status == 0)
-        vec_push_ansi(&ret, "\033[32m");
-    else
-        vec_push_ansi(&ret, "\033[31m");
-    
-    /* Use ONLY simple ASCII on line 2 to eliminate all width ambiguity */
-    vec_push_str(&ret, "$");
-    vec_push_ansi(&ret, "\033[0m");
-    
-    /* fancy visible prompt glyph */
-    /* Wrap prompt glyph with RL_SPACER_1 to help prevent cursor drift */
-    vec_push_str(&ret, " ");
-    vec_push_str(&ret, RL_SPACER_1);
-    vec_push_str(&ret, "❯");
-    vec_push_str(&ret, RL_SPACER_1);
-    vec_push_str(&ret, " ");
-    
-    /* cleanup */
+    /* Use a plain ASCII prompt symbol without control markers so it prints
+       correctly even in environments where readline markers are not handled. */
+    vec_push_str(&ret, "$ ");
+
+    /* Cleanup */
     free(short_cwd);
     if (branch)
         free(branch);

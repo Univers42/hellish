@@ -159,7 +159,10 @@ void	execute_top_level(t_shell *state)
 					last = buf[r - 1];
 				}
 				/* send last byte to parent */
-				write(status_pipe[1], &last, 1);
+				{
+					ssize_t _w = write(status_pipe[1], &last, 1);
+					(void)_w;
+				}
 				close(status_pipe[1]);
 				close(monitor_pipe[0]);
 				close(orig_out);
@@ -236,7 +239,10 @@ void	execute_top_level(t_shell *state)
 		/* Print indicator if needed */
 		if (rr == 1 && last != '\n')
 		{
-			write(1, "%\n", 2);
+			{
+				ssize_t _w2 = write(1, "%\n", 2);
+				(void)_w2;
+			}
 		}
 	}
 	else
