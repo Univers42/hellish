@@ -14,7 +14,7 @@
 # define GLOBBER_H
 
 # include "libft.h"
-# include "shell.h"
+# include "lexer.h"
 
 typedef enum e_glob
 {
@@ -30,7 +30,8 @@ typedef struct s_glob
 	int			len;
 }	t_glob;
 
-
+typedef t_vec	t_vec_glob;
+typedef t_vec	t_string;
 
 typedef struct s_dir_matcher
 {
@@ -41,31 +42,26 @@ typedef struct s_dir_matcher
 	size_t			offset;
 }	t_dir_matcher;
 
+t_vec_glob	word_to_glob(t_ast_node word);
+t_vec		expand_word_glob(t_ast_node word);
+t_vec		expand_word_glob(t_ast_node word);
+t_vec_glob	word_to_glob(t_ast_node word);
+
+
 void		match_dir(t_vec *args,
 				t_vec_glob glob, char *path, size_t offset);
 size_t		matches_pattern(char *name,
 				t_vec_glob patt, size_t offset, bool first);
-t_vec_glob	word_to_glob(t_ast_node word);
 size_t		matches_pattern(char *name, t_vec_glob patt,
 				size_t offset, bool first);
 void		ft_quicksort(t_vec *vec);
-
-/**
- * glob motor that is minimized obviously to answer to the bonus shell
- * project.
- * 
- * in a near future this could triggerable
- */
-t_vec		expand_word_glob(t_ast_node word);
 void		get_next_path(t_string *next_path, char *path, char *fname);
 char		*get_curr_path(char *path);
 int			process_dir(t_dir_matcher matcher);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
-t_vec		expand_word_glob(t_ast_node word);
 void		tokenize_star_glob(t_vec_glob *ret, t_token t, int *i);
 bool		star_expandable(t_tt tt);
 void		tokenize_pattern(t_vec_glob *ret, t_token t, int *i);
 void		tokenize_word_glob(t_vec_glob *ret, t_token t);
-t_vec_glob	word_to_glob(t_ast_node word);
 
 #endif

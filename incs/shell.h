@@ -21,7 +21,7 @@
 /**
  * cldjlkasdfklj
  */
-# include "public/ft_printf.h"
+# include "ft_printf.h"
 
 /**
  * 
