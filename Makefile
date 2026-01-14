@@ -12,16 +12,31 @@
 
 # Compiler and flags
 CC := gcc
-CFLAGS := -Wall -Wextra -Werror -g3 -ggdb -fsanitize=address,leak -std=gnu11 -D_XOPEN_SOURCE=700
+CFLAGS		:= -Wall -Wextra -Werror -std=gnu99	-D_XOPEN_SOURCE=700
+OPTFLAGS	:= -O2 -march=native
+LDFLAGS		:= -flto
+DEBFLAGS	:= -g3 -ggdb -fsanitize=address,leak
+
+# Choose flags: default = debug; pass OPT when calling make to enable optimizations
+ifdef OPT
+ALLFLAGS := $(CFLAGS) $(OPTFLAGS)
+else
+ALLFLAGS := $(CFLAGS) $(DEBFLAGS)
+endif
+
 INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
 
 # Directories
-SRC_DIR := src
+
 OBJ_DIR := build/obj
+BIN_DIR := build/bin
 LIBFT_DIR := vendor/libft
+SRC_DIR := src
+TEST_DIR		:= tests
+BIN_TEST		:= tester
+
 LIBFT_A := $(LIBFT_DIR)/libft.a
 LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
-
 # Source and object files
 SRCS := $(shell find $(SRC_DIR) -type f -name '*.c')
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
@@ -37,21 +52,22 @@ GREEN  := \033[32m
 YELLOW := \033[33m
 RED    := \033[31m
 
-.PHONY: all clean fclean re libft
+MAKEFLAGS  := --no-print-directory
 
-all: $(NAME)
+all: $(BIN_DIR)/$(NAME)
 
 # Link the final binary
-$(NAME): $(LIBFT_A) $(OBJS)
+$(BIN_DIR)/$(NAME): $(LIBFT_A) $(OBJS)
 	@printf "$(BOLD)$(GREEN)Linking $(NAME)...$(RESET)\r" >&2
-	@$(CC) $(CFLAGS) $(INCLUDES) $^ -L$(LIBFT_DIR) -lft -lreadline -o $@
+	@$(CC) $(ALLFLAGS) $(INCLUDES) $^ $(LDFLAGS) -L$(LIBFT_DIR) -lft -lreadline -o $@
 	@printf "$(BOLD)$(GREEN)Linked $(NAME) successfully.\n$(RESET)" >&2
 
 # Compile .c -> .o and generate side-by-side .d dependency file
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(dir $@)
 	@printf "$(YELLOW)Compiling: $< -> $@ ...$(RESET)\r" >&2
-	@$(CC) $(CFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+	@$(CC) $(ALLFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
 	@printf "$(GREEN)Compiled:  $< -> $@\n$(RESET)" >&2
 
 # Include dependency files if present
@@ -70,7 +86,7 @@ clean:
 
 fclean: clean
 	@printf "$(RED)Removing binary $(NAME)...$(RESET)\r" >&2
-	@rm -f $(NAME)
+	@rm -f $(BIN_DIR)/$(NAME)
 	@printf "$(RED)Removed binary $(NAME).\n$(RESET)" >&2
 	@printf "$(BOLD)Cleaning libft...$(RESET)\r" >&2
 	@$(MAKE) -C $(LIBFT_DIR) fclean
@@ -78,3 +94,8 @@ fclean: clean
 
 re: fclean all
 	@printf "$(BOLD)$(GREEN)Rebuilt $(NAME).$(RESET)\n" >&2
+
+test: all
+	(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
+
+.PHONY: test re all clean fclean all
