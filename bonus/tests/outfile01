@@ -1,11 +1,15 @@
 
 &&
 *
-bash_outfiles
+README.md
 bash.supp
+bash_outfiles
 bonus
 bonus_bonus
 builtins
+echo_edge_cases
+echo_more_edge_cases
+edge_cases
 extras
 local.supp
 loop.out
@@ -16,9 +20,10 @@ outfile01
 outfile02
 outfiles
 pipes
-README.md
 redirects
 syntax
-tester
 test_files
+test_japo
+test_japo2_echo
+tester
 wildcards
