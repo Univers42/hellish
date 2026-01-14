@@ -223,13 +223,14 @@ static void get_more_input_parser(t_shell *state,
 #if TRACE_DEBUG
 				ft_eprintf("%s: debug: parser.res=%d\n", state->context, (int)parser->res);
 #endif
-				if (parser->res == RES_OK)
+				/* Always print the AST, even if incomplete (RES_MoreInput), so user can see partial parse */
+				if (parser->res == RES_OK || parser->res == RES_MoreInput)
 				{
-					/* produce DOT + pretty tree using the AST printer (writes out.dot + prints tree) */
 					print_ast_dot(state, parsed);
-					free_ast(&parsed);
 				}
-				else if (parser->res == RES_FatalError)
+				if (parser->res == RES_OK || parser->res == RES_FatalError || parser->res == RES_MoreInput)
+					free_ast(&parsed);
+				if (parser->res == RES_FatalError)
 					set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
 			}
 			/* cleanup token deque and input similar to lexer debug path */
@@ -343,8 +344,8 @@ static void get_more_input_parser(t_shell *state,
 			/* print tokens for debugging */
 			print_tokens(tt);
 			/* set successful status for this debug run */
-		 set_cmd_status(state, res_status(0));
-		 /* clear token deque */
+			set_cmd_status(state, res_status(0));
+			/* clear token deque */
 			deque_clear(&tt->deqtok, NULL);
 			tt->looking_for = 0;
 			/* record history then reset/readline update */
