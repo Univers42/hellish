@@ -1,6 +1,6 @@
 #!/bin/bash
 
-MINISHELL_PATH="../minishell"
+MINISHELL_PATH="../build/bin/minishell"
 BASH_CMD=(bash --posix)
 
 # Run a specific test if the file name was specified
