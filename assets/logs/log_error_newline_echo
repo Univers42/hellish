@@ -1,0 +1,22 @@
+c1r10s3% ./build/bin/minishell                         
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42 ─ fix/sub_cmd                                                  ⏳23:53:20
+$ echo -n "hello"
+hello%
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42 ─ fix/sub_cmd                                                  ⏳23:53:32
+$ echo -n "hello\n"
+hello\n%
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42 ─ fix/sub_cmd                                                  ⏳23:53:35
+$ ^C
+╭─ dlesieur ─ /home/dlesieur/Documents/sh42 ─ fix/sub_cmd                                                  ⏳23:53:39
+$ 
+exit
+
+c1r10s3% echo hello\n  
+hellon
+c1r10s3% echo "hello\n"
+hello
+
+c1r10s3% echo -n "hello\n" 
+hello
+c1r10s3% echo -n "hello"  
+hello%                                                                                                                        c1r10s3% 
