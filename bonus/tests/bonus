@@ -6,14 +6,9 @@ cat <minishell.h&ls
 &&
 |& #-> não precisa
 *
-> *
->> *
 > & # valido para < e >>
 > &&
 > ||
 echo oi || echo tchau
 env | grep USER || grep lucas
-> *
->> *
-< *
 << *

@@ -17,23 +17,22 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-# include "sh_error.h"
-# include "env.h"
-
+#include "sh_error.h"
+#include "env.h"
 
 /* helper prototypes (ensure visible despite include-order */
-void	critical_error_errno_context(const char *msg);
-char	*env_expand(t_shell *state, char *key);
-void	free_tab(char **tab);
+void critical_error_errno_context(const char *msg);
+char *env_expand(t_shell *state, char *key);
+void free_tab(char **tab);
 
 // Forward-declare error helpers to avoid implicit-declaration due to include-order
-void	err_1_errno(t_shell *state, char *p1);
-void	err_2(t_shell *state, char *p1, char *p2);
+void err_1_errno(t_shell *state, char *p1);
+void err_2(t_shell *state, char *p1, char *p2);
 
-char	*exe_path(char **path_dirs, char *exe_name)
+char *exe_path(char **path_dirs, char *exe_name)
 {
-	t_string	temp;
-	int			i;
+	t_string temp;
+	int i;
 
 	if (ft_strchr(exe_name, '/'))
 		return (ft_strdup(exe_name));
@@ -49,8 +48,9 @@ char	*exe_path(char **path_dirs, char *exe_name)
 		vec_push(&temp, &ch);
 		vec_push_str(&temp, exe_name);
 		if (access((char *)temp.ctx, F_OK) == 0)
-			break ;
-		else if (path_dirs[i + 1] == 0) {
+			break;
+		else if (path_dirs[i + 1] == 0)
+		{
 			free(temp.ctx);
 			return NULL;
 		}
@@ -61,9 +61,9 @@ char	*exe_path(char **path_dirs, char *exe_name)
 	return NULL;
 }
 
-bool	check_is_a_dir(char *path, bool *enoent)
+bool check_is_a_dir(char *path, bool *enoent)
 {
-	struct stat	info;
+	struct stat info;
 
 	*enoent = false;
 	if (stat(path, &info) == -1)
@@ -78,15 +78,15 @@ bool	check_is_a_dir(char *path, bool *enoent)
 	return (S_ISDIR(info.st_mode));
 }
 
-static int	cmd_not_found(t_shell *state, char *cmd_name)
+static int cmd_not_found(t_shell *state, char *cmd_name)
 {
 	err_2(state, cmd_name, "command not found");
 	free_all_state(state);
 	return (COMMAND_NOT_FOUND);
 }
 
-static int	no_such_file_or_dir(t_shell *state,
-				char *cmd_name, char *path_of_exe)
+static int no_such_file_or_dir(t_shell *state,
+							   char *cmd_name, char *path_of_exe)
 {
 	errno = ENOENT;
 	err_1_errno(state, cmd_name);
@@ -95,11 +95,11 @@ static int	no_such_file_or_dir(t_shell *state,
 	return (COMMAND_NOT_FOUND);
 }
 
-int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
+int find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 {
-	char	*path;
-	char	**path_dirs;
-	bool	enoent;
+	char *path;
+	char **path_dirs;
+	bool enoent;
 
 	path = env_expand(state, "PATH");
 	path_dirs = 0;
@@ -110,7 +110,13 @@ int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 		free_tab(path_dirs);
 	if (!*path_of_exe)
 		return (cmd_not_found(state, cmd_name));
-	if (!check_is_a_dir(*path_of_exe, &enoent))
+	/* check_is_a_dir returns true when path is a directory.
+	   First handle ENOENT (stat failure) then treat actual directories as error. */
+	enoent = false;
+	bool is_dir = check_is_a_dir(*path_of_exe, &enoent);
+	if (enoent)
+		return (no_such_file_or_dir(state, cmd_name, *path_of_exe));
+	if (is_dir)
 	{
 		errno = EISDIR;
 		err_1_errno(state, cmd_name);
@@ -118,7 +124,5 @@ int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 		free(*path_of_exe);
 		return (EXE_PERM_DENIED);
 	}
-	else if (enoent)
-		return (no_such_file_or_dir(state, cmd_name, *path_of_exe));
 	return (0);
 }

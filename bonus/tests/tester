@@ -1,7 +1,7 @@
 #!/bin/bash
 
 MINISHELL_PATH="../minishell"
-BASH_CMD="bash --posix"
+BASH_CMD=(bash --posix)
 
 # Run a specific test if the file name was specified
 if [[ $1 ]]; then
@@ -42,51 +42,53 @@ mkdir -p ./mini_outfiles
 mkdir -p ./bash_outfiles
 
 printf $RED
-echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥";
-echo "                                                                                             ";
-echo " ██    ██ █ ██    █ █ █████ █   █ █████ █     █       ██████ █████ █████ ██████ █████ █████  ";
-echo " ███  ███ █ ███   █ █ █     █   █ █     █     █         ██   █     █       ██   █     █   ██ ";
-echo " █ ████ █ █ █ ██  █ █ █████ █████ ████  █     █         ██   ████  █████   ██   ████  █████  ";
-echo " █  ██  █ █ █  ██ █ █     █ █   █ █     █     █         ██   █         █   ██   █     █   ██ ";
-echo " █      █ █ █   ███ █ █████ █   █ █████ █████ █████     ██   █████ █████   ██   █████ █   ██ ";
-echo "                                                                                             ";
-echo "🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥";
-echo "                                                                                              ";
+echo "🔥 Test harness starting 🔥"
 
 # compute a cleaned prompt line (strip ANSI escape sequences using perl)
 PROMPT=$(echo -e "\nexit\n" | $MINISHELL_PATH | head -n 1 | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' )
-# Helper commands:
-# strip ANSI escapes reliably (perl), remove the literal "exit" line, and drop prompt-looking lines
-REMOVE_COLORS="perl -pe 's/\e\[[0-9;]*[A-Za-z]//g'"
-REMOVE_EXIT="grep -v ^exit$"
-REMOVE_PROMPT="grep -vE '^[[:space:]]*❯'"
 
 for testfile in ${test_lists[*]}; do
 
 	printf $RED
 	echo ———————————— $testfile
 
-	while read teste; do
+	while read -r teste; do
 		((i++))
 
 		rm -rf ./outfiles/*
 		rm -rf ./mini_outfiles/*
-		# run minishell, capture stdout to a temp file and get minishell exit code
-		tmpf=$(mktemp) || tmpf="/tmp/minishell_tester_tmp"
-		printf "%s\n" "$teste" | "$MINISHELL_PATH" >"$tmpf" 2>/dev/null
-		MINI_EXIT_CODE=$?
-		MINI_OUTPUT=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$tmpf" | grep -vE '^[[:space:]]*❯' | grep -v '^exit$' )
-		rm -f "$tmpf"
-		MINI_OUTFILES=$(cp ./outfiles/* ./mini_outfiles &>/dev/null)
-		MINI_ERROR_MSG=$(trap "" PIPE && printf "%s" "$teste" | $MINISHELL_PATH 2>&1 > /dev/null | grep -o '[^:]*$' )
-
-		# Capture bash --posix reference
-		rm -rf ./outfiles/*
 		rm -rf ./bash_outfiles/*
-		BASH_OUTPUT=$(printf "%s\n" "$teste" | $BASH_CMD 2> /dev/null)
+
+		# -------------------------
+		# Run minishell with -c, capture stdout/stderr/exitcode to files
+		mini_out_tmp=$(mktemp) || mini_out_tmp="/tmp/minishell_tester_out"
+		mini_err_tmp=$(mktemp) || mini_err_tmp="/tmp/minishell_tester_err"
+		# run the exact command string with -c to avoid stdin/piping differences
+		"$MINISHELL_PATH" -c "$teste" >"$mini_out_tmp" 2>"$mini_err_tmp"
+		MINI_EXIT_CODE=$?
+		MINI_OUTPUT=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$mini_out_tmp" | grep -vE '^[[:space:]]*❯' | grep -v '^exit$' )
+		# same: copy produced outfiles if any
+		cp ./outfiles/* ./mini_outfiles &>/dev/null || true
+		MINI_ERROR_MSG=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$mini_err_tmp" | grep -o '[^:]*$' | head -n1 || true)
+		rm -f "$mini_out_tmp" "$mini_err_tmp"
+
+		# Clear outfiles so the subsequent bash run starts with an empty outfiles dir.
+		# This prevents bash from appending to files already created by minishell.
+		rm -rf ./outfiles/*
+
+		# -------------------------
+		# Run bash with -c, capture stdout/stderr/exitcode to files
+		bash_out_tmp=$(mktemp) || bash_out_tmp="/tmp/bash_tester_out"
+		bash_err_tmp=$(mktemp) || bash_err_tmp="/tmp/bash_tester_err"
+		# invoke bash as an array to avoid any word-splitting/option ambiguity,
+		# pass -- and then the full command as a single argument
+		"${BASH_CMD[@]}" -c "$teste" >"$bash_out_tmp" 2>"$bash_err_tmp"
 		BASH_EXIT_CODE=$?
-		BASH_OUTFILES=$(cp ./outfiles/* ./bash_outfiles &>/dev/null)
-		BASH_ERROR_MSG=$(trap "" PIPE && printf "%s" "$teste" | $BASH_CMD 2>&1 > /dev/null | grep -o '[^:]*$' | head -n1)
+		BASH_OUTPUT=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$bash_out_tmp" | grep -vE '^[[:space:]]*❯' | grep -v '^exit$' )
+		# copy any produced outfiles (don't capture cp output via substitution)
+		cp ./outfiles/* ./bash_outfiles &>/dev/null || true
+		BASH_ERROR_MSG=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$bash_err_tmp" | grep -o '[^:]*$' | head -n1 || true)
+		rm -f "$bash_out_tmp" "$bash_err_tmp"
 
 		OUTFILES_DIFF_BASH=$(diff --brief ./mini_outfiles ./bash_outfiles)
 
@@ -141,8 +143,6 @@ printf $END
 
 if [[ "$ok" == "$i" ]]; then
 	echo "🎊 🎊 🎊"
-	echo "😎 😎 😎"
-	echo "🎉 🎉 🎉"
 	exit 0
 else
 	echo "😭 😭 😭"
