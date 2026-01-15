@@ -3,65 +3,81 @@
 /*                                                        :::      ::::::::   */
 /*   glob.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/10 02:00:40 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/10 02:00:40 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/15 16:00:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/01/15 16:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef GLOBBER_H
-# define GLOBBER_H
+#ifndef GLOB_H
+# define GLOB_H
 
+# include <stdbool.h>
+# include <stddef.h>
 # include "libft.h"
 # include "lexer.h"
 
-typedef enum e_glob
+/*
+** POSIX Glob Pattern Types
+*/
+typedef enum e_glob_type
 {
-	G_PATTERN,
+	G_LITERAL,
+	G_ASTERISK,
+	G_QUESTION,
+	G_BRACKET,
 	G_SLASH,
-	G_ASTERISK
-}	t_glob_tt;
+}	t_glob_type;
 
+/*
+** Bracket expression flags for character classes
+*/
+typedef enum e_bracket_flags
+{
+	BRACKET_NONE = 0,
+	BRACKET_NEGATED = 1,
+	BRACKET_HAS_RANGE = 2,
+}	t_bracket_flags;
+
+/*
+** Glob token structure
+*/
 typedef struct s_glob
 {
-	t_glob_tt	ty;
-	char		*start;
-	int			len;
+	t_glob_type		ty;
+	const char		*start;
+	int				len;
+	int				flags;
+	char			*char_set;
+	int				char_set_len;
 }	t_glob;
 
+/* Vector of glob tokens */
 typedef t_vec	t_vec_glob;
-typedef t_vec	t_string;
 
-typedef struct s_dir_matcher
-{
-	DIR				*dir;
-	t_vec			*args;
-	t_vec_glob		glob;
-	char			*path;
-	size_t			offset;
-}	t_dir_matcher;
+/* Forward declarations for project types */
+typedef struct s_ast_node	t_ast_node;
+typedef struct s_token		t_token;
 
+/*
+** GLOB MOTOR API
+*/
+t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted);
+void		glob_free_tokens(t_vec_glob *tokens);
+bool		glob_match(const char *name, t_vec_glob *pattern);
+bool		glob_match_at(const char *name, t_vec_glob *pattern, size_t offset);
+bool		glob_char_in_class(char c, t_glob *bracket);
+char		*glob_expand_bracket(const char *start, int len, int *out_len);
+
+/*
+** GLOB INTEGRATION API
+*/
 t_vec_glob	word_to_glob(t_ast_node word);
 t_vec		expand_word_glob(t_ast_node word);
-t_vec		expand_word_glob(t_ast_node word);
-t_vec_glob	word_to_glob(t_ast_node word);
-
-
-void		match_dir(t_vec *args,
-				t_vec_glob glob, char *path, size_t offset);
-size_t		matches_pattern(char *name,
-				t_vec_glob patt, size_t offset, bool first);
-size_t		matches_pattern(char *name, t_vec_glob patt,
-				size_t offset, bool first);
-void		ft_quicksort(t_vec *vec);
-void		get_next_path(t_string *next_path, char *path, char *fname);
-char		*get_curr_path(char *path);
-int			process_dir(t_dir_matcher matcher);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
-void		tokenize_star_glob(t_vec_glob *ret, t_token t, int *i);
+size_t		matches_pattern(char *name, t_vec_glob patt, size_t offset, bool first);
+bool		finished_pattern(t_vec_glob patt, size_t offset);
 bool		star_expandable(t_tt tt);
-void		tokenize_pattern(t_vec_glob *ret, t_token t, int *i);
-void		tokenize_word_glob(t_vec_glob *ret, t_token t);
 
 #endif
