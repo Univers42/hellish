@@ -82,6 +82,7 @@ static const char **get_tt_names(void)
         names[TT_DQWORD] = "TT_DQWORD";
         names[TT_ENVVAR] = "TT_ENVVAR";
         names[TT_DQENVVAR] = "TT_DQENVVAR";
+        names[TT_AMPERSAND] = "TT_AMPERSAND";
         inited = 1;
     }
     return names;

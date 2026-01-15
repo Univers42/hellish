@@ -236,4 +236,6 @@ void on(t_shell *state, char **argv, char **envp)
 		init_history(state);
 	prng_initialize_state(&state->prng, 19650218UL);
 	state->redirects.elem_size = sizeof(t_redir);
+	/* Initialize background job counter */
+	state->bg_job_count = 0;
 }

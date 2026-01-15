@@ -113,7 +113,7 @@ void	parse_op(t_deque_tt *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;
-	t_op_map	operators[13];
+	t_op_map	operators[14];
 	t_token		tmp;
 
 	operators[0] = (t_op_map){"|", TT_PIPE};
@@ -126,9 +126,8 @@ void	parse_op(t_deque_tt *tokens, char **str)
 	operators[6] = (t_op_map){"<", TT_REDIRECT_LEFT};
 	operators[7] = (t_op_map){">", TT_REDIRECT_RIGHT};
 	operators[8] = (t_op_map){"&&", TT_AND};
-	/* treat single '&' as a simple list separator (like ';') so
-	   inputs without spacing (e.g. "<file&cmd") are parsed */
-	operators[9] = (t_op_map){"&", TT_SEMICOLON};
+	/* single '&' for background execution */
+	operators[9] = (t_op_map){"&", TT_AMPERSAND};
 	operators[10] = (t_op_map){"||", TT_OR};
 	operators[11] = (t_op_map){";", TT_SEMICOLON};
 	operators[12] = (t_op_map){0, TT_END};
