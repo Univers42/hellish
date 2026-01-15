@@ -42,9 +42,12 @@ static char	*create_procsub_input(t_shell *state, const char *cmd)
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
 		{
-			char *const argv[] = {"/bin/sh", "-c", (char *)cmd, NULL};
-			char **envp = get_envp(state, "/bin/sh");
-			execve("/bin/sh", argv, envp);
+			/* Prefer current minishell to preserve builtin behavior */
+			char *const argv_ms[] = {"/proc/self/exe", "-c", (char *)cmd, NULL};
+			char *const argv_sh[] = {"/bin/sh", "-c", (char *)cmd, NULL};
+			char **envp = get_envp(state, "/proc/self/exe");
+			execve("/proc/self/exe", argv_ms, envp);
+			execve("/bin/sh", argv_sh, envp);
 			if (envp)
 				free_tab(envp);
 			_exit(127);
@@ -83,9 +86,12 @@ static char	*create_procsub_output(t_shell *state, const char *cmd)
 		dup2(pipefd[0], STDIN_FILENO);
 		close(pipefd[0]);
 		{
-			char *const argv[] = {"/bin/sh", "-c", (char *)cmd, NULL};
-			char **envp = get_envp(state, "/bin/sh");
-			execve("/bin/sh", argv, envp);
+			/* Prefer current minishell to preserve builtin behavior */
+			char *const argv_ms[] = {"/proc/self/exe", "-c", (char *)cmd, NULL};
+			char *const argv_sh[] = {"/bin/sh", "-c", (char *)cmd, NULL};
+			char **envp = get_envp(state, "/proc/self/exe");
+			execve("/proc/self/exe", argv_ms, envp);
+			execve("/bin/sh", argv_sh, envp);
 			if (envp)
 				free_tab(envp);
 			_exit(127);
