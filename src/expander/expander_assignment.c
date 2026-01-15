@@ -23,6 +23,7 @@ t_string	word_to_string(t_ast_node node)
 	size_t		i;
 
 	vec_init(&s);
+	s.elem_size = 1;
 	i = 0;
 	while (i < node.children.len)
 	{

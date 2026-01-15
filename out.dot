@@ -18,19 +18,11 @@ digraph AST {
 	n4177211283 -> n4287950519 [label="1"];
 	n4287950519 [label="AST_WORD", style=filled, fillcolor="#90EE90", shape=ellipse, penwidth=2];
 	n4287950519 -> n1214240581 [label="0"];
-	n1214240581 [label="AST_TOKEN\nTT_WORD: >hi<", style=filled, fillcolor="#90EE90", shape=ellipse];
-	n3850216102 -> n2884641882 [label="1"];
-	n2884641882 [label="AST_COMMAND", style=filled, fillcolor="#F0E68C", shape=box, penwidth=2];
-	n2884641882 -> n1913715028 [label="0"];
-	n1913715028 [label="AST_SIMPLE_COMMAND", style=filled, fillcolor="#F0E68C", shape=box, penwidth=2];
-	n1913715028 -> n1869909955 [label="0"];
-	n1869909955 [label="AST_WORD", style=filled, fillcolor="#90EE90", shape=ellipse, penwidth=2];
-	n1869909955 -> n4129444750 [label="0"];
-	n4129444750 [label="AST_TOKEN\nTT_WORD: >grep<", style=filled, fillcolor="#90EE90", shape=ellipse];
-	n1913715028 -> n1642354536 [label="1"];
-	n1642354536 [label="AST_WORD", style=filled, fillcolor="#90EE90", shape=ellipse, penwidth=2];
-	n1642354536 -> n3546971706 [label="0"];
-	n3546971706 [label="AST_TOKEN\nTT_DQWORD: >hi<", style=filled, fillcolor="#90EE90", shape=ellipse];
+	n1214240581 [label="AST_TOKEN\nTT_DQWORD: ><", style=filled, fillcolor="#90EE90", shape=ellipse];
+	n4287950519 -> n2884641882 [label="1"];
+	n2884641882 [label="AST_TOKEN\nTT_WORD: >$<", style=filled, fillcolor="#90EE90", shape=ellipse];
+	n4287950519 -> n1913715028 [label="2"];
+	n1913715028 [label="AST_TOKEN\nTT_DQWORD: >(echo hi)<", style=filled, fillcolor="#90EE90", shape=ellipse];
 
 	labelloc="t";
 	label="AST Visualization";
