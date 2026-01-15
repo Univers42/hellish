@@ -16,16 +16,8 @@ else
         "extras"
         "edge_cases"
         "echo_edge_cases"
+        "advanced_edge_cases"
     )
-fi
-
-if [[ $1 == "wildcards"  || $1 == "bonus" ]]; then
-	MINISHELL_PATH="../minishell_bonus"
-	# fallback if bonus binary not built
-	if [[ ! -x "$MINISHELL_PATH" ]]; then
-		echo "warning: $MINISHELL_PATH not found, falling back to ../minishell"
-		MINISHELL_PATH="../minishell"
-	fi
 fi
 
 BOLD="\e[1m"
