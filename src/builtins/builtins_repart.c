@@ -12,6 +12,22 @@
 
 #include "builtins.h"
 
+/*
+ * Builtin command dispatch helper functions.
+ * This file contains utility functions for builtin commands.
+ */
+
+/* Check if a string is a valid variable name for export/unset */
+bool	is_var_name_p1(char c)
+{
+	return (ft_isalpha(c) || c == '_');
+}
+
+bool	is_var_name_p2(char c)
+{
+	return (ft_isalnum(c) || c == '_');
+}
+
 typedef int (*builtin_fn_t)(t_shell *, t_vec);
 
 static void	init_builtin_hash(t_hash *h)

@@ -113,7 +113,7 @@ void	parse_op(t_deque_tt *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;
-	t_op_map	operators[15];
+	t_op_map	operators[17];
 	t_token		tmp;
 
 	operators[0] = (t_op_map){"|", TT_PIPE};
@@ -125,14 +125,17 @@ void	parse_op(t_deque_tt *tokens, char **str)
 	operators[4] = (t_op_map){"((", TT_ARITH_START};
 	operators[5] = (t_op_map){"(", TT_BRACE_LEFT};
 	operators[6] = (t_op_map){")", TT_BRACE_RIGHT};
-	operators[7] = (t_op_map){"<", TT_REDIRECT_LEFT};
-	operators[8] = (t_op_map){">", TT_REDIRECT_RIGHT};
-	operators[9] = (t_op_map){"&&", TT_AND};
+	/* Process substitution: <( and >( - must come before < and > */
+	operators[7] = (t_op_map){"<(", TT_PROC_SUB_IN};
+	operators[8] = (t_op_map){">(", TT_PROC_SUB_OUT};
+	operators[9] = (t_op_map){"<", TT_REDIRECT_LEFT};
+	operators[10] = (t_op_map){">", TT_REDIRECT_RIGHT};
+	operators[11] = (t_op_map){"&&", TT_AND};
 	/* single '&' for background execution */
-	operators[10] = (t_op_map){"&", TT_AMPERSAND};
-	operators[11] = (t_op_map){"||", TT_OR};
-	operators[12] = (t_op_map){";", TT_SEMICOLON};
-	operators[13] = (t_op_map){0, TT_END};
+	operators[12] = (t_op_map){"&", TT_AMPERSAND};
+	operators[13] = (t_op_map){"||", TT_OR};
+	operators[14] = (t_op_map){";", TT_SEMICOLON};
+	operators[15] = (t_op_map){0, TT_END};
 	start = *str;
 	op_idx = longest_matching_str(operators, *str);
 	ft_assert(op_idx != -1);

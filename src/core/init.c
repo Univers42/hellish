@@ -226,6 +226,9 @@ void on(t_shell *state, char **argv, char **envp)
 	/* initialize redirects vector so later vec_push/vec_idx are safe */
 	vec_init(&state->redirects);
 	state->redirects.elem_size = sizeof(t_redir);
+	/* initialize process substitution tracking vector */
+	vec_init(&state->proc_subs);
+	state->proc_subs.elem_size = sizeof(t_procsub_entry);
 	if (argv[1] && ft_strcmp(argv[1], "-c") == 0)
 		init_arg(state, argv);
 	else if (argv[1] && argv[1][0] != '-')
@@ -235,7 +238,6 @@ void on(t_shell *state, char **argv, char **envp)
 	else
 		init_history(state);
 	prng_initialize_state(&state->prng, 19650218UL);
-	state->redirects.elem_size = sizeof(t_redir);
 	/* Initialize background job counter */
 	state->bg_job_count = 0;
 }

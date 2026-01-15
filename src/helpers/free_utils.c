@@ -14,6 +14,7 @@
 #include "shell.h"
 #include <unistd.h>
 # include "env.h"
+# include "expander.h"
 
 void	free_redirects(t_vec_redir *v)
 {
@@ -49,6 +50,7 @@ void	free_all_state(t_shell *state)
 	state->base_context = 0;
 	free(state->readline_buff.buff.ctx);
 	free_redirects(&state->redirects);
+	cleanup_proc_subs(state);
 	free_ast(&state->tree);
 	free_hist(state);
 	free(state->cwd.ctx);

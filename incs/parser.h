@@ -30,6 +30,7 @@ typedef struct s_parser
 bool	is_redirect(t_tt tt);
 bool	is_simple_list_op(t_tt tt);
 bool	is_simple_cmd_token(t_tt tt);
+bool	is_proc_sub(t_tt tt);
 
 // process of parsing
 t_ast_node	parse_word(t_deque_tt *tokens);
@@ -50,6 +51,10 @@ t_ast_node	create_subtoken_node(t_token t, int offset, int end_offset, t_tt tt);
 t_ast_node	parse_subshell(t_shell *state, t_parser *parser, t_deque_tt *tokens);
 t_ast_node	parse_pipeline(t_shell *state, t_parser *parser, t_deque_tt *tokens);
 t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tt *tokens);
+
+/* Process substitution parser */
+t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser,
+				t_deque_tt *tokens);
 
 
 
