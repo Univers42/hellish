@@ -1,0 +1,13 @@
+# Background process with redirect and pipe
+cat <minishell.h&ls
+
+# Multiple operators in sequence
+(true && echo "first") || echo "second"
+(false || echo "first") && echo "second"
+
+# Subshells with pipes
+(echo hello | grep hello) && echo "match"
+(echo hello | grep bye) || echo "no match"
+
+# Complex combinations
+echo start && (echo middle || echo alt) && echo end
