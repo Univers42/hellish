@@ -85,4 +85,14 @@ typedef struct s_shell
 	int             bg_job_count;   /* counter for background job IDs */
 }   t_shell;
 
+/* Directory matcher context for glob expansion */
+typedef struct s_dir_matcher
+{
+	char		*path;
+	DIR			*dir;
+	t_vec_glob	glob;
+	size_t		offset;
+	t_vec		*args;
+}	t_dir_matcher;
+
 #endif
