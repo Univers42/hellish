@@ -24,6 +24,7 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
+#include "arith.h"
 
 char *expand_word_single(t_shell *state, t_ast_node *curr)
 {
@@ -150,12 +151,8 @@ static char *capture_subshell_output(t_shell *state, const char *cmd)
 	return ret;
 }
 
-/* Expand all occurrences of $(...) inside token strings of a node. This is a
-   simple, single-level implementation that handles nested parentheses counting.
-   
-   IMPORTANT: Only TT_WORD tokens (unquoted) should have $() expanded.
-   TT_SQWORD (single-quoted) and TT_DQWORD (double-quoted literal, including
-   escaped content) must NOT be processed - their content is literal. */
+/* Expand all occurrences of $((...)) arithmetic and $(...) command substitution 
+   inside token strings of a node. */
 static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 {
 	size_t i;
@@ -169,16 +166,9 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 		if (ch->node_type == AST_TOKEN)
 		{
 			t_token *tok = &ch->token;
-			/* Only process TT_WORD tokens for command substitution.
-			   TT_SQWORD = single-quoted content (always literal)
-			   TT_DQWORD = double-quoted literal content (including escaped chars)
-			   TT_DQENVVAR = variable inside double quotes (already handled separately)
-			   TT_ENVVAR = variable (already handled separately)
-			   
-			   We only expand $() in TT_WORD which represents unquoted text. */
+			/* Only process TT_WORD tokens for substitution */
 			if (tok->tt == TT_WORD)
 			{
-				/* scan for occurrences of $( */
 				const char *s = tok->start;
 				int len = tok->len;
 				int pos = 0;
@@ -188,7 +178,51 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 				outbuf.elem_size = 1;
 				while (pos < len)
 				{
-					if (s[pos] == '$' && pos + 1 < len && s[pos + 1] == '(')
+					/* Check for $(( arithmetic expansion first */
+					if (s[pos] == '$' && pos + 2 < len && 
+						s[pos + 1] == '(' && s[pos + 2] == '(')
+					{
+						/* Find matching )) */
+						int depth = 2;
+						int j = pos + 3;
+						while (j < len && depth > 0)
+						{
+							if (s[j] == '(' && j + 1 < len && s[j + 1] == '(')
+								{ depth += 2; j += 2; }
+							else if (s[j] == ')' && j + 1 < len && s[j + 1] == ')')
+								{ depth -= 2; j += 2; }
+							else if (s[j] == '(')
+								{ depth++; j++; }
+							else if (s[j] == ')')
+								{ depth--; j++; }
+							else
+								j++;
+						}
+						if (depth == 0)
+						{
+							/* Append prefix before $(( if this is first match */
+							if (pos > 0 && outbuf.len == 0)
+								vec_push_nstr(&outbuf, s, pos);
+							/* Extract arithmetic expression (between (( and )) */
+							int expr_start = pos + 3;
+							int expr_end = j - 2;
+							int expr_len = expr_end - expr_start;
+							char *result = arith_expand(state, s + expr_start, expr_len);
+							if (result)
+							{
+								vec_push_nstr(&outbuf, result, ft_strlen(result));
+								free(result);
+							}
+							/* Update scanning */
+							s = tok->start + j;
+							len = tok->len - j;
+							pos = 0;
+							changed = true;
+							continue;
+						}
+					}
+					/* Check for $( command substitution */
+					else if (s[pos] == '$' && pos + 1 < len && s[pos + 1] == '(')
 					{
 						int depth = 1;
 						int j = pos + 2;
@@ -202,53 +236,37 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 						}
 						if (depth == 0)
 						{
-							/* append prefix before $( */
 							if (pos > 0 && outbuf.len == 0)
 								vec_push_nstr(&outbuf, s, pos);
-							/* extract inner command */
 							int inner_start = pos + 2;
-							int inner_end = j - 1; /* exclusive */
+							int inner_end = j - 1;
 							int inlen = inner_end - inner_start;
 							char *inner = malloc(inlen + 1);
-							if (!inner)
+							if (inner)
 							{
-								free(outbuf.ctx);
-								break;
+								memcpy(inner, s + inner_start, inlen);
+								inner[inlen] = '\0';
+								char *subout = capture_subshell_output(state, inner);
+								free(inner);
+								if (!subout)
+									subout = ft_strdup("");
+								if (*subout)
+									vec_push_nstr(&outbuf, subout, ft_strlen(subout));
+								free(subout);
 							}
-							memcpy(inner, s + inner_start, inlen);
-							inner[inlen] = '\0';
-							char *subout = capture_subshell_output(state, inner);
-							free(inner);
-							if (!subout)
-								subout = ft_strdup("");
-							/* append substitution result */
-							if (*subout)
-								vec_push_nstr(&outbuf, subout, ft_strlen(subout));
-							free(subout);
-							/* update scanning position */
 							s = tok->start + j;
 							len = tok->len - j;
 							pos = 0;
 							changed = true;
-						}
-						else
-						{
-							/* unmatched: just copy the rest and break */
-							vec_push_nstr(&outbuf, s + pos, len - pos);
-							pos = len;
-							break;
+							continue;
 						}
 					}
-					else
-					{
-						/* copy single character and advance */
-						char c = s[pos++];
-						vec_push(&outbuf, &c);
-					}
+					/* Copy single character */
+					char c = s[pos++];
+					vec_push(&outbuf, &c);
 				}
 				if (changed)
 				{
-					/* replace token contents */
 					char *newstr = malloc(outbuf.len + 1);
 					if (newstr)
 					{
@@ -266,11 +284,7 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 				else
 					free(outbuf.ctx);
 			}
-			/* Do NOT process TT_SQWORD, TT_DQWORD, TT_DQENVVAR, TT_ENVVAR
-			   for command substitution - they are either literal or
-			   already handled via variable expansion */
 		}
-		/* recurse into children */
 		expand_cmd_substitutions(state, &((t_ast_node *)node->children.ctx)[i]);
 		i++;
 	}

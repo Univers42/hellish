@@ -68,10 +68,22 @@ t_ast_node	parse_compound_list(t_shell *state,
 	t_parser *parser, t_deque_tt *tokens)
 {
 	t_ast_node	ret;
+	t_tt		next;
 
 	ret = (t_ast_node){.node_type = AST_COMPOUND_LIST};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
+	
+	/* Check for arithmetic expression (( */
+	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	if (next == TT_ARITH_START)
+	{
+		/* Let parse_simple_list handle it - just fail here */
+		parser->res = RES_FatalError;
+		state->last_cmd_status_res = res_status(1);
+		return (ret);
+	}
+	
 	{
 		t_ast_node tmp_node = parse_pipeline(state, parser, tokens);
 		vec_push(&ret.children, &tmp_node);

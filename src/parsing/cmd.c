@@ -121,6 +121,16 @@ t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tt *tokens)
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	
+	/* Check for arithmetic expression (( which is not supported */
+	if (next == TT_ARITH_START)
+	{
+		/* Let parse_simple_list handle the error for consistent messaging */
+		parser->res = RES_FatalError;
+		state->last_cmd_status_res = res_status(1);
+		return (ret);
+	}
+	
 	if (next == TT_BRACE_LEFT)
 	{
 		{

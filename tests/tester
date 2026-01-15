@@ -17,6 +17,7 @@ else
         "edge_cases"
         "echo_edge_cases"
         "advanced_edge_cases"
+        "arith"
     )
 fi
 
@@ -100,7 +101,7 @@ for testfile in ${test_lists[*]}; do
 		else
 			printf ❌
 		fi
-		printf "$GREY $teste \n$END"
+		echo -e "${GREY}${teste}${END}"
 		if [ "$OUTFILES_DIFF_BASH" ]; then
 			echo "$OUTFILES_DIFF_BASH"
 			echo mini outfiles:

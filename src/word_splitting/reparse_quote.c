@@ -55,10 +55,32 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 
 	ft_assert(t.start[(*i)++] == '$');
 	prev_start = *i;
-	/* Handle $() command substitution - treat the whole $() as a single token.
-	   Use TT_WORD for unquoted context (tt == TT_ENVVAR) so it gets expanded.
-	   Use TT_DQWORD for quoted context (tt == TT_DQENVVAR) - but note that
-	   $() inside double quotes SHOULD be expanded, so we still use TT_WORD. */
+	
+	/* Handle $(( arithmetic expansion - treat the whole $((...)) as a single token */
+	if (*i + 1 < t.len && t.start[*i] == '(' && t.start[*i + 1] == '(')
+	{
+		int depth = 2;
+		(*i) += 2; /* skip (( */
+		while (*i < t.len && depth > 0)
+		{
+			if (*i + 1 < t.len && t.start[*i] == '(' && t.start[*i + 1] == '(')
+				{ depth += 2; (*i) += 2; }
+			else if (*i + 1 < t.len && t.start[*i] == ')' && t.start[*i + 1] == ')')
+				{ depth -= 2; (*i) += 2; }
+			else if (t.start[*i] == '(')
+				{ depth++; (*i)++; }
+			else if (t.start[*i] == ')')
+				{ depth--; (*i)++; }
+			else
+				(*i)++;
+		}
+		t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
+		tmp.children.elem_size = sizeof(t_ast_node);
+		vec_push(&ret->children, &tmp);
+		return;
+	}
+	
+	/* Handle $() command substitution - treat the whole $() as a single token. */
 	if (*i < t.len && t.start[*i] == '(')
 	{
 		int depth = 1;
@@ -71,9 +93,6 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 				depth--;
 			(*i)++;
 		}
-		/* Create a WORD token for $(...) that will be processed for command substitution.
-		   This works for both unquoted and double-quoted contexts since $() is
-		   expanded in both cases. */
 		t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
 		tmp.children.elem_size = sizeof(t_ast_node);
 		vec_push(&ret->children, &tmp);
@@ -89,12 +108,6 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	}
 	if (prev_start == *i)
 	{
-		/* No variable name after '$'.
-		   - If we're inside double-quotes (tt == TT_DQENVVAR) and the next
-		     character is the closing double-quote, treat as literal '$'.
-		   - If the next character is a quote (single or double) in other
-		     contexts, treat as empty envvar so $'' and $"" become empty.
-		   - Otherwise treat as literal '$'. */
 		if (tt == TT_DQENVVAR && prev_start < t.len && t.start[prev_start] == '"')
 		{
 			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, prev_start, TT_DQWORD);
@@ -109,8 +122,6 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 		}
 		else
 		{
-			/* Bare $ - treat as literal using TT_DQWORD in quoted context,
-			   TT_SQWORD in unquoted context to prevent further expansion */
 			t_tt literal_tt = (tt == TT_DQENVVAR) ? TT_DQWORD : TT_SQWORD;
 			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, literal_tt);
 			tmp.children.elem_size = sizeof(t_ast_node);

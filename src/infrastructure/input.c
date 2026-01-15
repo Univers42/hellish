@@ -151,7 +151,12 @@ bool try_parse_tokens(t_shell *state, t_parser *parser,
 		*prompt = (char *)prompt_more_input(parser).ctx;
 	}
 	else if (parser->res == RES_FatalError)
-		set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+	{
+		/* Only set SYNTAX_ERR if status wasn't already set by the parser
+		   (e.g., arithmetic errors set status to 1) */
+		if (state->last_cmd_status_res.status == 0)
+			set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+	}
 	free_ast(&state->tree);
 	return (true);
 }
@@ -331,7 +336,7 @@ static void get_more_input_parser(t_shell *state,
 				/* fall through to normal processing for the newly read input */
 			}
 			/* normal input read: ensure status reset immediately */
-			set_cmd_status(state, res_status(0));
+		 set_cmd_status(state, res_status(0));
 			if (g_should_unwind)
 				set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 			if (state->should_exit || g_should_unwind)
