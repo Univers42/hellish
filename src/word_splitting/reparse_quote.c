@@ -55,6 +55,25 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 
 	ft_assert(t.start[(*i)++] == '$');
 	prev_start = *i;
+	/* Handle $() command substitution - treat the whole $() as a single token */
+	if (*i < t.len && t.start[*i] == '(')
+	{
+		int depth = 1;
+		(*i)++; /* skip opening '(' */
+		while (*i < t.len && depth > 0)
+		{
+			if (t.start[*i] == '(')
+				depth++;
+			else if (t.start[*i] == ')')
+				depth--;
+			(*i)++;
+		}
+		/* Create a WORD token for $(...) that will be processed for command substitution */
+		t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
+		tmp.children.elem_size = sizeof(t_ast_node);
+		vec_push(&ret->children, &tmp);
+		return;
+	}
 	if (reparse_special_envvar(ret, i, t, tt))
 		return ;
 	if (*i < t.len && is_var_name_p1(t.start[*i]))
@@ -73,7 +92,7 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 		   - Otherwise treat as literal '$'. */
 		if (tt == TT_DQENVVAR && prev_start < t.len && t.start[prev_start] == '"')
 		{
-			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, prev_start, TT_WORD);
+			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, prev_start, TT_DQWORD);
 			tmp.children.elem_size = sizeof(t_ast_node);
 			vec_push(&ret->children, &tmp);
 		}
@@ -101,24 +120,22 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 {
 	int prev_start;
-	bool special;
 
 	ft_assert(t.start[(*i)++] == '"');
 	prev_start = *i;
 	while (*i < t.len && t.start[*i] != '"')
 	{
-		special = (t.start[*i] == '\\' || t.start[*i] == '$');
-		if (special)
-		{
-			/* push chunk before special char */
-			t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
-			tmp.children.elem_size = sizeof(t_ast_node);
-			vec_push(&ret->children, &tmp);
-		}
 		if (t.start[*i] == '\\')
 		{
+			/* push chunk before backslash */
+			if (*i > prev_start)
+			{
+				t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
+				tmp.children.elem_size = sizeof(t_ast_node);
+				vec_push(&ret->children, &tmp);
+			}
 			/* handle backslash in double quotes: remove backslash only when
-			   followed by ", $, \\ or newline; otherwise keep the backslash */
+			   followed by ", $, `, \, or newline; otherwise keep the backslash */
 			int esc_pos = *i;
 			(*i)++;
 			if (*i < t.len)
@@ -127,14 +144,15 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				if (c == '\n')
 				{
 					/* backslash-newline: line continuation -> consume both, emit nothing */
-					/* nothing to push */
+					(*i)++;
 				}
-				else if (c == '"' || c == '$' || c == '\\')
+				else if (c == '"' || c == '$' || c == '\\' || c == '`')
 				{
-					/* emit the escaped char without backslash */
+					/* emit the escaped char without backslash as DQWORD (literal) */
 					t_ast_node tmp2 = create_subtoken_node(t, *i, *i + 1, TT_DQWORD);
 					tmp2.children.elem_size = sizeof(t_ast_node);
 					vec_push(&ret->children, &tmp2);
+					(*i)++;
 				}
 				else
 				{
@@ -142,8 +160,8 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 					t_ast_node tmp2 = create_subtoken_node(t, esc_pos, *i + 1, TT_DQWORD);
 					tmp2.children.elem_size = sizeof(t_ast_node);
 					vec_push(&ret->children, &tmp2);
+					(*i)++;
 				}
-				(*i)++;
 			}
 			else
 			{
@@ -152,19 +170,26 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				tmp2.children.elem_size = sizeof(t_ast_node);
 				vec_push(&ret->children, &tmp2);
 			}
+			prev_start = *i;
+			continue;
 		}
 		else if (t.start[*i] == '$')
 		{
+			/* push chunk before $ */
+			if (*i > prev_start)
+			{
+				t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
+				tmp.children.elem_size = sizeof(t_ast_node);
+				vec_push(&ret->children, &tmp);
+			}
 			reparse_envvar(ret, i, t, TT_DQENVVAR);
-		}
-		if (special)
-		{
 			prev_start = *i;
 			continue;
 		}
 		(*i)++;
 	}
 	/* push remaining chunk inside quotes */
+	if (*i > prev_start)
 	{
 		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
 		tmp.children.elem_size = sizeof(t_ast_node);

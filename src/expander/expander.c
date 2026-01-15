@@ -68,6 +68,20 @@ char *expand_word_single(t_shell *state, t_ast_node *curr)
 	return (0);
 }
 
+/* Check if a command string is empty or whitespace-only */
+static bool is_empty_command(const char *cmd)
+{
+	if (!cmd)
+		return true;
+	while (*cmd)
+	{
+		if (*cmd != ' ' && *cmd != '\t' && *cmd != '\n')
+			return false;
+		cmd++;
+	}
+	return true;
+}
+
 /* Run a shell with -c to execute `cmd` and capture its stdout. Returns malloc'd
    string with trailing newlines removed (or empty string). Returns NULL on error. */
 static char *capture_subshell_output(t_shell *state, const char *cmd)
@@ -77,21 +91,24 @@ static char *capture_subshell_output(t_shell *state, const char *cmd)
 	t_string out;
 	char *ret;
 
+	/* Handle empty command - return empty string immediately */
+	if (is_empty_command(cmd))
+		return ft_strdup("");
+
 	if (pipe(pipefd) == -1)
-		return NULL;
+		return ft_strdup("");
 	pid = fork();
 	if (pid == -1)
 	{
 		close(pipefd[0]);
 		close(pipefd[1]);
-		return NULL;
+		return ft_strdup("");
 	}
 	if (pid == 0)
 	{
 		/* child: write stdout to pipe */
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
-		dup2(pipefd[1], STDERR_FILENO);
 		close(pipefd[1]);
 		/* exec /bin/sh -c cmd with current environment */
 		char *const argv[] = {"/bin/sh", "-c", (char *)cmd, NULL};
@@ -119,7 +136,7 @@ static char *capture_subshell_output(t_shell *state, const char *cmd)
 	if (!ret)
 	{
 		free(out.ctx);
-		return NULL;
+		return ft_strdup("");
 	}
 	if (out.len)
 		memcpy(ret, out.ctx, out.len);
@@ -149,7 +166,7 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 		{
 			t_token *tok = &ch->token;
 			/* only operate on word-like tokens where $(...) may appear */
-			if (tok->tt == TT_WORD || tok->tt == TT_DQWORD || tok->tt == TT_DQENVVAR)
+			if (tok->tt == TT_WORD || tok->tt == TT_DQENVVAR)
 			{
 				/* scan for occurrences of $( */
 				const char *s = tok->start;
@@ -176,10 +193,9 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 						if (depth == 0)
 						{
 							/* append prefix before $( */
-							if (pos > 0)
+							if (pos > 0 && outbuf.len == 0)
 								vec_push_nstr(&outbuf, s, pos);
 							/* extract inner command */
-							/* j already advanced; compute inner bounds below */
 							int inner_start = pos + 2;
 							int inner_end = j - 1; /* exclusive */
 							int inlen = inner_end - inner_start;
@@ -199,19 +215,17 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 							if (*subout)
 								vec_push_nstr(&outbuf, subout, ft_strlen(subout));
 							free(subout);
-							pos = j;
-							/* move s pointer forward by pos bytes, but easier to copy suffix later */
-							/* mark changed */
-							changed = true;
-							/* continue scanning remaining tail */
-							s = tok->start + pos;
-							len = tok->len - pos;
+							/* update scanning position */
+							s = tok->start + j;
+							len = tok->len - j;
 							pos = 0;
+							changed = true;
 						}
 						else
 						{
 							/* unmatched: just copy the rest and break */
 							vec_push_nstr(&outbuf, s + pos, len - pos);
+							pos = len;
 							break;
 						}
 					}
@@ -224,9 +238,6 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 				}
 				if (changed)
 				{
-					/* append any remaining (if loop exited with modified s/len) */
-					if (pos < len && s)
-						vec_push_nstr(&outbuf, s + pos, len - pos);
 					/* replace token contents */
 					char *newstr = malloc(outbuf.len + 1);
 					if (newstr)
@@ -234,6 +245,8 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 						if (outbuf.len)
 							memcpy(newstr, outbuf.ctx, outbuf.len);
 						newstr[outbuf.len] = '\0';
+						if (tok->allocated && tok->start)
+							free(tok->start);
 						tok->start = newstr;
 						tok->len = outbuf.len;
 						tok->allocated = true;
@@ -319,9 +332,6 @@ static char *perform_subst(t_shell *state, const char *s)
 			}
 			if (depth == 0)
 			{
-				/* append prefix */
-				if (pos > 0)
-					vec_push_nstr(&out, s, pos);
 				int inner_start = pos + 2;
 				int inner_end = j - 1;
 				int inlen = inner_end - inner_start;
@@ -341,13 +351,6 @@ static char *perform_subst(t_shell *state, const char *s)
 					vec_push_nstr(&out, sub, ft_strlen(sub));
 				free(sub);
 				pos = j;
-				/* continue without copying the consumed part */
-				/* adjust s/len by moving remaining part later */
-				/* We'll continue scanning remaining characters */
-				/* but need to update s pointer for copying later parts */
-				s += pos;
-				len -= pos;
-				pos = 0;
 			}
 			else
 			{

@@ -27,6 +27,7 @@ void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 	prev_start = *i;
 	while (*i < t.len && t.start[*i] != '\'')
 		(*i)++;
+	/* Create SQWORD token for content inside single quotes - this is raw/literal */
 	{
 		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_SQWORD);
 		tmp.children.elem_size = sizeof(t_ast_node);
@@ -42,9 +43,14 @@ void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 	ft_assert(t.start[(*i)++] == '\\');
 	prev_start = *i;
 	if (*i == t.len)
+	{
+		/* backslash at end - include backslash as literal */
 		prev_start--;
+	}
 	else
 	{
+		/* Outside quotes, backslash escapes the next character.
+		   The escaped character becomes literal (use SQWORD to prevent further expansion). */
 		(*i)++;
 	}
 	{
