@@ -55,7 +55,10 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 
 	ft_assert(t.start[(*i)++] == '$');
 	prev_start = *i;
-	/* Handle $() command substitution - treat the whole $() as a single token */
+	/* Handle $() command substitution - treat the whole $() as a single token.
+	   Use TT_WORD for unquoted context (tt == TT_ENVVAR) so it gets expanded.
+	   Use TT_DQWORD for quoted context (tt == TT_DQENVVAR) - but note that
+	   $() inside double quotes SHOULD be expanded, so we still use TT_WORD. */
 	if (*i < t.len && t.start[*i] == '(')
 	{
 		int depth = 1;
@@ -68,7 +71,9 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 				depth--;
 			(*i)++;
 		}
-		/* Create a WORD token for $(...) that will be processed for command substitution */
+		/* Create a WORD token for $(...) that will be processed for command substitution.
+		   This works for both unquoted and double-quoted contexts since $() is
+		   expanded in both cases. */
 		t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
 		tmp.children.elem_size = sizeof(t_ast_node);
 		vec_push(&ret->children, &tmp);
@@ -104,7 +109,10 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 		}
 		else
 		{
-			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, TT_WORD);
+			/* Bare $ - treat as literal using TT_DQWORD in quoted context,
+			   TT_SQWORD in unquoted context to prevent further expansion */
+			t_tt literal_tt = (tt == TT_DQENVVAR) ? TT_DQWORD : TT_SQWORD;
+			t_ast_node tmp = create_subtoken_node(t, prev_start - 1, *i, literal_tt);
 			tmp.children.elem_size = sizeof(t_ast_node);
 			vec_push(&ret->children, &tmp);
 		}
@@ -148,7 +156,8 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				}
 				else if (c == '"' || c == '$' || c == '\\' || c == '`')
 				{
-					/* emit the escaped char without backslash as DQWORD (literal) */
+					/* emit the escaped char without backslash as TT_DQWORD (literal).
+					   This means \$ becomes a literal $ that won't be expanded. */
 					t_ast_node tmp2 = create_subtoken_node(t, *i, *i + 1, TT_DQWORD);
 					tmp2.children.elem_size = sizeof(t_ast_node);
 					vec_push(&ret->children, &tmp2);
