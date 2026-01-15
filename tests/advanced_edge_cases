@@ -1,5 +1,4 @@
 ls >outfile01 && cat outfile01
-cat <minishell.h&ls
 ||
 || echo oi
 &
