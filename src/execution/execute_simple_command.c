@@ -274,6 +274,8 @@ t_exe_res execute_cmd_bg(t_shell *state,
 		env_extend(&state->env, &cmd->pre_assigns, true);
 		exit(actually_run(state, &cmd->argv));
 	}
+	/* parent: close procsub fds so readers can see EOF */
+	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res_pid(pid));

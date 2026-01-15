@@ -64,11 +64,6 @@ cat /tmp/log2.txt
 diff <(sort file1.txt) <(sort file2.txt)
 # Compare sorted versions of two files
 
-# Example 9: Using with while read
-while read line; do
-    echo "Read: $line"
-done < <(seq 1 3)
-# Expected output:
 # Read: 1
 # Read: 2
 # Read: 3
