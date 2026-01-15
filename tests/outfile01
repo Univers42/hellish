@@ -13,6 +13,9 @@ echo_edge_cases
 echo_more_edge_cases
 edge_cases
 extras
+files_test_glob
+glob-zoo
+globbing
 local.supp
 loop.out
 manual_tests

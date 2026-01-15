@@ -1,0 +1,80 @@
+cd glob-zoo && printf '%s\n' * | sort
+cd glob-zoo && printf '%s\n' */* | sort
+cd glob-zoo && printf '%s\n' */*/* | sort
+
+# root-level variety
+cd glob-zoo && printf '%s\n' *.md *.c *.txt | sort
+cd glob-zoo && printf '%s\n' *.* | sort
+cd glob-zoo && printf '%s\n' *.*.* | sort
+cd glob-zoo && printf '%s\n' *[!a-zA-Z0-9]* | sort
+
+# mixed/name variants
+cd glob-zoo && printf '%s\n' test* | sort
+cd glob-zoo && printf '%s\n' *file* | sort
+cd glob-zoo && printf '%s\n' *-file *file-* | sort
+cd glob-zoo && printf '%s\n' *_* __* _* | sort
+cd glob-zoo && printf '%s\n' *- *-- *--- | sort
+cd glob-zoo && printf '%s\n' *[._-]* | sort
+
+# POSIX classes
+cd glob-zoo && printf '%s\n' [[:upper:]]* | sort
+cd glob-zoo && printf '%s\n' [[:lower:]]* | sort
+cd glob-zoo && printf '%s\n' [[:alpha:]]* | sort
+cd glob-zoo && printf '%s\n' [[:alnum:]]* | sort
+cd glob-zoo && printf '%s\n' *[[:digit:]]* | sort
+cd glob-zoo && printf '%s\n' *[[:punct:]]* | sort
+
+# numeric playground
+cd glob-zoo && printf '%s\n' numeric/* | sort
+cd glob-zoo && printf '%s\n' numeric/[0-9] | sort
+cd glob-zoo && printf '%s\n' numeric/[0-9][0-9] | sort
+cd glob-zoo && printf '%s\n' numeric/*[0-9] | sort
+cd glob-zoo && printf '%s\n' numeric/*[!0-9] | sort
+cd glob-zoo && printf '%s\n' numeric/*[[:digit:]]* | sort
+
+# shallow + deep playground
+cd glob-zoo && printf '%s\n' shallow/* | sort
+cd glob-zoo && printf '%s\n' deep/* | sort
+cd glob-zoo && printf '%s\n' deep/*/* | sort
+cd glob-zoo && printf '%s\n' deep/*/*/*/test? | sort
+cd glob-zoo && printf '%s\n' deep/*/*/*/file[0-9] | sort
+cd glob-zoo && printf '%s\n' deep/*/*/*/* | sort
+cd glob-zoo && printf '%s\n' deep/*/*/*/[a-z]* | sort
+cd glob-zoo && printf '%s\n' deep/*/*/*/[!a-z]* | sort
+
+# dotfiles
+cd glob-zoo && printf '%s\n' .* | sort
+cd glob-zoo && printf '%s\n' .[!.]* | sort
+cd glob-zoo && printf '%s\n' dotfiles/.* | sort
+cd glob-zoo && printf '%s\n' dotfiles/.[a-z] | sort
+cd glob-zoo && printf '%s\n' dotfiles/.[!a] | sort
+
+# symbols playground (literal chars)
+cd glob-zoo && printf '%s\n' symbols/* | sort
+cd glob-zoo && printf '%s\n' symbols/\* symbols/\? symbols/\[ symbols/\] | sort
+cd glob-zoo && printf '%s\n' symbols/! symbols/^ symbols/- | sort
+cd glob-zoo && printf '%s\n' symbols/\\* symbols/\\? | sort
+
+# bracket/range edge cases
+cd glob-zoo && printf '%s\n' test[a-d] test[!a-d] | sort
+cd glob-zoo && printf '%s\n' test[a-zA-Z0-9] | sort
+cd glob-zoo && printf '%s\n' test[a-z-] test[-a-z] test[a-] test[-a] | sort
+cd glob-zoo && printf '%s\n' test[^a-z] test[!x-z] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]][[:digit:]] | sort
+
+# multi-pattern mixes
+cd glob-zoo && printf '%s\n' *test* *test*test* | sort
+cd glob-zoo && printf '%s\n' *a*b* *a*b*c* | sort
+cd glob-zoo && printf '%s\n' [ab]*[0-9] [ab]*[!0-9] | sort
+cd glob-zoo && printf '%s\n' [a-z]*[0-9]*[a-z] | sort
+cd glob-zoo && printf '%s\n' *[a-z][0-9]* | sort
+
+# literal brackets in names
+cd glob-zoo && printf '%s\n' test\[a-z\] test\[a\] | sort
+
+# multi-extension
+cd glob-zoo && printf '%s\n' test.*.c test.??.c *.md.bak | sort
+cd glob-zoo && printf '%s\n' test.backup.* *.*.c | sort
+
+# spaces (if any)
+cd glob-zoo && printf '%s\n' *" "* | sort
