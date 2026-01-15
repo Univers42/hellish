@@ -99,3 +99,9 @@ test: all
 	(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
 .PHONY: test re all clean fclean all
+
+# Add these to SRCS (or create a separate ARITH_SRCS):
+# src/arith/lexer.c
+# src/arith/parser.c
+# src/arith/parser2.c
+# src/arith/eval.c

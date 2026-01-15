@@ -78,6 +78,103 @@ t_ast_node	parse_simple_list(t_shell *state,
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	
+	/* Check for arithmetic expression (( at the start */
+	if (next == TT_ARITH_START)
+	{
+		t_token arith_tok = *(t_token *)deque_pop_start(&tokens->deqtok);
+		(void)arith_tok;
+		
+		/* Collect tokens until we find )) or run out */
+		t_string expr_buf;
+		vec_init(&expr_buf);
+		expr_buf.elem_size = 1;
+		
+		int depth = 1; /* We've consumed ((, so depth starts at 1 for the outer (( */
+		t_token last_word = {0};
+		bool has_inner_paren = false;
+		
+		while (depth > 0)
+		{
+			t_token peek = *(t_token *)deque_peek(&tokens->deqtok);
+			if (peek.tt == TT_END)
+				break;
+			
+			if (peek.tt == TT_BRACE_LEFT)
+			{
+				has_inner_paren = true;
+				depth++;
+				(void)deque_pop_start(&tokens->deqtok);
+				vec_push_str(&expr_buf, "(");
+			}
+			else if (peek.tt == TT_BRACE_RIGHT)
+			{
+				depth--;
+				if (depth > 0)
+				{
+					(void)deque_pop_start(&tokens->deqtok);
+					vec_push_str(&expr_buf, ")");
+				}
+				else
+				{
+					/* This is the first ) of )) - consume both */
+					(void)deque_pop_start(&tokens->deqtok);
+					peek = *(t_token *)deque_peek(&tokens->deqtok);
+					if (peek.tt == TT_BRACE_RIGHT)
+					{
+						(void)deque_pop_start(&tokens->deqtok);
+						depth = 0;
+					}
+					else
+					{
+						/* Only one ), not )) */
+						depth = 0;
+					}
+				}
+			}
+			else if (peek.tt == TT_WORD)
+			{
+				last_word = peek;
+				(void)deque_pop_start(&tokens->deqtok);
+				if (expr_buf.len > 0)
+				{
+					char sp = ' ';
+					vec_push(&expr_buf, &sp);
+				}
+				vec_push_nstr(&expr_buf, peek.start, peek.len);
+			}
+			else
+			{
+				(void)deque_pop_start(&tokens->deqtok);
+			}
+		}
+		
+		/* Generate error message like bash */
+		ft_eprintf("%s: ((: ", state->context);
+		if (has_inner_paren && last_word.start)
+		{
+			/* Like bash: missing `)' (error token is "...") */
+			ft_eprintf("missing `)' (error token is \"%.*s)\")\n",
+				last_word.len, last_word.start);
+		}
+		else if (last_word.start)
+		{
+			/* Like bash: syntax error in expression (error token is "...") */
+			ft_eprintf("syntax error in expression (error token is \"%.*s\")\n",
+				last_word.len, last_word.start);
+		}
+		else
+		{
+			ft_eprintf("syntax error in arithmetic expression\n");
+		}
+		
+		free(expr_buf.ctx);
+		parser->res = RES_FatalError;
+		/* Set exit code to 1 for arithmetic errors (bash uses 1, not 2) */
+		set_cmd_status(state, res_status(1));
+		return (ret);
+	}
+	
 	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT)
 		return (unexpected(state, parser, ret, tokens));
 	{

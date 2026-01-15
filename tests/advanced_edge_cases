@@ -11,3 +11,60 @@ ls >outfile01 && cat outfile01
 echo oi || echo tchau
 env | grep USER || grep lucas
 << *
+echo hello && echo world
+echo hello || echo world
+true && true && echo "all true"
+false || false || echo "all false"
+true && false || echo "failed"
+false && echo "should not print" || echo "printed"
+echo first || echo second || echo third
+echo first && echo second && echo third
+true | true
+false | false
+true | false
+false | true
+echo "test" | grep test && echo "found"
+echo "test" | grep nope || echo "not found"
+cat <./test_files/infile | grep hi && echo "match"
+cat <./test_files/infile | grep nope || echo "no match"
+ls | grep test_files && echo "exists"
+ls | grep nonexistent || echo "not exists"
+(echo hello)
+(echo hello && echo world)
+(echo hello || echo world)
+(true && false) || echo "subshell failed"
+(false || true) && echo "subshell succeeded"
+echo start && (echo middle) && echo end
+echo start || (echo middle) || echo end
+(echo a | grep a) && echo "piped success"
+(echo a | grep b) || echo "piped failure"
+echo && echo
+echo || echo test
+echo && false || true
+true && true && true && echo "chain success"
+false || false || false || echo "chain failure"
+(true)
+(false)
+(echo test)
+((echo test))
+(((echo test)))
+echo a && echo b | grep b
+echo a || echo b | grep a
+echo test | cat && echo done
+echo test | cat || echo failed
+cat <./test_files/infile | wc && true
+cat <./test_files/infile | wc || false
+true && true | grep true
+false || false | grep false
+(echo a && echo b)
+(echo a || echo b)
+echo test > ./outfiles/outfile01 && cat ./outfiles/outfile01
+echo test > ./outfiles/outfile01 || echo "redirect failed"
+cat <./test_files/infile >./outfiles/outfile01 && echo "success"
+cat <./test_files/infile | grep hi >./outfiles/outfile01 && cat ./outfiles/outfile01
+echo a && echo b && echo c && echo d
+false || true || false || true
+(true && true)
+(false || false)
+(true && false)
+(false || true)
