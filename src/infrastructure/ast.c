@@ -62,6 +62,8 @@ static char *get_node_color(t_ast_t tn)
 		return ("#FFB347");
 	if (tn == AST_ASSIGNMENT_WORD)
 		return ("#B0E0E6");
+	if (tn == AST_PROC_SUB)
+		return ("#98FB98");
 	return ("#FFFFFF");
 }
 
@@ -282,6 +284,8 @@ char *node_name(t_ast_t tn)
 		return ("AST_COMMAND");
 	if (tn == AST_ASSIGNMENT_WORD)
 		return ("AST_ASSIGNMENT_WORD");
+	if (tn == AST_PROC_SUB)
+		return ("AST_PROC_SUB");
 	ft_assert("Unreachable" == 0);
 	return (0);
 }

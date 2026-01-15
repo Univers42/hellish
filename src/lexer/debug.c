@@ -84,6 +84,8 @@ static const char **get_tt_names(void)
         names[TT_DQENVVAR] = "TT_DQENVVAR";
         names[TT_AMPERSAND] = "TT_AMPERSAND";
         names[TT_ARITH_START] = "TT_ARITH_START";
+        names[TT_PROC_SUB_IN] = "TT_PROC_SUB_IN";
+        names[TT_PROC_SUB_OUT] = "TT_PROC_SUB_OUT";
         inited = 1;
     }
     return names;

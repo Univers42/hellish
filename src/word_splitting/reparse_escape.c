@@ -30,7 +30,7 @@ void	reparse_words(t_ast_node	*node)
 		full_word = (t_token_old){.start = tok.start,
 			.len = tok.len, .present = true};
 		temp = *node;
-		*node = reparse_word(((t_ast_node *)temp.children.ctx)[0].token);
+		*node = reparse_word(tok);
 		// Save new children pointer and length
 		void *new_ctx = node->children.ctx;
 		size_t new_len = node->children.len;
@@ -43,7 +43,16 @@ void	reparse_words(t_ast_node	*node)
 	}
 	i = 0;
 	while (i < node->children.len)
-		reparse_words(&((t_ast_node *)node->children.ctx)[i++]);
+	{
+		t_ast_node *child = &((t_ast_node *)node->children.ctx)[i];
+		if (child->node_type == AST_PROC_SUB)
+		{
+			i++;
+			continue;
+		}
+		reparse_words(child);
+		i++;
+	}
 }
 
 bool	is_valid_ident(char *s, int len)
@@ -107,7 +116,8 @@ void	reparse_assignment_words(t_ast_node *node)
 	/* Guard: ensure node has valid children before recursing */
 	if (!node->children.ctx)
 		return;
-
+	if (node->node_type == AST_PROC_SUB)
+		return;
 	if (node->node_type != AST_REDIRECT)
 	{
 		i = 0;

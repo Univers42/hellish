@@ -10,26 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <stdio.h>
-#include "../libft/libft.h"
 #include "shell.h"
+# include "lexer.h"
 # include "parser.h"
 # include "ast.h"
 # include "decomposer.h"
 # include "sys.h"
 
 t_ast_node unexpected(t_shell *state, t_parser *parser, t_ast_node ret, t_deque_tt *tokens);
-
-bool	is_simple_cmd_token(t_tt tt)
-{
-	if (tt == TT_REDIRECT_LEFT
-		|| tt == TT_WORD
-		|| tt == TT_REDIRECT_RIGHT
-		|| tt == TT_APPEND
-		|| tt == TT_HEREDOC)
-		return (true);
-	return (false);
-}
 
 t_ast_node	create_subtoken_node(t_token t, int offset, int end_offset, t_tt tt)
 {

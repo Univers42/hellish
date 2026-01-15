@@ -194,7 +194,7 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 	vec_init(&ret->pre_assigns);
 	ret->pre_assigns.elem_size = sizeof(t_env);
 	vec_init(&ret->argv);
-	ret->argv.elem_size = sizeof(char *); // <--- store pointers
+	ret->argv.elem_size = sizeof(char *);
 	while (exp.i < node->children.len)
 	{
 		exp.curr = (t_ast_node *)vec_idx(&node->children, exp.i);
@@ -204,13 +204,24 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 			exp.exit_stat = expand_simple_cmd_assignment(state, &exp, ret);
 		else if (exp.curr->node_type == AST_REDIRECT)
 			exp.exit_stat = expand_simple_cmd_redir(state, &exp, redirects);
+		else if (exp.curr->node_type == AST_PROC_SUB)
+		{
+			/* Expand process substitution and add result to argv */
+			char *path = expand_proc_sub(state, exp.curr);
+			if (path)
+			{
+				vec_push(&ret->argv, &path);
+				exp.found_first = true;
+			}
+			exp.exit_stat = 0;
+		}
 		else
 		{
 #if TRACE_DEBUG
 			ft_eprintf("debug: expand_simple_command unexpected node_type=%d at idx=%lu\n",
 				(int)exp.curr->node_type, (unsigned long)exp.i);
 #endif
-			return (1); /* unexpected node type — fail expansion */
+			return (1);
 		}
 		if (exp.exit_stat)
 			return (exp.exit_stat);

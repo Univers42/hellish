@@ -61,6 +61,16 @@ typedef enum e_option
 	OPT_COMMAND
 }	t_option;
 
+
+typedef struct s_procsub_entry
+{
+	pid_t	pid;
+	int		fd;
+	char	*path;
+}	t_procsub_entry;
+
+typedef t_vec	t_vec_procsub;
+
 typedef struct s_shell
 {
 	t_string	input;
@@ -83,6 +93,7 @@ typedef struct s_shell
 	/* bitwise option flags detected at startup */
 	uint32_t	option_flags;
 	int             bg_job_count;   /* counter for background job IDs */
+	t_vec_procsub	proc_subs;      /* Process substitution tracking */
 }   t_shell;
 
 /* Directory matcher context for glob expansion */

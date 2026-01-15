@@ -119,10 +119,6 @@ void	execute_top_level(t_shell *state)
 	exe.redirs.elem_size = sizeof(int);
 	state->heredoc_idx = 0;
 
-	/* NOTE: The monitor child process that tracked trailing newlines has been
-	   disabled because it caused a second minishell process to appear in `ps`.
-	   The feature printed "%\n" when output didn't end with a newline. */
-
 	/* gather heredocs and execute the tree */
 	if (!g_should_unwind)
 		gather_heredocs(state, &state->tree, false);
@@ -130,6 +126,9 @@ void	execute_top_level(t_shell *state)
 		res = execute_tree_node(state, &exe);
 	else
 		res = res_status(CANCELED);
+
+	/* Clean up process substitutions */
+	cleanup_proc_subs(state);
 
 	if (res.c_c)
 	{

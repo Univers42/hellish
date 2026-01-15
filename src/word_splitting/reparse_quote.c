@@ -14,22 +14,7 @@
 #include "shell.h"
 #include <stdbool.h>
 # include "parser.h"
-
-//[a-zA-Z_]
-bool	is_var_name_p1(char c)
-{
-	if (ft_isalpha(c) || c == '_')
-		return (true);
-	return (false);
-}
-
-//[a-zA-Z0-9_]
-bool	is_var_name_p2(char c)
-{
-	if (ft_isalnum(c) || c == '_')
-		return (true);
-	return (false);
-}
+# include "helpers.h"
 
 bool	reparse_special_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 {
