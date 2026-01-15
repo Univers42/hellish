@@ -91,6 +91,7 @@ fclean: clean
 	@printf "$(BOLD)Cleaning libft...$(RESET)\r" >&2
 	@$(MAKE) -C $(LIBFT_DIR) fclean
 	@printf "$(BOLD)libft cleaned.\n$(RESET)" >&2
+	rm -rf build
 
 re: fclean all
 	@printf "$(BOLD)$(GREEN)Rebuilt $(NAME).$(RESET)\n" >&2
