@@ -128,9 +128,11 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 {
 	int prev_start;
+	bool pushed_any;
 
 	ft_assert(t.start[(*i)++] == '"');
 	prev_start = *i;
+	pushed_any = false;
 	while (*i < t.len && t.start[*i] != '"')
 	{
 		if (t.start[*i] == '\\')
@@ -141,6 +143,7 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
 				tmp.children.elem_size = sizeof(t_ast_node);
 				vec_push(&ret->children, &tmp);
+				pushed_any = true;
 			}
 			/* handle backslash in double quotes: remove backslash only when
 			   followed by ", $, `, \, or newline; otherwise keep the backslash */
@@ -161,6 +164,7 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 					t_ast_node tmp2 = create_subtoken_node(t, *i, *i + 1, TT_DQWORD);
 					tmp2.children.elem_size = sizeof(t_ast_node);
 					vec_push(&ret->children, &tmp2);
+					pushed_any = true;
 					(*i)++;
 				}
 				else
@@ -169,6 +173,7 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 					t_ast_node tmp2 = create_subtoken_node(t, esc_pos, *i + 1, TT_DQWORD);
 					tmp2.children.elem_size = sizeof(t_ast_node);
 					vec_push(&ret->children, &tmp2);
+					pushed_any = true;
 					(*i)++;
 				}
 			}
@@ -178,6 +183,7 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				t_ast_node tmp2 = create_subtoken_node(t, esc_pos, *i, TT_DQWORD);
 				tmp2.children.elem_size = sizeof(t_ast_node);
 				vec_push(&ret->children, &tmp2);
+				pushed_any = true;
 			}
 			prev_start = *i;
 			continue;
@@ -190,8 +196,10 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 				t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
 				tmp.children.elem_size = sizeof(t_ast_node);
 				vec_push(&ret->children, &tmp);
+				pushed_any = true;
 			}
 			reparse_envvar(ret, i, t, TT_DQENVVAR);
+			pushed_any = true;
 			prev_start = *i;
 			continue;
 		}
@@ -201,6 +209,15 @@ void reparse_dquote(t_ast_node *ret, int *i, t_token t)
 	if (*i > prev_start)
 	{
 		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_DQWORD);
+		tmp.children.elem_size = sizeof(t_ast_node);
+		vec_push(&ret->children, &tmp);
+		pushed_any = true;
+	}
+	/* If nothing was pushed (empty quotes ""), push an empty DQWORD token
+	   so the word node has at least one child representing the empty string */
+	if (!pushed_any)
+	{
+		t_ast_node tmp = create_subtoken_node(t, *i, *i, TT_DQWORD);
 		tmp.children.elem_size = sizeof(t_ast_node);
 		vec_push(&ret->children, &tmp);
 	}

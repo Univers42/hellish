@@ -67,12 +67,21 @@ void	reparse_assignment_word(t_ast_node *word)
 	t_token		*first_token;
 	char		*eq;
 
+	/* Guard: ensure children exist and are valid before accessing */
+	if (!word->children.ctx || word->children.len == 0)
+		return;
+	if (((t_ast_node *)word->children.ctx)[0].node_type != AST_TOKEN)
+		return;
+
 	new_root = (t_ast_node){.node_type = AST_ASSIGNMENT_WORD};
 	vec_init(&new_root.children);
 	new_root.children.elem_size = sizeof(t_ast_node);
 	if (((t_ast_node *)word->children.ctx)[0].token.tt == TT_WORD)
 	{
 		first_token = &((t_ast_node *)word->children.ctx)[0].token;
+		/* Guard: ensure token start is valid */
+		if (!first_token->start || first_token->len <= 0)
+			return;
 		eq = ft_strnchr(first_token->start, '=', first_token->len);
 		if (eq)
 		{
@@ -95,6 +104,10 @@ void	reparse_assignment_words(t_ast_node *node)
 {
 	size_t	i;
 
+	/* Guard: ensure node has valid children before recursing */
+	if (!node->children.ctx)
+		return;
+
 	if (node->node_type != AST_REDIRECT)
 	{
 		i = 0;
@@ -104,3 +117,5 @@ void	reparse_assignment_words(t_ast_node *node)
 	if (node->node_type == AST_WORD)
 		reparse_assignment_word(node);
 }
+
+/* NOTE: reparse_dq_bs is defined in reparse_envar_plain.c - do not duplicate here */
