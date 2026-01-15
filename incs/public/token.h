@@ -23,6 +23,7 @@ typedef enum e_tt
 	TT_SEMICOLON,
 	TT_NEWLINE,
 	TT_END,
+	TT_AMPERSAND,  /* single & for background execution */
 } t_tt;
 
 /* compact representation of original full token for AST bookkeeping */

@@ -82,6 +82,7 @@ typedef struct s_shell
 	t_prng_state	prng;
 	/* bitwise option flags detected at startup */
 	uint32_t	option_flags;
+	int             bg_job_count;   /* counter for background job IDs */
 }   t_shell;
 
 #endif

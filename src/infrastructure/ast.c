@@ -132,6 +132,10 @@ static void print_sequence_range(t_ast_node *children, int start, int end,
 {
 	int op_idx;
 
+	/* Guard: invalid range */
+	if (start > end || start < 0)
+		return;
+
 	/* single element: just print the child node normally */
 	if (start == end)
 	{
@@ -140,23 +144,46 @@ static void print_sequence_range(t_ast_node *children, int start, int end,
 		print_tree_recursive(children[start], depth_stack, depth);
 		return;
 	}
-	/* For left-associative grouping, choose the last operator as the root of this subtree */
-	op_idx = end - 1; /* operator is always at odd positions in the alternating sequence */
+
+	/* For left-associative grouping, choose the last operator as the root of this subtree.
+	   In alternating cmd op cmd op cmd sequences, operators are at odd indices.
+	   However, if the list ends with an operator (e.g., "cmd &"), we need to handle that. */
+	
+	/* Find the last operator token in the range */
+	op_idx = end;
+	while (op_idx > start && children[op_idx].node_type != AST_TOKEN)
+		op_idx--;
+	
+	/* If we couldn't find an operator, or range is malformed, just print sequentially */
+	if (op_idx <= start || children[op_idx].node_type != AST_TOKEN)
+	{
+		int i = start;
+		while (i <= end)
+		{
+			if (depth_stack)
+				depth_stack[depth] = (i == end);
+			print_tree_recursive(children[i], depth_stack, depth);
+			i++;
+		}
+		return;
+	}
+
 	/* print operator node at this depth */
 	print_tree_prefix(depth_stack, depth, depth > 0 && depth_stack[depth - 1]);
 	print_op_line(children[op_idx]); /* children[op_idx] is the operator token */
+
 	/* left subtree: range [start .. op_idx-1] */
 	if (depth_stack)
 		depth_stack[depth] = 0; /* operator has further siblings handling */
-	/* left is not the last child of operator (we'll print right after it) */
 	print_sequence_range(children, start, op_idx - 1, depth_stack, depth + 1);
-	/* right subtree: the operand after operator */
-	if (depth_stack)
+
+	/* right subtree: the operand after operator (if exists) */
+	if (op_idx + 1 <= end)
 	{
-		/* right child is last for this operator subtree */
-		depth_stack[depth] = 1;
+		if (depth_stack)
+			depth_stack[depth] = 1; /* right child is last for this operator subtree */
+		print_tree_recursive(children[op_idx + 1], depth_stack, depth + 1);
 	}
-	print_tree_recursive(children[op_idx + 1], depth_stack, depth + 1);
 }
 
 /* Helper: Recursively print tree structure (collapses trivial pipeline wrapper and

@@ -19,7 +19,8 @@ bool	is_compund_list_op(t_tt tt)
 	if (tt == TT_SEMICOLON
 		|| tt == TT_OR
 		|| tt == TT_AND
-		|| tt == TT_NEWLINE)
+		|| tt == TT_NEWLINE
+		|| tt == TT_AMPERSAND)
 		return (true);
 	return (false);
 }

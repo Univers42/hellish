@@ -20,7 +20,8 @@ bool	is_simple_list_op(t_tt tt)
 {
 	if (tt == TT_SEMICOLON
 		|| tt == TT_OR
-		|| tt == TT_AND)
+		|| tt == TT_AND
+		|| tt == TT_AMPERSAND)
 		return (true);
 	return (false);
 }
@@ -50,7 +51,9 @@ int	parse_simple_list_s(t_shell *state, t_parser *parser,
 		return (2);
 	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 		(void)deque_pop_start(&tokens->deqtok);
-	if (next == TT_SEMICOLON && (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
+	/* For & and ;, if we hit END or NEWLINE, that's valid - just stop parsing */
+	if ((next == TT_SEMICOLON || next == TT_AMPERSAND) 
+		&& (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (2);
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (parser->res = RES_MoreInput, 2);
