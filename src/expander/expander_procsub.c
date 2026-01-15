@@ -136,6 +136,26 @@ char	*expand_proc_sub(t_shell *state, t_ast_node *node)
 	return (result);
 }
 
+void	procsub_close_fds_parent(t_shell *state)
+{
+	size_t			i;
+	t_procsub_entry	*entry;
+
+	if (!state || !state->proc_subs.ctx)
+		return;
+	i = 0;
+	while (i < state->proc_subs.len)
+	{
+		entry = &((t_procsub_entry *)state->proc_subs.ctx)[i];
+		if (entry->fd >= 0)
+		{
+			close(entry->fd);
+			entry->fd = -1;
+		}
+		i++;
+	}
+}
+
 void	cleanup_proc_subs(t_shell *state)
 {
 	size_t			i;

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "shell.h"
+#include "expander.h"
 #include <unistd.h>
 #include "../libft/libft.h"
 
@@ -95,6 +96,8 @@ t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe)
 	vec_init(&results);
 	results.elem_size = sizeof(t_exe_res);
 	execute_pipeline_children(state, exe, &results);
+	/* parent: close procsub fds after all forks */
+	procsub_close_fds_parent(state);
 	/* Use the exit status of the last command in the pipeline */
 	if (results.len > 0)
 	{

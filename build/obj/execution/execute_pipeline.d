@@ -42,7 +42,8 @@ build/obj/execution/execute_pipeline.o: src/execution/execute_pipeline.c \
  vendor/libft/include/ft_printf.h incs/public/signals.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h vendor/libft/../libft/libft.h
+ incs/prompt.h incs/expander.h incs/helpers.h incs/env.h \
+ vendor/libft/../libft/libft.h
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -108,4 +109,7 @@ incs/redir.h:
 incs/history.h:
 incs/shell.h:
 incs/prompt.h:
+incs/expander.h:
+incs/helpers.h:
+incs/env.h:
 vendor/libft/../libft/libft.h:

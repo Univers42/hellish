@@ -47,5 +47,6 @@ int			redirect_from_ast_redir(t_shell *state, t_ast_node *curr,
 /* Process substitution */
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);
 void		cleanup_proc_subs(t_shell *state);
+void		procsub_close_fds_parent(t_shell *state);
 
 #endif
