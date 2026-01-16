@@ -1,0 +1,125 @@
+echo test > a
+cat a
+echo test2 > a
+cat a
+echo test3 >> a
+cat a
+
+echo one > b
+echo two >> b
+echo three >> b
+cat b
+
+cat < a
+cat < b
+
+cat < a > c
+cat c
+
+cat < a >> c
+cat c
+
+cat < does_not_exist
+cat < does_not_exist > out
+
+echo hello > x
+cat < x > y
+cat y
+
+echo overwrite > y
+cat y
+
+echo append >> y
+cat y
+
+echo hi > f1
+echo bye > f2
+cat < f1 < f2
+cat < f1 > f3 > f4
+cat f3
+cat f4
+
+echo test > same
+echo test2 > same
+echo test3 > same
+cat same
+
+echo test >> same
+echo test2 >> same
+cat same
+
+cat < same < same
+cat < same > same
+
+echo abc > in
+wc -c < in
+wc -w < in
+wc -l < in
+
+echo hello world > in2
+cat < in2 | wc -w > out2
+cat out2
+
+echo one > r
+cat < r >> r
+cat r
+
+echo hi > r2
+cat < r2 > r2
+cat r2
+
+cat << EOF
+hello
+world
+EOF
+
+cat << END
+one
+two
+three
+END
+
+wc -l << STOP
+a
+b
+c
+d
+STOP
+
+cat << X > heredoc_out
+line1
+line2
+line3
+X
+cat heredoc_out
+
+cat << LIM >> heredoc_out
+line4
+line5
+LIM
+cat heredoc_out
+
+cat << A | cat
+hello
+pipe
+test
+A
+
+cat << B > h1 | cat
+this
+should
+redirect
+B
+cat h1
+
+cat << C >> h1
+append
+heredoc
+C
+cat h1
+
+cat << D < in
+ignored
+D
+
+echo done

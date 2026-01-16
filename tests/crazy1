@@ -1,0 +1,56 @@
+dsbksdgbksdghsd
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+./this_should_not_exist
+./
+/
+
+echo start
+echo one
+echo two
+echo three
+ls
+pwd
+
+cat | cat | ls
+ls | cat | wc -l
+ls | dsbksdgbksdghsd | wc -l
+dsbksdgbksdghsd | ls
+cat filethatdoesntexist | ls
+ls | cat filethatdoesntexist
+
+|
+ls |
+cat | | cat
+echo hello | | cat
+
+echo a b c d e f g h i j k l m n o p q r s t u v w x y z 1 2 3 4 5 6 7 8 9 10
+ls a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+echo hello | cat | cat | cat | wc -c
+ls | grep . | grep s | wc -l
+yes | head -n 5 | wc -l
+
+echo before
+echo after
+
+cat
+^C
+cat
+^C
+
+echo half |
+^C
+
+echo history1
+echo history2
+echo history3
+echo history4
+echo history5
+
+dsbksdgbksdghsd
+dsbksdgbksdghsd
+dsbksdgbksdghsd
+
+cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | ls
+
+echo end
