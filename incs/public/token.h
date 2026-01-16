@@ -47,4 +47,26 @@ typedef struct s_token
 	t_token_old	full_word;
 }	t_token;
 
+static inline t_token create_token(char *start, int len, t_tt token_type)
+{
+	return (t_token){
+		.tt = token_type,
+		.start = start,
+		.len = len,
+		.allocated = false,
+		.full_word = { .present = false, .start = NULL, .len = 0 }
+	};
+}
+
+static inline t_token create_tok4(char *start, int len, t_tt token_type, bool allocated)
+{
+	return (t_token){
+		.tt = token_type,
+		.start = start,
+		.len = len,
+		.allocated = allocated,
+		.full_word = { .present = false, .start = NULL, .len = 0 }
+	};
+}
+
 #endif

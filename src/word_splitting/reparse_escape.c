@@ -127,5 +127,3 @@ void	reparse_assignment_words(t_ast_node *node)
 	if (node->node_type == AST_WORD)
 		reparse_assignment_word(node);
 }
-
-/* NOTE: reparse_dq_bs is defined in reparse_envar_plain.c - do not duplicate here */
