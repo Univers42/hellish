@@ -81,7 +81,7 @@ static char	*parse_word(t_deque_tt *tokens, char **str)
 		else
 			break ;
 	}
-	tmp = (t_token){.start = start, .len = (int)(*str - start), .tt = TT_WORD};
+	tmp = create_token(start, (int)(*str - start), TT_WORD);
 	deque_push_end(&tokens->deqtok, &tmp);
 	return (0);
 }
@@ -140,9 +140,7 @@ void	parse_op(t_deque_tt *tokens, char **str)
 	op_idx = longest_matching_str(operators, *str);
 	ft_assert(op_idx != -1);
 	*str += ft_strlen(operators[op_idx].str);
-	tmp = (t_token){.start = start,
-		.len = (int)(*str - start),
-		.tt = operators[op_idx].t};
+	tmp = create_token(start, (int)(*str - start), operators[op_idx].t);
 	deque_push_end(&tokens->deqtok, &tmp);
 }
 
@@ -151,6 +149,7 @@ void	parse_op(t_deque_tt *tokens, char **str)
 char	*tokenizer(char *str, t_deque_tt *ret)
 {
 	char	*prompt;
+	t_token	tmp;
 
 	prompt = 0;
 	deque_clear(&ret->deqtok, NULL);
@@ -168,7 +167,7 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 			prompt = parse_word(ret, &str);
 		else if (*str == '\n')
 		{
-			t_token tmp = (t_token){.start = str, .len = 1, .tt = TT_NEWLINE};
+			tmp = create_token(str, 1, TT_NEWLINE);
 			deque_push_end(&ret->deqtok, &tmp);
 			str++;
 		}
@@ -179,6 +178,7 @@ char	*tokenizer(char *str, t_deque_tt *ret)
 		if (prompt)
 			break ;
 	}
-	{ t_token tmp = {.tt = TT_END, .start = 0, .len = 0}; deque_push_end(&ret->deqtok, &tmp); }
+	tmp = create_token(0, 0, TT_END);
+	deque_push_end(&ret->deqtok, &tmp);
 	return (prompt);
 }
