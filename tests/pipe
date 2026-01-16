@@ -1,0 +1,116 @@
+echo hello | cat
+echo hello world | wc -w
+echo "a b c d" | tr ' ' '\n' | wc -l
+
+cat file1 | cat
+cat file1 | wc -c
+cat file1 | wc -l
+cat file1 | grep test
+cat file1 | grep test | wc -l
+
+ls | cat
+ls | wc -l
+ls | grep minishell | wc -l
+
+cat filethatdoesntexist | cat
+cat filethatdoesntexist | grep bla | wc -l
+ls filethatdoesntexist | grep bla | more
+
+echo test | grep t
+echo test | grep z
+echo test | grep t | grep e
+echo test | grep z | wc -l
+
+echo one | echo two
+echo one | cat | echo two
+echo one | cat | cat | cat
+
+cat < file1 | wc -l
+cat < file1 | grep test
+cat < file1 | grep test | wc -l
+
+echo hello > p1
+cat p1 | wc -w
+cat p1 | wc -w > p2
+cat p2
+
+echo one > p3
+echo two > p4
+cat p3 | cat p4
+cat p3 | cat p4 | wc -l
+
+cat p3 | grep one > out1
+cat out1
+
+cat p3 | grep one >> out1
+cat out1
+
+echo test | cat > out2
+cat out2
+
+echo test | cat >> out2
+cat out2
+
+cat < p3 | cat > out3
+cat out3
+
+cat < p3 | cat >> out3
+cat out3
+
+cat < does_not_exist | wc -l
+cat < does_not_exist | cat > out_fail
+
+ls | grep minishell > out_ls
+cat out_ls
+
+ls | grep minishell | wc -l > count_ls
+cat count_ls
+
+ls | grep minishell | wc -l >> count_ls
+cat count_ls
+
+echo hello | grep h | cat > pipe1
+cat pipe1
+
+echo hello | grep z | cat > pipe2
+cat pipe2
+
+echo a | tr a b | tr b c | tr c d
+echo a | tr a b | tr b c | tr c d > chain
+cat chain
+
+cat chain | wc -c | wc -l
+
+yes | head -n 5 | wc -l
+
+cat << EOF | cat
+hello
+pipe
+heredoc
+EOF
+
+cat << EOF | wc -l
+one
+two
+three
+EOF
+
+cat << EOF | grep two
+one
+two
+three
+EOF
+
+cat << EOF | grep z | wc -l
+one
+two
+three
+EOF
+
+cat << EOF | cat > heredoc_pipe
+line1
+line2
+EOF
+cat heredoc_pipe
+
+echo done

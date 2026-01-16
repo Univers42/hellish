@@ -1,0 +1,105 @@
+dsbksdgbksdghsd
+dsbksdgbksdghsd | dsbksdgbksdghsd
+./doesnotexist | ./doesnotexist | ./doesnotexist
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+|
+||
+|||
+ls ||
+|| ls
+ls | |
+| ls |
+cat | | | cat
+echo | | | |
+| | | |
+
+cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | ls
+ls | ls | ls | ls | ls | wc -l
+ls | grep a | grep b | grep c | grep d | grep e | wc -l
+
+echo a b c d e f g h i j k l m n o p q r s t u v w x y z \
+1 2 3 4 5 6 7 8 9 10 \
+aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu vv ww xx yy zz
+
+ls a b c d e f g h i j k l m n o p q r s t u v w x y z \
+aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo pp qq rr ss tt uu vv ww xx yy zz
+
+cat filethatdoesntexist | cat | cat | wc -l
+cat filethatdoesntexist | grep bla | wc -l
+ls filethatdoesntexist | grep bla | wc -l
+
+echo start | cat > out1 | cat
+echo start | cat >> out1 | cat
+cat < out1 | cat | wc -c > out2
+cat < out2 | cat | cat | wc -l
+
+cat < doesnotexist | cat | wc -l
+cat < doesnotexist | cat > out_fail
+
+cat << EOF | cat | cat | wc -l
+one
+two
+three
+four
+five
+EOF
+
+cat << EOF | grep two | cat | wc -l
+one
+two
+three
+EOF
+
+cat << EOF | cat > hdoc | cat
+line1
+line2
+line3
+EOF
+cat hdoc
+
+cat << EOF >> hdoc | cat
+line4
+line5
+EOF
+cat hdoc
+
+yes | yes | yes | head -n 5 | wc -l
+yes | head -n 1 | yes | head -n 1 | wc -l
+
+echo x | echo y | echo z
+echo x | cat | echo y | cat | echo z
+
+cat
+^C
+cat
+^C
+cat
+^C
+
+echo unfinished |
+^C
+echo unfinished >
+^C
+echo unfinished >>
+^C
+
+echo hist1
+echo hist2
+echo hist3
+echo hist4
+echo hist5
+echo hist6
+echo hist7
+echo hist8
+echo hist9
+echo hist10
+
+dsbksdgbksdghsd
+^C
+dsbksdgbksdghsd
+^C
+
+cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | cat | ls
+
+echo end

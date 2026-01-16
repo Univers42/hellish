@@ -1,0 +1,60 @@
+echo $USER
+echo "$USER"
+
+echo $HOME
+echo "$HOME"
+
+echo $PATH
+echo "$PATH"
+
+echo user:$USER home:$HOME
+echo "user:$USER home:$HOME"
+
+echo $SHELL
+echo "$SHELL"
+
+echo $PWD
+echo "$PWD"
+
+echo $NOTSET
+echo "$NOTSET"
+
+export TESTVAR=hello
+echo $TESTVAR
+echo "$TESTVAR"
+
+export TESTVAR="hello world"
+echo $TESTVAR
+echo "$TESTVAR"
+
+echo '$USER'
+echo '$HOME'
+echo '$TESTVAR'
+
+echo "$USER $HOME $PATH"
+
+export USER
+echo "$USER"
+
+unset TESTVAR
+echo $TESTVAR
+echo "$TESTVAR"
+
+echo done
+
+export USER=testuser
+
+echo "'$USER'"
+echo '"$USER"'
+
+echo "'$HOME'"
+echo '"$HOME"'
+
+echo "'$PATH'"
+echo '"$PATH"'
+
+echo "'$USER $HOME'"
+echo '"$USER $HOME"'
+
+echo "'abc$USERdef'"
+echo '"abc$USERdef"'

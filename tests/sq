@@ -1,0 +1,103 @@
+echo 'hello world'
+echo '   leading spaces'
+echo 'trailing spaces   '
+echo 'multiple     spaces     inside'
+echo ''
+echo ' '
+echo '    '
+
+echo 'cat lol.c | cat > lol.c'
+echo 'ls -l | wc -l'
+echo 'echo hello | echo world'
+echo 'echo one | cat | cat | cat'
+
+echo 'hello' | cat
+echo 'hello world' | cat
+echo 'hello   world' | cat
+echo 'hello | world' | cat
+
+echo 'test' > file1
+cat 'file1'
+echo 'another test' > 'file with spaces'
+cat 'file with spaces'
+
+echo 'overwrite' > file1
+cat 'file1'
+
+echo 'append one' >> file1
+echo 'append two' >> file1
+cat 'file1'
+
+echo 'pipe to file' | cat > file2
+cat file2
+
+echo 'pipe and append' | cat >> file2
+cat file2
+
+echo 'a b c d e' | wc -w
+echo 'a    b    c' | wc -w
+
+echo 'line1
+line2
+line3'
+
+echo '	tab inside quotes'
+echo '		'
+
+echo '>' 
+echo '<'
+echo '|'
+echo '>>'
+echo '<<'
+
+echo '>' > sym
+cat sym
+
+echo '|' | cat
+echo '<' | cat
+
+echo 'file does not exist' > nofile
+cat nofile
+
+cat 'file that does not exist'
+echo 'still running'
+
+echo 'redir before' > r1 | cat
+echo 'redir after' | cat > r2
+
+cat r1
+cat r2
+
+echo 'double  quotes  test'
+echo 'mix of words and    spaces'
+
+echo 'quote at end '
+echo ' quote at start'
+
+echo '123 456' | cat
+echo '123 | 456' | cat
+echo '123 > 456' | cat
+
+echo 'long long long long long long long long long line'
+
+echo 'x' | echo 'y'
+echo 'x' | echo 'y z'
+
+echo 'nested | pipes | inside' | cat
+echo 'redir > inside quotes' > out1
+cat out1
+
+echo '>> inside quotes' > out2
+cat out2
+
+echo '    ' | wc -c
+echo '' | wc -c
+
+echo 'a'|'b'
+echo 'a b'|'c d'
+
+echo 'no space pipe'|cat
+echo 'no space redir'>nospace
+cat nospace
+
+echo 'end'
