@@ -11,24 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
-
-/*
- * Builtin command dispatch helper functions.
- * This file contains utility functions for builtin commands.
- */
-
-/* Check if a string is a valid variable name for export/unset */
-bool	is_var_name_p1(char c)
-{
-	return (ft_isalpha(c) || c == '_');
-}
-
-bool	is_var_name_p2(char c)
-{
-	return (ft_isalnum(c) || c == '_');
-}
-
-typedef int (*builtin_fn_t)(t_shell *, t_vec);
+#include "helpers.h"
 
 static void	init_builtin_hash(t_hash *h)
 {
@@ -40,14 +23,13 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "pwd", (void *)builtin_pwd);
 	hash_set(h, "env", (void *)builtin_env);
 	hash_set(h, "unset", (void *)builtin_unset);
-	//hash_set(h, "histoy", (void *)builtin_history);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
 {
-	static t_hash h = {0};
+	static t_hash	h = {0};
 
 	if (!h.ctx)
 		init_builtin_hash(&h);
-	return (builtin_fn_t)hash_get(&h, name);
+	return ((builtin_fn_t)hash_get(&h, name));
 }

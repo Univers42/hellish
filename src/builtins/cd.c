@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# include "shell.h"
+#include "shell.h"
 #include "env.h"
 #include "../libft/libft.h"
 #include "../../incs/builtins.h"
@@ -105,8 +105,8 @@ int	builtin_cd(t_shell *state, t_vec argv)
 		arg = ((char **)argv.ctx)[1];
 	if (e == -1)
 	{
-		ft_eprintf("%s: %s: %s: %s\n", state->context, ((char **)argv.ctx)[0], arg,
-			strerror(errno));
+		ft_eprintf("%s: %s: %s: %s\n", state->context,
+			((char **)argv.ctx)[0], arg, strerror(errno));
 		return (1);
 	}
 	cwd = getcwd(NULL, 0);
