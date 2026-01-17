@@ -17,9 +17,11 @@ count_ls
 crazy1
 crazy2
 dq
+echo
 echo_edge_cases
 echo_more_edge_cases
 edge_cases
+env
 extras
 f1
 f2

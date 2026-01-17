@@ -23,6 +23,7 @@ typedef struct s_env
 	char	*value;
 }	t_env;
 
+t_env		env_create(char *key, char *value, bool exported);
 t_env		str_to_env(char *str);
 t_vec_env	env_to_vec_env(t_shell *state, char **envp);
 char		*env_expand_n(t_shell *state, char *key, int len);
