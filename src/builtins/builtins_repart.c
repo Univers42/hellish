@@ -13,6 +13,8 @@
 #include "builtins.h"
 #include "helpers.h"
 
+typedef int (*builtin_fn_t)(t_shell *state, t_vec argv);
+
 static void	init_builtin_hash(t_hash *h)
 {
 	hash_init(h, 16);
@@ -31,5 +33,5 @@ int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
 
 	if (!h.ctx)
 		init_builtin_hash(&h);
-	return ((builtin_fn_t)hash_get(&h, name));
+	return (builtin_fn_t)hash_get(&h, name);
 }
