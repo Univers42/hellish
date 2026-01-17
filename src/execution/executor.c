@@ -120,9 +120,9 @@ void	execute_top_level(t_shell *state)
 	state->heredoc_idx = 0;
 
 	/* gather heredocs and execute the tree */
-	if (!g_should_unwind)
+	if (!get_g_sig()->should_unwind)
 		gather_heredocs(state, &state->tree, false);
-	if (!g_should_unwind)
+	if (!get_g_sig()->should_unwind)
 		res = execute_tree_node(state, &exe);
 	else
 		res = res_status(CANCELED);

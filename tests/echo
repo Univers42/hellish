@@ -1,0 +1,27 @@
+echo "Helllo, world"
+echo -n "Hello"
+echo " world"
+echo -n "Processing.."
+sleep 1 ; echo "done"
+eccho -e "Line1\nLine2\nLine3"
+echo -e "Tabbed
+echo -e "bell\a"
+echo -e "Backslash:\\"
+echo -E "Line1\nLine2"
+echo -ne "No newline at en
+echo "-n"
+echo -- "-n"
+echo "-e hello"
+echo ""
+echo -n ""
+text="Hello\nworld" ; echo "$text"
+text="Hello\nworld" ; echo -e "$text"
+echo one two three
+echo -e "one\ttwo" three
+echo -e "hello"
+printf "hello\n"
+printf "%s\n" "Hello\nworld"
+printf "No newline ehre"
+echo -- "some text"
+echo -e "Line1\nLine2"
+printf "Line1\nLine2\n"
