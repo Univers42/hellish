@@ -106,7 +106,7 @@ void	match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset)
 		.offset = offset,
 		.args = args
 	};
-	while (!g_should_unwind && process_dir(matcher))
+	while (!get_g_sig()->should_unwind && process_dir(matcher))
 		;
 	closedir(dir);
 }
@@ -149,9 +149,9 @@ t_vec	expand_word_glob(t_ast_node word)
 		vec_push(&args, &s);
 	}
 	glob_free_tokens(&glob);
-	if (!g_should_unwind)
+	if (!get_g_sig()->should_unwind)
 		ft_quicksort(&args);
-	if (g_should_unwind)
+	if (get_g_sig()->should_unwind)
 		vec_destroy(&args, free_str_elem);
 	return (args);
 }

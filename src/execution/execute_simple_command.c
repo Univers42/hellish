@@ -293,7 +293,7 @@ t_exe_res execute_simple_command(t_shell *state, t_executable_node *exe)
 #endif
 		free_executable_cmd(cmd);
 		free_executable_node(exe);
-		if (g_should_unwind)
+		if (get_g_sig()->should_unwind)
 			return (res_status(CANCELED));
 		return (res_status(AMBIGUOUS_REDIRECT));
 	}

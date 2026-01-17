@@ -106,4 +106,9 @@ typedef struct s_dir_matcher
 	t_vec		*args;
 }	t_dir_matcher;
 
+static inline t_shell shell_init(void)
+{
+	return ((t_shell){0});
+}
+
 #endif
