@@ -211,9 +211,9 @@ static void get_more_input_parser(t_shell *state,
 			}
 			/* normal input read: ensure status reset immediately */
 			set_cmd_status(state, res_status(0));
-			if (g_should_unwind)
+			if (get_g_sig()->should_unwind)
 				set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
-			if (state->should_exit || g_should_unwind)
+			if (state->should_exit || get_g_sig()->should_unwind)
 				break;
 			/* empty token list -> nothing to do for parser debug */
 			if (is_empty_token_list(tt))
@@ -337,9 +337,9 @@ static void get_more_input_parser(t_shell *state,
 			}
 			/* normal input read: ensure status reset immediately */
 		 set_cmd_status(state, res_status(0));
-			if (g_should_unwind)
+			if (get_g_sig()->should_unwind)
 				set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
-			if (state->should_exit || g_should_unwind)
+			if (state->should_exit || get_g_sig()->should_unwind)
 				break;
 			if (is_empty_token_list(tt))
 			{
@@ -385,9 +385,9 @@ static void get_more_input_parser(t_shell *state,
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 			continue;
 		}
-		if (g_should_unwind)
+		if (get_g_sig()->should_unwind)
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
-		if (state->should_exit || g_should_unwind)
+		if (state->should_exit || get_g_sig()->should_unwind)
 			break;
 		if (!try_parse_tokens(state, parser, tt, prompt))
 			break;
@@ -420,7 +420,7 @@ void parse_and_execute_input(t_shell *state)
 		execute_top_level(state);
 		free_ast(&state->tree);
 	}
-	if (g_should_unwind)
+	if (get_g_sig()->should_unwind)
 		set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 	manage_history(state);
 	/* cleanup resources allocated in this function */
@@ -431,5 +431,5 @@ void parse_and_execute_input(t_shell *state)
 		free(prompt);
 	if (tt.deqtok.buff)
 		free(tt.deqtok.buff);
-	state->should_exit |= (g_should_unwind && state->input_method != INP_READLINE) || state->readline_buff.has_finished;
+	state->should_exit |= (get_g_sig()->should_unwind && state->input_method != INP_READLINE) || state->readline_buff.has_finished;
 }
