@@ -11,21 +11,20 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
-# include "env.h"
+#include "env.h"
 
 int	builtin_env(t_shell *state, t_vec argv)
 {
 	size_t	i;
+	t_env	*e;
 
-	i = 0;
+	i = -1;
 	(void)argv;
-	while (i < state->env.len)
+	while (++i < state->env.len)
 	{
-		t_env	*e = &((t_env *)state->env.ctx)[i];
-
+		e = &((t_env *)state->env.ctx)[i];
 		if (e->exported)
 			ft_printf("%s=%s\n", e->key, e->value);
-		++i;
 	}
 	return (0);
 }

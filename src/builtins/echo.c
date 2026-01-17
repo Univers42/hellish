@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
 #include "builtins.h"
 
 int	builtin_echo(t_shell *state, t_vec argv)

@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins.h"
-# include "env.h"
+#include "env.h"
 
 void	try_unset(t_shell *state, char *key)
 {
@@ -27,10 +27,8 @@ void	try_unset(t_shell *state, char *key)
 		return ;
 	arr = (t_env *)state->env.ctx;
 	idx = (size_t)(e - arr);
-	/* free the removed element */
 	free(arr[idx].key);
 	free(arr[idx].value);
-	/* shift elements left */
 	i = idx;
 	while (i + 1 < state->env.len)
 	{
@@ -38,7 +36,6 @@ void	try_unset(t_shell *state, char *key)
 		i++;
 	}
 	state->env.len--;
-	/* keep allocated capacity (no shrink) */
 }
 
 int	builtin_unset(t_shell *state, t_vec argv)

@@ -16,27 +16,37 @@ int	parse_flags(t_vec argv, int *n, int *e)
 {
 	size_t	i;
 	size_t	j;
+	int		tn;
+	int		te;
+	int		valid;
 
-	i = 1;
-	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-' && ((char **)argv.ctx)[i][1])
+	i = 0;
+	while (++i < argv.len && ((char **)argv.ctx)[i][0] == '-' &&
+			((char **)argv.ctx)[i][1])
 	{
+		tn = *n;
+		te = *e;
 		j = 1;
-		while (((char **)argv.ctx)[i][j] && ft_strchr("nEe", ((char **)argv.ctx)[i][j]))
-			j++;
-		if (((char **)argv.ctx)[i][j])
-			break ;
-		j = 1;
+		valid = 1;
 		while (((char **)argv.ctx)[i][j])
 		{
+			if (!ft_strchr("nEe", ((char **)argv.ctx)[i][j]))
+			{
+				valid = 0;
+				break ;
+			}
 			if (((char **)argv.ctx)[i][j] == 'n')
-				*n = 1;
+				tn = 1;
 			if (((char **)argv.ctx)[i][j] == 'e')
-				*e = 1;
+				te = 1;
 			if (((char **)argv.ctx)[i][j] == 'E')
-				*e = 0;
+				te = 0;
 			j++;
 		}
-		i++;
+		if (!valid)
+			break ;
+		*n = tn;
+		*e = te;
 	}
 	return (i);
 }
