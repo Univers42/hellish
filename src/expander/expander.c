@@ -308,7 +308,7 @@ void expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
 	size_t j;
 
 	glob_words = expand_word_glob(*node);
-	if (g_should_unwind)
+	if (get_g_sig()->should_unwind)
 		return;
 	vec_init(&temp);
 	j = 0;
@@ -358,10 +358,10 @@ void expand_word(t_shell *state, t_ast_node *node,
 	while (i < words.len)
 	{
 		expand_node_glob(&((t_ast_node *)words.ctx)[i], args, keep_as_one);
-		if (g_should_unwind)
+		if (get_g_sig()->should_unwind)
 			while (i < words.len)
 				free_ast(&((t_ast_node *)words.ctx)[i++]);
-		if (g_should_unwind)
+		if (get_g_sig()->should_unwind)
 			break;
 		i++;
 	}

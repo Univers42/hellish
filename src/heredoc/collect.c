@@ -150,7 +150,7 @@ int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 	i = 0;
 	/* Traverse children; group contiguous redirects so multiple heredocs
 	   targeting the same command are concatenated into a single temp file. */
-	while (i < node->children.len && !g_should_unwind)
+	while (i < node->children.len && !get_g_sig()->should_unwind)
 	{
 		t_ast_node *child = &((t_ast_node *)node->children.ctx)[i];
 		if (child->node_type != AST_REDIRECT)

@@ -58,7 +58,7 @@ int	expand_simple_cmd_assignment(t_shell *state,
 			expand_word(state, exp->curr, &ret->argv, true);
 		else
 			expand_word(state, exp->curr, &ret->argv, false);
-		if (g_should_unwind)
+		if (get_g_sig()->should_unwind)
 			return (1);
 		/* Debug: print assignment token and resulting argv if any */
 		#ifdef DEBUG_EXPAND
@@ -111,7 +111,7 @@ int	expand_simple_cmd_redir(t_shell *state,
 
 	if (redirect_from_ast_redir(state, exp->curr, &redir_idx))
 	{
-		g_should_unwind = 0; // ensure not treated as canceled
+		get_g_sig()->should_unwind = 0; // ensure not treated as canceled
 		return (AMBIGUOUS_REDIRECT);
 	}
 	{ int idx = redir_idx; vec_push(redirects, &idx); } // <-- changed
@@ -124,7 +124,7 @@ int	expand_simple_cmd_word(t_shell *state,
 	if (!exp->found_first && is_export(*exp->curr))
 		exp->export = true;
 	expand_word(state, exp->curr, &ret->argv, false);
-	if (g_should_unwind)
+	if (get_g_sig()->should_unwind)
 		return (1);
 	exp->found_first = true;
 	/* Debug: print the token being expanded and the current argv contents */

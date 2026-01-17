@@ -16,9 +16,6 @@
 # include <signal.h>
 # include <stdint.h>
 
-/* global unwind flag */
-extern uint32_t	g_should_unwind;
-
 static inline void	default_signal_handlers(void)
 {
 	signal(SIGINT, SIG_DFL);
@@ -34,7 +31,7 @@ static inline void	readline_bg_signals(void)
 static inline void	set_unwind(int sig)
 {
 	(void)sig;
-	g_should_unwind = SIGINT;
+	get_g_sig()->should_unwind = SIGINT;
 }
 
 void	set_unwind_sig(void);

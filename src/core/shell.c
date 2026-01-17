@@ -12,7 +12,7 @@
 
 #include "shell.h"
 #include <stdlib.h>
-
+# include "libft.h"
 # include "shell.h"
 # include "helpers.h"
 # include "env.h"
@@ -43,7 +43,7 @@ static void repl_shell(t_shell *state)
 	{
 		vec_init(&state->input);
 		state->input.elem_size = 1;
-		g_should_unwind = 0;
+		get_g_sig()->should_unwind = 0;
 		parse_and_execute_input(state);
 		free_redirects(&state->redirects);
 		free_ast(&state->tree);

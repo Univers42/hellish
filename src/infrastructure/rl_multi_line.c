@@ -17,8 +17,6 @@
 #include <unistd.h>
 # include "input.h"
 
-uint32_t	g_should_unwind = 0;
-
 int	return_last_line(t_shell *state, t_string *ret)
 {
 	int		len;
@@ -78,7 +76,7 @@ int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 			return (state->readline_buff.has_finished = true, 0);
 		if (code == 2)
 		{
-			g_should_unwind = SIGINT;
+			get_g_sig()->should_unwind = SIGINT;
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 			return (2);
 		}
