@@ -12,7 +12,17 @@
 
 #include "env.h"
 
-int env_set(t_vec_env *env, t_env el)
+t_env	env_create(char *key, char *value, bool exported)
+{
+	t_env	e;
+
+	e.key = key;
+	e.value = value;
+	e.exported = exported;
+	return (e);
+}
+
+int	env_set(t_vec_env *env, t_env el)
 {
 	t_env *old;
 

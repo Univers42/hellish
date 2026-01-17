@@ -11,17 +11,14 @@
 /* ************************************************************************** */
 
 #include "shell.h"
+#include "shell.h"
+#include "helpers.h"
+#include "env.h"
 #include <stdlib.h>
-# include "libft.h"
-# include "shell.h"
-# include "helpers.h"
-# include "env.h"
 
-// TODO: need to split this function to make it clear the boundaries..
-
-void	on(t_shell *state, char **argv, char **envp);
-static void repl_shell(t_shell *state);
-static void off(t_shell *state);
+void		on(t_shell *state, char **argv, char **envp);
+static void	repl_shell(t_shell *state);
+static void	off(t_shell *state);
 
 /**
  * no return needed as we forward with the exit status
@@ -34,10 +31,9 @@ int	main(int argc, char **argv, char **envp)
 	on(&state, argv, envp);
 	repl_shell(&state);
 	off(&state);
-	return (0);
 }
 
-static void repl_shell(t_shell *state)
+static void	repl_shell(t_shell *state)
 {
 	while (!state->should_exit)
 	{
@@ -54,7 +50,6 @@ static void repl_shell(t_shell *state)
 
 static void	off(t_shell *state)
 {
-	/* free environment vector, then other state resources and forward exit */
 	free_env(&state->env);
 	free_all_state(state);
 	forward_exit_status(state->last_cmd_status_res);
