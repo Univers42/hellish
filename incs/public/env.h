@@ -12,6 +12,7 @@ typedef struct s_vec t_vec;
 
 typedef struct s_vec t_vec_env;
 
+t_env   env_create(char *key, char *value, bool exported);
 char	*env_expand(t_shell *state, char *key);
 char	**env_to_vec_env(t_shell *state, char **envp);
 void	free_tab(char **tab);

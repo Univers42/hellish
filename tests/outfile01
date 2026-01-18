@@ -37,6 +37,7 @@ heredoc_out
 heredoc_pipe
 in
 in2
+lab
 local.supp
 loop.out
 manual_tests
