@@ -33,6 +33,8 @@ int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);
 char		**get_envp(t_shell *state, char *exe_path);
 t_env		*env_nget(t_vec_env *env, char *key, int len);
+void		set_home(t_shell *state);
+void		set_shlvl(t_shell *state);
 
 static inline char	*env_get_ifs(t_vec_env *v)
 {

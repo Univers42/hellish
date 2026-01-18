@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "env.h"
+#include "libft.h"
 
 t_env	str_to_env(char *str)
 {
@@ -30,21 +31,21 @@ t_env	str_to_env(char *str)
 t_vec_env	env_to_vec_env(t_shell *state, char **envp)
 {
 	t_vec_env	ret;
+	t_env		tmp;
 
 	vec_init(&ret);
 	ret.elem_size = sizeof(t_env);
 	while (*envp)
 	{
-		t_env tmp = str_to_env(*envp);
+		tmp = str_to_env(*envp);
 		vec_push(&ret, &tmp);
 		envp++;
 	}
 	if (state->cwd.len)
-		env_set(&ret, (t_env){.key = ft_strdup("PWD"),
-			.value = ft_strdup((char *)state->cwd.ctx), .exported = true});
+		env_set(&ret, env_create(ft_strdup("PWD"),
+				ft_strdup((char *)state->cwd.ctx), true));
 	if (state->cwd.len)
-		env_set(&ret, (t_env){.key = ft_strdup("IFS"),
-			.value = ft_strdup(" \t\n"), .exported = false});
+		env_set(&ret, env_create(ft_strdup("IFS"),
+				ft_strdup(" \t\n"), false));
 	return (ret);
 }
-
