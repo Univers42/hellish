@@ -13,37 +13,7 @@
 #include "lexer.h"
 
 /* forward declaration to avoid implicit declaration warning */
-static char	*parse_quote(t_deque_tt *tokens, char **str, char q);
-
-/* handle subshell $(...) with nested parentheses and quoted segments */
-static char	*parse_subshell(t_deque_tt *tokens, char **str)
-{
-	int		depth;
-	char	*res;
-
-	(*str) += 2;
-	depth = 1;
-	while (**str && depth > 0)
-	{
-		if (**str == '\\')
-			advance_bs(str);
-		else if (**str == '\'' || **str == '"')
-		{
-			res = parse_quote(tokens, str, **str);
-			if (res)
-				return (res);
-		}
-		else
-		{
-			if (**str == '(')
-				depth++;
-			else if (**str == ')')
-				depth--;
-			(*str)++;
-		}
-	}
-	return (0);
-}
+char	*tokenize_subshell(t_deque_tt *tokens, char **str);
 
 /* generic advancement for backslash / non-special / dollar */
 static int	parse_generic(char **str)
@@ -58,7 +28,7 @@ static int	parse_generic(char **str)
 }
 
 /* unify single/double-quote advance and prompt handling */
-static char	*parse_quote(t_deque_tt *tokens, char **str, char q)
+char	*parse_quote(t_deque_tt *tokens, char **str, char q)
 {
 	if (q == '\'')
 	{
@@ -82,31 +52,51 @@ static void	push_word_token(t_deque_tt *tokens, char *start, char *end)
 	deque_push_end(&tokens->deqtok, &tmp);
 }
 
+static int	handle_next_chunk(t_deque_tt *tokens,
+							char **str,
+							char **out_prompt)
+{
+	char	*res;
+
+	if (**str == '$' && (*str)[1] == '(')
+	{
+		res = tokenize_subshell(tokens, str);
+		if (res)
+		{
+			*out_prompt = res;
+			return (-1);
+		}
+		return (1);
+	}
+	if (parse_generic(str) == 0)
+		return (1);
+	if (**str == '\'' || **str == '"')
+	{
+		res = parse_quote(tokens, str, **str);
+		if (res)
+		{
+			*out_prompt = res;
+			return (-1);
+		}
+		return (1);
+	}
+	return (0);
+}
+
 /* parse a word lexeme, delegating to small helpers (<=25 lines) */
 char	*parse_lexeme(t_deque_tt *tokens, char **str)
 {
 	char	*start;
 	char	*res;
+	int		ret;
 
 	start = *str;
 	while (**str)
 	{
-		if (**str == '$' && (*str)[1] == '(')
-		{
-			res = parse_subshell(tokens, str);
-			if (res)
-				return (res);
-			continue;
-		}
-		if (parse_generic(str) == 0)
-			continue ;
-		if (**str == '\'' || **str == '"')
-		{
-			res = parse_quote(tokens, str, **str);
-			if ((res = parse_quote(tokens, str, **str)))
-				return (res);
-		}
-		else
+		ret = handle_next_chunk(tokens, str, &res);
+		if (ret == -1)
+			return (res);
+		if (ret == 0)
 			break ;
 	}
 	push_word_token(tokens, start, *str);
