@@ -6,40 +6,50 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:22:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 19:22:12 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 20:36:07 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-t_ast_node	parse_pipeline(t_shell *state, t_parser *parser, t_deque_tt *tokens)
+static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
+								t_deque_tt *tokens, t_ast_node *ret)
 {
-	t_ast_node	ret;
+	t_ast_node	tmp_node;
 
-	ret = (t_ast_node){.node_type = AST_COMMAND_PIPELINE};
-	vec_init(&ret.children);
-	ret.children.elem_size = sizeof(t_ast_node);
-	{
-		t_ast_node tmp_node = parse_command(state, parser, tokens);
-		vec_push(&ret.children, &tmp_node);
-	}
-	if (parser->res != RES_OK)
-		return (ret);
-	{ int val = TT_PIPE; vec_push(&parser->parse_stack, &val); }
 	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_PIPE)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
 		while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 			(void)deque_pop_start(&tokens->deqtok);
 		if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
-			return (parser->res = RES_MoreInput, ret);
 		{
-			t_ast_node tmp_node = parse_command(state, parser, tokens);
-			vec_push(&ret.children, &tmp_node);
+			parser->res = RES_MoreInput;
+			return (1);
 		}
+		tmp_node = parse_command(state, parser, tokens);
+		vec_push(&ret->children, &tmp_node);
 		if (parser->res != RES_OK)
-			return (ret);
+			return (2);
 	}
+	return (0);
+}
+
+t_ast_node	parse_pipeline(t_shell *state, t_parser *parser, t_deque_tt *tokens)
+{
+	t_ast_node	ret;
+	int			r;
+
+	ret = create_node_type(AST_COMMAND_PIPELINE);
+	vec_init(&ret.children);
+	ret.children.elem_size = sizeof(t_ast_node);
+	push_cmd_parsed(state, parser, tokens, &ret);
+	if (parser->res != RES_OK)
+		return (ret);
+	vec_push_int(&parser->parse_stack, TT_PIPE);
+	r = process_pipeline_pipes(state, parser, tokens, &ret);
 	vec_pop(&parser->parse_stack);
+	if (r == 1 || r == 2)
+		return (ret);
 	return (ret);
 }
