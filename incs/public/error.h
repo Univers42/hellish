@@ -44,7 +44,12 @@ static inline void	warning_error_errno(void)
 	ft_eprintf("[WARNING] %s\n", strerror(errno));
 }
 
-typedef struct s_shell	t_shell;
+#endif
+
+#ifndef PUBLIC_ERROR_H
+# define PUBLIC_ERROR_H
+
+typedef struct s_shell t_shell;
 
 void	critical_error_errno_context(const char *msg);
 void	warning_error_errno(void);
