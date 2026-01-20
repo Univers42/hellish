@@ -1,0 +1,38 @@
+(false && echo "AND_SHOULD_NOT") || echo "OR_TRIGGERED"
+(true || echo "OR_SHOULD_NOT") && echo "AND_TRIGGERED"
+(echo SUBSHELL && false) || echo "AFTER_SUBSHELL"
+echo foo | (grep foo && echo "PIPE_AND") || echo "PIPE_OR"
+
+cat <<HER1 <<HER2
+one
+HER1
+two
+HER2
+
+(cat <<HER1; cat <<HER2) | cat
+one
+HER1
+two
+HER2
+
+#printf "echo $\necho \"\$\"\necho \" \$\"\necho \$''\necho \"\$(echo hi)\"\n" | ../build/bin/minishell 2>&1 | sed -n '1,200p'
+#printf 'echo "$"\n' | ../build/bin/minishell 2>&1 | sed -n '1,200p'
+
+echo "a\\n"
+echo "a\\\\\n"
+echo "a\\\\\\\\\\n"
+echo "a\\\n"
+echo "a\\\\n"
+echo "a\\\\\n"
+echo "a\\\\\\n"
+echo "a\\\\\\\n"
+echo "a\\\\\\\\n"
+echo "a\\\\\\\\\\n"
+echo "a\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\\\\\\n"
+echo "a\\\\\\\\\\\\\\\\\\\n"

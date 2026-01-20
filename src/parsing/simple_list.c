@@ -10,21 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <stdbool.h>
-# include "parser.h"
-
-t_ast_node unexpected(t_shell *state, t_parser *parser, t_ast_node ret, t_deque_tt *tokens);
-
-bool	is_simple_list_op(t_tt tt)
-{
-	if (tt == TT_SEMICOLON
-		|| tt == TT_OR
-		|| tt == TT_AND
-		|| tt == TT_AMPERSAND)
-		return (true);
-	return (false);
-}
+#include "parser_private.h"
 
 // 0 continue
 // 1 break

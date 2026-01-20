@@ -1,0 +1,61 @@
+true; false
+echo one; echo two
+echo a && echo b
+echo a || echo b
+true && false || echo fallback
+false || true && echo ok
+echo a; echo b; echo c
+(echo sub1; echo sub2)
+(echo sub1 && echo sub2)
+(echo sub1 || echo sub2)
+true && (echo sub && false)
+false || (echo sub || true)
+(echo a; (echo b; echo c))
+(echo a && (echo b || echo c))
+(echo a || (echo b && echo c))
+(echo a; echo b) && echo c
+(echo a; echo b) || echo c
+(echo a && echo b) || (echo c && echo d)
+(echo a || echo b) && (echo c || echo d)
+true; false && true; echo done
+false; true || false; echo done
+(echo a; echo b) && (echo c; echo d)
+(echo a && echo b); (echo c || echo d)
+(echo a || echo b); (echo c && echo d)
+(echo a && echo b) || (echo c || echo d)
+(echo a || echo b) && (echo c && echo d)
+true && false; echo after
+false || true; echo after
+(echo a; echo b) && false || echo fallback
+(echo a && false) || (echo b && true)
+(echo a; echo b; echo c) && echo d
+(echo a && echo b; echo c) || echo d
+(echo a || echo b; echo c) && echo d
+(echo a; (echo b && echo c)); echo d
+(echo a; (echo b || echo c)); echo d
+(echo a && (echo b; echo c)); echo d
+(echo a || (echo b; echo c)); echo d
+(echo a && (echo b || echo c)); echo d
+(echo a || (echo b && echo c)); echo d
+true && (false || (true && false))
+false || (true && (false || true))
+(echo a; echo b) && (echo c || echo d) && echo e
+(echo a && echo b) || (echo c && echo d) || echo e
+(echo a || echo b) && (echo c && echo d) || echo e
+(echo a && echo b) || (echo c || echo d) && echo e
+(echo a; echo b) && (echo c; echo d) || (echo e; echo f)
+(echo a && echo b); (echo c || echo d); (echo e && echo f)
+(echo a || echo b); (echo c && echo d); (echo e || echo f)
+(echo a && echo b) || (echo c && echo d); (echo e && echo f)
+(echo a || echo b) && (echo c || echo d); (echo e || echo f)
+(echo a && echo b && echo c && echo d && echo e && echo f && echo g && echo h && echo i && echo j)
+(echo a; echo b; echo c; echo d; echo e; echo f; echo g; echo h; echo i; echo j)
+(echo a && echo b || echo c && echo d || echo e && echo f || echo g && echo h || echo i && echo j)
+(echo a; echo b) && (echo c; echo d) && (echo e; echo f) && (echo g; echo h) && (echo i; echo j)
+(echo a && (echo b || (echo c && (echo d || (echo e && (echo f || (echo g && (echo h || (echo i && echo j)))))))))
+(echo a && echo b && echo c && echo d && echo e && echo f && echo g && echo h && echo i && echo j && echo k && echo l && echo m && echo n && echo o && echo p && echo q && echo r && echo s && echo t && echo u && echo v && echo w && echo x && echo y && echo z)
+(echo a; echo b; echo c; echo d; echo e; echo f; echo g; echo h; echo i; echo j; echo k; echo l; echo m; echo n; echo o; echo p; echo q; echo r; echo s; echo t; echo u; echo v; echo w; echo x; echo y; echo z)
+(echo a && echo b && echo c && echo d && echo e && echo f && echo g && echo h && echo i && echo j && echo k && echo l && echo m && echo n && echo o && echo p && echo q && echo r && echo s && echo t && echo u && echo v && echo w && echo x && echo y && echo z && echo aa && echo bb && echo cc && echo dd && echo ee && echo ff && echo gg && echo hh && echo ii && echo jj && echo kk && echo ll && echo mm && echo nn && echo oo && echo pp && echo qq && echo rr && echo ss && echo tt && echo uu && echo vv && echo ww && echo xx && echo yy && echo zz)
+(echo a || echo b || echo c || echo d || echo e || echo f || echo g || echo h || echo i || echo j || echo k || echo l || echo m || echo n || echo o || echo p || echo q || echo r || echo s || echo t || echo u || echo v || echo w || echo x || echo y || echo z)
+(echo a && echo b; echo c && echo d; echo e && echo f; echo g && echo h; echo i && echo j; echo k && echo l; echo m && echo n; echo o && echo p; echo q && echo r; echo s && echo t; echo u && echo v; echo w && echo x; echo y && echo z)
+(echo a && (echo b && (echo c && (echo d && (echo e && (echo f && (echo g && (echo h && (echo i && (echo j && (echo k && (echo l && (echo m && (echo n && (echo o && (echo p && (echo q && (echo r && (echo s && (echo t && (echo u && (echo v && (echo w && (echo x && (echo y && echo z)))))))))))))))))))))))))
