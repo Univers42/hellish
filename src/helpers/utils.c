@@ -16,9 +16,9 @@
 #include <unistd.h>
 #include "env.h"
 
-void free_tab(char **tab)
+void	free_tab(char **tab)
 {
-	int i;
+	int	i;
 
 	i = 0;
 	while (tab[i])
@@ -27,11 +27,11 @@ void free_tab(char **tab)
 }
 
 // 0 on success
-int write_to_file(char *str, int fd)
+int	write_to_file(char *str, int fd)
 {
-	int wrote_total;
-	int wrote;
-	int len;
+	int	wrote_total;
+	int	wrote;
+	int	len;
 
 	if (!str)
 		return (1);
@@ -49,7 +49,7 @@ int write_to_file(char *str, int fd)
 	return (0);
 }
 
-void forward_exit_status(t_exe_res res)
+void	forward_exit_status(t_exe_res res)
 {
 	ft_assert(res.status != -1);
 	if (res.c_c)
@@ -61,7 +61,7 @@ void forward_exit_status(t_exe_res res)
 	_exit(res.status);
 }
 
-void set_cmd_status(t_shell *state, t_exe_res res)
+void	set_cmd_status(t_shell *state, t_exe_res res)
 {
 	state->last_cmd_status_res = res;
 	free(state->last_cmd_status_s);

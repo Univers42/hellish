@@ -10,11 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
 #include "shell.h"
 #include <unistd.h>
-# include "env.h"
-# include "expander.h"
+#include "env.h"
+#include "expander.h"
 
 void	free_redirects(t_vec_redir *v)
 {
@@ -59,28 +58,24 @@ void	free_all_state(t_shell *state)
 void	free_executable_cmd(t_executable_cmd cmd)
 {
 	size_t	i;
+	t_env	*e;
 
-	i = 0;
-	while (i < cmd.pre_assigns.len)
+	i = -1;
+	while (++i < cmd.pre_assigns.len)
 	{
-		t_env *e = &((t_env *)cmd.pre_assigns.ctx)[i];
+		e = &((t_env *)cmd.pre_assigns.ctx)[i];
 		free(e->value);
 		free(e->key);
-		i++;
 	}
-	i = 0;
-	while (i < cmd.argv.len)
-	{
+	i = -1;
+	while (++i < cmd.argv.len)
 		free(((char **)cmd.argv.ctx)[i]);
-		i++;
-	}
 	free(cmd.pre_assigns.ctx);
 	free(cmd.argv.ctx);
 }
 
 void	free_executable_node(t_executable_node *node)
 {
-	/* free redirs buffer (t_vec of ints) and reset vector */
 	free(node->redirs.ctx);
 	vec_init(&node->redirs);
 }
