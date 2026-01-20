@@ -53,4 +53,15 @@ void	print_ast_dot(t_shell *state, t_ast_node node);
 char	*node_name(t_ast_t tn);
 void	print_node(t_ast_node node);
 
+static inline t_ast_node create_node_tok(t_ast_t type, t_token token)
+{
+	return ((t_ast_node){
+		.node_type = type,
+		.token = token,
+		.children = (t_vec){0},
+		.has_redirect = false,
+		.redir_idx = -1
+	});
+}
+
 # endif

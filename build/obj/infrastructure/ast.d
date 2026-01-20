@@ -1,5 +1,6 @@
-build/obj/infrastructure/ast.o: src/infrastructure/ast.c incs/shell.h \
- incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
+build/obj/infrastructure/ast.o: src/infrastructure/ast.c \
+ src/infrastructure/ast_private.h incs/shell.h incs/alias.h \
+ vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -43,6 +44,7 @@ build/obj/infrastructure/ast.o: src/infrastructure/ast.c incs/shell.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
  incs/prompt.h incs/ast.h incs/parser.h incs/lexer.h incs/public/token.h
+src/infrastructure/ast_private.h:
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:

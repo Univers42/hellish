@@ -13,10 +13,12 @@ bonus_bonus
 builtins
 c
 chain
+compound
 count_ls
 crazy1
 crazy2
 dq
+dylan_exec
 echo
 echo_edge_cases
 echo_more_edge_cases

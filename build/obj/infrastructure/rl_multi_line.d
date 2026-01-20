@@ -1,6 +1,6 @@
 build/obj/infrastructure/rl_multi_line.o: \
- src/infrastructure/rl_multi_line.c incs/shell.h incs/alias.h \
- vendor/libft/libft.h vendor/libft/include/ds.h \
+ src/infrastructure/rl_multi_line.c src/infrastructure/rl_private.h \
+ incs/shell.h incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -43,7 +43,8 @@ build/obj/infrastructure/rl_multi_line.o: \
  vendor/libft/include/ft_printf.h incs/public/signals.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/input.h
+ incs/prompt.h incs/input.h incs/helpers.h
+src/infrastructure/rl_private.h:
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -110,3 +111,4 @@ incs/history.h:
 incs/shell.h:
 incs/prompt.h:
 incs/input.h:
+incs/helpers.h:

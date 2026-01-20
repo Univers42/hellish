@@ -1,5 +1,6 @@
-build/obj/parsing/parser.o: src/parsing/parser.c incs/shell.h \
- incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
+build/obj/infrastructure/input_utils2.o: \
+ src/infrastructure/input_utils2.c src/infrastructure/input_private.h \
+ incs/shell.h incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -42,8 +43,9 @@ build/obj/parsing/parser.o: src/parsing/parser.c incs/shell.h \
  vendor/libft/include/ft_printf.h incs/public/signals.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/lexer.h incs/public/token.h incs/parser.h \
- incs/lexer.h incs/ast.h incs/decomposer.h incs/sys.h
+ incs/prompt.h incs/input.h incs/lexer.h incs/public/token.h \
+ incs/parser.h incs/lexer.h incs/prompt.h incs/ast.h
+src/infrastructure/input_private.h:
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -109,10 +111,10 @@ incs/redir.h:
 incs/history.h:
 incs/shell.h:
 incs/prompt.h:
+incs/input.h:
 incs/lexer.h:
 incs/public/token.h:
 incs/parser.h:
 incs/lexer.h:
+incs/prompt.h:
 incs/ast.h:
-incs/decomposer.h:
-incs/sys.h:

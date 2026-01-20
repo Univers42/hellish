@@ -10,44 +10,28 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <stdbool.h>
-# include "parser.h"
+#include "parser_private.h"
 
-bool	is_compund_list_op(t_tt tt)
-{
-	if (tt == TT_SEMICOLON
-		|| tt == TT_OR
-		|| tt == TT_AND
-		|| tt == TT_NEWLINE
-		|| tt == TT_AMPERSAND)
-		return (true);
-	return (false);
-}
 
-bool	parse_compound_list_s(t_shell *state, t_parser *parser,
-	t_deque_tt *tokens, t_ast_node *ret)
+bool parse_compound_list_s(t_shell *state, t_parser *parser,
+						   t_deque_tt *tokens, t_ast_node *ret)
 {
-	t_tt		op;
-	t_token		tmp;
+	t_tt op;
+	t_token tmp;
+	t_ast_node tmp_node;
 
 	tmp = *(t_token *)deque_peek(&tokens->deqtok);
 	op = tmp.tt;
 	if (!is_compund_list_op(op))
 		return (true);
 	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
-	{
-		t_ast_node tmp_node = (t_ast_node){.node_type = AST_TOKEN, .token = tmp};
-		vec_init(&tmp_node.children);
-		tmp_node.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp_node);
-	}
-	/* check last pushed token using generic ctx */
-	if ((((t_ast_node *)ret->children.ctx)[ret->children.len - 1].token.tt == TT_SEMICOLON
-			|| ((t_ast_node *)ret->children.ctx)[ret->children.len - 1].token.tt == TT_NEWLINE)
-		&& (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
+	tmp_node = (t_ast_node){.node_type = AST_TOKEN, .token = tmp};
+	vec_init(&tmp_node.children);
+	tmp_node.children.elem_size = sizeof(t_ast_node);
+	vec_push(&ret->children, &tmp_node);
+	if (is_semicolon_or_newline_before_brace_right(ret, tokens))
 		return (true);
-	{ int val = op; vec_push(&parser->parse_stack, &val); }
+	vec_push_int(&parser->parse_stack, op);
 	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 		(void)deque_pop_start(&tokens->deqtok);
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
@@ -55,7 +39,7 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (parser->res = RES_MoreInput, true);
 	{
-		t_ast_node tmp_node = parse_pipeline(state, parser, tokens);
+		tmp_node = parse_pipeline(state, parser, tokens);
 		vec_push(&ret->children, &tmp_node);
 	}
 	if (parser->res != RES_OK)
@@ -64,36 +48,31 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	return (false);
 }
 
-t_ast_node	parse_compound_list(t_shell *state,
-	t_parser *parser, t_deque_tt *tokens)
+t_ast_node parse_compound_list(t_shell *state,
+							   t_parser *parser, t_deque_tt *tokens)
 {
-	t_ast_node	ret;
-	t_tt		next;
+	t_ast_node ret;
+	t_tt next;
+	t_ast_node tmp_node;
 
 	ret = (t_ast_node){.node_type = AST_COMPOUND_LIST};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	
-	/* Check for arithmetic expression (( */
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_ARITH_START)
 	{
-		/* Let parse_simple_list handle it - just fail here */
 		parser->res = RES_FatalError;
 		state->last_cmd_status_res = res_status(1);
 		return (ret);
 	}
-	
-	{
-		t_ast_node tmp_node = parse_pipeline(state, parser, tokens);
-		vec_push(&ret.children, &tmp_node);
-	}
+	tmp_node = parse_pipeline(state, parser, tokens);
+	vec_push(&ret.children, &tmp_node);
 	if (parser->res != RES_OK)
 		return (ret);
 	while (1)
 	{
 		if (parse_compound_list_s(state, parser, tokens, &ret))
-			break ;
+			break;
 	}
 	return (ret);
 }

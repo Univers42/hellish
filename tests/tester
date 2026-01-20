@@ -10,6 +10,8 @@ if [[ $1 ]]; then
     )
 else
     test_lists=(
+		"compound"
+		"dylan_exec"
 		"crazy1"
 		"crazy2"
 		"var"
