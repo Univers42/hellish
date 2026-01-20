@@ -10,93 +10,92 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <stdbool.h>
-# include "libft.h"
-#include <stddef.h>
-# include "decomposer.h"
-# include "lexer.h"
-# include "ast.h"
-# include "parser.h"
+#include "reparser_private.h"
 
+// Helper: reparse single-quoted region
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {
-	int	prev_start;
+	t_reparser	rp;
 
-	ft_assert(t.start[(*i)++] == '\'');
-	prev_start = *i;
-	while (*i < t.len && t.start[*i] != '\'')
-		(*i)++;
-	/* Create SQWORD token for content inside single quotes - this is raw/literal */
-	{
-		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_SQWORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
-	}
-	ft_assert(t.start[(*i)++] == '\'');
+	create_reparser(&rp, *ret, t, i);
+	ft_assert(rp.current_token.start[rp.i++] == '\'');
+	rp.prev_start = rp.i;
+	while (rp.i < rp.current_token.len
+		&& rp.current_token.start[rp.i] != '\'')
+		rp.i++;
+	push_subtoken_node(&rp.current_node, rp.current_token,
+		create_interval(rp.prev_start, rp.i), TT_SQWORD);
+	ft_assert(rp.current_token.start[rp.i++] == '\'');
+	*i = rp.i;
+	*ret = rp.current_node;
 }
 
+// Helper: reparse backslash escape
 void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 {
-	int	prev_start;
+	t_reparser	rp;
 
-	ft_assert(t.start[(*i)++] == '\\');
-	prev_start = *i;
-	if (*i == t.len)
-	{
-		/* backslash at end - include backslash as literal */
-		prev_start--;
-	}
+	create_reparser(&rp, *ret, t, i);
+	ft_assert(rp.current_token.start[rp.i++] == '\\');
+	rp.prev_start = rp.i;
+	if (rp.i == rp.current_token.len)
+		rp.prev_start--;
 	else
-	{
-		/* Outside quotes, backslash escapes the next character.
-		   The escaped character becomes literal (use SQWORD to prevent further expansion). */
-		(*i)++;
-	}
-	{
-		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_SQWORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
-	}
+		rp.i++;
+	push_subtoken_node(&rp.current_node, rp.current_token,
+		create_interval(rp.prev_start, rp.i), TT_SQWORD);
+	*i = rp.i;
+	*ret = rp.current_node;
 }
 
+// Helper: reparse normal word region
 void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 {
-	int	prev_start;
+	t_reparser	rp;
 
-	prev_start = *i;
-	while (*i < t.len && !is_special_char(t.start[*i]) && t.start[*i] != '\\')
-		(*i)++;
+	create_reparser(&rp, *ret, t, i);
+	rp.prev_start = rp.i;
+	while (rp.i < rp.current_token.len
+		&& !is_special_char(rp.current_token.start[rp.i])
+		&& rp.current_token.start[rp.i] != '\\')
+		rp.i++;
+	push_subtoken_node(&rp.current_node, rp.current_token,
+		create_interval(rp.prev_start, rp.i), TT_WORD);
+	*i = rp.i;
+	*ret = rp.current_node;
+}
+
+// Helper: main loop for reparsing a word token
+void	loop_node_rp(t_reparser *rp)
+{
+	while (rp->i < rp->current_token.len)
 	{
-		t_ast_node tmp = create_subtoken_node(t, prev_start, *i, TT_WORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
+		if (rp->current_token.start[rp->i] == '"')
+			reparse_dquote(&rp->current_node, &rp->i, rp->current_token);
+		else if (rp->current_token.start[rp->i] == '\\')
+			reparse_bs(&rp->current_node, &rp->i, rp->current_token);
+		else if (rp->current_token.start[rp->i] == '\'')
+			reparse_squote(&rp->current_node, &rp->i, rp->current_token);
+		else if (rp->current_token.start[rp->i] == '$')
+			reparse_envvar(&rp->current_node, &rp->i,
+				rp->current_token, TT_ENVVAR);
+		else if (is_space(rp->current_token.start[rp->i]))
+			ft_assert("Unreachable" == 0);
+		else
+			reparse_norm_word(&rp->current_node, &rp->i, rp->current_token);
 	}
 }
 
 t_ast_node	reparse_word(t_token t)
 {
 	t_ast_node	ret;
-	int			i;
+	t_reparser	rp;
 
-	ret = (t_ast_node){.node_type = AST_WORD};
+	ret = create_node_type(AST_WORD);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	i = 0;
-	while (i < t.len)
-	{
-		if (t.start[i] == '"')
-			reparse_dquote(&ret, &i, t);
-		else if (t.start[i] == '\\')
-			reparse_bs(&ret, &i, t);
-		else if (t.start[i] == '\'')
-			reparse_squote(&ret, &i, t);
-		else if (t.start[i] == '$')
-			reparse_envvar(&ret, &i, t, TT_ENVVAR);
-		else if (is_space(t.start[i]))
-			ft_assert("Unreachable" == 0);
-		else
-			reparse_norm_word(&ret, &i, t);
-	}
+	create_reparser(&rp, ret, t, &(int){0});
+	loop_node_rp(&rp);
+	ret = rp.current_node;
 	return (ret);
 }
