@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   error.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/01/10 02:12:28 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/10 02:12:28 by marvin           ###   ########.fr       */
+/*   Created: 2026/01/21 00:04:40 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/01/21 00:04:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef ERROR_H
 # define ERROR_H
 
-# include  "ft_printf.h"
+# include "ft_printf.h"
 # include <errno.h>
 
 static inline void	critical_error(char *error)
@@ -44,14 +44,7 @@ static inline void	warning_error_errno(void)
 	ft_eprintf("[WARNING] %s\n", strerror(errno));
 }
 
-
-#endif
-
-#ifndef PUBLIC_ERROR_H
-# define PUBLIC_ERROR_H
-
-/* lightweight forward-declare so header is small */
-typedef struct s_shell t_shell;
+typedef struct s_shell	t_shell;
 
 void	critical_error_errno_context(const char *msg);
 void	warning_error_errno(void);
