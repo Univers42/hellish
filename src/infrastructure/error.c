@@ -13,8 +13,8 @@
 #include "shell.h"
 #include <errno.h>
 #include <string.h>
-# include "lexer.h"
-# include "parser.h"
+#include "lexer.h"
+#include "parser.h"
 
 void	err_cmd_not_found(t_shell *state, char *cmd)
 {

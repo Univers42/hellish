@@ -10,12 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <readline/readline.h>
-#include <stdbool.h>
-#include <sys/wait.h>
-#include <unistd.h>
-# include "input.h"
+#include "rl_private.h"
 
 int	return_last_line(t_shell *state, t_string *ret)
 {
