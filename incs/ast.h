@@ -64,4 +64,15 @@ static inline t_ast_node create_node_tok(t_ast_t type, t_token token)
 	});
 }
 
+static inline t_ast_node create_node_type(t_ast_t type)
+{
+	return ((t_ast_node){
+		.node_type = type,
+		.token = (t_token){0},
+		.children = (t_vec){0},
+		.has_redirect = false,
+		.redir_idx = -1
+	});
+}
+
 # endif
