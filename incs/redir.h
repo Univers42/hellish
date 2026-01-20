@@ -49,4 +49,13 @@ int			ft_mktemp(t_shell *state, t_ast_node *node);
 char		*first_non_tab(char *line);
 void		expand_line(t_shell *state, t_string *full_file, char *line);
 
+static inline t_heredoc_req create_heredoc(char *sep, bool expand, bool remove_tabs, bool is_pipe_heredoc)
+{
+	return ((t_heredoc_req){
+		.sep = sep,
+		.expand = expand,
+		.remove_tabs = remove_tabs,
+		.is_pipe_heredoc = is_pipe_heredoc
+	});
+}
 #endif

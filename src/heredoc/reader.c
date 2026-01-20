@@ -10,18 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/libft.h"
-#include "shell.h"
-#include <unistd.h>
-#include "redir.h"
-#include "helpers.h"
+#include "heredoc_private.h"
 
 bool	get_line_heredoc(t_shell *state,
 		t_heredoc_req *req, t_string *alloc_line)
 {
-	int			stat;
-	char *prompt = req->is_pipe_heredoc ? "pipe heredoc> " : "heredoc> ";
+	int		stat;
+	char	*prompt;
 
+	if (req->is_pipe_heredoc)
+		prompt = "pipe heredoc> ";
+	else
+		prompt = "heredoc> ";
 	vec_init(alloc_line);
 	stat = buff_readline(state, alloc_line, prompt);
 	state->readline_buff.has_finished = false;
@@ -37,7 +37,7 @@ bool	get_line_heredoc(t_shell *state,
 	return (false);
 }
 
-static bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
+bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
 {
 	size_t	sep_len;
 
@@ -46,15 +46,11 @@ static bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
 			|| ((char *)req->full_file.ctx)[req->full_file.len - 1] == '\n'))
 	{
 		if (ft_strcmp((char *)alloc_line->ctx, req->sep) == 0)
-		{
 			return (true);
-		}
 		else if (((char *)alloc_line->ctx)[alloc_line->len - 1] == '\n'
 			&& sep_len + 1 == alloc_line->len
 			&& ft_strncmp((char *)alloc_line->ctx, req->sep, sep_len) == 0)
-		{
 			return (true);
-		}
 	}
 	return (false);
 }
@@ -68,10 +64,7 @@ void	process_line(t_shell *state, t_heredoc_req *req)
 	if (get_line_heredoc(state, req, &alloc_line))
 		return ;
 	if (is_sep(req, &alloc_line))
-	{
-		free(alloc_line.ctx);
-		return ((void)(req->finished = true));
-	}
+		return (free(alloc_line.ctx), (void)(req->finished = true));
 	if (req->remove_tabs)
 		line = first_non_tab((char *)alloc_line.ctx);
 	else
@@ -91,17 +84,12 @@ void	write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req)
 	}
 	if (req->full_file.len)
 	{
-		/* ensure NUL-termination before passing to write_to_file */
 		if (!vec_ensure_space_n(&req->full_file, 1))
-		{
-			// allocation failure, handle gracefully
-			return;
-		}
+			return ;
 		((char *)req->full_file.ctx)[req->full_file.len] = '\0';
 		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
 	}
-	close(wr_fd);
-	free(req->full_file.ctx);
+	(close(wr_fd), free(req->full_file.ctx));
 }
 
 bool	contains_quotes(t_ast_node node)
@@ -112,12 +100,9 @@ bool	contains_quotes(t_ast_node node)
 		&& (node.token.tt == TT_DQENVVAR || node.token.tt == TT_DQWORD
 			|| node.token.tt == TT_SQWORD))
 		return (true);
-	i = 0;
-	while (i < node.children.len)
-	{
+	i = -1;
+	while (++i < node.children.len)
 		if (contains_quotes(((t_ast_node *)node.children.ctx)[i]))
 			return (true);
-		i++;
-	}
 	return (false);
 }

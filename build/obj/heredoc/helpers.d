@@ -1,5 +1,6 @@
-build/obj/heredoc/helpers.o: src/heredoc/helpers.c incs/shell.h \
- incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
+build/obj/heredoc/helpers.o: src/heredoc/helpers.c \
+ src/heredoc/heredoc_private.h vendor/libft/libft.h \
+ vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -39,12 +40,12 @@ build/obj/heredoc/helpers.o: src/heredoc/helpers.c incs/shell.h \
  vendor/libft/include/../srcs/ipc/signals/quit.h \
  vendor/libft/include/../srcs/ipc/signals/trap.h \
  vendor/libft/include/system.h vendor/libft/include/ft_wctype.h \
- vendor/libft/include/ft_printf.h incs/public/signals.h \
- incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
- incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/redir.h incs/env.h incs/helpers.h
-incs/shell.h:
-incs/alias.h:
+ incs/shell.h incs/alias.h vendor/libft/include/ft_printf.h \
+ incs/public/signals.h incs/public/error.h incs/ast.h incs/public/token.h \
+ incs/executor.h incs/public/executor_types.h incs/redir.h incs/history.h \
+ incs/shell.h incs/prompt.h incs/redir.h incs/env.h incs/helpers.h \
+ incs/helpers.h
+src/heredoc/heredoc_private.h:
 vendor/libft/libft.h:
 vendor/libft/include/ds.h:
 vendor/libft/include/../srcs/ds/lists/ft_list.h:
@@ -97,6 +98,8 @@ vendor/libft/include/../srcs/ipc/signals/quit.h:
 vendor/libft/include/../srcs/ipc/signals/trap.h:
 vendor/libft/include/system.h:
 vendor/libft/include/ft_wctype.h:
+incs/shell.h:
+incs/alias.h:
 vendor/libft/include/ft_printf.h:
 incs/public/signals.h:
 incs/public/error.h:
@@ -110,4 +113,5 @@ incs/shell.h:
 incs/prompt.h:
 incs/redir.h:
 incs/env.h:
+incs/helpers.h:
 incs/helpers.h:

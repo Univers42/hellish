@@ -1,4 +1,4 @@
-build/obj/heredoc/reader.o: src/heredoc/reader.c \
+build/obj/heredoc/helpers1.o: src/heredoc/helpers1.c \
  src/heredoc/heredoc_private.h vendor/libft/libft.h \
  vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \

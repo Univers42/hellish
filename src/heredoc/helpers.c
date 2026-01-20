@@ -10,9 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-# include "redir.h"
-# include "env.h"
+#include "heredoc_private.h"
 
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
@@ -32,23 +30,19 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 			vec_push_nstr(full_file, "", 0);
 	}
 	else
-	{
-		char tmp = line[*i];
-		vec_push(full_file, &tmp);
-	}
+		vec_push(full_file, &line[*i]);
 	*i += len;
 }
 
 void	expand_bs(int *i, t_string *full_file, char *line)
 {
+	char	tmp;
+
 	if (is_escapable(line[*i]))
-	{
-		char tmp = line[*i];
-		vec_push(full_file, &tmp);
-	}
+		vec_push(full_file, &line[*i]);
 	else if (line[*i] != '\n')
 	{
-		char tmp = '\\';
+		tmp = '\\';
 		vec_push(full_file, &tmp);
 		tmp = line[*i];
 		vec_push(full_file, &tmp);
@@ -79,10 +73,7 @@ void	expand_line(t_shell *state, t_string *full_file, char *line)
 		else if (line[i] == '\\')
 			bs = true;
 		else
-		{
-			char tmp = line[i];
-			vec_push(full_file, &tmp);
-		}
+			vec_push(full_file, &line[i]);
 		i++;
 	}
 }
