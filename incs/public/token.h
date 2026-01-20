@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:04:48 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/21 00:12:55 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/21 00:20:50 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,7 @@ static inline t_token	create_token(char *start, int len, t_tt token_type)
 		});
 }
 
-static inline t_token	create_token4(char *start, int len,
+static inline t_token	create_tok4(char *start, int len,
 							t_tt token_type, bool allocated)
 {
 	return ((t_token)
