@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:12 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:40:56 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 18:22:25 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,10 +19,11 @@ static void	prepare_parser_and_prompt(t_shell *state,
 {
 	t_string	p;
 
+	(void)state;
 	*parser = (t_parser){.res = RES_Init};
 	vec_init(&parser->parse_stack);
 	parser->parse_stack.elem_size = sizeof(int);
-	p = prompt_normal(state);
+	p = prompt_normal();
 	*prompt = ft_strdup(p.ctx);
 	free(p.ctx);
 	*tt = (t_deque_tt){0};

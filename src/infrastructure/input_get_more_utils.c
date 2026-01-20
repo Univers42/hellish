@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 17:33:06 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:44:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 18:21:50 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ void	reset_status_and_prompt(t_shell *state, char **prompt)
 	if (*prompt)
 		free(*prompt);
 	{
-		p = prompt_normal(state);
+		p = prompt_normal();
 		*prompt = ft_strdup(p.ctx);
 		free(p.ctx);
 	}
