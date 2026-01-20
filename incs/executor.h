@@ -17,15 +17,15 @@
 # include "alias.h"
 
 /* forward declarations to avoid heavy includes */
-typedef struct s_shell t_shell;
-typedef struct s_ast_node t_ast_node;
+typedef struct s_shell		t_shell;
+typedef struct s_ast_node	t_ast_node;
 
 typedef struct executable_cmd_s
 {
 	t_vec_env	pre_assigns;
-	t_vec	argv;
+	t_vec		argv;
 	char		*fname;
-}t_executable_cmd;
+}	t_executable_cmd;
 
 typedef struct executable_node_s
 {
@@ -35,12 +35,10 @@ typedef struct executable_node_s
 	t_ast_node	*node;
 	t_vec_int	redirs;
 	bool		modify_parent_context;
-}t_executable_node;
-
+}	t_executable_node;
 
 void		execute_top_level(t_shell *state);
 t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe);
-
 void		set_up_redirection(t_shell *state, t_executable_node *exe);
 t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe);
 void		forward_exit_status(t_exe_res res);
@@ -50,16 +48,12 @@ t_exe_res	execute_simple_list(t_shell *state, t_executable_node *exe);
 t_string	word_to_string(t_ast_node node);
 t_string	word_to_hrdoc_string(t_ast_node node);
 void		set_cmd_status(t_shell *state, t_exe_res res);
-
 t_exe_res	res_status(int status);
 t_exe_res	res_pid(int pid);
-void	exe_res_set_status(t_exe_res *res);
+void		exe_res_set_status(t_exe_res *res);
+int			find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe);
+int			expand_simple_command(t_shell *state, t_ast_node *node,
+				t_executable_cmd *ret, t_vec_int *redirects);
+int			(*builtin_func(char *name))(t_shell *state, t_vec argv);
 
-/* missing prototypes referenced by execution units */
-int		find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe);
-int		expand_simple_command(t_shell *state, t_ast_node *node,
-							 t_executable_cmd *ret, t_vec_int *redirects);
-/* builtin lookup (signature also present in incs/builtins.h) */
-int		(*builtin_func(char *name))(t_shell *state, t_vec argv);
-
-# endif
+#endif

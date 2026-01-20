@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/11 20:17:31 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/11 23:59:14 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/21 00:40:43 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,8 +36,7 @@ typedef struct s_shell
 	t_vec_env		env;
 	t_string		cwd;
 	t_ast_node		tree;
-	//t_option		opt; 	// register the needs of the opt wanted, this way we can short-circuit in running time
-	int			input_method;
+	int				input_method;
 	char			*base_context;
 	char			*context;
 	char			*pid;
@@ -46,12 +45,12 @@ typedef struct s_shell
 	t_history		hist;
 	bool			should_exit;
 	t_vec_redir		redirects;
-	int			heredoc_idx;
+	int				heredoc_idx;
 	t_buff_readline	readline_buff;
-	t_prng_state		prng;
-	/* bitwise option flags detected at startup */
+	t_prng_state	prng;
 	uint32_t		option_flags;
 }	t_shell;
 
 void		on(t_shell *state, char **argv, char **envp);
+
 #endif

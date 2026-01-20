@@ -10,23 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef MINISHELL_H
-# define MINISHELL_H
+#ifndef SHELL_H
+# define SHELL_H
 
-/**
- * 
- */
 # include "alias.h"
-
-/**
- * cldjlkasdfklj
- */
 # include "ft_printf.h"
-
-/**
- * 
- * ksldfksajkl
- */
 # include "public/signals.h"
 # include "public/error.h"
 # include "ast.h"
@@ -37,12 +25,14 @@
 
 # include <stdint.h>
 
-/* option flags (bitmask) */
-#define OPT_FLAG_HELP          (1u << 0)
-#define OPT_FLAG_VERBOSE       (1u << 1)
-#define OPT_FLAG_DEBUG_LEXER   (1u << 8)
-#define OPT_FLAG_DEBUG_PARSER  (1u << 9)
-#define OPT_FLAG_DEBUG_AST     (1u << 10)
+enum e_opt_flag
+{
+	OPT_FLAG_HELP = 1u << 0,
+	OPT_FLAG_VERBOSE = 1u << 1,
+	OPT_FLAG_DEBUG_LEXER = 1u << 8,
+	OPT_FLAG_DEBUG_PARSER = 1u << 9,
+	OPT_FLAG_DEBUG_AST = 1u << 10
+};
 
 void	parse_and_execute_input(t_shell *state);
 
@@ -61,7 +51,6 @@ typedef enum e_option
 	OPT_COMMAND
 }	t_option;
 
-
 typedef struct s_procsub_entry
 {
 	pid_t	pid;
@@ -73,28 +62,26 @@ typedef t_vec	t_vec_procsub;
 
 typedef struct s_shell
 {
-	t_string	input;
-	t_vec_env	env;
-	t_string	cwd;
-	t_ast_node	tree;
-	//t_option		opt; 	// register the needs of the opt wanted, this way we can short-circuit in running time
-	int			input_method;
-	char		*base_context;
-	char		*context;
-	char		*pid;
-	char		*last_cmd_status_s;
-	t_exe_res	last_cmd_status_res;
-	t_history	hist;
-	bool		should_exit;
-	t_vec_redir	redirects;
-	int		heredoc_idx;
+	t_string		input;
+	t_vec_env		env;
+	t_string		cwd;
+	t_ast_node		tree;
+	int				input_method;
+	char			*base_context;
+	char			*context;
+	char			*pid;
+	char			*last_cmd_status_s;
+	t_exe_res		last_cmd_status_res;
+	t_history		hist;
+	bool			should_exit;
+	t_vec_redir		redirects;
+	int				heredoc_idx;
 	t_buff_readline	readline_buff;
 	t_prng_state	prng;
-	/* bitwise option flags detected at startup */
-	uint32_t	option_flags;
-	int             bg_job_count;   /* counter for background job IDs */
-	t_vec_procsub	proc_subs;      /* Process substitution tracking */
-}   t_shell;
+	uint32_t		option_flags;
+	int				bg_job_count;
+	t_vec_procsub	proc_subs;
+}	t_shell;
 
 /* Directory matcher context for glob expansion */
 typedef struct s_dir_matcher
@@ -106,7 +93,7 @@ typedef struct s_dir_matcher
 	t_vec		*args;
 }	t_dir_matcher;
 
-static inline t_shell shell_init(void)
+static inline t_shell	shell_init(void)
 {
 	return ((t_shell){0});
 }

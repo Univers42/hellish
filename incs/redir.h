@@ -17,11 +17,12 @@
 # include <stdbool.h>
 
 /* forward declarations to avoid including heavy headers */
-typedef struct s_shell t_shell;
-typedef struct s_ast_node t_ast_node;
+typedef struct s_shell		t_shell;
+typedef struct s_ast_node	t_ast_node;
 
 # ifndef REDIR_TYPE_DEFINED
 #  define REDIR_TYPE_DEFINED
+
 typedef struct redir_s
 {
 	bool		direction_in;
@@ -29,6 +30,7 @@ typedef struct redir_s
 	char		*fname;
 	bool		should_delete;
 }	t_redir;
+
 # endif
 
 // heredoc.c
@@ -49,13 +51,15 @@ int			ft_mktemp(t_shell *state, t_ast_node *node);
 char		*first_non_tab(char *line);
 void		expand_line(t_shell *state, t_string *full_file, char *line);
 
-static inline t_heredoc_req create_heredoc(char *sep, bool expand, bool remove_tabs, bool is_pipe_heredoc)
+static inline t_heredoc_req	create_heredoc(char *sep, bool expand,
+								bool remove_tabs, bool is_pipe_heredoc)
 {
-	return ((t_heredoc_req){
-		.sep = sep,
-		.expand = expand,
-		.remove_tabs = remove_tabs,
-		.is_pipe_heredoc = is_pipe_heredoc
-	});
+	return ((t_heredoc_req)
+		{
+			.sep = sep,
+			.expand = expand,
+			.remove_tabs = remove_tabs,
+			.is_pipe_heredoc = is_pipe_heredoc
+		});
 }
 #endif

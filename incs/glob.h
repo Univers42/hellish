@@ -54,8 +54,7 @@ typedef struct s_glob
 }	t_glob;
 
 /* Vector of glob tokens */
-typedef t_vec	t_vec_glob;
-
+typedef t_vec				t_vec_glob;
 /* Forward declarations for project types */
 typedef struct s_ast_node	t_ast_node;
 typedef struct s_token		t_token;
@@ -76,7 +75,8 @@ char		*glob_expand_bracket(const char *start, int len, int *out_len);
 t_vec_glob	word_to_glob(t_ast_node word);
 t_vec		expand_word_glob(t_ast_node word);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
-size_t		matches_pattern(char *name, t_vec_glob patt, size_t offset, bool first);
+size_t		matches_pattern(char *name, t_vec_glob patt,
+				size_t offset, bool first);
 bool		finished_pattern(t_vec_glob patt, size_t offset);
 bool		star_expandable(t_tt tt);
 

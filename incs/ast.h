@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# ifndef AST_H
+#ifndef AST_H
 # define AST_H
 
 # include "libft.h"
@@ -31,7 +31,7 @@ typedef enum e_ast_t
 	AST_COMPOUND_LIST,
 	AST_COMMAND,
 	AST_ASSIGNMENT_WORD,
-	AST_PROC_SUB       /* Process substitution node */
+	AST_PROC_SUB
 }	t_ast_t;
 
 typedef struct s_ast_node
@@ -44,7 +44,7 @@ typedef struct s_ast_node
 }	t_ast_node;
 
 /* Vector type alias for AST nodes */
-typedef t_vec	t_vec_nd;
+typedef t_vec			t_vec_nd;
 
 /* Function prototypes */
 void	free_ast(t_ast_node *node);
@@ -53,26 +53,28 @@ void	print_ast_dot(t_shell *state, t_ast_node node);
 char	*node_name(t_ast_t tn);
 void	print_node(t_ast_node node);
 
-static inline t_ast_node create_node_tok(t_ast_t type, t_token token)
+static inline t_ast_node	create_node_tok(t_ast_t type, t_token token)
 {
-	return ((t_ast_node){
-		.node_type = type,
-		.token = token,
-		.children = (t_vec){0},
+	return ((t_ast_node)
+		{
+			.node_type = type,
+			.token = token,
+			.children = (t_vec){0},
 		.has_redirect = false,
 		.redir_idx = -1
 	});
 }
 
-static inline t_ast_node create_node_type(t_ast_t type)
+static inline t_ast_node	create_node_type(t_ast_t type)
 {
-	return ((t_ast_node){
-		.node_type = type,
-		.token = (t_token){0},
+	return ((t_ast_node)
+		{
+			.node_type = type,
+			.token = (t_token){0},
 		.children = (t_vec){0},
-		.has_redirect = false,
-		.redir_idx = -1
-	});
+			.has_redirect = false,
+			.redir_idx = -1
+		});
 }
 
-# endif
+#endif
