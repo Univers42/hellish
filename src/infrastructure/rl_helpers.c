@@ -10,9 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <errno.h>
-#include <unistd.h>
+#include "rl_private.h"
 
 char	*ft_asprintf(const char *fmt, ...);
 
