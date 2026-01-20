@@ -6,16 +6,16 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:31:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 16:31:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 17:39:06 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "input_private.h"
 
-bool ends_with_bs_nl(t_string s)
+bool	ends_with_bs_nl(t_string s)
 {
-	size_t i;
-	bool unterminated;
+	size_t	i;
+	bool	unterminated;
 
 	if (s.len == 0)
 		return (false);
@@ -29,14 +29,14 @@ bool ends_with_bs_nl(t_string s)
 		if (((char *)s.ctx)[i] == '\\')
 			unterminated = !unterminated;
 		else
-			break;
+			break ;
 	}
 	return (unterminated);
 }
 
-void extend_bs(t_shell *state)
+void	extend_bs(t_shell *state)
 {
-	char *prompt;
+	char	*prompt;
 
 	while (ends_with_bs_nl(state->input))
 	{
@@ -44,23 +44,23 @@ void extend_bs(t_shell *state)
 		vec_pop(&state->input);
 		prompt = ft_strdup("> ");
 		if (readline_cmd(state, &prompt))
-			return;
+			return ;
 	}
 }
 
-bool is_empty_token_list(t_deque_tt *tokens)
+bool	is_empty_token_list(t_deque_tt *tokens)
 {
-	/* tokens->deqtok is the internal t_deque */
 	if (tokens->deqtok.len < 2)
 		return (true);
-	if (tokens->deqtok.len == 2 && ((t_token *)deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
+	if (tokens->deqtok.len == 2
+		&& ((t_token *)deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
 		return (true);
 	return (false);
 }
 
-int readline_cmd(t_shell *state, char **prompt)
+int	readline_cmd(t_shell *state, char **prompt)
 {
-	int stat;
+	int	stat;
 
 	if (!state->readline_buff.buff.ctx)
 	{
@@ -76,9 +76,7 @@ int readline_cmd(t_shell *state, char **prompt)
 	free(*prompt);
 	*prompt = 0;
 	if (stat == 0)
-	{
 		return (1);
-	}
 	if (stat == 2)
 	{
 		if (state->input_method != INP_READLINE)
