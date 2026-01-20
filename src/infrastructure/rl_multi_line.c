@@ -14,7 +14,7 @@
 
 int	return_last_line(t_shell *state, t_string *ret)
 {
-	int		len;
+	int	len;
 
 	len = state->readline_buff.buff.len - state->readline_buff.cursor;
 	vec_push_nstr(ret, (char *)state->readline_buff.buff.ctx
@@ -41,10 +41,8 @@ int	return_new_line(t_shell *state, t_string *ret)
 	len = temp - ((char *)state->readline_buff.buff.ctx
 			+ state->readline_buff.cursor) + 1;
 	if (len)
-	{
 		vec_push_nstr(ret, (char *)state->readline_buff.buff.ctx
 			+ state->readline_buff.cursor, len);
-	}
 	state->readline_buff.cursor += len;
 	state->readline_buff.has_line = state->readline_buff.cursor
 		!= state->readline_buff.buff.len;
@@ -55,7 +53,7 @@ int	return_new_line(t_shell *state, t_string *ret)
 
 int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 {
-	int		code;
+	int	code;
 
 	if (state->readline_buff.has_finished)
 		return (0);
@@ -75,9 +73,8 @@ int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
 			return (2);
 		}
-		if (state->input_method == INP_READLINE) {
-			char ch = '\n'; vec_push(&state->readline_buff.buff, &ch);
-		}
+		if (state->input_method == INP_READLINE)
+			vec_push_char(&state->readline_buff.buff, '\n');
 		state->readline_buff.has_line = true;
 	}
 	return (return_new_line(state, ret));
