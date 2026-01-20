@@ -1,0 +1,73 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   input_get_more_utils.c                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/20 17:33:06 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/01/20 17:44:15 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "input_private.h"
+
+void	reset_status_and_prompt(t_shell *state, char **prompt)
+{
+	t_string	p;
+
+	set_cmd_status(state, res_status(0));
+	if (*prompt)
+		free(*prompt);
+	{
+		p = prompt_normal(state);
+		*prompt = ft_strdup(p.ctx);
+		free(p.ctx);
+	}
+}
+
+void	handle_ctrl_c(t_shell *state, t_deque_tt *tt, char **prompt)
+{
+	buff_readline_reset(&state->readline_buff);
+	if (tt->deqtok.buff)
+		deque_clear(&tt->deqtok, NULL);
+	tt->looking_for = 0;
+	if (state->input.ctx)
+		state->input.len = 0;
+	set_cmd_status(state, (t_exe_res){.status = 130, .c_c = true});
+	reset_status_and_prompt(state, prompt);
+	buff_readline_update(&state->readline_buff);
+}
+
+int	handle_eof(int s, t_shell *state)
+{
+	if (s == 1)
+	{
+		state->should_exit = true;
+		return (1);
+	}
+	return (0);
+}
+
+int	handle_interrupt(int s, t_shell *state, t_deque_tt *tt, char **prompt)
+{
+	if (s == 2)
+	{
+		handle_ctrl_c(state, tt, prompt);
+		return (2);
+	}
+	return (0);
+}
+
+void	debug_parser_print_ast(t_shell *state,
+								t_parser *parser,
+								t_ast_node parsed)
+{
+	if (parser->res == RES_OK || parser->res == RES_MoreInput)
+		print_ast_dot(state, parsed);
+	if (parser->res == RES_OK || parser->res == RES_FatalError
+		|| parser->res == RES_MoreInput)
+		free_ast(&parsed);
+	if (parser->res == RES_FatalError)
+		set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+}
