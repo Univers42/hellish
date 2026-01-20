@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:21:39 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 16:40:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 18:57:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,9 @@
 # include <sys/wait.h>
 # include <unistd.h>
 # include "input.h"
+# include <stdio.h>
+# include <wchar.h>
+# include "helpers.h"
 
 int		return_last_line(t_shell *state, t_string *ret);
 int		return_new_line(t_shell *state, t_string *ret);
@@ -28,5 +31,6 @@ void	buff_readline_reset(t_buff_readline *l);
 void	buff_readline_init(t_buff_readline *ret);
 void	update_context(t_shell *state);
 int		get_more_input_notty(t_shell *state);
+int		visible_width_cstr(const char *s);
 
 #endif

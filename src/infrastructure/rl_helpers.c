@@ -12,11 +12,8 @@
 
 #include "rl_private.h"
 
-char	*ft_asprintf(const char *fmt, ...);
-
 void	buff_readline_update(t_buff_readline *l)
 {
-	/* defensive clamp: ensure cursor within buffer bounds */
 	if (!l->buff.ctx || l->buff.len == 0)
 	{
 		l->cursor = 0;
@@ -31,13 +28,13 @@ void	buff_readline_update(t_buff_readline *l)
 void	buff_readline_reset(t_buff_readline *l)
 {
 	if (l->buff.len > l->cursor)
-		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor, l->buff.len - l->cursor);
+		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor,
+			l->buff.len - l->cursor);
 	else if (l->buff.len > 0)
 		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx, l->buff.len);
 	l->buff.len -= l->cursor;
 	if (l->buff.ctx)
 		((char *)l->buff.ctx)[l->buff.len] = 0;
-	/* reset cursor to prompt start */
 	l->cursor = 0;
 	buff_readline_update(l);
 }
@@ -81,7 +78,6 @@ int	get_more_input_notty(t_shell *state)
 		if (ft_strnchr(buff, '\n', ret))
 			break ;
 	}
-	set_unwind_sig();
-	buff_readline_update(&state->readline_buff);
-	return (status);
+	return (set_unwind_sig(),
+		buff_readline_update(&state->readline_buff), status);
 }
