@@ -6,14 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 15:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/15 15:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/20 13:31:09 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "arith.h"
-#include "shell.h"
-#include "libft.h"
-#include <stdlib.h>
+#include "arith_private.h"
 
 /*
  * Evaluate an arithmetic expression and return the result.
@@ -32,7 +29,6 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	parser.error = false;
 	parser.error_msg = NULL;
 	result = arith_parse_expr(&parser);
-	/* Check that we consumed all input */
 	if (!parser.error && lexer.current.type != ATOK_EOF)
 		parser.error = true;
 	if (parser.error || lexer.error)
@@ -41,6 +37,36 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 		return (0);
 	}
 	return (result);
+}
+
+/* helper: convert long long to malloc'ed string (keeps original logic) */
+static char	*arith_lltoa(long long value)
+{
+	char	buf[32];
+	int		i;
+	int		neg;
+
+	neg = 0;
+	if (value < 0)
+	{
+		neg = 1;
+		value = -value;
+	}
+	i = 31;
+	buf[i] = '\0';
+	if (value == 0)
+		buf[--i] = '0';
+	else
+	{
+		while (value > 0)
+		{
+			buf[--i] = '0' + (value % 10);
+			value /= 10;
+		}
+	}
+	if (neg)
+		buf[--i] = '-';
+	return (ft_strdup(buf + i));
 }
 
 /*
@@ -52,10 +78,6 @@ char	*arith_expand(t_shell *state, const char *expr, int len)
 	long long	result;
 	bool		error;
 	char		*str;
-	char		buf[32];
-	int			i;
-	int			neg;
-	//long long	tmp;
 
 	result = arith_eval(state, expr, len, &error);
 	if (error)
@@ -64,27 +86,6 @@ char	*arith_expand(t_shell *state, const char *expr, int len)
 			state->context, len, expr);
 		return (NULL);
 	}
-	/* Convert result to string */
-	neg = 0;
-	if (result < 0)
-	{
-		neg = 1;
-		result = -result;
-	}
-	i = 31;
-	buf[i] = '\0';
-	if (result == 0)
-		buf[--i] = '0';
-	else
-	{
-		while (result > 0)
-		{
-			buf[--i] = '0' + (result % 10);
-			result /= 10;
-		}
-	}
-	if (neg)
-		buf[--i] = '-';
-	str = ft_strdup(buf + i);
+	str = arith_lltoa(result);
 	return (str);
 }
