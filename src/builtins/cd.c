@@ -115,5 +115,3 @@ int	builtin_cd(t_shell *state, t_vec argv)
 	update_pwd_vars(state);
 	return (0);
 }
-
-// norminetear

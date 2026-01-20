@@ -23,10 +23,8 @@
 #  define PRINT_TOKENS 1
 # endif
 
-#ifndef TRACE_DEBUG
-# define TRACE_DEBUG 0
-#endif
-
-
+# ifndef TRACE_DEBUG
+#  define TRACE_DEBUG 0
+# endif
 
 #endif

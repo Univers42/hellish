@@ -66,7 +66,7 @@ static inline void	free_env(t_vec_env *env)
 	t_env	*curr;
 
 	if (!env || env->ctx == NULL)
-		return;
+		return ;
 	i = 0;
 	while (i < env->len)
 	{

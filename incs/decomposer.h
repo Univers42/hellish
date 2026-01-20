@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-# ifndef REPARSER_H
-# define REPARSER_H
+#ifndef DECOMPOSER_H
+# define DECOMPOSER_H
 
 # include "ast.h"
 # include "lexer.h"
