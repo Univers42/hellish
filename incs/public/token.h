@@ -69,4 +69,13 @@ static inline t_token create_tok4(char *start, int len, t_tt token_type, bool al
 	};
 }
 
+static inline t_token_old create_token_old(char *start, int len, bool present)
+{
+	return (t_token_old){
+		.start = start,
+		.len = len,
+		.present = present
+	};
+}
+
 #endif

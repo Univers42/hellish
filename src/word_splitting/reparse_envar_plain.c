@@ -10,28 +10,29 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <stdbool.h>
-#include "../libft/libft.h"
-#include <stddef.h>
-# include "parser.h"
-# include "decomposer.h"
+#include "reparser_private.h"
 
 void	reparse_dq_bs(t_ast_node *ret, int *i, t_token t)
 {
 	ft_assert(t.start[*i] == '\\');
 	(*i)++;
 	if (ft_strchr("\"$\\", t.start[*i]))
-	{
-		t_ast_node tmp = create_subtoken_node(t, *i, *i + 1, TT_SQWORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
-	}
+		push_subtoken_node(ret, t, create_interval(*i - 1, *i + 1), TT_SQWORD);
 	else
-	{
-		t_ast_node tmp = create_subtoken_node(t, *i - 1, *i + 1, TT_SQWORD);
-		tmp.children.elem_size = sizeof(t_ast_node);
-		vec_push(&ret->children, &tmp);
-	}
+		push_subtoken_node(ret, t, create_interval(*i - 1, *i), TT_SQWORD);
 	(*i)++;
+}
+
+bool	reparse_special_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
+{
+	int		prev_start;
+	char	c;
+
+	prev_start = *i;
+	c = t.start[*i];
+	if (c != '?' && c != '$')
+		return (false);
+	(*i)++;
+	push_subtoken_node(ret, t, create_interval(prev_start, *i), tt);
+	return (true);
 }
