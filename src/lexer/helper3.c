@@ -66,13 +66,60 @@ static void	init_ops_group3(t_op_map ops[])
 	ops[15] = (t_op_map){0, TT_END};
 }
 
+/* Check if string starts with a fd-prefixed redirect like 2> or 1>> */
+static int	check_fd_redirect(char *str, t_token *out)
+{
+	int		fd_len;
+	char	*p;
+
+	fd_len = 0;
+	p = str;
+	while (*p && ft_isdigit((unsigned char)*p))
+	{
+		fd_len++;
+		p++;
+	}
+	if (fd_len == 0 || fd_len > 2)
+		return (0);
+	if (*p == '>' && *(p + 1) == '>')
+	{
+		*out = create_token(str, fd_len + 2, TT_APPEND);
+		return (fd_len + 2);
+	}
+	if (*p == '>')
+	{
+		*out = create_token(str, fd_len + 1, TT_REDIRECT_RIGHT);
+		return (fd_len + 1);
+	}
+	if (*p == '<' && *(p + 1) == '<')
+	{
+		*out = create_token(str, fd_len + 2, TT_HEREDOC);
+		return (fd_len + 2);
+	}
+	if (*p == '<')
+	{
+		*out = create_token(str, fd_len + 1, TT_REDIRECT_LEFT);
+		return (fd_len + 1);
+	}
+	return (0);
+}
+
 void	parse_op(t_deque_tt *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;
 	t_op_map	operators[17];
 	t_token		tmp;
+	int			fd_len;
 
+	/* First check for fd-prefixed redirects like 2> or 1>> */
+	fd_len = check_fd_redirect(*str, &tmp);
+	if (fd_len > 0)
+	{
+		*str += fd_len;
+		deque_push_end(&tokens->deqtok, &tmp);
+		return ;
+	}
 	init_ops_group1(operators);
 	init_ops_group2(operators);
 	init_ops_group3(operators);

@@ -30,7 +30,7 @@ int		builtin_env(t_shell *state, t_vec argv);
 void	exit_clean(t_shell *state, int code);
 int		builtin_exit(t_shell *state, t_vec argv);
 void	parse_export_arg(char *str, char **ident, char **val);
-void	strip_surrounding_quotes(char **val);
+char	strip_surrounding_quotes(char **val);
 void	consume_following_value(t_vec av, int *i, char **val);
 int		handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const char *orig_arg);
 int		process_arg(t_shell *st, t_vec av, int *ip);
