@@ -10,12 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include "env.h"
-#include "../libft/libft.h"
-#include "../../incs/builtins.h"
-#include <stdlib.h>
-#include "helpers.h"
+#include "builtins_private.h"
 
 static void	update_pwd_vars(t_shell *state)
 {

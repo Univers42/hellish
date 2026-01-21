@@ -10,13 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
-#include "env.h"
-#include "libft.h"
+#include "builtins_private.h"
 
-void	parse_export_arg(char *str, char **ident, char **val)
+void parse_export_arg(char *str, char **ident, char **val)
 {
-	char	*eq;
+	char *eq;
 
 	eq = ft_strchr(str, '=');
 	if (eq)
@@ -31,9 +29,9 @@ void	parse_export_arg(char *str, char **ident, char **val)
 	}
 }
 
-static bool	is_valid_ident(char *id)
+static bool is_valid_ident(char *id)
 {
-	int	i;
+	int i;
 
 	i = 0;
 	if (!is_var_name_p1(id[0]))
@@ -43,14 +41,14 @@ static bool	is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-static void	strip_surrounding_quotes(char **val)
+void strip_surrounding_quotes(char **val)
 {
-	size_t	vlen;
-	char	*clean;
-	char	f; // Declare f here
+	size_t vlen;
+	char *clean;
+	char f; // Declare f here
 
 	if (!val || !*val)
-		return ;
+		return;
 	vlen = ft_strlen(*val);
 	if (vlen >= 2)
 	{
@@ -64,12 +62,12 @@ static void	strip_surrounding_quotes(char **val)
 	}
 }
 
-static void	consume_following_value(t_vec av, int *i, char **val)
+void consume_following_value(t_vec av, int *i, char **val)
 {
-	int		idx;
-	char	*next;
+	int idx;
+	char *next;
 
-	idx	= *i;
+	idx = *i;
 	if ((!*val || (*val)[0] == '\0') && idx + 1 < (int)av.len)
 	{
 		next = ((char **)av.ctx)[idx + 1];
@@ -82,9 +80,9 @@ static void	consume_following_value(t_vec av, int *i, char **val)
 }
 
 /* handle identifier: set env or mark exported or print error */
-static int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const char *orig_arg)
+int handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const char *orig_arg)
 {
-	t_env	*e;
+	t_env *e;
 
 	if (is_valid_ident(id))
 	{
@@ -101,17 +99,18 @@ static int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0
 	}
 	else
 		return (ft_eprintf("%s: %s: `%s' not valid identifier\n", st->context,
-			argv0, orig_arg), free(id), free(val), 1);
+						   argv0, orig_arg),
+				free(id), free(val), 1);
 }
 
 /* reduced process_arg using helpers */
-static int	process_arg(t_shell *st, t_vec av, int *ip)
+int process_arg(t_shell *st, t_vec av, int *ip)
 {
-	char	*id;
-	char	*val;
-	int		i;
-	char	*arg0;
-	char	*cur;
+	char *id;
+	char *val;
+	int i;
+	char *arg0;
+	char *cur;
 
 	i = *ip;
 	arg0 = ((char **)av.ctx)[0];
@@ -119,9 +118,9 @@ static int	process_arg(t_shell *st, t_vec av, int *ip)
 	if (!av.ctx || !cur)
 		return (ft_eprintf("[DEBUG export] missing argv element at index %d\n", i), 1);
 	parse_export_arg(cur, &id, &val);
-#	ifdef DEBUG_EXPORT
+#ifdef DEBUG_EXPORT
 	ft_eprintf("[DEBUG export] arg='%s' -> id='%s' val='%s'\n", cur, id ? id : "(null)", val ? val : "(null)");
-#	endif
+#endif
 	strip_surrounding_quotes(&val);
 	consume_following_value(av, &i, &val);
 	*ip = i;
@@ -129,12 +128,12 @@ static int	process_arg(t_shell *st, t_vec av, int *ip)
 }
 
 /* collect, sort and print exported variables (extracted from builtin_export) */
-static void	collect_and_print_exported(t_shell *st)
+void collect_and_print_exported(t_shell *st)
 {
-	t_vec	list;
-	size_t	j;
-	t_env	*e;
-	char	*s;
+	t_vec list;
+	size_t j;
+	t_env *e;
+	char *s;
 
 	vec_init(&list);
 	list.elem_size = sizeof(char *);
@@ -163,15 +162,15 @@ static void	collect_and_print_exported(t_shell *st)
 }
 
 /* replace builtin_export loop with calls to helpers */
-int	builtin_export(t_shell *st, t_vec av)
+int builtin_export(t_shell *st, t_vec av)
 {
-	size_t	i;
-	int		status;
-	int		idx;
+	size_t i;
+	int status;
+	int idx;
 
-#	ifdef DEBUG_EXPORT
-	size_t	di;
-	char	*s;
+#ifdef DEBUG_EXPORT
+	size_t di;
+	char *s;
 	ft_eprintf("[DEBUG builtin_export] argv.len=%d\n", (int)av.len);
 	if (!av.ctx)
 		ft_eprintf("  argv.ctx = NULL\n");
@@ -184,7 +183,7 @@ int	builtin_export(t_shell *st, t_vec av)
 			ft_eprintf("  argv[%d] = '%s'\n", (int)di, s ? s : "(null)");
 		}
 	}
-#	endif
+#endif
 
 	i = 1;
 	status = 0;

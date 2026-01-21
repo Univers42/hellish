@@ -10,13 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../../incs/input.h"
-#include "builtins.h"
-#include "helpers.h"
+#include "builtins_private.h"
 
-void	exit_clean(t_shell *state, int code)
+void exit_clean(t_shell *state, int code)
 {
-	char	*pid_s;
+	char *pid_s;
 
 	pid_s = getpid_hack();
 	if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
@@ -28,9 +26,9 @@ void	exit_clean(t_shell *state, int code)
 	exit(code);
 }
 
-int	builtin_exit(t_shell *state, t_vec argv)
+int builtin_exit(t_shell *state, t_vec argv)
 {
-	int	ret;
+	int ret;
 
 	if (state->input_method == INP_READLINE)
 		ft_eprintf("exit\n");
@@ -39,13 +37,13 @@ int	builtin_exit(t_shell *state, t_vec argv)
 	if (ft_checked_atoi(((char **)argv.ctx)[1], &ret, 42))
 	{
 		ft_eprintf("%s: %s: %s: numeric argument required\n", state->context,
-			((char **)argv.ctx)[0], ((char **)argv.ctx)[1]);
+				   ((char **)argv.ctx)[0], ((char **)argv.ctx)[1]);
 		exit_clean(state, 2);
 	}
 	if (argv.len >= 3)
 	{
 		ft_eprintf("%s: %s: too many arguments\n", state->context,
-			((char **)argv.ctx)[0]);
+				   ((char **)argv.ctx)[0]);
 		return (1);
 	}
 	exit_clean(state, ret);

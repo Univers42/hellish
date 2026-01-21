@@ -10,19 +10,19 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
+#include "builtins_private.h"
 
-int	parse_flags(t_vec argv, int *n, int *e)
+int parse_flags(t_vec argv, int *n, int *e)
 {
-	size_t	i;
-	size_t	j;
-	int		tn;
-	int		te;
-	int		valid;
+	size_t i;
+	size_t j;
+	int tn;
+	int te;
+	int valid;
 
 	i = 0;
 	while (++i < argv.len && ((char **)argv.ctx)[i][0] == '-' &&
-			((char **)argv.ctx)[i][1])
+		   ((char **)argv.ctx)[i][1])
 	{
 		tn = *n;
 		te = *e;
@@ -33,7 +33,7 @@ int	parse_flags(t_vec argv, int *n, int *e)
 			if (!ft_strchr("nEe", ((char **)argv.ctx)[i][j]))
 			{
 				valid = 0;
-				break ;
+				break;
 			}
 			if (((char **)argv.ctx)[i][j] == 'n')
 				tn = 1;
@@ -44,14 +44,14 @@ int	parse_flags(t_vec argv, int *n, int *e)
 			j++;
 		}
 		if (!valid)
-			break ;
+			break;
 		*n = tn;
 		*e = te;
 	}
 	return (i);
 }
 
-int	print_args(int e, t_vec argv, size_t i)
+int print_args(int e, t_vec argv, size_t i)
 {
 	while (i < argv.len)
 	{
