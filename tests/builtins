@@ -49,4 +49,142 @@ exit "-100"
 exit -"100"
 exit hello
 exit 42 world
+# --- EXPORT ---
+export | grep HELLO
+export FOO=bar; export | grep FOO
+export FOO=bar FOO2=bar2; export | grep FOO2
+export FOO=bar; export FOO=qux; export | grep FOO
+export FOO=bar; export FOO=bar; export | grep FOO
+export FOO=bar; export FOO=; export | grep FOO
+export FOO=bar; export FOO; export | grep FOO
+export FOO=bar; export FOO=bar2; export | grep FOO
+export FOO=bar; export FOO=bar2; unset FOO; export | grep FOO
+export FOO=bar; export FOO2=bar2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; unset FOO2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; unset FOO; export | grep FOO
+export FOO=bar; export FOO2=bar2; unset FOO; unset FOO2; export | grep FOO
+export FOO=bar; export FOO2=bar2; unset FOO; unset FOO2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; unset FOO; unset FOO2; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO3; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO; unset FOO2; unset FOO3; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO; unset FOO2; unset FOO3; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO; unset FOO2; unset FOO3; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; unset FOO; unset FOO2; unset FOO3; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO4; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO3; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; unset FOO2; unset FOO3; unset FOO4; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; unset FOO2; unset FOO3; unset FOO4; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; unset FOO2; unset FOO3; unset FOO4; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; unset FOO2; unset FOO3; unset FOO4; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; unset FOO; unset FOO2; unset FOO3; unset FOO4; export | grep FOO5
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; export | grep FOO5
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO5; export | grep FOO5
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO4; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO3; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO2; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO2
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO3
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO4
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO5
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; unset FOO; unset FOO2; unset FOO3; unset FOO4; unset FOO5; export | grep FOO6
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; export FOO6=bar6; export | grep FOO6
+export FOO=bar; export FOO2=bar2; export FOO3=bar3; export FOO4=bar4; export FOO5=bar5; export FOO6=bar6; unset FOO6; export | grep FOO6
+
+# --- UNSET ---
+unset; export | grep FOO
+unset FOO; export | grep FOO
+export FOO=bar; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; unset FOO; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; export | grep FOO
+export FOO=bar; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; unset FOO; export | grep FOO
+
+# --- CD ---
+cd /
+pwd
+cd ..
+pwd
+cd /
+cd /tmp
+pwd
+cd /
+cd /doesnotexist
+cd
+pwd
+cd /
+cd -
+pwd
+cd /tmp
+cd -
+pwd
+cd /tmp
+cd /
+cd -
+pwd
+cd /tmp
+cd /tmp
+cd /tmp
+pwd
+cd /
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+cd /tmp
+pwd
+
+# --- PWD ---
+pwd
+(cd /tmp && pwd)
+(cd / && pwd)
+(cd /doesnotexist && pwd)
+(cd /tmp && cd / && pwd)
+(cd /tmp && cd / && cd /tmp && pwd)
+(cd /tmp && cd / && cd /tmp && cd / && pwd)
+
+# --- EXIT ---
+(exit 42)
+(exit 0)
+(exit 255)
+(exit 256)
+(exit -1)
+(exit +1)
+(exit 999999999)
+(exit abc)
+(exit 42 abc)
+(exit)
+(exit --)
+(exit ++)
+(exit -)
+(exit +)
+(exit 1 2 3)
+(exit 1; echo shouldnotsee)
+(exit 0; echo shouldnotsee)
+(exit 255; echo shouldnotsee)
+(exit 256; echo shouldnotsee)
+(exit -1; echo shouldnotsee)
+(exit +1; echo shouldnotsee)
+(exit 999999999; echo shouldnotsee)
+(exit abc; echo shouldnotsee)
+(exit 42 abc; echo shouldnotsee)
+(exit --; echo shouldnotsee)
+(exit ++; echo shouldnotsee)
+(exit -; echo shouldnotsee)
+(exit +; echo shouldnotsee)
+(exit 1 2 3; echo shouldnotsee)
 

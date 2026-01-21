@@ -10,10 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
-#include "helpers.h"
-
-typedef int (*builtin_fn_t)(t_shell *state, t_vec argv);
+#include "builtins_private.h"
 
 static void	init_builtin_hash(t_hash *h)
 {

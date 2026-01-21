@@ -10,13 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
-#include "env.h"
+#include "builtins_private.h"
 
-int	builtin_env(t_shell *state, t_vec argv)
+int builtin_env(t_shell *state, t_vec argv)
 {
-	size_t	i;
-	t_env	*e;
+	size_t i;
+	t_env *e;
 
 	i = -1;
 	(void)argv;

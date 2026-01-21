@@ -17,6 +17,8 @@
 # include "shell.h"
 # include "helpers.h"
 
+typedef int (*builtin_fn_t)(t_shell *state, t_vec argv);
+
 int		mini_atoi_base(char **str, int base, int len);
 int		cd_home(int *e, t_shell *state);
 void	parse_numeric_escape(char **str);
@@ -34,5 +36,6 @@ int		builtin_export(t_shell *state, t_vec argv);
 int		builtin_unset(t_shell *state, t_vec argv);
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv);
+
 
 #endif

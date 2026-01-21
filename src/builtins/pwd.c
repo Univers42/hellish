@@ -10,15 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
+#include "builtins_private.h"
 
-int	builtin_pwd(t_shell *state, t_vec argv)
+int builtin_pwd(t_shell *state, t_vec argv)
 {
 	(void)argv;
 	if (state->cwd.ctx == NULL)
 		ft_eprintf("pwd: error retrieving current directory:"
-			" getcwd: cannot access parent directories:"
-			" No such file or directory\n");
+				   " getcwd: cannot access parent directories:"
+				   " No such file or directory\n");
 	else
 		ft_printf("%s\n", (char *)state->cwd.ctx);
 	return (0);

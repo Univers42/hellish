@@ -10,13 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
+#include "builtins_private.h"
 
-int	builtin_echo(t_shell *state, t_vec argv)
+int builtin_echo(t_shell *state, t_vec argv)
 {
-	int		n;
-	int		e;
-	size_t	first_arg_print;
+	int n;
+	int e;
+	size_t first_arg_print;
 
 	n = 0;
 	e = 0;

@@ -10,13 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
-#include <stdlib.h>
-#include "env.h"
+#include "builtins_private.h"
 
-int	cd_home(int *e, t_shell *state)
+int cd_home(int *e, t_shell *state)
 {
-	char	*home;
+	char *home;
 
 	home = env_expand(state, "HOME");
 	if (home == NULL)

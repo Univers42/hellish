@@ -10,15 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "builtins.h"
-#include "libft.h"
+#include "builtins_private.h"
 
-void	parse_numeric_escape(char **str)
+void parse_numeric_escape(char **str)
 {
-	int				base;
-	unsigned char	c;
-	char			*end;
-	int				val;
+	int base;
+	unsigned char c;
+	char *end;
+	int val;
 
 	base = 10;
 	if (**str == '0')
@@ -26,7 +25,7 @@ void	parse_numeric_escape(char **str)
 	else if (**str == 'x')
 		base = 16;
 	else
-		return ;
+		return;
 	(*str)++;
 	val = ft_strto_int(*str, &end, base);
 	if (end && end != *str)
@@ -35,7 +34,7 @@ void	parse_numeric_escape(char **str)
 	ft_putchar_fd((char)c, 1);
 }
 
-static int	backslash_writer(char *s)
+static int backslash_writer(char *s)
 {
 	if (*s == 'n')
 		ft_putchar_fd('\n', 1);
@@ -60,7 +59,7 @@ static int	backslash_writer(char *s)
 	return (1);
 }
 
-int	e_parser(char *s)
+int e_parser(char *s)
 {
 	while (*s)
 	{
@@ -72,7 +71,7 @@ int	e_parser(char *s)
 			else if (*s == '0' || *s == 'x')
 			{
 				parse_numeric_escape(&s);
-				continue ;
+				continue;
 			}
 			else if (!backslash_writer(s))
 			{
