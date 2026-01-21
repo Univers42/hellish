@@ -12,6 +12,8 @@
 
 #include "lexer.h"
 
+bool	is_word_boundary(const char *s);
+
 static void	skip_shell_comment(char **str)
 {
 	while (**str && **str != '\n')
@@ -21,7 +23,7 @@ static void	skip_shell_comment(char **str)
 static char	*try_parse_lexeme(char **str, t_deque_tt *ret)
 {
 	if (**str == '\'' || **str == '"' || **str == '$'
-		|| !(is_special_char(**str)))
+		|| !(is_word_boundary(*str)))
 		return (parse_lexeme(ret, str));
 	return (0);
 }

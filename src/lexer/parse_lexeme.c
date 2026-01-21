@@ -15,12 +15,15 @@
 /* forward declaration to avoid implicit declaration warning */
 char	*tokenize_subshell(t_deque_tt *tokens, char **str);
 
+/* Check if current position should end word parsing */
+bool	is_word_boundary(const char *s);
+
 /* generic advancement for backslash / non-special / dollar */
 static int	parse_generic(char **str)
 {
 	if (**str == '\\')
 		advance_bs(str);
-	else if (!is_special_char(**str) || **str == '$')
+	else if (!is_word_boundary(*str) || **str == '$')
 		(*str)++;
 	else
 		return (1);

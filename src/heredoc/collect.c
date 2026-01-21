@@ -20,7 +20,7 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	int			wr_fd;
 	t_string	fname;
 
-	ret = (t_redir){.direction_in = true, .should_delete = true};
+	ret = (t_redir){.direction_in = true, .should_delete = true, .src_fd = 0};
 	vec_init(&fname);
 	vec_push_str(&fname, "/tmp/heredoc_");
 	if (state->pid)

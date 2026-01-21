@@ -28,27 +28,121 @@ static void	update_pwd_vars(t_shell *state)
 		.value = ft_strdup((char *)state->cwd.ctx)});
 }
 
-static int	cd_check_args(t_shell *state, t_vec argv)
+static bool	is_redir_operator(char *s)
 {
-	if (argv.len >= 3)
+	int	i;
+
+	if (!s || !*s)
+		return (false);
+	if (*s == '<' || *s == '>')
+		return (true);
+	i = 0;
+	while (ft_isdigit((unsigned char)s[i]))
+		i++;
+	if (i > 0 && (s[i] == '<' || s[i] == '>'))
+		return (true);
+	return (false);
+}
+
+static int	count_real_args(t_vec argv)
+{
+	size_t	i;
+	int		count;
+	char	*arg;
+	bool	skip_next;
+
+	count = 0;
+	skip_next = false;
+	i = 1;
+	while (i < argv.len)
 	{
-		ft_eprintf("%s: %s: too many arguments\n", state->context,
-			((char **)argv.ctx)[0]);
-		return (1);
+		arg = ((char **)argv.ctx)[i];
+		if (skip_next)
+		{
+			skip_next = false;
+			i++;
+			continue ;
+		}
+		if (is_redir_operator(arg))
+		{
+			int j = 0;
+			while (ft_isdigit((unsigned char)arg[j]))
+				j++;
+			if (arg[j] == '<' || arg[j] == '>')
+			{
+				j++;
+				if (arg[j] == '>' || arg[j] == '<')
+					j++;
+			}
+			if (arg[j] == '\0')
+				skip_next = true;
+			i++;
+			continue ;
+		}
+		count++;
+		i++;
 	}
+	return (count);
+}
+
+static char	*get_first_real_arg(t_vec argv)
+{
+	size_t	i;
+	char	*arg;
+	bool	skip_next;
+
+	skip_next = false;
+	i = 1;
+	while (i < argv.len)
+	{
+		arg = ((char **)argv.ctx)[i];
+		if (skip_next)
+		{
+			skip_next = false;
+			i++;
+			continue ;
+		}
+		if (is_redir_operator(arg))
+		{
+			int j = 0;
+			while (ft_isdigit((unsigned char)arg[j]))
+				j++;
+			if (arg[j] == '<' || arg[j] == '>')
+			{
+				j++;
+				if (arg[j] == '>' || arg[j] == '<')
+					j++;
+			}
+			if (arg[j] == '\0')
+				skip_next = true;
+			i++;
+			continue ;
+		}
+		return (arg);
+	}
+	return (NULL);
+}
+
+static int	cd_check_args(t_vec argv)
+{
+	int	real_args;
+
+	real_args = count_real_args(argv);
+	if (real_args >= 2)
+		return (1);
 	return (0);
 }
 
 static int	cd_do_chdir(t_shell *state, t_vec argv, int *e)
 {
 	char	*oldpwd;
+	char	*path;
 
 	oldpwd = env_expand(state, "OLDPWD");
-	if (argv.len == 1)
-	{
+	path = get_first_real_arg(argv);
+	if (!path)
 		return (cd_home(e, state));
-	}
-	if (argv.len >= 2 && !ft_strcmp("-", ((char **)argv.ctx)[1]))
+	if (!ft_strcmp("-", path))
 	{
 		if (oldpwd == NULL)
 		{
@@ -58,10 +152,8 @@ static int	cd_do_chdir(t_shell *state, t_vec argv, int *e)
 		ft_printf("%s\n", oldpwd);
 		*e = chdir(oldpwd);
 	}
-	else if (argv.len == 2)
-	{
-		*e = chdir(((char **)argv.ctx)[1]);
-	}
+	else
+		*e = chdir(path);
 	return (0);
 }
 
@@ -90,14 +182,18 @@ int	builtin_cd(t_shell *state, t_vec argv)
 	int		e;
 	char	*arg;
 
-	arg = "";
 	e = 0;
-	if (cd_check_args(state, argv))
+	if (cd_check_args(argv))
+	{
+		ft_eprintf("%s: %s: too many arguments\n", state->context,
+			((char **)argv.ctx)[0]);
 		return (1);
+	}
 	if (cd_do_chdir(state, argv, &e))
 		return (1);
-	if (argv.len >= 2)
-		arg = ((char **)argv.ctx)[1];
+	arg = get_first_real_arg(argv);
+	if (!arg)
+		arg = "";
 	if (e == -1)
 	{
 		ft_eprintf("%s: %s: %s: %s\n", state->context,

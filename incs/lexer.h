@@ -40,6 +40,7 @@ const char	*token_color(t_tt tt);
 void		print_visible_lexeme_noquotes(t_token *t);
 bool		is_special_char(char c);
 bool		is_space(char c);
+bool		is_word_boundary(const char *s);
 char		*parse_lexeme(t_deque_tt *tokens, char **str);
 void		parse_op(t_deque_tt *tokens, char **str);
 

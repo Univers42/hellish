@@ -27,6 +27,7 @@ typedef struct redir_s
 {
 	bool		direction_in;
 	int			fd;
+	int			src_fd;
 	char		*fname;
 	bool		should_delete;
 }	t_redir;

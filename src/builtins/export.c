@@ -41,14 +41,49 @@ static bool is_valid_ident(char *id)
 	return (!id[i]);
 }
 
-void strip_surrounding_quotes(char **val)
+static char	*expand_export_value(t_shell *st, char *val, bool allow_expand)
 {
-	size_t vlen;
-	char *clean;
-	char f; // Declare f here
+	t_string	out;
+	size_t		i;
+	size_t		start;
+
+	if (!val || !allow_expand)
+		return (val);
+	vec_init(&out);
+	out.elem_size = 1;
+	i = 0;
+	while (val[i])
+	{
+		if (val[i] == '$' && is_var_name_p1(val[i + 1]))
+		{
+			start = ++i;
+			while (is_var_name_p2(val[i]))
+				i++;
+			{
+				char	*rep = env_expand_n(st, val + start, i - start);
+				if (rep)
+					vec_push_str(&out, rep);
+			}
+			continue ;
+		}
+		vec_push(&out, &val[i]);
+		i++;
+	}
+	free(val);
+	if (!vec_ensure_space_n(&out, 1))
+		return (NULL);
+	((char *)out.ctx)[out.len] = '\0';
+	return ((char *)out.ctx);
+}
+
+char	strip_surrounding_quotes(char **val)
+{
+	size_t	vlen;
+	char	*clean;
+	char	f;
 
 	if (!val || !*val)
-		return;
+		return (0);
 	vlen = ft_strlen(*val);
 	if (vlen >= 2)
 	{
@@ -58,8 +93,10 @@ void strip_surrounding_quotes(char **val)
 			clean = ft_strndup(*val + 1, vlen - 2);
 			free(*val);
 			*val = clean;
+			return (f);
 		}
 	}
+	return (0);
 }
 
 void consume_following_value(t_vec av, int *i, char **val)
@@ -111,6 +148,7 @@ int process_arg(t_shell *st, t_vec av, int *ip)
 	int i;
 	char *arg0;
 	char *cur;
+	char quote;
 
 	i = *ip;
 	arg0 = ((char **)av.ctx)[0];
@@ -121,9 +159,11 @@ int process_arg(t_shell *st, t_vec av, int *ip)
 #ifdef DEBUG_EXPORT
 	ft_eprintf("[DEBUG export] arg='%s' -> id='%s' val='%s'\n", cur, id ? id : "(null)", val ? val : "(null)");
 #endif
-	strip_surrounding_quotes(&val);
+	quote = strip_surrounding_quotes(&val);
 	consume_following_value(av, &i, &val);
 	*ip = i;
+	if (val)
+		val = expand_export_value(st, val, quote != '\'');
 	return (handle_identifier(st, id, val, arg0, cur));
 }
 
@@ -143,7 +183,7 @@ void collect_and_print_exported(t_shell *st)
 		e = &((t_env *)st->env.ctx)[j];
 		if (e->exported)
 		{
-			s = ft_asprintf("declare -x %s=\"%s\"", e->key, e->value ? e->value : "");
+			s = ft_asprintf("export %s=\"%s\"", e->key, e->value ? e->value : "");
 			vec_push(&list, &s);
 		}
 		j++;

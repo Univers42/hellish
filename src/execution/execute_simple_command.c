@@ -176,10 +176,7 @@ void set_up_redirection(t_shell *state, t_executable_node *exe)
 				_exit(1);
 			}
 			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
-			if (redir.direction_in)
-				dup2(redir.fd, 0);
-			else
-				dup2(redir.fd, 1);
+			dup2(redir.fd, redir.src_fd);
 			close(redir.fd);
 		}
 		return;
@@ -188,7 +185,6 @@ void set_up_redirection(t_shell *state, t_executable_node *exe)
 	/* Case B: no redirs buffer available — fallback: scan AST children for redirects */
 	if (exe->node)
 	{
-		/* children[0] is command/subshell, redirects start at index 1 */
 		for (i = 1; i < exe->node->children.len; ++i)
 		{
 			t_ast_node *curr = (t_ast_node *)vec_idx(&exe->node->children, i);
@@ -197,7 +193,6 @@ void set_up_redirection(t_shell *state, t_executable_node *exe)
 			int idx;
 			if (redirect_from_ast_redir(state, curr, &idx))
 			{
-				/* ambiguous redirect or error: abort child */
 				ft_eprintf("%s: ambiguous redirect\n", state->context);
 				_exit(1);
 			}
@@ -208,16 +203,12 @@ void set_up_redirection(t_shell *state, t_executable_node *exe)
 				_exit(1);
 			}
 			redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
-			if (redir.direction_in)
-				dup2(redir.fd, 0);
-			else
-				dup2(redir.fd, 1);
+			dup2(redir.fd, redir.src_fd);
 			close(redir.fd);
 		}
 		return;
 	}
 
-	/* If we reach here, redirection info is inconsistent */
 	ft_eprintf("%s: internal error: redirects present but no redirect data\n",
 			   state->context ? state->context : "minishell");
 	_exit(1);
@@ -285,6 +276,7 @@ t_exe_res execute_simple_command(t_shell *state, t_executable_node *exe)
 {
 	t_executable_cmd cmd;
 	size_t i;
+	char *first_arg;
 
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
@@ -310,6 +302,19 @@ t_exe_res execute_simple_command(t_shell *state, t_executable_node *exe)
 			((char **)cmd.argv.ctx)[i] = empty;
 		}
 		i++;
+	}
+	/* Check if first argument is empty string - treat as command not found */
+	if (cmd.argv.len > 0)
+	{
+		first_arg = ((char **)cmd.argv.ctx)[0];
+		if (first_arg && first_arg[0] == '\0')
+		{
+			/* Empty command name (e.g., "" or '') - command not found */
+			ft_eprintf("%s: : command not found\n", state->context);
+			free_executable_cmd(cmd);
+			free_executable_node(exe);
+			return (res_status(COMMAND_NOT_FOUND));
+		}
 	}
 	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0]) && exe->modify_parent_context)
 		return (execute_builtin_cmd_fg(state, &cmd, exe));

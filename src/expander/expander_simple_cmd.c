@@ -215,6 +215,11 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 			}
 			exp.exit_stat = 0;
 		}
+		else if (exp.curr->node_type == AST_TOKEN)
+		{
+			/* Skip operator tokens that might appear in argv (like redirects) */
+			exp.exit_stat = 0;
+		}
 		else
 		{
 #if TRACE_DEBUG
