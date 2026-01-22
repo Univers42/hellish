@@ -10,9 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-
-#include <sys/wait.h>
-# include "shell.h"
+#include "execution_private.h"
 
 t_exe_res	res_status(int status)
 {
