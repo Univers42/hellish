@@ -1,5 +1,6 @@
-build/obj/expander/expander.o: src/expander/expander.c incs/shell.h \
- incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
+build/obj/glob/glob_expand_utils2.o: src/glob/glob_expand_utils2.c \
+ src/glob/glob_private.h incs/ft_glob.h vendor/libft/libft.h \
+ vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -39,13 +40,13 @@ build/obj/expander/expander.o: src/expander/expander.c incs/shell.h \
  vendor/libft/include/../srcs/ipc/signals/quit.h \
  vendor/libft/include/../srcs/ipc/signals/trap.h \
  vendor/libft/include/system.h vendor/libft/include/ft_wctype.h \
+ incs/lexer.h incs/public/token.h incs/shell.h incs/alias.h \
  vendor/libft/include/ft_printf.h incs/public/signals.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/expander.h incs/helpers.h incs/env.h incs/ft_glob.h \
- incs/lexer.h incs/public/token.h incs/env.h incs/helpers.h incs/arith.h
-incs/shell.h:
-incs/alias.h:
+ incs/prompt.h incs/lexer.h incs/expander.h incs/helpers.h incs/env.h
+src/glob/glob_private.h:
+incs/ft_glob.h:
 vendor/libft/libft.h:
 vendor/libft/include/ds.h:
 vendor/libft/include/../srcs/ds/lists/ft_list.h:
@@ -98,6 +99,10 @@ vendor/libft/include/../srcs/ipc/signals/quit.h:
 vendor/libft/include/../srcs/ipc/signals/trap.h:
 vendor/libft/include/system.h:
 vendor/libft/include/ft_wctype.h:
+incs/lexer.h:
+incs/public/token.h:
+incs/shell.h:
+incs/alias.h:
 vendor/libft/include/ft_printf.h:
 incs/public/signals.h:
 incs/public/error.h:
@@ -109,12 +114,7 @@ incs/redir.h:
 incs/history.h:
 incs/shell.h:
 incs/prompt.h:
+incs/lexer.h:
 incs/expander.h:
 incs/helpers.h:
 incs/env.h:
-incs/ft_glob.h:
-incs/lexer.h:
-incs/public/token.h:
-incs/env.h:
-incs/helpers.h:
-incs/arith.h:
