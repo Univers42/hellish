@@ -91,3 +91,6 @@ a\\\\
 
 c1r13s5% echo "a\\\\\\\\\\\\\\\\\\\n"
 a\\\\\n
+
+printf "echo $\necho \"\$\"\necho \" \$\"\necho \$''\necho \"\$(echo hi)\"\n" | ../build/bin/minishell 2>&1 | sed -n '1,200p'
+printf 'echo "$"\n' | ../build/bin/minishell 2>&1 | sed -n '1,200p'

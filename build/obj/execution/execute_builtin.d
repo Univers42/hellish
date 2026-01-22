@@ -1,4 +1,4 @@
-build/obj/execution/res_utils.o: src/execution/res_utils.c \
+build/obj/execution/execute_builtin.o: src/execution/execute_builtin.c \
  src/execution/execution_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
