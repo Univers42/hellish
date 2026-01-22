@@ -1,5 +1,5 @@
 build/obj/glob/glob_classes.o: src/glob/glob_classes.c \
- src/glob/glob_private.h incs/glob.h vendor/libft/libft.h \
+ src/glob/glob_private.h incs/ft_glob.h vendor/libft/libft.h \
  vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
@@ -46,7 +46,7 @@ build/obj/glob/glob_classes.o: src/glob/glob_classes.c \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
  incs/prompt.h incs/lexer.h incs/expander.h incs/helpers.h incs/env.h
 src/glob/glob_private.h:
-incs/glob.h:
+incs/ft_glob.h:
 vendor/libft/libft.h:
 vendor/libft/include/ds.h:
 vendor/libft/include/../srcs/ds/lists/ft_list.h:

@@ -15,7 +15,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "expander.h"
-#include "glob.h"
+#include "ft_glob.h"
 #include "env.h"
 #include "helpers.h"
 #include <errno.h>
@@ -151,7 +151,7 @@ static char *capture_subshell_output(t_shell *state, const char *cmd)
 	return ret;
 }
 
-/* Expand all occurrences of $((...)) arithmetic and $(...) command substitution 
+/* Expand all occurrences of $((...)) arithmetic and $(...) command substitution
    inside token strings of a node. */
 static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 {
@@ -179,7 +179,7 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 				while (pos < len)
 				{
 					/* Check for $(( arithmetic expansion first */
-					if (s[pos] == '$' && pos + 2 < len && 
+					if (s[pos] == '$' && pos + 2 < len &&
 						s[pos + 1] == '(' && s[pos + 2] == '(')
 					{
 						/* Find matching )) */
@@ -188,13 +188,25 @@ static void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 						while (j < len && depth > 0)
 						{
 							if (s[j] == '(' && j + 1 < len && s[j + 1] == '(')
-								{ depth += 2; j += 2; }
+							{
+								depth += 2;
+								j += 2;
+							}
 							else if (s[j] == ')' && j + 1 < len && s[j + 1] == ')')
-								{ depth -= 2; j += 2; }
+							{
+								depth -= 2;
+								j += 2;
+							}
 							else if (s[j] == '(')
-								{ depth++; j++; }
+							{
+								depth++;
+								j++;
+							}
 							else if (s[j] == ')')
-								{ depth--; j++; }
+							{
+								depth--;
+								j++;
+							}
 							else
 								j++;
 						}

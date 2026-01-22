@@ -80,4 +80,17 @@ size_t		matches_pattern(char *name, t_vec_glob patt,
 bool		finished_pattern(t_vec_glob patt, size_t offset);
 bool		star_expandable(t_tt tt);
 
+static inline t_glob init_glob(t_glob_type ty, const char *start, int len)
+{
+	return ((t_glob)
+		{
+			.ty = ty,
+			.start = start,
+			.len = len,
+			.flags = 0,
+			.char_set = NULL,
+			.char_set_len = 0
+		});
+}
+
 #endif

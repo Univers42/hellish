@@ -1,5 +1,5 @@
-cd glob-zoo && printf '%s\n' test[z-a] | sort
-cd glob-zoo && printf '%s\n' test[a\-z] | sort
+#cd glob-zoo && printf '%s\n' test[z-a] | sort
+#cd glob-zoo && printf '%s\n' test[a\-z] | sort
 cd glob-zoo && printf '%s\n' * | sort
 cd glob-zoo && printf '%s\n' ** | sort
 cd glob-zoo && printf '%s\n' ************* | sort

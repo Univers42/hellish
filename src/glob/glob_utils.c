@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   glob_types.c                                       :+:      :+:    :+:   */
+/*   glob_utils.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 16:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 10:37:33 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/22 12:23:45 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,4 +60,22 @@ bool	finished_pattern(t_vec_glob patt, size_t offset)
 	if (curr.ty == G_SLASH)
 		return (true);
 	return (false);
+}
+
+/*
+** Get path for opendir (use "." for empty path)
+*/
+char	*get_curr_path(char *path)
+{
+	if (*path)
+		return (path);
+	return (".");
+}
+
+/*
+** Helper to free string elements in a vector
+*/
+void	free_str_elem(void *el)
+{
+	free(*(char **)el);
 }
