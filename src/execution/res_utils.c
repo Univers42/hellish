@@ -34,7 +34,6 @@ void	exe_res_set_status(t_exe_res *res)
 			break ;
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
 		res->c_c = true;
-	/* print a diagnostic on broken pipe (match bash behavior) */
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGPIPE)
 		ft_eprintf(" Broken pipe\n");
 	res->status = WEXITSTATUS(status)

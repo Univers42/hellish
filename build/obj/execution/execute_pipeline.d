@@ -1,5 +1,6 @@
 build/obj/execution/execute_pipeline.o: src/execution/execute_pipeline.c \
- incs/shell.h incs/alias.h vendor/libft/libft.h vendor/libft/include/ds.h \
+ src/execution/execution_private.h incs/shell.h incs/alias.h \
+ vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -42,8 +43,10 @@ build/obj/execution/execute_pipeline.o: src/execution/execute_pipeline.c \
  vendor/libft/include/ft_printf.h incs/public/signals.h \
  incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/expander.h incs/helpers.h incs/env.h \
- vendor/libft/../libft/libft.h
+ incs/prompt.h incs/sh_error.h incs/lexer.h incs/public/token.h \
+ incs/parser.h incs/env.h incs/helpers.h incs/redir.h incs/helpers.h \
+ incs/expander.h incs/env.h incs/input.h incs/public/executor_types.h
+src/execution/execution_private.h:
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:
@@ -109,7 +112,15 @@ incs/redir.h:
 incs/history.h:
 incs/shell.h:
 incs/prompt.h:
-incs/expander.h:
-incs/helpers.h:
+incs/sh_error.h:
+incs/lexer.h:
+incs/public/token.h:
+incs/parser.h:
 incs/env.h:
-vendor/libft/../libft/libft.h:
+incs/helpers.h:
+incs/redir.h:
+incs/helpers.h:
+incs/expander.h:
+incs/env.h:
+incs/input.h:
+incs/public/executor_types.h:

@@ -13,7 +13,7 @@
 #include "execution_private.h"
 
 void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
-	t_executable_node *curr_exe, int (*pp)[2])
+								t_executable_node *curr_exe, int (*pp)[2])
 {
 	if (!is_last)
 	{
@@ -29,81 +29,88 @@ void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 	}
 }
 
-void	execute_pipeline_children(t_shell *state, t_executable_node *exe,
-	t_vec_exe_res *results)
+/* prepare per-child execution state (copy template,
+init redirs, set fds/node, setup pipe) */
+static void	prepare_child_exec(t_exec_child_ctx *c)
 {
-	size_t				i;
+	size_t	last_index;
+
+	*c->curr_exe = *c->exe;
+	vec_init(&c->curr_exe->redirs);
+	c->curr_exe->redirs.elem_size = sizeof(int);
+	c->curr_exe->infd = c->prev_infd;
+	last_index = c->last_index;
+	c->curr_exe->modify_parent_context = (c->idx == last_index)
+		&& c->exe->modify_parent_context;
+	c->curr_exe->node = vec_idx(&c->exe->node->children, c->idx);
+	ft_assert(c->curr_exe->node->node_type == AST_COMMAND);
+	set_up_redir_pipeline_child(c->idx == last_index,
+		c->exe, c->curr_exe, c->pp);
+}
+
+/* finalize parent-side after child execution: close fds
+and set prev_infd for next child */
+static void	finalize_child_parent(t_exec_child_ctx *c)
+{
+	if (c->curr_exe->outfd >= 0)
+		close(c->curr_exe->outfd);
+	if (c->curr_exe->infd >= 0)
+		close(c->curr_exe->infd);
+	if (c->idx == c->last_index)
+		c->prev_infd = -1;
+	else
+		c->prev_infd = (*c->pp)[0];
+}
+
+void	execute_pipeline_children(t_shell *state,
+								t_executable_node *exe,
+								t_vec_exe_res *results)
+{
 	t_executable_node	curr_exe;
 	int					pp[2];
-	int					prev_infd;
+	t_exec_child_ctx	ctx;
+	t_exe_res			res;
 
-	/* start input for first child from exe->infd (dup so parent can close safely) */
-	prev_infd = dup(exe->infd);
-	i = 0;
-	while (i < exe->node->children.len)
+	ctx.prev_infd = dup(exe->infd);
+	ctx.state = state;
+	ctx.exe = exe;
+	ctx.curr_exe = &curr_exe;
+	ctx.pp = &pp;
+	if (exe->node->children.len == 0)
+		ctx.last_index = 0;
+	else
+		ctx.last_index = exe->node->children.len - 1;
+	ctx.results = results;
+	ctx.idx = 0;
+	while (ctx.idx < exe->node->children.len)
 	{
-		/* copy template and set per-child fields */
-		curr_exe = *exe;
-		/* fresh redirs vector for the child */
-		vec_init(&curr_exe.redirs);
-		curr_exe.redirs.elem_size = sizeof(int);
-		/* set child's input from preserved fd */
-		curr_exe.infd = prev_infd;
-		/* only the last child may modify parent context (when the pipeline
-		   as a whole was allowed to modify parent) */
-		curr_exe.modify_parent_context = (i == exe->node->children.len - 1)
-			&& exe->modify_parent_context;
-
-		curr_exe.node = vec_idx(&exe->node->children, i);
-		ft_assert(curr_exe.node->node_type == AST_COMMAND);
-
-		/* set up pipe for this child (if not last) */
-		set_up_redir_pipeline_child(i == exe->node->children.len - 1,
-			exe, &curr_exe, &pp);
-
-		/* execute_command returns a t_exe_res; push its copy into results */
-		{
-			t_exe_res r = execute_command(state, &curr_exe);
-			vec_push(results, &r);
-		}
-
-		/* In parent: close the child's outfd (writer end) and its infd (the
-		   read end we passed as input), then prepare prev_infd for next child */
-		if (curr_exe.outfd >= 0)
-			close(curr_exe.outfd);
-		if (curr_exe.infd >= 0)
-			close(curr_exe.infd);
-
-		if (i == exe->node->children.len - 1)
-			prev_infd = -1;
-		else
-			prev_infd = pp[0];
-
-		i++;
+		prepare_child_exec(&ctx);
+		res = execute_command(state, &curr_exe);
+		vec_push(results, &res);
+		finalize_child_parent(&ctx);
+		ctx.idx++;
 	}
 }
 
-// Always returns status
+/* Always returns status */
 t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
-	t_vec_exe_res		results;
-	t_exe_res			res;
+	t_vec_exe_res	results;
+	t_exe_res		res;
+	t_exe_res		*plast;
 
 	results = (t_vec_exe_res){0};
 	vec_init(&results);
 	results.elem_size = sizeof(t_exe_res);
 	execute_pipeline_children(state, exe, &results);
-	/* parent: close procsub fds after all forks */
 	procsub_close_fds_parent(state);
-	/* Use the exit status of the last command in the pipeline */
 	if (results.len > 0)
 	{
-		t_exe_res *plast = (t_exe_res *)vec_idx(&results, results.len - 1);
+		plast = (t_exe_res *)vec_idx(&results, results.len - 1);
 		exe_res_set_status(plast);
 		res = *plast;
 	}
 	else
 		res = res_status(0);
-	free(results.ctx);
-	return (res);
+	return (free(results.ctx), res);
 }

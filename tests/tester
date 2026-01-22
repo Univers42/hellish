@@ -10,10 +10,10 @@ if [[ $1 ]]; then
     )
 else
     test_lists=(
-		"globbing"
-        "builtins"
-		"compound"
 		"dylan_exec"
+        "builtins"
+		"globbing"
+		"compound"
 		"crazy1"
 		"crazy2"
 		"var"

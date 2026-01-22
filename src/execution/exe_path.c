@@ -12,19 +12,21 @@
 
 #include "execution_private.h"
 
-static void reset_string(t_string *temp, const char *dir, const char *exe_name)
+static void	reset_string(t_string *temp, const char *dir, const char *exe_name)
 {
+	char	*joined;
+
+	joined = ft_strnjoin(dir, "/", exe_name, NULL);
 	vec_clear(temp);
-	vec_push_str(temp, dir);
-	vec_push_char(temp, '/');
-	vec_push_str(temp, exe_name);
+	vec_push_str(temp, joined);
+	free(joined);
 }
 
-char *exe_path(char **path_dirs, char *exe_name, int *perm_denied)
+char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied)
 {
-	t_string temp;
-	int i;
-	struct stat st;
+	t_string	temp;
+	int			i;
+	struct stat	st;
 
 	*perm_denied = 0;
 	if (ft_strchr(exe_name, '/'))
@@ -37,11 +39,11 @@ char *exe_path(char **path_dirs, char *exe_name, int *perm_denied)
 	{
 		reset_string(&temp, path_dirs[i], exe_name);
 		if (access((char *)temp.ctx, F_OK) != 0)
-			continue;
+			continue ;
 		if (stat((char *)temp.ctx, &st) == -1)
-			continue;
+			continue ;
 		if (S_ISDIR(st.st_mode))
-			continue;
+			continue ;
 		if (access((char *)temp.ctx, X_OK) == 0)
 			return ((char *)temp.ctx);
 		*perm_denied = 1;
