@@ -1,4 +1,8 @@
+cd glob-zoo && printf '%s\n' test[z-a] | sort
+cd glob-zoo && printf '%s\n' test[a\-z] | sort
 cd glob-zoo && printf '%s\n' * | sort
+cd glob-zoo && printf '%s\n' ** | sort
+cd glob-zoo && printf '%s\n' ************* | sort
 cd glob-zoo && printf '%s\n' */* | sort
 cd glob-zoo && printf '%s\n' */*/* | sort
 
@@ -78,3 +82,263 @@ cd glob-zoo && printf '%s\n' test.backup.* *.*.c | sort
 
 # spaces (if any)
 cd glob-zoo && printf '%s\n' *" "* | sort
+
+# --- More edge cases for globbing ---
+
+# single char wildcards
+cd glob-zoo && printf '%s\n' test? | sort
+cd glob-zoo && printf '%s\n' test?? | sort
+cd glob-zoo && printf '%s\n' test??? | sort
+cd glob-zoo && printf '%s\n' test* | sort
+cd glob-zoo && printf '%s\n' *test | sort
+cd glob-zoo && printf '%s\n' *test* | sort
+cd glob-zoo && printf '%s\n' *test?* | sort
+cd glob-zoo && printf '%s\n' ??? | sort
+cd glob-zoo && printf '%s\n' ???* | sort
+cd glob-zoo && printf '%s\n' *??? | sort
+
+# asterisk collapse
+cd glob-zoo && printf '%s\n' test**** | sort
+cd glob-zoo && printf '%s\n' ****test | sort
+cd glob-zoo && printf '%s\n' *test**** | sort
+cd glob-zoo && printf '%s\n' ****test**** | sort
+
+# bracket negation
+cd glob-zoo && printf '%s\n' test[!x] | sort
+cd glob-zoo && printf '%s\n' test[^x] | sort
+cd glob-zoo && printf '%s\n' test[!a-z] | sort
+cd glob-zoo && printf '%s\n' test[^a-z] | sort
+cd glob-zoo && printf '%s\n' test[!0-9] | sort
+cd glob-zoo && printf '%s\n' test[^0-9] | sort
+
+# bracket ranges and edge cases
+cd glob-zoo && printf '%s\n' test[a-c] | sort
+cd glob-zoo && printf '%s\n' test[a-bc] | sort
+cd glob-zoo && printf '%s\n' test[a-b-c] | sort
+cd glob-zoo && printf '%s\n' test[-a] | sort
+cd glob-zoo && printf '%s\n' test[a-] | sort
+cd glob-zoo && printf '%s\n' test[-a-z] | sort
+cd glob-zoo && printf '%s\n' test[a-z-] | sort
+cd glob-zoo && printf '%s\n' test[]a] | sort
+cd glob-zoo && printf '%s\n' test[!] | sort
+cd glob-zoo && printf '%s\n' test[]] | sort
+cd glob-zoo && printf '%s\n' test[[] | sort
+cd glob-zoo && printf '%s\n' test[]] | sort
+
+# POSIX classes edge
+cd glob-zoo && printf '%s\n' test[[:alpha:]] | sort
+cd glob-zoo && printf '%s\n' test[![:alpha:]] | sort
+cd glob-zoo && printf '%s\n' test[[:digit:]] | sort
+cd glob-zoo && printf '%s\n' test[![:digit:]] | sort
+cd glob-zoo && printf '%s\n' test[[:upper:]] | sort
+cd glob-zoo && printf '%s\n' test[[:lower:]] | sort
+cd glob-zoo && printf '%s\n' test[[:alnum:]] | sort
+cd glob-zoo && printf '%s\n' test[[:space:]] | sort
+cd glob-zoo && printf '%s\n' test[[:punct:]] | sort
+cd glob-zoo && printf '%s\n' test[[:xdigit:]] | sort
+cd glob-zoo && printf '%s\n' test[![:xdigit:]] | sort
+
+# multiple brackets
+cd glob-zoo && printf '%s\n' test[a-z][0-9] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]][[:digit:]] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]][![:digit:]] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]][^[:digit:]] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]][[:alpha:]] | sort
+
+# literal brackets and escapes
+cd glob-zoo && printf '%s\n' test\\[a\\] | sort
+cd glob-zoo && printf '%s\n' test\\[\\] | sort
+cd glob-zoo && printf '%s\n' test\\[ | sort
+cd glob-zoo && printf '%s\n' test\\] | sort
+cd glob-zoo && printf '%s\n' test\\[a-z\\] | sort
+
+# leading dotfiles
+cd glob-zoo && printf '%s\n' .* | sort
+cd glob-zoo && printf '%s\n' .[a-z]* | sort
+cd glob-zoo && printf '%s\n' .[!a-z]* | sort
+cd glob-zoo && printf '%s\n' .[[:alpha:]]* | sort
+cd glob-zoo && printf '%s\n' .[[:digit:]]* | sort
+cd glob-zoo && printf '%s\n' .[[:punct:]]* | sort
+
+# trailing wildcards
+cd glob-zoo && printf '%s\n' test* | sort
+cd glob-zoo && printf '%s\n' *test | sort
+cd glob-zoo && printf '%s\n' *test* | sort
+cd glob-zoo && printf '%s\n' *test? | sort
+cd glob-zoo && printf '%s\n' ?test* | sort
+cd glob-zoo && printf '%s\n' *test?? | sort
+
+# only wildcards
+cd glob-zoo && printf '%s\n' * | sort
+cd glob-zoo && printf '%s\n' ** | sort
+cd glob-zoo && printf '%s\n' *** | sort
+cd glob-zoo && printf '%s\n' **** | sort
+cd glob-zoo && printf '%s\n' ? | sort
+cd glob-zoo && printf '%s\n' ?? | sort
+cd glob-zoo && printf '%s\n' ??? | sort
+
+# deep directory wildcards
+cd glob-zoo && printf '%s\n' */* | sort
+cd glob-zoo && printf '%s\n' */*/* | sort
+cd glob-zoo && printf '%s\n' */*/*/* | sort
+cd glob-zoo && printf '%s\n' */*/*/*/* | sort
+
+# mixed wildcards and brackets
+cd glob-zoo && printf '%s\n' *[a-z]* | sort
+cd glob-zoo && printf '%s\n' *[!a-z]* | sort
+cd glob-zoo && printf '%s\n' *[[:digit:]]* | sort
+cd glob-zoo && printf '%s\n' *[[:alpha:]]* | sort
+cd glob-zoo && printf '%s\n' *[[:punct:]]* | sort
+
+# edge: empty pattern (should match nothing or all)
+cd glob-zoo && printf '%s\n' "" | sort
+
+# edge: only slashes
+cd glob-zoo && printf '%s\n' / | sort
+cd glob-zoo && printf '%s\n' // | sort
+cd glob-zoo && printf '%s\n' /// | sort
+
+# edge: patterns with only special chars
+cd glob-zoo && printf '%s\n' [*] | sort
+cd glob-zoo && printf '%s\n' [?] | sort
+cd glob-zoo && printf '%s\n' [[] | sort
+cd glob-zoo && printf '%s\n' []] | sort
+cd glob-zoo && printf '%s\n' [!] | sort
+cd glob-zoo && printf '%s\n' [-] | sort
+cd glob-zoo && printf '%s\n' [a-] | sort
+cd glob-zoo && printf '%s\n' [-a] | sort
+
+# edge: patterns with invalid brackets (should fallback to literal)
+cd glob-zoo && printf '%s\n' test[ | sort
+cd glob-zoo && printf '%s\n' test] | sort
+cd glob-zoo && printf '%s\n' test[] | sort
+cd glob-zoo && printf '%s\n' test[! | sort
+cd glob-zoo && printf '%s\n' test[^ | sort
+cd glob-zoo && printf '%s\n' test[--] | sort
+cd glob-zoo && printf '%s\n' test[!!] | sort
+
+# edge: patterns with multiple consecutive slashes
+cd glob-zoo && printf '%s\n' foo//bar | sort
+cd glob-zoo && printf '%s\n' foo///bar | sort
+cd glob-zoo && printf '%s\n' foo////bar | sort
+
+# edge: patterns with trailing slash
+cd glob-zoo && printf '%s\n' foo/ | sort
+cd glob-zoo && printf '%s\n' foo/bar/ | sort
+cd glob-zoo && printf '%s\n' foo/bar// | sort
+
+# edge: patterns with escaped special chars
+cd glob-zoo && printf '%s\n' foo\\* | sort
+cd glob-zoo && printf '%s\n' foo\\? | sort
+cd glob-zoo && printf '%s\n' foo\\[ | sort
+cd glob-zoo && printf '%s\n' foo\\] | sort
+cd glob-zoo && printf '%s\n' foo\\- | sort
+
+# edge: patterns with only negation
+cd glob-zoo && printf '%s\n' [!] | sort
+cd glob-zoo && printf '%s\n' [^] | sort
+
+# edge: patterns with only dash
+cd glob-zoo && printf '%s\n' [-] | sort
+
+# --- Failing / Weird edge cases (likely to differ from bash) ---
+
+# Extended globs / ksh-style (likely unsupported)
+cd glob-zoo && printf '%s\n' +(test) | sort
+cd glob-zoo && printf '%s\n' ?(test) | sort
+cd glob-zoo && printf '%s\n' *(test*) | sort
+cd glob-zoo && printf '%s\n' @(test|exam) | sort
+
+# Malformed brackets that bash treats specially
+cd glob-zoo && printf '%s\n' test[]a] | sort
+cd glob-zoo && printf '%s\n' test[[] | sort
+cd glob-zoo && printf '%s\n' test[]] | sort
+cd glob-zoo && printf '%s\n' test[--] | sort
+cd glob-zoo && printf '%s\n' test[a-] | sort
+cd glob-zoo && printf '%s\n' test[-a] | sort
+
+# POSIX classes unknown / malformed
+cd glob-zoo && printf '%s\n' test[[:UNKNOWN:]] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha] | sort
+cd glob-zoo && printf '%s\n' test[:alpha:] | sort
+
+# Character class edge cases
+cd glob-zoo && printf '%s\n' test[a-zA-Z0-9_] | sort
+cd glob-zoo && printf '%s\n' test[-] | sort
+cd glob-zoo && printf '%s\n' test[!-] | sort
+
+# Leading/trailing dashes and mixed placement
+cd glob-zoo && printf '%s\n' test[-a-z] | sort
+cd glob-zoo && printf '%s\n' test[a-z-] | sort
+
+# Dotfile edge conditions
+cd glob-zoo && printf '%s\n' .?* | sort
+cd glob-zoo && printf '%s\n' .[a-z]* | sort
+cd glob-zoo && printf '%s\n' .*.* | sort
+
+# Patterns that contain only special chars
+cd glob-zoo && printf '%s\n' '*' | sort
+cd glob-zoo && printf '%s\n' '?' | sort
+cd glob-zoo && printf '%s\n' '[*]' | sort
+cd glob-zoo && printf '%s\n' '[]' | sort
+
+# Escapes and backslashes in patterns
+cd glob-zoo && printf '%s\n' foo\\* | sort
+cd glob-zoo && printf '%s\n' foo\\\\* | sort
+cd glob-zoo && printf '%s\n' foo\\? | sort
+cd glob-zoo && printf '%s\n' foo\\[a-z\\] | sort
+
+# Patterns with spaces and weird quoting
+cd glob-zoo && printf '%s\n' '* *' | sort
+cd glob-zoo && printf '%s\n' "* *" | sort
+cd glob-zoo && printf '%s\n' '*  *' | sort
+
+# Extremely long pattern (stress
+cd glob-zoo && printf '%s\n' /tmp/longpattern.test* | sort
+
+# Patterns with multiple slashes and empty components
+cd glob-zoo && printf '%s\n' foo//bar | sort
+cd glob-zoo && printf '%s\n' */*/ | sort
+cd glob-zoo && printf '%s\n' */*/*/ | sort
+
+# Patterns combining many classes and ranges
+cd glob-zoo && printf '%s\n' *[A-Za-z0-9_-.]* | sort
+cd glob-zoo && printf '%s\n' *[!A-Za-z0-9]* | sort
+
+# Patterns with nested bracket-like sequences
+cd glob-zoo && printf '%s\n' test[[:alpha:]-z] | sort
+cd glob-zoo && printf '%s\n' test[[:alpha:]a-z] | sort
+
+# Patterns with null/empty matches (edge)
+cd glob-zoo && printf '%s\n' '' | sort
+cd glob-zoo && printf '%s\n' "" | sort
+cd glob-zoo && printf '%s\n' " " | sort
+
+# Mixed literal and special sequences that confuse expanders
+cd glob-zoo && printf '%s\n' '*[[:digit:]]*'* | sort
+cd glob-zoo && printf '%s\n' '*[[:digit:]]*'* | sort
+
+# Patterns expecting recursive glob (not supported)
+cd glob-zoo && printf '%s\n' **/*.txt | sort
+cd glob-zoo && printf '%s\n' **/* | sort
+
+# Uncommon UTF-8 / wide chars in file names
+cd glob-zoo && printf '%s\n' *é* | sort
+cd glob-zoo && printf '%s\n' *漢* | sort
+
+# Patterns with parentheses and pipes as literals
+cd glob-zoo && printf '%s\n' '*(a|b)' | sort
+cd glob-zoo && printf '%s\n' '(test)' | sort
+
+# Broken bracket constructs
+cd glob-zoo && printf '%s\n' '[a' | sort
+cd glob-zoo && printf '%s\n' 'a]' | sort
+
+# Compound weird commands to exercise integration
+cd glob-zoo && printf '%s\n' * | grep -E '^[[:digit:]]' || true
+cd glob-zoo && printf '%s\n' * | wc -l
+cd glob-zoo && printf '%s\n' * | head -n 5
+
+# Clean up created long test file (ignore errors)
+rm -f /tmp/longpattern.test || true
+# --- end failing/weird section ---
