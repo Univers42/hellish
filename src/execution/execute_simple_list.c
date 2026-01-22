@@ -10,13 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include "execution_private.h"
 
 /* Reap any zombie background children (non-blocking) */
-static void reap_background_children(void)
+void reap_background_children(void)
 {
 	int status;
 	
@@ -44,7 +41,7 @@ bool	should_execute(t_exe_res prev_status, t_tt prev_op)
 /* Find the next & or ; operator in the children list starting from index i.
    Returns the index of the operator, or children.len if not found.
    Also sets *found_amp to true if & was found before ; */
-static size_t find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
+size_t find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
 {
 	size_t i;
 	t_ast_node *child;
@@ -71,7 +68,7 @@ static size_t find_next_separator(t_ast_node *node, size_t start, bool *found_am
 
 /* Execute a range of children [start, end) as a sequence in the current process.
    This handles && and || chaining within the range. */
-static t_exe_res execute_range(t_shell *state, t_executable_node *exe,
+t_exe_res execute_range(t_shell *state, t_executable_node *exe,
 							   size_t start, size_t end)
 {
 	t_exe_res status;
@@ -112,7 +109,7 @@ static t_exe_res execute_range(t_shell *state, t_executable_node *exe,
 }
 
 /* Execute a command sequence in the background */
-static t_exe_res execute_range_background(t_shell *state, t_executable_node *exe,
+t_exe_res execute_range_background(t_shell *state, t_executable_node *exe,
 										  size_t start, size_t end)
 {
 	pid_t pid;

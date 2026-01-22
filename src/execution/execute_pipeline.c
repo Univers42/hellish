@@ -10,10 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "shell.h"
-#include "expander.h"
-#include <unistd.h>
-#include "../libft/libft.h"
+#include "execution_private.h"
 
 void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 	t_executable_node *curr_exe, int (*pp)[2])
