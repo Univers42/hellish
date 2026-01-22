@@ -1,0 +1,88 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   utils.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/22 19:08:58 by marvin            #+#    #+#             */
+/*   Updated: 2026/01/22 19:08:58 by marvin           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "expander_private.h"
+
+/* Check if a command string is empty or whitespace-only */
+bool is_empty_command(const char *cmd)
+{
+	if (!cmd)
+		return true;
+	while (*cmd)
+	{
+		if (*cmd != ' ' && *cmd != '\t' && *cmd != '\n')
+			return false;
+		cmd++;
+	}
+	return true;
+}
+
+bool	is_export(t_ast_node word)
+{
+	t_ast_node	c;
+
+	if (word.children.len != 1)
+		return (false);
+	c = ((t_ast_node *)word.children.ctx)[0];
+	if (c.token.tt != TT_WORD)
+		return (false);
+	if (ft_strncmp(c.token.start, "export", c.token.len))
+		return (false);
+	return (true);
+}
+
+int	expand_simple_cmd_redir(t_shell *state,
+		t_expander_simple_cmd *exp, t_vec_int *redirects)
+{
+	int			redir_idx;
+
+	if (redirect_from_ast_redir(state, exp->curr, &redir_idx))
+	{
+		get_g_sig()->should_unwind = 0; // ensure not treated as canceled
+		return (AMBIGUOUS_REDIRECT);
+	}
+	{ int idx = redir_idx; vec_push(redirects, &idx); } // <-- changed
+	return (0);
+}
+
+t_token_old get_old_token(t_ast_node word)
+{
+	t_token_old ret;
+
+	ft_assert(word.node_type == AST_WORD);
+	ft_assert(word.children.len);
+	ret = ((t_ast_node *)word.children.ctx)[0].token.full_word;
+	ft_assert(ret.present);
+	return (ret);
+}
+
+bool	token_starts_with(t_token t, char *str)
+{
+	if (t.len < (int)ft_strlen(str))
+		return (false);
+	return (ft_strncmp(t.start, str, ft_strlen(str)) == 0);
+}
+
+t_ast_node	new_env_node(char *new_start)
+{
+	t_ast_node ret;
+
+	vec_init(&ret.children);
+	ret.children.elem_size = sizeof(t_ast_node);
+	ret = (t_ast_node){.node_type = AST_TOKEN,
+		.token = {.allocated = true,
+			.len = ft_strlen(new_start),
+			.start = new_start,
+			.tt = TT_ENVVAR}};
+	return (ret);
+}
+

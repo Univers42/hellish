@@ -10,119 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "../libft/libft.h"
-#include "shell.h"
-# include "env.h"
-
-void	expand_token(t_shell *state, t_token	*curr_tt)
-{
-	char *temp;
-
-	/* Handle empty var name specially: if the next char is a quote (e.g. $'' or ""),
-	   treat as empty string; otherwise a bare '$' should remain as literal '$'. */
-	if (curr_tt->len == 0)
-	{
-		if (curr_tt->start && (*curr_tt->start == '\'' || *curr_tt->start == '"'))
-		{
-			/* quoted empty expansion -> empty string */
-			curr_tt->start = "";
-			curr_tt->len = 0;
-			curr_tt->allocated = false;
-			return;
-		}
-		/* bare $ -> leave as literal dollar */
-		curr_tt->start = "$";
-		curr_tt->len = 1;
-		curr_tt->allocated = false;
-		return;
-	}
-
-	temp = env_expand_n(state, curr_tt->start, curr_tt->len);
-	curr_tt->start = temp;
-	if (curr_tt->start)
-		curr_tt->len = ft_strlen(temp);
-	else
-		curr_tt->len = 0;
-	curr_tt->allocated = false;
-}
-
-void	expand_env_vars(t_shell *state, t_ast_node *node)
-{
-	t_token	*curr_tt;
-	size_t	i;
-
-	if (!node->children.ctx)
-		return ;
-	i = 0;
-	while (i < node->children.len)
-	{
-		/* defensive: if children buffer is corrupted or contains unexpected
-		   node types, abort expansion to avoid crashes */
-		if (((t_ast_node *)node->children.ctx)[i].node_type != AST_TOKEN)
-			return ;
-		curr_tt = &((t_ast_node *)node->children.ctx)[i].token;
-		if (curr_tt->tt == TT_WORD || curr_tt->tt == TT_SQWORD
-			|| curr_tt->tt == TT_DQWORD)
-		{
-			/* nothing to do for plain words */
-		}
-		else if (curr_tt->tt == TT_DQENVVAR || curr_tt->tt == TT_ENVVAR)
-		{
-			/* Special-case zero-length var names: if followed immediately by
-			   a quoted empty token (e.g. $'' or $"") that should expand to
-			   empty string. Otherwise treat bare $ as literal '$'. */
-			if (curr_tt->len == 0)
-			{
-				if (i + 1 < node->children.len)
-				{
-					t_ast_node next = ((t_ast_node *)node->children.ctx)[i + 1];
-					if (next.node_type == AST_TOKEN && (next.token.tt == TT_SQWORD || next.token.tt == TT_DQWORD) && next.token.len == 0)
-					{
-						/* empty quoted RHS after $ -> empty expansion */
-						curr_tt->start = "";
-						curr_tt->len = 0;
-						curr_tt->allocated = false;
-					}
-					else
-					{
-						/* bare $ -> leave literal dollar */
-						curr_tt->start = "$";
-						curr_tt->len = 1;
-						curr_tt->allocated = false;
-					}
-				}
-				else
-				{
-					/* no following token: bare $ */
-					curr_tt->start = "$";
-					curr_tt->len = 1;
-					curr_tt->allocated = false;
-				}
-			}
-			else
-			{
-				expand_token(state, curr_tt);
-			}
-		}
-		else
-			ft_assert("Unreachable" == 0);
-		i++;
-	}
-}
-
-t_ast_node	new_env_node(char *new_start)
-{
-	t_ast_node ret;
-
-	vec_init(&ret.children);
-	ret.children.elem_size = sizeof(t_ast_node);
-	ret = (t_ast_node){.node_type = AST_TOKEN,
-		.token = {.allocated = true,
-			.len = ft_strlen(new_start),
-			.start = new_start,
-			.tt = TT_ENVVAR}};
-	return (ret);
-}
+#include "expander_private.h"
 
 void	split_envvar(t_shell *state, t_token *curr_t,
 			t_ast_node *curr_node, t_vec_nd *ret)
@@ -164,6 +52,7 @@ void	split_envvar(t_shell *state, t_token *curr_t,
 	}
 	free(things);
 }
+
 
 // node -> split node
 t_vec_nd	split_words(t_shell *state, t_ast_node *node)
