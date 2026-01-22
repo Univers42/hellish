@@ -10,11 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "glob.h"
-#include "shell.h"
-#include "expander.h"
-#include <dirent.h>
-#include <stdlib.h>
+#include "glob_private.h"
 
 /*
 ** Build next path by appending filename to current path

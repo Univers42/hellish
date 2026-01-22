@@ -6,12 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 16:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/15 16:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/22 10:37:33 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "glob.h"
-#include <stdlib.h>
+#include "glob_private.h"
 
 /*
 ** Free all allocated memory in glob tokens

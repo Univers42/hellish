@@ -10,21 +10,19 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "glob.h"
-#include "shell.h"
-#include "lexer.h"
-#include <stdlib.h>
+#include "glob_private.h"
 
 /*
 ** Parse a bracket expression [...]
 ** For [[::]], the content includes the inner [::]
 ** Returns the length consumed (including brackets), or 0 on error
 */
-static int	parse_bracket(const char *s, int max_len, t_glob *g)
+static int parse_bracket(const char *s, int max_len, t_glob *g)
 {
 	int		i;
 	int		content_start;
 	int		flags;
+	int		j;
 
 	if (*s != '[' || max_len < 2)
 		return (0);
@@ -36,8 +34,8 @@ static int	parse_bracket(const char *s, int max_len, t_glob *g)
 		flags |= BRACKET_NEGATED;
 		i++;
 	}
-	/* Empty bracket after negation [!] or [] - treat as literal */
-	if (i >= max_len || s[i] == ']')
+	/* If we ran out of input after optional negation, treat as literal */
+	if (i >= max_len)
 		return (0);
 	content_start = i;
 	/* First char after [ or [! can be ] without closing the bracket */
@@ -55,7 +53,7 @@ static int	parse_bracket(const char *s, int max_len, t_glob *g)
 			while (i + 1 < max_len && !(s[i] == ':' && s[i + 1] == ']'))
 				i++;
 			if (i + 1 < max_len)
-				i += 2;  /* skip :] */
+				i += 2; /* skip :] */
 		}
 		else
 			i++;
@@ -66,6 +64,49 @@ static int	parse_bracket(const char *s, int max_len, t_glob *g)
 	/* Empty content after processing - treat as literal */
 	if (i == content_start)
 		return (0);
+	/* Validate ranges inside bracket respecting escapes and POSIX classes.
+	   If any unescaped range a-b with a > b is found, treat whole bracket as literal. */
+	j = content_start;
+	while (j < i)
+	{
+		/* honor backslash escapes */
+		if (s[j] == '\\' && j + 1 < i)
+		{
+			j += 2;
+			continue ;
+		}
+		/* skip POSIX classes inside bracket */
+		if (s[j] == '[' && j + 1 < i && s[j + 1] == ':')
+		{
+			int k = j + 2;
+			while (k + 1 < i && !(s[k] == ':' && s[k + 1] == ']'))
+				k++;
+			if (k + 1 >= i)
+				return (0);
+			j = k + 2;
+			continue ;
+		}
+		/* check for range a-b pattern (both ends not special) */
+		if (j + 2 < i && s[j + 1] == '-' && s[j] != ']' && s[j + 2] != '[' && s[j + 2] != ']')
+		{
+			unsigned char c1 = (unsigned char)s[j];
+			unsigned char c2;
+			/* if end is escaped, take the escaped char */
+			if (s[j + 2] == '\\' && j + 3 < i)
+				c2 = (unsigned char)s[j + 3];
+			else
+				c2 = (unsigned char)s[j + 2];
+			if (c1 > c2)
+				return (0); /* invalid range -> treat entire bracket as literal */
+			/* advance past the range; account for possible escape on end */
+			if (s[j + 2] == '\\' && j + 3 < i)
+				j += 4;
+			else
+				j += 3;
+			continue ;
+		}
+		j++;
+	}
 	g->ty = G_BRACKET;
 	g->start = s + content_start;
 	g->len = i - content_start;
@@ -85,9 +126,9 @@ static int	parse_bracket(const char *s, int max_len, t_glob *g)
 /*
 ** Tokenize asterisk (collapse multiple *'s into one)
 */
-static void	tokenize_asterisk(t_vec_glob *ret, const char *s, int *i, int len)
+static void tokenize_asterisk(t_vec_glob *ret, const char *s, int *i, int len)
 {
-	t_glob	g;
+	t_glob g;
 
 	while (*i < len && s[*i] == '*')
 		(*i)++;
@@ -98,9 +139,9 @@ static void	tokenize_asterisk(t_vec_glob *ret, const char *s, int *i, int len)
 /*
 ** Tokenize question mark
 */
-static void	tokenize_question(t_vec_glob *ret, const char *s, int *i)
+static void tokenize_question(t_vec_glob *ret, const char *s, int *i)
 {
-	t_glob	g;
+	t_glob g;
 
 	g = (t_glob){.ty = G_QUESTION, .start = s + *i, .len = 1};
 	vec_push(ret, &g);
@@ -111,11 +152,11 @@ static void	tokenize_question(t_vec_glob *ret, const char *s, int *i)
 ** Tokenize literal characters until next special char or end
 ** If force_one is true, consume at least one character even if special
 */
-static void	tokenize_literal_n(t_vec_glob *ret, const char *s, int *i, int len,
-							bool can_glob, int force_n)
+static void tokenize_literal_n(t_vec_glob *ret, const char *s, int *i, int len,
+							   bool can_glob, int force_n)
 {
-	int		start;
-	t_glob	g;
+	int start;
+	t_glob g;
 
 	start = *i;
 	/* Force consume at least force_n characters */
@@ -127,9 +168,9 @@ static void	tokenize_literal_n(t_vec_glob *ret, const char *s, int *i, int len,
 	while (*i < len)
 	{
 		if (s[*i] == '/')
-			break ;
+			break;
 		if (can_glob && (s[*i] == '*' || s[*i] == '?' || s[*i] == '['))
-			break ;
+			break;
 		(*i)++;
 	}
 	if (*i > start)
@@ -142,8 +183,8 @@ static void	tokenize_literal_n(t_vec_glob *ret, const char *s, int *i, int len,
 /*
 ** Tokenize literal characters until next special char or end
 */
-static void	tokenize_literal(t_vec_glob *ret, const char *s, int *i, int len,
-							bool can_glob)
+static void tokenize_literal(t_vec_glob *ret, const char *s, int *i, int len,
+							 bool can_glob)
 {
 	tokenize_literal_n(ret, s, i, len, can_glob, 0);
 }
@@ -152,12 +193,12 @@ static void	tokenize_literal(t_vec_glob *ret, const char *s, int *i, int len,
 ** Main tokenization function
 ** quoted = true means glob special chars should be treated as literals
 */
-t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted)
+t_vec_glob glob_tokenize(const char *pattern, int len, bool quoted)
 {
-	t_vec_glob	ret;
-	int			i;
-	int			consumed;
-	t_glob		g;
+	t_vec_glob ret;
+	int i;
+	int consumed;
+	t_glob g;
 
 	vec_init(&ret);
 	ret.elem_size = sizeof(t_glob);
@@ -197,7 +238,7 @@ t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted)
 /*
 ** Check if token type allows glob expansion
 */
-bool	star_expandable(t_tt tt)
+bool star_expandable(t_tt tt)
 {
 	if (tt == TT_SQWORD || tt == TT_DQWORD || tt == TT_DQENVVAR)
 		return (false);
@@ -209,11 +250,11 @@ bool	star_expandable(t_tt tt)
 /*
 ** Tokenize a single token from the AST
 */
-static void	tokenize_ast_token(t_vec_glob *ret, t_token t)
+static void tokenize_ast_token(t_vec_glob *ret, t_token t)
 {
-	bool		can_glob;
-	t_vec_glob	sub;
-	size_t		j;
+	bool can_glob;
+	t_vec_glob sub;
+	size_t j;
 
 	can_glob = star_expandable(t.tt);
 	sub = glob_tokenize(t.start, t.len, !can_glob);
@@ -229,11 +270,11 @@ static void	tokenize_ast_token(t_vec_glob *ret, t_token t)
 /*
 ** Convert AST word node to glob pattern
 */
-t_vec_glob	word_to_glob(t_ast_node word)
+t_vec_glob word_to_glob(t_ast_node word)
 {
-	size_t		i;
-	t_ast_node	curr_node;
-	t_vec_glob	ret;
+	size_t i;
+	t_ast_node curr_node;
+	t_vec_glob ret;
 
 	vec_init(&ret);
 	ret.elem_size = sizeof(t_glob);

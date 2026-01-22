@@ -10,8 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "glob.h"
-#include "shell.h"
+#include "glob_private.h"
 
 /*
 ** Match literal pattern tokens

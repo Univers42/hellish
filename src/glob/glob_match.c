@@ -6,13 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 16:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/15 16:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/22 10:36:35 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "glob.h"
-#include "shell.h"
-#include <string.h>
+#include "glob_private.h"
 
 /*
 ** Match a literal pattern segment against a name
