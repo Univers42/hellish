@@ -56,7 +56,8 @@ void		print_table_footer(size_t w_name, size_t w_len, size_t w_lexeme);
 const char	**get_tt_names(void);
 t_hash		*get_color_map(void);
 void		advance_bs(char **str);
-int create_token_consume(char *start, int fd_len, t_tt tt, t_token *out);
-int	check_fd_redirect(char *str, t_token *out);
+int			create_token_consume(char *start, int fd_len,
+				t_tt tt, t_token *out);
+int			check_fd_redirect(char *str, t_token *out);
 
 #endif

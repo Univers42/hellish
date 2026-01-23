@@ -10,8 +10,8 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef GLOB_H
-# define GLOB_H
+#ifndef FT_GLOB_H
+# define FT_GLOB_H
 
 # include <stdbool.h>
 # include <stddef.h>
@@ -80,7 +80,7 @@ size_t		matches_pattern(char *name, t_vec_glob patt,
 bool		finished_pattern(t_vec_glob patt, size_t offset);
 bool		star_expandable(t_tt tt);
 
-static inline t_glob init_glob(t_glob_type ty, const char *start, int len)
+static inline t_glob	init_glob(t_glob_type ty, const char *start, int len)
 {
 	return ((t_glob)
 		{
