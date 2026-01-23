@@ -31,6 +31,24 @@
 # include <unistd.h>
 # include <sys/wait.h>
 
+typedef struct s_expand_ctx
+{
+	const char	*s;
+	int			slen;
+	t_string	*outbuf;
+	int			*consumed;
+}	t_expand_ctx;
+
+typedef struct s_word_token_ctx
+{
+	t_shell		*state;
+	t_token		*tok;
+	t_string	*outbuf;
+	int			total_len;
+	int			pos;
+	bool		changed;
+}	t_word_token_ctx;
+
 t_string	word_to_string(t_ast_node node);
 t_string	word_to_hrdoc_string(t_ast_node node);
 t_env		assignment_to_env(t_shell *state, t_ast_node *node);
@@ -78,7 +96,33 @@ void		replace_trailing_equal_with_full_token(t_ast_node *node,
 				t_vec *argv);
 int			process_simple_child(t_shell *state, t_expander_simple_cmd *exp,
 				t_executable_cmd *ret, t_vec_int *redirects);
-void	expand_cmd_substitutions(t_shell *state, t_ast_node *node);
+void		expand_cmd_substitutions(t_shell *state, t_ast_node *node);
 
-void	process_word_token(t_shell *state, t_token *tok);
+void		process_word_token(t_shell *state, t_token *tok);
+bool		process_cmd_sub(t_shell *state, t_expand_ctx *ctx);
+bool		process_arith_sub(t_shell *state, t_expand_ctx *ctx);
+bool		finish_arith_sub(t_shell *state, t_expand_ctx *ctx, int j);
+void		handle_double_close_paren(int *depth, int *j);
+void		handle_single_open_paren(int *depth, int *j);
+void		handle_single_close_paren(int *depth, int *j);
+bool		is_double_open_paren(int slen, const char *s, int j);
+bool		is_double_close_paren(int slen, const char *s, int j);
+bool		is_single_open_paren(const char *s, int j);
+bool		is_single_close_paren(const char *s, int j);
+void		handle_double_open_paren(int *depth, int *j);
+bool		is_double_close_paren_v1(int slen, const char *s, int j);
+bool		is_double_open_paren_v1(int slen, const char *s, int j);
+
+static inline t_expand_ctx	init_expand(const char *s, int slen,
+								t_string *outbuf, int *consumed)
+{
+	t_expand_ctx	ectx;
+
+	ectx.s = s;
+	ectx.slen = slen;
+	ectx.outbuf = outbuf;
+	ectx.consumed = consumed;
+	return (ectx);
+}
+
 #endif

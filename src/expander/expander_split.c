@@ -12,47 +12,6 @@
 
 #include "expander_private.h"
 
-void	split_envvar(t_shell *state, t_token *curr_t,
-			t_ast_node *curr_node, t_vec_nd *ret)
-{
-	char	**things;
-	int		i;
-
-	if (!curr_t->start)
-		return ;
-	things = ft_split_str(curr_t->start, env_get_ifs(&state->env));
-	if (things[0])
-	{
-		{
-			t_ast_node tmp = new_env_node(things[0]);
-
-			vec_push(&curr_node->children, &tmp);
-		}
-		i = 1;
-		while (things[i])
-		{
-			vec_push(ret, curr_node);
-			*curr_node = (t_ast_node){.node_type = AST_WORD};
-			vec_init(&curr_node->children);
-			curr_node->children.elem_size = sizeof(t_ast_node);
-			{
-				t_ast_node tmp = new_env_node(things[i]);
-
-				vec_push(&curr_node->children, &tmp);
-			}
-			i++;
-		}
-	}
-	else if (curr_node->children.len)
-	{
-		vec_push(ret, curr_node);
-		*curr_node = (t_ast_node){.node_type = AST_WORD};
-		vec_init(&curr_node->children);
-		curr_node->children.elem_size = sizeof(t_ast_node);
-	}
-	free(things);
-}
-
 static void	init_word_node(t_ast_node *n)
 {
 	*n = (t_ast_node){.node_type = AST_WORD};
@@ -63,6 +22,25 @@ static void	init_word_node(t_ast_node *n)
 static void	push_token_node(t_ast_node *curr_node, t_ast_node *child)
 {
 	vec_push(&curr_node->children, child);
+}
+
+static void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
+{
+	if (cust_act_bef_reset)
+		cust_act_bef_reset(ptr);
+	memset(ptr, 0, size);
+}
+
+/* free children.ctx pointer of an ast node prior to zeroing the node */
+static void	free_children(void *p)
+{
+	t_ast_node	*n;
+
+	if (!p)
+		return ;
+	n = (t_ast_node *)p;
+	if (n->children.ctx)
+		free(n->children.ctx);
 }
 
 // node -> split node
@@ -91,7 +69,5 @@ t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 	}
 	if (curr_node.children.len)
 		vec_push(&ret, &curr_node);
-	free(node->children.ctx);
-	*node = (t_ast_node){};
-	return (ret);
+	return (ft_reset(node, sizeof(t_ast_node), free_children), ret);
 }

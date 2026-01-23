@@ -10,6 +10,7 @@ if [[ $1 ]]; then
     )
 else
     test_lists=(
+        "arith"
         "edge_cases"
 		"dylan_exec"
         "builtins"
@@ -27,7 +28,6 @@ else
         "extras"
         "echo_edge_cases"
         "advanced_edge_cases"
-        "arith"
     )
 fi
 
