@@ -1,0 +1,15 @@
+# HISTORY MANAGEMENT
+- [] some command is not worth remembering for instance
+```bash
+
+hello
+hello
+hello
+hello
+hello
+hello
+
+!-1 -> hello [only one hello remembered]
+```
+> not working !
+
