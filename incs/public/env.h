@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:04:45 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/21 00:06:22 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/23 15:08:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 # define ENV_H
 
 # include <stddef.h>
+# include <stdbool.h>
 
 typedef struct s_shell	t_shell;
 typedef struct s_env	t_env;

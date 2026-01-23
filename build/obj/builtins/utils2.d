@@ -1,4 +1,4 @@
-build/obj/builtins/export.o: src/builtins/export.c \
+build/obj/builtins/utils2.o: src/builtins/utils2.c \
  src/builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \

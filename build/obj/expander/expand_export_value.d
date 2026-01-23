@@ -1,5 +1,6 @@
-build/obj/builtins/home_setter.o: src/builtins/home_setter.c \
- src/builtins/builtins_private.h incs/shell.h incs/alias.h \
+build/obj/expander/expand_export_value.o: \
+ src/expander/expand_export_value.c \
+ src/expander/../builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
@@ -45,7 +46,7 @@ build/obj/builtins/home_setter.o: src/builtins/home_setter.c \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
  incs/prompt.h incs/env.h incs/helpers.h incs/ft_builtins.h \
  incs/helpers.h incs/input.h
-src/builtins/builtins_private.h:
+src/expander/../builtins/builtins_private.h:
 incs/shell.h:
 incs/alias.h:
 vendor/libft/libft.h:

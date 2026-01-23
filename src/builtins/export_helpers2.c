@@ -12,34 +12,54 @@
 
 #include "builtins_private.h"
 
-/* reduced process_arg using helpers */
-int process_arg(t_shell *st, t_vec av, int *ip)
+/* helper: parse current argv element, consume following value,
+	expand and dispatch */
+static int	handle_parsed_export_arg(t_shell *st,
+				t_vec av,
+				int *ip,
+				const char *argv0)
 {
+	int		i;
+	char	*cur;
 	char	*id;
 	char	*val;
-	int		i;
-	char	*arg0;
-	char	*cur;
 	char	quote;
 
 	i = *ip;
-	arg0 = ((char **)av.ctx)[0];
 	cur = ((char **)av.ctx)[i];
-	if (!av.ctx || !cur)
-		return (ft_eprintf("[DEBUG export] missing argv element at index %d\n", i), 1);
+	id = NULL;
+	val = NULL;
 	parse_export_arg(cur, &id, &val);
 	quote = strip_surrounding_quotes(&val);
 	consume_following_value(av, &i, &val);
 	*ip = i;
 	if (val)
 		val = expand_export_value(st, val, quote != '\'');
-	return (handle_identifier(st, id, val, arg0, cur));
+	return (handle_identifier(st, id, val, argv0));
 }
 
-/* handle identifier: set env or mark exported or print error */
-int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const char *orig_arg)
+/* reduced process_arg using helpers */
+int	process_arg(t_shell *st, t_vec av, int *ip)
 {
-	t_env *e;
+	int			i;
+	char		*cur;
+	const char	*arg0;
+
+	i = *ip;
+	arg0 = ((char **)av.ctx)[0];
+	if (!av.ctx || i >= (int)av.len)
+		return (ft_eprintf("[DEBUG export] missing argv"
+				" element at index %d\n", i), 1);
+	cur = ((char **)av.ctx)[i];
+	(void)cur;
+	return (handle_parsed_export_arg(st, av, ip, arg0));
+}
+
+/* handle identifier: set env or mark exported or print error
+   signature reduced to 4 args: (state, id, val, argv0) */
+int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
+{
+	t_env	*e;
 
 	if (ft_is_valid_ident(id))
 	{
@@ -55,7 +75,9 @@ int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const
 		return (0);
 	}
 	else
-		return (ft_eprintf("%s: %s: `%s' not valid identifier\n", st->context,
-			argv0, orig_arg),
-		free(id), free(val), 1);
+	{
+		ft_eprintf("%s: %s: `%s' not valid identifier\n", st->context,
+			argv0, id);
+		return (free(id), free(val), 1);
+	}
 }

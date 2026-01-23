@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:02:26 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 14:50:03 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/23 15:00:57 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,7 +42,7 @@ int		builtin_exit(t_shell *state, t_vec argv);
 void	parse_export_arg(char *str, char **ident, char **val);
 char	strip_surrounding_quotes(char **val);
 void	consume_following_value(t_vec av, int *i, char **val);
-int		handle_identifier(t_shell *st, char *id, char *val, const char *argv0, const char *orig_arg);
+int		handle_identifier(t_shell *st, char *id, char *val, const char *argv0);
 int		process_arg(t_shell *st, t_vec av, int *ip);
 void	collect_and_print_exported(t_shell *st);
 int		builtin_export(t_shell *st, t_vec av);
@@ -69,7 +69,7 @@ int		cd_do_chdir(t_shell *state, t_vec argv, int *e);
 void	cd_refresh_cwd(t_shell *state, t_vec argv, char *cwd);
 int		handle_too_many_args(t_shell *state, t_vec argv, size_t i);
 
-int	parse_redir_len(const char *arg);
+int		parse_redir_len(const char *arg);
 bool	redir_needs_next(const char *arg);
 
 #endif
