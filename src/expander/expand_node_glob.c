@@ -12,16 +12,15 @@
 
 #include "expander_private.h"
 
-
-void expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
+void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
 {
-	t_vec glob_words;
-	t_string temp;
-	size_t j;
+	t_vec		glob_words;
+	t_string	temp;
+	size_t		j;
 
 	glob_words = expand_word_glob(*node);
 	if (get_g_sig()->should_unwind)
-		return;
+		return ;
 	vec_init(&temp);
 	j = 0;
 	while (j < glob_words.len)
@@ -29,18 +28,12 @@ void expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
 		if (!keep_as_one)
 			vec_push(args, &((char **)glob_words.ctx)[j]);
 		else
-		{
-			vec_push_str(&temp, ((char **)glob_words.ctx)[j]);
-			free(((char **)glob_words.ctx)[j]);
-		}
+			(vec_push_str(&temp, ((char **)glob_words.ctx)[j]),
+			free(((char **)glob_words.ctx)[j]));
 		if (j++ + 1 < glob_words.len && keep_as_one)
-		{
-			char ch = ' ';
-			vec_push(&temp, &ch);
-		}
+			vec_push_char(&temp, ' ');
 	}
 	if (keep_as_one)
 		vec_push(args, &temp.ctx);
-	free(glob_words.ctx);
-	free_ast(node);
+	(free(glob_words.ctx), free_ast(node));
 }

@@ -12,26 +12,16 @@
 
 #include "expander_private.h"
 
-int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
+/* parse optional leading fd from operator token (e.g. "2>") */
+static int	parse_src_fd(t_tt tt, t_token op_tok)
 {
-	t_redir		new_redir;
-	t_tt		tt;
-	t_token_old	full_token;
-	char		*fname;
-	t_token		op_tok;
-	int			src_fd;
-	char		*p;
+	int		src_fd;
+	char	*p;
 
-	ft_assert(curr->node_type == AST_REDIRECT);
-	if (curr->has_redirect)
-	{
-		*redir_idx = curr->redir_idx;
-		return (0);
-	}
-	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
-	tt = op_tok.tt;
-	/* Parse source fd from operator (e.g., "2>" -> fd 2) */
-	src_fd = (tt == TT_REDIRECT_LEFT) ? 0 : 1;
+	if (tt == TT_REDIRECT_LEFT)
+		src_fd = 0;
+	else
+		src_fd = 1;
 	p = op_tok.start;
 	if (p && ft_isdigit((unsigned char)*p))
 	{
@@ -42,8 +32,31 @@ int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 			p++;
 		}
 	}
-	full_token = get_old_token(((t_ast_node *)curr->children.ctx)[1]);
-	fname = expand_word_single(state, vec_idx(&curr->children, 1));
+	return (src_fd);
+}
+
+/* expand the filename (child index 1)
+into a single string (transfer ownership) */
+static char	*expand_redir_fname(t_shell *state, t_ast_node *curr)
+{
+	return (expand_word_single(state,
+			&((t_ast_node *)curr->children.ctx)[1]));
+}
+
+/* create and commit a redir entry from AST node,
+on success updates node->redir_idx */
+static int	commit_redir(t_shell *state,
+					t_ast_node *curr,
+					t_tt tt,
+					int src_fd)
+{
+	t_redir			new_redir;
+	t_token_old		full_token;
+	char			*fname;
+
+	full_token
+		= get_old_token(((t_ast_node *)curr->children.ctx)[1]);
+	fname = expand_redir_fname(state, curr);
 	if (!create_redir(tt, fname, &new_redir, src_fd))
 	{
 		print_redir_err(state, full_token, fname);
@@ -51,8 +64,28 @@ int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 		return (-1);
 	}
 	curr->redir_idx = state->redirects.len;
-	*redir_idx = state->redirects.len;
 	curr->has_redirect = true;
 	vec_push(&state->redirects, &new_redir);
+	return (0);
+}
+
+int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
+{
+	t_token		op_tok;
+	t_tt		tt;
+	int			src_fd;
+
+	ft_assert(curr->node_type == AST_REDIRECT);
+	if (curr->has_redirect)
+	{
+		*redir_idx = curr->redir_idx;
+		return (0);
+	}
+	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
+	tt = op_tok.tt;
+	src_fd = parse_src_fd(tt, op_tok);
+	if (commit_redir(state, curr, tt, src_fd) < 0)
+		return (-1);
+	*redir_idx = curr->redir_idx;
 	return (0);
 }

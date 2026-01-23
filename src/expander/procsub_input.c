@@ -12,6 +12,36 @@
 
 #include "expander_private.h"
 
+/* fork child, wire child's stdout to pipefd[1],
+exec preferred binary then /bin/sh */
+static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
+						const char *cmd)
+{
+	pid_t		pid;
+	char *const	argv_ms[] = {(char *)"/proc/self/exe", (char *)"-c",
+		(char *)cmd, NULL};
+	char *const	argv_sh[] = {(char *)"/bin/sh", (char *)"-c",
+		(char *)cmd, NULL};
+	char		**envp;
+
+	pid = fork();
+	if (pid == -1)
+		return (-1);
+	if (pid == 0)
+	{
+		close(pipefd[0]);
+		dup2(pipefd[1], STDOUT_FILENO);
+		close(pipefd[1]);
+		envp = get_envp(state, "/proc/self/exe");
+		execve("/proc/self/exe", argv_ms, envp);
+		execve("/bin/sh", argv_sh, envp);
+		if (envp)
+			free_tab(envp);
+		_exit(127);
+	}
+	return (pid);
+}
+
 char	*create_procsub_input(t_shell *state, const char *cmd)
 {
 	int				pipefd[2];
@@ -23,29 +53,12 @@ char	*create_procsub_input(t_shell *state, const char *cmd)
 		return (ft_strdup("/dev/null"));
 	if (pipe(pipefd) == -1)
 		return (NULL);
-	pid = fork();
+	pid = fork_and_exec_procsub_input(state, pipefd, cmd);
 	if (pid == -1)
 	{
 		close(pipefd[0]);
 		close(pipefd[1]);
 		return (NULL);
-	}
-	if (pid == 0)
-	{
-		close(pipefd[0]);
-		dup2(pipefd[1], STDOUT_FILENO);
-		close(pipefd[1]);
-		{
-			/* Prefer current minishell to preserve builtin behavior */
-			char *const argv_ms[] = {"/proc/self/exe", "-c", (char *)cmd, NULL};
-			char *const argv_sh[] = {"/bin/sh", "-c", (char *)cmd, NULL};
-			char **envp = get_envp(state, "/proc/self/exe");
-			execve("/proc/self/exe", argv_ms, envp);
-			execve("/bin/sh", argv_sh, envp);
-			if (envp)
-				free_tab(envp);
-			_exit(127);
-		}
 	}
 	close(pipefd[1]);
 	snprintf(buf, sizeof(buf), "/dev/fd/%d", pipefd[0]);

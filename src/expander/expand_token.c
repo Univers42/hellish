@@ -14,27 +14,23 @@
 
 void	expand_token(t_shell *state, t_token	*curr_tt)
 {
-	char *temp;
+	char	*temp;
 
-	/* Handle empty var name specially: if the next char is a quote (e.g. $'' or ""),
-	   treat as empty string; otherwise a bare '$' should remain as literal '$'. */
 	if (curr_tt->len == 0)
 	{
-		if (curr_tt->start && (*curr_tt->start == '\'' || *curr_tt->start == '"'))
+		if (curr_tt->start && (*curr_tt->start == '\''
+				|| *curr_tt->start == '"'))
 		{
-			/* quoted empty expansion -> empty string */
 			curr_tt->start = "";
 			curr_tt->len = 0;
 			curr_tt->allocated = false;
-			return;
+			return ;
 		}
-		/* bare $ -> leave as literal dollar */
 		curr_tt->start = "$";
 		curr_tt->len = 1;
 		curr_tt->allocated = false;
-		return;
+		return ;
 	}
-
 	temp = env_expand_n(state, curr_tt->start, curr_tt->len);
 	curr_tt->start = temp;
 	if (curr_tt->start)

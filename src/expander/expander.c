@@ -12,155 +12,158 @@
 
 #include "expander_private.h"
 
-
-/* Expand all occurrences of $((...)) arithmetic and $(...) command substitution
-   inside token strings of a node. */
-void expand_cmd_substitutions(t_shell *state, t_ast_node *node)
+/* Try to process arithmetic $((...)) at start of `s`. On success push result
+   into outbuf, set *consumed to number of bytes consumed and return true. */
+static bool	process_arith_sub(t_shell *state, const char *s,
+				int slen, int *consumed, t_string *outbuf)
 {
-	size_t i;
+	int		depth;
+	int		j;
+	char	*result;
 
-	if (!node->children.ctx)
-		return;
-	i = 0;
-	while (i < node->children.len)
+	if (slen < 4 || s[0] != '$' || s[1] != '(' || s[2] != '(')
+		return (false);
+	depth = 2;
+	j = 3;
+	while (j < slen && depth > 0)
 	{
-		t_ast_node *ch = &((t_ast_node *)node->children.ctx)[i];
-		if (ch->node_type == AST_TOKEN)
+		if (s[j] == '(' && j + 1 < slen && s[j + 1] == '(')
+			depth += 2, j += 2;
+		else if (s[j] == ')' && j + 1 < slen && s[j + 1] == ')')
+			depth -= 2, j += 2;
+		else if (s[j] == '(')
+			depth++, j++;
+		else if (s[j] == ')')
+			depth--, j++;
+		else
+			j++;
+	}
+	if (depth != 0)
+		return (false);
+	/* expression is between s+3 .. s+(j-2)-1 inclusive */
+	{
+		int expr_len = (j - 2) - 3;
+		result = arith_expand(state, (char *)s + 3, expr_len);
+		if (result)
 		{
-			t_token *tok = &ch->token;
-			/* Only process TT_WORD tokens for substitution */
-			if (tok->tt == TT_WORD)
-			{
-				const char *s = tok->start;
-				int len = tok->len;
-				int pos = 0;
-				bool changed = false;
-				t_string outbuf;
-				vec_init(&outbuf);
-				outbuf.elem_size = 1;
-				while (pos < len)
-				{
-					/* Check for $(( arithmetic expansion first */
-					if (s[pos] == '$' && pos + 2 < len &&
-						s[pos + 1] == '(' && s[pos + 2] == '(')
-					{
-						/* Find matching )) */
-						int depth = 2;
-						int j = pos + 3;
-						while (j < len && depth > 0)
-						{
-							if (s[j] == '(' && j + 1 < len && s[j + 1] == '(')
-							{
-								depth += 2;
-								j += 2;
-							}
-							else if (s[j] == ')' && j + 1 < len && s[j + 1] == ')')
-							{
-								depth -= 2;
-								j += 2;
-							}
-							else if (s[j] == '(')
-							{
-								depth++;
-								j++;
-							}
-							else if (s[j] == ')')
-							{
-								depth--;
-								j++;
-							}
-							else
-								j++;
-						}
-						if (depth == 0)
-						{
-							/* Append prefix before $(( if this is first match */
-							if (pos > 0 && outbuf.len == 0)
-								vec_push_nstr(&outbuf, s, pos);
-							/* Extract arithmetic expression (between (( and )) */
-							int expr_start = pos + 3;
-							int expr_end = j - 2;
-							int expr_len = expr_end - expr_start;
-							char *result = arith_expand(state, s + expr_start, expr_len);
-							if (result)
-							{
-								vec_push_nstr(&outbuf, result, ft_strlen(result));
-								free(result);
-							}
-							/* Update scanning */
-							s = tok->start + j;
-							len = tok->len - j;
-							pos = 0;
-							changed = true;
-							continue;
-						}
-					}
-					/* Check for $( command substitution */
-					else if (s[pos] == '$' && pos + 1 < len && s[pos + 1] == '(')
-					{
-						int depth = 1;
-						int j = pos + 2;
-						while (j < len && depth > 0)
-						{
-							if (s[j] == '(')
-								depth++;
-							else if (s[j] == ')')
-								depth--;
-							j++;
-						}
-						if (depth == 0)
-						{
-							if (pos > 0 && outbuf.len == 0)
-								vec_push_nstr(&outbuf, s, pos);
-							int inner_start = pos + 2;
-							int inner_end = j - 1;
-							int inlen = inner_end - inner_start;
-							char *inner = malloc(inlen + 1);
-							if (inner)
-							{
-								memcpy(inner, s + inner_start, inlen);
-								inner[inlen] = '\0';
-								char *subout = capture_subshell_output(state, inner);
-								free(inner);
-								if (!subout)
-									subout = ft_strdup("");
-								if (*subout)
-									vec_push_nstr(&outbuf, subout, ft_strlen(subout));
-								free(subout);
-							}
-							s = tok->start + j;
-							len = tok->len - j;
-							pos = 0;
-							changed = true;
-							continue;
-						}
-					}
-					/* Copy single character */
-					char c = s[pos++];
-					vec_push(&outbuf, &c);
-				}
-				if (changed)
-				{
-					char *newstr = malloc(outbuf.len + 1);
-					if (newstr)
-					{
-						if (outbuf.len)
-							memcpy(newstr, outbuf.ctx, outbuf.len);
-						newstr[outbuf.len] = '\0';
-						if (tok->allocated && tok->start)
-							free((char *)tok->start);
-						tok->start = newstr;
-						tok->len = outbuf.len;
-						tok->allocated = true;
-					}
-					free(outbuf.ctx);
-				}
-				else
-					free(outbuf.ctx);
-			}
+			vec_push_nstr(outbuf, result, ft_strlen(result));
+			free(result);
 		}
-		expand_cmd_substitutions(state, &((t_ast_node *)node->children.ctx)[i]);
-		i++;
+		*consumed = j;
+		return (true);
 	}
 }
 
+/* Try to process command substitution $(...) at start of `s`. On success push
+   captured output into outbuf, set *consumed and return true. */
+static bool	process_cmd_sub(t_shell *state, const char *s,
+				int slen, int *consumed, t_string *outbuf)
+{
+	int		depth;
+	int		j;
+	char	*inner;
+	char	*subout;
+
+	if (slen < 3 || s[0] != '$' || s[1] != '(')
+		return (false);
+	depth = 1;
+	j = 2;
+	while (j < slen && depth > 0)
+	{
+		if (s[j] == '(')
+			depth++, j++;
+		else if (s[j] == ')')
+			depth--, j++;
+		else
+			j++;
+	}
+	if (depth != 0)
+		return (false);
+	{
+		int inlen = (j - 1) - 2;
+		inner = malloc(inlen + 1);
+		if (!inner)
+			return (false);
+		memcpy(inner, s + 2, inlen);
+		inner[inlen] = '\0';
+		subout = capture_subshell_output(state, inner);
+		free(inner);
+		if (!subout)
+			subout = ft_strdup("");
+		if (*subout)
+			vec_push_nstr(outbuf, subout, ft_strlen(subout));
+		free(subout);
+		*consumed = j;
+		return (true);
+	}
+}
+
+/* Process a TT_WORD token: perform arithmetic and command substitutions
+   within its string and update token on change. */
+void	process_word_token(t_shell *state, t_token *tok)
+{
+	t_string	outbuf;
+	const char	*s;
+	int			total_len;
+	int			pos;
+	bool		changed;
+
+	vec_init(&outbuf);
+	outbuf.elem_size = 1;
+	total_len = tok->len;
+	pos = 0;
+	changed = false;
+	while (pos < total_len)
+	{
+		s = tok->start + pos;
+		/* remaining length */
+		if (pos + 2 < total_len && s[0] == '$' && s[1] == '(' && s[2] == '(')
+		{
+			int consumed = 0;
+			if (pos > 0 && outbuf.len == 0)
+				vec_push_nstr(&outbuf, tok->start, (size_t)pos);
+			if (process_arith_sub(state, s, total_len - pos, &consumed, &outbuf))
+			{
+				pos += consumed;
+				changed = true;
+				continue;
+			}
+		}
+		if (pos + 1 < total_len && s[0] == '$' && s[1] == '(')
+		{
+			int consumed = 0;
+			if (pos > 0 && outbuf.len == 0)
+				vec_push_nstr(&outbuf, tok->start, (size_t)pos);
+			if (process_cmd_sub(state, s, total_len - pos, &consumed, &outbuf))
+			{
+				pos += consumed;
+				changed = true;
+				continue;
+			}
+		}
+		/* copy single char */
+		{
+			char c = s[0];
+			vec_push(&outbuf, &c);
+			pos++;
+		}
+	}
+	if (changed)
+	{
+		char *newstr = malloc(outbuf.len + 1);
+		if (newstr)
+		{
+			if (outbuf.len)
+				memcpy(newstr, outbuf.ctx, outbuf.len);
+			newstr[outbuf.len] = '\0';
+			if (tok->allocated && tok->start)
+				free((char *)tok->start);
+			tok->start = newstr;
+			tok->len = outbuf.len;
+			tok->allocated = true;
+		}
+		free(outbuf.ctx);
+	}
+	else
+		free(outbuf.ctx);
+}

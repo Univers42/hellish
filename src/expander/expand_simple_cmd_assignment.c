@@ -11,77 +11,85 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "lexer.h"
+
+/* Capture original full token when safe 
+(assignment child's original word or word node) */
+static t_token_old	capture_original_full_token(t_ast_node *node)
+{
+	t_token_old	full;
+	t_ast_node	*orig;
+
+	full = init_token_old();
+	if (!node)
+		return (full);
+	if (node->node_type == AST_ASSIGNMENT_WORD && node->children.len > 1)
+	{
+		orig = &((t_ast_node *)node->children.ctx)[1];
+		if (orig->node_type == AST_WORD)
+			full = get_old_token(*orig);
+	}
+	else if (node->node_type == AST_WORD)
+		full = get_old_token(*node);
+	return (full);
+}
+
+/* Replace argv entries ending with '=' 
+using provided full token (dup) */
+static void	replace_argv_entries_with_full_token(t_vec *argv,
+				t_token_old full)
+{
+	size_t	ai;
+	char	*s;
+	char	*orig;
+
+	if (!argv || !argv->ctx || !full.present)
+		return ;
+	ai = 0;
+	while (ai < argv->len)
+	{
+		s = ((char **)argv->ctx)[ai];
+		if (s && s[0] && s[ft_strlen(s) - 1] == '=')
+		{
+			orig = ft_strndup(full.start, full.len);
+			free(((char **)argv->ctx)[ai]);
+			((char **)argv->ctx)[ai] = orig;
+		}
+		ai++;
+	}
+}
+
+/* Perform assignment -> word conversion, expand into argv and apply fixup.
+   Returns 1 on unwind request, 0 otherwise. */
+static int	expand_assignment_word_and_fixup(t_shell *state,
+					t_expander_simple_cmd *exp, t_executable_cmd *ret)
+{
+	t_token_old	full;
+
+	full = capture_original_full_token(exp->curr);
+	assignment_word_to_word(exp->curr);
+	if (exp->export)
+		expand_word(state, exp->curr, &ret->argv, true);
+	else
+		expand_word(state, exp->curr, &ret->argv, false);
+	if (get_g_sig()->should_unwind)
+		return (1);
+	replace_argv_entries_with_full_token(&ret->argv, full);
+	return (0);
+}
 
 int	expand_simple_cmd_assignment(t_shell *state,
 		t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
+	t_env		tmp;
+
 	if (!exp->found_first)
 	{
-		t_env tmp = assignment_to_env(state, exp->curr);
+		tmp = assignment_to_env(state, exp->curr);
 		vec_push(&ret->pre_assigns, &tmp);
+		return (0);
 	}
-	else
-	{
-		t_token_old full = (t_token_old){.present = false};
-		/* If this is an assignment node, the original word is stored as child[1].
-		   Use that to obtain the original full token safely. */
-		if (exp->curr->node_type == AST_ASSIGNMENT_WORD && exp->curr->children.len > 1)
-		{
-			t_ast_node *orig = &((t_ast_node *)exp->curr->children.ctx)[1];
-			if (orig->node_type == AST_WORD)
-				full = get_old_token(*orig);
-		}
-		else if (exp->curr->node_type == AST_WORD)
-		{
-			full = get_old_token(*exp->curr);
-		}
-		assignment_word_to_word(exp->curr);
-		if (exp->export)
-			expand_word(state, exp->curr, &ret->argv, true);
-		else
-			expand_word(state, exp->curr, &ret->argv, false);
-		if (get_g_sig()->should_unwind)
-			return (1);
-		/* Debug: print assignment token and resulting argv if any */
-		#ifdef DEBUG_EXPAND
-		{
-			if (exp->curr->children.len > 0)
-			{
-				t_token t = ((t_ast_node *)exp->curr->children.ctx)[0].token;
-				char buf[256];
-				int l = t.len < 255 ? t.len : 255;
-				memcpy(buf, t.start, l);
-				buf[l] = '\0';
-				ft_eprintf("[DEBUG expander] assignment token after transform='%s'\n", buf);
-			}
-			size_t ai = 0;
-			while (ai < ret->argv.len)
-			{
-				char *s = ((char **)ret->argv.ctx)[ai];
-				ft_eprintf("[DEBUG expander] argv[%d] = '%s'\n", (int)ai, s ? s : "(null)");
-				ai++;
-			}
-		}
-		#endif
-		/* Fixup: use original full token if expansion left an entry ending with '=' */
-		if (full.present && full.start)
-		{
-			size_t ai = 0;
-			while (ai < ret->argv.len)
-			{
-				char *s = ((char **)ret->argv.ctx)[ai];
-				if (s && s[0] && s[ft_strlen(s) - 1] == '=')
-				{
-					char *orig = ft_strndup(full.start, full.len);
-					free(((char **)ret->argv.ctx)[ai]);
-					((char **)ret->argv.ctx)[ai] = orig;
-					#ifdef DEBUG_EXPAND
-					ft_eprintf("[DEBUG expander] fix assignment argv[%d] -> '%s'\n", (int)ai, orig);
-					#endif
-				}
-				ai++;
-			}
-		}
-	}
+	if (expand_assignment_word_and_fixup(state, exp, ret))
+		return (1);
 	return (0);
 }

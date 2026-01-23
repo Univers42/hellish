@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   token.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:04:48 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/21 00:20:50 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/22 20:37:01 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,4 +94,8 @@ static inline t_token_old	create_token_old(char *start, int len, bool present)
 		});
 }
 
+static inline t_token_old init_token_old(void)
+{
+	return ((t_token_old){.present = false, .start = NULL, .len = 0});
+}
 #endif

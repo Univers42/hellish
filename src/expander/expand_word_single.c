@@ -12,45 +12,46 @@
 
 #include "expander_private.h"
 
-char *expand_word_single(t_shell *state, t_ast_node *curr)
+static char	*handle_single_arg(t_vec *args)
 {
-	t_vec args;
-	size_t i;
-	char *temp;
+	char	*temp;
+
+	temp = ((char **)args->ctx)[0];
+	free(args->ctx);
+	return (temp);
+}
+
+static char	*build_string_from_node(t_ast_node *curr)
+{
+	t_string	s;
+
+	s = word_to_string(*curr);
+	if (!vec_ensure_space_n(&s, 1))
+		return (free(s.ctx), NULL);
+	((char *)s.ctx)[s.len] = '\0';
+	return ((char *)s.ctx);
+}
+
+static char	*free_args_ambiguous(t_vec *args)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < args->len)
+		free(((char **)args->ctx)[i++]);
+	return (free(args->ctx), NULL);
+}
+
+char	*expand_word_single(t_shell *state, t_ast_node *curr)
+{
+	t_vec	args;
 
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
 	expand_word(state, curr, &args, false);
-	/* If expansion produced exactly one item, return it (transfer ownership) */
 	if (args.len == 1)
-	{
-		temp = ((char **)args.ctx)[0];
-		free(args.ctx);
-		return (temp);
-	}
-	/* If expansion produced zero items, return the original word string
-	   (behaviour: unmatched glob stays literal). */
+		return (handle_single_arg(&args));
 	if (args.len == 0)
-	{
-		t_string s = word_to_string(*curr);
-		/* ensure NUL-termination */
-		if (!vec_ensure_space_n(&s, 1))
-		{
-			/* allocation failure: cleanup and return NULL to indicate error */
-			free(s.ctx);
-			return (NULL);
-		}
-		((char *)s.ctx)[s.len] = '\0';
-		/* transfer ownership of s.ctx to caller */
-		return ((char *)s.ctx);
-	}
-	/* args.len > 1: ambiguous expansion -> cleanup and return NULL */
-	i = 0;
-	while (i < args.len)
-	{
-		free(((char **)args.ctx)[i]);
-		i++;
-	}
-	free(args.ctx);
-	return (0);
+		return (build_string_from_node(curr));
+	return (free_args_ambiguous(&args));
 }
