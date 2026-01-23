@@ -6,18 +6,19 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 14:04:51 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 14:42:44 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/23 15:14:34 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../builtins/builtins_private.h"
 
 // Helper: Append a variable expansion to the output buffer
-static void	append_var_expansion(t_shell *st, t_string *out, char *val, size_t start, size_t end)
+static void	append_var_expansion(t_shell *st, t_string *out,
+								char *substart, int len)
 {
 	char	*rep;
 
-	rep = env_expand_n(st, val + start, (int)(end - start));
+	rep = env_expand_n(st, substart, len);
 	if (rep)
 		vec_push_str(out, rep);
 }
@@ -42,7 +43,8 @@ static void	expand_vars_to_buffer(t_shell *st, t_string *out, char *val)
 			start = ++i;
 			while (is_var_name_p2(val[i]))
 				i++;
-			append_var_expansion(st, out, val, start, i);
+			append_var_expansion(st, out, val + start,
+				(int)(i - start));
 			continue ;
 		}
 		append_char(out, val[i]);
