@@ -31,4 +31,3 @@ bool	create_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	ret->should_delete = false;
 	return (true);
 }
-

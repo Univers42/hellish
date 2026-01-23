@@ -13,17 +13,17 @@
 #include "expander_private.h"
 
 /* Check if a command string is empty or whitespace-only */
-bool is_empty_command(const char *cmd)
+bool	is_empty_command(const char *cmd)
 {
 	if (!cmd)
-		return true;
+		return (true);
 	while (*cmd)
 	{
 		if (*cmd != ' ' && *cmd != '\t' && *cmd != '\n')
-			return false;
+			return (false);
 		cmd++;
 	}
-	return true;
+	return (true);
 }
 
 bool	is_export(t_ast_node word)
@@ -47,16 +47,16 @@ int	expand_simple_cmd_redir(t_shell *state,
 
 	if (redirect_from_ast_redir(state, exp->curr, &redir_idx))
 	{
-		get_g_sig()->should_unwind = 0; // ensure not treated as canceled
+		get_g_sig()->should_unwind = 0;
 		return (AMBIGUOUS_REDIRECT);
 	}
-	{ int idx = redir_idx; vec_push(redirects, &idx); } // <-- changed
+	vec_push_int(redirects, redir_idx);
 	return (0);
 }
 
-t_token_old get_old_token(t_ast_node word)
+t_token_old	get_old_token(t_ast_node word)
 {
-	t_token_old ret;
+	t_token_old	ret;
 
 	ft_assert(word.node_type == AST_WORD);
 	ft_assert(word.children.len);
@@ -71,18 +71,3 @@ bool	token_starts_with(t_token t, char *str)
 		return (false);
 	return (ft_strncmp(t.start, str, ft_strlen(str)) == 0);
 }
-
-t_ast_node	new_env_node(char *new_start)
-{
-	t_ast_node ret;
-
-	vec_init(&ret.children);
-	ret.children.elem_size = sizeof(t_ast_node);
-	ret = (t_ast_node){.node_type = AST_TOKEN,
-		.token = {.allocated = true,
-			.len = ft_strlen(new_start),
-			.start = new_start,
-			.tt = TT_ENVVAR}};
-	return (ret);
-}
-

@@ -18,7 +18,7 @@ void	procsub_close_fds_parent(t_shell *state)
 	t_procsub_entry	*entry;
 
 	if (!state || !state->proc_subs.ctx)
-		return;
+		return ;
 	i = 0;
 	while (i < state->proc_subs.len)
 	{
@@ -39,7 +39,7 @@ void	cleanup_proc_subs(t_shell *state)
 	int				status;
 
 	if (!state->proc_subs.ctx)
-		return;
+		return ;
 	i = 0;
 	while (i < state->proc_subs.len)
 	{

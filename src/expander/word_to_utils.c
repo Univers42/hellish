@@ -28,10 +28,7 @@ t_string	word_to_hrdoc_string(t_ast_node node)
 			|| curr.tt == TT_DQWORD)
 			vec_push_nstr(&s, curr.start, curr.len);
 		else if (curr.tt == TT_DQENVVAR || curr.tt == TT_ENVVAR)
-		{
-			char ch = '$'; vec_push(&s, &ch);
-			vec_push_nstr(&s, curr.start, curr.len);
-		}
+			(vec_push_char(&s, '$'), vec_push_nstr(&s, curr.start, curr.len));
 		else
 			ft_assert("Unreachable" == 0);
 		i++;

@@ -12,16 +12,14 @@
 
 #include "expander_private.h"
 
-void expand_word(t_shell *state, t_ast_node *node,
-				 t_vec *args, bool keep_as_one)
+void	expand_word(t_shell *state, t_ast_node *node,
+					t_vec *args, bool keep_as_one)
 {
-	t_vec_nd words;
-	size_t i;
+	t_vec_nd	words;
+	size_t		i;
 
-	expand_tilde_word(state, node);
-	expand_cmd_substitutions(state, node);
-	expand_env_vars(state, node);
-	vec_init(&words);
+	(expand_tilde_word(state, node), expand_cmd_substitutions(state, node));
+	(expand_env_vars(state, node), vec_init(&words));
 	words.elem_size = sizeof(t_ast_node);
 	if (!keep_as_one)
 		words = split_words(state, node);
@@ -30,20 +28,18 @@ void expand_word(t_shell *state, t_ast_node *node,
 		vec_push(&words, node);
 		*node = (t_ast_node){};
 	}
-	i = 0;
-	while (i < words.len)
+	i = -1;
+	while (++i < words.len)
 	{
 		expand_node_glob(&((t_ast_node *)words.ctx)[i], args, keep_as_one);
 		if (get_g_sig()->should_unwind)
 			while (i < words.len)
 				free_ast(&((t_ast_node *)words.ctx)[i++]);
 		if (get_g_sig()->should_unwind)
-			break;
-		i++;
+			break ;
 	}
-	free(words.ctx);
-	free_ast(node);
-	return;
+	(free(words.ctx), free_ast(node));
+	return ;
 }
 
 char	*expand_proc_sub(t_shell *state, t_ast_node *node)
@@ -63,15 +59,11 @@ char	*expand_proc_sub(t_shell *state, t_ast_node *node)
 	if (!cmd_str.ctx)
 		return (ft_strdup("/dev/null"));
 	if (!vec_ensure_space_n(&cmd_str, 1))
-	{
-		free(cmd_str.ctx);
-		return (NULL);
-	}
+		return (free(cmd_str.ctx), NULL);
 	((char *)cmd_str.ctx)[cmd_str.len] = '\0';
 	if (is_input)
 		result = create_procsub_input(state, (char *)cmd_str.ctx);
 	else
 		result = create_procsub_output(state, (char *)cmd_str.ctx);
-	free(cmd_str.ctx);
-	return (result);
+	return (free(cmd_str.ctx), result);
 }

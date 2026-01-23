@@ -16,7 +16,7 @@
 static char	*dup_key_from_node(t_ast_node *node)
 {
 	return (ft_strndup(
-		((t_ast_node *)node->children.ctx)[0].token.start,
+			((t_ast_node *)node->children.ctx)[0].token.start,
 		((t_ast_node *)node->children.ctx)[0].token.len
 	));
 }
