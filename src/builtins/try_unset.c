@@ -12,18 +12,18 @@
 
 #include "builtins_private.h"
 
-void try_unset(t_shell *state, char *key)
+void	try_unset(t_shell *state, char *key)
 {
-	t_env *e;
-	size_t idx;
-	t_env *arr;
-	size_t i;
+	t_env	*e;
+	size_t	idx;
+	t_env	*arr;
+	size_t	i;
 
 	if (!state || state->env.ctx == NULL)
-		return;
+		return ;
 	e = env_get(&state->env, key);
 	if (!e)
-		return;
+		return ;
 	arr = (t_env *)state->env.ctx;
 	idx = (size_t)(e - arr);
 	free(arr[idx].key);
@@ -35,17 +35,4 @@ void try_unset(t_shell *state, char *key)
 		i++;
 	}
 	state->env.len--;
-}
-
-int builtin_unset(t_shell *state, t_vec argv)
-{
-	size_t i;
-
-	i = 1;
-	while (i < argv.len)
-	{
-		try_unset(state, ((char **)argv.ctx)[i]);
-		i++;
-	}
-	return (0);
 }
