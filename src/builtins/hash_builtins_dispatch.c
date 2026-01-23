@@ -30,5 +30,5 @@ int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
 
 	if (!h.ctx)
 		init_builtin_hash(&h);
-	return (builtin_fn_t)hash_get(&h, name);
+	return ((builtin_fn_t)hash_get(&h, name));
 }
