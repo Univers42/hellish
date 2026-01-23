@@ -1,4 +1,5 @@
-build/obj/builtins/echo.o: src/builtins/echo.c \
+build/obj/builtins/collect_and_print_exported.o: \
+ src/builtins/collect_and_print_exported.c \
  src/builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \

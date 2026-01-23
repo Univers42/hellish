@@ -1,4 +1,4 @@
-build/obj/builtins/pwd.o: src/builtins/pwd.c \
+build/obj/builtins/core_builtins.o: src/builtins/core_builtins.c \
  src/builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \

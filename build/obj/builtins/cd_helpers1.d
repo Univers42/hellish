@@ -1,4 +1,4 @@
-build/obj/builtins/cd.o: src/builtins/cd.c \
+build/obj/builtins/cd_helpers1.o: src/builtins/cd_helpers1.c \
  src/builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \

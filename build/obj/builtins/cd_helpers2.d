@@ -1,6 +1,6 @@
-build/obj/expander/expander.o: src/expander/expander.c \
- src/expander/expander_private.h vendor/libft/libft.h \
- vendor/libft/include/ds.h \
+build/obj/builtins/cd_helpers2.o: src/builtins/cd_helpers2.c \
+ src/builtins/builtins_private.h incs/shell.h incs/alias.h \
+ vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
  vendor/libft/include/../srcs/ds/doubly_linked_list/ft_doubly_list.h \
  vendor/libft/include/../srcs/ds/circular_linked_list/ft_circular_list.h \
@@ -40,13 +40,14 @@ build/obj/expander/expander.o: src/expander/expander.c \
  vendor/libft/include/../srcs/ipc/signals/quit.h \
  vendor/libft/include/../srcs/ipc/signals/trap.h \
  vendor/libft/include/system.h vendor/libft/include/ft_wctype.h \
- incs/shell.h incs/alias.h vendor/libft/include/ft_printf.h \
- incs/public/signals.h incs/public/error.h incs/ast.h incs/public/token.h \
- incs/executor.h incs/public/executor_types.h incs/redir.h incs/history.h \
- incs/shell.h incs/prompt.h incs/env.h incs/helpers.h incs/expander.h \
- incs/env.h incs/ft_glob.h incs/lexer.h incs/public/token.h \
- incs/helpers.h incs/arith.h
-src/expander/expander_private.h:
+ vendor/libft/include/ft_printf.h incs/public/signals.h \
+ incs/public/error.h incs/ast.h incs/public/token.h incs/executor.h \
+ incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
+ incs/prompt.h incs/env.h incs/helpers.h incs/ft_builtins.h \
+ incs/helpers.h incs/input.h
+src/builtins/builtins_private.h:
+incs/shell.h:
+incs/alias.h:
 vendor/libft/libft.h:
 vendor/libft/include/ds.h:
 vendor/libft/include/../srcs/ds/lists/ft_list.h:
@@ -99,8 +100,6 @@ vendor/libft/include/../srcs/ipc/signals/quit.h:
 vendor/libft/include/../srcs/ipc/signals/trap.h:
 vendor/libft/include/system.h:
 vendor/libft/include/ft_wctype.h:
-incs/shell.h:
-incs/alias.h:
 vendor/libft/include/ft_printf.h:
 incs/public/signals.h:
 incs/public/error.h:
@@ -114,10 +113,6 @@ incs/shell.h:
 incs/prompt.h:
 incs/env.h:
 incs/helpers.h:
-incs/expander.h:
-incs/env.h:
-incs/ft_glob.h:
-incs/lexer.h:
-incs/public/token.h:
+incs/ft_builtins.h:
 incs/helpers.h:
-incs/arith.h:
+incs/input.h:

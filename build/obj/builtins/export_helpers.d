@@ -1,4 +1,4 @@
-build/obj/builtins/unset.o: src/builtins/unset.c \
+build/obj/builtins/export_helpers.o: src/builtins/export_helpers.c \
  src/builtins/builtins_private.h incs/shell.h incs/alias.h \
  vendor/libft/libft.h vendor/libft/include/ds.h \
  vendor/libft/include/../srcs/ds/lists/ft_list.h \
