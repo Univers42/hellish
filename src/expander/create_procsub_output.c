@@ -60,7 +60,7 @@ char	*create_procsub_output(t_shell *state, const char *cmd)
 		return (NULL);
 	}
 	close(pipefd[0]);
-	snprintf(buf, sizeof(buf), "/dev/fd/%d", pipefd[1]);
+	ft_snprintf(buf, sizeof(buf), "/dev/fd/%d", pipefd[1]);
 	entry.pid = pid;
 	entry.fd = pipefd[1];
 	entry.path = ft_strdup(buf);

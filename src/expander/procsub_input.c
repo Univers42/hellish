@@ -61,7 +61,7 @@ char	*create_procsub_input(t_shell *state, const char *cmd)
 		return (NULL);
 	}
 	close(pipefd[1]);
-	snprintf(buf, sizeof(buf), "/dev/fd/%d", pipefd[0]);
+	ft_snprintf(buf, sizeof(buf), "/dev/fd/%d", pipefd[0]);
 	entry.pid = pid;
 	entry.fd = pipefd[0];
 	entry.path = ft_strdup(buf);
