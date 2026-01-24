@@ -28,7 +28,7 @@ void	exit_clean(t_shell *state, int code)
 {
 	char	*pid_s;
 
-	pid_s = getpid_hack();
+	pid_s = xgetpid();
 	if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
 		(manage_history(state), free_all_state(state));
 	(free(pid_s), exit(code));

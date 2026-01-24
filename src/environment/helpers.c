@@ -13,6 +13,7 @@
 #include "shell.h"
 #include "env.h"
 #include "libft.h"
+#include "sys.h"
 
 void	init_cwd(t_shell *state)
 {
@@ -23,10 +24,7 @@ void	init_cwd(t_shell *state)
 	if (cwd)
 		vec_push_str(&state->cwd, cwd);
 	else
-		ft_eprintf("shell-init: error retrieving current directory:"
-			" getcwd: cannot access parent directories:"
-			" No such file or directory\nsh: 0: "
-			"getcwd() failed: No such file or directory\n");
+		ft_eprintf(MSG_GETCWD_SHINIT);
 	free(cwd);
 }
 
@@ -35,13 +33,13 @@ void	set_home(t_shell *state)
 	t_env	*e;
 	char	*cwd;
 
-	e = env_get(&state->env, "HOME");
+	e = env_get(&state->env, HOME);
 	if (!e || !e->value || !e->value[0])
 	{
 		cwd = getcwd(NULL, 0);
 		if (!cwd)
-			cwd = ft_strdup("/tmp");
-		env_set(&state->env, env_create(ft_strdup("HOME"),
+			cwd = ft_strdup(TMP_DIR);
+		env_set(&state->env, env_create(ft_strdup(HOME),
 				ft_strdup(cwd), true));
 		free(cwd);
 	}
@@ -56,10 +54,7 @@ void	set_cwd(t_shell *state)
 	if (cwd)
 		vec_push_str(&state->cwd, cwd);
 	else
-		ft_eprintf("shell-init: error retrieving current directory:"
-			" getcwd: cannot access parent directories:"
-			" No such file or directory\nsh: 0: "
-			"getcwd() failed: No such file or directory\n");
+		ft_eprintf(MSG_GETCWD_SHINIT);
 	free(cwd);
 }
 
@@ -69,10 +64,10 @@ void	set_shlvl(t_shell *state)
 	int		lvl;
 	char	buf[16];
 
-	e = env_get(&state->env, "SHLVL");
+	e = env_get(&state->env, SHLVL);
 	if (!e || !e->value || !e->value[0])
 	{
-		env_set(&state->env, env_create(ft_strdup("SHLVL"),
+		env_set(&state->env, env_create(ft_strdup(SHLVL),
 				ft_strdup("1"), true));
 	}
 	else
@@ -83,7 +78,7 @@ void	set_shlvl(t_shell *state)
 		else
 			lvl = 1;
 		ft_snprintf(buf, sizeof(buf), "%d", lvl);
-		env_set(&state->env, env_create(ft_strdup("SHLVL"),
+		env_set(&state->env, env_create(ft_strdup(SHLVL),
 				ft_strdup(buf), true));
 	}
 }

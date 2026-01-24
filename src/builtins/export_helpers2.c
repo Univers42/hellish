@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins_private.h"
+#include "helpers.h"
 
 /* helper: parse current argv element, consume following value,
 	expand and dispatch */
@@ -48,11 +49,11 @@ int	process_arg(t_shell *st, t_vec av, int *ip)
 	i = *ip;
 	arg0 = ((char **)av.ctx)[0];
 	if (!av.ctx || i >= (int)av.len)
-		return (ft_eprintf("[DEBUG export] missing argv"
-				" element at index %d\n", i), 1);
+		return (verbose(CLAP_ERROR, ":[DEBUG export] missing "
+			"argv element at index %d\n", i), 1);
 	cur = ((char **)av.ctx)[i];
-	(void)cur;
 	return (handle_parsed_export_arg(st, av, ip, arg0));
+	(void)cur;
 }
 
 /* handle identifier: set env or mark exported or print error

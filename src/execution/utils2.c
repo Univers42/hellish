@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:50:27 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 16:50:51 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:27:52 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
@@ -34,5 +35,5 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 		ft_eprintf(MSG_REDIR_DATA_ERR, state->context);
 	else
 		ft_eprintf(MSG_REDIR_DATA_ERR, "shell");
-	_exit(1);
+	exit(EXIT_GENERAL_ERR);
 }

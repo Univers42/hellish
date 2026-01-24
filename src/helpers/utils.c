@@ -18,15 +18,6 @@
 #include "libft.h"
 #include <stdarg.h>
 
-void	free_tab(char **tab)
-{
-	int	i;
-
-	i = 0;
-	while (tab[i])
-		free(tab[i++]);
-	free(tab);
-}
 
 // 0 on success
 int	write_to_file(char *str, int fd)
@@ -58,9 +49,9 @@ void	forward_exit_status(t_exe_res res)
 	{
 		default_signal_handlers();
 		raise(SIGINT);
-		_exit(128 + SIGINT);
+		exit(128 + SIGINT);
 	}
-	_exit(res.status);
+	exit(res.status);
 }
 
 void	set_cmd_status(t_shell *state, t_exe_res res)

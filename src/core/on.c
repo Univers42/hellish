@@ -55,7 +55,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	buff_readline_init(&state->readline_buff);
 	vec_init(&state->readline_buff.buff);
 	state->readline_buff.buff.elem_size = 1;
-	state->pid = getpid_hack();
+	state->pid = xgetpid();
 	state->context = ft_strdup(argv[0]);
 	state->base_context = ft_strdup(argv[0]);
 	set_cmd_status(state, res_status(0));

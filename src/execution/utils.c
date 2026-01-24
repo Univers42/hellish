@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   utils.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:07:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 17:50:43 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/24 19:27:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
 {
@@ -21,7 +22,7 @@ void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
 		last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
 		if (last)
 			env_set(&state->env,
-				env_create(ft_strdup("_"), ft_strdup(last), true));
+				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
 	}
 }
 
@@ -40,7 +41,7 @@ void	apply_redir(t_shell *state, int idx)
 			ft_eprintf(MSG_INT_ERR_REDIR_IDX, state->context, idx);
 		else
 			ft_eprintf(MSG_INT_ERR_REDIR_IDX, NAME, idx);
-		_exit(1);
+		exit(EXIT_GENERAL_ERR);
 	}
 	redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
 	dup2(redir.fd, redir.src_fd);
@@ -75,7 +76,7 @@ void	apply_redirs_from_ast(t_shell *state, t_executable_node *exe)
 		if (redirect_from_ast_redir(state, curr, &idx))
 		{
 			ft_eprintf(MSG_AMBIGUOUS_REDIR, state->context);
-			_exit(1);
+			exit(EXIT_GENERAL_ERR);
 		}
 		apply_redir(state, idx);
 	}

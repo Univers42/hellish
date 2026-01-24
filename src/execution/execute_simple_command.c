@@ -41,7 +41,7 @@ static t_exe_res	handle_empty_command(t_shell *state,
 						t_executable_cmd *cmd,
 						t_executable_node *exe)
 {
-	ft_eprintf("%s: : command not found\n", state->context);
+	ft_eprintf("%s: command not found\n", state->context);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res_status(COMMAND_NOT_FOUND));

@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:12:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 17:08:37 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:26:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 static void	preserve_errno_exec_failed(t_shell *state, char **path_of_exe,
 									t_vec *args, char **envp)
@@ -40,7 +41,7 @@ int	actually_run(t_shell *state, t_vec *args)
 	if (status != 0)
 		return (status);
 	env_set(&state->env,
-		env_create(ft_strdup("_"), ft_strdup(path_of_exe), true));
+		env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(path_of_exe), true));
 	envp = get_envp(state, path_of_exe);
 	try_exec_with_fallback(path_of_exe, args, envp);
 	preserve_errno_exec_failed(state, &path_of_exe, args, envp);
