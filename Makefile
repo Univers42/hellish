@@ -127,11 +127,14 @@ norm:
 	    printf "\r\033[K  \033[1;31m✗\033[0m \033[1;37mNORM VIOLATIONS:\033[0m\n\n\033[37m%s\033[0m\n\n" "$$output"; \
 	fi
 
+
 my_shell:
-	@echo "Installing hellish shell.."
+	@echo "Installing hellish shell..."
 	sudo install -m 755 build/bin/minishell /usr/bin/hellish
-	chmod +x vendor/scripts/register_shell.sh
+	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
-	
+	@echo "Done. Log out and log back in to use hellish as your default shell."
+	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
+
 
 .PHONY: test re all clean fclean norm my_shell help
