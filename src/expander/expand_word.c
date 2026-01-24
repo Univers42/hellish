@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 void	expand_word(t_shell *state, t_ast_node *node,
 					t_vec *args, bool keep_as_one)
@@ -57,7 +58,7 @@ char	*expand_proc_sub(t_shell *state, t_ast_node *node)
 	is_input = (tok->tt == TT_PROC_SUB_IN);
 	cmd_str = word_to_string(*cmd_word);
 	if (!cmd_str.ctx)
-		return (ft_strdup("/dev/null"));
+		return (ft_strdup(BLACK_HOLE));
 	if (!vec_ensure_space_n(&cmd_str, 1))
 		return (free(cmd_str.ctx), NULL);
 	((char *)cmd_str.ctx)[cmd_str.len] = '\0';

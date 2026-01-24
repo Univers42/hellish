@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "lexer.h"
+#include "sys.h"
 
 /* Capture original full token when safe 
 (assignment child's original word or word node) */
@@ -49,7 +50,7 @@ static void	replace_argv_entries_with_full_token(t_vec *argv,
 	while (ai < argv->len)
 	{
 		s = ((char **)argv->ctx)[ai];
-		if (s && s[0] && s[ft_strlen(s) - 1] == '=')
+		if (s && s[0] && s[ft_strlen(s) - 1] == EQ)
 		{
 			orig = ft_strndup(full.start, full.len);
 			free(((char **)argv->ctx)[ai]);

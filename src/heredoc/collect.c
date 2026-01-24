@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "heredoc_private.h"
+#include "sys.h"
 
 // returns writable fd
 int	ft_mktemp(t_shell *state, t_ast_node *node)
@@ -20,12 +21,12 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	int			wr_fd;
 	t_string	fname;
 
-	ret = (t_redir){.direction_in = true, .should_delete = true, .src_fd = 0};
+	ret = create_redir(true, 0, true);
 	vec_init(&fname);
-	vec_push_str(&fname, "/tmp/heredoc_");
+	vec_push_str(&fname, TMP_HC_DIR);
 	if (state->pid)
 		vec_push_str(&fname, state->pid);
-	vec_push_str(&fname, "_");
+	vec_push_str(&fname, ULTIMATE_ARG);
 	temp = ft_itoa(state->heredoc_idx++);
 	vec_push_str(&fname, temp);
 	ret.fname = (char *)fname.ctx;
@@ -66,7 +67,7 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 			.expand = !contains_quotes(((t_ast_node *)node->children.ctx)[1]),
 			.remove_tabs
 			= ft_strncmp(((t_ast_node *)node->children.ctx)[0].token.start,
-				"<<-", 3)
+				STRIP_HEREDOC, 3)
 			== 0,
 			.is_pipe_heredoc = is_pipe
 		};

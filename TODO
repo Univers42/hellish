@@ -17,3 +17,4 @@ hello
 
 # PROHIBITED
 S_ISDIR
+raise()

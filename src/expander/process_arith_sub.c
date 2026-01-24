@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 12:54:20 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 13:24:23 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 20:10:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 // helper: finalize arithmetic substitution handling
 
@@ -39,7 +40,7 @@ bool	process_arith_sub(t_shell *state, t_expand_ctx *ctx)
 		return (false);
 	depth = 2;
 	j = 3;
-	if (slen < 4 || s[0] != '$' || s[1] != '(' || s[2] != '(')
+	if (slen < 4 || s[0] != IS_DOLLAR || s[1] != LPAREN || s[2] != LPAREN)
 		return (false);
 	while (j < slen && depth > 0)
 		proc_arith(slen, s, &j, &depth);

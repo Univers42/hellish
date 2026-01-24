@@ -69,7 +69,7 @@ build/obj/expander/expand_tilde_word.o: src/expander/expand_tilde_word.c \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
  incs/prompt.h incs/env.h incs/helpers.h incs/expander.h incs/env.h \
  incs/ft_glob.h incs/lexer.h incs/public/token.h incs/helpers.h \
- incs/arith.h
+ incs/arith.h incs/sys.h
 src/expander/expander_private.h:
 vendor/libft/libft.h:
 vendor/libft/./include/ds.h:
@@ -169,3 +169,4 @@ incs/lexer.h:
 incs/public/token.h:
 incs/helpers.h:
 incs/arith.h:
+incs/sys.h:

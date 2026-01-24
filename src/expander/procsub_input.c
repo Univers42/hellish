@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 /* fork child, wire child's stdout to pipefd[1],
 exec preferred binary then /bin/sh */
@@ -18,9 +19,9 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 						const char *cmd)
 {
 	pid_t		pid;
-	char *const	argv_ms[] = {(char *)"/proc/self/exe", (char *)"-c",
+	char *const	argv_ms[] = {(char *)PROC_SELF_EXE, (char *)CMD_OPT,
 		(char *)cmd, NULL};
-	char *const	argv_sh[] = {(char *)"/bin/sh", (char *)"-c",
+	char *const	argv_sh[] = {(char *)PATH_HELLISH, (char *)CMD_OPT,
 		(char *)cmd, NULL};
 	char		**envp;
 
@@ -32,9 +33,9 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		envp = get_envp(state, "/proc/self/exe");
-		execve("/proc/self/exe", argv_ms, envp);
-		execve("/bin/sh", argv_sh, envp);
+		envp = get_envp(state, PROC_SELF_EXE);
+		execve(PROC_SELF_EXE, argv_ms, envp);
+		execve(PATH_HELLISH, argv_sh, envp);
 		if (envp)
 			free_tab(envp);
 		exit(127);
@@ -50,7 +51,7 @@ char	*create_procsub_input(t_shell *state, const char *cmd)
 	t_procsub_entry	entry;
 
 	if (!cmd || !*cmd)
-		return (ft_strdup("/dev/null"));
+		return (ft_strdup(BLACK_HOLE));
 	if (pipe(pipefd) == -1)
 		return (NULL);
 	pid = fork_and_exec_procsub_input(state, pipefd, cmd);

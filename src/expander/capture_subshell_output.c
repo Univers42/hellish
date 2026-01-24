@@ -11,12 +11,13 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
 {
 	pid_t		pid;
 	char *const	argv[]
-		= {(char *)"/bin/sh", (char *)"-c", (char *)cmd, NULL};
+		= {(char *)PATH_HELLISH, (char *)"-c", (char *)cmd, NULL};
 	char		**envp;
 
 	pid = fork();
@@ -27,8 +28,8 @@ static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		envp = get_envp(state, "/bin/sh");
-		execve("/bin/sh", argv, envp);
+		envp = get_envp(state, PATH_HELLISH);
+		execve(PATH_HELLISH, argv, envp);
 		if (envp)
 			free_tab(envp);
 		exit(127);
@@ -53,7 +54,7 @@ static char	*read_pipe_and_wait(pid_t pid, int readfd)
 	if (!ret)
 		return (free(out.ctx), ft_strdup(""));
 	if (out.len)
-		memcpy(ret, out.ctx, out.len);
+		ft_memcpy(ret, out.ctx, out.len);
 	ret[out.len] = '\0';
 	nlen = out.len;
 	while (nlen > 0 && ret[nlen - 1] == '\n')

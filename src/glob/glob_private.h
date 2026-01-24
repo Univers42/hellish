@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 10:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 13:13:23 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 20:22:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 # include <dirent.h>
 # include <stdlib.h>
 # include <string.h>
-
+# include "sys.h"
 /* struct describing POSIX classes */
 struct s_classes
 {
@@ -71,27 +71,18 @@ typedef struct s_bracket_ctx	t_bracket_ctx;
 static inline const struct s_classes	*get_classes_singleton(void)
 {
 	static const struct s_classes	classes[] = {
-	{"[:alnum:]", 9, "0123456789ABCDEFGHIJKLMNO"
-		"PQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"},
-	{"[:alpha:]", 9, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		"abcdefghijklmnopqrstuvwxyz"},
-	{"[:digit:]", 9, "0123456789"},
-	{"[:lower:]", 9, "abcdefghijklmnopqrstuvwxyz"},
-	{"[:upper:]", 9, "ABCDEFGHIJKLMNOPQRSTUVWXYZ"},
-	{"[:space:]", 9, " \t\n\r\f\v"},
-	{"[:blank:]", 9, " \t"},
-	{"[:punct:]", 9, "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"},
-	{"[:xdigit:]", 10, "0123456789ABCDEFabcdef"},
-	{"[:cntrl:]", 9, "\001\002\003\004\005\006\007\010"
-		"\011\012\013\014\015"
-		"\016\017\020\021\022\023\024\025\026\027\030"
-		"\031\032\033\034\035\036\037\177"},
-	{"[:graph:]", 9, "!\"#$%&'()*+,-./0123456789:;<=>?@"
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^"
-		"_`abcdefghijklmnopqrstuvwxyz{|}~"},
-	{"[:print:]", 9, " !\"#$%&'()*+,-./0123456789:;"
-		"<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]"
-		"^_`abcdefghijklmnopqrstuvwxyz{|}~"},
+	{CLASSE_ALNUM, 9, PAT_ALNUM},
+	{CLASSE_ALPHA, 9, PAT_ALPHA},
+	{CLASSE_DIGIT, 9, PAT_DIGIT},
+	{CLASSE_LOWER, 9, PAT_LOWER},
+	{CLASSE_UPPER, 9, PAT_UPPER},
+	{CLASSE_SPACE, 9, PAT_SPACE},
+	{CLASSE_BLANK, 9, PAT_BLANK},
+	{CLASSE_PUNCT, 9, PAT_PUNCT},
+	{CLASSE_XDIGIT, 10, PAT_XDIGIT},
+	{CLASSE_CNTRL, 9, PAT_CNTRL},
+	{CLASSE_GRAPH, 9, PAT_GRAPH},
+	{CLASSE_PRINT, 9, PAT_PRINT},
 	{NULL, 0, NULL}};
 
 	return (classes);

@@ -30,7 +30,7 @@ t_string	word_to_hrdoc_string(t_ast_node node)
 		else if (curr.tt == TT_DQENVVAR || curr.tt == TT_ENVVAR)
 			(vec_push_char(&s, '$'), vec_push_nstr(&s, curr.start, curr.len));
 		else
-			ft_assert("Unreachable" == 0);
+			ft_assert(0);
 		i++;
 	}
 	return (s);

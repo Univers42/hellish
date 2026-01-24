@@ -12,7 +12,7 @@
 
 #include "expander_private.h"
 
-bool	create_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
+bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");
 	ret->fname = fname;

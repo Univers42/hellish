@@ -80,7 +80,7 @@ void	loop_node_rp(t_reparser *rp)
 			reparse_envvar(&rp->current_node, &rp->i,
 				rp->current_token, TT_ENVVAR);
 		else if (is_space(rp->current_token.start[rp->i]))
-			ft_assert("Unreachable" == 0);
+			ft_assert(0);
 		else
 			reparse_norm_word(&rp->current_node, &rp->i, rp->current_token);
 	}

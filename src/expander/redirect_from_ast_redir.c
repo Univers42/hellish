@@ -57,11 +57,10 @@ static int	commit_redir(t_shell *state,
 	full_token
 		= get_old_token(((t_ast_node *)curr->children.ctx)[1]);
 	fname = expand_redir_fname(state, curr);
-	if (!create_redir(tt, fname, &new_redir, src_fd))
+	if (!create_redir_4(tt, fname, &new_redir, src_fd))
 	{
 		print_redir_err(state, full_token, fname);
-		free(fname);
-		return (-1);
+		return (free(fname), -1);
 	}
 	curr->redir_idx = state->redirects.len;
 	curr->has_redirect = true;

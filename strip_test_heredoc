@@ -1,0 +1,8 @@
+cat <<-EOF | sed -n 'l'
+	hello
+EOF
+
+#dlesieur@dlesieur42:~/Documents/42_school/shell/sh42$ hellish strip_test_heredoc 
+#\thello$
+#dlesieur@dlesieur42:~/Documents/42_school/shell/sh42$ hellish strip_test_heredoc
+#hello$
