@@ -13,7 +13,7 @@
 #include "expander_private.h"
 
 /* initialize executable cmd return struct (vectors & elem_size) */
-static void init_executable_cmd(t_executable_cmd *ret)
+static void	init_executable_cmd(t_executable_cmd *ret)
 {
 	*ret = (t_executable_cmd){};
 	vec_init(&ret->pre_assigns);
@@ -23,10 +23,10 @@ static void init_executable_cmd(t_executable_cmd *ret)
 }
 
 /* If no argv produced but pre_assigns present, transfer them into shell env */
-static void apply_pre_assigns_if_assignment_only(t_shell *state,
-												 t_executable_cmd *ret)
+static void	apply_pre_assigns_if_assignment_only(t_shell *state,
+												t_executable_cmd *ret)
 {
-	t_env tmp;
+	t_env	tmp;
 
 	if (ret->argv.len == 0 && ret->pre_assigns.len > 0)
 	{
@@ -41,10 +41,10 @@ static void apply_pre_assigns_if_assignment_only(t_shell *state,
 }
 
 /* node -> expanded executable cmd (concise, delegates to helpers) */
-int expand_simple_command(t_shell *state, t_ast_node *node,
-						  t_executable_cmd *ret, t_vec_int *redirects)
+int	expand_simple_command(t_shell *state, t_ast_node *node,
+						t_executable_cmd *ret, t_vec_int *redirects)
 {
-	t_expander_simple_cmd exp;
+	t_expander_simple_cmd	exp;
 
 	if (node == NULL || node->children.len == 0 || node->children.ctx == NULL)
 		return (1);
