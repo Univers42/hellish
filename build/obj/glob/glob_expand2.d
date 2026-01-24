@@ -68,7 +68,7 @@ build/obj/glob/glob_expand2.o: src/glob/glob_expand2.c \
  incs/public/signals.h incs/public/error.h incs/ast.h incs/public/token.h \
  incs/executor.h incs/public/executor_types.h incs/redir.h incs/history.h \
  incs/shell.h incs/prompt.h incs/lexer.h incs/expander.h incs/helpers.h \
- incs/env.h
+ incs/env.h incs/sys.h
 src/glob/glob_private.h:
 incs/ft_glob.h:
 vendor/libft/libft.h:
@@ -166,3 +166,4 @@ incs/lexer.h:
 incs/expander.h:
 incs/helpers.h:
 incs/env.h:
+incs/sys.h:

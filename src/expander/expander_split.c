@@ -28,7 +28,7 @@ static void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
 {
 	if (cust_act_bef_reset)
 		cust_act_bef_reset(ptr);
-	memset(ptr, 0, size);
+	ft_memset(ptr, 0, size);
 }
 
 /* free children.ctx pointer of an ast node prior to zeroing the node */
@@ -65,7 +65,7 @@ t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 			|| curr_t->tt == TT_DQWORD || curr_t->tt == TT_DQENVVAR)
 			push_token_node(&curr_node, &((t_ast_node *)node->children.ctx)[i]);
 		else
-			ft_assert("Unreachable" == 0);
+			ft_assert(0);
 	}
 	if (curr_node.children.len)
 		vec_push(&ret, &curr_node);

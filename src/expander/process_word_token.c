@@ -6,19 +6,20 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 12:54:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 13:38:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 20:10:54 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 static bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
 {
 	const char		*s = ctx->tok->start + ctx->pos;
 	int				consumed;
 	const bool		result
-		= (ctx->pos + 2 < ctx->total_len && s[0] == '$'
-			&& s[1] == '(' && s[2] == '(');
+		= (ctx->pos + 2 < ctx->total_len && s[0] == IS_DOLLAR
+			&& s[1] == LPAREN && s[2] == LPAREN);
 	t_expand_ctx	ectx;
 
 	if (result)
@@ -44,7 +45,7 @@ static bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
 	t_expand_ctx	ectx;
 	int				consumed;
 
-	if (ctx->pos + 1 < ctx->total_len && s[0] == '$' && s[1] == '(')
+	if (ctx->pos + 1 < ctx->total_len && s[0] == IS_DOLLAR && s[1] == LPAREN)
 	{
 		consumed = 0;
 		ectx = init_expand(s, ctx->total_len - ctx->pos,

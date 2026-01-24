@@ -42,13 +42,17 @@ int	write_to_file(char *str, int fd)
 	return (0);
 }
 
+/**
+ * in forward exist status I've deleted raise() because I
+ * don't see the point of raising SIGINT just before exiting
+ * with the appropriate exit code.
+ */
 void	forward_exit_status(t_exe_res res)
 {
 	ft_assert(res.status != -1);
 	if (res.c_c)
 	{
 		default_signal_handlers();
-		raise(SIGINT);
 		exit(128 + SIGINT);
 	}
 	exit(res.status);

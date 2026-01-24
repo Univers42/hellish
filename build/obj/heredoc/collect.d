@@ -67,7 +67,8 @@ build/obj/heredoc/collect.o: src/heredoc/collect.c \
  incs/shell.h incs/alias.h incs/public/signals.h incs/public/error.h \
  incs/ast.h incs/public/token.h incs/executor.h \
  incs/public/executor_types.h incs/redir.h incs/history.h incs/shell.h \
- incs/prompt.h incs/redir.h incs/env.h incs/helpers.h incs/helpers.h
+ incs/prompt.h incs/redir.h incs/env.h incs/helpers.h incs/helpers.h \
+ incs/sys.h
 src/heredoc/heredoc_private.h:
 vendor/libft/libft.h:
 vendor/libft/./include/ds.h:
@@ -162,3 +163,4 @@ incs/redir.h:
 incs/env.h:
 incs/helpers.h:
 incs/helpers.h:
+incs/sys.h:

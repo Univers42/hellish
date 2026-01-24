@@ -68,7 +68,7 @@ build/obj/expander/expand_export_value.o: \
  incs/public/signals.h incs/public/error.h incs/ast.h incs/public/token.h \
  incs/executor.h incs/public/executor_types.h incs/redir.h incs/history.h \
  incs/shell.h incs/prompt.h incs/env.h incs/helpers.h incs/ft_builtins.h \
- incs/helpers.h incs/sh_input.h
+ incs/helpers.h incs/sh_input.h incs/sys.h
 src/expander/../builtins/builtins_private.h:
 incs/shell.h:
 incs/alias.h:
@@ -164,3 +164,4 @@ incs/helpers.h:
 incs/ft_builtins.h:
 incs/helpers.h:
 incs/sh_input.h:
+incs/sys.h:

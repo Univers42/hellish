@@ -65,7 +65,7 @@ void	expand_env_vars(t_shell *state, t_ast_node *node)
 		else if (curr_tt->tt == TT_DQENVVAR || curr_tt->tt == TT_ENVVAR)
 			process_env_token(state, node, curr_tt, i);
 		else
-			ft_assert("Unreachable" == 0);
+			ft_assert(0);
 		i++;
 	}
 }

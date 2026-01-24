@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 14:04:51 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 17:07:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:58:11 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../builtins/builtins_private.h"
+#include "sys.h"
 
 // Helper: Append a variable expansion to the output buffer
 static void	append_var_expansion(t_shell *st, t_string *out,
@@ -38,7 +39,7 @@ static void	expand_vars_to_buffer(t_shell *st, t_string *out, char *val)
 	i = 0;
 	while (val[i])
 	{
-		if (val[i] == '$' && is_var_name_p1(val[i + 1]))
+		if (val[i] == IS_DOLLAR && is_var_name_p1(val[i + 1]))
 		{
 			start = ++i;
 			while (is_var_name_p2(val[i]))

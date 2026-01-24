@@ -72,6 +72,6 @@ int	get_more_input_readline(t_buff_readline *l, char *prompt)
 		critical_error_errno_context("fork");
 	else
 		return (attach_input_readline(l, pp, pid));
-	ft_assert("Unreachable" == 0);
+	ft_assert(0);
 	return (0);
 }

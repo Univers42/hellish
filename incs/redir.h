@@ -63,4 +63,16 @@ static inline t_heredoc_req	create_heredoc(char *sep, bool expand,
 			.is_pipe_heredoc = is_pipe_heredoc
 		});
 }
+
+static inline t_redir create_redir(bool direction_in, int src_fd,
+								bool should_delete)
+{
+	return ((t_redir){
+		.direction_in = direction_in,
+		.fd = 0,
+		.src_fd = src_fd,
+		.fname = NULL,
+		.should_delete = should_delete
+	});
+}
 #endif

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 void	expand_tilde_token(t_shell *state, t_token *t)
 {
@@ -19,13 +20,13 @@ void	expand_tilde_token(t_shell *state, t_token *t)
 	t_string	s;
 
 	template_len = 2;
-	if (token_starts_with(*t, "~+"))
-		env_val = env_expand(state, "PWD");
-	else if (token_starts_with(*t, "~-"))
-		env_val = env_expand(state, "OLDPWD");
+	if (token_starts_with(*t, CUR_DIR))
+		env_val = env_expand(state, PWD);
+	else if (token_starts_with(*t, BEFORE))
+		env_val = env_expand(state, OLDPWD);
 	else
 	{
-		env_val = env_expand(state, "HOME");
+		env_val = env_expand(state, HOME);
 		template_len = 1;
 	}
 	if (!env_val)

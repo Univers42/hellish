@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 16:43:51 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 20:12:58 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ char	*node_name(t_ast_t tn)
 		return ("AST_ASSIGNMENT_WORD");
 	if (tn == AST_PROC_SUB)
 		return ("AST_PROC_SUB");
-	ft_assert("Unreachable" == 0);
+	ft_assert(0);
 	return (0);
 }
 
