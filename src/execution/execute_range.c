@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:26:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 16:27:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:28:13 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ t_exe_res	execute_range_background(t_shell *state, t_executable_node *exe,
 		(signal(SIGTSTP, SIG_IGN), signal(SIGTTIN, SIG_IGN));
 		signal(SIGTTOU, SIG_IGN);
 		res = execute_range(state, exe, start, end);
-		_exit(res.status);
+		exit(res.status);
 	}
 	if (pid < 0)
 		critical_error_errno_context("fork");

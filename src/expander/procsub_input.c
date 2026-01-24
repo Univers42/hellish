@@ -37,7 +37,7 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 		execve("/bin/sh", argv_sh, envp);
 		if (envp)
 			free_tab(envp);
-		_exit(127);
+		exit(127);
 	}
 	return (pid);
 }

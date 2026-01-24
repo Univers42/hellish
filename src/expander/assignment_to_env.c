@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sys.h"
 
 /* duplicate LHS key from assignment node */
 static char	*dup_key_from_node(t_ast_node *node)
@@ -47,10 +48,10 @@ static char	*trim_leading_equals(char *s)
 	size_t	k;
 	char	*trimmed;
 
-	if (!s || s[0] != '=')
+	if (!s || s[0] != EQ)
 		return (s);
 	k = 0;
-	while (s[k] == '=')
+	while (s[k] == EQ)
 		k++;
 	trimmed = ft_strdup(s + k);
 	free(s);

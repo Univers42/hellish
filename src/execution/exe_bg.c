@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:11:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 15:26:59 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:03:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 t_exe_res	execute_cmd_bg(t_shell *state,
 						t_executable_node *exe, t_executable_cmd *cmd)
@@ -23,7 +24,7 @@ t_exe_res	execute_cmd_bg(t_shell *state,
 		last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
 		if (last)
 			env_set(&state->env,
-				env_create(ft_strdup("_"), ft_strdup(last), true));
+				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
 	}
 	pid = fork();
 	if (pid == 0)

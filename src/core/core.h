@@ -36,6 +36,4 @@ void		update_context_from_file(t_shell *state, char **argv);
 void		init_arg(t_shell *state, char **argv);
 void		init_file(t_shell *state, char **argv);
 void		init_stdin_notty(t_shell *state);
-void		parse_debug_flag(const char *v, uint32_t *flags);
-void		parse_single_flag(const char *arg, uint32_t *flags);
 #endif

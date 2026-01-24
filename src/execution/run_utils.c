@@ -6,11 +6,12 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 17:02:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 17:10:37 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 19:25:41 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 /* helper: if builtin -> run and exit; return 0 if not builti
  (never returns on builtin) */
@@ -33,13 +34,34 @@ int	find_exe_path_wrapper(t_shell *state, char *cmd0, char **out_path)
 
 	status = find_cmd_path(state, cmd0, out_path);
 	if (status == COMMAND_NOT_FOUND)
-		return (127);
+		return (EXIT_CMD_NOT_FOUND);
 	if (status == EXE_PERM_DENIED)
-		return (126);
+		return (EXIT_CMD_NOT_EXEC);
 	return (status);
 }
 
-/* try exec, handle ENOEXEC fallback to /bin/sh */
+/**
+ * PURPOSE: handle the case when we try to execute
+ * a file file that is not a binary, but a script without 
+ * a shebang line. 
+ * When we call execve(path_of_exe, ...) and the file is 
+ * not a valid executable, execve fails with errno == ENOEXEC.
+ * in this case the shell should try to run the script path as an
+ * argument.
+ * 
+ * POSIX shell behavio r require to do this. if a file is not
+ * a boinary and has no shebang, try to run it as a shell script
+ * 
+ * This makes it compatible with scripts that do not have a shebang line.
+ * IMPLEMENTATION:
+ * - first we try to execve(path_of_exe, args, envp)
+ * - if it fails with ENOEXEC, we build a new argv array
+ *  with /bin/sh as first argument, path_of_exe as second,
+ * and the rest of args shifted by one.
+ * - then we call execve("/bin/sh", new_argv, envp)
+ * - if this fails, we just return (the caller should handle the error)
+ * 
+ */
 void	try_exec_with_fallback(char *path_of_exe,
 							t_vec *args,
 							char **envp)
@@ -60,13 +82,13 @@ void	try_exec_with_fallback(char *path_of_exe,
 		newargv = malloc(sizeof(char *) * (new_elems + 1));
 		if (newargv)
 		{
-			newargv[0] = "/bin/sh";
+			newargv[0] = FB_SH;
 			newargv[1] = path_of_exe;
 			i = 0;
 			while (++i < orig_elems)
 				newargv[i + 1] = ((char **)(args->ctx))[i];
 			newargv[new_elems] = NULL;
-			(execve("/bin/sh", newargv, envp), free(newargv));
+			(execve(FB_SH, newargv, envp), free(newargv));
 		}
 	}
 }
@@ -95,20 +117,39 @@ void	cleanup_after_exec_failure(t_vec *args,
 	free_tab(envp);
 }
 
-/* map errno to bash-like exit codes */
+/**
+ * This map gatger a common `errno values`to the exit
+ * codes  used by POSIX shells when a commands fails to execute.
+ * This is important for shell comptability and scripting.
+ * as shells like Bash use specific exit codes to indecate
+ * why a command failed.
+ * 
+ * here's what each mapped errno means:
+ * - EACCES (Permission denied): exit code 126
+ * - ENOENT (No such file or directory): exit code 127
+ * - ENOEXEC (Exec format error): exit code 126
+ * - ENOTDIR (Not a directory): exit code 127
+ * - ENOMEM (Out of memory): exit code 127
+ * - EISDIR (Is a directory): exit code 126
+ * - Other errors: exit code 1 (general error)
+ * 
+ * Those ensure that out shell behaves like Bash and other POSIX
+ * shell regarding exit codes
+ * 
+ */
 int	map_errno_to_exit(void)
 {
 	if (errno == EACCES)
-		return (126);
+		return (PERMISSION_DENIED);
 	if (errno == ENOENT)
-		return (127);
+		return (NO_SUCH_FILE_OR_DIR);
 	if (errno == ENOEXEC)
-		return (126);
+		return (EXIT_CMD_NOT_EXEC);
 	if (errno == ENOTDIR)
-		return (127);
+		return (NO_SUCH_DIR);
 	if (errno == ENOMEM)
-		return (127);
+		return (OUT_OF_MEM);
 	if (errno == EISDIR)
-		return (126);
-	return (1);
+		return (IS_A_DIR);
+	return (EXIT_GENERAL_ERR);
 }

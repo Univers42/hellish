@@ -11,6 +11,8 @@
 /* ************************************************************************** */
 
 #include "env.h"
+#include "libft.h"
+#include "sys.h"
 
 t_env	env_create(char *key, char *value, bool exported)
 {
@@ -68,7 +70,7 @@ static char	*env_to_str(t_env *e)
 	vec_init(&s);
 	s.elem_size = 1;
 	vec_push_str(&s, e->key);
-	ch = '=';
+	ch = EQ;
 	vec_push(&s, &ch);
 	vec_push_str(&s, e->value);
 	return ((char *)s.ctx);
