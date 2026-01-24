@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:21:39 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 18:57:38 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 01:24:43 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 # include <stdbool.h>
 # include <sys/wait.h>
 # include <unistd.h>
-# include "input.h"
+# include "sh_input.h"
 # include <stdio.h>
 # include <wchar.h>
 # include "helpers.h"

@@ -11,8 +11,8 @@
 /* ************************************************************************** */
 
 // The header name cannot be change due to conflict name with libft
-#ifndef INC_INPUT_H
-# define INC_INPUT_H
+#ifndef SH_INPUT_H
+# define SH_INPUT_H
 
 # include "alias.h"
 # include <stdbool.h>
@@ -25,6 +25,7 @@ typedef struct s_deque_tt	t_deque_tt;
 /* input method enum (unique guard to avoid accidental macro collision) */
 # ifndef INCS_INPUT_ENUM_DEFINED
 #  define INCS_INPUT_ENUM_DEFINED
+
 typedef enum e_input_method
 {
 	INP_READLINE,

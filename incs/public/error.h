@@ -13,7 +13,7 @@
 #ifndef ERROR_H
 # define ERROR_H
 
-# include "ft_printf.h"
+# include "libft.h"
 # include <errno.h>
 
 static inline void	critical_error(char *error)
@@ -44,16 +44,9 @@ static inline void	warning_error_errno(void)
 	ft_eprintf("[WARNING] %s\n", strerror(errno));
 }
 
-#endif
+typedef struct s_shell	t_shell;
 
-#ifndef PUBLIC_ERROR_H
-# define PUBLIC_ERROR_H
-
-typedef struct s_shell t_shell;
-
-void	critical_error_errno_context(const char *msg);
 void	warning_error_errno(void);
-void	warning_error(const char *msg);
 void	err_1_errno(t_shell *state, char *p1);
 void	err_2(t_shell *state, char *p1, char *p2);
 

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:02:26 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 15:00:57 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 01:25:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 # include "ft_builtins.h"
 # include <stdlib.h>
 # include "helpers.h"
-# include "input.h"
+# include "sh_input.h"
 
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \

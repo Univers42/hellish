@@ -13,7 +13,6 @@
 #include "core.h"
 #include "shell.h"
 #include "helpers.h"
-#include "input.h"
 #include "env.h"
 #include <string.h>
 #include "lexer.h"
