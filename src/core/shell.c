@@ -26,7 +26,11 @@ static void	off(t_shell *state);
 int	main(int argc, char **argv, char **envp)
 {
 	t_shell	state;
+	bool	is_login_shell;
 
+	is_login_shell = (argv[0] && argv[0][0] == '-');
+	if (is_login_shell)
+		argv[0]++;
 	(void)argc;
 	on(&state, argv, envp);
 	repl_shell(&state);
