@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   execution_private.h                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:05:22 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 17:52:31 by marvin           ###   ########.fr       */
+/*   Updated: 2026/01/24 01:24:21 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@
 # include <signal.h>
 # include "helpers.h"
 # include "expander.h"
-# include "input.h"
+# include "sh_input.h"
 # include "executor_types.h"
 
 # define MSG_REDIR_DATA_ERR "%s: internal error: redirects \
@@ -53,7 +53,6 @@ typedef struct s_exec_child_ctx
 }	t_exec_child_ctx;
 
 /* helper prototypes (ensure visible despite include-order */
-void		critical_error_errno_context(const char *msg);
 char		*env_expand(t_shell *state, char *key);
 void		free_tab(char **tab);
 void		err_1_errno(t_shell *state, char *p1);

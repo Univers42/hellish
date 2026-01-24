@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:21:06 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 18:01:20 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 01:25:10 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 # define INPUT_PRIVATE_H
 
 # include "shell.h"
-# include "input.h"
+# include "sh_input.h"
 # include <stdbool.h>
 # include "lexer.h"
 # include "parser.h"

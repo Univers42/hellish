@@ -14,7 +14,6 @@
 # define SHELL_H
 
 # include "alias.h"
-# include "ft_printf.h"
 # include "public/signals.h"
 # include "public/error.h"
 # include "ast.h"

@@ -16,7 +16,7 @@
 # include "shell.h"
 # include "shell.h"
 # include "helpers.h"
-# include "input.h"
+# include "sh_input.h"
 # include "env.h"
 # include <string.h>
 # include "lexer.h"
