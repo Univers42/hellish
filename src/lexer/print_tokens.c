@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "sys.h"
 
 const char	*get_token_display_name(t_token *curr);
 
@@ -37,7 +38,7 @@ static void	print_token_empty(size_t w_lexeme)
 	size_t		vis;
 	int			i;
 
-	emp = "(empty)";
+	emp = EMPTY;
 	vis = ft_strlen(emp);
 	i = -1;
 	ft_printf("%s%s%s", ASCII_GREY, emp, RESET_TERM);

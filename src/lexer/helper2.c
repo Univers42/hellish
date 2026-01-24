@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "sys.h"
 
 bool	is_space(char c)
 {
@@ -33,7 +34,7 @@ bool	is_special_char(char c)
 {
 	char	*specials;
 
-	specials = ";$'\"<>|&()\n";
+	specials = SPECIAL_CHARS;
 	if (ft_strchr(specials, c) || is_space(c))
 		return (true);
 	return (false);

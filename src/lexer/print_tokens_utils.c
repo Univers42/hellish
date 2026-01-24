@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "sys.h"
 
 // Helper to get the display name for a token
 const char	*get_token_display_name(t_token *curr)
@@ -23,9 +24,9 @@ const char	*get_token_display_name(t_token *curr)
 		fst = ((unsigned char *)curr->start)[0];
 		lst = ((unsigned char *)curr->start)[curr->len - 1];
 		if (fst == '"' && lst == '"')
-			return ("TT_DQWORD");
+			return (TOKEN_DQ);
 		else if (fst == '\'' && lst == '\'')
-			return ("TT_SQWORD");
+			return (TOKEN_SQ);
 	}
 	return (tt_to_str(curr->tt));
 }

@@ -50,7 +50,7 @@ int	process_arg(t_shell *st, t_vec av, int *ip)
 	arg0 = ((char **)av.ctx)[0];
 	if (!av.ctx || i >= (int)av.len)
 		return (verbose(CLAP_ERROR, ":[DEBUG export] missing "
-			"argv element at index %d\n", i), 1);
+				"argv element at index %d\n", i), 1);
 	cur = ((char **)av.ctx)[i];
 	return (handle_parsed_export_arg(st, av, ip, arg0));
 	(void)cur;
