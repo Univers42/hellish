@@ -4,6 +4,7 @@ CFLAGS      := -Wall -Wextra -Werror -std=c99 -D_XOPEN_SOURCE=700 -DVERBOSE
 OPTFLAGS    := -O2 -march=native
 LDFLAGS     := -flto
 DEBFLAGS    := -g3 -ggdb -fsanitize=address,leak
+BAPTIZE_SHELL	?= hellish
 
 # Choose flags: default = debug; pass OPT when calling make to enable optimizations
 ifdef OPT
@@ -126,4 +127,11 @@ norm:
 	    printf "\r\033[K  \033[1;31m✗\033[0m \033[1;37mNORM VIOLATIONS:\033[0m\n\n\033[37m%s\033[0m\n\n" "$$output"; \
 	fi
 
-.PHONY: test re all clean fclean
+my_shell:
+	@echo "Installing hellish shell.."
+	sudo install -m 755 build/bin/minishell /usr/bin/hellish
+	chmod +x vendor/scripts/register_shell.sh
+	./vendor/scripts/register_shell.sh
+	
+
+.PHONY: test re all clean fclean norm my_shell help
