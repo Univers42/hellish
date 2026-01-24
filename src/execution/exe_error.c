@@ -6,12 +6,11 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:09:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 19:05:24 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 20:54:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
-
 
 bool	check_is_a_dir(char *path, bool *enoent)
 {

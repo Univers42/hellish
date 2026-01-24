@@ -56,7 +56,8 @@
 
 // Classes
 # define CLASSE_ALNUM "[:alnum:]"
-# define PAT_ALNUM "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+# define PAT_ALNUM "0123456789ABCDEFGHIJKLMNOPQRSTUV\
+						WXYZabcdefghijklmnopqrstuvwxyz"
 # define CLASSE_ALPHA "[:alpha:]"
 # define PAT_ALPHA "ABCDEFGHIJKLMNOPQRSTUVWXYZZabcdefghijklmnopqrstuvwxyz"
 # define CLASSE_DIGIT "[:digit:]"
@@ -74,22 +75,26 @@
 # define CLASSE_XDIGIT "[:xdigit:]"
 # define PAT_XDIGIT "0123456789ABCDEFabcdef"
 # define CLASSE_CNTRL "[:cntrl:]"
-# define PAT_CNTRL "\001\002\003\004\005\006\007\010" \
-						"\011\012\013\014\015" \
-						"\016\017\020\021\022\023\024\025\026\027\030" \
-						"\031\032\033\034\035\036\037\177"
+# define PAT_CNTRL "\001\002\003\004\005\006\007\010\
+						\011\012\013\014\015\
+						\016\017\020\021\022\023\024\025\026\027\030\
+						\031\032\033\034\035\036\037\177"
 # define CLASSE_GRAPH "[:graph:]"
-# define PAT_GRAPH "!\"#$%&'()*+,-./0123456789:;<=>?@" \
-						"ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^" \
-						"_`abcdefghijklmnopqrstuvwxyz{|}~"
+# define PAT_GRAPH "!\"#$%&'()*+,-./0123456789:;<=>?@ \
+						ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^ \
+						_`abcdefghijklmnopqrstuvwxyz{|}~"
 # define CLASSE_PRINT "[:print:]"
-# define PAT_PRINT " !\"#$%&'()*+,-./0123456789:;" \
-						"<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]" \
-						"^_`abcdefghijklmnopqrstuvwxyz{|}~"
+# define PAT_PRINT " !\"#$%&'()*+,-./0123456789:;\
+						<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]\
+						^_`abcdefghijklmnopqrstuvwxyz{|}~"
 # define TMP_HC_DIR "/tmp/heredoc_"
 # define STRIP_HEREDOC "<<-"
 # define PIPE_HEREDOC_PROMPT "pipe_hereodoc> "
 # define HEREDOC_PROMPT "heredoc> "
+# define SPECIAL_CHARS ";$'\"<>|&()\n"
+# define TOKEN_DQ "TT_DQWORD"
+# define TOKEN_SQ "TT_SQWORD"
+# define EMPTY "(empty)"
 // debug printing of the tree structure
 # ifndef PRINT_AST
 #  define PRINT_AST 0

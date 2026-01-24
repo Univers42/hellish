@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "sys.h"
 
 /* Compute column widths dynamically for a neat table */
 void	compute_columns(t_deque_tt *tokens, size_t *w_name,
@@ -24,7 +25,7 @@ void	compute_columns(t_deque_tt *tokens, size_t *w_name,
 	n = tokens->deqtok.len;
 	*w_name = 4;
 	*w_len = 3;
-	*w_lexeme = ft_strlen("(empty)");
+	*w_lexeme = ft_strlen(EMPTY);
 	i = -1;
 	while (++i < n)
 	{

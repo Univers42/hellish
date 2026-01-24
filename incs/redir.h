@@ -64,7 +64,7 @@ static inline t_heredoc_req	create_heredoc(char *sep, bool expand,
 		});
 }
 
-static inline t_redir create_redir(bool direction_in, int src_fd,
+static inline t_redir	create_redir(bool direction_in, int src_fd,
 								bool should_delete)
 {
 	return ((t_redir){

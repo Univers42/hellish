@@ -18,7 +18,6 @@
 #include "libft.h"
 #include <stdarg.h>
 
-
 // 0 on success
 int	write_to_file(char *str, int fd)
 {
