@@ -107,4 +107,23 @@ test: all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
+norm:
+	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
+	output="$$( \
+	    norminette 2>&1 | grep -v 'OK!' | grep -v 'US' & \
+	    pid=$$!; \
+	    while kill -0 $$pid 2>/dev/null; do \
+	        for dots in '.' '..' '...' '....' '.....' '......'; do \
+	            printf "\r  \033[1;36m▸\033[0m Running norminette\033[1;35m%-6s\033[0m" "$$dots" >&2; \
+	            sleep 0.1; \
+	            kill -0 $$pid 2>/dev/null || break; \
+	        done; \
+	    done; \
+	    wait $$pid)"; \
+	if [ -z "$$output" ]; then \
+	    printf "\r\033[K  \033[1;32m✓\033[0m \033[1;37mNORM CHECK PASSED\033[0m\n\n"; \
+	else \
+	    printf "\r\033[K  \033[1;31m✗\033[0m \033[1;37mNORM VIOLATIONS:\033[0m\n\n\033[37m%s\033[0m\n\n" "$$output"; \
+	fi
+
 .PHONY: test re all clean fclean
