@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 14:04:51 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 15:14:34 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/24 17:07:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ static void	append_var_expansion(t_shell *st, t_string *out,
 }
 
 // Helper: Expand a single character to the output buffer
-static void	append_char(t_string *out, char c)
+static void	append_ch(t_string *out, char c)
 {
 	vec_push(out, &c);
 }
@@ -47,7 +47,7 @@ static void	expand_vars_to_buffer(t_shell *st, t_string *out, char *val)
 				(int)(i - start));
 			continue ;
 		}
-		append_char(out, val[i]);
+		append_ch(out, val[i]);
 		i++;
 	}
 }

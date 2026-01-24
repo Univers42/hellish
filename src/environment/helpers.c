@@ -82,7 +82,7 @@ void	set_shlvl(t_shell *state)
 			lvl++;
 		else
 			lvl = 1;
-		snprintf(buf, sizeof(buf), "%d", lvl);
+		ft_snprintf(buf, sizeof(buf), "%d", lvl);
 		env_set(&state->env, env_create(ft_strdup("SHLVL"),
 				ft_strdup(buf), true));
 	}
