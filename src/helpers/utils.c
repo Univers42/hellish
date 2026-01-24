@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "env.h"
+#include "libft.h"
+#include <stdarg.h>
 
 void	free_tab(char **tab)
 {

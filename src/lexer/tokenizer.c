@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "helpers.h"
 
 bool	is_word_boundary(const char *s);
 

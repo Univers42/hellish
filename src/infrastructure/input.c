@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "helpers.h"
 
 static void	handle_eof_or_error(t_shell *state, t_deque_tt *tt)
 {

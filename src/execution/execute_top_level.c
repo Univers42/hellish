@@ -36,4 +36,5 @@ void	execute_top_level(t_shell *state)
 			state->should_exit = true;
 	}
 	state->last_cmd_status_res = res;
+	verbose(CLAP_PRINT, "");
 }

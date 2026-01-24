@@ -34,6 +34,12 @@ int		ft_checked_atoi(const char *str, int *ret, int flags);
 bool	is_var_name_p1(char c);
 bool	is_var_name_p2(char c);
 
+# ifdef VERBOSE
+
+void	verbose(int flag, const char *str, ...);
+
+# endif
+
 static inline bool	vec_str_ends_with_str(t_string *s, char *s2)
 {
 	size_t	len_s2;

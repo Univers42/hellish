@@ -1,6 +1,6 @@
 # Compiler and flags
 CC          := cc
-CFLAGS      := -Wall -Wextra -Werror -std=c99 -D_XOPEN_SOURCE=700
+CFLAGS      := -Wall -Wextra -Werror -std=c99 -D_XOPEN_SOURCE=700 -DVERBOSE
 OPTFLAGS    := -O2 -march=native
 LDFLAGS     := -flto
 DEBFLAGS    := -g3 -ggdb -fsanitize=address,leak
