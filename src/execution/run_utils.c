@@ -12,6 +12,7 @@
 
 #include "execution_private.h"
 #include "sys.h"
+#include "libft.h"
 
 /* helper: if builtin -> run and exit; return 0 if not builti
  (never returns on builtin) */
