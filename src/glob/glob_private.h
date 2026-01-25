@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 10:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 20:22:30 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/25 19:46:27 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,12 @@
 # include <stdlib.h>
 # include <string.h>
 # include "sys.h"
+
+/* Bracket flags - ensure these are defined */
+# ifndef BRACKET_NEGATED
+#  define BRACKET_NEGATED 0x01
+# endif
+
 /* struct describing POSIX classes */
 struct s_classes
 {

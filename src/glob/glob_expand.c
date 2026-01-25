@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 11:08:48 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 12:01:12 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/25 20:41:46 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -60,7 +60,7 @@ static int	handle_range(t_bracket_ctx *ctx)
 
 static void	expand_bracket_content(t_bracket_ctx *ctx)
 {
-	while (ctx->i < ctx->len && ctx->buf_pos < 500)
+	while (ctx->i < ctx->len && ctx->buf_pos < 1000)
 	{
 		if (handle_backslash(ctx))
 			continue ;
@@ -87,7 +87,7 @@ char	*glob_expand_bracket(const char *start, int len, int *out_len)
 		return (expand_leading_bracket_special(start, out_len));
 	ctx.start = start;
 	ctx.len = len;
-	ctx.buf = malloc(512);
+	ctx.buf = malloc(1024);
 	if (!ctx.buf)
 		return (NULL);
 	ctx.buf_pos = 0;

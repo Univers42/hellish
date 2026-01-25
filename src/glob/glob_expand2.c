@@ -6,11 +6,19 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 11:11:45 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 12:04:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/25 21:06:56 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "glob_private.h"
+
+int				is_letter(unsigned char c);
+int				is_digit_char(unsigned char c);
+int				is_alnum_char(unsigned char c);
+unsigned char	to_lower(unsigned char c);
+int				ft_strcoll(const char *s1, const char *s2);
+void			glob_sort_inner(char **arr, int low, int high);
+void			glob_sort(t_vec *args);
 
 /*
 ** Check if token type allows glob expansion
@@ -71,7 +79,7 @@ t_vec	expand_word_glob(t_ast_node word)
 		vec_push(&args, &(char *){(char *)word_to_string(word).ctx});
 	glob_free_tokens(&glob);
 	if (!get_g_sig()->should_unwind)
-		ft_quicksort(&args);
+		glob_sort(&args);
 	if (get_g_sig()->should_unwind)
 		vec_destroy(&args, free_str_elem);
 	return (args);

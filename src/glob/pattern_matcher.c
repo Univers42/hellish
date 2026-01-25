@@ -36,9 +36,8 @@ size_t	match_g_literal(char *name, t_vec_glob patt, size_t offset,
 		offset++;
 		name += curr.len;
 	}
-	if (first && (!ft_strcmp(orig_name, "..") || !ft_strcmp(orig_name, "."))
-		&& offset != patt.len && ((t_glob *)patt.ctx)[offset].ty != G_SLASH)
-		return (0);
+	(void)first;
+	(void)orig_name;
 	return (matches_pattern(name, patt, offset, false));
 }
 
