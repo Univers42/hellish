@@ -5,8 +5,8 @@ a
 advanced_edge_cases
 arith
 b
-bash.supp
 bash_outfiles
+bash.supp
 bonus
 bonus_bonus
 builtins
@@ -28,11 +28,11 @@ f1
 f2
 f3
 f4
-file with spaces
 file1
 file2
-glob-zoo
+file with spaces
 globbing
+glob-zoo
 h1
 heredoc_out
 heredoc_pipe
@@ -50,10 +50,10 @@ out1
 out2
 out3
 out_fail
-out_ls
 outfile01
 outfile02
 outfiles
+out_ls
 p1
 p2
 p3
@@ -71,10 +71,10 @@ same
 sq
 sym
 syntax
+tester
 test_files
 test_japo
 test_japo2_echo
-tester
 var
 wildcards
 x
