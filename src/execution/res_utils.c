@@ -34,8 +34,6 @@ void	exe_res_set_status(t_exe_res *res)
 			break ;
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
 		res->c_c = true;
-	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGPIPE)
-		ft_eprintf(" Broken pipe\n");
 	res->status = WEXITSTATUS(status)
 		+ WIFSIGNALED(status) * 128 + WIFSIGNALED(status) * WTERMSIG(status);
 }

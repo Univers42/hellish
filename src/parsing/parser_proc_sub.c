@@ -52,7 +52,7 @@ static int	collect_proc_sub_command(t_parser *parser,
 		if (depth > 0)
 			proc_sub_consume_and_append(tokens, cmd_str, curr);
 		else
-			deque_pop_start(&tokens->deqtok);
+			(void)deque_pop_start(&tokens->deqtok);
 	}
 	return (0);
 }

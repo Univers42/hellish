@@ -30,6 +30,7 @@
 # include <errno.h>
 # include <unistd.h>
 # include <sys/wait.h>
+# include <signal.h>
 
 typedef struct s_expand_ctx
 {

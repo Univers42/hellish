@@ -39,8 +39,16 @@ static int	parse_src_fd(t_tt tt, t_token op_tok)
 into a single string (transfer ownership) */
 static char	*expand_redir_fname(t_shell *state, t_ast_node *curr)
 {
-	return (expand_word_single(state,
-			&((t_ast_node *)curr->children.ctx)[1]));
+	t_ast_node	*target;
+
+	if (curr->children.len < 2)
+		return (NULL);
+	target = &((t_ast_node *)curr->children.ctx)[1];
+	if (target->node_type == AST_PROC_SUB)
+		return (expand_proc_sub(state, target));
+	if (target->node_type == AST_WORD)
+		return (expand_word_single(state, target));
+	return (NULL);
 }
 
 /* create and commit a redir entry from AST node,
@@ -53,9 +61,13 @@ static int	commit_redir(t_shell *state,
 	t_redir			new_redir;
 	t_token_old		full_token;
 	char			*fname;
+	t_ast_node		*target;
 
-	full_token
-		= get_old_token(((t_ast_node *)curr->children.ctx)[1]);
+	target = &((t_ast_node *)curr->children.ctx)[1];
+	if (target->node_type == AST_WORD)
+		full_token = get_old_token(*target);
+	else
+		full_token = init_token_old();
 	fname = expand_redir_fname(state, curr);
 	if (!create_redir_4(tt, fname, &new_redir, src_fd))
 	{
