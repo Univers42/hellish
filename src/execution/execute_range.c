@@ -80,6 +80,7 @@ t_exe_res	execute_range_background(t_shell *state, t_executable_node *exe,
 	}
 	if (pid < 0)
 		critical_error_errno_context("fork");
+	procsub_close_fds_parent(state);
 	state->bg_job_count++;
 	ft_printf("[%d] %d\n", state->bg_job_count, pid);
 	return (res_status(0));

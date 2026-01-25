@@ -28,9 +28,13 @@ t_exe_res	execute_cmd_bg(t_shell *state,
 	}
 	pid = fork();
 	if (pid == 0)
-		(default_signal_handlers(), set_up_redirection(state, exe),
-			env_extend(&state->env, &cmd->pre_assigns, true),
-			exit(actually_run(state, &cmd->argv)));
-	(procsub_close_fds_parent(state), free_executable_cmd(*cmd));
+	{
+		default_signal_handlers();
+		set_up_redirection(state, exe);
+		env_extend(&state->env, &cmd->pre_assigns, true);
+		exit(actually_run(state, &cmd->argv));
+	}
+	procsub_close_fds_parent(state);
+	free_executable_cmd(*cmd);
 	return (free_executable_node(exe), res_pid(pid));
 }

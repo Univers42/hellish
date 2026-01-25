@@ -44,8 +44,11 @@ void	apply_redir(t_shell *state, int idx)
 		exit(EXIT_GENERAL_ERR);
 	}
 	redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
-	dup2(redir.fd, redir.src_fd);
-	close(redir.fd);
+	if (redir.fd != redir.src_fd)
+	{
+		dup2(redir.fd, redir.src_fd);
+		close(redir.fd);
+	}
 }
 
 void	apply_redirs_from_vec(t_shell *state, t_executable_node *exe)

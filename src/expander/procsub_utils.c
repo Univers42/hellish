@@ -14,16 +14,10 @@
 
 void	procsub_close_fds_parent(t_shell *state)
 {
-	(void)state;
-}
-
-void	cleanup_proc_subs(t_shell *state)
-{
 	size_t			i;
 	t_procsub_entry	*entry;
-	int				status;
 
-	if (!state->proc_subs.ctx)
+	if (!state->proc_subs.ctx || state->proc_subs.len == 0)
 		return ;
 	i = 0;
 	while (i < state->proc_subs.len)
@@ -34,8 +28,28 @@ void	cleanup_proc_subs(t_shell *state)
 			close(entry->fd);
 			entry->fd = -1;
 		}
+		i++;
+	}
+}
+
+void	cleanup_proc_subs(t_shell *state)
+{
+	size_t			i;
+	t_procsub_entry	*entry;
+	int				status;
+
+	if (!state->proc_subs.ctx)
+		return ;
+	procsub_close_fds_parent(state);
+	i = 0;
+	while (i < state->proc_subs.len)
+	{
+		entry = &((t_procsub_entry *)state->proc_subs.ctx)[i];
 		if (entry->pid > 0)
+		{
 			waitpid(entry->pid, &status, 0);
+			entry->pid = -1;
+		}
 		free(entry->path);
 		i++;
 	}

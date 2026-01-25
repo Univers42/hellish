@@ -107,10 +107,12 @@ t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe)
 	if (results.len > 0)
 	{
 		plast = (t_exe_res *)vec_idx(&results, results.len - 1);
-		exe_res_set_status(plast);
 		res = *plast;
+		if (res.pid != -1)
+			exe_res_set_status(&res);
 	}
 	else
 		res = res_status(0);
-	return (free(results.ctx), res);
+	free(results.ctx);
+	return (res);
 }

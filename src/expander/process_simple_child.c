@@ -36,5 +36,5 @@ int	process_simple_child(t_shell *state, t_expander_simple_cmd *exp,
 	}
 	else if (exp->curr->node_type == AST_TOKEN)
 		return (0);
-	return (1);
+	return (0);
 }

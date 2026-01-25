@@ -66,5 +66,6 @@ char	*expand_proc_sub(t_shell *state, t_ast_node *node)
 		result = create_procsub_input(state, (char *)cmd_str.ctx);
 	else
 		result = create_procsub_output(state, (char *)cmd_str.ctx);
-	return (free(cmd_str.ctx), result);
+	free(cmd_str.ctx);
+	return (result);
 }

@@ -14,6 +14,8 @@
 
 bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
+	int	orig_fd;
+
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");
 	ret->fname = fname;
 	ret->direction_in = tt == TT_REDIRECT_LEFT;
@@ -22,16 +24,21 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 		return (false);
 	if (ft_strncmp(fname, "/dev/fd/", 8) == 0)
 	{
-		ret->fd = ft_atoi(fname + 8);
+		orig_fd = ft_atoi(fname + 8);
+		if (orig_fd < 0)
+			return (false);
+		ret->fd = dup(orig_fd);
 		ret->should_delete = false;
 		return (ret->fd >= 0);
 	}
 	if (tt == TT_REDIRECT_LEFT)
 		ret->fd = open(ret->fname, O_RDONLY);
 	else if (tt == TT_REDIRECT_RIGHT)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	else if (tt == TT_APPEND)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0666);
+		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0644);
+	else
+		ret->fd = -1;
 	if (ret->fd < 0)
 		return (false);
 	ret->should_delete = false;

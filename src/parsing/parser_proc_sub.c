@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:10:40 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 00:14:47 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 00:37:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,8 +46,14 @@ static int	collect_proc_sub_command(t_parser *parser,
 	while (depth > 0)
 	{
 		curr = *(t_token *)deque_peek(&tokens->deqtok);
-		if (proc_sub_handle_eof(parser, tokens, cmd_str, curr))
+		if (curr.tt == TT_END)
+		{
+			parser->res = RES_MoreInput;
+			tokens->looking_for = ')';
+			free(cmd_str->ctx);
+			cmd_str->ctx = NULL;
 			return (1);
+		}
 		proc_sub_update_depth(curr, &depth);
 		if (depth > 0)
 			proc_sub_consume_and_append(tokens, cmd_str, curr);
