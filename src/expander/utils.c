@@ -58,10 +58,10 @@ t_token_old	get_old_token(t_ast_node word)
 {
 	t_token_old	ret;
 
-	ft_assert(word.node_type == AST_WORD);
-	ft_assert(word.children.len);
+	if (word.node_type != AST_WORD || word.children.len == 0
+		|| !word.children.ctx)
+		return (init_token_old());
 	ret = ((t_ast_node *)word.children.ctx)[0].token.full_word;
-	ft_assert(ret.present);
 	return (ret);
 }
 

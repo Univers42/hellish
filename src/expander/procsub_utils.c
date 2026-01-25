@@ -37,6 +37,7 @@ void	cleanup_proc_subs(t_shell *state)
 	size_t			i;
 	t_procsub_entry	*entry;
 	int				status;
+	int				ret;
 
 	if (!state->proc_subs.ctx)
 		return ;
@@ -47,7 +48,14 @@ void	cleanup_proc_subs(t_shell *state)
 		if (entry->fd >= 0)
 			close(entry->fd);
 		if (entry->pid > 0)
-			waitpid(entry->pid, &status, 0);
+		{
+			ret = waitpid(entry->pid, &status, WNOHANG);
+			if (ret == 0)
+			{
+				kill(entry->pid, SIGTERM);
+				waitpid(entry->pid, &status, 0);
+			}
+		}
 		free(entry->path);
 		i++;
 	}

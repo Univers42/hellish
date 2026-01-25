@@ -27,6 +27,12 @@ bool	is_proc_sub(t_tt tt)
 	return (tt == TT_PROC_SUB_IN || tt == TT_PROC_SUB_OUT);
 }
 
+bool	is_redirect_target(t_tt tt)
+{
+	return (tt == TT_WORD || tt == TT_SQWORD || tt == TT_DQWORD
+		|| tt == TT_ENVVAR || tt == TT_DQENVVAR || is_proc_sub(tt));
+}
+
 bool	is_simple_cmd_token(t_tt tt)
 {
 	return (tt == TT_WORD || is_redirect(tt) || is_proc_sub(tt));
