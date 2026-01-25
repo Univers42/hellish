@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:11:14 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 15:47:18 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 00:50:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,7 @@ t_exe_res	execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
 	dup2(stdout_bak, 1);
 	close(stdin_bak);
 	close(stdout_bak);
+	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res_status(status));

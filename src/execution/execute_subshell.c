@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 16:28:42 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 00:50:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ t_exe_res	execute_subshell(t_shell *state, t_executable_node *exe)
 	}
 	if (pid < 0)
 		critical_error_errno_context("fork");
+	procsub_close_fds_parent(state);
 	free_executable_node(exe);
 	return (res_pid(pid));
 }

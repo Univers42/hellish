@@ -17,8 +17,16 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
 	if (exe->next_infd != -1)
 		close(exe->next_infd);
-	dup2(exe->outfd, 1);
-	dup2(exe->infd, 0);
+	if (exe->outfd != 1)
+	{
+		dup2(exe->outfd, 1);
+		close(exe->outfd);
+	}
+	if (exe->infd != 0)
+	{
+		dup2(exe->infd, 0);
+		close(exe->infd);
+	}
 	if (exe->redirs.len == 0)
 		return ;
 	if (exe->redirs.ctx)

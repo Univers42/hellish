@@ -42,6 +42,7 @@ static t_exe_res	handle_empty_command(t_shell *state,
 						t_executable_node *exe)
 {
 	ft_eprintf("%s: command not found\n", state->context);
+	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res_status(COMMAND_NOT_FOUND));
@@ -53,6 +54,7 @@ static t_exe_res	handle_assign_only(t_shell *state,
 {
 	if (exe->modify_parent_context)
 		env_extend(&state->env, &cmd->pre_assigns, false);
+	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res_status(0));
@@ -64,6 +66,7 @@ t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe)
 
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
+		procsub_close_fds_parent(state);
 		free_executable_cmd(cmd);
 		free_executable_node(exe);
 		if (get_g_sig()->should_unwind)
