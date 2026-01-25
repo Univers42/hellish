@@ -20,6 +20,12 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	ret->src_fd = src_fd;
 	if (!ret->fname)
 		return (false);
+	if (ft_strncmp(fname, "/dev/fd/", 8) == 0)
+	{
+		ret->fd = ft_atoi(fname + 8);
+		ret->should_delete = false;
+		return (ret->fd >= 0);
+	}
 	if (tt == TT_REDIRECT_LEFT)
 		ret->fd = open(ret->fname, O_RDONLY);
 	else if (tt == TT_REDIRECT_RIGHT)
