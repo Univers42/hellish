@@ -70,11 +70,13 @@ static int	push_cmd_word_node(t_parser *parser,
 	if (!vec_ensure_space_n(cmd_str, 1))
 	{
 		parser->res = RES_FatalError;
-		return (free(cmd_str->ctx), 1);
+		free(cmd_str->ctx);
+		return (1);
 	}
 	((char *)cmd_str->ctx)[cmd_str->len] = '\0';
 	cmd_copy = ft_strdup((char *)cmd_str->ctx);
 	free(cmd_str->ctx);
+	cmd_str->ctx = NULL;
 	word_node = create_node_type(AST_WORD);
 	vec_init(&word_node.children);
 	word_node.children.elem_size = sizeof(t_ast_node);
@@ -82,8 +84,9 @@ static int	push_cmd_word_node(t_parser *parser,
 			create_tok4(cmd_copy, (int)ft_strlen(cmd_copy), TT_WORD, true));
 	vec_init(&tok_node.children);
 	tok_node.children.elem_size = sizeof(t_ast_node);
-	return (vec_push(&word_node.children, &tok_node),
-		vec_push(&ret->children, &word_node), 0);
+	vec_push(&word_node.children, &tok_node);
+	vec_push(&ret->children, &word_node);
+	return (0);
 }
 
 t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser, t_deque_tt *tokens)
@@ -94,11 +97,15 @@ t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser, t_deque_tt *tokens)
 
 	(void)state;
 	ret = create_node_type(AST_PROC_SUB);
+	vec_init(&ret.children);
+	ret.children.elem_size = sizeof(t_ast_node);
 	op_tok = *(t_token *)deque_pop_start(&tokens->deqtok);
 	add_op_token_child(&ret, op_tok);
 	vec_init(&cmd_str);
 	cmd_str.elem_size = 1;
 	if (collect_proc_sub_command(parser, tokens, &cmd_str))
 		return (ret);
-	return (push_cmd_word_node(parser, &cmd_str, &ret), ret);
+	if (push_cmd_word_node(parser, &cmd_str, &ret))
+		return (ret);
+	return (ret);
 }
