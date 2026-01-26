@@ -1,16 +1,22 @@
 # Compiler and flags
 CC          := cc
 CFLAGS      := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
-OPTFLAGS    := -O2 -march=native
-LDFLAGS     := -flto
-DEBFLAGS    := -g3 -ggdb -fsanitize=address,leak
+# Ultra-fast optimization flags for OPT=1 (Clang-compatible)
+OPTFLAGS    := -O3 -march=native -mtune=native -flto -ffast-math \
+               -funroll-loops -finline-functions -fomit-frame-pointer \
+               -fno-stack-protector -DNDEBUG -fdata-sections -ffunction-sections \
+               -pipe -ftree-vectorize -fslp-vectorize -fvectorize
+LDFLAGS     := -flto -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed
+DEBFLAGS    := -g3 -ggdb -fsanitize=address,leak -O0
 BAPTIZE_SHELL	?= hellish
 
-# Choose flags: default = debug; pass OPT when calling make to enable optimizations
+# Choose flags: default = debug; pass OPT=1 when calling make to enable ultra-fast optimizations
 ifdef OPT
-ALLFLAGS := $(CFLAGS) $(OPTFLAGS) $(LDFLAGS)
+ALLFLAGS := $(CFLAGS) $(OPTFLAGS)
+LDFLAGS := $(LDFLAGS)
 else
 ALLFLAGS := $(CFLAGS) $(DEBFLAGS)
+LDFLAGS :=
 endif
 
 INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
@@ -35,7 +41,8 @@ TOTAL := $(words $(SRCS))
 # Output
 NAME := minishell
 
-MAKEFLAGS := --no-print-directory
+# Parallel compilation for faster builds
+MAKEFLAGS := --no-print-directory -j$(shell nproc)
 
 # Add this variable at the top with your other variables
 COMPILED := 0
@@ -44,47 +51,35 @@ all: $(BIN_DIR)/$(NAME)
 
 # Link the final binary
 $(BIN_DIR)/$(NAME): $(LIBFT_A) $(OBJS)
-	@printf "\n  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[0m" >&2
-	@for dots in '.' '..' '...' '....' '.....'; do \
-	    printf "\r  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[1;36m%-5s\033[0m" "$$dots" >&2; \
-	    sleep 0.1; \
-	done
-	@$(CC) $(ALLFLAGS) $(INCLUDES) $^ $(LDFLAGS) $(LIBFT_A) -lreadline -o $@
-	@printf "\r\033[K  \033[1;32m✓\033[0m \033[1;37m$(NAME) ready\033[0m\n\n" >&2
+	@mkdir -p $(BIN_DIR)
+	@printf "\033[1;34m🔗 Linking $(NAME)...\033[0m\n"
+	@$(CC) $(ALLFLAGS) $(OBJS) $(LIBFT_A) -lreadline -lm $(LDFLAGS) -o $@
+	@printf "\033[1;32m✅ Built $(NAME) successfully!\033[0m\n"
+ifdef OPT
+	@printf "\033[1;33m⚡ Ultra-fast optimized build complete!\033[0m\n"
+	@strip $@
+endif
 
 # Compile .c -> .o with inline animation
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(dir $@)
-	@printf "\033c\n" >&2
-	@filename=$$(basename $<); \
-	{ \
-	    for spin in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'; do \
-	        printf "\r  \033[1;35m$$spin\033[0m \033[37mCompiling %-40s\033[0m" "$$filename" >&2; \
-	        sleep 0.02; \
-	    done & \
-	    pid=$$!; \
-	    $(CC) $(ALLFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@ 2>/dev/null; \
-	    result=$$?; \
-	    kill $$pid 2>/dev/null; \
-	    wait $$pid 2>/dev/null; \
-	    if [ $$result -eq 0 ]; then \
-	        count=$$(find $(OBJ_DIR) -name "*.o" 2>/dev/null | wc -l); \
-	        printf "\r  \033[1;32m✓\033[0m \033[37m%-40s\033[0m \033[1;36m%d\033[90m/\033[37m%d\033[0m" "$$filename" $$count $(TOTAL) >&2; \
-	    else \
-	        printf "\r  \033[1;31m✗\033[0m \033[37m%-40s\033[0m \033[1;31mFAILED\033[0m\n\n" "$$filename" >&2; \
-	        $(CC) $(ALLFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@; \
-	        exit 1; \
-	    fi; \
-	}
+	@$(eval COMPILED := $(shell echo $$(($(COMPILED) + 1))))
+	@printf "\r\033[K\033[1;36m⚡ Compiling [$(COMPILED)/$(TOTAL)]: \033[0m$< "
+ifdef OPT
+	@printf "\033[1;33m(ULTRA-FAST)\033[0m"
+endif
+	@$(CC) $(ALLFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
 # Include dependency files if present
 -include $(DEPS)
 
 # Build libft (in its directory)
 $(LIBFT_A):
-	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft\033[0m\n\n" >&2
-	@$(MAKE) -C vendor/libft -j 8
-	@printf "\n" >&2
+	@printf "\033[1;35m📚 Building libft...\033[0m\n"
+ifdef OPT
+	@$(MAKE) -C vendor/libft OPT=1
+else
+	@$(MAKE) -C vendor/libft
+endif
 
 clean:
 	@printf "\n  \033[1;33m⚠\033[0m \033[1;37mCleaning build artifacts\033[0m" >&2
@@ -136,5 +131,28 @@ my_shell:
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
+# Performance test target
+perf: $(BIN_DIR)/$(NAME)
+	@printf "\033[1;33m🚀 Running performance test...\033[0m\n"
+	@echo "echo 'Hello World'" | time -p ./$(BIN_DIR)/$(NAME)
+	@echo "ls -la | wc -l" | time -p ./$(BIN_DIR)/$(NAME)
+	@printf "\033[1;32m✅ Performance test complete!\033[0m\n"
 
-.PHONY: test re all clean fclean norm my_shell help
+# Show optimization info
+info:
+ifdef OPT
+	@printf "\033[1;33m⚡ ULTRA-FAST MODE ENABLED\033[0m\n"
+	@printf "Optimization flags: $(OPTFLAGS)\n"
+	@printf "Link flags: $(LDFLAGS)\n"
+else
+	@printf "\033[1;34m🐛 DEBUG MODE ENABLED\033[0m\n"
+	@printf "Debug flags: $(DEBFLAGS)\n"
+endif
+
+# Ultra-fast benchmark target
+benchmark: $(BIN_DIR)/$(NAME)
+	@printf "\033[1;33m⚡ Running ultra-fast benchmark...\033[0m\n"
+	@echo "for i in {1..100}; do echo 'test'; done | head -50" | time -p ./$(BIN_DIR)/$(NAME) >/dev/null
+	@printf "\033[1;32m🏁 Benchmark complete!\033[0m\n"
+
+.PHONY: test re all clean fclean norm my_shell perf info benchmark
