@@ -118,7 +118,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	        exit 1; \
 	    fi; \
 	}
-	
+
 # Include dependency files if present
 -include $(DEPS)
 
