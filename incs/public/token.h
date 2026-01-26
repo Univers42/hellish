@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:04:48 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 15:27:05 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 01:15:16 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,9 @@ typedef enum e_tt
 	TT_AMPERSAND,
 	TT_ARITH_START,
 	TT_PROC_SUB_IN,
-	TT_PROC_SUB_OUT
+	TT_PROC_SUB_OUT,
+	TT_DUP_OUT,
+	TT_DUP_IN
 }	t_tt;
 
 /* compact representation of original full token for AST bookkeeping */

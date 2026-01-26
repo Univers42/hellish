@@ -12,16 +12,43 @@
 
 #include "expander_private.h"
 
+static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
+{
+	int	target_fd;
+
+	ret->fname = fname;
+	ret->src_fd = src_fd;
+	ret->should_delete = false;
+	ret->direction_in = (tt == TT_DUP_IN);
+	if (!fname || !*fname)
+		return (false);
+	if (fname[0] == '-' && fname[1] == '\0')
+	{
+		ret->fd = -1;
+		ret->close_fd = true;
+		return (true);
+	}
+	target_fd = ft_atoi(fname);
+	if (target_fd < 0)
+		return (false);
+	ret->fd = dup(target_fd);
+	ret->close_fd = false;
+	return (ret->fd >= 0);
+}
+
 bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
 	int	orig_fd;
 
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");
 	ret->fname = fname;
-	ret->direction_in = tt == TT_REDIRECT_LEFT;
+	ret->direction_in = (tt == TT_REDIRECT_LEFT || tt == TT_DUP_IN);
 	ret->src_fd = src_fd;
+	ret->close_fd = false;
 	if (!ret->fname)
 		return (false);
+	if (tt == TT_DUP_OUT || tt == TT_DUP_IN)
+		return (create_dup_redir(tt, fname, ret, src_fd));
 	if (ft_strncmp(fname, "/dev/fd/", 8) == 0)
 	{
 		orig_fd = ft_atoi(fname + 8);
@@ -43,4 +70,17 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 		return (false);
 	ret->should_delete = false;
 	return (true);
+}
+
+bool	create_redir_heredoc(int heredoc_fd, t_redir *ret)
+{
+	if (heredoc_fd < 0)
+		return (false);
+	ret->fd = heredoc_fd;
+	ret->fname = NULL;
+	ret->src_fd = STDIN_FILENO;
+	ret->should_delete = false;
+	ret->direction_in = true;
+	ret->close_fd = false;
+	return (ret->fd >= 0);
 }

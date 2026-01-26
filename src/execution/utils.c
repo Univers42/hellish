@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:07:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 19:27:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 01:15:14 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,11 @@ void	apply_redir(t_shell *state, int idx)
 		exit(EXIT_GENERAL_ERR);
 	}
 	redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
+	if (redir.close_fd)
+	{
+		close(redir.src_fd);
+		return ;
+	}
 	if (redir.fd != redir.src_fd)
 	{
 		dup2(redir.fd, redir.src_fd);
