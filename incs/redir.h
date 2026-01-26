@@ -30,6 +30,7 @@ typedef struct redir_s
 	int			src_fd;
 	char		*fname;
 	bool		should_delete;
+	bool		close_fd;
 }	t_redir;
 
 # endif
@@ -72,7 +73,8 @@ static inline t_redir	create_redir(bool direction_in, int src_fd,
 		.fd = 0,
 		.src_fd = src_fd,
 		.fname = NULL,
-		.should_delete = should_delete
+		.should_delete = should_delete,
+		.close_fd = false
 	});
 }
 #endif

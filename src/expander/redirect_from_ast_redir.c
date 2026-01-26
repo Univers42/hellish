@@ -12,16 +12,20 @@
 
 #include "expander_private.h"
 
+static int	get_default_src_fd(t_tt tt)
+{
+	if (tt == TT_REDIRECT_LEFT || tt == TT_HEREDOC || tt == TT_DUP_IN)
+		return (STDIN_FILENO);
+	return (STDOUT_FILENO);
+}
+
 /* parse optional leading fd from operator token (e.g. "2>") */
 static int	parse_src_fd(t_tt tt, t_token op_tok)
 {
 	int		src_fd;
 	char	*p;
 
-	if (tt == TT_REDIRECT_LEFT)
-		src_fd = 0;
-	else
-		src_fd = 1;
+	src_fd = get_default_src_fd(tt);
 	p = op_tok.start;
 	if (p && ft_isdigit((unsigned char)*p))
 	{
@@ -78,6 +82,32 @@ static int	commit_redir(t_shell *state,
 	curr->has_redirect = true;
 	vec_push(&state->redirects, &new_redir);
 	return (0);
+}
+
+/* extract the source fd (child index 0), or use default based on operator */
+int	get_src_fd(t_ast_node *curr, t_tt tt)
+{
+	t_ast_node	*first;
+	const char	*s;
+	int			i;
+	int			fd;
+
+	if (curr->children.len == 0)
+		return (get_default_src_fd(tt));
+	first = &((t_ast_node *)curr->children.ctx)[0];
+	if (first->node_type != AST_TOKEN)
+		return (get_default_src_fd(tt));
+	s = first->token.start;
+	i = 0;
+	fd = 0;
+	while (i < first->token.len && ft_isdigit((unsigned char)s[i]))
+	{
+		fd = fd * 10 + (s[i] - '0');
+		i++;
+	}
+	if (i == 0)
+		return (get_default_src_fd(tt));
+	return (fd);
 }
 
 int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
