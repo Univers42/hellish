@@ -3,7 +3,21 @@ aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 ./this_should_not_exist
 ./
 /
-
+diff <(echo "hello") <(echo "hello")
+diff <(echo "hello") <(echo "world")
+grep root <(cat /etc/passwd);
+cat <(ls) <(pwd)
+echo "hello world" > >(tr a-z A-Z)
+echo "logging this" > >(tee log.txt)
+cat <(cat <<EOF
+hello
+world
+EOF
+)
+echo "1 2 3" > >(awk '{print $1+$2+$3}')
+sed 's/foo/bar/' <(echo "foo baz")
+paste <(seq 5) <(seq 6 10)
+column -t <(ls -l) <(ls -lh)
 echo start
 echo one
 echo two

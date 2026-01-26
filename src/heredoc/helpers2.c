@@ -6,58 +6,17 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:31:57 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 15:14:27 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 02:50:10 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "heredoc_private.h"
 
-static bool	node_is_groupable(t_ast_node *node)
-{
-	t_ast_node	*first;
-
-	if (node->node_type == AST_SIMPLE_COMMAND)
-		return (true);
-	if (node->node_type == AST_COMMAND && node->children.len > 0
-		&& node->children.ctx)
-	{
-		first = &((t_ast_node *)node->children.ctx)[0];
-		if (first->node_type == AST_SIMPLE_COMMAND)
-			return (true);
-	}
-	return (false);
-}
-
-static bool	should_skip_node(t_ast_node *node)
-{
-	if (!node)
-		return (true);
-	if (node->node_type == AST_PROC_SUB)
-		return (true);
-	if (node->node_type == AST_TOKEN)
-		return (true);
-	if (node->node_type == AST_WORD)
-		return (true);
-	return (false);
-}
-
-static void	recurse_non_redirect_child(t_shell *state,
-									t_ast_node *node,
-									size_t *idx)
-{
-	t_ast_node	*child;
-
-	if (!node->children.ctx || *idx >= node->children.len)
-	{
-		(*idx)++;
-		return ;
-	}
-	child = &((t_ast_node *)node->children.ctx)[*idx];
-	if (!should_skip_node(child))
-		gather_heredocs(state, child,
-			(node->node_type == AST_COMMAND_PIPELINE));
-	(*idx)++;
-}
+bool	node_is_groupable(t_ast_node *node);
+bool	should_skip_node(t_ast_node *node);
+void	recurse_non_redirect_child(t_shell *state,
+			t_ast_node *node,
+			size_t *idx);
 
 static void	handle_non_groupable_redirect(t_shell *state,
 									t_ast_node *node,
@@ -92,10 +51,36 @@ static void	handle_grouped_redirects(t_shell *state,
 	process_redirect_group(state, node, start, end);
 }
 
+static void	skip_redirect_group(t_ast_node *node, size_t *i)
+{
+	while (*i < node->children.len
+		&& ((t_ast_node *)node->children.ctx)[*i].node_type == AST_REDIRECT)
+		(*i)++;
+}
+
+static void	process_child_node(t_shell *state, t_ast_node *node,
+							size_t *i, bool in_pipeline)
+{
+	t_ast_node	*child;
+
+	child = &((t_ast_node *)node->children.ctx)[*i];
+	if (child->node_type != AST_REDIRECT)
+	{
+		recurse_non_redirect_child(state, node, i);
+		return ;
+	}
+	if (!node_is_groupable(node))
+	{
+		handle_non_groupable_redirect(state, node, i, in_pipeline);
+		return ;
+	}
+	handle_grouped_redirects(state, node, *i);
+	skip_redirect_group(node, i);
+}
+
 int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 {
-	size_t		i;
-	t_ast_node	*child;
+	size_t	i;
 
 	if (!node || should_skip_node(node))
 		return (0);
@@ -107,22 +92,6 @@ int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 	}
 	i = 0;
 	while (i < node->children.len && !get_g_sig()->should_unwind)
-	{
-		child = &((t_ast_node *)node->children.ctx)[i];
-		if (child->node_type != AST_REDIRECT)
-		{
-			recurse_non_redirect_child(state, node, &i);
-			continue ;
-		}
-		if (!node_is_groupable(node))
-		{
-			handle_non_groupable_redirect(state, node, &i, in_pipeline);
-			continue ;
-		}
-		handle_grouped_redirects(state, node, i);
-		while (i < node->children.len
-			&& ((t_ast_node *)node->children.ctx)[i].node_type == AST_REDIRECT)
-			i++;
-	}
+		process_child_node(state, node, &i, in_pipeline);
 	return (0);
 }

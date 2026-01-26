@@ -12,12 +12,7 @@
 
 #include "expander_private.h"
 
-static int	get_default_src_fd(t_tt tt)
-{
-	if (tt == TT_REDIRECT_LEFT || tt == TT_HEREDOC || tt == TT_DUP_IN)
-		return (STDIN_FILENO);
-	return (STDOUT_FILENO);
-}
+int	get_default_src_fd(t_tt tt);
 
 /* parse optional leading fd from operator token (e.g. "2>") */
 static int	parse_src_fd(t_tt tt, t_token op_tok)

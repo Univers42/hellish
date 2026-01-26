@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:50:27 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 01:04:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 02:27:41 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,9 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 	if (exe->next_infd != -1)
 		close(exe->next_infd);
 	if (exe->outfd != 1)
-	{
-		dup2(exe->outfd, 1);
-		close(exe->outfd);
-	}
+		(dup2(exe->outfd, 1), close(exe->outfd));
 	if (exe->infd != 0)
-	{
-		dup2(exe->infd, 0);
-		close(exe->infd);
-	}
+		(dup2(exe->infd, 0), close(exe->infd));
 	if (exe->redirs.len == 0)
 		return ;
 	if (exe->redirs.ctx)

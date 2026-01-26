@@ -6,21 +6,13 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:09:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 00:14:49 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 02:31:16 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-bool	is_redirect(t_tt tt)
-{
-	if (tt == TT_REDIRECT_LEFT
-		|| tt == TT_REDIRECT_RIGHT
-		|| tt == TT_APPEND
-		|| tt == TT_HEREDOC)
-		return (true);
-	return (false);
-}
+bool	is_redirect(t_tt tt);
 
 bool	is_proc_sub(t_tt tt)
 {

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:31:19 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 20:51:43 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/26 02:49:49 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,4 +83,35 @@ void	process_redirect_group(t_shell *state, t_ast_node *parent,
 		else
 			gather_heredoc(state, curr, is_pipeline);
 	}
+}
+
+bool	should_skip_node(t_ast_node *node)
+{
+	if (!node)
+		return (true);
+	if (node->node_type == AST_PROC_SUB)
+		return (true);
+	if (node->node_type == AST_TOKEN)
+		return (true);
+	if (node->node_type == AST_WORD)
+		return (true);
+	return (false);
+}
+
+void	recurse_non_redirect_child(t_shell *state,
+									t_ast_node *node,
+									size_t *idx)
+{
+	t_ast_node	*child;
+
+	if (!node->children.ctx || *idx >= node->children.len)
+	{
+		(*idx)++;
+		return ;
+	}
+	child = &((t_ast_node *)node->children.ctx)[*idx];
+	if (!should_skip_node(child))
+		gather_heredocs(state, child,
+			(node->node_type == AST_COMMAND_PIPELINE));
+	(*idx)++;
 }
