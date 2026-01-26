@@ -13,9 +13,9 @@
 #ifndef SYS_H
 # define SYS_H
 # define MSG_GETCWD_SHINIT "shell-init: error retrieving current directory:\
-						getcwd: cannot access parent directories:\
-						No such file or directory\nsh: 0: \
-						getcwd() failed: No such file or directory\n"
+getcwd: cannot access parent directories:\
+No such file or directory\nsh: 0: \
+getcwd() failed: No such file or directory\n"
 # define HOME "HOME"
 # define PWD "PWD"
 # define OLDPWD "OLDPWD"
@@ -33,15 +33,15 @@
 # define IFS "IFS"
 # define TMP_DIR "/tmp"
 # define SHLVL "SHLVL"
-# define DFT_PATH "/usr/local/sbin:/usr/local/bin\
-					:/usr/sbin:/usr/bin:/sbin:/bin"
+# define DFT_PATH "/usr/local/sbin:/usr/local/bin:\
+/usr/sbin:/usr/bin:/sbin:/bin"
 # define PATH "PATH"
 # define ULTIMATE_ARG "_"
 # define MINISHELL "./minishell"
 # define EQ '='
 # define FB_SH "/bin/sh"
 //# define PATH_HELLISH "/usr/bin/hellish"
-# define PATH_HELLISH "/bin/sh"
+# define PATH_HELLISH "/home/dlesieur/Documents/sh42/build/bin/minishell"
 # define PROC_SELF_EXE "/proc/self/exe"
 # define BLACK_HOLE "/dev/null"
 # define CMD_OPT "-c"
