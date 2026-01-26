@@ -1,25 +1,56 @@
 # Compiler and flags
 CC          := cc
-CFLAGS      := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
-# Ultra-fast optimization flags for OPT=1 (Clang-compatible)
-OPTFLAGS    := -O3 -march=native -mtune=native -flto -ffast-math \
-               -funroll-loops -finline-functions -fomit-frame-pointer \
-               -fno-stack-protector -DNDEBUG -fdata-sections -ffunction-sections \
-               -pipe -ftree-vectorize -fslp-vectorize -fvectorize
-LDFLAGS     := -flto -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed
-DEBFLAGS    := -g3 -ggdb -fsanitize=address,leak -O0
-BAPTIZE_SHELL	?= hellish
 
-# Choose flags: default = debug; pass OPT=1 when calling make to enable ultra-fast optimizations
-ifdef OPT
-ALLFLAGS := $(CFLAGS) $(OPTFLAGS)
-LDFLAGS := $(LDFLAGS)
+# Detect compiler (best-effort) and OS
+UNAME_S := $(shell uname -s 2>/dev/null)
+CC_IS_CLANG := $(shell $(CC) --version 2>/dev/null | grep -qi clang && echo 1)
+CC_IS_GCC   := $(shell $(CC) --version 2>/dev/null | grep -qi gcc   && echo 1)
+
+# Includes (must be defined before CPPFLAGS assignment)
+INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
+
+# Base compile flags
+CFLAGS_BASE := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
+
+# Debug / sanitize flags
+DEBFLAGS    := -g3 -ggdb -O0
+SANFLAGS    := -fsanitize=address,leak
+
+# Optimization flags (portable-ish)
+OPTFLAGS_COMMON := -O3 -ffast-math -funroll-loops -finline-functions -fomit-frame-pointer -DNDEBUG -pipe
+# GCC-only / Clang-only extras
+OPTFLAGS_GCC   := -fdata-sections -ffunction-sections
+OPTFLAGS_CLANG := -fdata-sections -ffunction-sections
+
+# LTO flags
+LTO_CFLAGS  := -flto
+LTO_LDFLAGS := -flto
+
+# Linker flags (do not mix into compile flags)
+LDFLAGS_BASE :=
+ifeq ($(UNAME_S),Linux)
+LDFLAGS_BASE += -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed
 else
-ALLFLAGS := $(CFLAGS) $(DEBFLAGS)
-LDFLAGS :=
+# macOS/BSD ld does not support --gc-sections/--as-needed
+LDFLAGS_BASE +=
 endif
 
-INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public
+LDLIBS      := -lreadline
+BAPTIZE_SHELL\t?= hellish
+
+# Choose flags: default = debug; pass OPT=1 when calling make to enable optimizations
+ifdef OPT
+CPPFLAGS := $(INCLUDES)
+CFLAGS   := $(CFLAGS_BASE) $(OPTFLAGS_COMMON) \
+            $(if $(CC_IS_GCC),$(OPTFLAGS_GCC),) \
+            $(if $(CC_IS_CLANG),$(OPTFLAGS_CLANG),) \
+            $(LTO_CFLAGS)
+LDFLAGS  := $(LDFLAGS_BASE) $(LTO_LDFLAGS)
+else
+CPPFLAGS := $(INCLUDES)
+CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
+LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
+endif
 
 # Directories
 OBJ_DIR := build/obj
@@ -41,8 +72,11 @@ TOTAL := $(words $(SRCS))
 # Output
 NAME := minishell
 
-# Parallel compilation for faster builds
-MAKEFLAGS := --no-print-directory -j$(shell nproc)
+ifeq ($(OPT),1)
+	MAKEFLAGS := --no-print-directory -j$(shell nproc)
+else
+	MAKEFLAGS := --no-print-directory -j1
+endif
 
 # Add this variable at the top with your other variables
 COMPILED := 0
@@ -51,35 +85,48 @@ all: $(BIN_DIR)/$(NAME)
 
 # Link the final binary
 $(BIN_DIR)/$(NAME): $(LIBFT_A) $(OBJS)
-	@mkdir -p $(BIN_DIR)
-	@printf "\033[1;34m🔗 Linking $(NAME)...\033[0m\n"
-	@$(CC) $(ALLFLAGS) $(OBJS) $(LIBFT_A) -lreadline -lm $(LDFLAGS) -o $@
-	@printf "\033[1;32m✅ Built $(NAME) successfully!\033[0m\n"
-ifdef OPT
-	@printf "\033[1;33m⚡ Ultra-fast optimized build complete!\033[0m\n"
-	@strip $@
-endif
+	@printf "\n  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[0m" >&2
+	@for dots in '.' '..' '...' '....' '.....'; do \
+	    printf "\r  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[1;36m%-5s\033[0m" "$$dots" >&2; \
+	    sleep 0.1; \
+	done
+	@$(CC) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
+	@printf "\r\033[K  \033[1;32m✓\033[0m \033[1;37m$(NAME) ready\033[0m\n\n" >&2
 
 # Compile .c -> .o with inline animation
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(dir $@)
-	@$(eval COMPILED := $(shell echo $$(($(COMPILED) + 1))))
-	@printf "\r\033[K\033[1;36m⚡ Compiling [$(COMPILED)/$(TOTAL)]: \033[0m$< "
-ifdef OPT
-	@printf "\033[1;33m(ULTRA-FAST)\033[0m"
-endif
-	@$(CC) $(ALLFLAGS) $(INCLUDES) -MMD -MP -c $< -o $@
+	@printf "\033c\n" >&2
+	@filename=$$(basename $<); \
+	{ \
+	    for spin in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'; do \
+	        printf "\r  \033[1;35m$$spin\033[0m \033[37mCompiling %-40s\033[0m" "$$filename" >&2; \
+	        sleep 0.02; \
+	    done & \
+	    pid=$$!; \
+	    $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@ 2>/dev/null; \
+	    result=$$?; \
+	    kill $$pid 2>/dev/null; \
+	    wait $$pid 2>/dev/null; \
+	    if [ $$result -eq 0 ]; then \
+	        count=$$(find $(OBJ_DIR) -name "*.o" 2>/dev/null | wc -l); \
+	        printf "\r  \033[1;32m✓\033[0m \033[37m%-40s\033[0m \033[1;36m%d\033[90m/\033[37m%d\033[0m" "$$filename" $$count $(TOTAL) >&2; \
+	    else \
+	        printf "\r  \033[1;31m✗\033[0m \033[37m%-40s\033[0m \033[1;31mFAILED\033[0m\n\n" "$$filename" >&2; \
+	        $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@; \
+	        exit 1; \
+	    fi; \
+	}
+	
 # Include dependency files if present
 -include $(DEPS)
 
 # Build libft (in its directory)
 $(LIBFT_A):
-	@printf "\033[1;35m📚 Building libft...\033[0m\n"
-ifdef OPT
-	@$(MAKE) -C vendor/libft OPT=1
-else
-	@$(MAKE) -C vendor/libft
-endif
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft\033[0m\n\n" >&2
+	@$(MAKE) -C vendor/libft -j20
+	@printf "\n" >&2
 
 clean:
 	@printf "\n  \033[1;33m⚠\033[0m \033[1;37mCleaning build artifacts\033[0m" >&2
@@ -131,28 +178,5 @@ my_shell:
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
-# Performance test target
-perf: $(BIN_DIR)/$(NAME)
-	@printf "\033[1;33m🚀 Running performance test...\033[0m\n"
-	@echo "echo 'Hello World'" | time -p ./$(BIN_DIR)/$(NAME)
-	@echo "ls -la | wc -l" | time -p ./$(BIN_DIR)/$(NAME)
-	@printf "\033[1;32m✅ Performance test complete!\033[0m\n"
 
-# Show optimization info
-info:
-ifdef OPT
-	@printf "\033[1;33m⚡ ULTRA-FAST MODE ENABLED\033[0m\n"
-	@printf "Optimization flags: $(OPTFLAGS)\n"
-	@printf "Link flags: $(LDFLAGS)\n"
-else
-	@printf "\033[1;34m🐛 DEBUG MODE ENABLED\033[0m\n"
-	@printf "Debug flags: $(DEBFLAGS)\n"
-endif
-
-# Ultra-fast benchmark target
-benchmark: $(BIN_DIR)/$(NAME)
-	@printf "\033[1;33m⚡ Running ultra-fast benchmark...\033[0m\n"
-	@echo "for i in {1..100}; do echo 'test'; done | head -50" | time -p ./$(BIN_DIR)/$(NAME) >/dev/null
-	@printf "\033[1;32m🏁 Benchmark complete!\033[0m\n"
-
-.PHONY: test re all clean fclean norm my_shell perf info benchmark
+.PHONY: test re all clean fclean norm my_shell help
