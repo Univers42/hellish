@@ -12,6 +12,8 @@
 
 #include "lexer.h"
 
+void	init_color_map_part2(t_hash *map);
+
 t_hash	*get_color_map(void)
 {
 	static t_hash	map;
@@ -32,13 +34,7 @@ t_hash	*get_color_map(void)
 	hash_set(&map, "TT_PIPE", (void *)ASCII_CYAN);
 	hash_set(&map, "TT_OR", (void *)ASCII_CYAN);
 	hash_set(&map, "TT_AND", (void *)ASCII_CYAN);
-	hash_set(&map, "TT_SEMICOLON", (void *)ASCII_MAGENTA);
-	hash_set(&map, "TT_NEWLINE", (void *)ASCII_MAGENTA);
-	hash_set(&map, "TT_QWORD", (void *)ASCII_GREEN);
-	hash_set(&map, "TT_SQWORD", (void *)ASCII_GREEN);
-	hash_set(&map, "TT_DQWORD", (void *)ASCII_GREEN);
-	hash_set(&map, "TT_ENVVAR", (void *)ASCII_GREEN);
-	hash_set(&map, "TT_DQENVVAR", (void *)ASCII_GREEN);
+	init_color_map_part2(&map);
 	ready = true;
 	return (&map);
 }

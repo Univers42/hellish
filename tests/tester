@@ -10,13 +10,13 @@ if [[ $1 ]]; then
     )
 else
     test_lists=(
+		"crazy1"
         "arith"
         "edge_cases"
 		"dylan_exec"
         "builtins"
 		"globbing"
 		"compound"
-		"crazy1"
 		"crazy2"
 		"var"
 		"pipe"

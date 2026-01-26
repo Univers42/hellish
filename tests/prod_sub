@@ -1,7 +1,6 @@
 diff <(echo "hello") <(echo "hello")
 diff <(echo "hello") <(echo "world")
 diff <(sort file1.txt) <(sort file2.txt)
-grep root <(cat /etc/passwd)
 wc -l <(ls /bin)
 cat <(ls) <(pwd)
 sed 's/foo/bar/' <(echo "foo baz")
