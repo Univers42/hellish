@@ -280,6 +280,11 @@ Throughout this evolution, the guiding principles were:
 - **Room to grow** – it should be possible to tighten POSIX compliance or add
   features without tearing everything apart.
 
+
+## 🛠 Use Of AI
+
+> to fill in ...
+
 ---
 
 ## ❤️ Why We Like Working on It
