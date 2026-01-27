@@ -1,13 +1,15 @@
-# 🐚 sh42 – A Modern Educational Shell
+# <div style="background-color: rgba(231, 140, 153, 1); color: rgba(11, 86, 65, 1); padding: 20px;">Hellish – A Modern Educational Shell
+
+_This project was created as part of the 42 curriculum by dlesieur, alcacere_.
 
 > A from‑scratch, almost‑POSIX shell written in C, designed to be **hackable**,
 > **observable**, and **pleasant** to use.
 
 ---
 
-## ✨ What Is This Project?
+## <div style="color:rgba(250,75,100,90)" >What Is This Project?
 
-`sh42` is a full interactive shell implementation done as a long‑running
+`hellish` is a full interactive shell implementation done as a long‑running
 learning project. It aims to be:
 
 - **Very close to POSIX semantics** (and moving closer over time),
@@ -26,9 +28,9 @@ teaching lab:
 
 ---
 
-## 🚀 Quick Start
+## <div style="color:rgba(250,75,100,90)" >Quick Start
 
-### 1. Build
+### <div style="color:rgba(195, 67, 103, 1)">1. Build
 
 The project comes with a `Makefile` at the root. The usual targets are:
 
@@ -44,32 +46,52 @@ The resulting binary is typically named something like `sh42` (or as defined
 in the `Makefile`). After `make`, you can run:
 
 ```sh
-./sh42
+./build/bin/minishell
 ```
 
 and you’ll be dropped into the shell prompt.
 
-### 2. Try It as an Interactive Shell
+### <div style="color:rgba(195, 67, 103, 1)">2. Try It as an Interactive Shell
 
 You don’t have to replace your login shell to experiment. A safe way to test:
 
 ```sh
 # From your usual shell
-$ ./sh42
-sh42$ echo "Hello from sh42"
+$ ./build/bin/minishell
+minishell$ echo "Hello from minishell"
 ```
 
 You can exit back to your normal shell with:
 
 ```sh
-sh42$ exit
+minishell$ exit
 ```
 
-### 3. (Optional) Use as Your Login Shell
+### <div style="color:rgba(195, 67, 103, 1)">3. (Optional) Use as Your Login Shell
 
 > **Warning**: Only do this if you understand what you’re doing and trust the
 > binary. A broken shell as `$SHELL` can make your life painful.
 
+#### <div style="color:rgba(189, 82, 95, 1)">From Now on You Get Two Solutions
+
+##### <div style="color:rgba(159, 93, 101, 1)"> Either makefile auto tools (recommended)
+
+```bash
+$ make my_shell
+
+# or rebaptize hellish to name to your convenience
+$ make  my_shell BAPTIZE_SHELL=<name>
+
+```
+
+Using those command will use the sudo rights and set this shell as your main shell into your computer. I approve ! and you  will be surpises how fast it is, especially if you compile the binary 
+
+```bash
+make OPT=1 # faster compilation; faster running time..   --- > hooo yeah
+```
+
+
+##### <div style="color:rgba(159, 93, 101, 1)"> or manually
 1. Find the full path to the binary, e.g.:
 
    ```sh
@@ -77,28 +99,28 @@ sh42$ exit
    /home/you/sh42
    $ ls sh42
    # ...
-   $ which ./sh42
-   /home/you/sh42/sh42
+   $ which ./minishell
+   /home/you/sh42/build/bin/minishell
    ```
 
 2. (System‑wide) You would normally add this path to `/etc/shells`.
 3. Change your shell for your user:
 
    ```sh
-   chsh -s /home/you/sh42/sh42
+   chsh -s /home/you/sh42/build/bin/minishell
    ```
 
 4. Log out / log in again, or open a new terminal.
 
 Because this is a personal/educational shell, it is usually better to keep it
-as an **alternative shell** you launch explicitly (`./sh42`) rather than
+as an **alternative shell** you launch explicitly (`./minishell`) rather than
 replacing `/bin/bash` or `/bin/zsh` everywhere.
 
 ---
 
-## 🎯 Why This Shell Exists
+## <div style="color:rgba(250,75,100,90)" >Why This Shell Exists
 
-### 1. To learn shells *properly*
+### <div style="color:rgba(195, 67, 103, 1)">1. To learn shells *properly*
 
 Writing a shell is one of the deepest ways to understand Unix:
 
@@ -107,10 +129,12 @@ Writing a shell is one of the deepest ways to understand Unix:
 - How pipelines, redirections, and process substitutions really work.
 - How job control, signals, and heredocs are implemented in practice.
 
-`sh42` was created to explore all of that with **realistic complexity** but
+`hellish` was created to explore all of that with **realistic complexity** but
 without the decades of historical baggage of a production shell.
 
-### 2. To design a clean, modular architecture
+> This shell called `hellish` was baptized like that due to 3 months of battling to create this giant motor of shell linux. That  we think you would like..
+
+### <div style="color:rgba(195, 67, 103, 1)">2. To design a clean, modular architecture
 
 Many shells grew organically. This one was designed from day one to have
 **clear internal boundaries**:
@@ -127,7 +151,7 @@ Many shells grew organically. This one was designed from day one to have
 The result is a codebase that’s surprisingly readable for a shell, and that
 invites experimentation.
 
-### 3. To be *usable*, not just theoretical
+### <div style="color:rgba(195, 67, 103, 1)">3. To be *usable*, not just theoretical
 
 This is not a toy REPL: the goal is to be something you **could** use for real
 work:
@@ -139,7 +163,7 @@ work:
 
 ---
 
-## 📐 POSIX Compliance (and Where We Are)
+## <div style="color:rgba(250,75,100,90)" >POSIX Compliance (and Where We Are)
 
 The project does **not** claim to be a complete POSIX shell, but it aims to be
 “POSIX‑shaped”:
@@ -165,7 +189,7 @@ POSIX‑inspired core.
 
 ---
 
-## 🧱 Internal Design Highlights
+## <div style="color:rgba(250,75,100,90)" >Internal Design Highlights
 
 While each submodule has its own README, here is the bird’s‑eye view:
 
@@ -212,7 +236,7 @@ stitched together.
 
 ---
 
-## 🛠 Using the Makefile and Build Profiles
+## <div style="color:rgba(250,75,100,90)" >Using the Makefile and Build Profiles
 
 The root `Makefile` is the main way to work with the project. Typical
 scenarios:
@@ -221,7 +245,7 @@ scenarios:
 
   ```sh
   make
-  ./sh42
+  ./build/bin/minishell
   ```
 
 - **Debugging internals** – enable lexer/parser debug modes via options or
@@ -238,7 +262,7 @@ custom scripts; just inspect the `Makefile` and pick the targets you need.
 
 ---
 
-## 💡 Extensibility
+## <div style="color:rgba(250,75,100,90)" >Extensibility </div>
 
 Because everything is modular, adding features is usually localized:
 
@@ -253,7 +277,7 @@ pipeline.
 
 ---
 
-## 📜 A Short History of the Project
+## <div style="color:rgba(250,75,100,90)" >A Short History of the Project
 
 This shell has been built incrementally over many sessions of experimentation
 and refactoring:
@@ -280,14 +304,42 @@ Throughout this evolution, the guiding principles were:
 - **Room to grow** – it should be possible to tighten POSIX compliance or add
   features without tearing everything apart.
 
+## <div style="color:rgba(250,75,100,90)" >References & Documentation
 
-## 🛠 Use Of AI
+This shell implementation is built upon the foundational logic of the POSIX standard, supplemented by classic systems programming literature and modern implementation guides.
 
-> to fill in ...
+### <div style="color:rgba(195, 67, 103, 1)">Standards & Manuals
+* **[POSIX Standard (Shell & Utilities)](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html)** – The primary authority on shell grammar, environment variables, and command execution.
+* **[GNU Bash Reference Manual](https://www.gnu.org/software/bash/manual/bash.html)** – Essential for comparing standard POSIX behavior against modern extensions.
+* **[Shell Man Page](assets/manual/man.1)** – Local documentation for this specific shell's usage.
 
----
+### <div style="color:rgba(195, 67, 103, 1)">Architecture & Logic
+* **[Crafting Interpreters](https://craftinginterpreters.com/)** – Guidance on the lexing and parsing patterns used to transform input into executable commands.
+* **[Architecture of the Shell Motor](assets/pdfs/builtins.pdf)** – Detailed breakdown of the internal execution engine and process lifecycle.
+* **[Grokking Algorithms](https://www.manning.com/books/grokking-algorithms)** – Reference for implementing the data structures required for environment variables and command history.
 
-## ❤️ Why We Like Working on It
+### <div style="color:rgba(195, 67, 103, 1)">Implementation Guides
+* **[Stephen Brennan's Guide: Write a Shell in C](https://brennan.io/2015/01/16/write-a-shell-in-c/)** – A foundational resource for handling the `fork-exec` loop and basic process management.
+* **[Writing Your Own Shell](assets/pdfs/Chapter5-WritingYourOwnShell.pdf)** – Advanced insights into signal handling and terminal control.
+* **[Code Crafters: Build Your Own Shell](https://app.codecrafters.io/courses/shell/overview)** – Test-driven development challenges that helped validate our implementation.
+
+### <div style="color:rgba(195, 67, 103, 1)">Advanced Topics & Strict Mode
+* **[Unofficial Bash Strict Mode](http://redsymbol.net/articles/unofficial-bash-strict-mode/)** – Best practices for error handling and preventing unexpected behavior.
+* **[Restricted Bash (rbash)](assets/pdfs/rbash.pdf)** – Documentation used to understand shell security and execution constraints.
+* **[Subject sh42 / minishell](assets/pdfs/minishell.pdf)** – Technical requirements and constraints for the project's core features.
+
+### <div style="color:rgba(195, 67, 103, 1)">Tester
+- [minishell tester](https://github.com/LucasKuhn/minishell_tester),  powered by our mind and based on his.
+
+## <div style="color:rgba(250,75,100,90)" >🛠 Use Of AI
+
+**Documentation & Research** - Used to clarify ambiguities in edge cases where conventions differ and to research complex topics not detailed in standard textbooks, ensuring realistic solutions within the project's scope.
+
+**Concept Explanation** - Served as a study aid to solidify the understanding of abstract functionalities and architectural requirements necessary for building a shell.
+
+**Code Generation** Not used for logic implementation; limited to clarification and study.
+
+## <div style="color:rgba(250,75,100,90)" >❤️ Why We Like Working on It
 
 - It’s a genuine, real‑world interpreter you can reason about.
 - It rewards careful thought about **APIs, ownership, and semantics**.
@@ -298,6 +350,6 @@ If you enjoy interpreters, Unix internals, or just want to see how a modern
 from‑scratch shell can be structured, this project is meant to be
 approachable, hackable, and instructive.
 
-Pull it, `make`, run `./sh42`, and poke at it.
+Pull it, `make`, run `./build/bin/minishell`, and poke at it.
 
-Welcome to `sh42`. 🐚
+Welcome to `hellish`. 🐚
