@@ -19,7 +19,7 @@
 /* Forward declaration */
 typedef struct s_shell	t_shell;
 
-typedef enum e_ast_t
+typedef enum e_ast_type
 {
 	AST_COMMAND_PIPELINE,
 	AST_REDIRECT,
@@ -32,11 +32,11 @@ typedef enum e_ast_t
 	AST_COMMAND,
 	AST_ASSIGNMENT_WORD,
 	AST_PROC_SUB
-}	t_ast_t;
+}	t_ast_type;
 
 typedef struct s_ast_node
 {
-	t_ast_t			node_type;
+	t_ast_type		node_type;
 	t_token			token;
 	t_vec			children;
 	bool			has_redirect;
@@ -50,10 +50,10 @@ typedef t_vec			t_vec_nd;
 void	free_ast(t_ast_node *node);
 void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node));
 void	print_ast_dot(t_shell *state, t_ast_node node);
-char	*node_name(t_ast_t tn);
+char	*node_name(t_ast_type tn);
 void	print_node(t_ast_node node);
 
-static inline t_ast_node	create_node_tok(t_ast_t type, t_token token)
+static inline t_ast_node	create_node_tok(t_ast_type type, t_token token)
 {
 	return ((t_ast_node)
 		{
@@ -65,7 +65,7 @@ static inline t_ast_node	create_node_tok(t_ast_t type, t_token token)
 	});
 }
 
-static inline t_ast_node	create_node_type(t_ast_t type)
+static inline t_ast_node	create_node_type(t_ast_type type)
 {
 	return ((t_ast_node)
 		{

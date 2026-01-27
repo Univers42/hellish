@@ -6,13 +6,13 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 20:50:55 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:53:21 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-void	push_parsed_word(t_deque_tt *tokens, t_ast_node *ret)
+void	push_parsed_word(t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 
@@ -21,7 +21,7 @@ void	push_parsed_word(t_deque_tt *tokens, t_ast_node *ret)
 }
 
 void	push_parsed_redirect(t_shell *state, t_parser *parser,
-						t_deque_tt *tokens, t_ast_node *ret)
+						t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 
@@ -30,7 +30,7 @@ void	push_parsed_redirect(t_shell *state, t_parser *parser,
 }
 
 void	push_parsed_proc_sub(t_shell *state, t_parser *parser,
-							t_deque_tt *tokens, t_ast_node *ret)
+							t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 
@@ -39,7 +39,7 @@ void	push_parsed_proc_sub(t_shell *state, t_parser *parser,
 }
 
 void	push_parsed_compound_list(t_shell *state, t_parser *parser,
-									t_deque_tt *tokens, t_ast_node *ret)
+									t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 

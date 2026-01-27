@@ -6,13 +6,13 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:21:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:48:55 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tt *tokens)
+t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 {
 	t_tt		tt;
 	t_ast_node	ret;

@@ -69,7 +69,7 @@ void	execute_pipeline_children(t_shell *state,
 	t_executable_node	curr_exe;
 	int					pp[2];
 	t_exec_child_ctx	ctx;
-	t_exe_res			res;
+	t_execution_state			res;
 
 	ctx.prev_infd = dup(exe->infd);
 	ctx.state = state;
@@ -93,20 +93,20 @@ void	execute_pipeline_children(t_shell *state,
 }
 
 /* Always returns status */
-t_exe_res	execute_pipeline(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
 	t_vec_exe_res	results;
-	t_exe_res		res;
-	t_exe_res		*plast;
+	t_execution_state		res;
+	t_execution_state		*plast;
 
 	results = (t_vec_exe_res){0};
 	vec_init(&results);
-	results.elem_size = sizeof(t_exe_res);
+	results.elem_size = sizeof(t_execution_state);
 	execute_pipeline_children(state, exe, &results);
 	procsub_close_fds_parent(state);
 	if (results.len > 0)
 	{
-		plast = (t_exe_res *)vec_idx(&results, results.len - 1);
+		plast = (t_execution_state *)vec_idx(&results, results.len - 1);
 		res = *plast;
 		if (res.pid != -1)
 			exe_res_set_status(&res);

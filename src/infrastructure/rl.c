@@ -35,7 +35,7 @@ void	bg_readline(int outfd, char *prompt)
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
 }
 
-int	attach_input_readline(t_buff_readline *l, int pp[2], int pid)
+int	attach_input_readline(t_rl *l, int pp[2], int pid)
 {
 	int	status;
 
@@ -54,7 +54,7 @@ int	attach_input_readline(t_buff_readline *l, int pp[2], int pid)
 	return (WEXITSTATUS(status));
 }
 
-int	get_more_input_readline(t_buff_readline *l, char *prompt)
+int	get_more_input_readline(t_rl *l, char *prompt)
 {
 	int	pp[2];
 	int	pid;

@@ -12,10 +12,10 @@
 
 #include "lexer.h"
 
-char	*parse_quote(t_deque_tt *tokens, char **str, char q);
+char	*parse_quote(t_deque_tok *tokens, char **str, char q);
 
 /* handle subshell $(...) with nested parentheses and quoted segments */
-char	*tokenize_subshell(t_deque_tt *tokens, char **str)
+char	*tokenize_subshell(t_deque_tok *tokens, char **str)
 {
 	int		depth;
 	char	*res;

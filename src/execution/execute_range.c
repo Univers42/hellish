@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:26:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 01:04:18 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 static void	execute_then(t_executable_node *exe,
 							t_ast_node *child,
 							t_shell *state,
-							t_exe_res *status)
+							t_execution_state *status)
 {
 	t_executable_node	exe_curr;
 
@@ -30,10 +30,10 @@ static void	execute_then(t_executable_node *exe,
 /* Execute a range of chi{ldren [start, end)
 as a sequence in the current process.
    This handles && and || chaining within the range. */
-t_exe_res	execute_range(t_shell *state, t_executable_node *exe,
+t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 							size_t start, size_t end)
 {
-	t_exe_res			status;
+	t_execution_state			status;
 	t_tt				op;
 	size_t				i;
 	t_ast_node			*child;
@@ -58,12 +58,12 @@ t_exe_res	execute_range(t_shell *state, t_executable_node *exe,
 }
 
 /* Execute a command sequence in the background */
-t_exe_res	execute_range_background(t_shell *state, t_executable_node *exe,
+t_execution_state	execute_range_background(t_shell *state, t_executable_node *exe,
 										size_t start, size_t end)
 {
 	pid_t		pid;
 	int			null_fd;
-	t_exe_res	res;
+	t_execution_state	res;
 
 	pid = fork();
 	if (pid == 0)

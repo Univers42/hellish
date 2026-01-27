@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 16:44:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:03:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ void	free_ast(t_ast_node *node)
 }
 
 /* Helper: Get color for node type in DOT format */
-char	*get_node_color(t_ast_t tn)
+char	*get_node_color(t_ast_type tn)
 {
 	if (tn == AST_COMMAND_PIPELINE)
 		return ("#FFB6C1");
@@ -61,7 +61,7 @@ char	*get_node_color(t_ast_t tn)
 }
 
 /* Helper: Get shape for node type in DOT format */
-char	*get_node_shape(t_ast_t tn)
+char	*get_node_shape(t_ast_type tn)
 {
 	if (tn == AST_TOKEN || tn == AST_WORD)
 		return ("ellipse");

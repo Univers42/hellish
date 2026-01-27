@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 00:21:30 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/26 02:44:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
 void	proc_sub_update_depth(t_token curr, int *depth);
-int		handle_end_token(t_parser *parser, t_deque_tt *tokens);
+int		handle_end_token(t_parser *parser, t_deque_tok *tokens);
 
 static void	update_cmd_bounds(t_token curr, const char **start,
 							const char **end, t_token *prev)
@@ -24,7 +24,7 @@ static void	update_cmd_bounds(t_token curr, const char **start,
 	*prev = curr;
 }
 
-static int	collect_proc_sub_command(t_parser *parser, t_deque_tt *tokens,
+static int	collect_proc_sub_command(t_parser *parser, t_deque_tok *tokens,
 								const char **cmd_start, const char **cmd_end)
 {
 	int		depth;
@@ -84,7 +84,7 @@ static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 	return (0);
 }
 
-t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser, t_deque_tt *tokens)
+t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_token		op_tok;

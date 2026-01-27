@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:09:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 02:31:16 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ bool	is_compund_list_op(t_tt tt)
 	return (false);
 }
 
-t_ast_node	parse_word(t_deque_tt *tokens)
+t_ast_node	parse_word(t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_token		tmp;

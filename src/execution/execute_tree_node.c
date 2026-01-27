@@ -6,17 +6,17 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:09:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 20:12:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
 
 // always returns status
-t_exe_res	execute_tree_node(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_tree_node(t_shell *state, t_executable_node *exe)
 {
-	t_exe_res		status;
-	t_ast_t			t;
+	t_execution_state		status;
+	t_ast_type			t;
 
 	t = exe->node->node_type;
 	status = res_status(0);

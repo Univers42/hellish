@@ -54,7 +54,7 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 {
 	int				wr_fd;
 	t_string		sep;
-	t_heredoc_req	req;
+	t_hdoc	req;
 
 	ft_assert(node->children.len >= 1);
 	if (((t_ast_node *)node->children.ctx)[0].token.tt == TT_HEREDOC)
@@ -62,7 +62,7 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 		wr_fd = ft_mktemp(state, node);
 		sep = word_to_hrdoc_string(((t_ast_node *)node->children.ctx)[1]);
 		ft_assert(sep.ctx != 0);
-		req = (t_heredoc_req){
+		req = (t_hdoc){
 			.sep = (char *)sep.ctx,
 			.expand = !contains_quotes(((t_ast_node *)node->children.ctx)[1]),
 			.remove_tabs

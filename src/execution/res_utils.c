@@ -12,17 +12,17 @@
 
 #include "execution_private.h"
 
-t_exe_res	res_status(int status)
+t_execution_state	res_status(int status)
 {
-	return ((t_exe_res){.status = status, .pid = -1});
+	return ((t_execution_state){.status = status, .pid = -1});
 }
 
-t_exe_res	res_pid(int pid)
+t_execution_state	res_pid(int pid)
 {
-	return ((t_exe_res){.status = -1, .pid = pid});
+	return ((t_execution_state){.status = -1, .pid = pid});
 }
 
-void	exe_res_set_status(t_exe_res *res)
+void	exe_res_set_status(t_execution_state *res)
 {
 	int	status;
 

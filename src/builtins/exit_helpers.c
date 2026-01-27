@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 13:59:39 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 14:03:50 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:08:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 // Print exit if using readline
 void	print_exit_if_readline(t_shell *state)
 {
-	if (state->input_method == INP_READLINE)
+	if (state->input_method == INP_RL)
 		ft_eprintf("exit\n");
 }
 

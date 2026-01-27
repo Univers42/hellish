@@ -61,7 +61,7 @@ int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 	{
 		if (state->input_method == INP_ARG || state->input_method == INP_FILE)
 			return (state->readline_buff.has_finished = true, 0);
-		if (state->input_method == INP_STDIN_NOTTY)
+		if (state->input_method == INP_NOTTY)
 			code = get_more_input_notty(state);
 		else
 			code = get_more_input_readline(&state->readline_buff, prompt);
@@ -70,10 +70,10 @@ int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 		if (code == 2)
 		{
 			get_g_sig()->should_unwind = SIGINT;
-			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 			return (2);
 		}
-		if (state->input_method == INP_READLINE)
+		if (state->input_method == INP_RL)
 			vec_push_char(&state->readline_buff.buff, '\n');
 		state->readline_buff.has_line = true;
 	}

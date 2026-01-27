@@ -109,7 +109,7 @@ Helpers in `utils.c` cover this:
 
 - `set_cmd_status`:
   - updates the shell’s notion of the last command result,
-  - stores both the raw `t_exe_res` (status + extra flags) and a freshly
+  - stores both the raw `t_execution_state` (status + extra flags) and a freshly
     allocated decimal string for expansion.
 
 - `forward_exit_status`:

@@ -38,13 +38,13 @@ typedef struct s_shell
 	 char            *context;
 	 char            *pid;
 	 char            *last_cmd_status_s;
-	 t_exe_res       last_cmd_status_res;
+	 t_execution_state       last_cmd_status_res;
 	 t_history       hist;
 	 bool            should_exit;
 	 t_vec_redir     redirects;
 	 int             heredoc_idx;
-	 t_buff_readline readline_buff;
-	 t_prng_state    prng;
+	 t_rl readline_buff;
+	 t_prng    prng;
 	 uint32_t        option_flags;
 	 int             bg_job_count;
 	 t_vec_procsub   proc_subs;
@@ -109,13 +109,13 @@ Expectation: at any given time, `tree` either represents the AST for the *curren
 
 ### 2.5 `input_method` – Input source mode
 
-- **Type:** `int` (values from `sh_input.h`, e.g. `INP_READLINE`, `INP_FILE`, `INP_ARG`, `INP_STDIN_NOTTY`)
+- **Type:** `int` (values from `sh_input.h`, e.g. `INP_RL`, `INP_FILE`, `INP_ARG`, `INP_NOTTY`)
 - **Set by:** `mode_input()` in `on.c`, via helpers in `init.c`
 - **Modes:**
-  - `INP_READLINE` – Interactive terminal (history, prompts)
+  - `INP_RL` – Interactive terminal (history, prompts)
   - `INP_FILE` – Script file execution
   - `INP_ARG` – `-c "command string"` mode
-  - `INP_STDIN_NOTTY` – Non‑TTY stdin (pipes, redirections)
+  - `INP_NOTTY` – Non‑TTY stdin (pipes, redirections)
 - **Why it matters:**
   - Controls prompt behavior, history integration, and some builtin behaviors (e.g. `exit` prints "exit" only when using readline)
 
@@ -154,7 +154,7 @@ Expectation: all user‑visible diagnostics use `context` so that errors correct
 
 - **Types:**
   - `last_cmd_status_s`: textual representation (e.g. `$?` string form)
-  - `last_cmd_status_res`: structured execution result `t_exe_res`
+  - `last_cmd_status_res`: structured execution result `t_execution_state`
 - **Set by:** `set_cmd_status(state, res_status(...))` and executor code
 - **Used by:**
   - `exit` builtin when no explicit code is given
@@ -209,7 +209,7 @@ Expectation: `redirects` only contains entries for *current* input; it is cleare
 
 ### 2.13 `readline_buff` – Buffered input for readline/FILE/STDIN
 
-- **Type:** `t_buff_readline`
+- **Type:** `t_rl`
 - **Filled by:**
   - `buff_readline_init()` and `vec_init()` in `on()`
   - `read_file_to_buffer()` in `init.c` for file mode
@@ -224,7 +224,7 @@ Design goal: have one abstraction for "a stream of lines" regardless of whether 
 
 ### 2.14 `prng` – Pseudo‑random number generator state
 
-- **Type:** `t_prng_state`
+- **Type:** `t_prng`
 - **Initialized by:** `prng_initialize_state(&state->prng, 19650218UL)` in `on()`
 - **Usage:**
   - Provides deterministic PRNG state for shell features (e.g., `$RANDOM`‑like behavior, job IDs, or other future features)
@@ -397,7 +397,7 @@ The executor is responsible for updating the last command status after each top�
 ```c
 void some_executor_entry(t_shell *state, t_ast_node *root)
 {
-    t_exe_res res;
+    t_execution_state res;
 
     res = execute_ast(root, state);
     set_cmd_status(state, res_status(res.status));

@@ -68,6 +68,6 @@ void	init_file(t_shell *state, char **argv)
 
 void	init_stdin_notty(t_shell *state)
 {
-	state->input_method = INP_STDIN_NOTTY;
+	state->input_method = INP_NOTTY;
 	state->readline_buff.should_update_context = true;
 }

@@ -12,7 +12,7 @@
 
 #include "rl_private.h"
 
-void	buff_readline_update(t_buff_readline *l)
+void	buff_readline_update(t_rl *l)
 {
 	if (!l->buff.ctx || l->buff.len == 0)
 	{
@@ -25,7 +25,7 @@ void	buff_readline_update(t_buff_readline *l)
 	l->has_line = l->cursor != l->buff.len;
 }
 
-void	buff_readline_reset(t_buff_readline *l)
+void	buff_readline_reset(t_rl *l)
 {
 	if (l->buff.len > l->cursor)
 		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor,
@@ -39,9 +39,9 @@ void	buff_readline_reset(t_buff_readline *l)
 	buff_readline_update(l);
 }
 
-void	buff_readline_init(t_buff_readline *ret)
+void	buff_readline_init(t_rl *ret)
 {
-	*ret = (t_buff_readline){};
+	*ret = (t_rl){};
 }
 
 void	update_context(t_shell *state)

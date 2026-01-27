@@ -46,7 +46,7 @@ int	write_to_file(char *str, int fd)
  * don't see the point of raising SIGINT just before exiting
  * with the appropriate exit code.
  */
-void	forward_exit_status(t_exe_res res)
+void	forward_exit_status(t_execution_state res)
 {
 	ft_assert(res.status != -1);
 	if (res.c_c)
@@ -57,7 +57,7 @@ void	forward_exit_status(t_exe_res res)
 	exit(res.status);
 }
 
-void	set_cmd_status(t_shell *state, t_exe_res res)
+void	set_cmd_status(t_shell *state, t_execution_state res)
 {
 	state->last_cmd_status_res = res;
 	free(state->last_cmd_status_s);

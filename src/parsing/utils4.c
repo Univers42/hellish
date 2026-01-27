@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 20:51:13 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:52:37 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,12 +15,12 @@
 void	handle_unexpected_token(t_shell *state,
 								t_parser *parser,
 								t_ast_node ret,
-								t_deque_tt *tokens)
+								t_deque_tok *tokens)
 {
 	(void)unexpected(state, parser, ret, tokens);
 }
 
-void	init_ast_node_children(t_ast_node *node, t_ast_t type)
+void	init_ast_node_children(t_ast_node *node, t_ast_type type)
 {
 	*node = create_node_type(type);
 	vec_init(&node->children);
@@ -39,7 +39,7 @@ void	push_token_child(t_ast_node *parent, t_token tok)
 
 void	push_cmd_parsed(t_shell *state,
 						t_parser *parser,
-						t_deque_tt *tokens,
+						t_deque_tok *tokens,
 						t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
@@ -50,7 +50,7 @@ void	push_cmd_parsed(t_shell *state,
 
 void	push_parsed_pipeline_child(t_shell *state,
 							t_parser *parser,
-							t_deque_tt *tokens,
+							t_deque_tok *tokens,
 							t_ast_node *parent)
 {
 	t_ast_node	tmp_node;

@@ -6,13 +6,13 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:52:24 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 21:11:16 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
-static void	append_paren_and_inc(t_deque_tt *tokens,
+static void	append_paren_and_inc(t_deque_tok *tokens,
 							t_string *expr_buf,
 							int *depth)
 {
@@ -23,7 +23,7 @@ static void	append_paren_and_inc(t_deque_tt *tokens,
 	vec_push_str(expr_buf, "(");
 }
 
-static void	handle_right_brace(t_deque_tt *tokens,
+static void	handle_right_brace(t_deque_tok *tokens,
 							t_string *expr_buf,
 							int *depth)
 {
@@ -43,7 +43,7 @@ static void	handle_right_brace(t_deque_tt *tokens,
 	*depth = 0;
 }
 
-static void	collect_word_token(t_deque_tt *tokens,
+static void	collect_word_token(t_deque_tok *tokens,
 							t_string *expr_buf,
 							t_token *last_word)
 {
@@ -57,7 +57,7 @@ static void	collect_word_token(t_deque_tt *tokens,
 	vec_push_nstr(expr_buf, peek.start, peek.len);
 }
 
-void	handle_arith_error_collect(t_deque_tt *tokens,
+void	handle_arith_error_collect(t_deque_tok *tokens,
 							t_string *expr_buf,
 							bool *has_inner_paren,
 							t_token *last_word)
@@ -87,7 +87,7 @@ void	handle_arith_error_collect(t_deque_tt *tokens,
 
 int	handle_arith_error(t_shell *state,
 						t_parser *parser,
-						t_deque_tt *tokens,
+						t_deque_tok *tokens,
 						t_ast_node *ret)
 {
 	t_token		arith_tok;

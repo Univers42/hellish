@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 21:11:01 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 21:12:02 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ void	handle_arith_error_print(t_shell *state,
 }
 
 int	push_simple_list_op_token(t_parser *parser,
-									t_deque_tt *tokens,
+									t_deque_tok *tokens,
 									t_ast_node *ret,
 									t_tt *out_next)
 {
@@ -49,7 +49,7 @@ int	push_simple_list_op_token(t_parser *parser,
 }
 
 int	check_newlines_and_end(t_parser *parser,
-									t_deque_tt *tokens,
+									t_deque_tok *tokens,
 									t_tt next)
 {
 	while (is_newline_token(tokens))
@@ -75,7 +75,7 @@ void	add_op_token_child(t_ast_node *ret, t_token op_tok)
 }
 
 int	proc_sub_handle_eof(t_parser *parser,
-							t_deque_tt *tokens,
+							t_deque_tok *tokens,
 							t_string *cmd_str,
 							t_token curr)
 {

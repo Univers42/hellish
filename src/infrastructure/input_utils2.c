@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:12 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 18:22:25 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:08:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 static void	prepare_parser_and_prompt(t_shell *state,
 									t_parser *parser,
-									t_deque_tt *tt,
+									t_deque_tok *tt,
 									char **prompt)
 {
 	t_string	p;
@@ -26,14 +26,14 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	p = prompt_normal();
 	*prompt = ft_strdup(p.ctx);
 	free(p.ctx);
-	*tt = (t_deque_tt){0};
+	*tt = (t_deque_tok){0};
 	deque_init(&tt->deqtok, 100, sizeof(t_token));
 	tt->looking_for = 0;
 }
 
 static void	finalize_parser_and_cleanup(t_shell *state,
 										t_parser *parser,
-										t_deque_tt *tt,
+										t_deque_tok *tt,
 										char *prompt)
 {
 	if (parser->res == RES_OK)
@@ -42,7 +42,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 		free_ast(&state->tree);
 	}
 	if (get_g_sig()->should_unwind)
-		set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+		set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 	manage_history(state);
 	if (parser->parse_stack.ctx)
 		free(parser->parse_stack.ctx);
@@ -52,13 +52,13 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 	if (tt->deqtok.buff)
 		free(tt->deqtok.buff);
 	state->should_exit |= (get_g_sig()->should_unwind
-			&& state->input_method != INP_READLINE)
+			&& state->input_method != INP_RL)
 		|| state->readline_buff.has_finished;
 }
 
 void	parse_and_execute_input(t_shell *state)
 {
-	t_deque_tt		tt;
+	t_deque_tok		tt;
 	char			*prompt;
 	t_parser		parser;
 

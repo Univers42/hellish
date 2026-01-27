@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:11:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 01:04:14 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
 #include "sys.h"
 
-t_exe_res	execute_cmd_bg(t_shell *state,
+t_execution_state	execute_cmd_bg(t_shell *state,
 						t_executable_node *exe, t_executable_cmd *cmd)
 {
 	int		pid;

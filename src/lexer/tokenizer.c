@@ -21,7 +21,7 @@ static void	skip_shell_comment(char **str)
 		(*str)++;
 }
 
-static char	*try_parse_lexeme(char **str, t_deque_tt *ret)
+static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
 {
 	if (**str == '\'' || **str == '"' || **str == '$'
 		|| !(is_word_boundary(*str)))
@@ -29,7 +29,7 @@ static char	*try_parse_lexeme(char **str, t_deque_tt *ret)
 	return (0);
 }
 
-static void	emit_newline(char **str, t_deque_tt *ret)
+static void	emit_newline(char **str, t_deque_tok *ret)
 {
 	t_token	tmp;
 
@@ -38,7 +38,7 @@ static void	emit_newline(char **str, t_deque_tt *ret)
 	(*str)++;
 }
 
-char	*tokenizer(char *str, t_deque_tt *ret)
+char	*tokenizer(char *str, t_deque_tok *ret)
 {
 	char	*prompt;
 	t_token	tmp;

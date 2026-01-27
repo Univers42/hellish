@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:10:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:47:33 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
 static bool	parse_and_push_simple_cmd_child(t_shell *state, t_parser *res,
-											t_deque_tt *tokens, t_ast_node *ret)
+											t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_tt	next;
 
@@ -30,7 +30,7 @@ static bool	parse_and_push_simple_cmd_child(t_shell *state, t_parser *res,
 }
 
 t_ast_node	parse_simple_command(t_shell *state, t_parser *res,
-								t_deque_tt *tokens)
+								t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_tt		next;
