@@ -256,7 +256,7 @@ DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
 # Output
-NAME := minishell
+NAME := hellish
 
 ifeq ($(OPT),1)
 	MAKEFLAGS := --no-print-directory -j$(shell nproc)
