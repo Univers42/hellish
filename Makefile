@@ -179,7 +179,7 @@ SRCS :=		src/arith/eval.c\
 			src/helpers/free_utils.c\
 			src/helpers/utils.c\
 			src/helpers/var_name.c\
-			src/helpers/verbose.c\SRCS = $(shell find ./srcs -name "*.c")
+			src/helpers/verbose.c\
 			src/heredoc/helpers.c\
 			src/heredoc/reader.c\
 			src/heredoc/helpers1.c\
