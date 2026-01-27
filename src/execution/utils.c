@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:07:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 01:15:14 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,8 +37,8 @@ void	apply_redir(t_shell *state, int idx)
 
 	if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
 	{
-		if (state->context)
-			ft_eprintf(MSG_INT_ERR_REDIR_IDX, state->context, idx);
+		if (state->ctx)
+			ft_eprintf(MSG_INT_ERR_REDIR_IDX, state->ctx, idx);
 		else
 			ft_eprintf(MSG_INT_ERR_REDIR_IDX, NAME, idx);
 		exit(EXIT_GENERAL_ERR);
@@ -83,7 +83,7 @@ void	apply_redirs_from_ast(t_shell *state, t_executable_node *exe)
 			continue ;
 		if (redirect_from_ast_redir(state, curr, &idx))
 		{
-			ft_eprintf(MSG_AMBIGUOUS_REDIR, state->context);
+			ft_eprintf(MSG_AMBIGUOUS_REDIR, state->ctx);
 			exit(EXIT_GENERAL_ERR);
 		}
 		apply_redir(state, idx);

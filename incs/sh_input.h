@@ -26,13 +26,13 @@ typedef struct s_deque_tok	t_deque_tok;
 # ifndef INCS_INPUT_ENUM_DEFINED
 #  define INCS_INPUT_ENUM_DEFINED
 
-typedef enum e_input_method
+typedef enum e_metinp
 {
 	INP_RL,
 	INP_FILE,
 	INP_ARG,
 	INP_NOTTY,
-}	t_input_method;
+}	t_metinp;
 # endif
 
 bool	ends_with_bs_nl(t_string s);

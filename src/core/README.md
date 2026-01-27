@@ -33,17 +33,17 @@ typedef struct s_shell
 	 t_vec_env       env;
 	 t_string        cwd;
 	 t_ast_node      tree;
-	 int             input_method;
-	 char            *base_context;
-	 char            *context;
+	 int             metinp;
+	 char            *dft_ctx;
+	 char            *ctx;
 	 char            *pid;
-	 char            *last_cmd_status_s;
-	 t_execution_state       last_cmd_status_res;
+	 char            *last_cmd_st;
+	 t_execution_state       last_cmd_st_exe;
 	 t_history       hist;
 	 bool            should_exit;
 	 t_vec_redir     redirects;
 	 int             heredoc_idx;
-	 t_rl readline_buff;
+	 t_rl rl;
 	 t_prng    prng;
 	 uint32_t        option_flags;
 	 int             bg_job_count;
@@ -107,7 +107,7 @@ Expectation: at any given time, `tree` either represents the AST for the *curren
 
 ---
 
-### 2.5 `input_method` – Input source mode
+### 2.5 `metinp` – Input source mode
 
 - **Type:** `int` (values from `sh_input.h`, e.g. `INP_RL`, `INP_FILE`, `INP_ARG`, `INP_NOTTY`)
 - **Set by:** `mode_input()` in `on.c`, via helpers in `init.c`
@@ -121,17 +121,17 @@ Expectation: at any given time, `tree` either represents the AST for the *curren
 
 ---
 
-### 2.6 `base_context` and `context` – Error/reporting context strings
+### 2.6 `dft_ctx` and `ctx` – Error/reporting ctx strings
 
 - **Type:** `char *`
 - **Ownership:** Allocated with `ft_strdup`, freed in `free_all_state()`
 - **Roles:**
-  - `base_context`: original identifier of the shell (argv[0] at startup)
-  - `context`: mutable display name used in error messages
-    - Updated for scripts: `update_context_from_file()` sets it to the filename
-    - Used in error reporting throughout the code (`ft_eprintf("%s: ...", state->context, ...)`)
+  - `dft_ctx`: original identifier of the shell (argv[0] at startup)
+  - `ctx`: mutable display name used in error messages
+    - Updated for scripts: `update_ctx_from_file()` sets it to the filename
+    - Used in error reporting throughout the code (`ft_eprintf("%s: ...", state->ctx, ...)`)
 
-Expectation: all user‑visible diagnostics use `context` so that errors correctly refer to the current script or shell name.
+Expectation: all user‑visible diagnostics use `ctx` so that errors correctly refer to the current script or shell name.
 
 ---
 
@@ -150,17 +150,17 @@ Expectation: all user‑visible diagnostics use `context` so that errors correct
 
 ---
 
-### 2.8 `last_cmd_status_s` and `last_cmd_status_res`
+### 2.8 `last_cmd_st` and `last_cmd_st_exe`
 
 - **Types:**
-  - `last_cmd_status_s`: textual representation (e.g. `$?` string form)
-  - `last_cmd_status_res`: structured execution result `t_execution_state`
+  - `last_cmd_st`: textual representation (e.g. `$?` string form)
+  - `last_cmd_st_exe`: structured execution result `t_execution_state`
 - **Set by:** `set_cmd_status(state, res_status(...))` and executor code
 - **Used by:**
   - `exit` builtin when no explicit code is given
   - Prompt, scripting constructs and error reporting
 
-Expectation: after each command or pipeline, `last_cmd_status_res` accurately reflects the final status, and `last_cmd_status_s` (if used) maintains a printable form.
+Expectation: after each command or pipeline, `last_cmd_st_exe` accurately reflects the final status, and `last_cmd_st` (if used) maintains a printable form.
 
 ---
 
@@ -207,7 +207,7 @@ Expectation: `redirects` only contains entries for *current* input; it is cleare
 
 ---
 
-### 2.13 `readline_buff` – Buffered input for readline/FILE/STDIN
+### 2.13 `rl` – Buffered input for readline/FILE/STDIN
 
 - **Type:** `t_rl`
 - **Filled by:**
@@ -216,7 +216,7 @@ Expectation: `redirects` only contains entries for *current* input; it is cleare
   - stdin/tty reading in the input subsystem
 - **Usage:**
   - Acts as unified buffer for various input methods
-  - `should_update_context` flag indicates when the prompt/context should be recalculated
+  - `should_update_ctx` flag indicates when the prompt/ctx should be recalculated
 
 Design goal: have one abstraction for "a stream of lines" regardless of whether they come from a TTY, a file, a string (`-c`) or a pipe.
 
@@ -294,7 +294,7 @@ This short‑circuit approach avoids complex parsing: each option is independent
    - Sets signal handling via `set_unwind_sig()`
    - Initializes `state` to zero with `shell_init()` (inline in `shell.h`)
    - Parses command‑line options with `select_mode_from_argv()`
-   - Initializes readline buffer, PID, context, cwd, environment and vectors
+   - Initializes readline buffer, PID, ctx, cwd, environment and vectors
    - Decides input method (`-c`, file, stdin, TTY) and prepares corresponding buffers
    - Seeds PRNG and sets `bg_job_count = 0`
 
@@ -329,9 +329,9 @@ In other words, the shell is "thread‑safe" in the sense that there is no unsyn
 The core adheres to POSIX shell expectations:
 
 - **Environment:** `env_to_vec_env()` initializes `env` from `envp`, and builtins modify this view as POSIX specifies.
-- **Exit status:** `last_cmd_status_res` follows standard 0–255 exit codes and is used for `$?` and `exit` default.
+- **Exit status:** `last_cmd_st_exe` follows standard 0–255 exit codes and is used for `$?` and `exit` default.
 - **Input modes:**
-  - Interactive vs non‑interactive behavior is distinguished via `isatty(0)` and `input_method`.
+  - Interactive vs non‑interactive behavior is distinguished via `isatty(0)` and `metinp`.
   - `exit` printing behavior (`print_exit_if_readline`) mimics POSIX shells printing `exit` only in interactive sessions.
 - **Signals:** `set_unwind_sig()` and `get_g_sig()` integrate with POSIX signal handling; unwinding behavior is centralized and respects typical shell expectations (e.g., interrupting the current command but not killing the entire shell inappropriately).
 - **Redirections and heredocs:** handled via `redirects`, `heredoc_idx` and the AST, providing POSIX redirection semantics.
@@ -390,7 +390,7 @@ Understanding `t_shell` and the core lifecycle is key to extending the shell saf
 
 ## 7. Practical Code Examples
 
-### 7.1 Using `last_cmd_status_res` for `$?` and `exit`
+### 7.1 Using `last_cmd_st_exe` for `$?` and `exit`
 
 The executor is responsible for updating the last command status after each top‑level evaluation:
 
@@ -401,11 +401,11 @@ void some_executor_entry(t_shell *state, t_ast_node *root)
 
     res = execute_ast(root, state);
     set_cmd_status(state, res_status(res.status));
-    state->last_cmd_status_res = res;
+    state->last_cmd_st_exe = res;
 }
 ```
 
-A builtin that needs the default exit status (like `exit` with no argument) simply reads from `state->last_cmd_status_res`:
+A builtin that needs the default exit status (like `exit` with no argument) simply reads from `state->last_cmd_st_exe`:
 
 ```c
 int builtin_exit(t_shell *state, t_vec argv)
@@ -414,7 +414,7 @@ int builtin_exit(t_shell *state, t_vec argv)
 
     // No explicit code: use last command status
     if (argv.len == 1)
-        exit_clean(state, state->last_cmd_status_res.status);
+        exit_clean(state, state->last_cmd_st_exe.status);
     // ...existing numeric parsing and error logic...
 }
 ```
@@ -425,13 +425,13 @@ Similarly, an expansion implementation for `$?` can be written as:
 char *expand_last_status(t_shell *state)
 {
     // Convert last status to string if needed
-    if (!state->last_cmd_status_s)
-        state->last_cmd_status_s = ft_itoa(state->last_cmd_status_res.status);
-    return (ft_strdup(state->last_cmd_status_s));
+    if (!state->last_cmd_st)
+        state->last_cmd_st = ft_itoa(state->last_cmd_st_exe.status);
+    return (ft_strdup(state->last_cmd_st));
 }
 ```
 
-This shows the intended pattern: the *numeric* truth lives in `last_cmd_status_res.status`, while the string form is derived on demand.
+This shows the intended pattern: the *numeric* truth lives in `last_cmd_st_exe.status`, while the string form is derived on demand.
 
 ### 7.2 How `pid` controls cleanup in `exit`
 
@@ -500,7 +500,7 @@ When adding new fields to `t_shell`, keep these invariants and guidelines in min
 
 5. **Consider input modes and POSIX semantics**
    - If your new field affects user‑visible behavior (e.g. prompts, logging, debug info), think about:
-     - Interactive vs non‑interactive (`input_method`),
+     - Interactive vs non‑interactive (`metinp`),
      - Script file vs `-c` vs stdin.
    - Try to mirror how POSIX shells differ between these modes.
 

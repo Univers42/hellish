@@ -19,11 +19,11 @@ void	print_redir_err(t_shell *state,
 	{
 		if (full_token.present && full_token.start)
 			ft_eprintf("%s: %.*s: ambiguous redirect\n",
-				state->context, full_token.len, full_token.start);
+				state->ctx, full_token.len, full_token.start);
 		else
-			ft_eprintf("%s: ambiguous redirect\n", state->context);
+			ft_eprintf("%s: ambiguous redirect\n", state->ctx);
 	}
 	else
-		ft_eprintf("%s: %s: %s\n", state->context,
+		ft_eprintf("%s: %s: %s\n", state->ctx,
 			expanded_name, strerror(errno));
 }

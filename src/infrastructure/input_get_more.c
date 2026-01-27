@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:29:56 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,12 +55,12 @@ static int	debug_lexer_loop_body(t_shell *state,
 	}
 	set_cmd_status(state, res_status(0));
 	if (get_g_sig()->should_unwind)
-		set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
+		set_cmd_status(state, create_exec_state(CANCELED, true));
 	if (state->should_exit || get_g_sig()->should_unwind)
 		return (1);
 	if (is_empty_token_list(tt))
 	{
-		buff_readline_reset(&state->readline_buff);
+		buff_readline_reset(&state->rl);
 		return (0);
 	}
 	print_and_cleanup_tokens(state, tt, prompt);
@@ -74,7 +74,7 @@ void	debug_lexer_loop(t_shell *state,
 {
 	int	ret;
 
-	while (parser->res == RES_MoreInput || parser->res == RES_Init)
+	while (parser->res == RES_GETMOREINPUT || parser->res == RES_INIT)
 	{
 		ret = debug_lexer_loop_body(state, parser, prompt, tt);
 		if (ret == 1)
@@ -89,18 +89,18 @@ void	default_parser_loop(t_shell *state, t_parser *parser,
 {
 	int	s;
 
-	while (parser->res == RES_MoreInput || parser->res == RES_Init)
+	while (parser->res == RES_GETMOREINPUT || parser->res == RES_INIT)
 	{
 		s = get_more_tokens(state, prompt, tt);
 		if (handle_eof(s, state))
 			break ;
 		if (s == 2)
 		{
-			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, create_exec_state(CANCELED, true));
 			continue ;
 		}
 		if (get_g_sig()->should_unwind)
-			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, create_exec_state(CANCELED, true));
 		if (state->should_exit || get_g_sig()->should_unwind)
 			break ;
 		if (!try_parse_tokens(state, parser, tt, prompt))

@@ -186,7 +186,7 @@ A typical interaction looks like this:
    - word splitting (based on `IFS`).
 
 2. If the resulting word contains glob characters and is allowed to be
-   expanded (i.e. not in single quotes, not a context where globbing is
+   expanded (i.e. not in single quotes, not a ctx where globbing is
    disabled), the expander calls:
 
    - “expand this word via globbing”, which internally:
@@ -251,7 +251,7 @@ This may look “over‑engineered” at first, but it gives several advantages:
      directories, sorting) is separate. You can understand and test them
      independently.
 
-2. **Reusability in different contexts**
+2. **Reusability in different ctxs**
    - The same core operations can be used for:
      - normal argument expansion,
      - redirection targets,

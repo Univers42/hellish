@@ -41,13 +41,13 @@ void	free_all_state(t_shell *state)
 {
 	free(state->input.ctx);
 	state->input = (t_string){};
-	free(state->last_cmd_status_s);
+	free(state->last_cmd_st);
 	free(state->pid);
-	free(state->context);
-	free(state->base_context);
-	state->context = 0;
-	state->base_context = 0;
-	free(state->readline_buff.buff.ctx);
+	free(state->ctx);
+	free(state->dft_ctx);
+	state->ctx = 0;
+	state->dft_ctx = 0;
+	free(state->rl.buff.ctx);
 	free_redirects(&state->redirects);
 	cleanup_proc_subs(state);
 	free_ast(&state->tree);

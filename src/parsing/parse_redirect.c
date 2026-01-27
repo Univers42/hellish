@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:10:18 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:28:40 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,9 @@ void	validate_next_token_is_properly_set_for_redirect(t_deque_tok *tokens,
 	(void)next;
 }
 
-t_ast_node	parse_redirect(t_shell *state, t_parser *parser, t_deque_tok *tokens)
+t_ast_node	parse_redirect(t_shell *state,
+				t_parser *parser,
+				t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_token		t;

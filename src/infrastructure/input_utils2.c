@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:12 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:08:38 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:29:05 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	t_string	p;
 
 	(void)state;
-	*parser = (t_parser){.res = RES_Init};
+	*parser = (t_parser){.res = RES_INIT};
 	vec_init(&parser->parse_stack);
 	parser->parse_stack.elem_size = sizeof(int);
 	p = prompt_normal();
@@ -42,7 +42,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 		free_ast(&state->tree);
 	}
 	if (get_g_sig()->should_unwind)
-		set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
+		set_cmd_status(state, create_exec_state(CANCELED, true));
 	manage_history(state);
 	if (parser->parse_stack.ctx)
 		free(parser->parse_stack.ctx);
@@ -52,8 +52,8 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 	if (tt->deqtok.buff)
 		free(tt->deqtok.buff);
 	state->should_exit |= (get_g_sig()->should_unwind
-			&& state->input_method != INP_RL)
-		|| state->readline_buff.has_finished;
+			&& state->metinp != INP_RL)
+		|| state->rl.has_finished;
 }
 
 void	parse_and_execute_input(t_shell *state)

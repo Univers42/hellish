@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:41 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	if (collect_redirects_from_ast(state, exe))
 		return (res_status(AMBIGUOUS_REDIRECT));
 	exe->node = vec_idx(&exe->node->children, 0);
-	exe->modify_parent_context = true;
+	exe->modify_parent_ctx = true;
 	return (execute_subshell(state, exe));
 }
 

@@ -32,7 +32,7 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
 		return (true);
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
-		return (parser->res = RES_MoreInput, true);
+		return (parser->res = RES_GETMOREINPUT, true);
 	{
 		push_parsed_pipeline_child(state, parser, tokens, ret);
 		if (parser->res != RES_OK)
@@ -53,8 +53,8 @@ t_ast_node	parse_compound_list(t_shell *state,
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_ARITH_START)
 	{
-		parser->res = RES_FatalError;
-		state->last_cmd_status_res = res_status(1);
+		parser->res = RES_ERR;
+		state->last_cmd_st_exe = res_status(1);
 		return (ret);
 	}
 	push_parsed_pipeline_child(state, parser, tokens, &ret);

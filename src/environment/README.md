@@ -287,7 +287,7 @@ char *env_expand_n(t_shell *state, char *key, int len)
     t_env *curr;
 
     if (ft_strncmp(key, "?", len) == 0 && len == 1)
-        return (state->last_cmd_status_s);
+        return (state->last_cmd_st);
     else if (ft_strncmp(key, "$", len) == 0 && state->pid && len == 1)
         return (state->pid);
     else if (len == 0)
@@ -302,7 +302,7 @@ char *env_expand_n(t_shell *state, char *key, int len)
 
 Special cases:
 
-- `$?` → string form of the last command status (`state->last_cmd_status_s`).
+- `$?` → string form of the last command status (`state->last_cmd_st`).
 - `$$` → PID of the shell (`state->pid`).
 - Empty name (like `$""` or malformed cases) → empty string.
 
@@ -425,7 +425,7 @@ void init_cwd(t_shell *state)
 - `set_shlvl(state)`:
   - Reads `SHLVL`, parses it as an int (with `ft_checked_atoi`), increments it or resets to `1`.
 - `set_underscore(state)`:
-  - Ensures `_` (ultimate argument) is set; uses `state->context` or `MINISHELL`.
+  - Ensures `_` (ultimate argument) is set; uses `state->ctx` or `MINISHELL`.
 - `ensure_essential_env_vars(state)` ties them together and ensures `PWD` exists:
 
 ```c
@@ -547,7 +547,7 @@ Algorithm:
 
 Design notes:
 
-- `exe_path` is currently unused but could be used in the future for context‑specific env manipulations.
+- `exe_path` is currently unused but could be used in the future for ctx‑specific env manipulations.
 - Only `exported` entries are visible to children, matching POSIX behavior of `export`.
 
 ---

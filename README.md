@@ -209,7 +209,7 @@ While each submodule has its own README, here is the bird’s‑eye view:
   - Hand‑written descent-ish parser building an AST of `t_ast_node`.
   - Distinguishes simple lists, pipelines, commands, subshells, redirects,
     process substitutions.
-  - Uses a small `parse_stack` plus `RES_MoreInput`/`RES_FatalError` protocol
+  - Uses a small `parse_stack` plus `RES_GETMOREINPUT`/`RES_ERR` protocol
     to drive multi‑line prompts and error messages.
 
 - **Word Reparser / Splitting**

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 21:46:13 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 23:58:16 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ typedef struct s_reparser
 	t_ast_node	current_node;
 	int			i;
 	t_token		current_token;
-	t_tt		context_tt;
+	t_tt		ctx_tt;
 	int			prev_start;
 }	t_reparser;
 
@@ -64,7 +64,7 @@ bool		is_close_paren(t_token t, int idx);
 bool		try_handle_paren_rp(t_reparser *rp, int prev_start);
 bool		try_handle_special_rp(t_reparser *rp, t_tt tt);
 void		consume_ident_rp(t_reparser *rp);
-t_tt		select_literal_tt(t_tt context_tt, t_token *t, int prev_start);
+t_tt		select_literal_tt(t_tt ctx_tt, t_token *t, int prev_start);
 void		handle_envvar_literal(t_reparser *rp, int prev_start, t_tt tt);
 bool		handle_envvar_empty(t_reparser *rp, int prev_start, t_tt tt);
 void		handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt);
@@ -86,7 +86,7 @@ static inline void	create_reparser(t_reparser *rp,
 	rp->current_node = current_node;
 	rp->current_token = current_token;
 	rp->i = *i;
-	rp->context_tt = current_token.tt;
+	rp->ctx_tt = current_token.tt;
 	rp->prev_start = 0;
 }
 

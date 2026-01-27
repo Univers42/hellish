@@ -60,7 +60,7 @@ The expander walks this AST and produces higher‑level objects for the executor
 
 The executor then:
 
-- applies `pre_assigns` (temporarily or permanently, depending on context),
+- applies `pre_assigns` (temporarily or permanently, depending on ctx),
 - applies the redirections,
 - chooses **builtin vs external** command,
 - and finally executes.
@@ -97,7 +97,7 @@ The expander knows when a leading `~` should be treated specially:
 - `~-` → `$OLDPWD`
 - `~/path` → `$HOME/path`
 
-It only applies these rules in the correct syntactic contexts (e.g., at the
+It only applies these rules in the correct syntactic ctxs (e.g., at the
 start of a word, and not inside quotes). This keeps the parser simple while
 still matching traditional shell behavior.
 
@@ -302,7 +302,7 @@ intentional. The goals were:
 
 2. **Reusability**
    - The same core operations (word expansion, env lookup, globbing) are used in
-     several contexts:
+     several ctxs:
      - simple commands,
      - here‑documents,
      - process substitutions,

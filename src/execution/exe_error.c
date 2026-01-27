@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:09:52 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 20:54:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ bool	check_is_a_dir(char *path, bool *enoent)
 			*enoent = true;
 			return (false);
 		}
-		critical_error_errno_context(path);
+		critical_error_errno_ctx(path);
 	}
 	return (S_ISDIR(info.st_mode));
 }

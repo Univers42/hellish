@@ -24,11 +24,11 @@ bool	get_line_heredoc(t_shell *state,
 		prompt = "heredoc> ";
 	vec_init(alloc_line);
 	stat = buff_readline(state, alloc_line, prompt);
-	state->readline_buff.has_finished = false;
+	state->rl.has_finished = false;
 	if (stat == 0)
 		ft_eprintf("%s: warning: here-document at"
 			" line %i delimited by end-of-file (wanted `%s')\n",
-			state->context, state->readline_buff.line, req->sep);
+			state->ctx, state->rl.line, req->sep);
 	if (stat == 0 || stat == 2)
 	{
 		req->finished = true;

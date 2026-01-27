@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 21:11:01 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:20:47 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ void	handle_arith_error_print(t_shell *state,
 							bool has_inner_paren,
 							t_token last_word)
 {
-	ft_eprintf("%s: ((: ", state->context);
+	ft_eprintf("%s: ((: ", state->ctx);
 	if (has_inner_paren && last_word.start)
 		ft_eprintf("missing `)' (error token is \"%.*s)\")\n",
 			last_word.len, last_word.start);
@@ -58,7 +58,7 @@ int	check_newlines_and_end(t_parser *parser,
 		return (2);
 	if (is_end_token(tokens))
 	{
-		parser->res = RES_MoreInput;
+		parser->res = RES_GETMOREINPUT;
 		return (2);
 	}
 	return (0);
@@ -81,7 +81,7 @@ int	proc_sub_handle_eof(t_parser *parser,
 {
 	if (curr.tt == TT_END)
 	{
-		parser->res = RES_MoreInput;
+		parser->res = RES_GETMOREINPUT;
 		tokens->looking_for = ')';
 		free(cmd_str->ctx);
 		return (1);

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:26:46 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:38:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ as a sequence in the current process.
 t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 							size_t start, size_t end)
 {
-	t_execution_state			status;
+	t_execution_state	status;
 	t_tt				op;
 	size_t				i;
 	t_ast_node			*child;
@@ -58,11 +58,12 @@ t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 }
 
 /* Execute a command sequence in the background */
-t_execution_state	execute_range_background(t_shell *state, t_executable_node *exe,
+t_execution_state	execute_range_background(t_shell *state,
+										t_executable_node *exe,
 										size_t start, size_t end)
 {
-	pid_t		pid;
-	int			null_fd;
+	pid_t				pid;
+	int					null_fd;
 	t_execution_state	res;
 
 	pid = fork();
@@ -79,7 +80,7 @@ t_execution_state	execute_range_background(t_shell *state, t_executable_node *ex
 		exit(res.status);
 	}
 	if (pid < 0)
-		critical_error_errno_context("fork");
+		critical_error_errno_ctx("fork");
 	procsub_close_fds_parent(state);
 	state->bg_job_count++;
 	ft_printf("[%d] %d\n", state->bg_job_count, pid);

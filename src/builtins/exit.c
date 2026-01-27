@@ -17,7 +17,7 @@ int	handle_too_many_args(t_shell *state, t_vec argv, size_t i)
 {
 	if (i + 1 < argv.len)
 	{
-		ft_eprintf("%s: %s: too many arguments\n", state->context,
+		ft_eprintf("%s: %s: too many arguments\n", state->ctx,
 			((char **)argv.ctx)[0]);
 		return (exit_clean(state, 1), 1);
 	}

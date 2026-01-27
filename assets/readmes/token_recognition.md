@@ -42,7 +42,7 @@ cat << EOF | grep "foo" # comment
 ]
 ```
 
-## Strategy when working with tokens (there is differenct context to repeat for each verif)
+## Strategy when working with tokens (there is differenct ctx to repeat for each verif)
 - Inside here-documents:
 - Inside command substritution and arithmetic expansion:
 - Insdie double quuotes
@@ -50,27 +50,27 @@ cat << EOF | grep "foo" # comment
 - Outside of quotes:
 - parameter expansion, inside `${...}`
 
-| #     	| Context                                           	| Why it matters / what to verify 																																							|
+| #     	| ctx                                           	| Why it matters / what to verify 																																							|
 | ------	| --------------------------------------------------	|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------  |
 | **1**		|**here documents** -- `< > >> << <& >&`				| 
 | **2**		|** Inside quoting** -- `[b\|d\|s]quote`				|
 | **3**		| **outside of quotes**									|
 | **4** 	| **Parameter expansion** — inside `${...}`         	|	 Verify how quoting, escapes, and nested expansions work (e.g. `${var\}` vs `${var:-"foo"}` vs `${#var}`).Also test quoting inside pattern removals `${var%"pattern"}`.                  	|
 | **5** 	| **Command word vs arguments**                     	| In POSIX shells, the *first token* (the command name) is recognized before field splitting, alias expansion, or pathname expansion. Verify how escapes affect the *command position* token. |
-| **6** 	| **Redirection and assignment contexts**           	| Test escaping in `VAR=value`, `echo foo\>bar`, `echo >file\ name`, etc. Lexer must distinguish operators like `>`, `>>`, `<&`, etc.                                                         |
+| **6** 	| **Redirection and assignment ctxs**           	| Test escaping in `VAR=value`, `echo foo\>bar`, `echo >file\ name`, etc. Lexer must distinguish operators like `>`, `>>`, `<&`, etc.                                                         |
 | **7**		| **Alias and reserved word recognition**           	| Quoting and escaping can suppress recognition. For instance, `\if` is a literal command, not a reserved word. Verify that escapes disable keyword parsing.                                  |
 | **8**		| **Pathname expansion (globbing)**                 	| Backslash can disable `*`, `?`, and `[` expansion; quoting also prevents it. Verify how these interact before tokenization.                                                                 |
-| **9**		| **Tilde expansion**                               	| Occurs only in unquoted, unescaped contexts at the start of a word (`~/foo`). Test that `\~` or `echo "~"` disables expansion.                                                              |
+| **9**		| **Tilde expansion**                               	| Occurs only in unquoted, unescaped ctxs at the start of a word (`~/foo`). Test that `\~` or `echo "~"` disables expansion.                                                              |
 | **10**	| **Field splitting (word splitting)**              	| After expansions, unquoted results are split by IFS. Verify that quoting or escaping prevents splitting (`echo "$var"` vs `echo $var`).                                                     |
 | **11**	| **Arithmetic vs command substitution nesting**    	| Ensure correct layering: e.g. `"$(( $(echo 1)+1 ))"`, verifying how tokens are re-lexed inside.                                                                                             |
 | **12**	| **Comments**                                      	| Test that `#` starts a comment only when not quoted or escaped. Verify `echo \#notcomment` and `echo '#stillnotcomment'`.                                                                   |
 | **13**	| **Continuation lines and whitespace handling**    	| Verify that `\<newline>` joins lines, doesn’t insert whitespace, and can appear after operators or quotes.                                                                                  |
 | **14**	| **Process substitution (in Bash/Zsh)**            	| `<(command)` and `>(command)` — verify how escapes and quoting affect parsing. (Non-POSIX but common.)                                                                                      |
-| **15**	| **Array or associative array contexts (Bash/Zsh)**	| `arr=(a\ b "c d")` — escaping and quoting rules apply during array word splitting.                                                                                                          |
+| **15**	| **Array or associative array ctxs (Bash/Zsh)**	| `arr=(a\ b "c d")` — escaping and quoting rules apply during array word splitting.                                                                                                          |
 | **16**	| **Subshells / grouping**                          	| `( echo "hi" )` vs `\( echo hi \)` — verify recognition of grouping tokens when escaped.                                                                                                    |
 
 
-For each of those context, we have to verify:
+For each of those ctx, we have to verify:
 1. lexical removal -- What characters are stripped (quotes, backslashes, line continuations)
 2. Expansions phase -- What expansions occur (parameter, command arithmetic, arithmetic, pathname, tilde)
 3. field splitting --  does it happen or is it suppressed by quoting ?
@@ -87,14 +87,14 @@ The Way I see it this pseudo code respond briefly on how the code should behave
 The posix shell's lexical rules aren't just:
 > "split  on whitespace and respect quotes"
 
-They're context sensitive, meaning the interpretation of a character depends on:
+They're ctx sensitive, meaning the interpretation of a character depends on:
 - The current quoting state
 - What came before (operator, redirect, etc..)
 - Whether the parser expects an assignment or a command.
 - and sometimes even on expansion rulse that happen after lexing.
 
 So implementing that correctly requires :
-1. Recursive parsing context
+1. Recursive parsing ctx
 2. Lookhead into expansion phases
 3. Grammar feedback into lexing decisions
 

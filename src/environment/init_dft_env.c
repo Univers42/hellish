@@ -34,9 +34,9 @@ void	set_underscore(t_shell *state)
 	e = env_get(&state->env, ULTIMATE_ARG);
 	if (!e || !e->value || !e->value[0])
 	{
-		if (state->context)
+		if (state->ctx)
 			env_set(&state->env, env_create(ft_strdup(ULTIMATE_ARG),
-					ft_strdup(state->context), true));
+					ft_strdup(state->ctx), true));
 		env_set(&state->env, env_create(ft_strdup(ULTIMATE_ARG),
 				ft_strdup(MINISHELL), true));
 	}

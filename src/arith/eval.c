@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 15:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 13:31:09 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,7 +83,7 @@ char	*arith_expand(t_shell *state, const char *expr, int len)
 	if (error)
 	{
 		ft_eprintf("%s: %.*s: syntax error in arithmetic expression\n",
-			state->context, len, expr);
+			state->ctx, len, expr);
 		return (NULL);
 	}
 	str = arith_lltoa(result);

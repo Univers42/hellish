@@ -12,14 +12,14 @@ about:
 - subshells (`( ... )`),
 - process substitutions (`<(cmd)`, `>(cmd)`),
 - redirections (including FD‑prefixed forms like `2>>file`),
-- arithmetic contexts (`$(( ... ))`) for error reporting.
+- arithmetic ctxs (`$(( ... ))`) for error reporting.
 
 It builds an AST composed of `t_ast_node` objects and communicates with the
 infrastructure via a small **status protocol**:
 
 - `parser->res == RES_OK` – AST is valid and complete.
-- `RES_MoreInput` – grammar is incomplete and needs more tokens.
-- `RES_FatalError` – irrecoverable syntax error.
+- `RES_GETMOREINPUT` – grammar is incomplete and needs more tokens.
+- `RES_ERR` – irrecoverable syntax error.
 
 ---
 
@@ -162,7 +162,7 @@ executor/decomposer.
     closing `)` via `is_semicolon_or_newline_before_brace_right`,
   - pushes the operator onto `parse_stack`,
   - skips newlines,
-  - handles `TT_END` by setting `RES_MoreInput` (expecting more input before
+  - handles `TT_END` by setting `RES_GETMOREINPUT` (expecting more input before
     closing `)`),
   - parses another pipeline and appends it.
 
@@ -190,7 +190,7 @@ Algorithm:
 4. Call `process_pipeline_pipes`:
    - While the next token is `TT_PIPE`:
      - consume it and any following newlines,
-     - if `TT_END` appears, set `RES_MoreInput` and return (pipeline expects
+     - if `TT_END` appears, set `RES_GETMOREINPUT` and return (pipeline expects
        another command),
      - parse another command and append it.
 5. Pop `TT_PIPE` from `parse_stack`.
@@ -278,7 +278,7 @@ The algorithm in `parser_proc_sub.c`:
    - maintain a *depth counter* over parentheses,
    - track the start and end pointers of the inner command text,
    - stop when the matching closing `)` is reached,
-   - request `RES_MoreInput` via `proc_sub_handle_eof` if EOF arrives before
+   - request `RES_GETMOREINPUT` via `proc_sub_handle_eof` if EOF arrives before
      closing the construct.
 
 3. Once `cmd_start`/`cmd_end` are known:
@@ -304,7 +304,7 @@ Subshells have the form:
 Algorithm:
 
 1. Create `AST_SUBSHELL`.
-2. Push `TT_BRACE_LEFT` onto `parse_stack` (for prompt/debug context).
+2. Push `TT_BRACE_LEFT` onto `parse_stack` (for prompt/debug ctx).
 3. Ensure the current token is `TT_BRACE_LEFT`; otherwise call `unexpected`.
 4. Consume `(`.
 5. Parse a **compound list** via `push_parsed_compound_list`.
@@ -317,7 +317,7 @@ This nicely composes with `parse_command` and list operators.
 
 ---
 
-## 7. Arithmetic Context Errors
+## 7. Arithmetic ctx Errors
 
 While full arithmetic parsing lives elsewhere, the parser provides **good
 error messages** when arithmetic constructs are malformed.
@@ -337,7 +337,7 @@ If a `TT_ARITH_START` appears where a list or command is expected,
   - “missing `)` (error token is `"..."`)” when there are unmatched parens.
   - “syntax error in expression (error token is `"..."`)” otherwise.
 
-- The parser res is set to `RES_FatalError` and the shell status to `1`.
+- The parser res is set to `RES_ERR` and the shell status to `1`.
 
 This separation keeps the main grammar simple while still yielding descriptive
 error messages for `$(( ... ))` misuse.
@@ -386,8 +386,8 @@ helpers** instead of one monolithic function.
 
 - **Infrastructure / input**:
   - The main loop checks `parser->res` after each parse attempt:
-    - `RES_MoreInput` → build a continuation prompt and gather more tokens.
-    - `RES_FatalError` → print syntax errors and discard the incomplete AST.
+    - `RES_GETMOREINPUT` → build a continuation prompt and gather more tokens.
+    - `RES_ERR` → print syntax errors and discard the incomplete AST.
 
 - **AST / decomposer / expander**:
   - Once `RES_OK`, the AST is stored in `state->tree` and later traversed by

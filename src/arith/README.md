@@ -4,7 +4,7 @@ This module implements a complete arithmetic expression evaluator for the shell,
 
 ## Overview
 
-The arithmetic parser is designed as a self-contained API that can evaluate mathematical expressions in shell contexts (like `$((expression))` in bash). It consists of three main components:
+The arithmetic parser is designed as a self-contained API that can evaluate mathematical expressions in shell ctxs (like `$((expression))` in bash). It consists of three main components:
 
 1. **Lexer** - Tokenizes the input string into arithmetic tokens
 2. **Parser** - Builds an abstract syntax tree using recursive descent parsing
@@ -222,7 +222,7 @@ void expect(t_arith_parser *p, t_arith_tok type) {
 The arithmetic module integrates with the shell through:
 
 1. **Variable expansion**: Uses shell's environment system
-2. **Error reporting**: Reports to shell's error context
+2. **Error reporting**: Reports to shell's error ctx
 3. **Memory management**: Compatible with shell's allocation patterns
 
 ## Performance Characteristics

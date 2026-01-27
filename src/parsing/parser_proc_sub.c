@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 00:21:30 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:20:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,17 +74,19 @@ static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 	t_ast_node	word_node;
 
 	if (!cmd_start || !cmd_end || cmd_end <= cmd_start)
-		return (parser->res = RES_FatalError, 1);
+		return (parser->res = RES_ERR, 1);
 	len = cmd_end - cmd_start;
 	cmd_copy = ft_strndup(cmd_start, len);
 	if (!cmd_copy)
-		return (parser->res = RES_FatalError, 1);
+		return (parser->res = RES_ERR, 1);
 	word_node = create_word_node(cmd_copy, (int)len);
 	vec_push(&ret->children, &word_node);
 	return (0);
 }
 
-t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser, t_deque_tok *tokens)
+t_ast_node	parse_proc_sub(t_shell *state,
+					t_parser *parser,
+					t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_token		op_tok;

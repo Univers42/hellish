@@ -15,7 +15,7 @@
 void	execute_top_level(t_shell *state)
 {
 	t_executable_node	exe;
-	t_execution_state			res;
+	t_execution_state	res;
 
 	exe = create_exe_node(0, 1, &state->tree, true);
 	vec_init(&exe.redirs);
@@ -28,13 +28,13 @@ void	execute_top_level(t_shell *state)
 	else
 		res = res_status(CANCELED);
 	cleanup_proc_subs(state);
-	if (res.c_c)
+	if (res.ctrl_c)
 	{
-		if (state->input_method == INP_RL)
+		if (state->metinp == INP_RL)
 			ft_eprintf("\n");
 		else
 			state->should_exit = true;
 	}
-	state->last_cmd_status_res = res;
+	state->last_cmd_st_exe = res;
 	verbose(CLAP_PRINT, "");
 }

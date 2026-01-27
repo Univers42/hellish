@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/11 20:17:31 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:13:58 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:17:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,17 +36,17 @@ typedef struct s_shell
 	t_vec_env			env;
 	t_string			cwd;
 	t_ast_node			tree;
-	int					input_method;
-	char				*base_context;
-	char				*context;
+	int					metinp;
+	char				*dft_ctx;
+	char				*ctx;
 	char				*pid;
-	char				*last_cmd_status_s;
-	t_execution_state	last_cmd_status_res;
+	char				*last_cmd_st;
+	t_execution_state	last_cmd_st_exe;
 	t_history			hist;
 	bool				should_exit;
 	t_vec_redir			redirects;
 	int					heredoc_idx;
-	t_rl				readline_buff;
+	t_rl				rl;
 	t_prng				prng;
 	uint32_t			option_flags;
 }	t_shell;

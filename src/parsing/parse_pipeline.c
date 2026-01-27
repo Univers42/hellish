@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:22:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:20:47 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 			(void)deque_pop_start(&tokens->deqtok);
 		if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		{
-			parser->res = RES_MoreInput;
+			parser->res = RES_GETMOREINPUT;
 			return (1);
 		}
 		tmp_node = parse_command(state, parser, tokens);
@@ -35,7 +35,9 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 	return (0);
 }
 
-t_ast_node	parse_pipeline(t_shell *state, t_parser *parser, t_deque_tok *tokens)
+t_ast_node	parse_pipeline(t_shell *state,
+				t_parser *parser,
+				t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	int			r;

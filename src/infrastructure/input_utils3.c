@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:31:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:08:38 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:17:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,10 +62,10 @@ int	readline_cmd(t_shell *state, char **prompt)
 {
 	int	stat;
 
-	if (!state->readline_buff.buff.ctx)
+	if (!state->rl.buff.ctx)
 	{
-		vec_init(&state->readline_buff.buff);
-		state->readline_buff.buff.elem_size = 1;
+		vec_init(&state->rl.buff);
+		state->rl.buff.elem_size = 1;
 	}
 	if (!state->input.ctx)
 	{
@@ -79,7 +79,7 @@ int	readline_cmd(t_shell *state, char **prompt)
 		return (1);
 	if (stat == 2)
 	{
-		if (state->input_method != INP_RL)
+		if (state->metinp != INP_RL)
 			state->should_exit = true;
 		return (2);
 	}
