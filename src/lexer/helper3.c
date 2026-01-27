@@ -68,7 +68,7 @@ static void	init_ops_group3(t_op_map ops[])
 	ops[17] = (t_op_map){NULL, TT_END};
 }
 
-void	parse_op(t_deque_tt *tokens, char **str)
+void	parse_op(t_deque_tok *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;

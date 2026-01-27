@@ -14,7 +14,7 @@
 
 static int	parse_and_push_pipeline(t_shell *state,
 									t_parser *parser,
-									t_deque_tt *tokens,
+									t_deque_tok *tokens,
 									t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
@@ -28,7 +28,7 @@ static int	parse_and_push_pipeline(t_shell *state,
 }
 
 static int	parse_simple_list_op(t_shell *state, t_parser *parser,
-								t_deque_tt *tokens, t_ast_node *ret)
+								t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_tt	next;
 	int		r;
@@ -44,7 +44,7 @@ static int	parse_simple_list_op(t_shell *state, t_parser *parser,
 
 static void	handle_final_newline_or_end(t_shell *state, t_parser *parser,
 										t_ast_node *ret,
-										t_deque_tt *tokens)
+										t_deque_tok *tokens)
 {
 	if (is_newline_token(tokens))
 		(void)deque_pop_start(&tokens->deqtok);
@@ -55,7 +55,7 @@ static void	handle_final_newline_or_end(t_shell *state, t_parser *parser,
 /* Run parse_simple_list_op repeatedly until it signals "no more ops" (1)
    or "error / need more input" (2). Returns the same status code. */
 static int	process_all_simple_list_ops(t_shell *state, t_parser *parser,
-										t_deque_tt *tokens, t_ast_node *ret)
+										t_deque_tok *tokens, t_ast_node *ret)
 {
 	int	status;
 
@@ -70,7 +70,7 @@ static int	process_all_simple_list_ops(t_shell *state, t_parser *parser,
 }
 
 t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
-								t_deque_tt *tokens)
+								t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_tt		next;

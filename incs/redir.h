@@ -36,7 +36,7 @@ typedef struct redir_s
 # endif
 
 // heredoc.c
-typedef struct s_heredoc_req
+typedef struct s_hdoc
 {
 	t_string	full_file;
 	bool		finished;
@@ -44,19 +44,19 @@ typedef struct s_heredoc_req
 	bool		expand;
 	bool		remove_tabs;
 	bool		is_pipe_heredoc;
-}	t_heredoc_req;
+}	t_hdoc;
 
 int			gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline);
 bool		contains_quotes(t_ast_node node);
-void		write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req);
+void		write_heredoc(t_shell *state, int wr_fd, t_hdoc *req);
 int			ft_mktemp(t_shell *state, t_ast_node *node);
 char		*first_non_tab(char *line);
 void		expand_line(t_shell *state, t_string *full_file, char *line);
 
-static inline t_heredoc_req	create_heredoc(char *sep, bool expand,
+static inline t_hdoc	create_heredoc(char *sep, bool expand,
 								bool remove_tabs, bool is_pipe_heredoc)
 {
-	return ((t_heredoc_req)
+	return ((t_hdoc)
 		{
 			.sep = sep,
 			.expand = expand,

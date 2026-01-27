@@ -19,7 +19,7 @@
 // Forward declarations to avoid circular dependency
 typedef struct executable_cmd_s		t_executable_cmd;
 typedef struct executable_node_s	t_executable_node;
-typedef struct s_exe_res			t_exe_res;
+typedef struct s_execution_state	t_execution_state;
 
 void	free_redirects(t_vec_redir *v);
 void	free_all_state(t_shell *state);
@@ -27,8 +27,8 @@ void	free_executable_cmd(t_executable_cmd cmd);
 void	free_executable_node(t_executable_node *node);
 void	free_tab(char **tab);
 int		write_to_file(char *str, int fd);
-void	forward_exit_status(t_exe_res res);
-void	set_cmd_status(t_shell *state, t_exe_res res);
+void	forward_exit_status(t_execution_state res);
+void	set_cmd_status(t_shell *state, t_execution_state res);
 int		ft_checked_atoi(const char *str, int *ret, int flags);
 bool	is_var_name_p1(char c);
 bool	is_var_name_p2(char c);

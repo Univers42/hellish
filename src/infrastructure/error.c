@@ -37,7 +37,7 @@ void	err_2(t_shell *state, char *p1, char *p2)
 }
 
 t_ast_node	unexpected(t_shell *state, t_parser *parser,
-	t_ast_node ret, t_deque_tt *tokens)
+	t_ast_node ret, t_deque_tok *tokens)
 {
 	t_token	t;
 

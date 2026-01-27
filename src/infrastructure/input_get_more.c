@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:10 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:59:40 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "input_private.h"
 
 static int	fetch_lexer_input(t_shell *state, t_parser *parser,
-						char **prompt, t_deque_tt *tt)
+						char **prompt, t_deque_tok *tt)
 {
 	int	s;
 
@@ -38,7 +38,7 @@ static int	fetch_lexer_input(t_shell *state, t_parser *parser,
 static int	debug_lexer_loop_body(t_shell *state,
 								t_parser *parser,
 								char **prompt,
-								t_deque_tt *tt)
+								t_deque_tok *tt)
 {
 	int	action;
 
@@ -55,7 +55,7 @@ static int	debug_lexer_loop_body(t_shell *state,
 	}
 	set_cmd_status(state, res_status(0));
 	if (get_g_sig()->should_unwind)
-		set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+		set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 	if (state->should_exit || get_g_sig()->should_unwind)
 		return (1);
 	if (is_empty_token_list(tt))
@@ -70,7 +70,7 @@ static int	debug_lexer_loop_body(t_shell *state,
 void	debug_lexer_loop(t_shell *state,
 							t_parser *parser,
 							char **prompt,
-							t_deque_tt *tt)
+							t_deque_tok *tt)
 {
 	int	ret;
 
@@ -85,7 +85,7 @@ void	debug_lexer_loop(t_shell *state,
 }
 
 void	default_parser_loop(t_shell *state, t_parser *parser,
-								char **prompt, t_deque_tt *tt)
+								char **prompt, t_deque_tok *tt)
 {
 	int	s;
 
@@ -96,11 +96,11 @@ void	default_parser_loop(t_shell *state, t_parser *parser,
 			break ;
 		if (s == 2)
 		{
-			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 			continue ;
 		}
 		if (get_g_sig()->should_unwind)
-			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 		if (state->should_exit || get_g_sig()->should_unwind)
 			break ;
 		if (!try_parse_tokens(state, parser, tt, prompt))
@@ -111,7 +111,7 @@ void	default_parser_loop(t_shell *state, t_parser *parser,
 void	get_more_input_parser(t_shell *state,
 							t_parser *parser,
 							char **prompt,
-							t_deque_tt *tt)
+							t_deque_tok *tt)
 {
 	if (state->option_flags & OPT_FLAG_DEBUG_PARSER)
 	{

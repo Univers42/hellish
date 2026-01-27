@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:41 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 15:53:57 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 static void	ensure_redirs_initialized(t_executable_node *exe);
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
 
-t_exe_res	execute_command(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
 	ft_assert(exe->node->children.len >= 1);
 	if (((t_ast_node *)exe->node->children.ctx)[0].node_type

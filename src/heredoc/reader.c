@@ -13,7 +13,7 @@
 #include "heredoc_private.h"
 
 bool	get_line_heredoc(t_shell *state,
-		t_heredoc_req *req, t_string *alloc_line)
+		t_hdoc *req, t_string *alloc_line)
 {
 	int		stat;
 	char	*prompt;
@@ -37,7 +37,7 @@ bool	get_line_heredoc(t_shell *state,
 	return (false);
 }
 
-bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
+bool	is_sep(t_hdoc *req, t_string *alloc_line)
 {
 	size_t	sep_len;
 
@@ -56,7 +56,7 @@ bool	is_sep(t_heredoc_req *req, t_string *alloc_line)
 }
 
 // should brake
-void	process_line(t_shell *state, t_heredoc_req *req)
+void	process_line(t_shell *state, t_hdoc *req)
 {
 	t_string	alloc_line;
 	char		*line;
@@ -76,7 +76,7 @@ void	process_line(t_shell *state, t_heredoc_req *req)
 	free(alloc_line.ctx);
 }
 
-void	write_heredoc(t_shell *state, int wr_fd, t_heredoc_req *req)
+void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
 {
 	while (!req->finished)
 	{

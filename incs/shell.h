@@ -61,25 +61,25 @@ typedef t_vec	t_vec_procsub;
 
 typedef struct s_shell
 {
-	t_string		input;
-	t_vec_env		env;
-	t_string		cwd;
-	t_ast_node		tree;
-	int				input_method;
-	char			*base_context;
-	char			*context;
-	char			*pid;
-	char			*last_cmd_status_s;
-	t_exe_res		last_cmd_status_res;
-	t_history		hist;
-	bool			should_exit;
-	t_vec_redir		redirects;
-	int				heredoc_idx;
-	t_buff_readline	readline_buff;
-	t_prng_state	prng;
-	uint32_t		option_flags;
-	int				bg_job_count;
-	t_vec_procsub	proc_subs;
+	t_string			input;
+	t_vec_env			env;
+	t_string			cwd;
+	t_ast_node			tree;
+	int					input_method;
+	char				*base_context;
+	char				*context;
+	char				*pid;
+	char				*last_cmd_status_s;
+	t_execution_state	last_cmd_status_res;
+	t_history			hist;
+	bool				should_exit;
+	t_vec_redir			redirects;
+	int					heredoc_idx;
+	t_rl				readline_buff;
+	t_prng				prng;
+	uint32_t			option_flags;
+	int					bg_job_count;
+	t_vec_procsub		proc_subs;
 }	t_shell;
 
 /* Directory matcher context for glob expansion */

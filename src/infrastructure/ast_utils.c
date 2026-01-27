@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 20:12:58 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:03:31 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ast_private.h"
 
 /* Original function - enhanced with tree output */
-char	*node_name(t_ast_t tn)
+char	*node_name(t_ast_type tn)
 {
 	if (tn == AST_COMMAND_PIPELINE)
 		return ("AST_COMMAND_PIPELINE");

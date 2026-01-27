@@ -13,7 +13,7 @@
 #include "input_private.h"
 #include "helpers.h"
 
-static void	handle_eof_or_error(t_shell *state, t_deque_tt *tt)
+static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 {
 	if (tt->looking_for && state->input.len)
 		ft_eprintf("%s: unexpected EOF while looking for "
@@ -22,21 +22,21 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tt *tt)
 	else if (state->input.len)
 		ft_eprintf("%s: syntax error: unexpected end of file\n",
 			state->context);
-	if (state->input_method == INP_READLINE)
+	if (state->input_method == INP_RL)
 		ft_eprintf("exit\n");
 	if (!state->last_cmd_status_res.status && state->input.len)
-		set_cmd_status(state, (t_exe_res){.status = SYNTAX_ERR});
+		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 	state->should_exit = true;
 }
 
-static void	update_prompt(t_shell *state, char **prompt, t_deque_tt *tt)
+static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 {
 	*prompt = (extend_bs(state), tokenizer((char *)state->input.ctx, tt));
 	if (*prompt)
 		*prompt = ft_strdup(*prompt);
 }
 
-int	get_more_tokens(t_shell *state, char **prompt, t_deque_tt *tt)
+int	get_more_tokens(t_shell *state, char **prompt, t_deque_tok *tt)
 {
 	int	stat;
 

@@ -68,7 +68,7 @@ static void	print_token_row(t_token *curr,
 	ft_printf(ASCII_MAGENTA " ║" RESET_TERM "\n");
 }
 
-static void	print_token_rows(t_deque_tt *tokens,
+static void	print_token_rows(t_deque_tok *tokens,
 						size_t w_name,
 						size_t w_len,
 						size_t w_lexeme)
@@ -84,7 +84,7 @@ static void	print_token_rows(t_deque_tt *tokens,
 	}
 }
 
-void	print_tokens(t_deque_tt *tokens)
+void	print_tokens(t_deque_tok *tokens)
 {
 	size_t	w_name;
 	size_t	w_len;

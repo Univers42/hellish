@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 17:47:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:59:48 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "input_private.h"
 
 void	print_and_cleanup_tokens(t_shell *state,
-									t_deque_tt *tt,
+									t_deque_tok *tt,
 									char **prompt)
 {
 	debug_lexer_print_tokens(state, tt);
@@ -25,7 +25,7 @@ void	print_and_cleanup_tokens(t_shell *state,
 static int	fetch_and_handle_input(t_shell *state,
 									t_parser *parser,
 									char **prompt,
-									t_deque_tt *tt)
+									t_deque_tok *tt)
 {
 	int	s;
 
@@ -47,7 +47,7 @@ static int	fetch_and_handle_input(t_shell *state,
 // Parse tokens, print AST, cleanup, and reset parser state
 static void	parse_print_and_cleanup(t_shell *state,
 									t_parser *parser,
-									t_deque_tt *tt,
+									t_deque_tok *tt,
 									char **prompt)
 {
 	t_ast_node	parsed;
@@ -60,7 +60,7 @@ static void	parse_print_and_cleanup(t_shell *state,
 }
 
 void	debug_parser_loop(t_shell *state, t_parser *parser,
-							char **prompt, t_deque_tt *tt)
+							char **prompt, t_deque_tok *tt)
 {
 	int	action;
 
@@ -74,7 +74,7 @@ void	debug_parser_loop(t_shell *state, t_parser *parser,
 			continue ;
 		set_cmd_status(state, res_status(0));
 		if (get_g_sig()->should_unwind)
-			set_cmd_status(state, (t_exe_res){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
 		if (state->should_exit || get_g_sig()->should_unwind)
 			break ;
 		if (is_empty_token_list(tt))

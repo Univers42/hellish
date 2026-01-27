@@ -14,7 +14,7 @@
 #include "sys.h"
 
 /* Compute column widths dynamically for a neat table */
-void	compute_columns(t_deque_tt *tokens, size_t *w_name,
+void	compute_columns(t_deque_tok *tokens, size_t *w_name,
 		size_t *w_len, size_t *w_lexeme)
 {
 	size_t	i;

@@ -15,7 +15,7 @@
 void	execute_top_level(t_shell *state)
 {
 	t_executable_node	exe;
-	t_exe_res			res;
+	t_execution_state			res;
 
 	exe = create_exe_node(0, 1, &state->tree, true);
 	vec_init(&exe.redirs);
@@ -30,7 +30,7 @@ void	execute_top_level(t_shell *state)
 	cleanup_proc_subs(state);
 	if (res.c_c)
 	{
-		if (state->input_method == INP_READLINE)
+		if (state->input_method == INP_RL)
 			ft_eprintf("\n");
 		else
 			state->should_exit = true;

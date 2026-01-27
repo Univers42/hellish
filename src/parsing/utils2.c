@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:22:44 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:55:52 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,7 +32,7 @@ bool	is_simple_list_op(t_tt tt)
 }
 
 bool	is_semicolon_or_newline_before_brace_right(t_ast_node *ret,
-											t_deque_tt *tokens)
+											t_deque_tok *tokens)
 {
 	size_t	len;
 	t_tt	next_tt;
@@ -47,7 +47,7 @@ bool	is_semicolon_or_newline_before_brace_right(t_ast_node *ret,
 		&& next_tt == TT_BRACE_RIGHT);
 }
 
-bool	is_end_token(t_deque_tt *tokens)
+bool	is_end_token(t_deque_tok *tokens)
 {
 	t_tt	tt;
 
@@ -55,7 +55,7 @@ bool	is_end_token(t_deque_tt *tokens)
 	return (tt == TT_END);
 }
 
-bool	is_newline_token(t_deque_tt *tokens)
+bool	is_newline_token(t_deque_tok *tokens)
 {
 	t_tt	tt;
 

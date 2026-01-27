@@ -37,7 +37,7 @@ static bool	is_empty_command_name(t_executable_cmd *cmd)
 	return (first_arg && first_arg[0] == '\0');
 }
 
-static t_exe_res	handle_empty_command(t_shell *state,
+static t_execution_state	handle_empty_command(t_shell *state,
 						t_executable_cmd *cmd,
 						t_executable_node *exe)
 {
@@ -48,7 +48,7 @@ static t_exe_res	handle_empty_command(t_shell *state,
 	return (res_status(COMMAND_NOT_FOUND));
 }
 
-static t_exe_res	handle_assign_only(t_shell *state,
+static t_execution_state	handle_assign_only(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
 {
@@ -60,7 +60,7 @@ static t_exe_res	handle_assign_only(t_shell *state,
 	return (res_status(0));
 }
 
-t_exe_res	execute_simple_command(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_simple_command(t_shell *state, t_executable_node *exe)
 {
 	t_executable_cmd	cmd;
 

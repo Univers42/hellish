@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:21:39 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 01:24:43 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:10:22 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,9 +26,9 @@
 int		return_last_line(t_shell *state, t_string *ret);
 int		return_new_line(t_shell *state, t_string *ret);
 int		buff_readline(t_shell *state, t_string *ret, char *prompt);
-void	buff_readline_update(t_buff_readline *l);
-void	buff_readline_reset(t_buff_readline *l);
-void	buff_readline_init(t_buff_readline *ret);
+void	buff_readline_update(t_rl *l);
+void	buff_readline_reset(t_rl *l);
+void	buff_readline_init(t_rl *ret);
 void	update_context(t_shell *state);
 int		get_more_input_notty(t_shell *state);
 int		visible_width_cstr(const char *s);

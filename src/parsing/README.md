@@ -28,7 +28,7 @@ infrastructure via a small **status protocol**:
 The entry point is:
 
 ```c
-t_ast_node parse_tokens(t_shell *state, t_parser *parser, t_deque_tt *tokens);
+t_ast_node parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens);
 ```
 
 Conceptually it does:
@@ -380,7 +380,7 @@ helpers** instead of one monolithic function.
 ## 9. Interaction with Other Modules
 
 - **Lexer**:
-  - Parser consumes tokens from `t_deque_tt` produced by `tokenizer`.
+  - Parser consumes tokens from `t_deque_tok` produced by `tokenizer`.
   - It never attempts to “pull” more tokens directly; that is handled by the
     infrastructure (`get_more_input_parser`).
 

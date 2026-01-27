@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/26 02:28:49 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 02:53:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,7 +57,7 @@ void	proc_sub_update_depth(t_token curr, int *depth)
 		(*depth)--;
 }
 
-int	handle_end_token(t_parser *parser, t_deque_tt *tokens)
+int	handle_end_token(t_parser *parser, t_deque_tok *tokens)
 {
 	parser->res = RES_MoreInput;
 	tokens->looking_for = ')';

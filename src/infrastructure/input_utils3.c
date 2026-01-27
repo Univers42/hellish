@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:31:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:39:06 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:08:38 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ void	extend_bs(t_shell *state)
 	}
 }
 
-bool	is_empty_token_list(t_deque_tt *tokens)
+bool	is_empty_token_list(t_deque_tok *tokens)
 {
 	if (tokens->deqtok.len < 2)
 		return (true);
@@ -79,7 +79,7 @@ int	readline_cmd(t_shell *state, char **prompt)
 		return (1);
 	if (stat == 2)
 	{
-		if (state->input_method != INP_READLINE)
+		if (state->input_method != INP_RL)
 			state->should_exit = true;
 		return (2);
 	}

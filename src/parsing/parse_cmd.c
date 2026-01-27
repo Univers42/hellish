@@ -6,14 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:11:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 20:41:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "parser_private.h"
 
 static bool	handle_subshell_case(t_shell *state, t_parser *parser,
-								t_deque_tt *tokens, t_ast_node *ret)
+								t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 
@@ -32,7 +32,7 @@ static bool	handle_subshell_case(t_shell *state, t_parser *parser,
 }
 
 static bool	handle_simple_command_case(t_shell *state, t_parser *parser,
-									t_deque_tt *tokens, t_ast_node *ret)
+									t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 
@@ -43,7 +43,7 @@ static bool	handle_simple_command_case(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tt *tokens)
+t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_tt		next;

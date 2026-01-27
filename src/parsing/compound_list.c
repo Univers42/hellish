@@ -13,7 +13,7 @@
 #include "parser_private.h"
 
 bool	parse_compound_list_s(t_shell *state, t_parser *parser,
-							t_deque_tt *tokens, t_ast_node *ret)
+							t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_tt	op;
 	t_token	tmp;
@@ -42,7 +42,7 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 }
 
 t_ast_node	parse_compound_list(t_shell *state,
-								t_parser *parser, t_deque_tt *tokens)
+								t_parser *parser, t_deque_tok *tokens)
 {
 	t_ast_node	ret;
 	t_tt		next;

@@ -242,7 +242,7 @@ several design choices:
 
 - **Memory ownership clarity**:
   - Strings allocated for separators and heredoc content are either handed off
-    to well‑defined owners (e.g. `t_heredoc_req`, redirect entries) or freed
+    to well‑defined owners (e.g. `t_hdoc`, redirect entries) or freed
     immediately after use.
 
 ---

@@ -22,7 +22,7 @@ incomplete input (multiline commands, open quotes, unfinished subshells).
 
 From the parser’s perspective, the lexer is a function:
 
-> `tokenizer(char *input, t_deque_tt *out) -> optional prompt string`
+> `tokenizer(char *input, t_deque_tok *out) -> optional prompt string`
 
 It:
 
@@ -231,7 +231,7 @@ interactive debugging.
 
 The lexer intentionally stays **dumb about ASTs** and higher‑level constructs:
 
-- It does not allocate AST nodes, it only fills a `t_deque_tt` with tokens.
+- It does not allocate AST nodes, it only fills a `t_deque_tok` with tokens.
 - It doesn’t know about precedence or grammar rules; it simply categorizes
   lexemes and operators.
 - It exposes minimal additional state (`looking_for` and an optional prompt
@@ -245,7 +245,7 @@ The **input layer** (`get_more_tokens`) calls:
   - ask for more input (open quotes, partial lines),
   - or hand tokens over to the parser.
 
-The **parser** then consumes tokens from `t_deque_tt` and pushes its own state
+The **parser** then consumes tokens from `t_deque_tok` and pushes its own state
 (operators, expected closures) into `parser->parse_stack`. When it needs more
 input, it sets `RES_MoreInput`, which in turn affects the next prompt.
 

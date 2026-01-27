@@ -20,7 +20,7 @@ opaque **input and debug service**.
 
 At the top level, `parse_and_execute_input()` is the orchestrator:
 
-1. **Prepare** a `t_parser`, token deque (`t_deque_tt`), and an initial prompt
+1. **Prepare** a `t_parser`, token deque (`t_deque_tok`), and an initial prompt
    string.
 2. Enter a general **input loop** (`get_more_input_parser`):
    - request more tokens from the lexer (`get_more_tokens`),
@@ -45,9 +45,9 @@ tokens** and a clean AST, even though the underlying control flow is complex.
 
 ## 2. Input Model and Data Structures
 
-### 2.1 `t_buff_readline` – line buffer and cursor
+### 2.1 `t_rl` – line buffer and cursor
 
-The core data structure for line input is `t_buff_readline` (see `sh_input.h`):
+The core data structure for line input is `t_rl` (see `sh_input.h`):
 
 - `t_string buff` – backing byte buffer holding **all unread input**.
 - `size_t cursor` – index of the next unread byte within `buff`.
@@ -89,8 +89,8 @@ This design allows us to:
 1. If input is already exhausted (`has_finished`), return 0.
 2. If there is no ready line:
    - decide **how** to get more input based on `state->input_method`:
-     - `INP_READLINE`: interactive terminal via `readline()` in a child,
-     - `INP_STDIN_NOTTY`: raw `read()` loop for non‑TTY stdin,
+     - `INP_RL`: interactive terminal via `readline()` in a child,
+     - `INP_NOTTY`: raw `read()` loop for non‑TTY stdin,
      - `INP_FILE`/`INP_ARG`: read once then EOF.
    - append new data into `readline_buff.buff`.
    - for interactive mode, append a `\n` artificially so that each `Enter`
@@ -130,7 +130,7 @@ process to remain in control of signals and buffering. The strategy is:
   - write the result into the pipe and exit.
 
 - The parent (`attach_input_readline`):
-  - reads the child’s data into `t_buff_readline.buff` via `vec_append_fd`,
+  - reads the child’s data into `t_rl.buff` via `vec_append_fd`,
   - updates `has_line`/`cursor`,
   - waits for the child and inspects exit status or signals.
 

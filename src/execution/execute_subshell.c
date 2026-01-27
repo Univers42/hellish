@@ -6,16 +6,16 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 01:04:15 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
 
-t_exe_res	execute_subshell(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 {
 	int			pid;
-	t_exe_res	res;
+	t_execution_state	res;
 
 	pid = fork();
 	if (pid == 0)

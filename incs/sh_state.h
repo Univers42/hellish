@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/11 20:17:31 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/21 00:40:43 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:13:58 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,23 +32,23 @@ typedef enum e_option
 
 typedef struct s_shell
 {
-	t_string		input;
-	t_vec_env		env;
-	t_string		cwd;
-	t_ast_node		tree;
-	int				input_method;
-	char			*base_context;
-	char			*context;
-	char			*pid;
-	char			*last_cmd_status_s;
-	t_exe_res		last_cmd_status_res;
-	t_history		hist;
-	bool			should_exit;
-	t_vec_redir		redirects;
-	int				heredoc_idx;
-	t_buff_readline	readline_buff;
-	t_prng_state	prng;
-	uint32_t		option_flags;
+	t_string			input;
+	t_vec_env			env;
+	t_string			cwd;
+	t_ast_node			tree;
+	int					input_method;
+	char				*base_context;
+	char				*context;
+	char				*pid;
+	char				*last_cmd_status_s;
+	t_execution_state	last_cmd_status_res;
+	t_history			hist;
+	bool				should_exit;
+	t_vec_redir			redirects;
+	int					heredoc_idx;
+	t_rl				readline_buff;
+	t_prng				prng;
+	uint32_t			option_flags;
 }	t_shell;
 
 void		on(t_shell *state, char **argv, char **envp);

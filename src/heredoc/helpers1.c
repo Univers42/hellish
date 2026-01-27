@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:31:19 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 02:49:49 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:11:17 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 {
 	int				wr;
 	t_string		sep;
-	t_heredoc_req	req;
+	t_hdoc	req;
 
 	wr = ft_mktemp(state, curr);
 	if (wr < 0)
@@ -36,7 +36,7 @@ static void	append_to_exist_heredoc(t_shell *state, t_ast_node *curr,
 	t_redir			*r;
 	int				append_fd;
 	t_string		sep;
-	t_heredoc_req	req;
+	t_hdoc	req;
 
 	r = (t_redir *)vec_idx(&state->redirects, shared_idx);
 	if (!r || !r->fname)

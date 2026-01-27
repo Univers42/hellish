@@ -21,7 +21,7 @@ void	reap_background_children(void)
 		;
 }
 
-bool	should_execute(t_exe_res prev_status, t_tt prev_op)
+bool	should_execute(t_execution_state prev_status, t_tt prev_op)
 {
 	if (prev_status.c_c)
 		return (false);
@@ -67,9 +67,9 @@ size_t	find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
 	return (node->children.len);
 }
 
-t_exe_res	execute_simple_list(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 {
-	t_exe_res	status;
+	t_execution_state	status;
 	size_t		i;
 	size_t		sep_idx;
 	bool		is_background;
