@@ -41,7 +41,7 @@ getcwd() failed: No such file or directory\n"
 # define EQ '='
 # define FB_SH "/bin/sh"
 //# define PATH_HELLISH "/usr/bin/hellish"
-# define PATH_HELLISH "/home/dlesieur/Documents/sh42/build/bin/minishell"
+# define PATH_HELLISH "/home/alcacere/sh42/build/bin/minishell"
 # define PROC_SELF_EXE "/proc/self/exe"
 # define BLACK_HOLE "/dev/null"
 # define CMD_OPT "-c"

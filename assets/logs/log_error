@@ -47,3 +47,75 @@ $ echo $(echo hi)
 ╭─ dlesieur ─ /home/dlesieur/Documents/sh42/bonus ─ short_circuit                 ⏳19:30:23
 $ htop &
 ╭─ dlesieur ─ /home/dlesieur/Documents/sh42/bonus ─ short_circuit # doesnt' work
+
+
+╭─ alcacere ─ /home/alcacere/sh42 ─ main*                                                ⏳20:44:41
+$ export A+=0
+./build/bin/minishell: export: `A+' not valid identifier
+╭─ alcacere ─ /home/alcacere/sh42 ─ main*                                                ⏳20:44:50
+$ export A += 0
+./build/bin/minishell: export: `+' not valid identifier
+
+
+
+╭─ alcacere ─ /home/alcacere/sh42 ─ main*                                                ⏳20:44:57
+$ bash
+e
+=================================================================
+==3028270==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 1 byte(s) in 1 object(s) allocated from:
+    #0 0x499b4d in malloc (/home/alcacere/sh42/build/bin/minishell+0x499b4d)
+    #1 0x54fb34 in ft_strdup (/home/alcacere/sh42/build/bin/minishell+0x54fb34)
+    #2 0x4d2f62 in parse_export_arg /home/alcacere/sh42/src/builtins/export_helpers.c:23:10
+    #3 0x4d4091 in handle_parsed_export_arg /home/alcacere/sh42/src/builtins/export_helpers2.c:33:2
+    #4 0x4d3cc7 in process_arg /home/alcacere/sh42/src/builtins/export_helpers2.c:55:10
+    #5 0x4ce7a3 in builtin_export /home/alcacere/sh42/src/builtins/core_builtins.c:29:12
+    #6 0x4e2583 in execute_builtin_cmd_fg /home/alcacere/sh42/src/execution/execute_builtin.c:27:11
+    #7 0x4e5908 in execute_simple_command /home/alcacere/sh42/src/execution/execute_simple_command.c:84:11
+    #8 0x4dd0ba in execute_command /home/alcacere/sh42/src/execution/execute_command.c:25:11
+    #9 0x4e31b5 in execute_pipeline_children /home/alcacere/sh42/src/execution/execute_pipeline.c:88:9
+    #10 0x4e3f5b in execute_pipeline /home/alcacere/sh42/src/execution/execute_pipeline.c:105:2
+    #11 0x4dead2 in execute_tree_node /home/alcacere/sh42/src/execution/execute_tree_node.c:25:12
+    #12 0x4e49d5 in execute_then /home/alcacere/sh42/src/execution/execute_range.c:24:12
+    #13 0x4e4710 in execute_range /home/alcacere/sh42/src/execution/execute_range.c:54:4
+    #14 0x4de5a0 in execute_simple_list /home/alcacere/sh42/src/execution/execute_simple_list.c:86:13
+    #15 0x4deb8a in execute_tree_node /home/alcacere/sh42/src/execution/execute_tree_node.c:27:12
+    #16 0x4e019f in execute_top_level /home/alcacere/sh42/src/execution/execute_top_level.c:27:9
+    #17 0x522a4d in finalize_parser_and_cleanup /home/alcacere/sh42/src/infrastructure/input_utils2.c:41:3
+    #18 0x5223de in parse_and_execute_input /home/alcacere/sh42/src/infrastructure/input_utils2.c:67:2
+    #19 0x4d7d29 in repl_shell /home/alcacere/sh42/src/core/shell.c:47:3
+    #20 0x4d7afe in main /home/alcacere/sh42/src/core/shell.c:36:2
+    #21 0x7fe917047d8f in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+
+SUMMARY: AddressSanitizer: 1 byte(s) leaked in 1 allocation(s).
+exit
+ 
+=================================================================
+==3027035==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 1 byte(s) in 1 object(s) allocated from:
+    #0 0x499b4d in malloc (/home/alcacere/sh42/build/bin/minishell+0x499b4d)
+    #1 0x54fb34 in ft_strdup (/home/alcacere/sh42/build/bin/minishell+0x54fb34)
+    #2 0x4d2f62 in parse_export_arg /home/alcacere/sh42/src/builtins/export_helpers.c:23:10
+    #3 0x4d4091 in handle_parsed_export_arg /home/alcacere/sh42/src/builtins/export_helpers2.c:33:2
+    #4 0x4d3cc7 in process_arg /home/alcacere/sh42/src/builtins/export_helpers2.c:55:10
+    #5 0x4ce7a3 in builtin_export /home/alcacere/sh42/src/builtins/core_builtins.c:29:12
+    #6 0x4e2583 in execute_builtin_cmd_fg /home/alcacere/sh42/src/execution/execute_builtin.c:27:11
+    #7 0x4e5908 in execute_simple_command /home/alcacere/sh42/src/execution/execute_simple_command.c:84:11
+    #8 0x4dd0ba in execute_command /home/alcacere/sh42/src/execution/execute_command.c:25:11
+    #9 0x4e31b5 in execute_pipeline_children /home/alcacere/sh42/src/execution/execute_pipeline.c:88:9
+    #10 0x4e3f5b in execute_pipeline /home/alcacere/sh42/src/execution/execute_pipeline.c:105:2
+    #11 0x4dead2 in execute_tree_node /home/alcacere/sh42/src/execution/execute_tree_node.c:25:12
+    #12 0x4e49d5 in execute_then /home/alcacere/sh42/src/execution/execute_range.c:24:12
+    #13 0x4e4710 in execute_range /home/alcacere/sh42/src/execution/execute_range.c:54:4
+    #14 0x4de5a0 in execute_simple_list /home/alcacere/sh42/src/execution/execute_simple_list.c:86:13
+    #15 0x4deb8a in execute_tree_node /home/alcacere/sh42/src/execution/execute_tree_node.c:27:12
+    #16 0x4e019f in execute_top_level /home/alcacere/sh42/src/execution/execute_top_level.c:27:9
+    #17 0x522a4d in finalize_parser_and_cleanup /home/alcacere/sh42/src/infrastructure/input_utils2.c:41:3
+    #18 0x5223de in parse_and_execute_input /home/alcacere/sh42/src/infrastructure/input_utils2.c:67:2
+    #19 0x4d7d29 in repl_shell /home/alcacere/sh42/src/core/shell.c:47:3
+    #20 0x4d7afe in main /home/alcacere/sh42/src/core/shell.c:36:2
+    #21 0x7fe917047d8f in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+
+
