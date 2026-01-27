@@ -17,6 +17,7 @@ void	assignment_word_to_word(t_ast_node *node)
 	t_ast_node	ret;
 	t_ast_node	left;
 	t_ast_node	right;
+	size_t		i;
 
 	ret = (t_ast_node){.node_type = AST_WORD};
 	vec_init(&ret.children);
@@ -27,7 +28,15 @@ void	assignment_word_to_word(t_ast_node *node)
 	right = ((t_ast_node *)node->children.ctx)[1];
 	left.token.len++;
 	vec_push(&ret.children, &left);
-	vec_push(&ret.children, &right);
+	if (right.node_type == AST_WORD)
+	{
+		i = -1;
+		while (++i < right.children.len)
+			vec_push(&ret.children, vec_idx(&right.children, i));
+		free(right.children.ctx);
+	}
+	else
+		vec_push(&ret.children, &right);
 	free(node->children.ctx);
 	*node = ret;
 }
