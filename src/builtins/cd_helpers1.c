@@ -25,7 +25,7 @@ int	cd_do_chdir(t_shell *state, t_vec argv, int *e)
 	{
 		if (oldpwd == NULL)
 		{
-			ft_eprintf(OLDPWD_NO_SET, state->context);
+			ft_eprintf(OLDPWD_NO_SET, state->ctx);
 			return (1);
 		}
 		ft_printf("%s\n", oldpwd);

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:11:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:20:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,8 +54,8 @@ t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_ARITH_START)
 	{
-		parser->res = RES_FatalError;
-		state->last_cmd_status_res = res_status(1);
+		parser->res = RES_ERR;
+		state->last_cmd_st_exe = res_status(1);
 		return (ret);
 	}
 	if (next == TT_BRACE_LEFT)

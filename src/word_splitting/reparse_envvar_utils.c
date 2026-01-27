@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 23:29:27 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 23:49:10 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,17 +45,17 @@ void	consume_ident_rp(t_reparser *rp)
 		rp->i++;
 }
 
-t_tt	select_literal_tt(t_tt context_tt, t_token *t, int prev_start)
+t_tt	select_literal_tt(t_tt ctx_tt, t_token *t, int prev_start)
 {
 	t_tt	out;
 
-	if (context_tt == TT_DQENVVAR && prev_start < t->len
+	if (ctx_tt == TT_DQENVVAR && prev_start < t->len
 		&& t->start[prev_start] == '"')
 		return (TT_DQWORD);
 	if (prev_start < t->len && (t->start[prev_start] == '\''
 			|| t->start[prev_start] == '"'))
 		return (TT_ENVVAR);
-	if (context_tt == TT_DQENVVAR)
+	if (ctx_tt == TT_DQENVVAR)
 		out = TT_DQWORD;
 	else
 		out = TT_SQWORD;

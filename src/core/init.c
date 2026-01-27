@@ -17,24 +17,24 @@ void	read_file_to_buffer(int fd, t_shell *state)
 {
 	char	ch;
 
-	vec_append_fd(fd, &state->readline_buff.buff);
+	vec_append_fd(fd, &state->rl.buff);
 	close(fd);
 	{
 		ch = '\n';
-		vec_push(&state->readline_buff.buff, &ch);
+		vec_push(&state->rl.buff, &ch);
 	}
-	buff_readline_update(&state->readline_buff);
-	state->readline_buff.should_update_context = true;
+	buff_readline_update(&state->rl);
+	state->rl.should_update_ctx = true;
 }
 
-/* Helper for updating context after file read */
-void	update_context_from_file(t_shell *state, char **argv)
+/* Helper for updating ctx after file read */
+void	update_ctx_from_file(t_shell *state, char **argv)
 {
-	free(state->base_context);
-	free(state->context);
-	state->base_context = ft_strdup(argv[1]);
-	state->context = ft_strdup(argv[1]);
-	state->input_method = INP_FILE;
+	free(state->dft_ctx);
+	free(state->ctx);
+	state->dft_ctx = ft_strdup(argv[1]);
+	state->ctx = ft_strdup(argv[1]);
+	state->metinp = INP_FILE;
 }
 
 void	init_arg(t_shell *state, char **argv)
@@ -42,14 +42,14 @@ void	init_arg(t_shell *state, char **argv)
 	if (!argv[2])
 	{
 		ft_eprintf("%s: -c: option requires an argument\n",
-			state->base_context);
+			state->dft_ctx);
 		free_all_state(state);
 		exit(SYNTAX_ERR);
 	}
-	vec_push_str(&state->readline_buff.buff, argv[2]);
-	buff_readline_update(&state->readline_buff);
-	state->readline_buff.should_update_context = true;
-	state->input_method = INP_ARG;
+	vec_push_str(&state->rl.buff, argv[2]);
+	buff_readline_update(&state->rl);
+	state->rl.should_update_ctx = true;
+	state->metinp = INP_ARG;
 }
 
 void	init_file(t_shell *state, char **argv)
@@ -63,11 +63,11 @@ void	init_file(t_shell *state, char **argv)
 		return ;
 	}
 	read_file_to_buffer(fd, state);
-	update_context_from_file(state, argv);
+	update_ctx_from_file(state, argv);
 }
 
 void	init_stdin_notty(t_shell *state)
 {
-	state->input_method = INP_NOTTY;
-	state->readline_buff.should_update_context = true;
+	state->metinp = INP_NOTTY;
+	state->rl.should_update_ctx = true;
 }

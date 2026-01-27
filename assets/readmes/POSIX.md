@@ -106,7 +106,7 @@ Design goal for your shell: **implement the POSIX shell semantics by default (or
 <div class="small">
 - Double quotes allow parameter and command expansion but prevent word splitting and pathname expansion.  
 - Single quotes prevent all expansions inside (except where POSIX specifies pattern removal inside `${...}` for certain operators).  
-- Inside `$(...)` or backquotes used for command substitution, treat `"` specially per POSIX (backslashes before `"` may be removed in here-doc contexts).
+- Inside `$(...)` or backquotes used for command substitution, treat `"` specially per POSIX (backslashes before `"` may be removed in here-doc ctxs).
 </div>
 
 .rule
@@ -151,7 +151,7 @@ Design goal for your shell: **implement the POSIX shell semantics by default (or
 .rule
 
 <div class="kv"><strong>Rule 5.4 — Globbing/filename expansion</strong><span class="small">: standard glob semantics</span></div>
-<div class="small">Implement `* ? [..]` with usual semantics; when no match is found, decide whether to leave literal or return non-zero — document behavior (POSIX defines context-sensitive expectations).</div>
+<div class="small">Implement `* ? [..]` with usual semantics; when no match is found, decide whether to leave literal or return non-zero — document behavior (POSIX defines ctx-sensitive expectations).</div>
 
 ---
 

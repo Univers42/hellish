@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:12:09 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 19:26:01 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@ static void	preserve_errno_exec_failed(t_shell *state, char **path_of_exe,
 
 	saved_errno = errno;
 	if (saved_errno == EACCES)
-		ft_eprintf("%s: %s: %s\n", state->context,
+		ft_eprintf("%s: %s: %s\n", state->ctx,
 			*path_of_exe, strerror(saved_errno));
 	cleanup_after_exec_failure(args, *path_of_exe, envp);
 	errno = saved_errno;

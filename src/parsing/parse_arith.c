@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:52:24 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:20:29 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,7 @@ int	handle_arith_error(t_shell *state,
 	handle_arith_error_collect(tokens, &expr_buf, &has_inner_paren, &last_word);
 	handle_arith_error_print(state, has_inner_paren, last_word);
 	free(expr_buf.ctx);
-	parser->res = RES_FatalError;
+	parser->res = RES_ERR;
 	set_cmd_status(state, res_status(1));
 	(void)ret;
 	return (1);

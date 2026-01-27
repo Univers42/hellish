@@ -33,7 +33,7 @@ void	exe_res_set_status(t_execution_state *res)
 		if (waitpid(res->pid, &status, 0) != -1)
 			break ;
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
-		res->c_c = true;
+		res->ctrl_c = true;
 	res->status = WEXITSTATUS(status)
 		+ WIFSIGNALED(status) * 128 + WIFSIGNALED(status) * WTERMSIG(status);
 }

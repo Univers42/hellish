@@ -18,7 +18,7 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 	t_env	*curr;
 
 	if (ft_strncmp(key, "?", len) == 0 && len == 1)
-		return (state->last_cmd_status_s);
+		return (state->last_cmd_st);
 	else if (ft_strncmp(key, "$", len) == 0 && state->pid && len == 1)
 		return (state->pid);
 	else if (len == 0)

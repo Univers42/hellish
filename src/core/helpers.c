@@ -15,7 +15,7 @@
 /* Helper for error handling in init_file */
 void	handle_file_open_error(t_shell *state, char **argv)
 {
-	ft_eprintf("%s: %s: %s\n", state->base_context, argv[1], strerror(errno));
+	ft_eprintf("%s: %s: %s\n", state->dft_ctx, argv[1], strerror(errno));
 	free_all_state(state);
 	if (errno == EISDIR)
 		exit(127);

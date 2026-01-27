@@ -61,7 +61,7 @@ typedef struct s_reparser {
     t_ast_node current_node;   // AST being built from the original word
     int        i;              // current byte index in current_token
     t_token    current_token;  // original TT_WORD token
-    t_tt       context_tt;     // context type (e.g. TT_WORD, TT_DQENVVAR)
+    t_tt       ctx_tt;     // ctx type (e.g. TT_WORD, TT_DQENVVAR)
     int        prev_start;     // start index of the current segment
 } t_reparser;
 ```
@@ -159,7 +159,7 @@ Algorithm (simplified):
      `process_escape_seq_rp`.
    - When a `$` is seen, flush preceding literal and call
      `process_dollar_in_dquote_rp`, which internally uses `reparse_envvar` with
-     a `TT_DQENVVAR` context.
+     a `TT_DQENVVAR` ctx.
    - Otherwise, move forward.
 4. At the end, flush any trailing literal segment as a `TT_DQWORD`.
 5. If nothing at all was pushed (empty quotes), insert an empty `TT_DQWORD`
@@ -197,13 +197,13 @@ Environment references are introduced by `$` and may have several forms:
 
 - `$FOO`, `$FOO_BAR` (normal identifiers),
 - `$?`, `$$` (special variables),
-- `$(( ... ))` arithmetic contexts,
+- `$(( ... ))` arithmetic ctxs,
 - `$(` or `${...}`‑like constructs (handled by other stages when present).
 
 `reparse_envvar` is the central helper:
 
 1. Consumes the initial `$`.
-2. Initializes a `t_reparser` with a context type (`TT_ENVVAR` or
+2. Initializes a `t_reparser` with a ctx type (`TT_ENVVAR` or
    `TT_DQENVVAR` if inside double quotes).
 3. Checks two special cases:
    - **Parenthesized constructs** via `try_handle_paren_rp` and

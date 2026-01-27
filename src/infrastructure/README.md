@@ -32,11 +32,11 @@ Underlying that are several subsystems:
 
 - `rl_*` and `input_*` handle reading **lines** from various sources and
   buffering them.
-- `prompt_*` constructs context‑aware prompts and tracks visible width with
+- `prompt_*` constructs ctx‑aware prompts and tracks visible width with
   ANSI and multibyte awareness.
 - `history_*` manages user command history across sessions.
 - `ast_*` offers visualization and cleanup utilities for the AST.
-- `error.c` prints consistent, context‑aware error messages.
+- `error.c` prints consistent, ctx‑aware error messages.
 
 All of these aim to make the rest of the shell see a **simple stream of
 tokens** and a clean AST, even though the underlying control flow is complex.
@@ -53,8 +53,8 @@ The core data structure for line input is `t_rl` (see `sh_input.h`):
 - `size_t cursor` – index of the next unread byte within `buff`.
 - `bool has_line` – whether there is at least one full line to return.
 - `bool has_finished` – whether the input source is exhausted (EOF).
-- `int line` – current logical line number (for error messages and context).
-- `bool should_update_context` – toggle for whether `state->context` should be
+- `int line` – current logical line number (for error messages and ctx).
+- `bool should_update_ctx` – toggle for whether `state->ctx` should be
   updated with the new line number.
 
 The invariant is:
@@ -78,7 +78,7 @@ This design allows us to:
 
 - Append arbitrary chunks of input (from `read()` or `readline()`),
 - Return lines incrementally without re‑allocating a new buffer each time,
-- Support multi‑line inputs (e.g. `\` continuation, `RES_MoreInput` in parser)
+- Support multi‑line inputs (e.g. `\` continuation, `RES_GETMOREINPUT` in parser)
   by simply appending more data and re‑running the tokenizer.
 
 ### 2.2 Line extraction: `buff_readline`
@@ -88,11 +88,11 @@ This design allows us to:
 
 1. If input is already exhausted (`has_finished`), return 0.
 2. If there is no ready line:
-   - decide **how** to get more input based on `state->input_method`:
+   - decide **how** to get more input based on `state->metinp`:
      - `INP_RL`: interactive terminal via `readline()` in a child,
      - `INP_NOTTY`: raw `read()` loop for non‑TTY stdin,
      - `INP_FILE`/`INP_ARG`: read once then EOF.
-   - append new data into `readline_buff.buff`.
+   - append new data into `rl.buff`.
    - for interactive mode, append a `\n` artificially so that each `Enter`
      counts as a full line.
 3. Once a full line is present, `return_new_line()`:
@@ -100,7 +100,7 @@ This design allows us to:
    - copies that slice into `ret`,
    - advances `cursor`,
    - updates `has_line` and increments `line` count,
-   - updates `state->context` to the new `base_context: line N`.
+   - updates `state->ctx` to the new `dft_ctx: line N`.
 
 If the trailing newline is never found (e.g. final partial line before EOF),
 `return_last_line()` returns the remaining bytes once, then empties the buffer.
@@ -234,7 +234,7 @@ If you want to change the prompt, you can:
 
 ### 4.3 More‑input prompt (`prompt_more_input`)
 
-When the parser needs more tokens (`RES_MoreInput`), the prompt changes to
+When the parser needs more tokens (`RES_GETMOREINPUT`), the prompt changes to
 remind the user *why* more input is being asked.
 
 `prompt_more_input` inspects `parser->parse_stack`, which stores a sequence of
@@ -328,9 +328,9 @@ and parsers under different debug modes:
     - otherwise calls `parse_tokens`, stores AST in `state->tree`, and
       analyzes `parser->res`:
       - `RES_OK`: return to top‑level to execute `state->tree`.
-      - `RES_MoreInput`: generate new `prompt_more_input` and continue
+      - `RES_GETMOREINPUT`: generate new `prompt_more_input` and continue
         reading.
-      - `RES_FatalError`: set `last_cmd_status` to syntax error.
+      - `RES_ERR`: set `last_cmd_status` to syntax error.
 
 - `debug_lexer_loop` / `debug_parser_loop`:
   - similar structure, but either print tokens (`print_tokens`) or AST
@@ -387,13 +387,13 @@ when pointers between nodes reference children.
 `error.c` provides a consistent **front‑end error language**:
 
 - `err_cmd_not_found`, `err_no_path_var`, `err_1_errno`, `err_2` are small
-  wrappers that prefix messages with `state->context` and print via
+  wrappers that prefix messages with `state->ctx` and print via
   `ft_eprintf`.
 
 - `unexpected` is used by the parser when an unexpected token is seen:
   - it peeks at the upcoming token,
   - prints `syntax error near unexpected token 'X'` or `'newline'`,
-  - sets `parser->res = RES_FatalError`.
+  - sets `parser->res = RES_ERR`.
 
 This centralization of error messages keeps output consistent and makes it
 simple to update wording later.
@@ -413,11 +413,11 @@ Ctrl‑D, and non‑TTY input:
   - clear token deque,
   - reset readline buffer,
   - reset prompt and status to `130` (
-    `CANCELED` with `c_c = true`),
+    `CANCELED` with `ctrl_c = true`),
   - allow the main loop to continue for a new command.
 
 - `get_more_input_notty`:
-  - loops `read()` calls, pushing into `readline_buff.buff` until a `\n` or
+  - loops `read()` calls, pushing into `rl.buff` until a `\n` or
     EOF, and returns different status codes for EOF vs interrupt.
 
 - All main loops check `get_g_sig()->should_unwind` and `state->should_exit`

@@ -12,7 +12,7 @@
 
 #include "glob_private.h"
 
-// Helper: initialize tokenizer context
+// Helper: initialize tokenizer ctx
 static t_tokenizer_ctx	init_tokenizer_ctx(const char *pattern, int *i,
 								int len, bool quoted)
 {

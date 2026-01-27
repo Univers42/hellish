@@ -49,7 +49,7 @@ int	write_to_file(char *str, int fd)
 void	forward_exit_status(t_execution_state res)
 {
 	ft_assert(res.status != -1);
-	if (res.c_c)
+	if (res.ctrl_c)
 	{
 		default_signal_handlers();
 		exit(128 + SIGINT);
@@ -59,7 +59,7 @@ void	forward_exit_status(t_execution_state res)
 
 void	set_cmd_status(t_shell *state, t_execution_state res)
 {
-	state->last_cmd_status_res = res;
-	free(state->last_cmd_status_s);
-	state->last_cmd_status_s = ft_itoa(res.status);
+	state->last_cmd_st_exe = res;
+	free(state->last_cmd_st);
+	state->last_cmd_st = ft_itoa(res.status);
 }

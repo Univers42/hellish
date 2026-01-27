@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 10:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/25 19:46:27 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ typedef struct s_glob_match_ctx
 	bool		is_first;
 }	t_glob_match_ctx;
 
-// Helper: context for tokenizer state
+// Helper: ctx for tokenizer state
 typedef struct s_tokenizer_ctx
 {
 	t_vec_glob	*ret;

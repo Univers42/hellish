@@ -33,10 +33,10 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	free(temp);
 	wr_fd = open(ret.fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (wr_fd < 0)
-		critical_error_errno_context(ret.fname);
+		critical_error_errno_ctx(ret.fname);
 	ret.fd = open(ret.fname, O_RDONLY);
 	if (ret.fd < 0)
-		critical_error_errno_context(ret.fname);
+		critical_error_errno_ctx(ret.fname);
 	vec_push(&state->redirects, &ret);
 	node->redir_idx = state->redirects.len - 1;
 	node->has_redirect = true;
@@ -54,7 +54,7 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 {
 	int				wr_fd;
 	t_string		sep;
-	t_hdoc	req;
+	t_hdoc			req;
 
 	ft_assert(node->children.len >= 1);
 	if (((t_ast_node *)node->children.ctx)[0].token.tt == TT_HEREDOC)

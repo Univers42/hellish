@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 16:50:27 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 02:27:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,8 @@ void	set_up_redirection(t_shell *state, t_executable_node *exe)
 		apply_redirs_from_ast(state, exe);
 		return ;
 	}
-	if (state->context)
-		ft_eprintf(MSG_REDIR_DATA_ERR, state->context);
+	if (state->ctx)
+		ft_eprintf(MSG_REDIR_DATA_ERR, state->ctx);
 	else
 		ft_eprintf(MSG_REDIR_DATA_ERR, "shell");
 	exit(EXIT_GENERAL_ERR);

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:06:09 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:14:56 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,11 +19,11 @@ void	manage_history(t_shell *state)
 
 	if (worthy_of_being_remembered(state))
 	{
-		if (state->readline_buff.cursor > 0 && state->readline_buff.buff.ctx)
-			((char *)state->readline_buff.buff.ctx)
-			[state->readline_buff.cursor - 1] = '\0';
-		hist_entry = ft_strndup((char *)state->readline_buff.buff.ctx,
-				state->readline_buff.cursor - 1);
+		if (state->rl.cursor > 0 && state->rl.buff.ctx)
+			((char *)state->rl.buff.ctx)
+			[state->rl.cursor - 1] = '\0';
+		hist_entry = ft_strndup((char *)state->rl.buff.ctx,
+				state->rl.cursor - 1);
 		add_history(hist_entry);
 		vec_push(&state->hist.hist_cmds, &hist_entry);
 		if (state->hist.append_fd >= 0)
@@ -38,15 +38,15 @@ void	manage_history(t_shell *state)
 			free(enc_hist_entry);
 		}
 	}
-	buff_readline_reset(&state->readline_buff);
+	buff_readline_reset(&state->rl);
 }
 
 bool	worthy_of_being_remembered(t_shell *state)
 {
-	if (state->readline_buff.cursor > 1 && state->hist.hist_active
+	if (state->rl.cursor > 1 && state->hist.hist_active
 		&& (!state->hist.hist_cmds.len
-			|| !str_slice_eq_str((char *)state->readline_buff.buff.ctx,
-				state->readline_buff.cursor - 1,
+			|| !str_slice_eq_str((char *)state->rl.buff.ctx,
+				state->rl.cursor - 1,
 				((char **)state->hist.hist_cmds.ctx)
 				[state->hist.hist_cmds.len - 1]
 			)

@@ -41,7 +41,7 @@ static t_execution_state	handle_empty_command(t_shell *state,
 						t_executable_cmd *cmd,
 						t_executable_node *exe)
 {
-	ft_eprintf("%s: command not found\n", state->context);
+	ft_eprintf("%s: command not found\n", state->ctx);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
@@ -52,7 +52,7 @@ static t_execution_state	handle_assign_only(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
 {
-	if (exe->modify_parent_context)
+	if (exe->modify_parent_ctx)
 		env_extend(&state->env, &cmd->pre_assigns, false);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
@@ -60,7 +60,8 @@ static t_execution_state	handle_assign_only(t_shell *state,
 	return (res_status(0));
 }
 
-t_execution_state	execute_simple_command(t_shell *state, t_executable_node *exe)
+t_execution_state	execute_simple_command(t_shell *state,
+									t_executable_node *exe)
 {
 	t_executable_cmd	cmd;
 
@@ -79,7 +80,7 @@ t_execution_state	execute_simple_command(t_shell *state, t_executable_node *exe)
 	if (is_empty_command_name(&cmd))
 		return (handle_empty_command(state, &cmd, exe));
 	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0])
-		&& exe->modify_parent_context)
+		&& exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, &cmd, exe));
 	else if (cmd.argv.len)
 		return (execute_cmd_bg(state, exe, &cmd));

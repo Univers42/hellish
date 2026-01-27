@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 17:33:06 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:23:04 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,15 +28,15 @@ void	reset_status_and_prompt(t_shell *state, char **prompt)
 
 void	handle_ctrl_c(t_shell *state, t_deque_tok *tt, char **prompt)
 {
-	buff_readline_reset(&state->readline_buff);
+	buff_readline_reset(&state->rl);
 	if (tt->deqtok.buff)
 		deque_clear(&tt->deqtok, NULL);
 	tt->looking_for = 0;
 	if (state->input.ctx)
 		state->input.len = 0;
-	set_cmd_status(state, (t_execution_state){.status = 130, .c_c = true});
+	set_cmd_status(state, (t_execution_state){.status = 130, .ctrl_c = true});
 	reset_status_and_prompt(state, prompt);
-	buff_readline_update(&state->readline_buff);
+	buff_readline_update(&state->rl);
 }
 
 int	handle_eof(int s, t_shell *state)
@@ -63,11 +63,11 @@ void	debug_parser_print_ast(t_shell *state,
 								t_parser *parser,
 								t_ast_node parsed)
 {
-	if (parser->res == RES_OK || parser->res == RES_MoreInput)
+	if (parser->res == RES_OK || parser->res == RES_GETMOREINPUT)
 		print_ast_dot(state, parsed);
-	if (parser->res == RES_OK || parser->res == RES_FatalError
-		|| parser->res == RES_MoreInput)
+	if (parser->res == RES_OK || parser->res == RES_ERR
+		|| parser->res == RES_GETMOREINPUT)
 		free_ast(&parsed);
-	if (parser->res == RES_FatalError)
+	if (parser->res == RES_ERR)
 		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 }

@@ -13,12 +13,12 @@
 #include "execution_private.h"
 
 void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
-								t_executable_node *curr_exe, int (*pp)[2])
+									t_executable_node *curr_exe, int (*pp)[2])
 {
 	if (!is_last)
 	{
 		if (pipe(*pp))
-			critical_error_errno_context("pipe");
+			critical_error_errno_ctx("pipe");
 		curr_exe->outfd = (*pp)[1];
 		curr_exe->next_infd = (*pp)[0];
 	}
@@ -40,8 +40,8 @@ static void	prepare_child_exec(t_exec_child_ctx *c)
 	c->curr_exe->redirs.elem_size = sizeof(int);
 	c->curr_exe->infd = c->prev_infd;
 	last_index = c->last_index;
-	c->curr_exe->modify_parent_context = (c->idx == last_index)
-		&& c->exe->modify_parent_context;
+	c->curr_exe->modify_parent_ctx = (c->idx == last_index)
+		&& c->exe->modify_parent_ctx;
 	c->curr_exe->node = vec_idx(&c->exe->node->children, c->idx);
 	ft_assert(c->curr_exe->node->node_type == AST_COMMAND);
 	set_up_redir_pipeline_child(c->idx == last_index,
@@ -69,7 +69,7 @@ void	execute_pipeline_children(t_shell *state,
 	t_executable_node	curr_exe;
 	int					pp[2];
 	t_exec_child_ctx	ctx;
-	t_execution_state			res;
+	t_execution_state	res;
 
 	ctx.prev_infd = dup(exe->infd);
 	ctx.state = state;
@@ -95,9 +95,9 @@ void	execute_pipeline_children(t_shell *state,
 /* Always returns status */
 t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
-	t_vec_exe_res	results;
-	t_execution_state		res;
-	t_execution_state		*plast;
+	t_vec_exe_res		results;
+	t_execution_state	res;
+	t_execution_state	*plast;
 
 	results = (t_vec_exe_res){0};
 	vec_init(&results);

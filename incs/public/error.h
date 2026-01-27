@@ -28,9 +28,9 @@ static inline void	critical_error_errno(void)
 	exit(1);
 }
 
-static inline void	critical_error_errno_context(char *context)
+static inline void	critical_error_errno_ctx(char *ctx)
 {
-	ft_eprintf("[ERROR] %s: %s\n", context, strerror(errno));
+	ft_eprintf("[ERROR] %s: %s\n", ctx, strerror(errno));
 	exit(1);
 }
 

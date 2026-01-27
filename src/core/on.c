@@ -52,14 +52,14 @@ void	on(t_shell *state, char **argv, char **envp)
 	state->option_flags = select_mode_from_argv(argv);
 	if (state->option_flags & OPT_FLAG_HELP)
 		print_opts(argv, state);
-	buff_readline_init(&state->readline_buff);
-	vec_init(&state->readline_buff.buff);
-	state->readline_buff.buff.elem_size = 1;
+	buff_readline_init(&state->rl);
+	vec_init(&state->rl.buff);
+	state->rl.buff.elem_size = 1;
 	state->pid = xgetpid();
-	state->context = ft_strdup(argv[0]);
-	state->base_context = ft_strdup(argv[0]);
+	state->ctx = ft_strdup(argv[0]);
+	state->dft_ctx = ft_strdup(argv[0]);
 	set_cmd_status(state, res_status(0));
-	state->last_cmd_status_res = res_status(0);
+	state->last_cmd_st_exe = res_status(0);
 	init_cwd(state);
 	state->env = env_to_vec_env(state, envp);
 	ensure_essential_env_vars(state);

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:21 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:31:36 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 {
-	int			pid;
 	t_execution_state	res;
+	int					pid;
 
 	pid = fork();
 	if (pid == 0)
@@ -30,7 +30,7 @@ t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 		forward_exit_status(res);
 	}
 	if (pid < 0)
-		critical_error_errno_context("fork");
+		critical_error_errno_ctx("fork");
 	procsub_close_fds_parent(state);
 	free_executable_node(exe);
 	return (res_pid(pid));

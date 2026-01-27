@@ -60,7 +60,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 	int	pid;
 
 	if (pipe(pp))
-		critical_error_errno_context("pipe");
+		critical_error_errno_ctx("pipe");
 	pid = fork();
 	if (pid == 0)
 	{
@@ -69,7 +69,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 		bg_readline(pp[1], prompt);
 	}
 	else if (pid < 0)
-		critical_error_errno_context("fork");
+		critical_error_errno_ctx("fork");
 	else
 		return (attach_input_readline(l, pp, pid));
 	ft_assert(0);

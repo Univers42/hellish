@@ -129,7 +129,7 @@ cd 2>/dev/null /path             # Handles stderr redirection
 
 **Error Recovery:**
 - Graceful handling of missing HOME/OLDPWD
-- Detailed error messages with context
+- Detailed error messages with ctx
 - Fallback directory tracking when getcwd() fails
 
 ## Export Implementation
@@ -176,7 +176,7 @@ The exit builtin implements bash-compatible argument processing:
 1. **Argument Count**: 0-1 arguments allowed
 2. **Double-dash Handling**: Optional `--` separator support
 3. **Numeric Validation**: Strict integer parsing with overflow detection
-4. **Error Reporting**: Context-aware error messages
+4. **Error Reporting**: ctx-aware error messages
 
 **Exit Code Logic:**
 - No arguments: Use last command status
@@ -249,7 +249,7 @@ The exit builtin implements bash-compatible argument processing:
 ### Error Handling
 
 1. **Graceful Degradation**: Continue operation when possible
-2. **Context Preservation**: Maintain error context for debugging
+2. **ctx Preservation**: Maintain error ctx for debugging
 3. **Resource Cleanup**: Ensure cleanup on all error paths
 4. **User-friendly Messages**: Clear, actionable error messages
 
@@ -268,7 +268,7 @@ The exit builtin implements bash-compatible argument processing:
 ### Extensions and Enhancements
 
 1. **Redirection Support**: All builtins handle shell redirections
-2. **Advanced Error Reporting**: Detailed, context-aware error messages
+2. **Advanced Error Reporting**: Detailed, ctx-aware error messages
 3. **Memory Safety**: Comprehensive bounds checking and cleanup
 4. **Performance**: Hash-based dispatch and optimized algorithms
 
@@ -280,7 +280,7 @@ All builtins operate on the central `t_shell` state structure:
 - **Environment**: Direct manipulation of environment vector
 - **Current Directory**: PWD/OLDPWD maintenance
 - **Exit Status**: Proper status code propagation
-- **Error Context**: Consistent error reporting with shell context
+- **Error ctx**: Consistent error reporting with shell ctx
 
 ### Vector and Hash Utilities
 

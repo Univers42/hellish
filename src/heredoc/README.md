@@ -125,7 +125,7 @@ The logic is:
 
 1. **Choose a prompt**:
    - Normal heredoc → `heredoc> `.
-   - Heredoc inside a pipeline → `pipe heredoc> ` (to reflect the context).
+   - Heredoc inside a pipeline → `pipe heredoc> ` (to reflect the ctx).
 
 2. **Read lines** using the shell’s readline buffer:
    - The module integrates with the shell’s line‑reading infrastructure so that

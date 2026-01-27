@@ -77,7 +77,7 @@ int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
 	}
 	else
 	{
-		ft_eprintf("%s: %s: `%s' not valid identifier\n", st->context,
+		ft_eprintf("%s: %s: `%s' not valid identifier\n", st->ctx,
 			argv0, id);
 		return (free(id), free(val), 1);
 	}

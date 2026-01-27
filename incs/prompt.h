@@ -24,7 +24,7 @@ typedef struct s_shell	t_shell;
 typedef struct s_rl
 {
 	bool		has_line;
-	bool		should_update_context;
+	bool		should_update_ctx;
 	bool		has_finished;
 	int			line;
 	t_string	buff;
@@ -38,7 +38,7 @@ int			buff_readline(t_shell *state, t_string *ret, char *prompt);
 void		buff_readline_update(t_rl *l);
 void		buff_readline_reset(t_rl *l);
 int			get_more_input_readline(t_rl *l, char *prompt);
-void		update_context(t_shell *state);
+void		update_ctx(t_shell *state);
 int			get_more_input_notty(t_shell *state);
 
 void		bg_readline(int outfd, char *prompt);
@@ -46,6 +46,6 @@ int			attach_input_readline(t_rl *l, int pp[2], int pid);
 t_string	prompt_normal(void);
 t_string	prompt_more_input(struct s_parser *parser);
 void		buff_readline_init(t_rl *ret);
-void		update_context(t_shell *state);
+void		update_ctx(t_shell *state);
 
 #endif

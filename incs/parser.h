@@ -21,8 +21,8 @@
 
 typedef struct s_parser
 {
-	t_result_type		res;
-	t_vec		parse_stack;
+	t_result_type	res;
+	t_vec			parse_stack;
 }	t_parser;
 
 bool		is_redirect(t_tt tt);
@@ -36,7 +36,8 @@ t_ast_node	parse_redirect(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_simple_command(t_shell *state, t_parser *res,
 				t_deque_tok *tokens);
-t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_command(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens);
 bool		is_compund_list_op(t_tt tt);
 bool		parse_compound_list_s(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens, t_ast_node *ret);

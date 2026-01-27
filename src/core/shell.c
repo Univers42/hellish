@@ -56,5 +56,5 @@ static void	off(t_shell *state)
 {
 	free_env(&state->env);
 	free_all_state(state);
-	forward_exit_status(state->last_cmd_status_res);
+	forward_exit_status(state->last_cmd_st_exe);
 }

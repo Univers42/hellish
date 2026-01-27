@@ -6,13 +6,14 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:11:14 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:05:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:38:09 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
 
-t_execution_state	execute_builtin_cmd_fg(t_shell *state, t_executable_cmd *cmd,
+t_execution_state	execute_builtin_cmd_fg(t_shell *state,
+								t_executable_cmd *cmd,
 								t_executable_node *exe)
 {
 	int	stdin_bak;

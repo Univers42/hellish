@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:31:19 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:11:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:25:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 {
 	int				wr;
 	t_string		sep;
-	t_hdoc	req;
+	t_hdoc			req;
 
 	wr = ft_mktemp(state, curr);
 	if (wr < 0)
@@ -36,7 +36,7 @@ static void	append_to_exist_heredoc(t_shell *state, t_ast_node *curr,
 	t_redir			*r;
 	int				append_fd;
 	t_string		sep;
-	t_hdoc	req;
+	t_hdoc			req;
 
 	r = (t_redir *)vec_idx(&state->redirects, shared_idx);
 	if (!r || !r->fname)
@@ -45,7 +45,7 @@ static void	append_to_exist_heredoc(t_shell *state, t_ast_node *curr,
 	curr->has_redirect = true;
 	append_fd = open(r->fname, O_WRONLY | O_APPEND);
 	if (append_fd < 0)
-		critical_error_errno_context(r->fname);
+		critical_error_errno_ctx(r->fname);
 	sep = word_to_hrdoc_string(((t_ast_node *)curr->children.ctx)[1]);
 	req = create_heredoc((char *)sep.ctx,
 			!contains_quotes(((t_ast_node *)curr->children.ctx)[1]),

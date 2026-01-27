@@ -18,13 +18,13 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 	if (tt->looking_for && state->input.len)
 		ft_eprintf("%s: unexpected EOF while looking for "
 			"matching `%c'\n",
-			state->context, tt->looking_for);
+			state->ctx, tt->looking_for);
 	else if (state->input.len)
 		ft_eprintf("%s: syntax error: unexpected end of file\n",
-			state->context);
-	if (state->input_method == INP_RL)
+			state->ctx);
+	if (state->metinp == INP_RL)
 		ft_eprintf("exit\n");
-	if (!state->last_cmd_status_res.status && state->input.len)
+	if (!state->last_cmd_st_exe.status && state->input.len)
 		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 	state->should_exit = true;
 }

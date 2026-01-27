@@ -32,7 +32,7 @@ void		init_cwd(t_shell *state);
 void		ensure_essential_env_vars(t_shell *state);
 void		handle_file_open_error(t_shell *state, char **argv);
 void		read_file_to_buffer(int fd, t_shell *state);
-void		update_context_from_file(t_shell *state, char **argv);
+void		update_ctx_from_file(t_shell *state, char **argv);
 void		init_arg(t_shell *state, char **argv);
 void		init_file(t_shell *state, char **argv);
 void		init_stdin_notty(t_shell *state);

@@ -37,8 +37,8 @@ It:
 The parser then decides whether:
 
 - It can parse a full command (`RES_OK`),
-- It needs more tokens (`RES_MoreInput`),
-- Or the stream is syntactically invalid (`RES_FatalError`).
+- It needs more tokens (`RES_GETMOREINPUT`),
+- Or the stream is syntactically invalid (`RES_ERR`).
 
 The lexer never allocates or frees AST nodes; it only manipulates `t_token`
 structures and simple C pointers.
@@ -247,7 +247,7 @@ The **input layer** (`get_more_tokens`) calls:
 
 The **parser** then consumes tokens from `t_deque_tok` and pushes its own state
 (operators, expected closures) into `parser->parse_stack`. When it needs more
-input, it sets `RES_MoreInput`, which in turn affects the next prompt.
+input, it sets `RES_GETMOREINPUT`, which in turn affects the next prompt.
 
 ---
 

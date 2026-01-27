@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 14:16:24 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/23 14:33:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ int	cd_home(int *e, t_shell *state)
 
 	home = env_expand(state, "HOME");
 	if (home == NULL)
-		return (ft_eprintf("%s: cd: HOME not set\n", state->context), 1);
+		return (ft_eprintf("%s: cd: HOME not set\n", state->ctx), 1);
 	*e = chdir(home);
 	return (0);
 }
@@ -42,7 +42,7 @@ int	builtin_cd(t_shell *state, t_vec argv)
 	e = 0;
 	if (check_args(argv))
 	{
-		ft_eprintf("%s: %s: too many arguments\n", state->context,
+		ft_eprintf("%s: %s: too many arguments\n", state->ctx,
 			((char **)argv.ctx)[0]);
 		return (1);
 	}
@@ -53,7 +53,7 @@ int	builtin_cd(t_shell *state, t_vec argv)
 		arg = "";
 	if (e == -1)
 	{
-		ft_eprintf("%s: %s: %s: %s\n", state->context,
+		ft_eprintf("%s: %s: %s: %s\n", state->ctx,
 			((char **)argv.ctx)[0], arg, strerror(errno));
 		return (1);
 	}

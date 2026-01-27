@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 17:47:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 16:29:30 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,7 @@ static void	parse_print_and_cleanup(t_shell *state,
 	parsed = parse_tokens(state, parser, tt);
 	debug_parser_print_ast(state, parser, parsed);
 	debug_parser_cleanup(state, tt, prompt);
-	parser->res = RES_Init;
+	parser->res = RES_INIT;
 }
 
 void	debug_parser_loop(t_shell *state, t_parser *parser,
@@ -64,7 +64,7 @@ void	debug_parser_loop(t_shell *state, t_parser *parser,
 {
 	int	action;
 
-	while (parser->res == RES_MoreInput || parser->res == RES_Init)
+	while (parser->res == RES_GETMOREINPUT || parser->res == RES_INIT)
 	{
 		set_cmd_status(state, res_status(0));
 		action = fetch_and_handle_input(state, parser, prompt, tt);
@@ -74,12 +74,12 @@ void	debug_parser_loop(t_shell *state, t_parser *parser,
 			continue ;
 		set_cmd_status(state, res_status(0));
 		if (get_g_sig()->should_unwind)
-			set_cmd_status(state, (t_execution_state){.status = CANCELED, .c_c = true});
+			set_cmd_status(state, create_exec_state(CANCELED, true));
 		if (state->should_exit || get_g_sig()->should_unwind)
 			break ;
 		if (is_empty_token_list(tt))
 		{
-			buff_readline_reset(&state->readline_buff);
+			buff_readline_reset(&state->rl);
 			continue ;
 		}
 		parse_print_and_cleanup(state, parser, tt, prompt);
