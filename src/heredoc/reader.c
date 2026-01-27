@@ -65,13 +65,15 @@ void	process_line(t_shell *state, t_hdoc *req)
 		return ;
 	if (is_sep(req, &alloc_line))
 		return (free(alloc_line.ctx), (void)(req->finished = true));
-	if (req->remove_tabs)
-		line = first_non_tab((char *)alloc_line.ctx);
-	else
-		line = (char *)alloc_line.ctx;
+	line = (char *)alloc_line.ctx;
+	if (!req->full_file.ctx)
+	{
+		vec_init(&req->full_file);
+		req->full_file.elem_size = 1;
+	}
 	if (req->expand)
 		expand_line(state, &req->full_file, line);
-	else
+	else if (line)
 		vec_push_str(&req->full_file, line);
 	free(alloc_line.ctx);
 }
