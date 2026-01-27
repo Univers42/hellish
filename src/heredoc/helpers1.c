@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:31:19 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:25:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/01/27 17:16:01 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,15 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	if (wr < 0)
 		return (-1);
 	sep = word_to_hrdoc_string(((t_ast_node *)curr->children.ctx)[1]);
+	if (!sep.ctx)
+	{
+		vec_init(&sep);
+		sep.elem_size = 1;
+		vec_push_char(&sep, '$');
+	}
+	if (!vec_ensure_space_n(&sep, 1))
+		return (close(wr), free(sep.ctx), -1);
+	((char *)sep.ctx)[sep.len] = '\0';
 	req = create_heredoc((char *)sep.ctx,
 			!contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
 			ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start,
