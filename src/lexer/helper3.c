@@ -62,17 +62,18 @@ static void	init_ops_group3(t_op_map ops[])
 	ops[11] = (t_op_map){"&&", TT_AND};
 	ops[12] = (t_op_map){"&", TT_AMPERSAND};
 	ops[13] = (t_op_map){"||", TT_OR};
-	ops[14] = (t_op_map){";", TT_SEMICOLON};
-	ops[15] = (t_op_map){">&", TT_DUP_OUT};
-	ops[16] = (t_op_map){"<&", TT_DUP_IN};
-	ops[17] = (t_op_map){NULL, TT_END};
+	ops[14] = (t_op_map){";;", TT_DSEMI};
+	ops[15] = (t_op_map){";", TT_SEMICOLON};
+	ops[16] = (t_op_map){">&", TT_DUP_OUT};
+	ops[17] = (t_op_map){"<&", TT_DUP_IN};
+	ops[18] = (t_op_map){NULL, TT_END};
 }
 
 void	parse_op(t_deque_tok *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;
-	t_op_map	operators[18];
+	t_op_map	operators[19];
 	t_token		tmp;
 	int			fd_len;
 

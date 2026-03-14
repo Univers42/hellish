@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   split_envvar.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/23 11:28:58 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/26 16:40:27 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 10:20:54 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,9 @@ void	split_envvar(t_shell *state, t_token *curr_t,
 	if (!curr_t->start)
 		return ;
 	things = ft_split_str(curr_t->start, env_get_ifs(&state->env));
+	if (curr_t->allocated)
+		free((char *)curr_t->start);
+	curr_t->allocated = false;
 	if (things[0])
 	{
 		push_new_env_child(curr_node, things[0]);

@@ -31,7 +31,14 @@ typedef enum e_ast_type
 	AST_COMPOUND_LIST,
 	AST_COMMAND,
 	AST_ASSIGNMENT_WORD,
-	AST_PROC_SUB
+	AST_PROC_SUB,
+	AST_IF,
+	AST_WHILE,
+	AST_UNTIL,
+	AST_FOR,
+	AST_CASE,
+	AST_CASE_ITEM,
+	AST_BRACE_GROUP
 }	t_ast_type;
 
 typedef struct s_ast_node
@@ -47,7 +54,8 @@ typedef struct s_ast_node
 typedef t_vec			t_vec_nd;
 
 /* Function prototypes */
-void	free_ast(t_ast_node *node);
+void		free_ast(t_ast_node *node);
+t_ast_node	clone_ast(t_ast_node *src);
 void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node));
 void	print_ast_dot(t_shell *state, t_ast_node node);
 char	*node_name(t_ast_type tn);

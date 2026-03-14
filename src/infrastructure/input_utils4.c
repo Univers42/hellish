@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   input_utils4.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:31:45 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:20:47 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	if (is_empty_token_list(tt))
 		return (buff_readline_reset(&state->rl), false);
 	parser->parse_stack.len = 0;
+	reclassify_keywords(tt);
 	state->tree = parse_tokens(state, parser, tt);
 	if (parser->res == RES_OK)
 		return (true);

@@ -13,6 +13,7 @@
 #include "lexer.h"
 
 void	init_color_map_part2(t_hash *map);
+void	init_color_map_kw(t_hash *map);
 
 t_hash	*get_color_map(void)
 {
@@ -35,6 +36,7 @@ t_hash	*get_color_map(void)
 	hash_set(&map, "TT_OR", (void *)ASCII_CYAN);
 	hash_set(&map, "TT_AND", (void *)ASCII_CYAN);
 	init_color_map_part2(&map);
+	init_color_map_kw(&map);
 	ready = true;
 	return (&map);
 }
@@ -79,6 +81,9 @@ static void	init_tt_names_group3(const char **names)
 	names[TT_DUP_IN] = "TT_DUP_IN";
 }
 
+void	init_tt_names_kw1(const char **names);
+void	init_tt_names_kw2(const char **names);
+
 const char	**get_tt_names(void)
 {
 	static const char	*names[256];
@@ -89,6 +94,8 @@ const char	**get_tt_names(void)
 		init_tt_names_group1(names);
 		init_tt_names_group2(names);
 		init_tt_names_group3(names);
+		init_tt_names_kw1((const char **)names);
+		init_tt_names_kw2((const char **)names);
 		inited = 1;
 	}
 	return (names);

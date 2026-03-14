@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   execute_command.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:41 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,17 +15,52 @@
 static void	ensure_redirs_initialized(t_executable_node *exe);
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
 
+t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
+
+static bool	is_compound_ast(t_ast_type t)
+{
+	return (t == AST_IF || t == AST_WHILE || t == AST_UNTIL
+		|| t == AST_FOR || t == AST_BRACE_GROUP);
+}
+
+static t_execution_state	dispatch_compound(t_shell *state,
+								t_executable_node *exe)
+{
+	t_ast_type	t;
+
+	t = exe->node->node_type;
+	if (t == AST_IF)
+		return (execute_if(state, exe));
+	if (t == AST_WHILE || t == AST_UNTIL)
+		return (execute_while(state, exe));
+	if (t == AST_FOR)
+		return (execute_for(state, exe));
+	ft_assert(0);
+	return (res_status(1));
+}
+
 t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
+	t_ast_type	first_type;
+
 	ft_assert(exe->node->children.len >= 1);
-	if (((t_ast_node *)exe->node->children.ctx)[0].node_type
-		== AST_SIMPLE_COMMAND)
+	first_type = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
+	if (first_type == AST_SIMPLE_COMMAND)
 	{
 		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
 		return (execute_simple_command(state, exe));
 	}
-	ft_assert(((t_ast_node *)exe->node->children.ctx)[0].node_type
-		== AST_SUBSHELL);
+	if (is_compound_ast(first_type))
+	{
+		ensure_redirs_initialized(exe);
+		if (collect_redirects_from_ast(state, exe))
+			return (res_status(AMBIGUOUS_REDIRECT));
+		exe->node = vec_idx(&exe->node->children, 0);
+		return (dispatch_compound(state, exe));
+	}
+	ft_assert(first_type == AST_SUBSHELL);
 	ensure_redirs_initialized(exe);
 	if (collect_redirects_from_ast(state, exe))
 		return (res_status(AMBIGUOUS_REDIRECT));

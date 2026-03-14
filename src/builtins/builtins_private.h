@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   builtins_private.h                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:02:26 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 01:25:31 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 10:20:50 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,5 +71,6 @@ int		handle_too_many_args(t_shell *state, t_vec argv, size_t i);
 
 int		parse_redir_len(const char *arg);
 bool	redir_needs_next(const char *arg);
+char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied);
 
 #endif

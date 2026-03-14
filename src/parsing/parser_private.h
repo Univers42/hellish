@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   parser_private.h                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:03:35 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:07:19 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,5 +121,18 @@ int			proc_sub_handle_eof(t_parser *parser,
 				t_deque_tok *tokens,
 				t_string *cmd_str,
 				t_token curr);
+bool		is_compound_start(t_tt tt);
+bool		is_compound_terminator(t_tt tt);
+bool		is_separator_before_terminator(t_ast_node *ret,
+				t_deque_tok *tokens);
+void		skip_newlines(t_deque_tok *tokens);
+t_ast_node	parse_if_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_while_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_until_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_for_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
 
 #endif

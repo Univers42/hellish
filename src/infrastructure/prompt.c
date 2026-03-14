@@ -12,11 +12,33 @@
 
 #include "prompt_private.h"
 
+static const char	*prompt_label(t_tt curr)
+{
+	if (curr == TT_BRACE_LEFT)
+		return ("subsh");
+	if (curr == TT_PIPE)
+		return ("pipe");
+	if (curr == TT_AND)
+		return ("cmdand");
+	if (curr == TT_OR)
+		return ("cmdor");
+	if (curr == TT_IF)
+		return ("if");
+	if (curr == TT_WHILE)
+		return ("while");
+	if (curr == TT_UNTIL)
+		return ("until");
+	if (curr == TT_FOR)
+		return ("for");
+	return (NULL);
+}
+
 t_string	prompt_more_input(t_parser *parser)
 {
 	t_string	ret;
 	t_tt		curr;
 	size_t		i;
+	const char	*label;
 
 	i = -1;
 	vec_init(&ret);
@@ -24,16 +46,10 @@ t_string	prompt_more_input(t_parser *parser)
 	while (++i < parser->parse_stack.len)
 	{
 		curr = *(int *)vec_idx(&parser->parse_stack, i++);
-		if (curr == TT_BRACE_LEFT)
-			vec_push_str(&ret, "subsh");
-		else if (curr == TT_PIPE)
-			vec_push_str(&ret, "pipe");
-		else if (curr == TT_AND)
-			vec_push_str(&ret, "cmdand");
-		else if (curr == TT_OR)
-			vec_push_str(&ret, "cmdor");
-		else
+		label = prompt_label(curr);
+		if (!label)
 			continue ;
+		vec_push_str(&ret, (char *)label);
 		vec_push_str(&ret, " ");
 	}
 	if (ret.len > 0)

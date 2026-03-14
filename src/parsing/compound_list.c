@@ -24,12 +24,13 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 		return (true);
 	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
 	push_token_child(ret, tmp);
-	if (is_semicolon_or_newline_before_brace_right(ret, tokens))
+	if (is_separator_before_terminator(ret, tokens))
 		return (true);
 	vec_push_int(&parser->parse_stack, op);
 	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 		(void)deque_pop_start(&tokens->deqtok);
-	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BRACE_RIGHT)
+	if (is_compound_terminator(
+			(*(t_token *)deque_peek(&tokens->deqtok)).tt))
 		return (true);
 	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		return (parser->res = RES_GETMOREINPUT, true);
@@ -50,7 +51,10 @@ t_ast_node	parse_compound_list(t_shell *state,
 	ret = (t_ast_node){.node_type = AST_COMPOUND_LIST};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
+	skip_newlines(tokens);
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	if (next == TT_END)
+		return (parser->res = RES_GETMOREINPUT, ret);
 	if (next == TT_ARITH_START)
 	{
 		parser->res = RES_ERR;
