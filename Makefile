@@ -36,7 +36,8 @@ LDFLAGS_BASE +=
 endif
 
 LDLIBS      := -lreadline
-BAPTIZE_SHELL\t?= hellish
+BAPTIZE_SHELL ?= hellish
+
 
 # Choose flags: default = debug; pass OPT=1 when calling make to enable optimizations
 ifdef OPT
@@ -79,6 +80,8 @@ SRCS :=		src/arith/eval.c\
 			src/arith/set.c\
 			src/builtins/cd_helpers1.c\
 			src/builtins/cd_helpers2.c\
+			src/builtins/builtin_type.c\
+			src/builtins/builtin_set.c\
 			src/builtins/collect_and_print_exported.c\
 			src/builtins/core_builtins.c\
 			src/builtins/core_builtins2.c\
@@ -106,6 +109,9 @@ SRCS :=		src/arith/eval.c\
 			src/execution/exe_error.c\
 			src/execution/exe_path.c\
 			src/execution/execute_command.c\
+			src/execution/execute_if.c\
+			src/execution/execute_while.c\
+			src/execution/execute_for.c\
 			src/execution/execute_simple_list.c\
 			src/execution/execute_tree_node.c\
 			src/execution/find_cmd_path.c\
@@ -126,6 +132,7 @@ SRCS :=		src/arith/eval.c\
 			src/expander/expand_cmd_substitution.c\
 			src/expander/expand_env_vars.c\
 			src/expander/expand_export_value.c\
+			src/expander/expand_param_format.c\
 			src/expander/expand_node_glob.c\
 			src/expander/expand_simple_cmd_assignment.c\
 			src/expander/expand_tilde_token.c\
@@ -190,6 +197,7 @@ SRCS :=		src/arith/eval.c\
 			src/infrastructure/ast_utils2.c\
 			src/infrastructure/ast_utils3.c\
 			src/infrastructure/ast_utils4.c\
+			src/infrastructure/ast_utils5.c\
 			src/infrastructure/error.c\
 			src/infrastructure/history.c\
 			src/infrastructure/history_utils.c\
@@ -213,19 +221,24 @@ SRCS :=		src/arith/eval.c\
 			src/lexer/debug.c\
 			src/lexer/helper2.c\
 			src/lexer/helper4.c\
+			src/lexer/keywords.c\
 			src/lexer/lexer_advance.c\
 			src/lexer/parse_subshell.c\
 			src/lexer/print_tokens.c\
 			src/lexer/print_tokens_utils.c\
+			src/lexer/singletons.c\
+			src/lexer/singletons_kw.c\
 			src/lexer/tables.c\
 			src/lexer/tables_utils.c\
 			src/lexer/tokenizer.c\
 			src/lexer/parse_lexeme.c\
-			src/lexer/singletons.c\
 			src/lexer/helper3.c\
 			src/parsing/compound_list.c\
 			src/parsing/parse_arith.c\
 			src/parsing/parse_cmd.c\
+			src/parsing/parse_if.c\
+			src/parsing/parse_while.c\
+			src/parsing/parse_for.c\
 			src/parsing/parse_pipeline.c\
 			src/parsing/parse_simple_cmd.c\
 			src/parsing/parse_subshell.c\
@@ -235,6 +248,7 @@ SRCS :=		src/arith/eval.c\
 			src/parsing/utils4.c\
 			src/parsing/utils3.c\
 			src/parsing/utils5.c\
+			src/parsing/utils6.c\
 			src/parsing/utils.c\
 			src/parsing/parse_redirect.c\
 			src/parsing/parser_proc_sub.c\
@@ -255,9 +269,6 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
-# Output
-NAME := hellish
-
 ifeq ($(OPT),1)
 	MAKEFLAGS := --no-print-directory -j$(shell nproc)
 else
@@ -267,17 +278,12 @@ endif
 # Add this variable at the top with your other variables
 COMPILED := 0
 
-all: $(BIN_DIR)/$(NAME)
+all: $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Link the final binary
-$(BIN_DIR)/$(NAME): $(LIBFT_A) $(OBJS)
-	@printf "\n  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[0m" >&2
-	@for dots in '.' '..' '...' '....' '.....'; do \
-	    printf "\r  \033[1;35m●\033[0m \033[1;37mLinking $(NAME)\033[1;36m%-5s\033[0m" "$$dots" >&2; \
-	    sleep 0.1; \
-	done
-	@$(CC) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
-	@printf "\r\033[K  \033[1;32m✓\033[0m \033[1;37m$(NAME) ready\033[0m\n\n" >&2
+$(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
 
 # Compile .c -> .o with inline animation
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
@@ -321,7 +327,7 @@ clean:
 
 fclean: clean
 	@printf "  \033[1;33m⚠\033[0m \033[1;37mRemoving binary\033[0m" >&2
-	@rm -f $(BIN_DIR)/$(NAME)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mBinary removed\033[0m\n\n" >&2
 	@printf "  \033[1;35m●\033[0m \033[1;37mCleaning libft\033[0m" >&2
 	@$(MAKE) -C vendor/libft fclean
@@ -330,7 +336,7 @@ fclean: clean
 	@printf "\n" >&2
 
 re: fclean all
-	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(NAME)\033[0m\n\n" >&2
+	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(BAPTIZE_SHELL)\033[0m\n\n" >&2
 
 test: all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2

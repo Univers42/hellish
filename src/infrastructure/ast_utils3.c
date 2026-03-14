@@ -3,16 +3,36 @@
 /*                                                        :::      ::::::::   */
 /*   ast_utils3.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:20:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 17:00:11 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:44:37 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ast_private.h"
 
-// Helper: print all children of a node recursively
+char	*node_name_compound(t_ast_type tn)
+{
+	if (tn == AST_IF)
+		return ("AST_IF");
+	if (tn == AST_WHILE)
+		return ("AST_WHILE");
+	if (tn == AST_UNTIL)
+		return ("AST_UNTIL");
+	if (tn == AST_FOR)
+		return ("AST_FOR");
+	if (tn == AST_CASE)
+		return ("AST_CASE");
+	if (tn == AST_CASE_ITEM)
+		return ("AST_CASE_ITEM");
+	if (tn == AST_BRACE_GROUP)
+		return ("AST_BRACE_GROUP");
+	ft_assert(0);
+	return (0);
+}
+
+/* Helper: print all children of a node recursively */
 static void	print_all_children(t_ast_node node, int *depth_stack, int depth)
 {
 	size_t	i;
@@ -30,7 +50,7 @@ static void	print_all_children(t_ast_node node, int *depth_stack, int depth)
 	}
 }
 
-// Helper: print a collapsed pipeline node (single child)
+/* Helper: print a collapsed pipeline node (single child) */
 static void	print_collapsed_pipeline(t_ast_node node,
 									int *depth_stack,
 									int depth)
@@ -69,7 +89,7 @@ static void	print_left_associative_list(t_ast_node node,
 	print_sequence_range_ctx(&ctx, 0, (int)node.children.len - 1);
 }
 
-// Main recursive print function
+/* Main recursive print function */
 void	print_tree_recursive(t_ast_node node, int *depth_stack, int depth)
 {
 	print_tree_prefix(depth_stack, depth,

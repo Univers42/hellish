@@ -3,14 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   ast_utils.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:03:31 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ast_private.h"
+
+char	*node_name_compound(t_ast_type tn);
 
 /* Original function - enhanced with tree output */
 char	*node_name(t_ast_type tn)
@@ -37,8 +39,7 @@ char	*node_name(t_ast_type tn)
 		return ("AST_ASSIGNMENT_WORD");
 	if (tn == AST_PROC_SUB)
 		return ("AST_PROC_SUB");
-	ft_assert(0);
-	return (0);
+	return (node_name_compound(tn));
 }
 
 /* Original function - kept as is */

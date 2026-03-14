@@ -32,6 +32,8 @@ int		builtin_cd(t_shell *state, t_vec argv);
 int		builtin_env(t_shell *state, t_vec argv);
 int		builtin_export(t_shell *state, t_vec argv);
 int		builtin_unset(t_shell *state, t_vec argv);
+int		builtin_type(t_shell *state, t_vec argv);
+int		builtin_set(t_shell *state, t_vec argv);
 int		(*builtin_func(char *name))(t_shell *state, t_vec argv);
 
 #endif
