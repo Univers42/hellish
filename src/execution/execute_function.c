@@ -1,0 +1,111 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   execute_function.c                                 :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/03/14 17:00:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/03/14 17:00:00 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "execution_private.h"
+
+/*
+** Look up a function by name in the shell's function table.
+** Returns pointer to the function entry, or NULL.
+*/
+t_shell_func	*func_lookup(t_shell *state, const char *name)
+{
+	size_t			i;
+	t_shell_func	*fn;
+
+	i = 0;
+	while (i < state->functions.len)
+	{
+		fn = (t_shell_func *)vec_idx(&state->functions, i);
+		if (ft_strcmp(fn->name, name) == 0)
+			return (fn);
+		i++;
+	}
+	return (NULL);
+}
+
+/*
+** Store (or overwrite) a function definition.
+** Clones the body AST so the original can be freed.
+*/
+static void	store_function(t_shell *state, char *name, t_ast_node *body)
+{
+	t_shell_func	*existing;
+	t_shell_func	new_fn;
+
+	existing = func_lookup(state, name);
+	if (existing)
+	{
+		free_ast(&existing->body);
+		existing->body = deep_clone_ast(body);
+		return ;
+	}
+	new_fn.name = ft_strdup(name);
+	new_fn.body = deep_clone_ast(body);
+	vec_push(&state->functions, &new_fn);
+}
+
+/*
+** Execute a function definition: store the body in the function table.
+** AST_FUNCTION_DEF: token = name, children[0] = body
+*/
+t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
+{
+	char		*name;
+	t_ast_node	*body;
+
+	name = ft_strndup(exe->node->token.start, exe->node->token.len);
+	body = vec_idx(&exe->node->children, 0);
+	store_function(state, name, body);
+	free(name);
+	return (res_status(0));
+}
+
+static void	set_positional_params(t_shell *state, t_vec *argv)
+{
+	size_t	i;
+	char	key[2];
+	char	**av;
+	char	*count;
+
+	av = (char **)argv->ctx;
+	i = 1;
+	key[1] = '\0';
+	while (i < argv->len && i <= 9)
+	{
+		key[0] = '0' + i;
+		env_set(&state->env, env_create(ft_strdup(key),
+				ft_strdup(av[i]), false));
+		i++;
+	}
+	count = ft_itoa(argv->len - 1);
+	env_set(&state->env, env_create(ft_strdup("#"), count, false));
+}
+
+/*
+** Execute a function call: clone body, set positional params, execute.
+*/
+t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
+						t_vec *argv)
+{
+	t_ast_node			body_copy;
+	t_executable_node	body_exe;
+	t_execution_state	status;
+
+	if (argv->len > 1)
+		set_positional_params(state, argv);
+	body_copy = clone_ast(&fn->body);
+	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
+			&body_copy, true);
+	status = execute_tree_node(state, &body_exe);
+	free_ast(&body_copy);
+	return (status);
+}

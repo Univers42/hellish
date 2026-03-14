@@ -67,6 +67,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	state->redirects.elem_size = sizeof(t_redir);
 	vec_init(&state->proc_subs);
 	state->proc_subs.elem_size = sizeof(t_procsub_entry);
+	vec_init(&state->functions);
+	state->functions.elem_size = sizeof(t_shell_func);
 	mode_input(argv, state);
 	prng_initialize_state(&state->prng, 19650218UL);
 	state->bg_job_count = 0;

@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:20:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 14:44:37 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,8 @@ char	*node_name_compound(t_ast_type tn)
 		return ("AST_CASE_ITEM");
 	if (tn == AST_BRACE_GROUP)
 		return ("AST_BRACE_GROUP");
+	if (tn == AST_FUNCTION_DEF)
+		return ("AST_FUNCTION_DEF");
 	ft_assert(0);
 	return (0);
 }

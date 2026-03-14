@@ -79,6 +79,14 @@ t_execution_state	execute_simple_command(t_shell *state,
 	replace_null_argv_with_empty(&cmd);
 	if (is_empty_command_name(&cmd))
 		return (handle_empty_command(state, &cmd, exe));
+	if (cmd.argv.len && func_lookup(state, ((char **)(cmd.argv.ctx))[0])
+		&& exe->modify_parent_ctx)
+	{
+		procsub_close_fds_parent(state);
+		return (execute_func_call(state,
+				func_lookup(state, ((char **)(cmd.argv.ctx))[0]),
+				&cmd.argv));
+	}
 	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0])
 		&& exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, &cmd, exe));

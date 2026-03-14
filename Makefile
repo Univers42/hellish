@@ -112,6 +112,7 @@ SRCS :=		src/arith/eval.c\
 			src/execution/execute_if.c\
 			src/execution/execute_while.c\
 			src/execution/execute_for.c\
+			src/execution/execute_function.c\
 			src/execution/execute_simple_list.c\
 			src/execution/execute_tree_node.c\
 			src/execution/find_cmd_path.c\
@@ -239,6 +240,7 @@ SRCS :=		src/arith/eval.c\
 			src/parsing/parse_if.c\
 			src/parsing/parse_while.c\
 			src/parsing/parse_for.c\
+			src/parsing/parse_function.c\
 			src/parsing/parse_pipeline.c\
 			src/parsing/parse_simple_cmd.c\
 			src/parsing/parse_subshell.c\
