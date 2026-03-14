@@ -277,7 +277,7 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 
 	if (slen <= 0)
 		return (ft_strdup(""));
-	if (s[0] == '#')
+	if (s[0] == '#' && slen > 1)
 		return (expand_strlen(state, s + 1, slen - 1));
 	op = find_colon_op(s, slen);
 	if (op)
