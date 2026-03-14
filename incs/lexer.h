@@ -43,6 +43,7 @@ bool		is_space(char c);
 bool		is_word_boundary(const char *s);
 char		*parse_lexeme(t_deque_tok *tokens, char **str);
 void		parse_op(t_deque_tok *tokens, char **str);
+void		reclassify_keywords(t_deque_tok *tokens);
 
 /* helpers used by debug/tables printing */
 size_t		visible_lexeme_len(t_token *t);

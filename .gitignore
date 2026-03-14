@@ -1,4 +1,9 @@
 *.a
 */*.a
 */*.o
+*.o
 .vscode
+temp/
+build/
+out.dot
+tests/results.log

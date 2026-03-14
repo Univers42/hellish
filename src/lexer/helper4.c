@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   helper4.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 10:13:59 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 10:15:35 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,10 @@ int	check_fd_redirect(char *str, t_token *out)
 	}
 	if (fd_len == 0 || fd_len > 2)
 		return (0);
+	if (*p == '>' && *(p + 1) == '&')
+		return (create_token_consume(str, fd_len + 2, TT_DUP_OUT, out));
+	if (*p == '<' && *(p + 1) == '&')
+		return (create_token_consume(str, fd_len + 2, TT_DUP_IN, out));
 	if (*p == '>' && *(p + 1) == '>')
 		return (create_token_consume(str, fd_len + 2, TT_APPEND, out));
 	if (*p == '>')

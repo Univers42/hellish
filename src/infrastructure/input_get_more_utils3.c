@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   input_get_more_utils3.c                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 17:47:07 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:29:30 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ static void	parse_print_and_cleanup(t_shell *state,
 	t_ast_node	parsed;
 
 	parser->parse_stack.len = 0;
+	reclassify_keywords(tt);
 	parsed = parse_tokens(state, parser, tt);
 	debug_parser_print_ast(state, parser, parsed);
 	debug_parser_cleanup(state, tt, prompt);

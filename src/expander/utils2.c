@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils2.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/26 02:28:49 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:20:47 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,9 @@ bool	is_redirect(t_tt tt)
 	if (tt == TT_REDIRECT_LEFT
 		|| tt == TT_REDIRECT_RIGHT
 		|| tt == TT_APPEND
-		|| tt == TT_HEREDOC)
+		|| tt == TT_HEREDOC
+		|| tt == TT_DUP_OUT
+		|| tt == TT_DUP_IN)
 		return (true);
 	return (false);
 }

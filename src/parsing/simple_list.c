@@ -80,7 +80,8 @@ t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_ARITH_START)
 		return (handle_arith_error(state, parser, tokens, &ret), ret);
-	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT)
+	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT
+		&& !is_compound_start(next))
 		return (handle_unexpected_token(state, parser, ret, tokens), ret);
 	push_parsed_pipeline_child(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)

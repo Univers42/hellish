@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   reparse_envvar.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 22:29:14 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 23:57:47 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 10:20:52 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,25 @@ static void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 		create_interval(prev_start, rp->i), tt);
 }
 
+static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
+{
+	int	start;
+
+	if (rp->i >= rp->current_token.len
+		|| rp->current_token.start[rp->i] != '{')
+		return (false);
+	rp->i++;
+	start = rp->i;
+	while (rp->i < rp->current_token.len
+		&& rp->current_token.start[rp->i] != '}')
+		rp->i++;
+	push_subtoken_node(&rp->current_node, rp->current_token,
+		create_interval(start, rp->i), tt);
+	if (rp->i < rp->current_token.len)
+		rp->i++;
+	return (true);
+}
+
 void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 {
 	t_reparser	rp;
@@ -58,6 +77,11 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	ft_assert(t.start[(*i)++] == '$');
 	create_reparser(&rp, *ret, t, i);
 	prev_start = rp.i;
+	if (handle_envvar_brace(&rp, tt))
+	{
+		update_envvar_result(ret, i, &rp);
+		return ;
+	}
 	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
 	{
 		update_envvar_result(ret, i, &rp);
