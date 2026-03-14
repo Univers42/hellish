@@ -26,6 +26,22 @@ void	lex_variable(t_arith_lexer *lex)
 	lex->current.len = lex->pos - start;
 }
 
+void	lex_dollar_var(t_arith_lexer *lex)
+{
+	int	braced;
+
+	lex->pos++;
+	braced = (lex->pos < lex->len && lex->input[lex->pos] == '{');
+	if (braced)
+		lex->pos++;
+	if (lex->pos < lex->len && is_var_start(lex->input[lex->pos]))
+		lex_variable(lex);
+	else
+		set_lex_error(lex);
+	if (braced && lex->pos < lex->len && lex->input[lex->pos] == '}')
+		lex->pos++;
+}
+
 void	lex_two_char_op(t_arith_lexer *lex, char c2,
 							t_arith_tok single, t_arith_tok dbl)
 {
