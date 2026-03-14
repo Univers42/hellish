@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:03:35 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,6 +133,9 @@ t_ast_node	parse_while_command(t_shell *state,
 t_ast_node	parse_until_command(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_for_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+bool		is_function_def(t_deque_tok *tokens);
+t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 
 #endif

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   helpers3.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 13:18:34 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 13:48:52 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,8 @@ void	lex_dollar_var(t_arith_lexer *lex)
 	if (braced)
 		lex->pos++;
 	if (lex->pos < lex->len && is_var_start(lex->input[lex->pos]))
+		lex_variable(lex);
+	else if (lex->pos < lex->len && ft_isdigit(lex->input[lex->pos]))
 		lex_variable(lex);
 	else
 		set_lex_error(lex);

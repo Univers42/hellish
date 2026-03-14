@@ -61,7 +61,7 @@ static bool	is_cmd_position(t_tt tt)
 		|| tt == TT_AMPERSAND || tt == TT_IF || tt == TT_THEN
 		|| tt == TT_ELIF || tt == TT_ELSE || tt == TT_WHILE
 		|| tt == TT_UNTIL || tt == TT_DO || tt == TT_LBRACE
-		|| tt == TT_BANG || tt == TT_DSEMI);
+		|| tt == TT_BANG || tt == TT_DSEMI || tt == TT_BRACE_RIGHT);
 }
 
 void	reclassify_keywords(t_deque_tok *tokens)

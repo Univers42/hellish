@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   execution_private.h                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:05:22 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:35:17 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -93,6 +93,10 @@ t_execution_state	execute_simple_list(t_shell *state,
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe);
 void				execute_top_level(t_shell *state);
 t_execution_state	execute_tree_node(t_shell *state, t_executable_node *exe);
+t_shell_func		*func_lookup(t_shell *state, const char *name);
+t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
+						t_vec *argv);
 int					find_cmd_path(t_shell *state, char *cmd_name,
 						char **path_of_exe);
 t_execution_state	res_status(int status);

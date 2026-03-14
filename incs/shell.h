@@ -59,6 +59,12 @@ typedef struct s_procsub_entry
 
 typedef t_vec	t_vec_procsub;
 
+typedef struct s_shell_func
+{
+	char		*name;
+	t_ast_node	body;
+}	t_shell_func;
+
 typedef struct s_shell
 {
 	t_string			input;
@@ -80,6 +86,7 @@ typedef struct s_shell
 	uint32_t			option_flags;
 	int					bg_job_count;
 	t_vec_procsub		proc_subs;
+	t_vec				functions;
 }	t_shell;
 
 /* Directory matcher ctx for glob expansion */

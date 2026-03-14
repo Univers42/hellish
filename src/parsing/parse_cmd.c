@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 19:11:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,6 +94,15 @@ t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 	else if (is_compound_start(next))
 	{
 		if (!handle_compound_case(state, parser, tokens, &ret))
+			return (ret);
+	}
+	else if (is_function_def(tokens))
+	{
+		t_ast_node	func_node;
+
+		func_node = parse_function_def(state, parser, tokens);
+		vec_push(&ret.children, &func_node);
+		if (parser->res != RES_OK)
 			return (ret);
 	}
 	else
