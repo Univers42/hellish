@@ -93,6 +93,8 @@ void	arith_lexer_advance(t_arith_lexer *lex)
 		lex_number(lex);
 	else if (is_var_start(c))
 		lex_variable(lex);
+	else if (c == '$')
+		lex_dollar_var(lex);
 	else
 		lex_operator(lex);
 }

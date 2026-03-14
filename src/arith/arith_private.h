@@ -30,6 +30,7 @@ bool			is_var_start(char c);
 bool			is_var_char(char c);
 void			lex_number(t_arith_lexer *lex);
 void			lex_variable(t_arith_lexer *lex);
+void			lex_dollar_var(t_arith_lexer *lex);
 void			lex_two_char_op(t_arith_lexer *lex, char c2,
 					t_arith_tok single, t_arith_tok dbl);
 void			lex_operator(t_arith_lexer *lex);
