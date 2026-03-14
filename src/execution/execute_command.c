@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:41 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
 static bool	is_compound_ast(t_ast_type t)
 {
@@ -47,6 +48,11 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 
 	ft_assert(exe->node->children.len >= 1);
 	first_type = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
+	if (first_type == AST_FUNCTION_DEF)
+	{
+		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
+		return (execute_func_def(state, exe));
+	}
 	if (first_type == AST_SIMPLE_COMMAND)
 	{
 		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];

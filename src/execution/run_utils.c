@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   run_utils.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 17:02:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 19:25:41 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,10 +18,14 @@
  (never returns on builtin) */
 int	run_builtin_or_continue(t_shell *state, t_vec *args)
 {
-	int	(*bf)(t_shell *, t_vec);
+	int				(*bf)(t_shell *, t_vec);
+	t_shell_func	*fn;
 
 	if (!args->len || !args->ctx)
 		return (0);
+	fn = func_lookup(state, ((char **)args->ctx)[0]);
+	if (fn)
+		exit(execute_func_call(state, fn, args).status);
 	bf = builtin_func(((char **)args->ctx)[0]);
 	if (bf)
 		exit(bf(state, *args));
