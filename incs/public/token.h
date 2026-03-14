@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/21 00:04:48 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 14:07:05 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/15 00:14:40 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,6 +64,7 @@ typedef enum e_tt
 typedef struct s_token_old
 {
 	bool	present;
+	bool	allocated;
 	char	*start;
 	int		len;
 }	t_token_old;

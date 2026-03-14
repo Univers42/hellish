@@ -19,7 +19,7 @@ static t_execution_state	run_node(t_shell *state, t_ast_node *child)
 	t_execution_state	status;
 
 	copy = clone_ast(child);
-	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &copy, false);
+	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &copy, true);
 	status = execute_tree_node(state, &child_exe);
 	free_ast(&copy);
 	return (status);

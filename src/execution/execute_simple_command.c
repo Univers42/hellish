@@ -27,14 +27,19 @@ static void	replace_null_argv_with_empty(t_executable_cmd *cmd)
 	}
 }
 
-static bool	is_empty_command_name(t_executable_cmd *cmd)
+static t_execution_state	handle_func_call(t_shell *state,
+						t_executable_cmd *cmd,
+						t_executable_node *exe)
 {
-	char	*first_arg;
+	t_execution_state	res;
 
-	if (cmd->argv.len == 0)
-		return (false);
-	first_arg = ((char **)cmd->argv.ctx)[0];
-	return (first_arg && first_arg[0] == '\0');
+	procsub_close_fds_parent(state);
+	res = execute_func_call(state,
+			func_lookup(state, ((char **)(cmd->argv.ctx))[0]),
+			&cmd->argv);
+	free_executable_cmd(*cmd);
+	free_executable_node(exe);
+	return (res);
 }
 
 static t_execution_state	handle_empty_command(t_shell *state,
@@ -77,16 +82,12 @@ t_execution_state	execute_simple_command(t_shell *state,
 	if (!cmd.argv.ctx)
 		cmd.argv.len = 0;
 	replace_null_argv_with_empty(&cmd);
-	if (is_empty_command_name(&cmd))
+	if (cmd.argv.len > 0 && ((char **)cmd.argv.ctx)[0]
+		&& ((char **)cmd.argv.ctx)[0][0] == '\0')
 		return (handle_empty_command(state, &cmd, exe));
 	if (cmd.argv.len && func_lookup(state, ((char **)(cmd.argv.ctx))[0])
 		&& exe->modify_parent_ctx)
-	{
-		procsub_close_fds_parent(state);
-		return (execute_func_call(state,
-				func_lookup(state, ((char **)(cmd.argv.ctx))[0]),
-				&cmd.argv));
-	}
+		return (handle_func_call(state, &cmd, exe));
 	if (cmd.argv.len && builtin_func(((char **)(cmd.argv.ctx))[0])
 		&& exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, &cmd, exe));

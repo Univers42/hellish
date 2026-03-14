@@ -13,6 +13,30 @@
 #include "expander_private.h"
 #include "sys.h"
 
+static char	**build_full_envp(t_shell *state)
+{
+	char	**ret;
+	size_t	i;
+	size_t	j;
+	t_env	*e;
+	char	*tmp;
+
+	ret = ft_calloc(state->env.len + 1, sizeof(char *));
+	i = -1;
+	j = 0;
+	while (++i < state->env.len)
+	{
+		e = &((t_env *)state->env.ctx)[i];
+		if (!e->key || !e->value)
+			continue ;
+		tmp = ft_strjoin(e->key, "=");
+		ret[j] = ft_strjoin(tmp, e->value);
+		free(tmp);
+		j++;
+	}
+	return (ret);
+}
+
 static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
 {
 	pid_t		pid;
@@ -28,7 +52,7 @@ static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		envp = get_envp(state, PATH_HELLISH);
+		envp = build_full_envp(state);
 		execve(PATH_HELLISH, argv, envp);
 		if (envp)
 			free_tab(envp);
