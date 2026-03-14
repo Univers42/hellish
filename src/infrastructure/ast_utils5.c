@@ -17,11 +17,8 @@ static t_token	clone_token(t_token tok)
 	t_token	out;
 
 	out = tok;
-	if (tok.allocated && tok.start)
-		out.start = ft_strndup(tok.start, tok.len);
-	if (tok.full_word.present && tok.full_word.start)
-		out.full_word.start = ft_strndup(tok.full_word.start,
-				tok.full_word.len);
+	out.allocated = false;
+	out.full_word.allocated = false;
 	return (out);
 }
 
@@ -36,8 +33,11 @@ static t_token	deep_clone_token(t_token tok)
 		out.allocated = true;
 	}
 	if (tok.full_word.present && tok.full_word.start)
+	{
 		out.full_word.start = ft_strndup(tok.full_word.start,
 				tok.full_word.len);
+		out.full_word.allocated = true;
+	}
 	return (out);
 }
 

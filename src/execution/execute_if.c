@@ -16,7 +16,7 @@ static t_execution_state	run_child(t_shell *state, t_ast_node *child)
 {
 	t_executable_node	child_exe;
 
-	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, child, false);
+	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, child, true);
 	return (execute_tree_node(state, &child_exe));
 }
 

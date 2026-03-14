@@ -37,8 +37,25 @@ void	free_redirects(t_vec_redir *v)
 	v->elem_size = sizeof(t_redir);
 }
 
+static void	free_functions(t_vec *fns)
+{
+	size_t			i;
+	t_shell_func	*fn;
+
+	i = 0;
+	while (i < fns->len)
+	{
+		fn = vec_idx(fns, i);
+		free(fn->name);
+		free_ast(&fn->body);
+		i++;
+	}
+	free(fns->ctx);
+}
+
 void	free_all_state(t_shell *state)
 {
+	free_functions(&state->functions);
 	free(state->input.ctx);
 	state->input = (t_string){};
 	free(state->last_cmd_st);
