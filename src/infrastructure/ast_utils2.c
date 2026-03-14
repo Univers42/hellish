@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ast_utils2.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:03:31 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/15 00:14:40 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,8 +27,10 @@ void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 
 void	free_node(t_ast_node *node)
 {
-	if (node->node_type == AST_TOKEN && node->token.allocated)
+	if (node->token.allocated)
 		free(node->token.start);
+	if (node->token.full_word.allocated)
+		free(node->token.full_word.start);
 	free(node->children.ctx);
 	*node = (t_ast_node){};
 }
