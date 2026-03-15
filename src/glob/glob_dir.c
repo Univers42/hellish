@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   glob_dir.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 11:12:42 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 11:35:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/15 05:07:43 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,12 @@ static void	handle_glob_match_result(t_dir_matcher matcher,
 	}
 }
 
+static bool	is_dot_or_dotdot(const char *name)
+{
+	return (name[0] == '.' && (name[1] == '\0'
+			|| (name[1] == '.' && name[2] == '\0')));
+}
+
 int	process_dir(t_dir_matcher matcher)
 {
 	struct dirent	*diren;
@@ -48,6 +54,8 @@ int	process_dir(t_dir_matcher matcher)
 	diren = readdir(matcher.dir);
 	if (!diren)
 		return (0);
+	if (is_dot_or_dotdot(diren->d_name))
+		return (1);
 	res = matches_pattern(diren->d_name, matcher.glob, matcher.offset, true);
 	vec_init(&next_path);
 	next_path.elem_size = 1;
