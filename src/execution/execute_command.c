@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:08:41 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 18:05:04 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/15 01:30:03 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,13 +20,7 @@ t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
-static bool	is_compound_ast(t_ast_type t)
-{
-	return (t == AST_IF || t == AST_WHILE || t == AST_UNTIL
-		|| t == AST_FOR || t == AST_BRACE_GROUP);
-}
-
-static t_execution_state	dispatch_compound(t_shell *state,
+static t_execution_state	run_compound(t_shell *state,
 								t_executable_node *exe)
 {
 	t_ast_type	t;
@@ -38,41 +32,58 @@ static t_execution_state	dispatch_compound(t_shell *state,
 		return (execute_while(state, exe));
 	if (t == AST_FOR)
 		return (execute_for(state, exe));
-	ft_assert(0);
-	return (res_status(1));
+	return (ft_assert(0), res_status(1));
+}
+
+static t_execution_state	dispatch_compound(t_shell *state,
+								t_executable_node *exe)
+{
+	t_execution_state	res;
+	int					bak[2];
+	int					pid;
+
+	if (!exe->modify_parent_ctx)
+	{
+		pid = fork();
+		if (pid == 0)
+		{
+			default_signal_handlers();
+			set_up_redirection(state, exe);
+			exit(run_compound(state, exe).status);
+		}
+		return (res_pid(pid));
+	}
+	bak[0] = dup(STDIN_FILENO);
+	bak[1] = dup(STDOUT_FILENO);
+	set_up_redirection(state, exe);
+	res = run_compound(state, exe);
+	dup2(bak[0], STDIN_FILENO);
+	dup2(bak[1], STDOUT_FILENO);
+	close(bak[0]);
+	close(bak[1]);
+	return (res);
 }
 
 t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
-	t_ast_type	first_type;
+	t_ast_type	ft;
 
 	ft_assert(exe->node->children.len >= 1);
-	first_type = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
-	if (first_type == AST_FUNCTION_DEF)
-	{
-		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
-		return (execute_func_def(state, exe));
-	}
-	if (first_type == AST_SIMPLE_COMMAND)
-	{
-		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
-		return (execute_simple_command(state, exe));
-	}
-	if (is_compound_ast(first_type))
-	{
-		ensure_redirs_initialized(exe);
-		if (collect_redirects_from_ast(state, exe))
-			return (res_status(AMBIGUOUS_REDIRECT));
-		exe->node = vec_idx(&exe->node->children, 0);
-		return (dispatch_compound(state, exe));
-	}
-	ft_assert(first_type == AST_SUBSHELL);
+	ft = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
+	if (ft == AST_FUNCTION_DEF)
+		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
+			execute_func_def(state, exe));
+	if (ft == AST_SIMPLE_COMMAND)
+		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
+			execute_simple_command(state, exe));
 	ensure_redirs_initialized(exe);
 	if (collect_redirects_from_ast(state, exe))
 		return (res_status(AMBIGUOUS_REDIRECT));
 	exe->node = vec_idx(&exe->node->children, 0);
-	exe->modify_parent_ctx = true;
-	return (execute_subshell(state, exe));
+	if (ft == AST_SUBSHELL)
+		return (exe->modify_parent_ctx = true,
+			execute_subshell(state, exe));
+	return (dispatch_compound(state, exe));
 }
 
 /* Ensure exe->redirs is initialized */
