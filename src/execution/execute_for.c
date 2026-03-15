@@ -33,26 +33,47 @@ static void	set_for_var(t_shell *state, char *name, char *val)
 	env_set(&state->env, var);
 }
 
+static t_vec	expand_for_words(t_shell *state,
+		t_ast_node *node, size_t wc)
+{
+	t_vec		words;
+	size_t		i;
+	t_ast_node	copy;
+
+	vec_init(&words);
+	words.elem_size = sizeof(char *);
+	i = 0;
+	while (i < wc)
+	{
+		copy = clone_ast(vec_idx(&node->children, i));
+		expand_word(state, &copy, &words, false);
+		i++;
+	}
+	return (words);
+}
+
 static t_execution_state	for_word_loop(t_shell *state,
 		t_ast_node *node, char *var_name, size_t wc)
 {
 	t_execution_state	status;
+	t_vec				words;
 	size_t				i;
-	char				*word_value;
 
+	words = expand_for_words(state, node, wc);
 	status = res_status(0);
 	i = 0;
-	while (i < wc)
+	while (i < words.len)
 	{
-		word_value = expand_word_single(state,
-				vec_idx(&node->children, i));
-		set_for_var(state, var_name, word_value ? word_value : "");
-		free(word_value);
+		set_for_var(state, var_name, ((char **)words.ctx)[i]);
 		status = run_body(state, vec_idx(&node->children, wc));
 		if (state->should_exit || get_g_sig()->should_unwind)
 			break ;
 		i++;
 	}
+	i = 0;
+	while (i < words.len)
+		free(((char **)words.ctx)[i++]);
+	free(words.ctx);
 	return (status);
 }
 

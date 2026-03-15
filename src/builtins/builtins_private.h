@@ -50,6 +50,7 @@ int		cd_home(int *e, t_shell *state);
 int		builtin_pwd(t_shell *state, t_vec argv);
 void	try_unset(t_shell *state, char *key);
 int		builtin_unset(t_shell *state, t_vec argv);
+int		builtin_read(t_shell *state, t_vec argv);
 
 void	print_exit_if_readline(t_shell *state);
 int		handle_no_args(t_shell *state, t_vec argv);

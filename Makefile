@@ -82,6 +82,7 @@ SRCS :=		src/arith/eval.c\
 			src/builtins/cd_helpers2.c\
 			src/builtins/builtin_type.c\
 			src/builtins/builtin_set.c\
+			src/builtins/builtin_read.c\
 			src/builtins/collect_and_print_exported.c\
 			src/builtins/core_builtins.c\
 			src/builtins/core_builtins2.c\
