@@ -24,6 +24,7 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "unset", (void *)builtin_unset);
 	hash_set(h, "type", (void *)builtin_type);
 	hash_set(h, "set", (void *)builtin_set);
+	hash_set(h, "read", (void *)builtin_read);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
