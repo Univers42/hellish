@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   visible_with_cstr.c                                :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 18:54:20 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 18:56:32 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 05:14:55 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ static size_t	skip_ansi_escape(const char *s, size_t i)
 }
 
 static size_t	handle_wide_char(const char *s, size_t i,
-							mbstate_t *st, int *width)
+								mbstate_t *st, int *width)
 {
 	wchar_t	wc;
 	size_t	consumed;
@@ -52,10 +52,9 @@ static size_t	handle_wide_char(const char *s, size_t i,
 		ft_memset(st, 0, sizeof(*st));
 		return (i + 1);
 	}
-	w = ft_wcwidth(wc);
-	if (w <= 0)
-		w = 1;
-	(*width) += w;
+	w = wcwidth(wc);
+	if (w > 0)
+		(*width) += w;
 	return (i + consumed);
 }
 
