@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   eval.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 15:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:46:59 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	parser.lexer = &lexer;
 	parser.shell = state;
 	parser.error = false;
+	parser.no_side_effects = false;
 	parser.error_msg = NULL;
 	result = arith_parse_expr(&parser);
 	if (!parser.error && lexer.current.type != ATOK_EOF)
