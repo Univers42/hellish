@@ -14,7 +14,7 @@
 
 static void	init_builtin_hash(t_hash *h)
 {
-	hash_init(h, 16);
+	hash_init(h, 32);
 	hash_set(h, "echo", (void *)builtin_echo);
 	hash_set(h, "export", (void *)builtin_export);
 	hash_set(h, "cd", (void *)builtin_cd);
@@ -25,6 +25,15 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "type", (void *)builtin_type);
 	hash_set(h, "set", (void *)builtin_set);
 	hash_set(h, "read", (void *)builtin_read);
+	hash_set(h, "test", (void *)builtin_test);
+	hash_set(h, "[", (void *)builtin_test);
+	hash_set(h, "alias", (void *)builtin_alias);
+	hash_set(h, "unalias", (void *)builtin_unalias);
+	hash_set(h, "hash", (void *)builtin_hash);
+	hash_set(h, "jobs", (void *)builtin_jobs);
+	hash_set(h, "fg", (void *)builtin_fg);
+	hash_set(h, "bg", (void *)builtin_bg);
+	hash_set(h, "fc", (void *)builtin_fc);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)

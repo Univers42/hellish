@@ -3,14 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   input_utils3.c                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:31:16 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:17:29 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 01:53:46 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "helpers.h"
+
+char	*expand_history(t_shell *state, const char *input);
 
 bool	ends_with_bs_nl(t_string s)
 {
@@ -58,6 +61,27 @@ bool	is_empty_token_list(t_deque_tok *tokens)
 	return (false);
 }
 
+static void	expand_hist_in_input(t_shell *state)
+{
+	char	*expanded;
+	char	*raw;
+
+	raw = ft_strndup((char *)state->input.ctx, state->input.len);
+	if (!raw)
+		return ;
+	expanded = expand_history(state, raw);
+	if (expanded && ft_strcmp(expanded, raw) != 0 && expanded[0] != '\0')
+	{
+		free(state->input.ctx);
+		vec_init(&state->input);
+		state->input.elem_size = 1;
+		vec_push_str(&state->input, expanded);
+	}
+	if (expanded)
+		free(expanded);
+	free(raw);
+}
+
 int	readline_cmd(t_shell *state, char **prompt)
 {
 	int	stat;
@@ -82,6 +106,10 @@ int	readline_cmd(t_shell *state, char **prompt)
 		if (state->metinp != INP_RL)
 			state->should_exit = true;
 		return (2);
+	}
+	if (state->hist.hist_active && state->input.ctx && state->input.len > 0)
+	{
+		expand_hist_in_input(state);
 	}
 	return (0);
 }

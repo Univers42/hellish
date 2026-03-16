@@ -11,6 +11,57 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sh_alias.h"
+
+static void	apply_alias(t_shell *state, t_executable_cmd *cmd)
+{
+	char	*name;
+	char	*val;
+	char	**words;
+	t_vec	new_argv;
+	int		i;
+	char	*dup;
+
+	if (cmd->argv.len == 0 || !cmd->argv.ctx)
+		return ;
+	name = ((char **)cmd->argv.ctx)[0];
+	if (!name)
+		return ;
+	val = alias_get(&state->aliases, name);
+	if (!val)
+		return ;
+	words = ft_split(val, ' ');
+	if (!words || !words[0])
+	{
+		free_tab(words);
+		return ;
+	}
+	vec_init(&new_argv);
+	new_argv.elem_size = sizeof(char *);
+	i = 0;
+	while (words[i])
+	{
+		dup = ft_strdup(words[i]);
+		vec_push(&new_argv, &dup);
+		i++;
+	}
+	i = 1;
+	while (i < (int)cmd->argv.len)
+	{
+		dup = ft_strdup(((char **)cmd->argv.ctx)[i]);
+		vec_push(&new_argv, &dup);
+		i++;
+	}
+	i = 0;
+	while (i < (int)cmd->argv.len)
+	{
+		free(((char **)cmd->argv.ctx)[i]);
+		i++;
+	}
+	free(cmd->argv.ctx);
+	cmd->argv = new_argv;
+	free_tab(words);
+}
 
 static void	replace_null_argv_with_empty(t_executable_cmd *cmd)
 {
@@ -82,6 +133,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 	if (!cmd.argv.ctx)
 		cmd.argv.len = 0;
 	replace_null_argv_with_empty(&cmd);
+	apply_alias(state, &cmd);
 	if (cmd.argv.len > 0 && ((char **)cmd.argv.ctx)[0]
 		&& ((char **)cmd.argv.ctx)[0][0] == '\0')
 		return (handle_empty_command(state, &cmd, exe));

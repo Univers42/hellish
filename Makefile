@@ -266,7 +266,27 @@ SRCS :=		src/arith/eval.c\
 			src/word_splitting/reparse_word.c\
 			src/word_splitting/utils.c\
 			src/word_splitting/utils2.c\
-			src/word_splitting/verif.c
+			src/word_splitting/verif.c\
+			src/builtins/builtin_test.c\
+			src/builtins/builtin_test_ops.c\
+			src/builtins/builtin_alias.c\
+			src/builtins/builtin_unalias.c\
+			src/builtins/builtin_hash.c\
+			src/builtins/builtin_jobs.c\
+			src/builtins/builtin_fg.c\
+			src/builtins/builtin_bg.c\
+			src/builtins/builtin_fc.c\
+			src/alias/alias.c\
+			src/alias/alias_expand.c\
+			src/job_control/job_table.c\
+			src/job_control/job_utils.c\
+			src/infrastructure/history_expand.c\
+			src/completion/completion.c\
+			src/completion/complete_commands.c\
+			src/completion/complete_variables.c\
+			src/completion/complete_files.c\
+			src/editing/vi_mode.c\
+			src/editing/emacs_mode.c
 
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
