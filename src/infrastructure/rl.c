@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "rl_private.h"
+#include <locale.h>
 
 void	setup_completion(void);
 void	setup_vi_mode(void);
@@ -21,6 +22,7 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 	char	*ret;
 	size_t	i;
 
+	setlocale(LC_ALL, "");
 	rl_instream = stdin;
 	rl_outstream = stderr;
 	setup_completion();

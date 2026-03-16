@@ -33,6 +33,7 @@ typedef struct s_prompt
 	char	*branch;
 	char	*venv;
 	int		cols;
+	int		vis_w;
 	int		left_width;
 	int		time_width;
 	int		pad;
