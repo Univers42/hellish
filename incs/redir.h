@@ -31,6 +31,7 @@ typedef struct redir_s
 	char		*fname;
 	bool		should_delete;
 	bool		close_fd;
+	bool		is_dup;
 }	t_redir;
 
 # endif
@@ -74,7 +75,8 @@ static inline t_redir	create_redir(bool direction_in, int src_fd,
 		.src_fd = src_fd,
 		.fname = NULL,
 		.should_delete = should_delete,
-		.close_fd = false
+		.close_fd = false,
+		.is_dup = false
 	});
 }
 #endif

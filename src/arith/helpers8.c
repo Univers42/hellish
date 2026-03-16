@@ -3,14 +3,48 @@
 /*                                                        :::      ::::::::   */
 /*   helpers8.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:15:22 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 14:15:30 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:46:58 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "arith_private.h"
+
+void	set_var_value(t_arith_parser *p, const char *name, int len,
+	long long val)
+{
+	char	*key;
+	char	buf[32];
+	int		i;
+	int		neg;
+
+	if (p->no_side_effects)
+		return ;
+	key = ft_strndup(name, len);
+	if (!key)
+		return ;
+	neg = 0;
+	if (val < 0)
+	{
+		neg = 1;
+		val = -val;
+	}
+	i = 31;
+	buf[i] = '\0';
+	if (val == 0)
+		buf[--i] = '0';
+	while (val > 0)
+	{
+		buf[--i] = '0' + (val % 10);
+		val /= 10;
+	}
+	if (neg)
+		buf[--i] = '-';
+	env_set(&p->shell->env,
+		env_create(key, ft_strdup(buf + i), true));
+}
 
 long long	get_var_value(t_arith_parser *p, const char *name, int len)
 {

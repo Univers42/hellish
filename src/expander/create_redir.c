@@ -20,6 +20,7 @@ static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	ret->src_fd = src_fd;
 	ret->should_delete = false;
 	ret->direction_in = (tt == TT_DUP_IN);
+	ret->is_dup = true;
 	if (!fname || !*fname)
 		return (false);
 	if (fname[0] == '-' && fname[1] == '\0')
@@ -27,9 +28,9 @@ static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	target_fd = ft_atoi(fname);
 	if (target_fd < 0)
 		return (false);
-	ret->fd = dup(target_fd);
+	ret->fd = target_fd;
 	ret->close_fd = false;
-	return (ret->fd >= 0);
+	return (true);
 }
 
 static bool	open_file_redir(t_tt tt, t_redir *ret)
@@ -67,6 +68,7 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	ret->direction_in = (tt == TT_REDIRECT_LEFT || tt == TT_DUP_IN);
 	ret->src_fd = src_fd;
 	ret->close_fd = false;
+	ret->is_dup = false;
 	if (!ret->fname)
 		return (false);
 	if (tt == TT_DUP_OUT || tt == TT_DUP_IN)
@@ -86,5 +88,6 @@ bool	create_redir_heredoc(int heredoc_fd, t_redir *ret)
 	ret->should_delete = false;
 	ret->direction_in = true;
 	ret->close_fd = false;
+	ret->is_dup = false;
 	return (ret->fd >= 0);
 }
