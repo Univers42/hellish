@@ -367,7 +367,7 @@ norm:
 
 my_shell:
 	@echo "Installing hellish shell..."
-	sudo install -m 755 build/bin/minishell /usr/bin/hellish
+	sudo install -m 755 build/bin/hellish /usr/bin/hellish
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
 	@echo "Done. Log out and log back in to use hellish as your default shell."

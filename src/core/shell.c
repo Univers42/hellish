@@ -73,8 +73,8 @@ static void	flush_output_buffer(int buf_fd, int bak)
 	while (n > 0)
 	{
 		n = read(buf_fd, tmp, sizeof(tmp));
-		if (n > 0)
-			write(STDOUT_FILENO, tmp, n);
+		if (n > 0 && write(STDOUT_FILENO, tmp, n) < 0)
+			break ;
 	}
 	close(buf_fd);
 }
