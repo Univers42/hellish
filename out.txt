@@ -1,19 +1,0 @@
-c
-  [1;35m⠋[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠙[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠹[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠸[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠼[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠴[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠦[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠧[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠋[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠙[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠹[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠸[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠼[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠴[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠦[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠧[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠋[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠙[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠹[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠸[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠼[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠴[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠦[0m [37mCompiling visible_with_cstr.c                     [0m  [1;35m⠧[0m [37mCompiling visible_with_cstr.c                     [0m  [1;31m✗[0m [37mvisible_with_cstr.c                     [0m [1;31mFAILED[0m
-
-src/infrastructure/visible_with_cstr.c: In function ‘skip_ansi_marker’:
-src/infrastructure/visible_with_cstr.c:20:28: error: expected ‘)’ before ‘;’ token
-   20 |                 while (s[i] ; s[i] != '\002')
-      |                       ~    ^~
-      |                            )
-src/infrastructure/visible_with_cstr.c: In function ‘skip_ansi_escape’:
-src/infrastructure/visible_with_cstr.c:33:28: error: expected ‘)’ before ‘;’ token
-   33 |                 while (s[i] ; !(s[i] >= 'A' ; s[i] <= 'z'))
-      |                       ~    ^~
-      |                            )
-src/infrastructure/visible_with_cstr.c: In function ‘handle_wide_char’:
-src/infrastructure/visible_with_cstr.c:49:35: error: expected ‘)’ before ‘;’ token
-   49 |         if (consumed == (size_t)-1 ; consumed == (size_t)-2 ; consumed == 0)
-      |            ~                      ^~
-      |                                   )
-make: *** [Makefile:316: build/obj/infrastructure/visible_with_cstr.o] Error 1
