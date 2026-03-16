@@ -55,6 +55,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	buff_readline_init(&state->rl);
 	vec_init(&state->rl.buff);
 	state->rl.buff.elem_size = 1;
+	state->rl.edit_mode = 1;
 	state->pid = xgetpid();
 	state->ctx = ft_strdup(argv[0]);
 	state->dft_ctx = ft_strdup(argv[0]);
@@ -69,6 +70,10 @@ void	on(t_shell *state, char **argv, char **envp)
 	state->proc_subs.elem_size = sizeof(t_procsub_entry);
 	vec_init(&state->functions);
 	state->functions.elem_size = sizeof(t_shell_func);
+	job_table_init(&state->job_table);
+	alias_table_init(&state->aliases);
+	cmd_hash_init(&state->cmd_cache);
+	state->edit_mode = 1;
 	mode_input(argv, state);
 	prng_initialize_state(&state->prng, 19650218UL);
 	state->bg_job_count = 0;

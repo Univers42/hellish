@@ -21,6 +21,9 @@
 # include "redir.h"
 # include "history.h"
 # include "prompt.h"
+# include "job_control.h"
+# include "sh_alias.h"
+# include "cmd_hash.h"
 
 # include <stdint.h>
 
@@ -87,6 +90,10 @@ typedef struct s_shell
 	int					bg_job_count;
 	t_vec_procsub		proc_subs;
 	t_vec				functions;
+	t_job_table			job_table;
+	t_hash				aliases;
+	t_hash				cmd_cache;
+	int					edit_mode;
 }	t_shell;
 
 /* Directory matcher ctx for glob expansion */

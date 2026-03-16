@@ -34,6 +34,14 @@ int		builtin_export(t_shell *state, t_vec argv);
 int		builtin_unset(t_shell *state, t_vec argv);
 int		builtin_type(t_shell *state, t_vec argv);
 int		builtin_set(t_shell *state, t_vec argv);
+int		builtin_test(t_shell *state, t_vec argv);
+int		builtin_alias(t_shell *state, t_vec argv);
+int		builtin_unalias(t_shell *state, t_vec argv);
+int		builtin_hash(t_shell *state, t_vec argv);
+int		builtin_jobs(t_shell *state, t_vec argv);
+int		builtin_fg(t_shell *state, t_vec argv);
+int		builtin_bg(t_shell *state, t_vec argv);
+int		builtin_fc(t_shell *state, t_vec argv);
 int		(*builtin_func(char *name))(t_shell *state, t_vec argv);
 
 #endif

@@ -11,6 +11,8 @@
 /* ************************************************************************** */
 
 #include "builtins_private.h"
+#include "sh_alias.h"
+#include "cmd_hash.h"
 
 static int	type_is_builtin(const char *name)
 {
@@ -38,10 +40,24 @@ static int	type_find_in_path(t_shell *state, const char *name, char **out)
 static int	type_one(t_shell *state, const char *name)
 {
 	char	*path;
+	char	*alias_val;
+	char	*cached;
 
+	alias_val = alias_get(&state->aliases, name);
+	if (alias_val)
+	{
+		ft_printf("%s is aliased to `%s'\n", name, alias_val);
+		return (0);
+	}
 	if (type_is_builtin(name))
 	{
 		ft_printf("%s is a shell builtin\n", name);
+		return (0);
+	}
+	cached = cmd_hash_lookup(&state->cmd_cache, name);
+	if (cached)
+	{
+		ft_printf("%s is hashed (%s)\n", name, cached);
 		return (0);
 	}
 	path = NULL;
