@@ -12,13 +12,22 @@
 
 #include "rl_private.h"
 
-void	bg_readline(int outfd, char *prompt)
+void	setup_completion(void);
+void	setup_vi_mode(void);
+void	setup_emacs_mode(void);
+
+void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
 	size_t	i;
 
 	rl_instream = stdin;
 	rl_outstream = stderr;
+	setup_completion();
+	if (edit_mode == 0)
+		setup_vi_mode();
+	else
+		setup_emacs_mode();
 	if (getenv("MINISHELL_DEBUG_PROMPT"))
 	{
 		fprintf(stderr, "[DEBUG PROMPT] bytes: ");
@@ -66,7 +75,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 	{
 		readline_bg_signals();
 		close(pp[0]);
-		bg_readline(pp[1], prompt);
+		bg_readline(pp[1], prompt, l->edit_mode);
 	}
 	else if (pid < 0)
 		critical_error_errno_ctx("fork");

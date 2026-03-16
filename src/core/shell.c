@@ -14,6 +14,7 @@
 #include "helpers.h"
 #include "env.h"
 #include "sh_input.h"
+#include "job_control.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -90,6 +91,7 @@ static void	repl_shell(t_shell *state)
 		vec_init(&state->input);
 		state->input.elem_size = 1;
 		get_g_sig()->should_unwind = 0;
+		job_notify(state);
 		parse_and_execute_input(state);
 		free_redirects(&state->redirects);
 		free_ast(&state->tree);

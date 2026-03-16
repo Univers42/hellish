@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   find_cmd_path.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:10:20 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/22 16:39:36 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 01:53:46 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "cmd_hash.h"
 
 static int	handle_perm_denied(t_shell *state, char *cmd_name)
 {
@@ -66,7 +67,14 @@ static int	handle_path_lookup(t_shell *state,
 	char	**path_dirs;
 	int		perm_denied;
 	int		ret;
+	char	*cached;
 
+	cached = cmd_hash_lookup(&state->cmd_cache, cmd_name);
+	if (cached && access(cached, X_OK) == 0)
+	{
+		*path_of_exe = ft_strdup(cached);
+		return (0);
+	}
 	path = env_expand(state, "PATH");
 	path_dirs = NULL;
 	if (path)
@@ -81,6 +89,7 @@ static int	handle_path_lookup(t_shell *state,
 			return (handle_perm_denied(state, cmd_name));
 		return (cmd_not_found(state, cmd_name));
 	}
+	cmd_hash_insert(&state->cmd_cache, cmd_name, *path_of_exe);
 	ret = handle_found_path(state, cmd_name, path_of_exe);
 	return (ret);
 }
