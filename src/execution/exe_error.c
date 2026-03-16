@@ -60,16 +60,24 @@ static int	errex_code(t_shell *state,
 
 /**
  * check if either file, dir, or executable permission error
+ * For recognized script extensions (.sh, .hell, .hellish)
+ * only require the file to be readable, not executable.
  */
 int	handle_direct_path_error(t_shell *state, char *cmd_name,
 									char **path_of_exe)
 {
 	struct stat	st;
+	size_t		len;
 
 	if (stat(*path_of_exe, &st) == -1)
 		return (errex_code(state, cmd_name, path_of_exe, COMMAND_NOT_FOUND));
 	if (S_ISDIR(st.st_mode))
 		return (errex_code(state, cmd_name, path_of_exe, EXE_PERM_DENIED));
+	len = ft_strlen(*path_of_exe);
+	if ((len >= 3 && ft_strcmp(*path_of_exe + len - 3, ".sh") == 0)
+		|| (len >= 5 && ft_strcmp(*path_of_exe + len - 5, ".hell") == 0)
+		|| (len >= 8 && ft_strcmp(*path_of_exe + len - 8, ".hellish") == 0))
+		return (0);
 	if (access(*path_of_exe, X_OK) != 0)
 	{
 		return (errex_code(state, cmd_name, path_of_exe,

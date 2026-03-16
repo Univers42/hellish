@@ -14,6 +14,34 @@
 #include "sys.h"
 #include "libft.h"
 
+static char	*select_fallback_shell(char *path)
+{
+	size_t	len;
+
+	len = ft_strlen(path);
+	if (len >= 8 && ft_strcmp(path + len - 8, ".hellish") == 0)
+		return (PATH_HELLISH);
+	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
+		return (PATH_HELLISH);
+	if (len >= 3 && ft_strcmp(path + len - 3, ".sh") == 0)
+		return (PATH_HELLISH);
+	return (FB_SH);
+}
+
+static bool	has_script_ext(const char *path)
+{
+	size_t	len;
+
+	len = ft_strlen(path);
+	if (len >= 8 && ft_strcmp(path + len - 8, ".hellish") == 0)
+		return (true);
+	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
+		return (true);
+	if (len >= 3 && ft_strcmp(path + len - 3, ".sh") == 0)
+		return (true);
+	return (false);
+}
+
 /* helper: if builtin -> run and exit; return 0 if not builti
  (never returns on builtin) */
 int	run_builtin_or_continue(t_shell *state, t_vec *args)
@@ -80,20 +108,21 @@ void	try_exec_with_fallback(char *path_of_exe,
 	null_ptr = NULL;
 	vec_push(args, &null_ptr);
 	execve(path_of_exe, (char **)(args->ctx), envp);
-	if (errno == ENOEXEC)
+	if (errno == ENOEXEC
+		|| (errno == EACCES && has_script_ext(path_of_exe)))
 	{
 		orig_elems = args->len - 1;
 		new_elems = orig_elems + 1;
 		newargv = malloc(sizeof(char *) * (new_elems + 1));
 		if (newargv)
 		{
-			newargv[0] = FB_SH;
+			newargv[0] = select_fallback_shell(path_of_exe);
 			newargv[1] = path_of_exe;
 			i = 0;
 			while (++i < orig_elems)
 				newargv[i + 1] = ((char **)(args->ctx))[i];
 			newargv[new_elems] = NULL;
-			(execve(FB_SH, newargv, envp), free(newargv));
+			(execve(newargv[0], newargv, envp), free(newargv));
 		}
 	}
 }
