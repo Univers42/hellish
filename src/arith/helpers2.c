@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   helpers2.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 13:18:44 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 13:47:51 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:25:02 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,12 +62,32 @@ static void	handle_angle_right(t_arith_lexer *lex)
 		set_simple_op(lex, ATOK_GT);
 }
 
+static void	handle_plus_minus(t_arith_lexer *lex, char c)
+{
+	if (c == '+' && lex->pos + 1 < lex->len
+		&& lex->input[lex->pos + 1] == '+')
+	{
+		lex->current.type = ATOK_INC;
+		lex->current.len = 2;
+		lex->pos += 2;
+	}
+	else if (c == '-' && lex->pos + 1 < lex->len
+		&& lex->input[lex->pos + 1] == '-')
+	{
+		lex->current.type = ATOK_DEC;
+		lex->current.len = 2;
+		lex->pos += 2;
+	}
+	else if (c == '+')
+		set_simple_op(lex, ATOK_PLUS);
+	else
+		set_simple_op(lex, ATOK_MINUS);
+}
+
 static void	handle_common_single(t_arith_lexer *lex, char c)
 {
-	if (c == '+')
-		set_simple_op(lex, ATOK_PLUS);
-	else if (c == '-')
-		set_simple_op(lex, ATOK_MINUS);
+	if (c == '+' || c == '-')
+		handle_plus_minus(lex, c);
 	else if (c == '/')
 		set_simple_op(lex, ATOK_DIV);
 	else if (c == '%')

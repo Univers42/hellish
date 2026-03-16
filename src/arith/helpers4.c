@@ -3,15 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   helpers4.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:05:14 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/24 18:37:44 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:25:02 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "arith_private.h"
-#include <string.h>
 
 /* Additive: multiplicative (('+' | '-') multiplicative)* */
 long long	arith_parse_additive(t_arith_parser *p)
@@ -67,17 +66,14 @@ long long	arith_parse_shift(t_arith_parser *p)
 
 static void	cmp_result(int *res, long long a, long long b, int op)
 {
-	int		cmp;
-
-	cmp = ft_memcmp(&a, &b, sizeof(long long));
 	if (op == 0)
-		*res = (cmp < 0);
+		*res = (a < b);
 	else if (op == 1)
-		*res = (cmp <= 0);
+		*res = (a <= b);
 	else if (op == 2)
-		*res = (cmp > 0);
+		*res = (a > b);
 	else if (op == 3)
-		*res = (cmp >= 0);
+		*res = (a >= b);
 }
 
 static void	do_relop(t_arith_parser *p, int *res, long long *left, int op)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   arith.h                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/15 15:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/21 00:25:12 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:46:57 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,8 @@ typedef enum e_arith_tok
 	ATOK_LSHIFT,	/* << */
 	ATOK_RSHIFT,	/* >> */
 	ATOK_ASSIGN,	/* = */
+	ATOK_INC,		/* ++ */
+	ATOK_DEC,		/* -- */
 	ATOK_TERNQ,		/* ? (ternary) */
 	ATOK_TERNC,		/* : (ternary) */
 	ATOK_COMMA,		/* , */
@@ -83,6 +85,7 @@ typedef struct s_arith_parser
 	t_arith_lexer	*lexer;
 	t_shell			*shell;
 	bool			error;
+	bool			no_side_effects;
 	char			*error_msg;
 }	t_arith_parser;
 

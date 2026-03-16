@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   helpers5.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 14:13:25 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/20 14:15:46 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:47:01 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ static long long	handle_div(t_arith_parser *p, long long left)
 	right = arith_parse_exponent(p);
 	if (right == 0)
 	{
+		if (p->no_side_effects)
+			return (0);
 		p->error = true;
 		return (0);
 	}
@@ -40,6 +42,8 @@ static long long	handle_mod(t_arith_parser *p, long long left)
 	right = arith_parse_exponent(p);
 	if (right == 0)
 	{
+		if (p->no_side_effects)
+			return (0);
 		p->error = true;
 		return (0);
 	}

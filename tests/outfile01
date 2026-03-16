@@ -4,9 +4,9 @@
 a
 advanced_edge_cases
 arith
+arith.sh
 b
 bash.supp
-bash_outfiles
 bonus
 bonus_bonus
 build.sh
@@ -18,9 +18,18 @@ count_ls
 crazy1
 crazy2
 debug_test.sh
+demo_alias.sh
+demo_all_features.sh
+demo_fc.sh
 demo_functions.sh
+demo_hash.sh
+demo_history_expand.sh
+demo_jobs.sh
 demo_multiline.sh
+demo_set_o.sh
 demo_shell_txt.sh
+demo_test_builtin.sh
+demo_type.sh
 diff_bash.sh
 dq
 dylan_exec
@@ -69,7 +78,6 @@ local.supp
 log.txt
 loop.out
 manual_tests
-mini_outfiles
 nofile
 nospace
 os_specific
@@ -80,7 +88,6 @@ out_fail
 out_ls
 outfile01
 outfile02
-outfiles
 p1
 p2
 p3

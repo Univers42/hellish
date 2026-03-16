@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.c                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 15:07:53 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/01/27 16:16:39 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/03/16 03:25:02 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,11 @@ void	apply_redir(t_shell *state, int idx)
 	if (redir.close_fd)
 	{
 		close(redir.src_fd);
+		return ;
+	}
+	if (redir.is_dup)
+	{
+		dup2(redir.fd, redir.src_fd);
 		return ;
 	}
 	if (redir.fd != redir.src_fd)

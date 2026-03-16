@@ -25,40 +25,50 @@ static char	*g_builtins[] = {
 static int	g_cmd_idx;
 static char	*g_path_dirs_cache;
 
-static char	*cmd_generator(const char *text, int state_gen)
+static void	free_split(char **arr)
 {
-	static char	**path_dirs;
-	static int	dir_idx;
-	size_t		tlen;
-	char		*name;
+	int	i;
 
-	tlen = ft_strlen(text);
-	if (!state_gen)
+	if (!arr)
+		return ;
+	i = 0;
+	while (arr[i])
 	{
-		g_cmd_idx = 0;
-		if (g_path_dirs_cache)
-			free(g_path_dirs_cache);
-		g_path_dirs_cache = NULL;
-		if (getenv("PATH"))
-			g_path_dirs_cache = ft_strdup(getenv("PATH"));
-		if (path_dirs)
-			free(path_dirs);
-		path_dirs = g_path_dirs_cache ? ft_split(g_path_dirs_cache, ':') : NULL;
-		dir_idx = 0;
+		free(arr[i]);
+		i++;
 	}
-	while (g_builtins[g_cmd_idx])
-	{
-		name = g_builtins[g_cmd_idx++];
-		if (ft_strncmp(name, text, tlen) == 0)
-			return (ft_strdup(name));
-	}
-	while (path_dirs && path_dirs[dir_idx])
-	{
-		DIR				*d;
-		struct dirent	*ent;
+	free(arr);
+}
 
-		d = opendir(path_dirs[dir_idx]);
-		dir_idx++;
+static void	cmd_gen_cleanup(char ***path_dirs)
+{
+	free_split(*path_dirs);
+	*path_dirs = NULL;
+	free(g_path_dirs_cache);
+	g_path_dirs_cache = NULL;
+}
+
+static void	cmd_gen_init(char ***path_dirs, int *dir_idx)
+{
+	g_cmd_idx = 0;
+	cmd_gen_cleanup(path_dirs);
+	if (getenv("PATH"))
+		g_path_dirs_cache = ft_strdup(getenv("PATH"));
+	*path_dirs = g_path_dirs_cache ? ft_split(g_path_dirs_cache, ':') : NULL;
+	*dir_idx = 0;
+}
+
+static char	*cmd_gen_dirs(char ***path_dirs, int *dir_idx, size_t tlen,
+	const char *text)
+{
+	DIR				*d;
+	struct dirent	*ent;
+	char			*name;
+
+	while (*path_dirs && (*path_dirs)[*dir_idx])
+	{
+		d = opendir((*path_dirs)[*dir_idx]);
+		(*dir_idx)++;
 		if (!d)
 			continue ;
 		while (1)
@@ -75,7 +85,27 @@ static char	*cmd_generator(const char *text, int state_gen)
 		}
 		closedir(d);
 	}
+	cmd_gen_cleanup(path_dirs);
 	return (NULL);
+}
+
+static char	*cmd_generator(const char *text, int state_gen)
+{
+	static char	**path_dirs;
+	static int	dir_idx;
+	size_t		tlen;
+	char		*name;
+
+	tlen = ft_strlen(text);
+	if (!state_gen)
+		cmd_gen_init(&path_dirs, &dir_idx);
+	while (g_builtins[g_cmd_idx])
+	{
+		name = g_builtins[g_cmd_idx++];
+		if (ft_strncmp(name, text, tlen) == 0)
+			return (ft_strdup(name));
+	}
+	return (cmd_gen_dirs(&path_dirs, &dir_idx, tlen, text));
 }
 
 char	**complete_commands(const char *text, int start, int end)

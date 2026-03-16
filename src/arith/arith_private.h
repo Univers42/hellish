@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 13:13:03 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/14 17:12:27 by marvin           ###   ########.fr       */
+/*   Updated: 2026/03/16 03:25:02 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,6 +40,8 @@ void			arith_lexer_advance(t_arith_lexer *lex);
 t_arith_token	arith_lexer_peek(t_arith_lexer *lex);
 
 long long		get_var_value(t_arith_parser *p, const char *name, int len);
+void			set_var_value(t_arith_parser *p, const char *name, int len,
+					long long val);
 void			expect(t_arith_parser *p, t_arith_tok type);
 long long		arith_parse_exponent(t_arith_parser *p);
 long long		arith_parse_multiplicative(t_arith_parser *p);
