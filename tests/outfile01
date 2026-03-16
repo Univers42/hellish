@@ -7,6 +7,7 @@ arith
 arith.sh
 b
 bash.supp
+bash_outfiles
 bonus
 bonus_bonus
 build.sh
@@ -78,6 +79,7 @@ local.supp
 log.txt
 loop.out
 manual_tests
+mini_outfiles
 nofile
 nospace
 os_specific
@@ -88,6 +90,7 @@ out_fail
 out_ls
 outfile01
 outfile02
+outfiles
 p1
 p2
 p3

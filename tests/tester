@@ -1,33 +1,21 @@
 #!/bin/bash
 
-MINISHELL_PATH="../build/bin/hellish"
-BASH_CMD=(bash --posix)
+# Parse arguments:
+VERBOSE=0
+test_lists=()
+for arg in "$@"; do
+    if [[ "$arg" == "-v" || "$arg" == "--verbose" ]]; then
+        VERBOSE=1
+    else
+        test_lists+=("$arg")
+    fi
+done
 
-# Run a specific test if the file name was specified
-if [[ $1 ]]; then
+if [[ ${#test_lists[@]} -eq 0 ]]; then
     test_lists=(
-        $1
-    )
-else
-    test_lists=(
-		"globbing"
-		"crazy1"
-        "arith"
-        "edge_cases"
-		"dylan_exec"
-        "builtins"
-		"compound"
-		"crazy2"
-		"var"
-		"pipe"
-		"sq"
-		"dq"
-		"redir"
-        "pipes"
-        "redirects"
-        "extras"
-        "echo_edge_cases"
-        "advanced_edge_cases"
+        "globbing" "crazy1" "arith" "edge_cases" "dylan_exec"
+        "builtins" "compound" "crazy2" "var" "pipe" "sq" "dq" "redir"
+        "pipes" "redirects" "extras" "echo_edge_cases" "advanced_edge_cases"
     )
 fi
 
@@ -37,117 +25,174 @@ GREY="\033[38;5;244m"
 PURPLE="\033[0;35m"
 BLUE="\033[0;36m"
 RED="\e[0;31m"
+GREEN="\e[0;32m"
 END="\033[0m"
 
-chmod 000 ./test_files/invalid_permission
-mkdir -p ./outfiles
-mkdir -p ./mini_outfiles
-mkdir -p ./bash_outfiles
+TEST_DIR="$(pwd)"
+MINISHELL_PATH="$(cd .. && pwd)/build/bin/hellish"
+if [[ ! -f "$MINISHELL_PATH" ]]; then
+    echo -e "${RED}Error: hellish not found at $MINISHELL_PATH${END}"
+    exit 1
+fi
 
-printf $RED
-echo "🔥 Test harness starting 🔥"
+chmod 000 "$TEST_DIR/test_files/invalid_permission" 2>/dev/null
+mkdir -p "$TEST_DIR/outfiles" "$TEST_DIR/mini_outfiles" "$TEST_DIR/bash_outfiles"
 
-# compute a cleaned prompt line (strip ANSI escape sequences using perl)
-PROMPT=$(echo -e "\nexit\n" | $MINISHELL_PATH | head -n 1 | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' )
+printf "${RED}🔥 Parallel Test Harness starting 🔥${END}\n"
 
-for testfile in ${test_lists[*]}; do
+RUN_DIR="$(mktemp -d /tmp/sh42_tester_XXXXXX)"
 
-	printf $RED
-	echo ———————————— $testfile
+rm -f "$RUN_DIR/queue.txt"
+TOTAL_TESTS=0
+for tf in "${test_lists[@]}"; do
+    if [[ -f "$tf" ]]; then
+        while IFS= read -r teste || [[ -n "$teste" ]]; do
+            [[ -z "$teste" ]] && continue
+            ((TOTAL_TESTS++))
+            echo "$TOTAL_TESTS|||$tf|||$teste" >> "$RUN_DIR/queue.txt"
+        done < "$tf"
+    else
+        echo -e "${YELLOW}Warning: File $tf not found${END}"
+    fi
+done
 
-	while read -r teste; do
-		((i++))
+if [[ $TOTAL_TESTS -eq 0 ]]; then
+    echo "No tests found."
+    exit 0
+fi
 
-		rm -rf ./outfiles/*
-		rm -rf ./mini_outfiles/*
-		rm -rf ./bash_outfiles/*
+# Worker script
+cat << 'EOF_WORKER' > "$RUN_DIR/worker.sh"
+#!/bin/bash
+index=$1
+testfile=$2
+teste=$3
+VERBOSE=$4
+TEST_DIR=$5
+MINISHELL_PATH=$6
+RUN_DIR=$7
 
-		# -------------------------
-		# Run minishell with -c, capture stdout/stderr/exitcode to files
-		mini_out_tmp=$(mktemp) || mini_out_tmp="/tmp/minishell_tester_out"
-		mini_err_tmp=$(mktemp) || mini_err_tmp="/tmp/minishell_tester_err"
-		# run the exact command string with -c to avoid stdin/piping differences
-		"$MINISHELL_PATH" -c "$teste" >"$mini_out_tmp" 2>"$mini_err_tmp"
-		MINI_EXIT_CODE=$?
-		MINI_OUTPUT=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$mini_out_tmp" | grep -vE '^[[:space:]]*❯' | grep -v '^exit$' )
-		# same: copy produced outfiles if any
-		cp ./outfiles/* ./mini_outfiles &>/dev/null || true
-		MINI_ERROR_MSG=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$mini_err_tmp" | grep -o '[^:]*$' | head -n1 || true)
-		rm -f "$mini_out_tmp" "$mini_err_tmp"
+workdir="$RUN_DIR/job_$index"
+mkdir -p "$workdir/outfiles" "$workdir/mini_outfiles" "$workdir/bash_outfiles"
+cp -a "$TEST_DIR/test_files" "$workdir/" 2>/dev/null || true
+cd "$workdir" || exit 1
 
-		# Clear outfiles so the subsequent bash run starts with an empty outfiles dir.
-		# This prevents bash from appending to files already created by minishell.
-		rm -rf ./outfiles/*
+m_out=$(mktemp) m_err=$(mktemp)
+"$MINISHELL_PATH" -c "$teste" >"$m_out" 2>"$m_err"
+m_ext=$?
 
-		# -------------------------
-		# Run bash with -c, capture stdout/stderr/exitcode to files
-		bash_out_tmp=$(mktemp) || bash_out_tmp="/tmp/bash_tester_out"
-		bash_err_tmp=$(mktemp) || bash_err_tmp="/tmp/bash_tester_err"
-		# invoke bash as an array to avoid any word-splitting/option ambiguity,
-		# pass -- and then the full command as a single argument
-		"${BASH_CMD[@]}" -c "$teste" >"$bash_out_tmp" 2>"$bash_err_tmp"
-		BASH_EXIT_CODE=$?
-		BASH_OUTPUT=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$bash_out_tmp" | grep -vE '^[[:space:]]*❯' | grep -v '^exit$' )
-		# copy any produced outfiles (don't capture cp output via substitution)
-		cp ./outfiles/* ./bash_outfiles &>/dev/null || true
-		BASH_ERROR_MSG=$(perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' "$bash_err_tmp" | grep -o '[^:]*$' | head -n1 || true)
-		rm -f "$bash_out_tmp" "$bash_err_tmp"
+m_out_filtered=$(cat "$m_out" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$')
+m_err_filtered=$(cat "$m_err" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -o '[^:]*$' | head -n1 || true)
 
-		OUTFILES_DIFF_BASH=$(diff --brief ./mini_outfiles ./bash_outfiles)
+cp ./outfiles/* ./mini_outfiles/ 2>/dev/null || true
+rm -rf ./outfiles/*
 
-		printf $YELLOW
-		printf "Test %3s: " $i
-		matched=false
-		if [[ "$MINI_OUTPUT" == "$BASH_OUTPUT" && "$MINI_EXIT_CODE" == "$BASH_EXIT_CODE" && -z "$OUTFILES_DIFF_BASH" ]]; then
-			matched=true
-			ref="bash --posix"
-		fi
-		if $matched; then
-			printf ✅
-			((ok++))
-			if [ "$MINI_ERROR_MSG" != "$BASH_ERROR_MSG" ]; then
-				printf "⚠️ "
-			fi
-		else
-			printf ❌
-		fi
-		echo -e "${GREY}${teste}${END}"
-		if [ "$OUTFILES_DIFF_BASH" ]; then
-			echo "$OUTFILES_DIFF_BASH"
-			echo mini outfiles:
-			cat ./mini_outfiles/*
-			echo bash outfiles:
-			cat ./bash_outfiles/*
-		fi
-		if [ "$MINI_OUTPUT" != "$BASH_OUTPUT" ]; then
-			echo mini output = \($MINI_OUTPUT\)
-			echo bash output = \($BASH_OUTPUT\)
-		fi
-		if [ "$MINI_EXIT_CODE" != "$BASH_EXIT_CODE" ]; then
-			echo mini exit code = $MINI_EXIT_CODE
-			echo bash exit code = $BASH_EXIT_CODE
-		fi
-		if [ "$MINI_ERROR_MSG" != "$BASH_ERROR_MSG" ]; then
-			echo mini error = \($MINI_ERROR_MSG\)
-			echo bash error = \($BASH_ERROR_MSG\)
-		fi
-		done < $testfile
-	done
+b_out=$(mktemp) b_err=$(mktemp)
+bash --posix -c "$teste" >"$b_out" 2>"$b_err"
+b_ext=$?
 
-chmod 666 ./test_files/invalid_permission
-rm -rf ./outfiles
-rm -rf ./mini_outfiles
-rm -rf ./bash_outfiles
+b_out_filtered=$(cat "$b_out" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$')
+b_err_filtered=$(cat "$b_err" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -o '[^:]*$' | head -n1 || true)
 
-printf $PURPLE
-printf $BOLD
-echo   $ok/$i
-printf $END
+cp ./outfiles/* ./bash_outfiles/ 2>/dev/null || true
 
-if [[ "$ok" == "$i" ]]; then
-	echo "🎊 🎊 🎊"
-	exit 0
+diff_out=$(diff --brief ./mini_outfiles ./bash_outfiles 2>&1)
+
+status="FAIL"
+if [[ "$m_out_filtered" == "$b_out_filtered" && "$m_ext" == "$b_ext" && -z "$diff_out" ]]; then
+    status="PASS"
+fi
+
+result_file="$RUN_DIR/res_${index}.out"
+if [[ "$status" == "PASS" ]]; then
+    echo "PASS" > "$result_file"
 else
-	echo "😭 😭 😭"
-	exit 1
+    echo "FAIL" > "$result_file"
+    echo "File: $testfile" >> "$result_file"
+    echo "Command: $teste" >> "$result_file"
+    if [[ -n "$diff_out" ]]; then
+        echo "Dir Diff: $diff_out" >> "$result_file"
+        echo "Mini outfiles: $(find ./mini_outfiles -type f 2>/dev/null | xargs -r basename -a | tr '\n' ' ')" >> "$result_file"
+        echo "Bash outfiles: $(find ./bash_outfiles -type f 2>/dev/null | xargs -r basename -a | tr '\n' ' ')" >> "$result_file"
+    fi
+    if [[ "$m_out_filtered" != "$b_out_filtered" ]]; then
+        echo "=====================================" >> "$result_file"
+        echo "Mini output: ($m_out_filtered)" >> "$result_file"
+        echo "-------------------------------------" >> "$result_file"
+        echo "Bash output: ($b_out_filtered)" >> "$result_file"
+        echo "=====================================" >> "$result_file"
+    fi
+    if [[ "$m_ext" != "$b_ext" ]]; then
+        echo "Mini exit code: $m_ext" >> "$result_file"
+        echo "Bash exit code: $b_ext" >> "$result_file"
+    fi
+    if [[ "$VERBOSE" == "1" && "$m_err_filtered" != "$b_err_filtered" ]]; then
+        echo "Mini error msg: ($m_err_filtered)" >> "$result_file"
+        echo "Bash error msg: ($b_err_filtered)" >> "$result_file"
+    fi
+fi
+
+rm -f "$m_out" "$m_err" "$b_out" "$b_err"
+rm -rf "$workdir" # Cleanup to save space
+EOF_WORKER
+
+chmod +x "$RUN_DIR/worker.sh"
+
+export RUN_DIR
+export MINISHELL_PATH
+export TEST_DIR
+export VERBOSE
+
+# Tracker
+(
+    while true; do
+        cnt=$(find "$RUN_DIR" -maxdepth 1 -name "res_*.out" 2>/dev/null | wc -l)
+        printf "\r\033[KProgress: %d / %d tests completed..." "$cnt" "$TOTAL_TESTS"
+        if [ "$cnt" -eq "$TOTAL_TESTS" ]; then
+            break
+        fi
+        sleep 0.5
+    done
+    printf "\n"
+) &
+TRACKER_PID=$!
+
+# Dispatch using xargs with null terminators
+while IFS= read -r line; do
+    index="${line%%|||*}"
+    rest="${line#*|||}"
+    file="${rest%%|||*}"
+    cmd="${rest#*|||}"
+    printf "%s\0%s\0%s\0%s\0%s\0%s\0%s\0" "$index" "$file" "$cmd" "$VERBOSE" "$TEST_DIR" "$MINISHELL_PATH" "$RUN_DIR"
+done < "$RUN_DIR/queue.txt" | xargs -0 -P 16 -n 7 bash "$RUN_DIR/worker.sh"
+
+wait "$TRACKER_PID" 2>/dev/null
+
+echo -e "\n${BOLD}${PURPLE}================ SUMMARY =================${END}"
+
+FAILS=0
+for ((i=1; i<=TOTAL_TESTS; i++)); do
+    f="$RUN_DIR/res_${i}.out"
+    if [[ -f "$f" ]]; then
+        status=$(head -n 1 "$f")
+        if [[ "$status" == "FAIL" ]]; then
+            ((FAILS++))
+            echo -e "${RED}❌ TEST $i FAILED${END}"
+            tail -n +2 "$f"
+            echo ""
+        fi
+    fi
+done
+
+PASSED=$((TOTAL_TESTS - FAILS))
+
+if [[ $FAILS -eq 0 ]]; then
+    printf "${GREEN}${BOLD}🎊 ALL $TOTAL_TESTS TESTS PASSED! 🎊${END}\n"
+    rm -rf "$RUN_DIR"
+    exit 0
+else
+    printf "${RED}${BOLD}😭 $FAILS FAILED OUT OF $TOTAL_TESTS TESTS 😭${END}\n"
+    # Keep RUN_DIR around for debugging if there are failures
+    echo "Failure details saved in temp file (not cleaned up): $RUN_DIR"
+    exit 1
 fi
