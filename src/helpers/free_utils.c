@@ -26,7 +26,8 @@ void	free_redirects(t_vec_redir *v)
 		c = ((t_redir *)v->ctx)[i];
 		if (c.should_delete)
 			unlink(c.fname);
-		close(c.fd);
+		if (!c.is_dup && !c.close_fd && c.fd > STDERR_FILENO)
+			close(c.fd);
 		free(c.fname);
 		i++;
 	}

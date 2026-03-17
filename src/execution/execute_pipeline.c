@@ -52,9 +52,9 @@ static void	prepare_child_exec(t_exec_child_ctx *c)
 and set prev_infd for next child */
 static void	finalize_child_parent(t_exec_child_ctx *c)
 {
-	if (c->curr_exe->outfd >= 0)
+	if (c->curr_exe->outfd >= 0 && c->curr_exe->outfd != STDOUT_FILENO)
 		close(c->curr_exe->outfd);
-	if (c->curr_exe->infd >= 0)
+	if (c->curr_exe->infd >= 0 && c->curr_exe->infd != STDIN_FILENO)
 		close(c->curr_exe->infd);
 	if (c->idx == c->last_index)
 		c->prev_infd = -1;
