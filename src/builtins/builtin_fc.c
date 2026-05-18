@@ -88,8 +88,8 @@ static int	fc_edit_run(t_shell *state, const char *editor, int first, int last)
 	while (i <= last)
 	{
 		entry = ((char **)state->hist.hist_cmds.ctx)[i];
-		write(fd, entry, ft_strlen(entry));
-		write(fd, "\n", 1);
+		if (write(fd, entry, ft_strlen(entry))) {}
+		if (write(fd, "\n", 1)) {}
 		i++;
 	}
 	close(fd);
