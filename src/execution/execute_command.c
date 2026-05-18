@@ -39,7 +39,7 @@ static t_execution_state	dispatch_compound(t_shell *state,
 								t_executable_node *exe)
 {
 	t_execution_state	res;
-	int					bak[2];
+	int					bak[3];
 	int					pid;
 
 	if (!exe->modify_parent_ctx)
@@ -55,12 +55,18 @@ static t_execution_state	dispatch_compound(t_shell *state,
 	}
 	bak[0] = dup(STDIN_FILENO);
 	bak[1] = dup(STDOUT_FILENO);
+	bak[2] = dup(STDERR_FILENO);
 	set_up_redirection(state, exe);
+	exe->infd = -1;
+	exe->outfd = -1;
+	exe->next_infd = -1;
 	res = run_compound(state, exe);
 	dup2(bak[0], STDIN_FILENO);
 	dup2(bak[1], STDOUT_FILENO);
+	dup2(bak[2], STDERR_FILENO);
 	close(bak[0]);
 	close(bak[1]);
+	close(bak[2]);
 	return (res);
 }
 

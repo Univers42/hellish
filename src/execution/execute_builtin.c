@@ -18,17 +18,24 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 {
 	int	stdin_bak;
 	int	stdout_bak;
+	int	stderr_bak;
 	int	status;
 
 	stdin_bak = dup(0);
 	stdout_bak = dup(1);
+	stderr_bak = dup(2);
 	set_up_redirection(state, exe);
+	exe->infd = -1;
+	exe->outfd = -1;
+	exe->next_infd = -1;
 	update_underscore_var(state, cmd);
 	status = builtin_func(((char **)(cmd->argv.ctx))[0])(state, cmd->argv);
 	dup2(stdin_bak, 0);
 	dup2(stdout_bak, 1);
+	dup2(stderr_bak, 2);
 	close(stdin_bak);
 	close(stdout_bak);
+	close(stderr_bak);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
