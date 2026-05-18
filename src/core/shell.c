@@ -48,7 +48,7 @@ static int	setup_output_buffer(t_shell *state, int *bak)
 	char	path[32];
 
 	*bak = -1;
-	if (state->metinp == INP_RL)
+	if (state->metinp == INP_RL || isatty(STDOUT_FILENO))
 		return (-1);
 	ft_strlcpy(path, "/tmp/.hellish_XXXXXX", 32);
 	fd = mkstemp(path);
