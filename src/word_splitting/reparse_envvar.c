@@ -21,7 +21,7 @@ static void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
 static bool	handle_envvar_paren_or_special(t_reparser *rp,
 				int prev_start, t_tt tt)
 {
-	if (try_handle_paren_rp(rp, prev_start))
+	if (try_handle_paren_rp(rp, prev_start, tt))
 		return (true);
 	if (try_handle_special_rp(rp, tt))
 		return (true);
@@ -53,15 +53,22 @@ static void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 {
 	int	start;
+	int	depth;
 
 	if (rp->i >= rp->current_token.len
 		|| rp->current_token.start[rp->i] != '{')
 		return (false);
 	rp->i++;
 	start = rp->i;
-	while (rp->i < rp->current_token.len
-		&& rp->current_token.start[rp->i] != '}')
+	depth = 1;
+	while (rp->i < rp->current_token.len && depth > 0)
+	{
+		if (rp->current_token.start[rp->i] == '{')
+			depth++;
+		else if (rp->current_token.start[rp->i] == '}' && --depth == 0)
+			break ;
 		rp->i++;
+	}
 	push_subtoken_node(&rp->current_node, rp->current_token,
 		create_interval(start, rp->i), tt);
 	if (rp->i < rp->current_token.len)
