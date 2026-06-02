@@ -7,3 +7,4 @@ temp/
 build/
 out.dot
 tests/results.log
+.claude/
