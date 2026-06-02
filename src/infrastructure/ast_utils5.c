@@ -53,6 +53,8 @@ t_ast_node	clone_ast(t_ast_node *src)
 	dst.redir_idx = src->redir_idx;
 	vec_init(&dst.children);
 	dst.children.elem_size = sizeof(t_ast_node);
+	if (src->children.len)
+		vec_ensure_space_n(&dst.children, src->children.len);
 	i = 0;
 	while (i < src->children.len)
 	{
@@ -75,6 +77,8 @@ t_ast_node	deep_clone_ast(t_ast_node *src)
 	dst.redir_idx = src->redir_idx;
 	vec_init(&dst.children);
 	dst.children.elem_size = sizeof(t_ast_node);
+	if (src->children.len)
+		vec_ensure_space_n(&dst.children, src->children.len);
 	i = 0;
 	while (i < src->children.len)
 	{
