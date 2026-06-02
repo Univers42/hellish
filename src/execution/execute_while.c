@@ -25,6 +25,24 @@ static t_execution_state	run_node(t_shell *state, t_ast_node *child)
 	return (status);
 }
 
+/* Consume a pending break/continue after a loop body. Returns 1 if the
+   current loop must stop (break, continue targeting an outer loop, or
+   exit/unwind), 0 to proceed to the next iteration. */
+int	handle_loop_ctl(t_shell *state)
+{
+	if (state->loop_break)
+	{
+		state->loop_break--;
+		return (1);
+	}
+	if (state->loop_continue)
+	{
+		state->loop_continue--;
+		return (state->loop_continue != 0);
+	}
+	return (state->should_exit || get_g_sig()->should_unwind);
+}
+
 /*
 ** AST_WHILE: children[0]=condition, children[1]=body
 ** While condition exits 0, execute body. Return last body status.
@@ -39,6 +57,7 @@ t_execution_state	execute_while(t_shell *state, t_executable_node *exe)
 	ft_assert(exe->node->children.len == 2);
 	is_until = (exe->node->node_type == AST_UNTIL);
 	body_status = res_status(0);
+	state->loop_depth++;
 	while (1)
 	{
 		status = run_node(state, vec_idx(&exe->node->children, 0));
@@ -46,8 +65,9 @@ t_execution_state	execute_while(t_shell *state, t_executable_node *exe)
 			|| (is_until && status.status == 0))
 			break ;
 		body_status = run_node(state, vec_idx(&exe->node->children, 1));
-		if (state->should_exit || get_g_sig()->should_unwind)
+		if (handle_loop_ctl(state))
 			break ;
 	}
+	state->loop_depth--;
 	return (body_status);
 }
