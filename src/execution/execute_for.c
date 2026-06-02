@@ -27,10 +27,16 @@ static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 
 static void	set_for_var(t_shell *state, char *name, char *val)
 {
-	t_env	var;
+	t_env	*old;
 
-	var = env_create(ft_strdup(name), ft_strdup(val), false);
-	env_set(&state->env, var);
+	old = env_get(&state->env, name);
+	if (old)
+	{
+		free(old->value);
+		old->value = ft_strdup(val);
+		return ;
+	}
+	env_set(&state->env, env_create(ft_strdup(name), ft_strdup(val), false));
 }
 
 static t_vec	expand_for_words(t_shell *state,
