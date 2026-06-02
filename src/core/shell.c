@@ -20,6 +20,8 @@
 #include <unistd.h>
 
 void		on(t_shell *state, char **argv, char **envp);
+void		run_pending_traps(t_shell *state);
+void		run_exit_trap(t_shell *state);
 static int	setup_output_buffer(t_shell *state, int *bak);
 static void	flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
@@ -42,22 +44,14 @@ int	main(int argc, char **argv, char **envp)
 	off(&state);
 }
 
+/* Output buffering (stdout -> temp file dumped at exit) is disabled: it lost
+   output when the shell process was replaced (exec) or exited directly (exit),
+   and serves no purpose now that prompts are gated on interactivity. */
 static int	setup_output_buffer(t_shell *state, int *bak)
 {
-	int		fd;
-	char	path[32];
-
+	(void)state;
 	*bak = -1;
-	if (state->metinp == INP_RL || isatty(STDOUT_FILENO))
-		return (-1);
-	ft_strlcpy(path, "/tmp/.hellish_XXXXXX", 32);
-	fd = mkstemp(path);
-	if (fd < 0)
-		return (-1);
-	unlink(path);
-	*bak = dup(STDOUT_FILENO);
-	dup2(fd, STDOUT_FILENO);
-	return (fd);
+	return (-1);
 }
 
 static void	flush_output_buffer(int buf_fd, int bak)
@@ -93,6 +87,7 @@ static void	repl_shell(t_shell *state)
 		get_g_sig()->should_unwind = 0;
 		job_notify(state);
 		parse_and_execute_input(state);
+		run_pending_traps(state);
 		free_redirects(&state->redirects);
 		free_ast(&state->tree);
 		free(state->input.ctx);
@@ -103,6 +98,7 @@ static void	repl_shell(t_shell *state)
 
 static void	off(t_shell *state)
 {
+	run_exit_trap(state);
 	free_env(&state->env);
 	free_all_state(state);
 	forward_exit_status(state->last_cmd_st_exe);
