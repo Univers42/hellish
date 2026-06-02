@@ -70,28 +70,11 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 	return (res_status(0));
 }
 
-/* Save the caller's $1..$9 and $# before a function replaces them, so
-   scope_leave can restore them when the function returns. */
-static void	save_positionals(t_shell *state)
-{
-	char	key[2];
-	int		i;
-
-	key[1] = '\0';
-	i = 1;
-	while (i <= 9)
-	{
-		key[0] = (char)('0' + i);
-		scope_save(state, key);
-		i++;
-	}
-	scope_save(state, "#");
-}
-
 /*
-** Execute a function call: enter a scope, give it its own positional params
-** (saving the caller's), clone+run the body, then restore the scope (positional
-** params + any `local` variables) — POSIX function scoping.
+** Execute a function call: give it its own positional params by swapping in a
+** freshly-built t_pos (saving the caller's by value — an O(1) struct copy, no
+** env mutation), clone+run the body, then restore the scope (`local` variables
+** via scope_leave, positional params by restoring the saved struct).
 */
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv)
@@ -99,10 +82,11 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	t_ast_node			body_copy;
 	t_executable_node	body_exe;
 	t_execution_state	status;
+	t_pos				saved;
 
 	state->func_depth++;
-	save_positionals(state);
-	set_positional_args(state, (char **)argv->ctx + 1, argv->len - 1);
+	saved = state->pos;
+	pos_build(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
 	body_copy = clone_ast(&fn->body);
 	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
 			&body_copy, true);
@@ -110,5 +94,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	free_ast(&body_copy);
 	state->func_return = 0;
 	scope_leave(state);
+	pos_free(&state->pos);
+	state->pos = saved;
 	return (status);
 }

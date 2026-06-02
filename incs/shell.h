@@ -78,6 +78,16 @@ typedef struct s_scope_save
 	bool	existed;
 }	t_scope_save;
 
+/* Positional parameters $1..$count, stored outside the env so function calls
+   swap them in O(1) (a struct copy) instead of mutating the env hash 10x per
+   call. args[i] == $(i+1); args is NULL-terminated; cnt_str caches $#. */
+typedef struct s_pos
+{
+	char	**args;
+	int		count;
+	char	cnt_str[12];
+}	t_pos;
+
 typedef struct s_shell
 {
 	t_string			input;
@@ -98,6 +108,7 @@ typedef struct s_shell
 	int					loop_depth;
 	int					func_return;
 	int					func_depth;
+	t_pos				pos;
 	t_vec				local_saves;
 	int					getopts_pos;
 	bool				input_expanded;

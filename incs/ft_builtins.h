@@ -36,6 +36,8 @@ int		builtin_type(t_shell *state, t_vec argv);
 int		builtin_set(t_shell *state, t_vec argv);
 int		builtin_shift(t_shell *state, t_vec argv);
 int		set_positional_args(t_shell *state, char **args, size_t n);
+void	pos_build(t_pos *pos, char **args, size_t n);
+void	pos_free(t_pos *pos);
 int		apply_set_flags(t_shell *state, t_vec argv);
 int		set_long_option(t_shell *state, char sign, const char *name);
 void	xtrace_print(t_vec *argv);
