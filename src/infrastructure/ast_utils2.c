@@ -31,6 +31,7 @@ void	free_node(t_ast_node *node)
 		free(node->token.start);
 	if (node->token.full_word.allocated)
 		free(node->token.full_word.start);
+	free(node->heredoc_body);
 	free(node->children.ctx);
 	*node = (t_ast_node){};
 }

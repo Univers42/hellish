@@ -114,6 +114,8 @@ int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 	ft_assert(curr->node_type == AST_REDIRECT);
 	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
 	tt = op_tok.tt;
+	if (tt == TT_HEREDOC && curr->heredoc_body)
+		return (materialize_heredoc(state, curr, redir_idx));
 	if (curr->has_redirect && tt == TT_HEREDOC)
 	{
 		*redir_idx = curr->redir_idx;

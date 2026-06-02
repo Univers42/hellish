@@ -49,6 +49,9 @@ typedef struct s_hdoc
 
 int			gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline);
 bool		split_heredocs(const char *str, char **stripped, char **bodies);
+bool		capture_heredoc_to_node(t_shell *state, t_ast_node *node);
+int			materialize_heredoc(t_shell *state, t_ast_node *node,
+				int *redir_idx);
 bool		contains_quotes(t_ast_node node);
 void		write_heredoc(t_shell *state, int wr_fd, t_hdoc *req);
 int			ft_mktemp(t_shell *state, t_ast_node *node);
