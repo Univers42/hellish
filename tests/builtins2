@@ -1,0 +1,40 @@
+echo hello
+echo -n hello; echo
+echo a b c
+echo
+printf '%s\n' hello
+printf '%d\n' 42
+printf '%s-%s\n' a b
+printf '%c\n' A
+printf '%%\n'
+printf '%5d\n' 3
+printf '%-5d|\n' 3
+printf 'no newline'
+printf '%s %s %s\n' one two three
+printf '%d\n' 0
+true && echo t
+false || echo f
+: && echo colon
+pwd | grep -c /
+cd /tmp && pwd
+cd / && cd - >/dev/null 2>&1; echo $?
+export FOO=bar; echo $FOO
+FOO=baz; export FOO; echo $FOO
+unset FOO; echo "[${FOO:-unset}]"
+x=1 y=2; echo $x $y
+A=1 B=2 env | grep -E '^(A|B)=' | sort
+test -e /tmp; echo $?
+test 5 -gt 3; echo $?
+[ -d /tmp ]; echo $?
+[ ! -e /nonexistent_xyz ]; echo $?
+[ "abc" = "abc" ]; echo $?
+[ 3 -eq 03 ]; echo $?
+type echo >/dev/null 2>&1; echo $?
+echo $((1+1)) $((2+2))
+read x <<EOF
+inputline
+EOF
+echo "got:$x"
+printf '%o\n' 8
+printf '%x\n' 255
+shift; echo $?
