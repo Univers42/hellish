@@ -22,8 +22,11 @@ void	manage_history(t_shell *state)
 		if (state->rl.cursor > 0 && state->rl.buff.ctx)
 			((char *)state->rl.buff.ctx)
 			[state->rl.cursor - 1] = '\0';
-		hist_entry = ft_strndup((char *)state->rl.buff.ctx,
-				state->rl.cursor - 1);
+		if (state->input_expanded && state->input.ctx)
+			hist_entry = ft_strndup((char *)state->input.ctx, state->input.len);
+		else
+			hist_entry = ft_strndup((char *)state->rl.buff.ctx,
+					state->rl.cursor - 1);
 		add_history(hist_entry);
 		vec_push(&state->hist.hist_cmds, &hist_entry);
 		if (state->hist.append_fd >= 0)
@@ -38,6 +41,7 @@ void	manage_history(t_shell *state)
 			free(enc_hist_entry);
 		}
 	}
+	state->input_expanded = false;
 	buff_readline_reset(&state->rl);
 }
 
