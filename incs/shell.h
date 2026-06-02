@@ -68,6 +68,16 @@ typedef struct s_shell_func
 	t_ast_node	body;
 }	t_shell_func;
 
+/* One saved variable for function scope: its value at the moment it was made
+   local / before positional params were replaced, restored on return. */
+typedef struct s_scope_save
+{
+	int		depth;
+	char	*key;
+	char	*value;
+	bool	existed;
+}	t_scope_save;
+
 typedef struct s_shell
 {
 	t_string			input;
@@ -87,6 +97,8 @@ typedef struct s_shell
 	int					loop_continue;
 	int					loop_depth;
 	int					func_return;
+	int					func_depth;
+	t_vec				local_saves;
 	int					getopts_pos;
 	bool				input_expanded;
 	int					last_cmdsub_status;
