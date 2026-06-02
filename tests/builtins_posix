@@ -1,0 +1,22 @@
+eval "echo hi"
+eval echo one two three
+x=5; eval "echo \$x"
+eval "for i in 1 2 3; do echo \$i; done"
+eval "if true; then echo yes; fi"
+eval "case x in x) echo m;; esac"
+eval "echo a; echo b"
+command echo hi
+command -v echo
+true && echo yes
+false || echo no
+true; echo $?
+false; echo $?
+umask 022; umask
+umask 077; umask
+f() { return 3; }; f; echo $?
+f() { echo a; return 5; echo b; }; f; echo rc=$?
+g() { for i in 1 2 3; do if [ $i = 2 ]; then return 0; fi; echo $i; done; }; g; echo after
+set -- -a -b -c; while getopts abc o; do echo opt=$o; done
+set -- -n 5 rest; getopts n: o; echo "$o=$OPTARG"
+set -- -x -y; getopts xy o; echo $o; getopts xy o; echo $o
+: ${UNSET:=def}; echo $UNSET
