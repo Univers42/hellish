@@ -90,7 +90,8 @@ int	exec_string(t_shell *state, char *str)
 	prev_pos = state->hd_pos;
 	stripped = NULL;
 	bodies = NULL;
-	if (split_heredocs(str, &stripped, &bodies))
+	if (ft_strnstr(str, "<<", ft_strlen(str))
+		&& split_heredocs(str, &stripped, &bodies))
 	{
 		state->hd_src = bodies;
 		state->hd_pos = 0;
