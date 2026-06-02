@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "ft_builtins.h"
 
 /*
 ** Look up a function by name in the shell's function table.
@@ -69,29 +70,28 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 	return (res_status(0));
 }
 
-static void	set_positional_params(t_shell *state, t_vec *argv)
+/* Save the caller's $1..$9 and $# before a function replaces them, so
+   scope_leave can restore them when the function returns. */
+static void	save_positionals(t_shell *state)
 {
-	size_t	i;
 	char	key[2];
-	char	**av;
-	char	*count;
+	int		i;
 
-	av = (char **)argv->ctx;
-	i = 1;
 	key[1] = '\0';
-	while (i < argv->len && i <= 9)
+	i = 1;
+	while (i <= 9)
 	{
-		key[0] = '0' + i;
-		env_set(&state->env, env_create(ft_strdup(key),
-				ft_strdup(av[i]), false));
+		key[0] = (char)('0' + i);
+		scope_save(state, key);
 		i++;
 	}
-	count = ft_itoa(argv->len - 1);
-	env_set(&state->env, env_create(ft_strdup("#"), count, false));
+	scope_save(state, "#");
 }
 
 /*
-** Execute a function call: clone body, set positional params, execute.
+** Execute a function call: enter a scope, give it its own positional params
+** (saving the caller's), clone+run the body, then restore the scope (positional
+** params + any `local` variables) — POSIX function scoping.
 */
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv)
@@ -100,13 +100,15 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	t_executable_node	body_exe;
 	t_execution_state	status;
 
-	if (argv->len > 1)
-		set_positional_params(state, argv);
+	state->func_depth++;
+	save_positionals(state);
+	set_positional_args(state, (char **)argv->ctx + 1, argv->len - 1);
 	body_copy = clone_ast(&fn->body);
 	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
 			&body_copy, true);
 	status = execute_tree_node(state, &body_exe);
 	free_ast(&body_copy);
 	state->func_return = 0;
+	scope_leave(state);
 	return (status);
 }

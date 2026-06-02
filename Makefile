@@ -132,6 +132,7 @@ SRCS :=		src/arith/eval.c\
 			src/execution/case_match.c\
 			src/execution/exec_string.c\
 			src/execution/execute_function.c\
+			src/execution/func_scope.c\
 			src/execution/execute_simple_list.c\
 			src/execution/execute_tree_node.c\
 			src/execution/find_cmd_path.c\
