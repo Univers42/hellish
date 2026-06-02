@@ -89,14 +89,18 @@ int	builtin_fc(t_shell *state, t_vec argv)
 {
 	char	**av;
 	int		ac;
+	bool	empty;
 
 	av = (char **)argv.ctx;
 	ac = (int)argv.len;
-	if (!state->hist.hist_active || !state->hist.hist_cmds.len)
+	empty = (!state->hist.hist_active || !state->hist.hist_cmds.len);
+	if (ac >= 2 && (!ft_strcmp(av[1], "-l") || !ft_strcmp(av[1], "-lr")))
+	{
+		if (empty)
+			return (0);
+		return (fc_list(state, av + 2, ac - 2, av[1][2] == 'r'));
+	}
+	if (empty)
 		return (ft_eprintf("%s: fc: no command history\n", state->ctx), 1);
-	if (ac >= 2 && ft_strcmp(av[1], "-l") == 0)
-		return (fc_list(state, av + 2, ac - 2, false));
-	if (ac >= 2 && ft_strcmp(av[1], "-lr") == 0)
-		return (fc_list(state, av + 2, ac - 2, true));
 	return (fc_run(state, av, ac));
 }
