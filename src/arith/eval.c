@@ -11,6 +11,9 @@
 /* ************************************************************************** */
 
 #include "arith_private.h"
+#include "sh_input.h"
+
+void	exit_clean(t_shell *state, int code);
 
 /*
  * Evaluate an arithmetic expression and return the result.
@@ -29,6 +32,8 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	parser.error = false;
 	parser.no_side_effects = false;
 	parser.error_msg = NULL;
+	if (lexer.current.type == ATOK_EOF)
+		return (0);
 	result = arith_parse_expr(&parser);
 	if (!parser.error && lexer.current.type != ATOK_EOF)
 		parser.error = true;
@@ -40,30 +45,27 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	return (result);
 }
 
-/* helper: convert long long to malloc'ed string (keeps original logic) */
+/* long long -> malloc'd string. Operates on the magnitude as unsigned so that
+   LLONG_MIN (whose signed negation overflows) is formatted correctly. */
 static char	*arith_lltoa(long long value)
 {
-	char	buf[32];
-	int		i;
-	int		neg;
+	char				buf[32];
+	int					i;
+	int					neg;
+	unsigned long long	u;
 
-	neg = 0;
-	if (value < 0)
-	{
-		neg = 1;
-		value = -value;
-	}
+	neg = (value < 0);
+	u = (unsigned long long)value;
+	if (neg)
+		u = -u;
 	i = 31;
 	buf[i] = '\0';
-	if (value == 0)
+	if (u == 0)
 		buf[--i] = '0';
-	else
+	while (u > 0)
 	{
-		while (value > 0)
-		{
-			buf[--i] = '0' + (value % 10);
-			value /= 10;
-		}
+		buf[--i] = '0' + (int)(u % 10);
+		u /= 10;
 	}
 	if (neg)
 		buf[--i] = '-';
@@ -83,8 +85,10 @@ char	*arith_expand(t_shell *state, const char *expr, int len)
 	result = arith_eval(state, expr, len, &error);
 	if (error)
 	{
-		ft_eprintf("%s: %.*s: syntax error in arithmetic expression\n",
-			state->ctx, len, expr);
+		ft_eprintf("%s: %.*s: arithmetic error\n", state->ctx, len, expr);
+		state->last_cmd_st_exe = (t_execution_state){.status = 127};
+		if (state->metinp != INP_RL)
+			exit_clean(state, 127);
 		return (NULL);
 	}
 	str = arith_lltoa(result);

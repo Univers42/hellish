@@ -15,6 +15,8 @@
 #include "decomposer.h"
 #include "sys.h"
 
+char	*arith_expand(t_shell *state, const char *expr, int len);
+
 /* A word participates in brace expansion only if it is entirely unquoted
    (all TT_WORD subtokens); quotes/vars inhibit it, matching POSIX shells. */
 static bool	word_all_unquoted(t_ast_node *node)
@@ -148,10 +150,62 @@ static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	return (v);
 }
 
+/* A word that is exactly $((expr)) with no $ or backtick inside is pure
+   arithmetic: evaluate it directly (no clone, no split/glob — the result is a
+   number). Returns the result string (caller owns), or NULL to fall back.
+   Words containing $ or ` need the full pipeline (nested cmdsub / $var refs). */
+/* The single non-empty TT_WORD child of `node` (skipping empty tokens, e.g. the
+   empty leading token of an assignment value), or NULL if the word isn't a lone
+   bare word (any quoted/var subtoken or two non-empty pieces disqualify it). */
+static t_token	*lone_word_token(t_ast_node *node)
+{
+	t_token		*t;
+	t_ast_node	*c;
+	int			i;
+
+	t = NULL;
+	i = 0;
+	while (i < (int)node->children.len)
+	{
+		c = &((t_ast_node *)node->children.ctx)[i++];
+		if (c->node_type != AST_TOKEN || c->token.tt != TT_WORD)
+			return (NULL);
+		if (c->token.len == 0)
+			continue ;
+		if (t)
+			return (NULL);
+		t = &c->token;
+	}
+	return (t);
+}
+
+/* A word that is exactly $((expr)) with no $ or backtick inside is pure
+   arithmetic: evaluate directly (no clone, no split/glob — result is a number).
+   Returns the result string (caller owns) or NULL to fall back. */
+static char	*try_pure_arith(t_shell *state, t_ast_node *node)
+{
+	t_token	*t;
+	int		i;
+
+	t = lone_word_token(node);
+	if (!t || t->len < 5 || t->start[0] != '$' || t->start[1] != '('
+		|| t->start[2] != '(' || t->start[t->len - 1] != ')'
+		|| t->start[t->len - 2] != ')')
+		return (NULL);
+	i = 3;
+	while (i < t->len - 2)
+	{
+		if (t->start[i] == '$' || t->start[i] == '`')
+			return (NULL);
+		i++;
+	}
+	return (arith_expand(state, t->start + 3, t->len - 5));
+}
+
 /* Non-destructive variant: expand the words of `src` into `args` without
-   mutating or freeing `src`. Fast-paths plain literals and simple $var so hot
-   loop words never clone; falls back to a private clone + the destructive
-   pipeline for everything else, leaving the caller's `src` intact. */
+   mutating or freeing `src`. Fast-paths plain literals, simple $var and pure
+   $((arith)) so hot loop words never clone; falls back to a private clone + the
+   destructive pipeline for everything else, leaving the caller's `src` intact. */
 void	expand_word_ro(t_shell *state, t_ast_node *src,
 					t_vec *args, bool keep_as_one)
 {
@@ -164,6 +218,9 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 		t = &((t_ast_node *)src->children.ctx)[0].token;
 		return ((void)vec_push(args, &(char *){ft_strndup(t->start, t->len)}));
 	}
+	v = try_pure_arith(state, src);
+	if (v)
+		return ((void)vec_push(args, &(char *){v}));
 	if (!keep_as_one)
 	{
 		v = try_simple_envvar(state, src);
