@@ -100,21 +100,68 @@ static bool	word_is_plain_literal(t_ast_node *node)
 	return (true);
 }
 
+static bool	name_is_plain(const char *s, int len)
+{
+	int	i;
+
+	if (len <= 0 || !(ft_isalpha(s[0]) || s[0] == '_'))
+		return (false);
+	i = 1;
+	while (i < len)
+	{
+		if (!(ft_isalnum(s[i]) || s[i] == '_'))
+			return (false);
+		i++;
+	}
+	return (true);
+}
+
+/* A bare unquoted $var whose value contains no IFS blank and no glob char
+   (under the default IFS) expands to exactly that value as one field — no
+   split, no glob, no clone. Returns the env value to push, or NULL to fall
+   back to the full pipeline. Special params / ${...} forms are excluded. */
+static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
+{
+	t_token	*t;
+	char	*ifs;
+	char	*v;
+
+	if (node->children.len != 1
+		|| ((t_ast_node *)node->children.ctx)[0].node_type != AST_TOKEN)
+		return (NULL);
+	t = &((t_ast_node *)node->children.ctx)[0].token;
+	if (t->tt != TT_ENVVAR || !name_is_plain(t->start, t->len))
+		return (NULL);
+	ifs = env_get_ifs(&state->env);
+	if (ifs && ft_strcmp(ifs, " \t\n") != 0)
+		return (NULL);
+	v = env_expand_n(state, t->start, t->len);
+	if (!v || !*v || v[ft_strcspn(v, " \t\n*?[")] != '\0')
+		return (NULL);
+	return (v);
+}
+
 /* Non-destructive variant: expand the words of `src` into `args` without
-   mutating or freeing `src`. The expansion pipeline is destructive, so we
-   run it on a private shallow-cloned scratch we own and consume here. The
-   caller (e.g. a loop body) keeps `src` intact for the next iteration. */
+   mutating or freeing `src`. Fast-paths plain literals and simple $var so hot
+   loop words never clone; falls back to a private clone + the destructive
+   pipeline for everything else, leaving the caller's `src` intact. */
 void	expand_word_ro(t_shell *state, t_ast_node *src,
 					t_vec *args, bool keep_as_one)
 {
 	t_ast_node	scratch;
 	t_token		*t;
+	char		*v;
 
 	if (!keep_as_one && word_is_plain_literal(src))
 	{
 		t = &((t_ast_node *)src->children.ctx)[0].token;
-		vec_push(args, &(char *){ft_strndup(t->start, t->len)});
-		return ;
+		return ((void)vec_push(args, &(char *){ft_strndup(t->start, t->len)}));
+	}
+	if (!keep_as_one)
+	{
+		v = try_simple_envvar(state, src);
+		if (v)
+			return ((void)vec_push(args, &(char *){ft_strdup(v)}));
 	}
 	scratch = clone_ast(src);
 	expand_word(state, &scratch, args, keep_as_one);
