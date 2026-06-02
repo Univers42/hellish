@@ -13,19 +13,27 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
+/* `exec` with no command word just applies its redirections; POSIX keeps them
+   in effect for the rest of the shell, so those fds must NOT be restored. */
+static int	is_bare_exec(t_executable_cmd *cmd)
+{
+	return (cmd->argv.len == 1
+		&& ft_strcmp(((char **)cmd->argv.ctx)[0], "exec") == 0);
+}
+
 t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
 {
-	int		stdin_bak;
-	int		stdout_bak;
-	int		stderr_bak;
+	int		bak[3];
 	int		status;
+	int		persist;
 	t_vec	saves;
 
-	stdin_bak = dup(0);
-	stdout_bak = dup(1);
-	stderr_bak = dup(2);
+	persist = is_bare_exec(cmd);
+	bak[0] = dup(0);
+	bak[1] = dup(1);
+	bak[2] = dup(2);
 	set_up_redirection(state, exe);
 	exe->infd = -1;
 	exe->outfd = -1;
@@ -34,14 +42,16 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	status = builtin_func(((char **)(cmd->argv.ctx))[0])(state, cmd->argv);
 	restore_temp_assigns(state, &saves);
-	dup2(stdin_bak, 0);
-	dup2(stdout_bak, 1);
-	dup2(stderr_bak, 2);
-	close(stdin_bak);
-	close(stdout_bak);
-	close(stderr_bak);
+	if (!persist)
+	{
+		dup2(bak[0], 0);
+		dup2(bak[1], 1);
+		dup2(bak[2], 2);
+	}
+	close(bak[0]);
+	close(bak[1]);
+	close(bak[2]);
 	procsub_close_fds_parent(state);
-	free_executable_cmd(*cmd);
-	free_executable_node(exe);
-	return (res_status(status));
+	return (free_executable_cmd(*cmd), free_executable_node(exe),
+		res_status(status));
 }
