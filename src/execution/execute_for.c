@@ -12,6 +12,8 @@
 
 #include "execution_private.h"
 
+int	handle_loop_ctl(t_shell *state);
+
 static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 {
 	t_executable_node	body_exe;
@@ -62,14 +64,16 @@ static t_execution_state	for_word_loop(t_shell *state,
 	words = expand_for_words(state, node, wc);
 	status = res_status(0);
 	i = 0;
+	state->loop_depth++;
 	while (i < words.len)
 	{
 		set_for_var(state, var_name, ((char **)words.ctx)[i]);
 		status = run_body(state, vec_idx(&node->children, wc));
-		if (state->should_exit || get_g_sig()->should_unwind)
+		if (handle_loop_ctl(state))
 			break ;
 		i++;
 	}
+	state->loop_depth--;
 	i = 0;
 	while (i < words.len)
 		free(((char **)words.ctx)[i++]);
