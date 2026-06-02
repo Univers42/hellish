@@ -36,9 +36,9 @@ static long long	apply_op(long long l, long long r, t_arith_tok op,
 		return (0);
 	}
 	if (op == ATOK_DIV)
-		return (l / r);
+		return ((l == LLONG_MIN && r == -1) ? LLONG_MIN : l / r);
 	if (op == ATOK_MOD)
-		return (l % r);
+		return ((l == LLONG_MIN && r == -1) ? 0 : l % r);
 	if (op == ATOK_LSHIFT)
 		return (l << r);
 	if (op == ATOK_RSHIFT)
