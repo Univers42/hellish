@@ -24,12 +24,13 @@ void		run_pending_traps(t_shell *state);
 void		run_exit_trap(t_shell *state);
 int			exec_string(t_shell *state, char *str);
 char		*env_expand(t_shell *state, char *key);
-static int	setup_output_buffer(t_shell *state, int *bak);
-static void	flush_output_buffer(int buf_fd, int bak);
+int			setup_output_buffer(t_shell *state, int *bak);
+void		flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
 
-/* Slurp a whole file into a freshly-allocated NUL-terminated string, or NULL. */
+/* Slurp a whole file into a freshly-allocated NUL-terminated string.
+   Returns NULL on error. */
 static char	*read_file(const char *path)
 {
 	char		buf[4096];
@@ -95,36 +96,6 @@ int	main(int argc, char **argv, char **envp)
 	source_hellishrc(&state);
 	repl_shell(&state);
 	off(&state);
-}
-
-/* Output buffering (stdout -> temp file dumped at exit) is disabled: it lost
-   output when the shell process was replaced (exec) or exited directly (exit),
-   and serves no purpose now that prompts are gated on interactivity. */
-static int	setup_output_buffer(t_shell *state, int *bak)
-{
-	(void)state;
-	*bak = -1;
-	return (-1);
-}
-
-static void	flush_output_buffer(int buf_fd, int bak)
-{
-	char	tmp[4096];
-	ssize_t	n;
-
-	if (buf_fd < 0)
-		return ;
-	dup2(bak, STDOUT_FILENO);
-	close(bak);
-	lseek(buf_fd, 0, SEEK_SET);
-	n = 1;
-	while (n > 0)
-	{
-		n = read(buf_fd, tmp, sizeof(tmp));
-		if (n > 0 && write(STDOUT_FILENO, tmp, n) < 0)
-			break ;
-	}
-	close(buf_fd);
 }
 
 static void	repl_shell(t_shell *state)

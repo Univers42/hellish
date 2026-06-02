@@ -12,9 +12,8 @@
 
 #include "builtins_private.h"
 
-static void	init_builtin_hash(t_hash *h)
+static void	fill_builtin_hash1(t_hash *h)
 {
-	hash_init(h, 32);
 	hash_set(h, "echo", (void *)builtin_echo);
 	hash_set(h, "export", (void *)builtin_export);
 	hash_set(h, "cd", (void *)builtin_cd);
@@ -35,6 +34,10 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "false", (void *)builtin_false);
 	hash_set(h, "umask", (void *)builtin_umask);
 	hash_set(h, "command", (void *)builtin_command);
+}
+
+static void	fill_builtin_hash2(t_hash *h)
+{
 	hash_set(h, "return", (void *)builtin_return);
 	hash_set(h, "getopts", (void *)builtin_getopts);
 	hash_set(h, "exec", (void *)builtin_exec);
@@ -58,6 +61,13 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "kill", (void *)builtin_kill);
 	hash_set(h, "printf", (void *)builtin_printf);
 	hash_set(h, "ulimit", (void *)builtin_ulimit);
+}
+
+static void	init_builtin_hash(t_hash *h)
+{
+	hash_init(h, 32);
+	fill_builtin_hash1(h);
+	fill_builtin_hash2(h);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)

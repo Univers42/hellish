@@ -14,6 +14,15 @@
 
 char	*parse_quote(t_deque_tok *tokens, char **str, char q);
 
+static void	update_depth(char **str, int *depth)
+{
+	if (**str == '(')
+		(*depth)++;
+	else if (**str == ')')
+		(*depth)--;
+	(*str)++;
+}
+
 /* handle subshell $(...) with nested parentheses and quoted segments */
 char	*tokenize_subshell(t_deque_tok *tokens, char **str)
 {
@@ -33,13 +42,7 @@ char	*tokenize_subshell(t_deque_tok *tokens, char **str)
 				return (res);
 		}
 		else
-		{
-			if (**str == '(')
-				depth++;
-			else if (**str == ')')
-				depth--;
-			(*str)++;
-		}
+			update_depth(str, &depth);
 	}
 	if (depth > 0)
 		return (tokens->looking_for = ')', "subshell> ");

@@ -6,7 +6,7 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 19:35:39 by marvin            #+#    #+#             */
-/*   Updated: 2026/06/02 00:00:00 by dlesieur          ###   ########.fr       */
+/*   Updated: 2026/06/02 00:00:00 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,14 @@ static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 	return (pid);
 }
 
+static void	update_cmdsub_status(t_shell *state, int status)
+{
+	if (WIFEXITED(status))
+		state->last_cmdsub_status = WEXITSTATUS(status);
+	else if (WIFSIGNALED(status))
+		state->last_cmdsub_status = 128 + WTERMSIG(status);
+}
+
 static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 {
 	t_string	out;
@@ -50,10 +58,7 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 	status = 0;
 	while (waitpid(pid, &status, 0) == -1 && errno == EINTR)
 		;
-	if (WIFEXITED(status))
-		state->last_cmdsub_status = WEXITSTATUS(status);
-	else if (WIFSIGNALED(status))
-		state->last_cmdsub_status = 128 + WTERMSIG(status);
+	update_cmdsub_status(state, status);
 	ret = malloc(out.len + 1);
 	if (!ret)
 		return (free(out.ctx), ft_strdup(""));

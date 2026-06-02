@@ -119,11 +119,3 @@ int	advance_squoted(char **str)
 	(*str)++;
 	return (0);
 }
-
-void	advance_bs(char **str)
-{
-	ft_assert(**str == '\\');
-	if ((*str)[1])
-		*str += 1;
-	*str += 1;
-}

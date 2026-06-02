@@ -25,20 +25,6 @@ static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 	return (execute_tree_node(state, &body_exe));
 }
 
-static void	set_for_var(t_shell *state, char *name, char *val)
-{
-	t_env	*old;
-
-	old = env_get(&state->env, name);
-	if (old)
-	{
-		free(old->value);
-		old->value = ft_strdup(val);
-		return ;
-	}
-	env_set(&state->env, env_create(ft_strdup(name), ft_strdup(val), false));
-}
-
 static t_vec	expand_for_words(t_shell *state,
 		t_ast_node *node, size_t wc)
 {
@@ -87,9 +73,9 @@ static t_execution_state	for_word_loop(t_shell *state,
 ** for NAME [in wordlist ;] do compound_list done
 ** children = [word_list...] + compound_list(body)
 */
-/* `for NAME; do ... done` with no `in` list iterates over "$@" (POSIX). The
-   parser sets node->negate when an `in` clause is present, so word_count==0 with
-   no `in` means "iterate the positional parameters" (vs an explicit empty list). */
+/* `for NAME; do ... done` with no `in` iterates over "$@" (POSIX).
+** Parser sets node->negate when an `in` clause is present, so word_count==0
+** with no `in` means "iterate positional parameters" (vs an explicit empty). */
 static t_execution_state	for_positional_loop(t_shell *state,
 		t_ast_node *node, char *var_name)
 {

@@ -15,8 +15,7 @@
 
 int	get_default_src_fd(t_tt tt);
 
-/* noclobber (set -C): a plain `>` may not truncate an existing regular file;
-   `>|` (TT_CLOBBER) overrides it. Returns true if the redirect must be refused. */
+/* noclobber (set -C): `>` may not truncate an existing regular file. */
 static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
 {
 	struct stat	st;
@@ -29,7 +28,7 @@ static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
 }
 
 /* parse optional leading fd from operator token (e.g. "2>") */
-static int	parse_src_fd(t_tt tt, t_token op_tok)
+int	parse_src_fd(t_tt tt, t_token op_tok)
 {
 	int		src_fd;
 	char	*p;
@@ -64,23 +63,24 @@ static char	*expand_redir_fname(t_shell *state, t_ast_node *curr)
 	return (NULL);
 }
 
-/* create and commit a redir entry from AST node,
-on success updates node->redir_idx */
-static int	commit_redir(t_shell *state,
-					t_ast_node *curr,
-					t_tt tt,
-					int src_fd)
+static t_token_old	get_target_token(t_ast_node *curr)
 {
-	t_redir			new_redir;
-	t_token_old		full_token;
-	char			*fname;
-	t_ast_node		*target;
+	t_ast_node	*target;
 
 	target = &((t_ast_node *)curr->children.ctx)[1];
 	if (target->node_type == AST_WORD)
-		full_token = get_old_token(*target);
-	else
-		full_token = init_token_old();
+		return (get_old_token(*target));
+	return (init_token_old());
+}
+
+int	try_create_redir(t_shell *state, t_ast_node *curr,
+			t_tt tt, int src_fd)
+{
+	t_redir		new_redir;
+	t_token_old	full_token;
+	char		*fname;
+
+	full_token = get_target_token(curr);
 	fname = expand_redir_fname(state, curr);
 	if (noclobber_blocks(state, tt, fname))
 	{
@@ -96,54 +96,5 @@ static int	commit_redir(t_shell *state,
 	curr->redir_idx = state->redirects.len;
 	curr->has_redirect = true;
 	vec_push(&state->redirects, &new_redir);
-	return (0);
-}
-
-/* extract the source fd (child index 0), or use default based on operator */
-int	get_src_fd(t_ast_node *curr, t_tt tt)
-{
-	t_ast_node	*first;
-	const char	*s;
-	int			i;
-	int			fd;
-
-	if (curr->children.len == 0)
-		return (get_default_src_fd(tt));
-	first = &((t_ast_node *)curr->children.ctx)[0];
-	if (first->node_type != AST_TOKEN)
-		return (get_default_src_fd(tt));
-	s = first->token.start;
-	i = 0;
-	fd = 0;
-	while (i < first->token.len && ft_isdigit((unsigned char)s[i]))
-	{
-		fd = fd * 10 + (s[i] - '0');
-		i++;
-	}
-	if (i == 0)
-		return (get_default_src_fd(tt));
-	return (fd);
-}
-
-int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
-{
-	t_token		op_tok;
-	t_tt		tt;
-	int			src_fd;
-
-	ft_assert(curr->node_type == AST_REDIRECT);
-	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
-	tt = op_tok.tt;
-	if (tt == TT_HEREDOC && curr->heredoc_body)
-		return (materialize_heredoc(state, curr, redir_idx));
-	if (curr->has_redirect && tt == TT_HEREDOC)
-	{
-		*redir_idx = curr->redir_idx;
-		return (0);
-	}
-	src_fd = parse_src_fd(tt, op_tok);
-	if (commit_redir(state, curr, tt, src_fd) < 0)
-		return (-1);
-	*redir_idx = curr->redir_idx;
 	return (0);
 }

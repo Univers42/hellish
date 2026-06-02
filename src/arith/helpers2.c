@@ -44,24 +44,6 @@ static void	handle_angle_left(t_arith_lexer *lex)
 		set_simple_op(lex, ATOK_LT);
 }
 
-static void	handle_angle_right(t_arith_lexer *lex)
-{
-	if (lex->pos + 1 < lex->len && lex->input[lex->pos + 1] == '=')
-	{
-		lex->current.type = ATOK_GE;
-		lex->current.len = 2;
-		lex->pos += 2;
-	}
-	else if (lex->pos + 1 < lex->len && lex->input[lex->pos + 1] == '>')
-	{
-		lex->current.type = ATOK_RSHIFT;
-		lex->current.len = 2;
-		lex->pos += 2;
-	}
-	else
-		set_simple_op(lex, ATOK_GT);
-}
-
 static void	handle_plus_minus(t_arith_lexer *lex, char c)
 {
 	if (c == '+' && lex->pos + 1 < lex->len

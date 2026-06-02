@@ -19,11 +19,25 @@
 # include "env.h"
 # include "expander.h"
 # include <unistd.h>
-# include "redir.h"
 # include "helpers.h"
 # include <sys/wait.h>
 # include <readline/readline.h>
 # include <fcntl.h>
+
+typedef struct s_hd
+{
+	char	*delim;
+	bool	dash;
+	size_t	line;
+}	t_hd;
+
+typedef struct s_walk_ctx
+{
+	t_hd	*sp;
+	int		n;
+	int		si;
+	int		got;
+}	t_walk_ctx;
 
 int		ft_mktemp(t_shell *state, t_ast_node *node);
 char	*first_non_tab(char *line);
@@ -40,5 +54,7 @@ bool	is_sep(t_hdoc *req, t_string *alloc_line);
 void	process_line(t_shell *state, t_hdoc *req);
 void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req);
 bool	contains_quotes(t_ast_node node);
+bool	is_delim_line(const char *line, size_t len, t_hd *s);
+bool	split_heredocs(const char *str, char **stripped, char **bodies);
 
 #endif

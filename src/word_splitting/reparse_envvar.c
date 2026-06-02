@@ -12,14 +12,14 @@
 
 #include "reparser_private.h"
 
-static void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
+void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
 {
 	*i = rp->i;
 	*ret = rp->current_node;
 }
 
-static bool	handle_envvar_paren_or_special(t_reparser *rp,
-				int prev_start, t_tt tt)
+bool	handle_envvar_paren_or_special(t_reparser *rp,
+			int prev_start, t_tt tt)
 {
 	if (try_handle_paren_rp(rp, prev_start, tt))
 		return (true);
@@ -44,15 +44,15 @@ void	handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt)
 	}
 }
 
-static void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
+void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 {
 	push_subtoken_node(&rp->current_node, rp->current_token,
 		create_interval(prev_start, rp->i), tt);
 }
 
-/* Advance rp->i to the matching close quote `q` (leaving it on the quote), so
-   braces inside a quoted segment of ${...} are not counted by the brace scan. */
-static void	skip_quoted_in_brace(t_reparser *rp, char q)
+/* Advance rp->i to the matching close quote `q` (leaving it on the quote),
+   so braces inside a quoted segment of ${...} are not counted. */
+void	skip_quoted_in_brace(t_reparser *rp, char q)
 {
 	const char	*s;
 	int			len;
@@ -66,66 +66,4 @@ static void	skip_quoted_in_brace(t_reparser *rp, char q)
 			rp->i++;
 		rp->i++;
 	}
-}
-
-static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
-{
-	int		start;
-	int		depth;
-	char	c;
-
-	if (rp->i >= rp->current_token.len
-		|| rp->current_token.start[rp->i] != '{')
-		return (false);
-	rp->i++;
-	start = rp->i;
-	depth = 1;
-	while (rp->i < rp->current_token.len && depth > 0)
-	{
-		c = rp->current_token.start[rp->i];
-		if (c == '\'' || c == '"')
-			skip_quoted_in_brace(rp, c);
-		else if (c == '{')
-			depth++;
-		else if (c == '}' && --depth == 0)
-			break ;
-		rp->i++;
-	}
-	push_subtoken_node(&rp->current_node, rp->current_token,
-		create_interval(start, rp->i), tt);
-	if (rp->i < rp->current_token.len)
-		rp->i++;
-	return (true);
-}
-
-void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
-{
-	t_reparser	rp;
-	int			prev_start;
-
-	ft_assert(t.start[(*i)++] == '$');
-	create_reparser(&rp, *ret, t, i);
-	prev_start = rp.i;
-	if (handle_envvar_brace(&rp, tt))
-	{
-		update_envvar_result(ret, i, &rp);
-		return ;
-	}
-	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
-	{
-		update_envvar_result(ret, i, &rp);
-		return ;
-	}
-	consume_ident_rp(&rp);
-	if (prev_start == rp.i)
-	{
-		if (handle_envvar_empty(&rp, prev_start, tt))
-		{
-			update_envvar_result(ret, i, &rp);
-			return ;
-		}
-	}
-	else
-		handle_envvar_ident(&rp, prev_start, tt);
-	update_envvar_result(ret, i, &rp);
 }

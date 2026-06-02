@@ -12,7 +12,7 @@
 
 #include "reparser_private.h"
 
-// Helper: reparse single-quoted region
+/* Helper: reparse single-quoted region */
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -30,7 +30,7 @@ void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-// Helper: reparse backslash escape
+/* Helper: reparse backslash escape */
 void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -48,7 +48,7 @@ void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-// Helper: reparse normal word region
+/* Helper: reparse normal word region */
 void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -66,8 +66,8 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-// Helper: reparse a `...` backtick command substitution as one TT_WORD
-// subtoken (so process_word_token can expand it), marked split-eligible.
+/* Helper: reparse a `...` backtick command substitution as one TT_WORD
+   subtoken (so process_word_token can expand it), marked split-eligible. */
 void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -77,7 +77,8 @@ void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 	start = rp.i++;
 	while (rp.i < rp.current_token.len && rp.current_token.start[rp.i] != '`')
 	{
-		if (rp.current_token.start[rp.i] == '\\' && rp.i + 1 < rp.current_token.len)
+		if (rp.current_token.start[rp.i] == '\\'
+			&& rp.i + 1 < rp.current_token.len)
 			rp.i++;
 		rp.i++;
 	}
@@ -90,7 +91,7 @@ void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-// Helper: main loop for reparsing a word token
+/* Main loop for reparsing a word token */
 void	loop_node_rp(t_reparser *rp)
 {
 	while (rp->i < rp->current_token.len)
@@ -115,18 +116,4 @@ void	loop_node_rp(t_reparser *rp)
 		else
 			reparse_norm_word(&rp->current_node, &rp->i, rp->current_token);
 	}
-}
-
-t_ast_node	reparse_word(t_token t)
-{
-	t_ast_node	ret;
-	t_reparser	rp;
-
-	ret = create_node_type(AST_WORD);
-	vec_init(&ret.children);
-	ret.children.elem_size = sizeof(t_ast_node);
-	create_reparser(&rp, ret, t, &(int){0});
-	loop_node_rp(&rp);
-	ret = rp.current_node;
-	return (ret);
 }

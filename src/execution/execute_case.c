@@ -35,33 +35,8 @@ static char	*expand_case_word(t_shell *state, t_ast_node *node)
 	return (ret);
 }
 
-/* A subtoken whose glob metacharacters must be matched literally: single- or
-   double-quoted text, or the value of a double-quoted variable. */
-static bool	is_quoted_tok(t_tt tt)
-{
-	return (tt == TT_SQWORD || tt == TT_DQWORD || tt == TT_DQENVVAR);
-}
-
-/* Append a pattern subtoken, backslash-escaping glob metacharacters that came
-   from a quoted segment so case_match treats them as literals (POSIX: quoted
-   chars in a case pattern lose their special meaning). */
-static void	append_pat_tok(t_string *s, t_token t)
-{
-	int		i;
-	bool	q;
-
-	if (!t.start)
-		return ;
-	q = is_quoted_tok(t.tt);
-	i = 0;
-	while (i < t.len)
-	{
-		if (q && ft_strchr("*?[\\", t.start[i]))
-			vec_push_char(s, '\\');
-		vec_push_char(s, t.start[i]);
-		i++;
-	}
-}
+bool	is_quoted_tok(t_tt tt);
+void	append_pat_tok(t_string *s, t_token t);
 
 /* Like expand_case_word but for a PATTERN: quoted glob metacharacters are
    escaped so they match literally, unquoted ones stay active. */
@@ -82,7 +57,10 @@ static char	*expand_case_pattern(t_shell *state, t_ast_node *node)
 	while (copy.children.ctx && ++i < copy.children.len
 		&& ((t_ast_node *)copy.children.ctx)[i].node_type == AST_TOKEN)
 		append_pat_tok(&s, ((t_ast_node *)copy.children.ctx)[i].token);
-	ret = ft_strndup(s.ctx ? (char *)s.ctx : "", s.len);
+	if (s.ctx)
+		ret = ft_strndup((char *)s.ctx, s.len);
+	else
+		ret = ft_strndup("", s.len);
 	free(s.ctx);
 	free_ast(&copy);
 	return (ret);
