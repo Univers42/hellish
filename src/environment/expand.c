@@ -12,6 +12,11 @@
 
 #include "env.h"
 #include "shell.h"
+#include "helpers.h"
+#include "sh_input.h"
+
+bool	is_readonly_var(t_shell *state, const char *key);
+void	exit_clean(t_shell *state, int code);
 
 char	*env_expand_n(t_shell *state, char *key, int len)
 {
@@ -25,7 +30,11 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 		return ("");
 	curr = env_nget(&state->env, key, len);
 	if (curr == 0 || curr->key == 0)
+	{
+		if (len == 1 && key[0] == '#')
+			return ("0");
 		return (0);
+	}
 	return (curr->value);
 }
 
@@ -64,6 +73,19 @@ void	env_apply_cmd_assigns(t_shell *state,
 		el = &((t_env *)src->pre_assigns.ctx)[i];
 		if (!el->key)
 		{
+			i++;
+			continue ;
+		}
+		if (is_readonly_var(state, el->key))
+		{
+			ft_eprintf("%s: %s: readonly variable\n", state->ctx, el->key);
+			free(el->key);
+			free(el->value);
+			el->key = NULL;
+			el->value = NULL;
+			if (state->metinp != INP_RL)
+				exit_clean(state, 127);
+			state->last_cmd_st_exe = (t_execution_state){.status = 1};
 			i++;
 			continue ;
 		}
