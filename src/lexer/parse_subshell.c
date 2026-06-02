@@ -41,5 +41,7 @@ char	*tokenize_subshell(t_deque_tok *tokens, char **str)
 			(*str)++;
 		}
 	}
+	if (depth > 0)
+		return (tokens->looking_for = ')', "subshell> ");
 	return (0);
 }

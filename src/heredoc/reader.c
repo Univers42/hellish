@@ -12,6 +12,24 @@
 
 #include "heredoc_private.h"
 
+/* When executing a string (command substitution, eval, source) the heredoc
+   bodies were extracted up front into state->hd_src; serve lines from there
+   instead of the live input stream. Returns 0 at end-of-source (EOF-like). */
+static int	read_hd_src_line(t_shell *state, t_string *out)
+{
+	size_t	start;
+
+	if (!state->hd_src[state->hd_pos])
+		return (0);
+	start = state->hd_pos;
+	while (state->hd_src[state->hd_pos] && state->hd_src[state->hd_pos] != '\n')
+		state->hd_pos++;
+	if (state->hd_src[state->hd_pos] == '\n')
+		state->hd_pos++;
+	vec_push_nstr(out, state->hd_src + start, state->hd_pos - start);
+	return (4);
+}
+
 bool	get_line_heredoc(t_shell *state,
 		t_hdoc *req, t_string *alloc_line)
 {
@@ -23,7 +41,10 @@ bool	get_line_heredoc(t_shell *state,
 	else
 		prompt = "heredoc> ";
 	vec_init(alloc_line);
-	stat = buff_readline(state, alloc_line, prompt);
+	if (state->hd_src)
+		stat = read_hd_src_line(state, alloc_line);
+	else
+		stat = buff_readline(state, alloc_line, prompt);
 	state->rl.has_finished = false;
 	if (stat == 0)
 		ft_eprintf("%s: warning: here-document at"

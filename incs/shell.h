@@ -110,6 +110,8 @@ typedef struct s_shell
 	t_vec				readonly_vars;
 	t_vec_redir			redirects;
 	int					heredoc_idx;
+	char				*hd_src;
+	size_t				hd_pos;
 	t_rl				rl;
 	t_prng				prng;
 	uint32_t			option_flags;
