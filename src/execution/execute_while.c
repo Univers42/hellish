@@ -59,7 +59,9 @@ t_execution_state	execute_while(t_shell *state, t_executable_node *exe)
 	state->loop_depth++;
 	while (1)
 	{
+		state->errexit_off++;
 		status = run_node(state, vec_idx(&exe->node->children, 0));
+		state->errexit_off--;
 		if ((!is_until && status.status != 0)
 			|| (is_until && status.status == 0))
 			break ;

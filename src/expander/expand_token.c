@@ -13,6 +13,7 @@
 #include "expander_private.h"
 
 char	*expand_param_format(t_shell *state, const char *s, int slen);
+void	nounset_abort(t_shell *state, const char *name, int len);
 
 /* Join the positional parameters $1..$# with the first char of IFS (space by
    default). Used for $@/$*; quoted "$@" multi-field is a known limitation. */
@@ -82,6 +83,8 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 		return ;
 	}
 	temp = env_expand_n(state, curr_tt->start, curr_tt->len);
+	if (!temp && state->opt_nounset)
+		nounset_abort(state, curr_tt->start, curr_tt->len);
 	curr_tt->start = temp;
 	if (curr_tt->start)
 		curr_tt->len = ft_strlen(temp);

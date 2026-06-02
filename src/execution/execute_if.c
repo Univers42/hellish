@@ -20,6 +20,18 @@ static t_execution_state	run_child(t_shell *state, t_ast_node *child)
 	return (execute_tree_node(state, &child_exe));
 }
 
+/* The if/elif condition is a list run with errexit suppressed (POSIX: -e is
+   ignored for the compound list following if/elif/while/until). */
+static t_execution_state	run_condition(t_shell *state, t_ast_node *child)
+{
+	t_execution_state	s;
+
+	state->errexit_off++;
+	s = run_child(state, child);
+	state->errexit_off--;
+	return (s);
+}
+
 /*
 ** AST_IF children: pairs of (condition, body)
 ** If total children is odd and > 1, last child is else-body.
@@ -37,7 +49,7 @@ t_execution_state	execute_if(t_shell *state, t_executable_node *exe)
 	i = 0;
 	while (i + 1 < len)
 	{
-		status = run_child(state, vec_idx(&exe->node->children, i));
+		status = run_condition(state, vec_idx(&exe->node->children, i));
 		if (status.status == 0)
 			return (run_child(state,
 					vec_idx(&exe->node->children, i + 1)));
