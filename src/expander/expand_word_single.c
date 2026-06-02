@@ -55,3 +55,13 @@ char	*expand_word_single(t_shell *state, t_ast_node *curr)
 		return (build_string_from_node(curr));
 	return (free_args_ambiguous(&args));
 }
+
+/* Non-destructive single-word expansion: leaves `curr` intact so a loop body
+   redirect can be re-expanded next iteration. Expands on a private clone. */
+char	*expand_word_single_ro(t_shell *state, t_ast_node *curr)
+{
+	t_ast_node	scratch;
+
+	scratch = clone_ast(curr);
+	return (expand_word_single(state, &scratch));
+}

@@ -70,10 +70,8 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
 	ft_assert(node->children.len == 2);
-	expand_word(state,
+	expand_word_ro(state,
 		&((t_ast_node *)node->children.ctx)[1], &args, true);
-	ft_assert(((t_ast_node *)node->children.ctx)
-	[1].children.ctx == 0);
 	ret.key = dup_key_from_node(node);
 	if (args.len)
 	{
