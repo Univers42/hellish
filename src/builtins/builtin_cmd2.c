@@ -52,13 +52,32 @@ static char	*join_from(t_vec argv, size_t from)
 }
 
 /* command -v name: print how `name` would be resolved (builtin name or path). */
+/* Silent PATH search for command -v (find_cmd_path can't be used here: it has
+   executor side effects -- it prints errors and free_all_state()s the shell). */
 static int	command_v(t_shell *state, char *name)
 {
 	char	*path;
+	char	**dirs;
+	int		perm;
 
-	if (builtin_func(name))
+	if (builtin_func(name) || func_lookup(state, name))
 		return (ft_printf("%s\n", name), 0);
-	if (find_cmd_path(state, name, &path) == 0)
+	if (ft_strchr(name, '/'))
+	{
+		if (access(name, X_OK) == 0)
+			return (ft_printf("%s\n", name), 0);
+		return (1);
+	}
+	path = env_expand(state, "PATH");
+	if (!path)
+		return (1);
+	dirs = ft_split(path, ':');
+	if (!dirs)
+		return (1);
+	perm = 0;
+	path = exe_path(dirs, name, &perm);
+	free_tab(dirs);
+	if (path)
 		return (ft_printf("%s\n", path), free(path), 0);
 	return (1);
 }
