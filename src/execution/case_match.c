@@ -33,7 +33,10 @@ static bool	match_bracket(char c, const char **pp)
 			p += 3;
 		}
 		else
-			hit = (hit || c == *p) && (++p || 1);
+		{
+			hit = hit || (c == *p);
+			p++;
+		}
 	}
 	*pp = p + (*p == ']');
 	return (hit != neg);
