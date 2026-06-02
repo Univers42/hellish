@@ -144,17 +144,39 @@ static bool	needs_split_or_glob(const char *v)
 	return (false);
 }
 
+/* The single non-empty sub-token of a word, skipping empty TT_WORD pieces (e.g.
+   the empty leading token left on an assignment value `x=$i`). NULL if there are
+   two non-empty pieces or any non-token child. */
+static t_token	*lone_nonempty_token(t_ast_node *node)
+{
+	t_token		*t;
+	t_ast_node	*c;
+	int			i;
+
+	t = NULL;
+	i = 0;
+	while (i < (int)node->children.len)
+	{
+		c = &((t_ast_node *)node->children.ctx)[i++];
+		if (c->node_type != AST_TOKEN)
+			return (NULL);
+		if (c->token.tt == TT_WORD && c->token.len == 0)
+			continue ;
+		if (t)
+			return (NULL);
+		t = &c->token;
+	}
+	return (t);
+}
+
 static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 {
 	t_token	*t;
 	char	*ifs;
 	char	*v;
 
-	if (node->children.len != 1
-		|| ((t_ast_node *)node->children.ctx)[0].node_type != AST_TOKEN)
-		return (NULL);
-	t = &((t_ast_node *)node->children.ctx)[0].token;
-	if (t->tt != TT_ENVVAR || !name_is_plain(t->start, t->len))
+	t = lone_nonempty_token(node);
+	if (!t || t->tt != TT_ENVVAR || !name_is_plain(t->start, t->len))
 		return (NULL);
 	ifs = env_get_ifs(&state->env);
 	if (ifs && ft_strcmp(ifs, " \t\n") != 0)
@@ -228,7 +250,7 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 	t_token		*t;
 	char		*v;
 
-	if (!keep_as_one && word_is_plain_literal(src))
+	if (word_is_plain_literal(src))
 	{
 		t = &((t_ast_node *)src->children.ctx)[0].token;
 		return ((void)vec_push(args, &(char *){ft_strndup(t->start, t->len)}));
@@ -236,12 +258,9 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 	v = try_pure_arith(state, src);
 	if (v)
 		return ((void)vec_push(args, &(char *){v}));
-	if (!keep_as_one)
-	{
-		v = try_simple_envvar(state, src);
-		if (v)
-			return ((void)vec_push(args, &(char *){ft_strdup(v)}));
-	}
+	v = try_simple_envvar(state, src);
+	if (v)
+		return ((void)vec_push(args, &(char *){ft_strdup(v)}));
 	scratch = clone_ast(src);
 	expand_word(state, &scratch, args, keep_as_one);
 }
