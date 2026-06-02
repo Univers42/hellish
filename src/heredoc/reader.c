@@ -55,6 +55,20 @@ bool	is_sep(t_hdoc *req, t_string *alloc_line)
 	return (false);
 }
 
+/* <<- : strip leading TABS (not spaces) from a heredoc line and its delimiter. */
+static void	strip_leading_tabs(t_string *l)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < l->len && ((char *)l->ctx)[i] == '\t')
+		i++;
+	if (i == 0)
+		return ;
+	ft_memmove(l->ctx, (char *)l->ctx + i, l->len - i + 1);
+	l->len -= i;
+}
+
 // should brake
 void	process_line(t_shell *state, t_hdoc *req)
 {
@@ -63,6 +77,8 @@ void	process_line(t_shell *state, t_hdoc *req)
 
 	if (get_line_heredoc(state, req, &alloc_line))
 		return ;
+	if (req->remove_tabs)
+		strip_leading_tabs(&alloc_line);
 	if (is_sep(req, &alloc_line))
 		return (free(alloc_line.ctx), (void)(req->finished = true));
 	line = (char *)alloc_line.ctx;
