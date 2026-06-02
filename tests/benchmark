@@ -50,17 +50,18 @@ BOLD="\e[1m"; GREEN="\e[0;32m"; RED="\e[0;31m"; YEL="\e[0;33m"; GREY="\e[38;5;24
 declare -A C_LOGSUM C_N C_WIN C_TIE C_LOSS C_HMS C_BMS
 ALL_RATIOS=()
 
-# best_ms <out_file> <shell-cmd...> : run ROUNDS times, echo the MIN elapsed ms
-# (min = the least OS-contended run, the standard low-noise estimator).
-best_ms() {
+# best_us <out_file> <shell-cmd...> : run ROUNDS times, echo the MIN elapsed
+# MICROSECONDS (min = least OS-contended run; µs avoids the ±1ms quantization
+# that makes 1-3ms scripts swing wildly between runs).
+best_us() {
 	local out="$1"; shift
-	local best=99999999 r s e ms
+	local best=999999999 r s e us
 	for ((r=0; r<ROUNDS; r++)); do
 		s=$(date +%s%N)
 		timeout "$TIMEOUT_S" "$@" >"$out" 2>/dev/null
 		e=$(date +%s%N)
-		ms=$(( (e - s) / 1000000 ))
-		(( ms < best )) && best=$ms
+		us=$(( (e - s) / 1000 ))
+		(( us < best )) && best=$us
 	done
 	echo "$best"
 }
@@ -71,11 +72,11 @@ race() {
 	local ho bo hms bms ratio verdict col
 	ho=$(mktemp); bo=$(mktemp)
 	if [[ "$kind" == file ]]; then
-		hms=$(best_ms "$ho" "$HELLISH" "$payload")
-		bms=$(best_ms "$bo" bash --posix "$payload")
+		hus=$(best_us "$ho" "$HELLISH" "$payload")
+		bus=$(best_us "$bo" bash --posix "$payload")
 	else
-		hms=$(best_ms "$ho" "$HELLISH" -c "$payload")
-		bms=$(best_ms "$bo" bash --posix -c "$payload")
+		hus=$(best_us "$ho" "$HELLISH" -c "$payload")
+		bus=$(best_us "$bo" bash --posix -c "$payload")
 	fi
 	# equality gate: only race workloads that produce identical output
 	if ! diff -q "$ho" "$bo" >/dev/null 2>&1; then
@@ -83,16 +84,18 @@ race() {
 		rm -f "$ho" "$bo"; return
 	fi
 	rm -f "$ho" "$bo"
-	(( hms < 1 )) && hms=1; (( bms < 1 )) && bms=1
-	ratio=$(awk -v b="$bms" -v h="$hms" 'BEGIN{printf "%.3f", b/h}')
+	(( hus < 1 )) && hus=1; (( bus < 1 )) && bus=1
+	ratio=$(awk -v b="$bus" -v h="$hus" 'BEGIN{printf "%.3f", b/h}')
 	if   awk -v x="$ratio" 'BEGIN{exit !(x>1.05)}'; then verdict="FASTER"; col="$GREEN"
 	elif awk -v x="$ratio" 'BEGIN{exit !(x<0.95)}'; then verdict="slower"; col="$RED"
 	else verdict="~tie";   col="$GREY"; fi
-	printf "  %-26s h=%5dms b=%5dms  ${col}%5sx %s${END}\n" "$name" "$hms" "$bms" "$ratio" "$verdict"
+	printf "  %-26s h=%7.2fms b=%7.2fms  ${col}%5sx %s${END}\n" \
+		"$name" "$(awk -v u=$hus 'BEGIN{printf "%.3f",u/1000}')" \
+		"$(awk -v u=$bus 'BEGIN{printf "%.3f",u/1000}')" "$ratio" "$verdict"
 	C_LOGSUM[$class]=$(awk -v s="${C_LOGSUM[$class]:-0}" -v x="$ratio" 'BEGIN{printf "%.6f", s+log(x)}')
 	C_N[$class]=$(( ${C_N[$class]:-0} + 1 ))
-	C_HMS[$class]=$(( ${C_HMS[$class]:-0} + hms ))
-	C_BMS[$class]=$(( ${C_BMS[$class]:-0} + bms ))
+	C_HMS[$class]=$(( ${C_HMS[$class]:-0} + hus ))
+	C_BMS[$class]=$(( ${C_BMS[$class]:-0} + bus ))
 	if [[ "$verdict" == FASTER ]]; then C_WIN[$class]=$(( ${C_WIN[$class]:-0}+1 ))
 	elif [[ "$verdict" == slower ]]; then C_LOSS[$class]=$(( ${C_LOSS[$class]:-0}+1 ))
 	else C_TIE[$class]=$(( ${C_TIE[$class]:-0}+1 )); fi
@@ -144,7 +147,7 @@ for c in "${classes[@]}"; do
 	hms=${C_HMS[$c]:-0}; bms=${C_BMS[$c]:-0}
 	wall=$(awk -v b="$bms" -v h="$hms" 'BEGIN{printf "%.3f", (h>0)? b/h : 0}')
 	printf "  %-7s  n=%-2d  geomean ${BOLD}%sx${END}  wall %dms vs %dms (${BOLD}%sx${END})  W/T/L=%d/%d/%d\n" \
-		"$c" "$n" "$gm" "$hms" "$bms" "$wall" "${C_WIN[$c]:-0}" "${C_TIE[$c]:-0}" "${C_LOSS[$c]:-0}"
+		"$c" "$n" "$gm" "$((hms/1000))" "$((bms/1000))" "$wall" "${C_WIN[$c]:-0}" "${C_TIE[$c]:-0}" "${C_LOSS[$c]:-0}"
 	g_log=$(awk -v a="$g_log" -v b="${C_LOGSUM[$c]:-0}" 'BEGIN{printf "%.6f", a+b}')
 	g_n=$(( g_n + n )); g_hms=$(( g_hms + hms )); g_bms=$(( g_bms + bms ))
 	g_w=$(( g_w + ${C_WIN[$c]:-0} )); g_t=$(( g_t + ${C_TIE[$c]:-0} )); g_l=$(( g_l + ${C_LOSS[$c]:-0} ))
@@ -157,6 +160,16 @@ WALL=$(awk -v b="$g_bms" -v h="$g_hms" 'BEGIN{printf "%.3f", b/h}')
 echo "  ──────────────────────────────────────────────"
 printf "  ${BOLD}OVERALL  n=%d  geomean %sx  median %sx  wall %sx  W/T/L=%d/%d/%d${END}\n" \
 	"$g_n" "$GEO" "$median" "$WALL" "$g_w" "$g_t" "$g_l"
+# coverage (% of tasks faster/parity/slower) + average magnitude within each bucket
+printf '%s\n' "${ALL_RATIOS[@]}" | awk -v n="$g_n" '
+	{ r=$1; if(r>1.02){fw++; sw+=log(r)} else if(r<0.98){fl++; sl+=log(r)} else fp++ }
+	END{
+		printf "  coverage : faster %d%% (%d/%d) | parity %d%% (%d) | slower %d%% (%d)\n",
+			int(fw*100/n+0.5), fw, n, int(fp*100/n+0.5), fp, int(fl*100/n+0.5), fl
+		wf=(fw>0)?exp(sw/fw):1; lf=(fl>0)?exp(sl/fl):1
+		printf "  magnitude: when faster avg %.2fx (+%d%%) | when slower avg %.2fx (-%d%%)\n",
+			wf, int((wf-1)*100+0.5), lf, int((1-lf)*100+0.5)
+	}'
 echo -e "  ${GREY}geomean = equal weight per task;  wall = total time to run everything (throughput)${END}"
 # Three-way verdict with a parity band (per-task geomean is noisy near 1.0).
 if awk -v x="$GEO" 'BEGIN{exit !(x>1.02)}'; then
