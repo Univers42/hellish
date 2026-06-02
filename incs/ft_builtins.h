@@ -35,6 +35,7 @@ int		builtin_unset(t_shell *state, t_vec argv);
 int		builtin_type(t_shell *state, t_vec argv);
 int		builtin_set(t_shell *state, t_vec argv);
 int		builtin_shift(t_shell *state, t_vec argv);
+int		set_positional_args(t_shell *state, char **args, size_t n);
 int		builtin_colon(t_shell *state, t_vec argv);
 int		builtin_break(t_shell *state, t_vec argv);
 int		builtin_continue(t_shell *state, t_vec argv);
