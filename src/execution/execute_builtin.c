@@ -21,14 +21,25 @@ static int	is_bare_exec(t_executable_cmd *cmd)
 		&& ft_strcmp(((char **)cmd->argv.ctx)[0], "exec") == 0);
 }
 
+/* A bare `exec` keeps its redirections, so we must NOT save/restore 0/1/2 for
+   it: the saved dups can land on the very fd a redirection targets (e.g. 6) and
+   closing them would tear the redirection back down. */
+static void	take_backup_fds(int *bak, int persist)
+{
+	if (persist)
+		return ;
+	bak[0] = dup(0);
+	bak[1] = dup(1);
+	bak[2] = dup(2);
+}
+
 static void	restore_backup_fds(int *bak, int persist)
 {
-	if (!persist)
-	{
-		dup2(bak[0], 0);
-		dup2(bak[1], 1);
-		dup2(bak[2], 2);
-	}
+	if (persist)
+		return ;
+	dup2(bak[0], 0);
+	dup2(bak[1], 1);
+	dup2(bak[2], 2);
 	close(bak[0]);
 	close(bak[1]);
 	close(bak[2]);
@@ -44,9 +55,7 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	t_vec	saves;
 
 	persist = is_bare_exec(cmd);
-	bak[0] = dup(0);
-	bak[1] = dup(1);
-	bak[2] = dup(2);
+	take_backup_fds(bak, persist);
 	set_up_redirection(state, exe);
 	exe->infd = -1;
 	exe->outfd = -1;
