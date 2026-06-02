@@ -73,6 +73,33 @@ static bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 	return (free(results.ctx), free_ast(node), true);
 }
 
+/* A single literal TT_WORD subtoken with no metacharacter, quote or blank
+   expands to itself as exactly one field — no tilde/var/cmdsub/split/glob and
+   no clone needed. Lets hot loop words ([ -lt 4000 ]) skip the whole pipeline. */
+static bool	word_is_plain_literal(t_ast_node *node)
+{
+	t_token	*t;
+	int		i;
+	char	c;
+
+	if (node->children.len != 1
+		|| ((t_ast_node *)node->children.ctx)[0].node_type != AST_TOKEN)
+		return (false);
+	t = &((t_ast_node *)node->children.ctx)[0].token;
+	if (t->tt != TT_WORD)
+		return (false);
+	i = 0;
+	while (i < t->len)
+	{
+		c = t->start[i++];
+		if (c == '$' || c == '`' || c == '*' || c == '?' || c == '['
+			|| c == '~' || c == '{' || c == '\\' || c == '\'' || c == '"'
+			|| c == ' ' || c == '\t' || c == '\n')
+			return (false);
+	}
+	return (true);
+}
+
 /* Non-destructive variant: expand the words of `src` into `args` without
    mutating or freeing `src`. The expansion pipeline is destructive, so we
    run it on a private shallow-cloned scratch we own and consume here. The
@@ -81,7 +108,14 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 					t_vec *args, bool keep_as_one)
 {
 	t_ast_node	scratch;
+	t_token		*t;
 
+	if (!keep_as_one && word_is_plain_literal(src))
+	{
+		t = &((t_ast_node *)src->children.ctx)[0].token;
+		vec_push(args, &(char *){ft_strndup(t->start, t->len)});
+		return ;
+	}
 	scratch = clone_ast(src);
 	expand_word(state, &scratch, args, keep_as_one);
 }
