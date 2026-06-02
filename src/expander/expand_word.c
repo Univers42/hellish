@@ -11,7 +11,60 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "brace_expand.h"
+#include "decomposer.h"
 #include "sys.h"
+
+/* A word participates in brace expansion only if it is entirely unquoted
+   (all TT_WORD subtokens); quotes/vars inhibit it, matching POSIX shells. */
+static bool	word_all_unquoted(t_ast_node *node)
+{
+	size_t		i;
+	t_ast_node	*c;
+
+	if (!node->children.ctx || node->children.len == 0)
+		return (false);
+	i = 0;
+	while (i < node->children.len)
+	{
+		c = &((t_ast_node *)node->children.ctx)[i];
+		if (c->node_type != AST_TOKEN || c->token.tt != TT_WORD)
+			return (false);
+		i++;
+	}
+	return (true);
+}
+
+/* Brace-expand `node` into multiple words, re-lexing each result and running
+   it through the full expansion pipeline. Returns true if it handled `node`. */
+static bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
+{
+	t_string	flat;
+	char		*fs;
+	t_vec		results;
+	t_ast_node	w;
+	size_t		i;
+
+	if (!word_all_unquoted(node))
+		return (false);
+	flat = word_to_string(*node);
+	fs = ft_strndup((char *)flat.ctx, flat.len);
+	free(flat.ctx);
+	if (brace_find_expandable(fs, &(int){0}) < 0)
+		return (free(fs), false);
+	results = brace_expand_str(fs);
+	free(fs);
+	i = 0;
+	while (i < results.len)
+	{
+		fs = ((char **)results.ctx)[i++];
+		w = reparse_word((t_token){.start = fs, .len = (int)ft_strlen(fs),
+				.tt = TT_WORD});
+		expand_word(state, &w, args, false);
+		free(fs);
+	}
+	return (free(results.ctx), free_ast(node), true);
+}
 
 void	expand_word(t_shell *state, t_ast_node *node,
 					t_vec *args, bool keep_as_one)
@@ -19,8 +72,15 @@ void	expand_word(t_shell *state, t_ast_node *node,
 	t_vec_nd	words;
 	size_t		i;
 
+	if (!keep_as_one && try_brace_expand(state, node, args))
+		return ;
+	if (!node->children.ctx || node->children.len == 0)
+	{
+		vec_push(args, &(char *){ft_strdup("")});
+		return (free_ast(node));
+	}
 	(expand_tilde_word(state, node), expand_cmd_substitutions(state, node));
-	(expand_env_vars(state, node), vec_init(&words));
+	(expand_env_vars(state, node, !keep_as_one), vec_init(&words));
 	words.elem_size = sizeof(t_ast_node);
 	if (!keep_as_one)
 		words = split_words(state, node);
