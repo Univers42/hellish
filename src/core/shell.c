@@ -22,10 +22,62 @@
 void		on(t_shell *state, char **argv, char **envp);
 void		run_pending_traps(t_shell *state);
 void		run_exit_trap(t_shell *state);
+int			exec_string(t_shell *state, char *str);
+char		*env_expand(t_shell *state, char *key);
 static int	setup_output_buffer(t_shell *state, int *bak);
 static void	flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
+
+/* Slurp a whole file into a freshly-allocated NUL-terminated string, or NULL. */
+static char	*read_file(const char *path)
+{
+	char		buf[4096];
+	t_string	content;
+	int			fd;
+	ssize_t		n;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return (NULL);
+	vec_init(&content);
+	content.elem_size = 1;
+	n = read(fd, buf, sizeof(buf));
+	while (n > 0)
+	{
+		vec_push_nstr(&content, buf, n);
+		n = read(fd, buf, sizeof(buf));
+	}
+	close(fd);
+	vec_push(&content, &(char){0});
+	return ((char *)content.ctx);
+}
+
+/* On interactive startup, run the user's ~/.hellishrc (aliases, exports,
+   functions, set options, prompt tweaks) in the current shell -- our own
+   rc-file convention, the .bashrc analogue. Silently skipped if absent or
+   non-interactive (-c / scripts / piped input do not source it). */
+static void	source_hellishrc(t_shell *state)
+{
+	char	*home;
+	char	*path;
+	char	*content;
+
+	if (state->metinp != INP_RL)
+		return ;
+	home = env_expand(state, "HOME");
+	if (!home || !*home)
+		return ;
+	path = ft_strjoin(home, "/.hellishrc");
+	if (!path)
+		return ;
+	content = read_file(path);
+	free(path);
+	if (!content)
+		return ;
+	exec_string(state, content);
+	free(content);
+}
 
 /**
  * no return needed as we forward with the exit status
@@ -40,6 +92,7 @@ int	main(int argc, char **argv, char **envp)
 		argv[0]++;
 	(void)argc;
 	on(&state, argv, envp);
+	source_hellishrc(&state);
 	repl_shell(&state);
 	off(&state);
 }
