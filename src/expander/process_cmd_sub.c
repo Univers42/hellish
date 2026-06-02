@@ -91,3 +91,20 @@ bool	process_cmd_sub(t_shell *state, t_expand_ctx *ctx)
 		return (false);
 	return (do_cmd_sub(state, ctx, j));
 }
+
+/* Public entry: expand a $(...) or $((...)) at the start of `s` into `outbuf`,
+   returning the number of input chars consumed (0 if not a substitution).
+   Reuses the same paren-matching logic the word expander uses. */
+int	expand_dollar_sub(t_shell *state, const char *s, int slen, t_string *outbuf)
+{
+	int				consumed;
+	t_expand_ctx	ctx;
+
+	consumed = 0;
+	ctx = init_expand(s, slen, outbuf, &consumed);
+	if (process_arith_sub(state, &ctx))
+		return (consumed);
+	if (process_cmd_sub(state, &ctx))
+		return (consumed);
+	return (0);
+}
