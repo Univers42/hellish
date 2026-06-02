@@ -12,6 +12,35 @@
 
 #include "heredoc_private.h"
 #include "sys.h"
+#include "sh_input.h"
+
+/* Same-line heredoc in -c / script mode: when gather runs, the body still sits
+   ahead in state->rl.buff (state->input held only the first line, so
+   split_heredocs could not pre-extract and hd_src is NULL). Point hd_src at the
+   un-read remainder of rl.buff, capture the RAW body onto the node (so
+   materialize_heredoc expands it at execution time, after any preceding
+   same-line assignment), then advance rl.cursor past what we consumed so the
+   REPL does not re-read the body lines as commands. */
+bool	capture_heredoc_from_buff(t_shell *state, t_ast_node *node)
+{
+	char	*saved_src;
+	size_t	saved_pos;
+	bool	ok;
+
+	if (state->metinp != INP_ARG && state->metinp != INP_FILE)
+		return (false);
+	if (!state->rl.buff.ctx || state->rl.cursor >= state->rl.buff.len)
+		return (false);
+	saved_src = state->hd_src;
+	saved_pos = state->hd_pos;
+	state->hd_src = (char *)state->rl.buff.ctx + state->rl.cursor;
+	state->hd_pos = 0;
+	ok = capture_heredoc_to_node(state, node);
+	state->rl.cursor += state->hd_pos;
+	state->hd_src = saved_src;
+	state->hd_pos = saved_pos;
+	return (ok);
+}
 
 static t_hdoc	build_hdoc_req(t_ast_node *node, bool is_pipe, t_string *sep)
 {
