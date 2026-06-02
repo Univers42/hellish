@@ -134,6 +134,10 @@ t_ast_node	parse_until_command(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_for_command(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_case_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_brace_group(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
 bool		is_function_def(t_deque_tok *tokens);
 t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
