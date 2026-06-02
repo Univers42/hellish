@@ -61,6 +61,7 @@ void	free_all_state(t_shell *state)
 	state->input = (t_string){};
 	free(state->last_cmd_st);
 	free(state->pid);
+	free(state->last_bg_pid);
 	free(state->ctx);
 	free(state->dft_ctx);
 	state->ctx = 0;
