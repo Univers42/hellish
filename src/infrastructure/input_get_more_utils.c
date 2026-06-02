@@ -21,7 +21,7 @@ void	reset_status_and_prompt(t_shell *state, char **prompt)
 		free(*prompt);
 	if (state->metinp == INP_RL)
 	{
-		p = prompt_normal();
+		p = prompt_normal(state);
 		*prompt = ft_strdup(p.ctx);
 		free(p.ctx);
 	}

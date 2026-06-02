@@ -57,7 +57,7 @@ t_string	prompt_more_input(t_parser *parser)
 	return (vec_push_str(&ret, " "), ret);
 }
 
-t_string	prompt_normal(void)
+t_string	prompt_normal(t_shell *state)
 {
 	t_string	ret;
 	t_prompt	p;
@@ -65,10 +65,10 @@ t_string	prompt_normal(void)
 	ensure_locale();
 	vec_init(&ret);
 	ret.elem_size = 1;
+	p.exit_status = state->last_cmd_st_exe.status;
 	prompt_user_and_cwd(&ret, &p);
 	prompt_branch(&ret, &p);
 	prompt_venv(&ret, &p);
-	prompt_branch_marker(&ret, &p);
 	prompt_time_and_pad(&ret, &p);
 	free(p.short_cwd);
 	if (p.branch)

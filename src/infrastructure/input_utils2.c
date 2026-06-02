@@ -24,7 +24,7 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	parser->parse_stack.elem_size = sizeof(int);
 	if (state->metinp == INP_RL)
 	{
-		p = prompt_normal();
+		p = prompt_normal(state);
 		*prompt = ft_strdup(p.ctx);
 		free(p.ctx);
 	}
