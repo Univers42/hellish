@@ -1,0 +1,12 @@
+f(){ echo hi; }; echo $(f)
+greet(){ echo "hello $1"; }; echo $(greet world)
+f(){ echo $1 $2; }; echo $(f a b)
+echo $(echo $(echo deep))
+echo `echo backtick`
+x=$(false); echo $?
+x=$(true); echo $?
+n(){ return 5; }; x=$(n); echo $?
+echo "$(echo a b c)"
+for i in $(seq 1 3); do echo $i; done
+v=hi; echo $(echo $v)
+sq(){ echo $(($1 * $1)); }; echo $(sq 7)
