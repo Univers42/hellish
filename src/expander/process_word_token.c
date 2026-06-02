@@ -62,6 +62,56 @@ static bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
 	return (false);
 }
 
+/* Inside `..`, backslash keeps its literal meaning except before `, $ or \. */
+static char	*unescape_backtick(const char *s, int len)
+{
+	char	*out;
+	int		i;
+	int		j;
+
+	out = malloc(len + 1);
+	if (!out)
+		return (NULL);
+	i = 0;
+	j = 0;
+	while (i < len)
+	{
+		if (s[i] == '\\' && i + 1 < len
+			&& (s[i + 1] == '`' || s[i + 1] == '$' || s[i + 1] == '\\'))
+			i++;
+		out[j++] = s[i++];
+	}
+	out[j] = '\0';
+	return (out);
+}
+
+static bool	try_backtick_ctx(t_word_token_ctx *ctx)
+{
+	const char	*s = ctx->tok->start + ctx->pos;
+	char		*inner;
+	char		*out;
+	int			j;
+
+	if (s[0] != '`')
+		return (false);
+	j = 1;
+	while (ctx->pos + j < ctx->total_len && s[j] != '`')
+		j += 1 + (s[j] == '\\' && s[j + 1] != '\0');
+	if (ctx->pos + j >= ctx->total_len)
+		return (false);
+	if (ctx->pos > 0 && ctx->outbuf->len == 0)
+		vec_push_nstr(ctx->outbuf, ctx->tok->start, (size_t)ctx->pos);
+	inner = unescape_backtick(s + 1, j - 1);
+	out = capture_subshell_output(ctx->state, inner);
+	free(inner);
+	if (out && *out)
+		vec_push_nstr(ctx->outbuf, out, ft_strlen(out));
+	free(out);
+	ctx->pos += j + 1;
+	ctx->changed = true;
+	return (true);
+}
+
 static void	push_single_char_ctx(t_word_token_ctx *ctx)
 {
 	const char	*s = ctx->tok->start + ctx->pos;
@@ -114,6 +164,8 @@ void	process_word_token(t_shell *state, t_token *tok)
 		if (try_arith_sub_ctx(&ctx))
 			continue ;
 		if (try_cmd_sub_ctx(&ctx))
+			continue ;
+		if (try_backtick_ctx(&ctx))
 			continue ;
 		push_single_char_ctx(&ctx);
 	}
