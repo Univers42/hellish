@@ -56,12 +56,13 @@ void		process_dollar_in_dquote_rp(t_reparser *rp, bool *pushed_any);
 void		process_escape_seq_rp(t_reparser *rp, bool *pushed_any);
 void		reparse_envvar_paren(t_ast_node *ret, int *i,
 				t_token t,
-				int prev_start);
+				int prev_start, t_tt tt);
+void		reparse_backtick(t_ast_node *ret, int *i, t_token t);
 bool		is_double_open_paren(t_token t, int idx);
 bool		is_double_close_paren(t_token t, int idx);
 bool		is_open_paren(t_token t, int idx);
 bool		is_close_paren(t_token t, int idx);
-bool		try_handle_paren_rp(t_reparser *rp, int prev_start);
+bool		try_handle_paren_rp(t_reparser *rp, int prev_start, t_tt tt);
 bool		try_handle_special_rp(t_reparser *rp, t_tt tt);
 void		consume_ident_rp(t_reparser *rp);
 t_tt		select_literal_tt(t_tt ctx_tt, t_token *t, int prev_start);
