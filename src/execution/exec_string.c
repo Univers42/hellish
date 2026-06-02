@@ -41,7 +41,7 @@ static bool	must_stop(t_shell *state)
 /* Lex `str` once, then parse + execute it one statement at a time (the REPL
    normally feeds the parser one line at a time). Used by eval, command and the
    dot/source builtin. `str` must stay valid for the whole call. */
-int	exec_string(t_shell *state, char *str)
+static int	exec_string_inner(t_shell *state, char *str)
 {
 	t_deque_tok	tt;
 	t_parser	parser;
@@ -73,4 +73,34 @@ int	exec_string(t_shell *state, char *str)
 	}
 	state->func_return = 0;
 	return (free(tt.deqtok.buff), status);
+}
+
+/* Extract heredoc bodies up front (so they aren't parsed as commands) and feed
+   them to the heredoc reader via state->hd_src. hd_src is saved/restored so
+   nested command substitutions each get their own body stream. */
+int	exec_string(t_shell *state, char *str)
+{
+	char	*stripped;
+	char	*bodies;
+	char	*prev_src;
+	size_t	prev_pos;
+	int		status;
+
+	prev_src = state->hd_src;
+	prev_pos = state->hd_pos;
+	stripped = NULL;
+	bodies = NULL;
+	if (split_heredocs(str, &stripped, &bodies))
+	{
+		state->hd_src = bodies;
+		state->hd_pos = 0;
+		status = exec_string_inner(state, stripped);
+		free(stripped);
+	}
+	else
+		status = exec_string_inner(state, str);
+	free(bodies);
+	state->hd_src = prev_src;
+	state->hd_pos = prev_pos;
+	return (status);
 }

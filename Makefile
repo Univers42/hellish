@@ -217,6 +217,7 @@ SRCS :=		src/arith/eval.c\
 			src/heredoc/helpers1.c\
 			src/heredoc/collect.c\
 			src/heredoc/helpers2.c\
+			src/heredoc/extract.c\
 			src/infrastructure/ast.c\
 			src/infrastructure/ast_utils.c\
 			src/infrastructure/ast_utils2.c\
