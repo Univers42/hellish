@@ -12,12 +12,27 @@
 
 #include "expander_private.h"
 
-void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one)
+/* POSIX: an assignment value (NAME=value, export/local/readonly NAME=value)
+   undergoes tilde/parameter/command/arithmetic expansion and quote removal,
+   but NOT field-splitting (already gated by keep_as_one) and NOT pathname
+   expansion (globbing). When no_glob is set we stringify the word verbatim
+   instead of scanning the filesystem. */
+void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
+			bool no_glob)
 {
 	t_vec		glob_words;
 	t_string	temp;
 	size_t		j;
 
+	if (no_glob)
+	{
+		temp = word_to_string(*node);
+		if (!temp.ctx)
+			vec_push(args, &(char *){ft_strdup("")});
+		else
+			vec_push(args, &temp.ctx);
+		return (free_ast(node));
+	}
 	glob_words = expand_word_glob(*node);
 	if (get_g_sig()->should_unwind)
 		return ;
