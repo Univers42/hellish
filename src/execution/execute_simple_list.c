@@ -14,11 +14,15 @@
 
 void	run_pending_traps(t_shell *state);
 
-/* Reap any zombie background children (non-blocking) */
-void	reap_background_children(void)
+/* Reap any zombie background children (non-blocking). Skip the waitpid syscall
+   entirely when no background job has ever been launched (the common case for
+   scripts and tight loops) — bg_job_count stays 0 until the first `&`. */
+void	reap_background_children(t_shell *state)
 {
 	int	status;
 
+	if (state->bg_job_count == 0)
+		return ;
 	while (waitpid(-1, &status, WNOHANG) > 0)
 		;
 }
@@ -76,7 +80,7 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 	size_t				sep_idx;
 	bool				is_background;
 
-	reap_background_children();
+	reap_background_children(state);
 	status = res_status(0);
 	i = 0;
 	while (i < exe->node->children.len)
@@ -92,6 +96,6 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 			|| state->func_return || get_g_sig()->should_unwind)
 			break ;
 	}
-	reap_background_children();
+	reap_background_children(state);
 	return (status);
 }
