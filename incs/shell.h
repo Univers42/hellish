@@ -82,6 +82,15 @@ typedef struct s_shell
 	t_execution_state	last_cmd_st_exe;
 	t_history			hist;
 	bool				should_exit;
+	int					loop_break;
+	int					loop_continue;
+	int					loop_depth;
+	int					func_return;
+	int					getopts_pos;
+	bool				input_expanded;
+	int					last_cmdsub_status;
+	char				*traps[32];
+	t_vec				readonly_vars;
 	t_vec_redir			redirects;
 	int					heredoc_idx;
 	t_rl				rl;
