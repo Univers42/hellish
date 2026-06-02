@@ -65,6 +65,7 @@ void	init_arg(t_shell *state, char **argv)
 	buff_readline_update(&state->rl);
 	state->rl.should_update_ctx = true;
 	state->metinp = INP_ARG;
+	state->rl.no_compact = true;
 	if (argv[3])
 		set_argv_params(state, argv, 4, argv[3]);
 }
@@ -81,6 +82,7 @@ void	init_file(t_shell *state, char **argv)
 	}
 	read_file_to_buffer(fd, state);
 	update_ctx_from_file(state, argv);
+	state->rl.no_compact = true;
 	set_argv_params(state, argv, 2, argv[1]);
 }
 

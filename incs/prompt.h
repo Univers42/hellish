@@ -30,6 +30,7 @@ typedef struct s_rl
 	t_string	buff;
 	size_t		cursor;
 	int			edit_mode;
+	bool		no_compact;
 }	t_rl;
 
 // Forward declaration to avoid circular dependency
