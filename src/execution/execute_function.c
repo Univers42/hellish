@@ -107,5 +107,6 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 			&body_copy, true);
 	status = execute_tree_node(state, &body_exe);
 	free_ast(&body_copy);
+	state->func_return = 0;
 	return (status);
 }
