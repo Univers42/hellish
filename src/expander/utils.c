@@ -61,7 +61,9 @@ t_token_old	get_old_token(t_ast_node word)
 	if (word.node_type != AST_WORD || word.children.len == 0
 		|| !word.children.ctx)
 		return (init_token_old());
-	ret = ((t_ast_node *)word.children.ctx)[0].token.full_word;
+	if (!((t_ast_node *)word.children.ctx)[0].token.full_word)
+		return (init_token_old());
+	ret = *((t_ast_node *)word.children.ctx)[0].token.full_word;
 	return (ret);
 }
 
