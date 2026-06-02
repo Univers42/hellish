@@ -30,8 +30,7 @@ void	xtrace_print(t_vec *argv)
 	ft_eprintf("\n");
 }
 
-/* set -u : a reference to an unset parameter is an error; a non-interactive
-   shell exits (status 1), matching bash --posix. */
+/* set -u : a reference to an unset parameter is an error. */
 void	nounset_abort(t_shell *state, const char *name, int len)
 {
 	ft_eprintf("%s: %.*s: parameter not set\n", state->ctx, len, name);
@@ -40,9 +39,21 @@ void	nounset_abort(t_shell *state, const char *name, int len)
 	state->last_cmd_st_exe = (t_execution_state){.status = 1};
 }
 
-/* set -o name / set +o name. We honour errexit/nounset/xtrace and the editing
-   modes; other standard option names are accepted as no-ops so scripts that
-   toggle them (-o pipefail, noglob, ...) don't error out. */
+static void	set_opt_edit_mode(t_shell *state, const char *name, bool on)
+{
+	if (!ft_strcmp(name, "vi") && on)
+	{
+		state->edit_mode = 0;
+		state->rl.edit_mode = 0;
+	}
+	else if (!ft_strcmp(name, "emacs") && on)
+	{
+		state->edit_mode = 1;
+		state->rl.edit_mode = 1;
+	}
+}
+
+/* set -o name / set +o name. */
 int	set_long_option(t_shell *state, char sign, const char *name)
 {
 	bool	on;
@@ -64,16 +75,13 @@ int	set_long_option(t_shell *state, char sign, const char *name)
 		state->opt_noexec = on;
 	else if (!ft_strcmp(name, "verbose"))
 		state->opt_verbose = on;
-	else if (!ft_strcmp(name, "vi") && on)
-		(state->edit_mode = 0), (state->rl.edit_mode = 0);
-	else if (!ft_strcmp(name, "emacs") && on)
-		(state->edit_mode = 1), (state->rl.edit_mode = 1);
+	else
+		set_opt_edit_mode(state, name, on);
 	return (0);
 }
 
-/* Apply one flag word like "-e", "+e", "-eux". Unknown letters are accepted as
-   no-ops (so -f/-C/-v/-n/-m/... don't break scripts). */
-static void	apply_flag_word(t_shell *state, const char *w)
+/* Apply one flag word like "-e", "+e", "-eux". */
+void	apply_flag_word(t_shell *state, const char *w)
 {
 	char	sign;
 	int		j;
@@ -100,54 +108,4 @@ static void	apply_flag_word(t_shell *state, const char *w)
 			state->opt_verbose = (sign == '-');
 		j++;
 	}
-}
-
-/* Build the value of $- : one letter per currently-set option flag (POSIX). */
-char	*build_flagstr(t_shell *state)
-{
-	int	k;
-
-	k = 0;
-	if (state->opt_allexport)
-		state->flagbuf[k++] = 'a';
-	if (state->opt_errexit)
-		state->flagbuf[k++] = 'e';
-	if (state->opt_noglob)
-		state->flagbuf[k++] = 'f';
-	if (state->metinp == INP_RL)
-		state->flagbuf[k++] = 'i';
-	if (state->opt_noexec)
-		state->flagbuf[k++] = 'n';
-	if (state->opt_nounset)
-		state->flagbuf[k++] = 'u';
-	if (state->opt_verbose)
-		state->flagbuf[k++] = 'v';
-	if (state->opt_xtrace)
-		state->flagbuf[k++] = 'x';
-	if (state->opt_noclobber)
-		state->flagbuf[k++] = 'C';
-	state->flagbuf[k] = '\0';
-	return (state->flagbuf);
-}
-
-/* set -e/-u/-x [...] : consume leading flag words, then (after an optional --)
-   any remaining args replace the positional parameters, like bash. */
-int	apply_set_flags(t_shell *state, t_vec argv)
-{
-	char	**av;
-	size_t	i;
-
-	av = (char **)argv.ctx;
-	i = 1;
-	while (i < argv.len && (av[i][0] == '-' || av[i][0] == '+')
-		&& av[i][1] && ft_strcmp(av[i], "--") != 0)
-	{
-		apply_flag_word(state, av[i]);
-		i++;
-	}
-	if (i < argv.len && ft_strcmp(av[i], "--") == 0)
-		i++;
-	if (i < argv.len)
-		set_positional_args(state, av + i, argv.len - i);
-	return (0);
 }

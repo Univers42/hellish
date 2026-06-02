@@ -21,7 +21,10 @@ int	builtin_return(t_shell *state, t_vec argv)
 	int		n;
 
 	cur = env_expand(state, "?");
-	n = ((cur) ? ft_atoi(cur) : 0);
+	if (cur)
+		n = ft_atoi(cur);
+	else
+		n = 0;
 	if (argv.len >= 2)
 		n = ft_atoi(((char **)argv.ctx)[1]);
 	state->func_return = 1;
@@ -51,9 +54,7 @@ static char	*join_from(t_vec argv, size_t from)
 	return (acc);
 }
 
-/* command -v name: print how `name` would be resolved (builtin name or path). */
-/* Silent PATH search for command -v (find_cmd_path can't be used here: it has
-   executor side effects -- it prints errors and free_all_state()s the shell). */
+/* Silent PATH search for command -v. */
 static int	command_v(t_shell *state, char *name)
 {
 	char	*path;
@@ -82,25 +83,14 @@ static int	command_v(t_shell *state, char *name)
 	return (1);
 }
 
-/* command [-p] [-v|-V] cmd [args]: run cmd (args already split) bypassing
-   functions. -p (use a default PATH) is accepted and skipped. */
-int	builtin_command(t_shell *state, t_vec argv)
+static int	command_run(t_shell *state, t_vec argv, size_t start)
 {
 	char	**av;
 	t_vec	sub;
 	size_t	i;
-	size_t	start;
 	char	*cur;
 
 	av = (char **)argv.ctx;
-	start = 1;
-	while (start < argv.len && !ft_strcmp(av[start], "-p"))
-		start++;
-	if (start + 1 < argv.len && (!ft_strcmp(av[start], "-v")
-			|| !ft_strcmp(av[start], "-V")))
-		return (command_v(state, av[start + 1]));
-	if (start >= argv.len)
-		return (0);
 	vec_init(&sub);
 	sub.elem_size = sizeof(char *);
 	i = start;
@@ -112,4 +102,22 @@ int	builtin_command(t_shell *state, t_vec argv)
 	cur = join_from(argv, start);
 	i = exec_string(state, cur);
 	return (free(cur), i);
+}
+
+/* command [-p] [-v|-V] cmd [args]: run cmd bypassing functions. */
+int	builtin_command(t_shell *state, t_vec argv)
+{
+	char	**av;
+	size_t	start;
+
+	av = (char **)argv.ctx;
+	start = 1;
+	while (start < argv.len && !ft_strcmp(av[start], "-p"))
+		start++;
+	if (start + 1 < argv.len && (!ft_strcmp(av[start], "-v")
+			|| !ft_strcmp(av[start], "-V")))
+		return (command_v(state, av[start + 1]));
+	if (start >= argv.len)
+		return (0);
+	return (command_run(state, argv, start));
 }

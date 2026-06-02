@@ -68,11 +68,15 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 {
 	t_token_old	full;
 	t_ast_node	scratch;
+	int			flags;
 
 	full = capture_original_full_token(exp->curr);
 	scratch = clone_ast(exp->curr);
 	assignment_word_to_word(&scratch);
-	expand_word_glob_ctl(state, &scratch, &ret->argv, exp->export, true);
+	flags = EW_NO_GLOB;
+	if (exp->export)
+		flags |= EW_KEEP_AS_ONE;
+	expand_word_glob_ctl(state, &scratch, &ret->argv, flags);
 	if (get_g_sig()->should_unwind)
 		return (1);
 	replace_argv_entries_with_full_token(&ret->argv, full);

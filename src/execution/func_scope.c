@@ -38,11 +38,14 @@ void	scope_save(t_shell *state, const char *key)
 	vec_push(&state->local_saves, &s);
 }
 
-static void	restore_one(t_shell *state, t_scope_save *s)
+void	restore_one(t_shell *state, t_scope_save *s)
 {
 	if (s->existed)
-		env_set(&state->env, env_create(s->key,
-				s->value ? s->value : ft_strdup(""), false));
+	{
+		if (!s->value)
+			s->value = ft_strdup("");
+		env_set(&state->env, env_create(s->key, s->value, false));
+	}
 	else
 	{
 		try_unset(state, s->key);
@@ -69,72 +72,37 @@ void	scope_leave(t_shell *state)
 	state->func_depth--;
 }
 
-/* Apply NAME=val prefix assignments (cmd->pre_assigns) temporarily before a
-   regular builtin or function runs, saving prior values so restore_temp_assigns
-   can revert them (POSIX: such assignments don't persist past a regular builtin
-   or function). Returns the save list (caller passes it to restore). */
+static void	save_and_apply_one(t_shell *state, t_vec *saves, t_env *pa)
+{
+	t_scope_save	s;
+	t_env			*e;
+
+	e = env_get(&state->env, pa->key);
+	s.depth = 0;
+	s.key = ft_strdup(pa->key);
+	s.existed = (e != NULL);
+	s.value = NULL;
+	if (e && e->value)
+		s.value = ft_strdup(e->value);
+	vec_push(saves, &s);
+	if (pa->value)
+		env_set(&state->env,
+			env_create(ft_strdup(pa->key), ft_strdup(pa->value), false));
+	else
+		env_set(&state->env,
+			env_create(ft_strdup(pa->key), ft_strdup(""), false));
+}
+
+/* Apply NAME=val assignments temporarily; save prior values for restore. */
 t_vec	apply_temp_assigns(t_shell *state, t_vec *pre)
 {
-	t_vec			saves;
-	t_scope_save	s;
-	t_env			*pa;
-	t_env			*e;
-	size_t			i;
+	t_vec	saves;
+	size_t	i;
 
 	vec_init(&saves);
 	saves.elem_size = sizeof(t_scope_save);
 	i = 0;
 	while (i < pre->len)
-	{
-		pa = (t_env *)vec_idx(pre, i++);
-		e = env_get(&state->env, pa->key);
-		s.depth = 0;
-		s.key = ft_strdup(pa->key);
-		s.existed = (e != NULL);
-		s.value = NULL;
-		if (e && e->value)
-			s.value = ft_strdup(e->value);
-		vec_push(&saves, &s);
-		env_set(&state->env, env_create(ft_strdup(pa->key),
-				ft_strdup(pa->value ? pa->value : ""), false));
-	}
+		save_and_apply_one(state, &saves, (t_env *)vec_idx(pre, i++));
 	return (saves);
-}
-
-void	restore_temp_assigns(t_shell *state, t_vec *saves)
-{
-	size_t	i;
-
-	i = saves->len;
-	while (i > 0)
-		restore_one(state, (t_scope_save *)vec_idx(saves, --i));
-	free(saves->ctx);
-}
-
-/* local name[=value] ... : make each name local to the current function. */
-int	builtin_local(t_shell *state, t_vec argv)
-{
-	char	**av;
-	size_t	i;
-	char	*eq;
-	char	*key;
-
-	av = (char **)argv.ctx;
-	if (state->func_depth <= 0)
-		return (ft_eprintf("%s: local: can only be used in a function\n",
-				state->ctx), 1);
-	i = 1;
-	while (i < argv.len)
-	{
-		eq = ft_strchr(av[i], '=');
-		if (eq)
-			key = ft_strndup(av[i], eq - av[i]);
-		else
-			key = ft_strdup(av[i]);
-		scope_save(state, key);
-		env_set(&state->env, env_create(key,
-				ft_strdup(eq ? eq + 1 : ""), false));
-		i++;
-	}
-	return (0);
 }

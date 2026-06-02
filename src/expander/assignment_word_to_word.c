@@ -14,8 +14,8 @@
 
 /* Turn the key token "NAME" into "NAME=". The old code did token.len++, which
    only works when the token points into the source buffer (the '=' is the next
-   byte). In a cloned function body the key is a strndup'd "NAME\0", so build an
-   explicit "NAME=" instead — fixes export/readonly/local NAME=val in functions. */
+   byte). In a cloned body the key is a strndup'd "NAME\0", so build an
+   explicit "NAME=" instead. */
 static void	append_eq_to_token(t_token *t)
 {
 	char	*ke;

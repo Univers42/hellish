@@ -54,7 +54,7 @@ int	builtin_eval(t_shell *state, t_vec argv)
 	return (status);
 }
 
-/* . file (a.k.a. source): read `file` and execute its contents in this shell. */
+/* . file (a.k.a. source): read `file` and execute in this shell. */
 int	builtin_source(t_shell *state, t_vec argv)
 {
 	char		**av;

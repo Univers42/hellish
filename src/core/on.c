@@ -45,6 +45,19 @@ static void	mode_input(char **argv, t_shell *state)
 		init_history(state);
 }
 
+static void	init_tables(t_shell *state)
+{
+	vec_init(&state->redirects);
+	state->redirects.elem_size = sizeof(t_redir);
+	vec_init(&state->proc_subs);
+	state->proc_subs.elem_size = sizeof(t_procsub_entry);
+	vec_init(&state->functions);
+	state->functions.elem_size = sizeof(t_shell_func);
+	job_table_init(&state->job_table);
+	alias_table_init(&state->aliases);
+	cmd_hash_init(&state->cmd_cache);
+}
+
 void	on(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();
@@ -64,15 +77,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	init_cwd(state);
 	state->env = env_to_vec_env(state, envp);
 	ensure_essential_env_vars(state);
-	vec_init(&state->redirects);
-	state->redirects.elem_size = sizeof(t_redir);
-	vec_init(&state->proc_subs);
-	state->proc_subs.elem_size = sizeof(t_procsub_entry);
-	vec_init(&state->functions);
-	state->functions.elem_size = sizeof(t_shell_func);
-	job_table_init(&state->job_table);
-	alias_table_init(&state->aliases);
-	cmd_hash_init(&state->cmd_cache);
+	init_tables(state);
 	state->edit_mode = 1;
 	mode_input(argv, state);
 	prng_initialize_state(&state->prng, 19650218UL);

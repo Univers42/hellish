@@ -76,7 +76,7 @@ bool	is_sep(t_hdoc *req, t_string *alloc_line)
 	return (false);
 }
 
-/* <<- : strip leading TABS (not spaces) from a heredoc line and its delimiter. */
+/* <<- : strip leading TABS (not spaces) from a heredoc line. */
 static void	strip_leading_tabs(t_string *l)
 {
 	size_t	i;
@@ -113,35 +113,4 @@ void	process_line(t_shell *state, t_hdoc *req)
 	else if (line)
 		vec_push_str(&req->full_file, line);
 	free(alloc_line.ctx);
-}
-
-void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
-{
-	while (!req->finished)
-	{
-		process_line(state, req);
-	}
-	if (req->full_file.len)
-	{
-		if (!vec_ensure_space_n(&req->full_file, 1))
-			return ;
-		((char *)req->full_file.ctx)[req->full_file.len] = '\0';
-		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
-	}
-	(close(wr_fd), free(req->full_file.ctx));
-}
-
-bool	contains_quotes(t_ast_node node)
-{
-	size_t	i;
-
-	if (node.node_type == AST_TOKEN
-		&& (node.token.tt == TT_DQENVVAR || node.token.tt == TT_DQWORD
-			|| node.token.tt == TT_SQWORD))
-		return (true);
-	i = -1;
-	while (++i < node.children.len)
-		if (contains_quotes(((t_ast_node *)node.children.ctx)[i]))
-			return (true);
-	return (false);
 }

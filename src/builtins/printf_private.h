@@ -33,5 +33,7 @@ typedef struct s_pf
 char		pf_escape(const char *s, int *i, bool *stop);
 long long	pf_to_num(const char *arg);
 void		pf_emit_b(t_string *out, const char *arg, bool *stop);
+void		pf_conv(t_pf *pf, const char *spec, int speclen, char conv);
+void		pf_scan_spec(const char *fmt, int *i);
 
 #endif

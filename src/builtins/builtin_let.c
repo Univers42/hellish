@@ -13,8 +13,8 @@
 #include "builtins_private.h"
 #include "arith.h"
 
-/* let expr [expr ...] : evaluate each arithmetic expression (assignments
-   persist, like $((...))). Exit 0 if the LAST expression is non-zero, else 1. */
+/* let expr [expr ...] : evaluate each arithmetic expression. Exit 0 if the
+   LAST expression is non-zero, else 1. */
 int	builtin_let(t_shell *state, t_vec argv)
 {
 	char		**av;
@@ -35,5 +35,7 @@ int	builtin_let(t_shell *state, t_vec argv)
 			return (1);
 		i++;
 	}
-	return (v != 0 ? 0 : 1);
+	if (v != 0)
+		return (0);
+	return (1);
 }

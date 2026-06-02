@@ -14,15 +14,8 @@
 #include "job_control.h"
 #include <signal.h>
 
-int	builtin_bg(t_shell *state, t_vec argv)
+static int	bg_check_job(t_shell *state, t_job *job, char *spec)
 {
-	t_job	*job;
-	char	*spec;
-
-	spec = NULL;
-	if (argv.len > 1)
-		spec = ((char **)argv.ctx)[1];
-	job = job_by_spec(&state->job_table, spec);
 	if (!job)
 	{
 		if (spec)
@@ -37,10 +30,26 @@ int	builtin_bg(t_shell *state, t_vec argv)
 			state->ctx, job->id);
 		return (1);
 	}
+	return (0);
+}
+
+int	builtin_bg(t_shell *state, t_vec argv)
+{
+	t_job	*job;
+	char	*spec;
+
+	spec = NULL;
+	if (argv.len > 1)
+		spec = ((char **)argv.ctx)[1];
+	job = job_by_spec(&state->job_table, spec);
+	if (bg_check_job(state, job, spec))
+		return (1);
 	job->bg = true;
 	job->status = JOB_RUNNING;
-	ft_printf("[%d]%c %s &\n", job->id,
-		(job->id == state->job_table.current) ? '+' : '-', job->cmd);
+	if (job->id == state->job_table.current)
+		ft_printf("[%d]+ %s &\n", job->id, job->cmd);
+	else
+		ft_printf("[%d]- %s &\n", job->id, job->cmd);
 	kill(-job->pgid, SIGCONT);
 	return (0);
 }

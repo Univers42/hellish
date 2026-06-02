@@ -60,10 +60,11 @@ static void	push_cmd_sub_result(t_string *outbuf, char *subout)
 // Helper: encapsulate the main logic for command substitution
 static bool	do_cmd_sub(t_shell *state, t_expand_ctx *ctx, int j)
 {
-	const int	inlen = (j - 1) - 2;
-	char		*inner;
-	char		*subout;
+	int		inlen;
+	char	*inner;
+	char	*subout;
 
+	inlen = (j - 1) - 2;
 	inner = extract_cmd_inner(ctx->s, inlen);
 	if (!inner)
 		return (false);
@@ -78,33 +79,14 @@ static bool	do_cmd_sub(t_shell *state, t_expand_ctx *ctx, int j)
    captured output into outbuf, set *consumed and return true. */
 bool	process_cmd_sub(t_shell *state, t_expand_ctx *ctx)
 {
-	const char	*s = ctx->s;
-	const int	slen = ctx->slen;
-	int			j;
+	int	j;
 
-	if (!ctx || !s || !ctx->outbuf || !ctx->consumed)
+	if (!ctx || !ctx->s || !ctx->outbuf || !ctx->consumed)
 		return (false);
-	if (slen < 3 || s[0] != '$' || s[1] != '(')
+	if (ctx->slen < 3 || ctx->s[0] != '$' || ctx->s[1] != '(')
 		return (false);
-	j = find_cmd_sub_end(s, slen);
+	j = find_cmd_sub_end(ctx->s, ctx->slen);
 	if (j == -1)
 		return (false);
 	return (do_cmd_sub(state, ctx, j));
-}
-
-/* Public entry: expand a $(...) or $((...)) at the start of `s` into `outbuf`,
-   returning the number of input chars consumed (0 if not a substitution).
-   Reuses the same paren-matching logic the word expander uses. */
-int	expand_dollar_sub(t_shell *state, const char *s, int slen, t_string *outbuf)
-{
-	int				consumed;
-	t_expand_ctx	ctx;
-
-	consumed = 0;
-	ctx = init_expand(s, slen, outbuf, &consumed);
-	if (process_arith_sub(state, &ctx))
-		return (consumed);
-	if (process_cmd_sub(state, &ctx))
-		return (consumed);
-	return (0);
 }

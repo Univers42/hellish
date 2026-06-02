@@ -27,11 +27,16 @@ typedef struct s_expander_simple_cmd
 	int			exit_stat;
 }	t_expander_simple_cmd;
 
+/* expand_word_glob_ctl `flags` bits: keep the word as one field (no field
+   splitting) and/or suppress pathname (glob) expansion. */
+# define EW_KEEP_AS_ONE 1
+# define EW_NO_GLOB 2
+
 /* Expander functions */
 void		expand_word(t_shell *state, t_ast_node *node,
 				t_vec *args, bool keep_as_one);
 void		expand_word_glob_ctl(t_shell *state, t_ast_node *node,
-				t_vec *args, bool keep_as_one, bool no_glob);
+				t_vec *args, int flags);
 void		expand_word_ro(t_shell *state, t_ast_node *src,
 				t_vec *args, bool keep_as_one);
 void		expand_word_assign_ro(t_shell *state, t_ast_node *src,

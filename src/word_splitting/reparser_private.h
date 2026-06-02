@@ -23,6 +23,15 @@
 # include "ast.h"
 # include "helpers.h"
 
+typedef struct s_paren_ctx
+{
+	t_ast_node	*ret;
+	int			*i;
+	t_token		t;
+	int			prev_start;
+	t_tt		tt;
+}	t_paren_ctx;
+
 typedef struct s_interval
 {
 	int	start;
@@ -54,9 +63,7 @@ void		push_dqword_subtoken_rp(t_reparser *rp, int start, int end);
 void		flush_pending_segment_rp(t_reparser *rp, bool *pushed_any);
 void		process_dollar_in_dquote_rp(t_reparser *rp, bool *pushed_any);
 void		process_escape_seq_rp(t_reparser *rp, bool *pushed_any);
-void		reparse_envvar_paren(t_ast_node *ret, int *i,
-				t_token t,
-				int prev_start, t_tt tt);
+void		reparse_envvar_paren(t_paren_ctx ctx);
 void		reparse_backtick(t_ast_node *ret, int *i, t_token t);
 bool		is_double_open_paren(t_token t, int idx);
 bool		is_double_close_paren(t_token t, int idx);
@@ -69,6 +76,12 @@ t_tt		select_literal_tt(t_tt ctx_tt, t_token *t, int prev_start);
 void		handle_envvar_literal(t_reparser *rp, int prev_start, t_tt tt);
 bool		handle_envvar_empty(t_reparser *rp, int prev_start, t_tt tt);
 void		handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt);
+void		update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp);
+void		handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt);
+bool		handle_envvar_paren_or_special(t_reparser *rp,
+				int prev_start, t_tt tt);
+void		skip_quoted_in_brace(t_reparser *rp, char q);
+void		loop_node_rp(t_reparser *rp);
 
 static inline t_interval	create_interval(int start, int end)
 {

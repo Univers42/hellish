@@ -12,7 +12,7 @@
 
 #include "parser_private.h"
 
-static bool	handle_subshell_case(t_shell *state, t_parser *parser,
+bool	handle_subshell_case(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
@@ -31,25 +31,30 @@ static bool	handle_subshell_case(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-static bool	handle_compound_case(t_shell *state, t_parser *parser,
+static t_ast_node	dispatch_compound(t_shell *state, t_parser *parser,
+									t_deque_tok *tokens, t_tt next)
+{
+	if (next == TT_IF)
+		return (parse_if_command(state, parser, tokens));
+	if (next == TT_WHILE)
+		return (parse_while_command(state, parser, tokens));
+	if (next == TT_UNTIL)
+		return (parse_until_command(state, parser, tokens));
+	if (next == TT_CASE)
+		return (parse_case_command(state, parser, tokens));
+	if (next == TT_LBRACE)
+		return (parse_brace_group(state, parser, tokens));
+	return (parse_for_command(state, parser, tokens));
+}
+
+bool	handle_compound_case(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
 	t_tt		next;
 
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
-	if (next == TT_IF)
-		tmp_node = parse_if_command(state, parser, tokens);
-	else if (next == TT_WHILE)
-		tmp_node = parse_while_command(state, parser, tokens);
-	else if (next == TT_UNTIL)
-		tmp_node = parse_until_command(state, parser, tokens);
-	else if (next == TT_CASE)
-		tmp_node = parse_case_command(state, parser, tokens);
-	else if (next == TT_LBRACE)
-		tmp_node = parse_brace_group(state, parser, tokens);
-	else
-		tmp_node = parse_for_command(state, parser, tokens);
+	tmp_node = dispatch_compound(state, parser, tokens, next);
 	vec_push(&ret->children, &tmp_node);
 	if (parser->res != RES_OK)
 		return (false);
@@ -63,7 +68,7 @@ static bool	handle_compound_case(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-static bool	handle_simple_command_case(t_shell *state, t_parser *parser,
+bool	handle_simple_command_case(t_shell *state, t_parser *parser,
 									t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
@@ -73,44 +78,4 @@ static bool	handle_simple_command_case(t_shell *state, t_parser *parser,
 	if (parser->res != RES_OK)
 		return (false);
 	return (true);
-}
-
-t_ast_node	parse_command(t_shell *state, t_parser *parser, t_deque_tok *tokens)
-{
-	t_ast_node	ret;
-	t_tt		next;
-
-	ret = (t_ast_node){.node_type = AST_COMMAND};
-	vec_init(&ret.children);
-	ret.children.elem_size = sizeof(t_ast_node);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
-	if (next == TT_ARITH_START)
-	{
-		parser->res = RES_ERR;
-		state->last_cmd_st_exe = res_status(1);
-		return (ret);
-	}
-	if (next == TT_BRACE_LEFT)
-	{
-		if (!handle_subshell_case(state, parser, tokens, &ret))
-			return (ret);
-	}
-	else if (is_compound_start(next))
-	{
-		if (!handle_compound_case(state, parser, tokens, &ret))
-			return (ret);
-	}
-	else if (is_function_def(tokens))
-	{
-		t_ast_node	func_node;
-
-		func_node = parse_function_def(state, parser, tokens);
-		vec_push(&ret.children, &func_node);
-		if (parser->res != RES_OK)
-			return (ret);
-	}
-	else
-		if (!handle_simple_command_case(state, parser, tokens, &ret))
-			return (ret);
-	return (ret);
 }

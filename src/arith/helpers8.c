@@ -111,13 +111,3 @@ long long	get_var_value(t_arith_parser *p, const char *name, int len)
 		return (ft_atol(val));
 	return (resolve_recursive(p, val));
 }
-
-void	expect(t_arith_parser *p, t_arith_tok type)
-{
-	if (p->lexer->current.type != type)
-	{
-		p->error = true;
-		return ;
-	}
-	arith_lexer_advance(p->lexer);
-}

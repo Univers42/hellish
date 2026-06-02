@@ -85,9 +85,3 @@ void	init_file(t_shell *state, char **argv)
 	state->rl.no_compact = true;
 	set_argv_params(state, argv, 2, argv[1]);
 }
-
-void	init_stdin_notty(t_shell *state)
-{
-	state->metinp = INP_NOTTY;
-	state->rl.should_update_ctx = true;
-}
