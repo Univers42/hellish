@@ -38,6 +38,7 @@ typedef struct executable_node_s
 }	t_executable_node;
 
 void				execute_top_level(t_shell *state);
+int					exec_string(t_shell *state, char *str);
 t_execution_state	execute_pipeline(t_shell *state,
 						t_executable_node *exe);
 void				set_up_redirection(t_shell *state,
