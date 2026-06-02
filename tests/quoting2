@@ -1,0 +1,40 @@
+echo 'single quotes'
+echo "double quotes"
+echo no quotes
+echo 'a'b'c'
+echo "a"b"c"
+echo "it's a test"
+echo 'she said "hi"'
+echo a\ b\ c
+echo \$HOME
+x=val; echo "$x"
+x=val; echo '$x'
+echo "tab	here"
+echo "back\\slash"
+echo "quote\"inside"
+echo 'no\escape'
+echo "$"
+echo "a$b"
+echo "${x:-d}"
+echo a"b"c'd'e
+echo ""
+echo ''
+echo "  spaces  "
+echo '  spaces  '
+printf '%s\n' "literal"
+x="a b c"; echo "$x"
+x="a b c"; echo $x
+echo "line1
+line2"
+echo \\
+echo \#notcomment
+echo a#b
+echo "end$"
+echo '\n'
+echo "\n"
+echo "*"
+echo '*'
+echo \*
+echo "a   b"
+echo "$HOME" | grep -c /
+x=' spaced '; echo "[$x]"
