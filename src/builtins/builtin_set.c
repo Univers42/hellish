@@ -37,8 +37,7 @@ static int	handle_set_o(t_shell *state, t_vec argv)
 		state->rl.edit_mode = 1;
 		return (0);
 	}
-	ft_eprintf("%s: set: %s: invalid option name\n", state->ctx, av[2]);
-	return (1);
+	return (set_long_option(state, av[1][0], av[2]));
 }
 
 /*
@@ -83,6 +82,8 @@ int	builtin_set(t_shell *state, t_vec argv)
 		return (handle_set_o(state, argv));
 	if (argv.len >= 2 && ft_strcmp(av[1], "--") == 0)
 		return (set_positional_args(state, av + 2, argv.len - 2));
+	if (argv.len >= 2 && (av[1][0] == '-' || av[1][0] == '+') && av[1][1])
+		return (apply_set_flags(state, argv));
 	if (argv.len >= 2 && av[1][0] != '-' && av[1][0] != '+')
 		return (set_positional_args(state, av + 1, argv.len - 1));
 	if (argv.len >= 2)

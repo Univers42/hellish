@@ -12,6 +12,7 @@
 
 #include "execution_private.h"
 #include "sh_alias.h"
+#include "ft_builtins.h"
 
 static void	apply_alias(t_shell *state, t_executable_cmd *cmd)
 {
@@ -135,6 +136,8 @@ t_execution_state	execute_simple_command(t_shell *state,
 		cmd.argv.len = 0;
 	replace_null_argv_with_empty(&cmd);
 	apply_alias(state, &cmd);
+	if (state->opt_xtrace && cmd.argv.len > 0)
+		xtrace_print(&cmd.argv);
 	if (cmd.argv.len > 0 && ((char **)cmd.argv.ctx)[0]
 		&& ((char **)cmd.argv.ctx)[0][0] == '\0')
 		return (handle_empty_command(state, &cmd, exe));
