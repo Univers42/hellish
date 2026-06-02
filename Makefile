@@ -115,6 +115,7 @@ SRCS :=		src/arith/eval.c\
 			src/core/opt.c\
 			src/core/shell.c\
 			src/environment/conv.c\
+			src/environment/env_index.c\
 			src/environment/expand.c\
 			src/environment/helpers.c\
 			src/environment/init_dft_env.c\

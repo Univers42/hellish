@@ -35,6 +35,7 @@ t_vec_env	env_to_vec_env(t_shell *state, char **envp)
 
 	vec_init(&ret);
 	ret.elem_size = sizeof(t_env);
+	env_index_mark_dirty();
 	while (*envp)
 	{
 		tmp = str_to_env(*envp);

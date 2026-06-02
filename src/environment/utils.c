@@ -39,27 +39,22 @@ int	env_set(t_vec_env *env, t_env el)
 	}
 	else
 	{
-		if (vec_push(env, &el))
-			return (0);
-		else
+		if (!vec_push(env, &el))
 			return (1);
+		env_index_add(env, (int)env->len - 1);
+		return (0);
 	}
 	return (0);
 }
 
 t_env	*env_get(t_vec_env *env, char *key)
 {
-	t_env	*curr;
-	size_t	i;
+	int	idx;
 
-	i = -1;
-	while (++i < env->len)
-	{
-		curr = &((t_env *)env->ctx)[i];
-		if (ft_strcmp(key, curr->key) == 0)
-			return (curr);
-	}
-	return (0);
+	idx = env_index_find(env, key, -1);
+	if (idx < 0)
+		return (0);
+	return (&((t_env *)env->ctx)[idx]);
 }
 
 static char	*env_to_str(t_env *e)
