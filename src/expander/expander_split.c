@@ -43,11 +43,48 @@ static void	free_children(void *p)
 		free(n->children.ctx);
 }
 
+/* Release a consumed subtoken's own allocations. split_envvar/emit_positional_at
+   build fresh field nodes rather than moving this one into the output, so its
+   start (clone-owned) and full_word (malloc'd by clone_ast) would otherwise leak.
+   Pushed word tokens are moved instead, so they are never passed here. */
+static void	free_token_res(t_token *t)
+{
+	if (t->allocated)
+		free((char *)t->start);
+	t->allocated = false;
+	if (t->full_word)
+	{
+		if (t->full_word->allocated)
+			free(t->full_word->start);
+		free(t->full_word);
+		t->full_word = NULL;
+	}
+}
+
+/* Dispatch one subtoken: envvar/$@ subtokens are split into fresh field nodes
+   (and their own allocations released), plain words are moved into curr_node. */
+static void	split_one_child(t_shell *state, t_ast_node *child,
+				t_ast_node *curr_node, t_vec_nd *ret)
+{
+	t_token	*curr_t;
+
+	curr_t = &child->token;
+	if (curr_t->tt == TT_DQENVVAR && curr_t->len == 1 && curr_t->start[0] == '@')
+		(emit_positional_at(state, curr_node, ret), free_token_res(curr_t));
+	else if (curr_t->tt == TT_ENVVAR
+		|| (curr_t->tt == TT_WORD && curr_t->split_eligible))
+		(split_envvar(state, curr_t, curr_node, ret), free_token_res(curr_t));
+	else if (curr_t->tt == TT_WORD || curr_t->tt == TT_SQWORD
+		|| curr_t->tt == TT_DQWORD || curr_t->tt == TT_DQENVVAR)
+		push_token_node(curr_node, child);
+	else
+		ft_assert(0);
+}
+
 // node -> split node
 t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 {
 	t_vec_nd	ret;
-	t_token		*curr_t;
 	t_ast_node	curr_node;
 	int			i;
 
@@ -58,18 +95,8 @@ t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 	while (++i < (int)node->children.len)
 	{
 		ft_assert(((t_ast_node *)node->children.ctx)[i].node_type == AST_TOKEN);
-		curr_t = &((t_ast_node *)node->children.ctx)[i].token;
-		if (curr_t->tt == TT_DQENVVAR && curr_t->len == 1
-			&& curr_t->start[0] == '@')
-			emit_positional_at(state, &curr_node, &ret);
-		else if (curr_t->tt == TT_ENVVAR
-			|| (curr_t->tt == TT_WORD && curr_t->split_eligible))
-			split_envvar(state, curr_t, &curr_node, &ret);
-		else if (curr_t->tt == TT_WORD || curr_t->tt == TT_SQWORD
-			|| curr_t->tt == TT_DQWORD || curr_t->tt == TT_DQENVVAR)
-			push_token_node(&curr_node, &((t_ast_node *)node->children.ctx)[i]);
-		else
-			ft_assert(0);
+		split_one_child(state, &((t_ast_node *)node->children.ctx)[i],
+			&curr_node, &ret);
 	}
 	if (curr_node.children.len)
 		vec_push(&ret, &curr_node);
