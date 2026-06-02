@@ -52,6 +52,36 @@ t_string	parse_single_cmd(t_string hist, size_t *cur)
 	return (cmd);
 }
 
+/* readline edits each history entry as one logical line, so an entry with an
+   embedded newline (a \-continuation or quoted-newline command) desyncs its
+   cursor model and corrupts the display on ↑/↓ (you get stuck, needing ^C).
+   Feed readline a single-line form: drop a \ that escapes a newline (join the
+   continuation) and turn any other newline into a space. */
+void	add_history_line(const char *cmd)
+{
+	char	*buf;
+	size_t	i;
+	size_t	j;
+
+	buf = malloc(ft_strlen(cmd) + 1);
+	if (!buf)
+		return (add_history(cmd));
+	i = 0;
+	j = 0;
+	while (cmd[i])
+	{
+		if (cmd[i] == '\\' && cmd[i + 1] == '\n')
+			(i += 2, buf[j++] = ' ');
+		else if (cmd[i] == '\n')
+			(i++, buf[j++] = ' ');
+		else
+			buf[j++] = cmd[i++];
+	}
+	buf[j] = '\0';
+	add_history(buf);
+	free(buf);
+}
+
 t_vec	parse_hist_file(t_string hist)
 {
 	size_t	cur;
@@ -97,7 +127,7 @@ static void	load_and_persist(t_shell *state, const char *path, bool trimmed)
 
 	i = 0;
 	while (i < state->hist.hist_cmds.len)
-		add_history(((char **)state->hist.hist_cmds.ctx)[i++]);
+		add_history_line(((char **)state->hist.hist_cmds.ctx)[i++]);
 	if (!trimmed)
 		return ;
 	fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
