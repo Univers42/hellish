@@ -130,7 +130,7 @@ void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 
 	get_timebuf(p->time_buf, sizeof(p->time_buf));
 	right_w = (int)ft_strlen(p->time_buf) + 3;
-	p->pad = p->cols - p->vis_w - right_w;
+	p->pad = p->cols - p->vis_w - right_w - 2;
 	if (p->pad < 3)
 		p->pad = 3;
 	push_fill(ret, p->pad - 2);
