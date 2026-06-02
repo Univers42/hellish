@@ -128,6 +128,8 @@ static void	repl_shell(t_shell *state)
 static void	off(t_shell *state)
 {
 	run_exit_trap(state);
+	if (state->metinp == INP_RL)
+		ft_eprintf("\033[0 q");
 	free_env(&state->env);
 	free_all_state(state);
 	forward_exit_status(state->last_cmd_st_exe);
