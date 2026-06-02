@@ -33,7 +33,8 @@ t_shell_func	*func_lookup(t_shell *state, const char *name)
 	return (NULL);
 }
 
-/* unset -f name: remove a stored function definition (POSIX). No-op if absent. */
+/* unset -f name: remove a stored function definition (POSIX).
+** No-op if absent. */
 void	unset_function(t_shell *state, const char *name)
 {
 	t_shell_func	*arr;

@@ -34,6 +34,19 @@ static bool	expect_token(t_shell *state, t_parser *parser,
 	return (true);
 }
 
+static bool	parse_elif_one(t_shell *state, t_parser *parser,
+							t_deque_tok *tokens, t_ast_node *ret)
+{
+	(void)deque_pop_start(&tokens->deqtok);
+	push_parsed_compound_list(state, parser, tokens, ret);
+	if (parser->res != RES_OK)
+		return (false);
+	if (!expect_token(state, parser, tokens, TT_THEN))
+		return (false);
+	push_parsed_compound_list(state, parser, tokens, ret);
+	return (parser->res == RES_OK);
+}
+
 static bool	parse_elif_chain(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -43,14 +56,7 @@ static bool	parse_elif_chain(t_shell *state, t_parser *parser,
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	while (next == TT_ELIF)
 	{
-		(void)deque_pop_start(&tokens->deqtok);
-		push_parsed_compound_list(state, parser, tokens, ret);
-		if (parser->res != RES_OK)
-			return (false);
-		if (!expect_token(state, parser, tokens, TT_THEN))
-			return (false);
-		push_parsed_compound_list(state, parser, tokens, ret);
-		if (parser->res != RES_OK)
+		if (!parse_elif_one(state, parser, tokens, ret))
 			return (false);
 		skip_newlines(tokens);
 		next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;

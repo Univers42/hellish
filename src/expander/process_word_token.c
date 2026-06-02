@@ -13,15 +13,16 @@
 #include "expander_private.h"
 #include "sys.h"
 
-static bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
+bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
 {
-	const char		*s = ctx->tok->start + ctx->pos;
+	const char		*s;
 	int				consumed;
-	const bool		result
-		= (ctx->pos + 2 < ctx->total_len && s[0] == IS_DOLLAR
-			&& s[1] == LPAREN && s[2] == LPAREN);
+	bool			result;
 	t_expand_ctx	ectx;
 
+	s = ctx->tok->start + ctx->pos;
+	result = (ctx->pos + 2 < ctx->total_len && s[0] == IS_DOLLAR
+			&& s[1] == LPAREN && s[2] == LPAREN);
 	if (result)
 	{
 		consumed = 0;
@@ -39,12 +40,13 @@ static bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
 	return (false);
 }
 
-static bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
+bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
 {
-	const char		*s = ctx->tok->start + ctx->pos;
+	const char		*s;
 	t_expand_ctx	ectx;
 	int				consumed;
 
+	s = ctx->tok->start + ctx->pos;
 	if (ctx->pos + 1 < ctx->total_len && s[0] == IS_DOLLAR && s[1] == LPAREN)
 	{
 		consumed = 0;
@@ -85,13 +87,14 @@ static char	*unescape_backtick(const char *s, int len)
 	return (out);
 }
 
-static bool	try_backtick_ctx(t_word_token_ctx *ctx)
+bool	try_backtick_ctx(t_word_token_ctx *ctx)
 {
-	const char	*s = ctx->tok->start + ctx->pos;
+	const char	*s;
 	char		*inner;
 	char		*out;
 	int			j;
 
+	s = ctx->tok->start + ctx->pos;
 	if (s[0] != '`')
 		return (false);
 	j = 1;
@@ -112,62 +115,13 @@ static bool	try_backtick_ctx(t_word_token_ctx *ctx)
 	return (true);
 }
 
-static void	push_single_char_ctx(t_word_token_ctx *ctx)
+void	push_single_char_ctx(t_word_token_ctx *ctx)
 {
-	const char	*s = ctx->tok->start + ctx->pos;
+	const char	*s;
 	char		c;
 
+	s = ctx->tok->start + ctx->pos;
 	c = s[0];
 	vec_push(ctx->outbuf, &c);
 	ctx->pos++;
-}
-
-static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
-{
-	char	*newstr;
-
-	if (ctx->changed)
-	{
-		newstr = malloc(ctx->outbuf->len + 1);
-		if (newstr)
-		{
-			if (ctx->outbuf->len)
-				memcpy(newstr, ctx->outbuf->ctx, ctx->outbuf->len);
-			newstr[ctx->outbuf->len] = '\0';
-			if (ctx->tok->allocated && ctx->tok->start)
-				free((char *)ctx->tok->start);
-			ctx->tok->start = newstr;
-			ctx->tok->len = ctx->outbuf->len;
-			ctx->tok->allocated = true;
-		}
-		free(ctx->outbuf->ctx);
-	}
-	else
-		free(ctx->outbuf->ctx);
-}
-
-void	process_word_token(t_shell *state, t_token *tok)
-{
-	t_string			outbuf;
-	t_word_token_ctx	ctx;
-
-	vec_init(&outbuf);
-	outbuf.elem_size = 1;
-	ctx.state = state;
-	ctx.tok = tok;
-	ctx.outbuf = &outbuf;
-	ctx.total_len = tok->len;
-	ctx.pos = 0;
-	ctx.changed = false;
-	while (ctx.pos < ctx.total_len)
-	{
-		if (try_arith_sub_ctx(&ctx))
-			continue ;
-		if (try_cmd_sub_ctx(&ctx))
-			continue ;
-		if (try_backtick_ctx(&ctx))
-			continue ;
-		push_single_char_ctx(&ctx);
-	}
-	update_token_if_changed_ctx(&ctx);
 }

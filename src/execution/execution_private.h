@@ -94,6 +94,10 @@ t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe);
 void				execute_top_level(t_shell *state);
 t_execution_state	execute_tree_node(t_shell *state, t_executable_node *exe);
 t_shell_func		*func_lookup(t_shell *state, const char *name);
+t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_case(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv);
@@ -121,6 +125,9 @@ void				try_exec_with_fallback(char *path_of_exe,
 void				cleanup_after_exec_failure(t_vec *args,
 						char *path_of_exe, char **envp);
 int					map_errno_to_exit(void);
+void				set_for_var(t_shell *state, char *name, char *val);
+void				restore_one(t_shell *state, t_scope_save *s);
+void				restore_temp_assigns(t_shell *state, t_vec *saves);
 
 static inline t_executable_node	create_exe_node(int infd,
 										int outfd,

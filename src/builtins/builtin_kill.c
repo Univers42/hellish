@@ -32,7 +32,7 @@ static const t_signame	*sig_table(void)
 }
 
 /* "TERM", "SIGTERM" or "15" -> signal number, or -1 when unknown. */
-static int	sig_from_name(const char *name)
+int	kill_sig_from_name(const char *name)
 {
 	const t_signame	*t;
 
@@ -50,7 +50,7 @@ static int	sig_from_name(const char *name)
 	return (-1);
 }
 
-static int	kill_list(void)
+int	kill_list_sigs(void)
 {
 	const t_signame	*t;
 
@@ -63,9 +63,8 @@ static int	kill_list(void)
 	return (0);
 }
 
-/* A literal pid: optional leading '-' then digits only (never empty/garbage,
-   so an unset $! can't collapse to "kill 0" and signal our whole group). */
-static bool	is_pid(const char *s)
+/* A literal pid: optional leading '-' then digits only. */
+static bool	kill_is_pid(const char *s)
 {
 	if (*s == '-')
 		s++;
@@ -78,7 +77,7 @@ static bool	is_pid(const char *s)
 }
 
 /* %job -> whole process group (negative pgid); otherwise a literal pid. */
-static int	kill_one(t_shell *state, const char *target, int sig)
+int	kill_one_target(t_shell *state, const char *target, int sig)
 {
 	t_job	*job;
 
@@ -93,44 +92,11 @@ static int	kill_one(t_shell *state, const char *target, int sig)
 					job->pgid, strerror(errno)), 1);
 		return (0);
 	}
-	if (!is_pid(target))
+	if (!kill_is_pid(target))
 		return (ft_eprintf("%s: kill: %s: arguments must be process or"
 				" job IDs\n", state->ctx, target), 1);
 	if (kill((pid_t)ft_atoi(target), sig) == -1)
 		return (ft_eprintf("%s: kill: (%s): %s\n", state->ctx,
 				target, strerror(errno)), 1);
 	return (0);
-}
-
-/* kill -l | kill [-s SIG | -SIG | -n NUM] target ...  (target = pid or %job) */
-int	builtin_kill(t_shell *state, t_vec argv)
-{
-	char	**av;
-	int		sig;
-	int		i;
-	int		ret;
-
-	av = (char **)argv.ctx;
-	if (argv.len >= 2 && !ft_strcmp(av[1], "-l"))
-		return (kill_list());
-	sig = SIGTERM;
-	i = 1;
-	if (argv.len > 1 && av[1][0] == '-' && av[1][1])
-	{
-		if ((!ft_strcmp(av[1], "-s") || !ft_strcmp(av[1], "-n")) && av[2])
-			sig = sig_from_name(av[++i]);
-		else
-			sig = sig_from_name(av[1] + 1);
-		i++;
-	}
-	if (sig < 0)
-		return (ft_eprintf("%s: kill: %s: invalid signal\n",
-				state->ctx, av[1]), 1);
-	if (i >= (int)argv.len)
-		return (ft_eprintf("%s: kill: usage: kill [-s sig|-n num|-sig]"
-				" pid|%%job ...\n", state->ctx), 1);
-	ret = 0;
-	while (i < (int)argv.len)
-		ret |= kill_one(state, av[i++], sig);
-	return (ret);
 }

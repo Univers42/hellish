@@ -42,7 +42,31 @@ static bool	match_bracket(char c, const char **pp)
 	return (hit != neg);
 }
 
-/* fnmatch-style glob match used by `case` patterns: '*' '?' '[..]' and '\'. */
+static bool	advance_one(const char **s, const char **p)
+{
+	if (**p == '?' && **s)
+	{
+		(*s)++;
+		(*p)++;
+	}
+	else if (**p == '[' && **s && match_bracket(**s, p))
+		(*s)++;
+	else if (**p == '\\' && (*p)[1] == **s && **s)
+	{
+		(*s)++;
+		(*p) += 2;
+	}
+	else if (**p != '[' && **p != '?' && **p != '\\' && **p == **s)
+	{
+		(*s)++;
+		(*p)++;
+	}
+	else
+		return (false);
+	return (true);
+}
+
+/* fnmatch-style glob match used by `case` patterns: '*' '?' '[..]' '\'. */
 bool	case_match(const char *s, const char *p)
 {
 	while (*p)
@@ -58,15 +82,7 @@ bool	case_match(const char *s, const char *p)
 					return (true);
 			return (case_match(s, p));
 		}
-		if (*p == '?' && *s)
-			(s++, p++);
-		else if (*p == '[' && *s && match_bracket(*s, &p))
-			s++;
-		else if (*p == '\\' && p[1] == *s && *s)
-			(s++, p += 2);
-		else if (*p != '[' && *p != '?' && *p != '\\' && *p == *s)
-			(s++, p++);
-		else
+		if (!advance_one(&s, &p))
 			return (false);
 	}
 	return (*s == '\0');

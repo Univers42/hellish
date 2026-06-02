@@ -13,13 +13,7 @@
 #include "execution_private.h"
 #include "cmd_hash.h"
 
-static int	handle_perm_denied(t_shell *state, char *cmd_name)
-{
-	errno = EACCES;
-	err_1_errno(state, cmd_name);
-	free_all_state(state);
-	return (EXE_PERM_DENIED);
-}
+int	handle_perm_denied(t_shell *state, char *cmd_name);
 
 static int	handle_found_path(t_shell *state,
 				char *cmd_name,
@@ -59,26 +53,15 @@ static int	handle_direct_path(t_shell *state,
 	return (0);
 }
 
-static int	handle_path_lookup(t_shell *state,
-				char *cmd_name,
+static int	search_path_dirs(t_shell *state, char *cmd_name,
 				char **path_of_exe)
 {
-	char	*path;
 	char	**path_dirs;
 	int		perm_denied;
-	int		ret;
-	char	*cached;
 
-	cached = cmd_hash_lookup(&state->cmd_cache, cmd_name);
-	if (cached && access(cached, X_OK) == 0)
-	{
-		*path_of_exe = ft_strdup(cached);
-		return (0);
-	}
-	path = env_expand(state, "PATH");
 	path_dirs = NULL;
-	if (path)
-		path_dirs = ft_split(path, ':');
+	if (env_expand(state, "PATH"))
+		path_dirs = ft_split(env_expand(state, "PATH"), ':');
 	perm_denied = 0;
 	*path_of_exe = exe_path(path_dirs, cmd_name, &perm_denied);
 	if (path_dirs)
@@ -89,9 +72,27 @@ static int	handle_path_lookup(t_shell *state,
 			return (handle_perm_denied(state, cmd_name));
 		return (cmd_not_found(state, cmd_name));
 	}
+	return (0);
+}
+
+static int	handle_path_lookup(t_shell *state,
+				char *cmd_name,
+				char **path_of_exe)
+{
+	char	*cached;
+	int		ret;
+
+	cached = cmd_hash_lookup(&state->cmd_cache, cmd_name);
+	if (cached && access(cached, X_OK) == 0)
+	{
+		*path_of_exe = ft_strdup(cached);
+		return (0);
+	}
+	ret = search_path_dirs(state, cmd_name, path_of_exe);
+	if (ret)
+		return (ret);
 	cmd_hash_insert(&state->cmd_cache, cmd_name, *path_of_exe);
-	ret = handle_found_path(state, cmd_name, path_of_exe);
-	return (ret);
+	return (handle_found_path(state, cmd_name, path_of_exe));
 }
 
 int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)

@@ -60,10 +60,11 @@ typedef t_vec			t_vec_nd;
 void		free_ast(t_ast_node *node);
 t_ast_node	clone_ast(t_ast_node *src);
 t_ast_node	deep_clone_ast(t_ast_node *src);
-void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node));
-void	print_ast_dot(t_shell *state, t_ast_node node);
-char	*node_name(t_ast_type tn);
-void	print_node(t_ast_node node);
+void		ast_postorder_traversal(t_ast_node *node,
+				void (*f)(t_ast_node *node));
+void		print_ast_dot(t_shell *state, t_ast_node node);
+char		*node_name(t_ast_type tn);
+void		print_node(t_ast_node node);
 
 static inline t_ast_node	create_node_tok(t_ast_type type, t_token token)
 {

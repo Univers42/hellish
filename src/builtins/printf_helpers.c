@@ -81,7 +81,7 @@ char	pf_escape(const char *s, int *i, bool *stop)
 	return ('\\');
 }
 
-/* Numeric arg value: 0x/0 prefixes (C rules) plus the leading-quote char form. */
+/* Numeric arg value: 0x/0 prefixes (C rules) plus leading-quote char form. */
 long long	pf_to_num(const char *arg)
 {
 	if (!arg || !*arg)

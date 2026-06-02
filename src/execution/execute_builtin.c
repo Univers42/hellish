@@ -21,6 +21,19 @@ static int	is_bare_exec(t_executable_cmd *cmd)
 		&& ft_strcmp(((char **)cmd->argv.ctx)[0], "exec") == 0);
 }
 
+static void	restore_backup_fds(int *bak, int persist)
+{
+	if (!persist)
+	{
+		dup2(bak[0], 0);
+		dup2(bak[1], 1);
+		dup2(bak[2], 2);
+	}
+	close(bak[0]);
+	close(bak[1]);
+	close(bak[2]);
+}
+
 t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
@@ -42,16 +55,9 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	status = builtin_func(((char **)(cmd->argv.ctx))[0])(state, cmd->argv);
 	restore_temp_assigns(state, &saves);
-	if (!persist)
-	{
-		dup2(bak[0], 0);
-		dup2(bak[1], 1);
-		dup2(bak[2], 2);
-	}
-	close(bak[0]);
-	close(bak[1]);
-	close(bak[2]);
+	restore_backup_fds(bak, persist);
 	procsub_close_fds_parent(state);
-	return (free_executable_cmd(*cmd), free_executable_node(exe),
-		res_status(status));
+	free_executable_cmd(*cmd);
+	free_executable_node(exe);
+	return (res_status(status));
 }

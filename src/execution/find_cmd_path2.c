@@ -1,0 +1,22 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   find_cmd_path2.c                                   :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/01/22 15:10:20 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/03/16 01:53:46 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "execution_private.h"
+#include "cmd_hash.h"
+
+int	handle_perm_denied(t_shell *state, char *cmd_name)
+{
+	errno = EACCES;
+	err_1_errno(state, cmd_name);
+	free_all_state(state);
+	return (EXE_PERM_DENIED);
+}

@@ -93,26 +93,3 @@ int	builtin_env(t_shell *state, t_vec argv)
 	}
 	return (0);
 }
-
-int	builtin_unset(t_shell *state, t_vec argv)
-{
-	char	**av;
-	size_t	i;
-	int		fmode;
-
-	av = (char **)argv.ctx;
-	i = 1;
-	fmode = 0;
-	if (i < argv.len && av[i][0] == '-' && (av[i][1] == 'f' || av[i][1] == 'v')
-		&& !av[i][2])
-		fmode = (av[i++][1] == 'f');
-	while (i < argv.len)
-	{
-		if (fmode)
-			unset_function(state, av[i]);
-		else
-			try_unset(state, av[i]);
-		i++;
-	}
-	return (0);
-}

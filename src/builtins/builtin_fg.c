@@ -16,6 +16,22 @@
 #include <signal.h>
 #include <termios.h>
 
+static int	fg_wait_result(t_shell *state, t_job *job, int status)
+{
+	if (WIFSTOPPED(status))
+	{
+		job->status = JOB_STOPPED;
+		job_print(job, state->job_table.current,
+			state->job_table.previous, false);
+		return (148);
+	}
+	job->status = JOB_DONE;
+	job_remove(&state->job_table, job->id);
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+	return (128 + WTERMSIG(status));
+}
+
 int	builtin_fg(t_shell *state, t_vec argv)
 {
 	t_job	*job;
@@ -41,16 +57,5 @@ int	builtin_fg(t_shell *state, t_vec argv)
 	tcsetpgrp(STDIN_FILENO, job->pgid);
 	waitpid(-job->pgid, &status, WUNTRACED);
 	tcsetpgrp(STDIN_FILENO, getpgrp());
-	if (WIFSTOPPED(status))
-	{
-		job->status = JOB_STOPPED;
-		job_print(job, state->job_table.current,
-			state->job_table.previous, false);
-		return (148);
-	}
-	job->status = JOB_DONE;
-	job_remove(&state->job_table, job->id);
-	if (WIFEXITED(status))
-		return (WEXITSTATUS(status));
-	return (128 + WTERMSIG(status));
+	return (fg_wait_result(state, job, status));
 }
