@@ -58,6 +58,19 @@ static void	init_tables(t_shell *state)
 	cmd_hash_init(&state->cmd_cache);
 }
 
+/* The name the shell reports itself as in diagnostics: the basename of argv[0]
+   (bash uses "bash", not the full path it was launched from). A script overrides
+   this later with the script name. */
+static char	*shell_basename(char *arg0)
+{
+	char	*slash;
+
+	slash = ft_strrchr(arg0, '/');
+	if (slash && slash[1])
+		return (slash + 1);
+	return (arg0);
+}
+
 void	on(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();
@@ -70,8 +83,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	state->rl.buff.elem_size = 1;
 	state->rl.edit_mode = 1;
 	state->pid = xgetpid();
-	state->ctx = ft_strdup(argv[0]);
-	state->dft_ctx = ft_strdup(argv[0]);
+	state->ctx = ft_strdup(shell_basename(argv[0]));
+	state->dft_ctx = ft_strdup(shell_basename(argv[0]));
 	set_cmd_status(state, res_status(0));
 	state->last_cmd_st_exe = res_status(0);
 	init_cwd(state);
