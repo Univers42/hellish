@@ -75,7 +75,8 @@ static int	want_arg(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 	if (g->silent)
 		return (set_char(state, g->name, ':'), set_char(state, "OPTARG",
 				cur[pos]), 0);
-	ft_eprintf("%s: option requires an argument -- %c\n", state->ctx, cur[pos]);
+	ft_eprintf("%s: option requires an argument -- %c\n",
+		state->dft_ctx, cur[pos]);
 	return (set_char(state, g->name, '?'), 0);
 }
 
@@ -91,7 +92,8 @@ static int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 		if (g->silent)
 			set_char(state, "OPTARG", cur[pos]);
 		else
-			ft_eprintf("%s: illegal option -- %c\n", state->ctx, cur[pos]);
+			ft_eprintf("%s: illegal option -- %c\n",
+				state->dft_ctx, cur[pos]);
 		set_char(state, g->name, '?');
 		if (!cur[pos + 1])
 			(g->optind++, state->getopts_pos = 0);
