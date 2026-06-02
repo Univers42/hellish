@@ -50,10 +50,29 @@ static void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 		create_interval(prev_start, rp->i), tt);
 }
 
+/* Advance rp->i to the matching close quote `q` (leaving it on the quote), so
+   braces inside a quoted segment of ${...} are not counted by the brace scan. */
+static void	skip_quoted_in_brace(t_reparser *rp, char q)
+{
+	const char	*s;
+	int			len;
+
+	s = rp->current_token.start;
+	len = rp->current_token.len;
+	rp->i++;
+	while (rp->i < len && s[rp->i] != q)
+	{
+		if (q == '"' && s[rp->i] == '\\' && rp->i + 1 < len)
+			rp->i++;
+		rp->i++;
+	}
+}
+
 static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 {
-	int	start;
-	int	depth;
+	int		start;
+	int		depth;
+	char	c;
 
 	if (rp->i >= rp->current_token.len
 		|| rp->current_token.start[rp->i] != '{')
@@ -63,9 +82,12 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 	depth = 1;
 	while (rp->i < rp->current_token.len && depth > 0)
 	{
-		if (rp->current_token.start[rp->i] == '{')
+		c = rp->current_token.start[rp->i];
+		if (c == '\'' || c == '"')
+			skip_quoted_in_brace(rp, c);
+		else if (c == '{')
 			depth++;
-		else if (rp->current_token.start[rp->i] == '}' && --depth == 0)
+		else if (c == '}' && --depth == 0)
 			break ;
 		rp->i++;
 	}
