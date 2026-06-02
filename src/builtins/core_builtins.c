@@ -51,6 +51,15 @@ int	builtin_exit(t_shell *state, t_vec argv)
 	return (exit_clean(state, ret), 0);
 }
 
+/* The ':' null utility: expand args (already done before we run) and
+   succeed. Used for side effects like `: ${x:=default}` and as a true-ish. */
+int	builtin_colon(t_shell *state, t_vec argv)
+{
+	(void)state;
+	(void)argv;
+	return (0);
+}
+
 int	builtin_echo(t_shell *state, t_vec argv)
 {
 	int		n;
