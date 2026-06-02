@@ -77,7 +77,7 @@ typedef struct s_token
 	int			len;
 	bool		allocated;
 	bool		split_eligible;
-	t_token_old	full_word;
+	t_token_old	*full_word;
 }	t_token;
 
 static inline t_token	create_token(char *start, int len, t_tt token_type)
@@ -88,7 +88,7 @@ static inline t_token	create_token(char *start, int len, t_tt token_type)
 			.start = start,
 			.len = len,
 			.allocated = false,
-			.full_word = {.present = false, .start = NULL, .len = 0}
+			.full_word = NULL
 		});
 }
 
@@ -101,7 +101,7 @@ static inline t_token	create_tok4(char *start, int len,
 			.start = start,
 			.len = len,
 			.allocated = allocated,
-			.full_word = {.present = false, .start = NULL, .len = 0}
+			.full_word = NULL
 		});
 }
 
