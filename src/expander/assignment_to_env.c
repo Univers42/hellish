@@ -41,25 +41,6 @@ static char	*dup_value_from_args(t_vec *args)
 	return (ft_strdup(""));
 }
 
-/* trim leading '=' characters, return newly
- allocated string (preserve non-null) */
-static char	*trim_leading_equals(char *s)
-{
-	size_t	k;
-	char	*trimmed;
-
-	if (!s || s[0] != EQ)
-		return (s);
-	k = 0;
-	while (s[k] == EQ)
-		k++;
-	trimmed = ft_strdup(s + k);
-	free(s);
-	if (trimmed)
-		return (trimmed);
-	return (ft_strdup(""));
-}
-
 t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 {
 	t_vec	args;
@@ -77,7 +58,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 	{
 		v = dup_value_from_args(&args);
 		if (v)
-			ret.value = trim_leading_equals(v);
+			ret.value = v;
 		else
 			ret.value = ft_strdup("");
 	}
