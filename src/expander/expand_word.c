@@ -73,6 +73,19 @@ static bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 	return (free(results.ctx), free_ast(node), true);
 }
 
+/* Non-destructive variant: expand the words of `src` into `args` without
+   mutating or freeing `src`. The expansion pipeline is destructive, so we
+   run it on a private shallow-cloned scratch we own and consume here. The
+   caller (e.g. a loop body) keeps `src` intact for the next iteration. */
+void	expand_word_ro(t_shell *state, t_ast_node *src,
+					t_vec *args, bool keep_as_one)
+{
+	t_ast_node	scratch;
+
+	scratch = clone_ast(src);
+	expand_word(state, &scratch, args, keep_as_one);
+}
+
 void	expand_word(t_shell *state, t_ast_node *node,
 					t_vec *args, bool keep_as_one)
 {
