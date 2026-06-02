@@ -72,7 +72,7 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 	full = capture_original_full_token(exp->curr);
 	scratch = clone_ast(exp->curr);
 	assignment_word_to_word(&scratch);
-	expand_word(state, &scratch, &ret->argv, exp->export);
+	expand_word_glob_ctl(state, &scratch, &ret->argv, exp->export, true);
 	if (get_g_sig()->should_unwind)
 		return (1);
 	replace_argv_entries_with_full_token(&ret->argv, full);

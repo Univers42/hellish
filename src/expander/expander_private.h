@@ -100,7 +100,8 @@ int			expand_simple_cmd_redir(t_shell *state,
 bool		is_export(t_ast_node word);
 bool		is_empty_command(const char *cmd);
 void		expand_cmd_substitutions(t_shell *state, t_ast_node *node);
-void		expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one);
+void		expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
+				bool no_glob);
 void		expand_tilde_token(t_shell *state, t_token *t);
 char		*expand_word_single(t_shell *state, t_ast_node *curr);
 char		*capture_subshell_output(t_shell *state, const char *cmd);
