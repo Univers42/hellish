@@ -32,6 +32,8 @@ t_hash	*get_color_map(void)
 	hash_set(&map, "TT_HEREDOC", (void *)ASCII_YELLOW);
 	hash_set(&map, "TT_DUP_OUT", (void *)ASCII_YELLOW);
 	hash_set(&map, "TT_DUP_IN", (void *)ASCII_YELLOW);
+	hash_set(&map, "TT_READWRITE", (void *)ASCII_YELLOW);
+	hash_set(&map, "TT_CLOBBER", (void *)ASCII_YELLOW);
 	hash_set(&map, "TT_PIPE", (void *)ASCII_CYAN);
 	hash_set(&map, "TT_OR", (void *)ASCII_CYAN);
 	hash_set(&map, "TT_AND", (void *)ASCII_CYAN);
@@ -79,6 +81,8 @@ static void	init_tt_names_group3(const char **names)
 	names[TT_PROC_SUB_OUT] = "TT_PROC_SUB_OUT";
 	names[TT_DUP_OUT] = "TT_DUP_OUT";
 	names[TT_DUP_IN] = "TT_DUP_IN";
+	names[TT_READWRITE] = "TT_READWRITE";
+	names[TT_CLOBBER] = "TT_CLOBBER";
 }
 
 void	init_tt_names_kw1(const char **names);

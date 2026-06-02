@@ -39,10 +39,14 @@ int	check_fd_redirect(char *str, t_token *out)
 		return (create_token_consume(str, fd_len + 2, TT_DUP_IN, out));
 	if (*p == '>' && *(p + 1) == '>')
 		return (create_token_consume(str, fd_len + 2, TT_APPEND, out));
+	if (*p == '>' && *(p + 1) == '|')
+		return (create_token_consume(str, fd_len + 2, TT_CLOBBER, out));
 	if (*p == '>')
 		return (create_token_consume(str, fd_len + 1, TT_REDIRECT_RIGHT, out));
 	if (*p == '<' && *(p + 1) == '<')
 		return (create_token_consume(str, fd_len + 2, TT_HEREDOC, out));
+	if (*p == '<' && *(p + 1) == '>')
+		return (create_token_consume(str, fd_len + 2, TT_READWRITE, out));
 	if (*p == '<')
 		return (create_token_consume(str, fd_len + 1, TT_REDIRECT_LEFT, out));
 	return (0);

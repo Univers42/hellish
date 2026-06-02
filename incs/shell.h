@@ -116,6 +116,12 @@ typedef struct s_shell
 	bool				opt_errexit;
 	bool				opt_nounset;
 	bool				opt_xtrace;
+	bool				opt_noglob;
+	bool				opt_noclobber;
+	bool				opt_allexport;
+	bool				opt_noexec;
+	bool				opt_verbose;
+	char				flagbuf[16];
 	int					errexit_off;
 	char				*traps[32];
 	t_vec				readonly_vars;

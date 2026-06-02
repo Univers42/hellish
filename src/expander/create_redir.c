@@ -37,10 +37,12 @@ static bool	open_file_redir(t_tt tt, t_redir *ret)
 {
 	if (tt == TT_REDIRECT_LEFT)
 		ret->fd = open(ret->fname, O_RDONLY);
-	else if (tt == TT_REDIRECT_RIGHT)
+	else if (tt == TT_REDIRECT_RIGHT || tt == TT_CLOBBER)
 		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	else if (tt == TT_APPEND)
 		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0644);
+	else if (tt == TT_READWRITE)
+		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0644);
 	else
 		ret->fd = -1;
 	if (ret->fd < 0)
@@ -65,7 +67,8 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");
 	ret->fname = fname;
-	ret->direction_in = (tt == TT_REDIRECT_LEFT || tt == TT_DUP_IN);
+	ret->direction_in = (tt == TT_REDIRECT_LEFT || tt == TT_DUP_IN
+			|| tt == TT_READWRITE);
 	ret->src_fd = src_fd;
 	ret->close_fd = false;
 	ret->is_dup = false;

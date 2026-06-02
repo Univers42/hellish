@@ -54,6 +54,16 @@ int	set_long_option(t_shell *state, char sign, const char *name)
 		state->opt_nounset = on;
 	else if (!ft_strcmp(name, "xtrace"))
 		state->opt_xtrace = on;
+	else if (!ft_strcmp(name, "noglob"))
+		state->opt_noglob = on;
+	else if (!ft_strcmp(name, "noclobber"))
+		state->opt_noclobber = on;
+	else if (!ft_strcmp(name, "allexport"))
+		state->opt_allexport = on;
+	else if (!ft_strcmp(name, "noexec"))
+		state->opt_noexec = on;
+	else if (!ft_strcmp(name, "verbose"))
+		state->opt_verbose = on;
 	else if (!ft_strcmp(name, "vi") && on)
 		(state->edit_mode = 0), (state->rl.edit_mode = 0);
 	else if (!ft_strcmp(name, "emacs") && on)
@@ -78,8 +88,46 @@ static void	apply_flag_word(t_shell *state, const char *w)
 			state->opt_nounset = (sign == '-');
 		else if (w[j] == 'x')
 			state->opt_xtrace = (sign == '-');
+		else if (w[j] == 'f')
+			state->opt_noglob = (sign == '-');
+		else if (w[j] == 'C')
+			state->opt_noclobber = (sign == '-');
+		else if (w[j] == 'a')
+			state->opt_allexport = (sign == '-');
+		else if (w[j] == 'n')
+			state->opt_noexec = (sign == '-');
+		else if (w[j] == 'v')
+			state->opt_verbose = (sign == '-');
 		j++;
 	}
+}
+
+/* Build the value of $- : one letter per currently-set option flag (POSIX). */
+char	*build_flagstr(t_shell *state)
+{
+	int	k;
+
+	k = 0;
+	if (state->opt_allexport)
+		state->flagbuf[k++] = 'a';
+	if (state->opt_errexit)
+		state->flagbuf[k++] = 'e';
+	if (state->opt_noglob)
+		state->flagbuf[k++] = 'f';
+	if (state->metinp == INP_RL)
+		state->flagbuf[k++] = 'i';
+	if (state->opt_noexec)
+		state->flagbuf[k++] = 'n';
+	if (state->opt_nounset)
+		state->flagbuf[k++] = 'u';
+	if (state->opt_verbose)
+		state->flagbuf[k++] = 'v';
+	if (state->opt_xtrace)
+		state->flagbuf[k++] = 'x';
+	if (state->opt_noclobber)
+		state->flagbuf[k++] = 'C';
+	state->flagbuf[k] = '\0';
+	return (state->flagbuf);
 }
 
 /* set -e/-u/-x [...] : consume leading flag words, then (after an optional --)
