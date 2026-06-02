@@ -50,6 +50,12 @@ typedef struct s_word_token_ctx
 	bool		changed;
 }	t_word_token_ctx;
 
+typedef struct s_env_tok_pos
+{
+	size_t	idx;
+	bool	split_ctx;
+}	t_env_tok_pos;
+
 t_string	word_to_string(t_ast_node node);
 t_string	word_to_hrdoc_string(t_ast_node node);
 t_env		assignment_to_env(t_shell *state, t_ast_node *node);
@@ -75,11 +81,16 @@ int			expand_simple_cmd_word(t_shell *state,
 				t_expander_simple_cmd *exp, t_executable_cmd *ret);
 int			expand_simple_command(t_shell *state, t_ast_node *node,
 				t_executable_cmd *ret, t_vec_int *redirects);
-void		expand_token(t_shell *state, t_token	*curr_tt);
-void		expand_env_vars(t_shell *state, t_ast_node *node);
+void		expand_token(t_shell *state, t_token *curr_tt, bool split_ctx);
+void		expand_env_vars(t_shell *state, t_ast_node *node, bool split_ctx);
+char		*join_positionals(t_shell *state);
 t_ast_node	new_env_node(char *new_start);
 void		split_envvar(t_shell *state, t_token *curr_t,
 				t_ast_node *curr_node, t_vec_nd *ret);
+void		emit_positional_at(t_shell *state, t_ast_node *curr_node,
+				t_vec_nd *ret);
+bool		ifs_has_nonws(const char *ifs);
+char		**ifs_split_posix(const char *s, const char *ifs);
 t_vec_nd	split_words(t_shell *state, t_ast_node *node);
 t_ast_node	new_env_node(char *new_start);
 bool		token_starts_with(t_token t, char *str);
