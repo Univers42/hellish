@@ -15,6 +15,7 @@
 t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_case(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
 /* dispatch to the right executor for each node */
@@ -36,6 +37,8 @@ t_execution_state	execute_tree_node(t_shell *state,
 		status = execute_while(state, exe);
 	else if (t == AST_FOR)
 		status = execute_for(state, exe);
+	else if (t == AST_CASE)
+		status = execute_case(state, exe);
 	else if (t == AST_FUNCTION_DEF)
 		status = execute_func_def(state, exe);
 	else
