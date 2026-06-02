@@ -54,6 +54,7 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "fc", (void *)builtin_fc);
 	hash_set(h, "history", (void *)builtin_history);
 	hash_set(h, "let", (void *)builtin_let);
+	hash_set(h, "local", (void *)builtin_local);
 	hash_set(h, "kill", (void *)builtin_kill);
 	hash_set(h, "printf", (void *)builtin_printf);
 }
