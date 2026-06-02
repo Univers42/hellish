@@ -45,7 +45,7 @@ static int	handle_set_o(t_shell *state, t_vec argv)
 ** set [--] [arg ...]: replace the positional parameters ($1.., $#).
 ** Stored as env entries "1".."N" + "#" (same scheme function calls use).
 */
-static int	set_positional_args(t_shell *state, char **args, size_t n)
+int	set_positional_args(t_shell *state, char **args, size_t n)
 {
 	char	*cnt;
 	size_t	i;

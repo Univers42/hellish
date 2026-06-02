@@ -11,6 +11,21 @@
 /* ************************************************************************** */
 
 #include "core.h"
+#include "env.h"
+#include "ft_builtins.h"
+
+/* $0 + positional params $1.. from argv[base..] ($0 = `zero`). Lets a script
+   (or -c command_name args) see its arguments, per POSIX. */
+static void	set_argv_params(t_shell *state, char **argv, int base, char *zero)
+{
+	int	n;
+
+	n = 0;
+	while (argv[base + n])
+		n++;
+	set_positional_args(state, argv + base, (size_t)n);
+	env_set(&state->env, env_create(ft_strdup("0"), ft_strdup(zero), false));
+}
 
 /* Helper for reading file into buffer */
 void	read_file_to_buffer(int fd, t_shell *state)
@@ -50,6 +65,8 @@ void	init_arg(t_shell *state, char **argv)
 	buff_readline_update(&state->rl);
 	state->rl.should_update_ctx = true;
 	state->metinp = INP_ARG;
+	if (argv[3])
+		set_argv_params(state, argv, 4, argv[3]);
 }
 
 void	init_file(t_shell *state, char **argv)
@@ -64,6 +81,7 @@ void	init_file(t_shell *state, char **argv)
 	}
 	read_file_to_buffer(fd, state);
 	update_ctx_from_file(state, argv);
+	set_argv_params(state, argv, 2, argv[1]);
 }
 
 void	init_stdin_notty(t_shell *state)
