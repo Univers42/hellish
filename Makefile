@@ -82,6 +82,7 @@ SRCS :=		src/arith/eval.c\
 			src/builtins/cd_helpers2.c\
 			src/builtins/builtin_type.c\
 			src/builtins/builtin_set.c\
+			src/builtins/set_opts.c\
 			src/builtins/builtin_loopctl.c\
 			src/builtins/builtin_eval.c\
 			src/builtins/builtin_misc.c\

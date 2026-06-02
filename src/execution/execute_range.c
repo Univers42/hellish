@@ -12,6 +12,25 @@
 
 #include "execution_private.h"
 
+void	exit_clean(t_shell *state, int code);
+
+/* set -e: exit when the AND-OR list's last *executed* command failed. This
+   excludes the left operand of && / || (it isn't the one that ran last, e.g.
+   `false && true` skips true so `false` is non-terminal), a negated pipeline
+   (! ...), and any list run as an if/while/until condition (errexit_off). */
+static void	errexit_check(t_shell *state, t_execution_state st,
+				bool ran, t_ast_node *last)
+{
+	if (!state->opt_errexit || state->errexit_off || !ran || st.status == 0)
+		return ;
+	if (last && last->node_type == AST_COMMAND_PIPELINE && last->negate)
+		return ;
+	if (state->should_exit || state->func_return || state->loop_break
+		|| state->loop_continue || get_g_sig()->should_unwind)
+		return ;
+	exit_clean(state, st.status);
+}
+
 static void	execute_then(t_executable_node *exe,
 							t_ast_node *child,
 							t_shell *state,
@@ -37,10 +56,13 @@ t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 	t_tt				op;
 	size_t				i;
 	t_ast_node			*child;
+	bool				ran;
 
 	status = res_status(0);
 	op = TT_SEMICOLON;
 	i = start;
+	ran = false;
+	child = NULL;
 	while (i < end)
 	{
 		child = &((t_ast_node *)exe->node->children.ctx)[i];
@@ -50,10 +72,12 @@ t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 			i++;
 			continue ;
 		}
-		if (should_execute(status, op))
+		ran = should_execute(status, op);
+		if (ran)
 			execute_then(exe, child, state, &status);
 		i++;
 	}
+	errexit_check(state, status, ran, child);
 	return (status);
 }
 

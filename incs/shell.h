@@ -90,6 +90,10 @@ typedef struct s_shell
 	int					getopts_pos;
 	bool				input_expanded;
 	int					last_cmdsub_status;
+	bool				opt_errexit;
+	bool				opt_nounset;
+	bool				opt_xtrace;
+	int					errexit_off;
 	char				*traps[32];
 	t_vec				readonly_vars;
 	t_vec_redir			redirects;
