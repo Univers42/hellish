@@ -71,16 +71,10 @@ char	*alias_get(t_hash *aliases, const char *name)
 int	alias_remove(t_hash *aliases, const char *name)
 {
 	t_alias_entry	*e;
-	int				idx;
 
-	e = (t_alias_entry *)hash_get(aliases, name);
+	e = (t_alias_entry *)hash_del(aliases, name);
 	if (!e)
 		return (1);
-	idx = hash_find_idx(aliases, name);
-	if (idx < 0)
-		return (1);
-	((t_hash_entry *)aliases->ctx)[idx].key = NULL;
-	((t_hash_entry *)aliases->ctx)[idx].value = NULL;
 	free(e->name);
 	free(e->value);
 	free(e);

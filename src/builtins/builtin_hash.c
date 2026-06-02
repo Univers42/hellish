@@ -75,16 +75,10 @@ void	cmd_hash_insert(t_hash *ht, const char *name, const char *path)
 void	cmd_hash_remove(t_hash *ht, const char *name)
 {
 	t_cmd_hash_entry	*e;
-	int					idx;
 
-	e = (t_cmd_hash_entry *)hash_get(ht, name);
+	e = (t_cmd_hash_entry *)hash_del(ht, name);
 	if (!e)
 		return ;
-	idx = hash_find_idx(ht, name);
-	if (idx < 0)
-		return ;
-	((t_hash_entry *)ht->ctx)[idx].key = NULL;
-	((t_hash_entry *)ht->ctx)[idx].value = NULL;
 	free(e->name);
 	free(e->path);
 	free(e);
