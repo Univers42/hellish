@@ -18,6 +18,7 @@ static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_case(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
 static t_execution_state	run_compound(t_shell *state,
@@ -32,6 +33,11 @@ static t_execution_state	run_compound(t_shell *state,
 		return (execute_while(state, exe));
 	if (t == AST_FOR)
 		return (execute_for(state, exe));
+	if (t == AST_CASE)
+		return (execute_case(state, exe));
+	if (t == AST_BRACE_GROUP)
+		return (exe->node = vec_idx(&exe->node->children, 0),
+			execute_tree_node(state, exe));
 	return (ft_assert(0), res_status(1));
 }
 
