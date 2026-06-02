@@ -31,7 +31,7 @@ bool	reparse_special_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	prev_start = *i;
 	c = t.start[*i];
 	if (c != '?' && c != '$' && c != '#' && c != '@' && c != '*'
-		&& c != '!' && !ft_isdigit(c))
+		&& c != '!' && c != '-' && !ft_isdigit(c))
 		return (false);
 	(*i)++;
 	push_subtoken_node(ret, t, create_interval(prev_start, *i), tt);

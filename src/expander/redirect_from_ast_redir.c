@@ -11,8 +11,22 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include <sys/stat.h>
 
 int	get_default_src_fd(t_tt tt);
+
+/* noclobber (set -C): a plain `>` may not truncate an existing regular file;
+   `>|` (TT_CLOBBER) overrides it. Returns true if the redirect must be refused. */
+static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
+{
+	struct stat	st;
+
+	if (tt != TT_REDIRECT_RIGHT || !state->opt_noclobber || !fname)
+		return (0);
+	if (stat(fname, &st) == 0 && S_ISREG(st.st_mode))
+		return (1);
+	return (0);
+}
 
 /* parse optional leading fd from operator token (e.g. "2>") */
 static int	parse_src_fd(t_tt tt, t_token op_tok)
@@ -68,6 +82,12 @@ static int	commit_redir(t_shell *state,
 	else
 		full_token = init_token_old();
 	fname = expand_redir_fname(state, curr);
+	if (noclobber_blocks(state, tt, fname))
+	{
+		ft_eprintf("%s: %s: cannot overwrite existing file\n",
+			state->ctx, fname);
+		return (free(fname), -1);
+	}
 	if (!create_redir_4(tt, fname, &new_redir, src_fd))
 	{
 		print_redir_err(state, full_token, fname);
