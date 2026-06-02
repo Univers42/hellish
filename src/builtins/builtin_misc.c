@@ -52,6 +52,8 @@ int	builtin_umask(t_shell *state, t_vec argv)
 	mode_t	m;
 
 	av = (char **)argv.ctx;
+	if (argv.len >= 2 && ft_strcmp(av[1], "-S") == 0)
+		return (umask_symbolic());
 	if (argv.len < 2)
 	{
 		m = umask(0);

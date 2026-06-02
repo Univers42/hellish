@@ -52,6 +52,8 @@ void	ensure_essential_env_vars(t_shell *state)
 	set_path(state);
 	set_shlvl(state);
 	set_underscore(state);
+	env_set(&state->env, env_create(ft_strdup("PPID"),
+			ft_itoa((int)getppid()), false));
 	e = env_get(&state->env, PWD);
 	if (!e || !e->value || !e->value[0])
 	{

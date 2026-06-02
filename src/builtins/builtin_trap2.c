@@ -45,6 +45,28 @@ void	run_exit_trap(t_shell *state)
 	free(cmd);
 }
 
+/* trap -p [condition ...] : print the trap commands for the named conditions
+   (or every set trap when none are named), in a re-readable form. */
+int	print_traps_for(t_shell *state, t_vec argv)
+{
+	char	**av;
+	size_t	i;
+	int		num;
+
+	av = (char **)argv.ctx;
+	if (argv.len == 2)
+		return (list_traps(state));
+	i = 1;
+	while (++i < argv.len)
+	{
+		num = trap_sig_from_name(av[i]);
+		if (num >= 0 && state->traps[num])
+			ft_printf("trap -- '%s' %s\n", state->traps[num],
+				sig_to_name(num));
+	}
+	return (0);
+}
+
 int	set_one_trap(t_shell *state, const char *action, int num)
 {
 	if (num < 0 || num >= 32)

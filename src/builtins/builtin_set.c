@@ -18,13 +18,7 @@ int	handle_set_o(t_shell *state, t_vec argv)
 
 	av = (char **)argv.ctx;
 	if (argv.len < 3)
-	{
-		if (state->edit_mode == 0)
-			ft_printf("vi\ton\nemacs\toff\n");
-		else
-			ft_printf("vi\toff\nemacs\ton\n");
-		return (0);
-	}
+		return (list_set_options(state));
 	if (ft_strcmp(av[2], "vi") == 0)
 	{
 		state->edit_mode = 0;

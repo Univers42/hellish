@@ -18,6 +18,7 @@
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 char	*build_flagstr(t_shell *state);
+char	*lineno_str(t_shell *state);
 
 /* If key[0..len) is all-digit > 0, return it; else -1.
 ** "0" falls through (so $0 stays an ordinary env entry). */
@@ -56,6 +57,8 @@ static char	*expand_special(t_shell *state, char *key, int len)
 	}
 	if (len == 1 && key[0] == '-')
 		return (build_flagstr(state));
+	if (len == 6 && ft_strncmp(key, "LINENO", 6) == 0)
+		return (lineno_str(state));
 	if (len == 0)
 		return ("");
 	if (len == 1 && key[0] == '#')

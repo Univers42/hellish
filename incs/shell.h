@@ -122,6 +122,7 @@ typedef struct s_shell
 	bool				opt_noexec;
 	bool				opt_verbose;
 	char				flagbuf[16];
+	char				linebuf[16];
 	int					errexit_off;
 	char				*traps[32];
 	t_vec				readonly_vars;

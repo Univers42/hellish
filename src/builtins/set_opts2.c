@@ -13,6 +13,31 @@
 #include "builtins_private.h"
 #include "sh_input.h"
 
+/* One `set -o` line: option name left-padded then on/off, like bash --posix. */
+static void	print_set_opt(const char *name, int on)
+{
+	if (on)
+		ft_printf("%-15s\ton\n", name);
+	else
+		ft_printf("%-15s\toff\n", name);
+}
+
+/* set -o (no option name): list every shell option with its current state. */
+int	list_set_options(t_shell *state)
+{
+	print_set_opt("allexport", state->opt_allexport);
+	print_set_opt("errexit", state->opt_errexit);
+	print_set_opt("noclobber", state->opt_noclobber);
+	print_set_opt("noexec", state->opt_noexec);
+	print_set_opt("noglob", state->opt_noglob);
+	print_set_opt("nounset", state->opt_nounset);
+	print_set_opt("verbose", state->opt_verbose);
+	print_set_opt("xtrace", state->opt_xtrace);
+	print_set_opt("emacs", state->edit_mode == 1);
+	print_set_opt("vi", state->edit_mode == 0);
+	return (0);
+}
+
 /* set -e/-u/-x [...] : consume leading flag words. */
 int	apply_set_flags(t_shell *state, t_vec argv)
 {

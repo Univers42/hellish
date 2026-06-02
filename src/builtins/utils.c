@@ -47,12 +47,9 @@ int	count_real_args(t_vec argv)
 	while (i < argv.len)
 	{
 		arg = ((char **)argv.ctx)[i];
-		if (consume_pending_skip(&skip_next))
-		{
-			i++;
-			continue ;
-		}
-		if (handle_redir_token(arg, &skip_next))
+		if (consume_pending_skip(&skip_next)
+			|| handle_redir_token(arg, &skip_next)
+			|| !ft_strcmp(arg, "-L") || !ft_strcmp(arg, "-P"))
 		{
 			i++;
 			continue ;

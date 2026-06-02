@@ -105,6 +105,6 @@ t_execution_state	execute_simple_command(t_shell *state,
 	replace_null_argv_with_empty(&cmd);
 	apply_alias(state, &cmd);
 	if (state->opt_xtrace && cmd.argv.len > 0)
-		xtrace_print(&cmd.argv);
+		xtrace_print(state, &cmd.argv);
 	return (dispatch_cmd(state, &cmd, exe));
 }
