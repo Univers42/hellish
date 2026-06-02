@@ -12,6 +12,15 @@
 
 #include "heredoc_private.h"
 
+/* Special/positional parameter names are a single character: a digit ($1..$9),
+   or $#, $?, $$, $!, $@, $* — none of which env_len (alpha/_ names) recognises. */
+static int	special_param_len(char c)
+{
+	if (ft_isdigit((unsigned char)c) || ft_strchr("#?$!@*", c))
+		return (1);
+	return (0);
+}
+
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
@@ -19,6 +28,8 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 
 	(*i)++;
 	len = env_len(line + *i);
+	if (len == 0)
+		len = special_param_len(line[*i]);
 	if (len)
 	{
 		if (!full_file->ctx)
