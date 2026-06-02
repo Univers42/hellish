@@ -61,6 +61,15 @@ bool	is_empty_token_list(t_deque_tok *tokens)
 	return (false);
 }
 
+static void	apply_expansion(t_shell *state, char *expanded)
+{
+	free(state->input.ctx);
+	vec_init(&state->input);
+	state->input.elem_size = 1;
+	vec_push_str(&state->input, expanded);
+	state->input_expanded = true;
+}
+
 static void	expand_hist_in_input(t_shell *state)
 {
 	char	*expanded;
@@ -71,12 +80,7 @@ static void	expand_hist_in_input(t_shell *state)
 		return ;
 	expanded = expand_history(state, raw);
 	if (expanded && ft_strcmp(expanded, raw) != 0 && expanded[0] != '\0')
-	{
-		free(state->input.ctx);
-		vec_init(&state->input);
-		state->input.elem_size = 1;
-		vec_push_str(&state->input, expanded);
-	}
+		apply_expansion(state, expanded);
 	if (expanded)
 		free(expanded);
 	free(raw);
