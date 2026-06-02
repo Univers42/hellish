@@ -31,6 +31,8 @@ static long long	handle_div(t_arith_parser *p, long long left)
 		p->error = true;
 		return (0);
 	}
+	if (left == LLONG_MIN && right == -1)
+		return (LLONG_MIN);
 	return (left / right);
 }
 
@@ -47,6 +49,8 @@ static long long	handle_mod(t_arith_parser *p, long long left)
 		p->error = true;
 		return (0);
 	}
+	if (left == LLONG_MIN && right == -1)
+		return (0);
 	return (left % right);
 }
 

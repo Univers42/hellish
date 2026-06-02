@@ -17,6 +17,7 @@
 # include "shell.h"
 # include "libft.h"
 # include <stdlib.h>
+# include <limits.h>
 # include "helpers.h"
 # include "env.h"
 
