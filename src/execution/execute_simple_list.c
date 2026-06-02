@@ -12,6 +12,8 @@
 
 #include "execution_private.h"
 
+void	run_pending_traps(t_shell *state);
+
 /* Reap any zombie background children (non-blocking) */
 void	reap_background_children(void)
 {
@@ -85,6 +87,10 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 		else
 			status = execute_range(state, exe, i, sep_idx);
 		i = sep_idx + 1;
+		run_pending_traps(state);
+		if (state->should_exit || state->loop_break || state->loop_continue
+			|| state->func_return || get_g_sig()->should_unwind)
+			break ;
 	}
 	reap_background_children();
 	return (status);
