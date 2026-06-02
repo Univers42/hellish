@@ -91,6 +91,11 @@ SRCS :=		src/arith/eval.c\
 			src/builtins/builtin_trap.c\
 			src/builtins/builtin_readonly.c\
 			src/builtins/builtin_read.c\
+			src/builtins/builtin_history.c\
+			src/builtins/builtin_let.c\
+			src/builtins/builtin_kill.c\
+			src/builtins/builtin_printf.c\
+			src/builtins/printf_helpers.c\
 			src/builtins/collect_and_print_exported.c\
 			src/builtins/core_builtins.c\
 			src/builtins/core_builtins2.c\

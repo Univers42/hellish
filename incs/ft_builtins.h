@@ -68,6 +68,10 @@ int		builtin_jobs(t_shell *state, t_vec argv);
 int		builtin_fg(t_shell *state, t_vec argv);
 int		builtin_bg(t_shell *state, t_vec argv);
 int		builtin_fc(t_shell *state, t_vec argv);
+int		builtin_history(t_shell *state, t_vec argv);
+int		builtin_let(t_shell *state, t_vec argv);
+int		builtin_kill(t_shell *state, t_vec argv);
+int		builtin_printf(t_shell *state, t_vec argv);
 int		(*builtin_func(char *name))(t_shell *state, t_vec argv);
 
 #endif
