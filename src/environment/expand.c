@@ -18,9 +18,33 @@
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 
+/* If key[0..len) is an all-digit positive number, return it; else -1. "0" and
+** anything non-numeric fall through (so $0 stays an ordinary env entry). */
+static int	pos_index(const char *key, int len)
+{
+	int	n;
+	int	i;
+
+	if (len <= 0)
+		return (-1);
+	n = 0;
+	i = 0;
+	while (i < len)
+	{
+		if (key[i] < '0' || key[i] > '9')
+			return (-1);
+		n = n * 10 + (key[i] - '0');
+		i++;
+	}
+	if (n < 1)
+		return (-1);
+	return (n);
+}
+
 char	*env_expand_n(t_shell *state, char *key, int len)
 {
 	t_env	*curr;
+	int		n;
 
 	if (ft_strncmp(key, "?", len) == 0 && len == 1)
 		return (state->last_cmd_st);
@@ -30,13 +54,18 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 		return (state->last_bg_pid ? state->last_bg_pid : "");
 	else if (len == 0)
 		return ("");
-	curr = env_nget(&state->env, key, len);
-	if (curr == 0 || curr->key == 0)
+	else if (len == 1 && key[0] == '#')
+		return (state->pos.cnt_str[0] ? state->pos.cnt_str : "0");
+	n = pos_index(key, len);
+	if (n >= 1)
 	{
-		if (len == 1 && key[0] == '#')
-			return ("0");
+		if (n <= state->pos.count)
+			return (state->pos.args[n - 1]);
 		return (0);
 	}
+	curr = env_nget(&state->env, key, len);
+	if (curr == 0 || curr->key == 0)
+		return (0);
 	return (curr->value);
 }
 
