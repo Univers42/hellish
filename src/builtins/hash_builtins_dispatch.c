@@ -57,6 +57,7 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "local", (void *)builtin_local);
 	hash_set(h, "kill", (void *)builtin_kill);
 	hash_set(h, "printf", (void *)builtin_printf);
+	hash_set(h, "ulimit", (void *)builtin_ulimit);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)

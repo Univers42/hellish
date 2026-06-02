@@ -21,8 +21,11 @@ int	builtin_export(t_shell *st, t_vec av)
 
 	i = 1;
 	status = 0;
-	if (av.len == 1)
+	if (av.len == 1 || (av.len == 2
+			&& !ft_strcmp(((char **)av.ctx)[1], "-p")))
 		return (collect_and_print_exported(st), 0);
+	if (av.len > 1 && !ft_strcmp(((char **)av.ctx)[1], "-p"))
+		i = 2;
 	while (i < av.len)
 	{
 		idx = (int)i;
@@ -93,12 +96,22 @@ int	builtin_env(t_shell *state, t_vec argv)
 
 int	builtin_unset(t_shell *state, t_vec argv)
 {
+	char	**av;
 	size_t	i;
+	int		fmode;
 
+	av = (char **)argv.ctx;
 	i = 1;
+	fmode = 0;
+	if (i < argv.len && av[i][0] == '-' && (av[i][1] == 'f' || av[i][1] == 'v')
+		&& !av[i][2])
+		fmode = (av[i++][1] == 'f');
 	while (i < argv.len)
 	{
-		try_unset(state, ((char **)argv.ctx)[i]);
+		if (fmode)
+			unset_function(state, av[i]);
+		else
+			try_unset(state, av[i]);
 		i++;
 	}
 	return (0);

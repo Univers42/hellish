@@ -63,30 +63,34 @@ static int	command_v(t_shell *state, char *name)
 	return (1);
 }
 
-/* command [-v] cmd [args]: run cmd (args already split) bypassing functions. */
+/* command [-p] [-v|-V] cmd [args]: run cmd (args already split) bypassing
+   functions. -p (use a default PATH) is accepted and skipped. */
 int	builtin_command(t_shell *state, t_vec argv)
 {
 	char	**av;
 	t_vec	sub;
-	int		(*fn)(t_shell *, t_vec);
 	size_t	i;
+	size_t	start;
 	char	*cur;
 
 	av = (char **)argv.ctx;
-	if (argv.len >= 3 && (!ft_strcmp(av[1], "-v") || !ft_strcmp(av[1], "-V")))
-		return (command_v(state, av[2]));
-	if (argv.len < 2)
+	start = 1;
+	while (start < argv.len && !ft_strcmp(av[start], "-p"))
+		start++;
+	if (start + 1 < argv.len && (!ft_strcmp(av[start], "-v")
+			|| !ft_strcmp(av[start], "-V")))
+		return (command_v(state, av[start + 1]));
+	if (start >= argv.len)
 		return (0);
 	vec_init(&sub);
 	sub.elem_size = sizeof(char *);
-	i = 1;
+	i = start;
 	while (i < argv.len)
 		vec_push(&sub, &av[i++]);
-	fn = builtin_func(((char **)sub.ctx)[0]);
-	if (fn)
-		return (i = fn(state, sub), free(sub.ctx), i);
+	if (builtin_func(av[start]))
+		return (i = builtin_func(av[start])(state, sub), free(sub.ctx), i);
 	free(sub.ctx);
-	cur = join_from(argv, 1);
+	cur = join_from(argv, start);
 	i = exec_string(state, cur);
 	return (free(cur), i);
 }

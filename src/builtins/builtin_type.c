@@ -19,6 +19,20 @@ static int	type_is_builtin(const char *name)
 	return (builtin_func((char *)name) != NULL);
 }
 
+/* POSIX reserved words (plus the common function/{/}). */
+static int	type_is_keyword(const char *name)
+{
+	static const char	*kw[] = {"!", "{", "}", "case", "do", "done", "elif",
+		"else", "esac", "fi", "for", "if", "in", "then", "until", "while", NULL};
+	int					i;
+
+	i = 0;
+	while (kw[i])
+		if (!ft_strcmp(kw[i++], name))
+			return (1);
+	return (0);
+}
+
 static int	type_find_in_path(t_shell *state, const char *name, char **out)
 {
 	char	*path;
@@ -49,6 +63,10 @@ static int	type_one(t_shell *state, const char *name)
 		ft_printf("%s is aliased to `%s'\n", name, alias_val);
 		return (0);
 	}
+	if (type_is_keyword(name))
+		return (ft_printf("%s is a shell keyword\n", name), 0);
+	if (func_lookup(state, (char *)name))
+		return (ft_printf("%s is a function\n", name), 0);
 	if (type_is_builtin(name))
 	{
 		ft_printf("%s is a shell builtin\n", name);
