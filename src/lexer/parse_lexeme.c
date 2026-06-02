@@ -71,6 +71,10 @@ static int	handle_next_chunk(t_deque_tok *tokens,
 		}
 		return (1);
 	}
+	if (**str == '`')
+		return (advance_backtick(str), 1);
+	if (**str == '$' && (*str)[1] == '{')
+		return (advance_brace_param(str), 1);
 	if (parse_generic(str) == 0)
 		return (1);
 	if (**str == '\'' || **str == '"')
