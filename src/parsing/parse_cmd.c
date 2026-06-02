@@ -44,6 +44,10 @@ static bool	handle_compound_case(t_shell *state, t_parser *parser,
 		tmp_node = parse_while_command(state, parser, tokens);
 	else if (next == TT_UNTIL)
 		tmp_node = parse_until_command(state, parser, tokens);
+	else if (next == TT_CASE)
+		tmp_node = parse_case_command(state, parser, tokens);
+	else if (next == TT_LBRACE)
+		tmp_node = parse_brace_group(state, parser, tokens);
 	else
 		tmp_node = parse_for_command(state, parser, tokens);
 	vec_push(&ret->children, &tmp_node);
