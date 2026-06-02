@@ -72,6 +72,7 @@ void	free_all_state(t_shell *state)
 	free_ast(&state->tree);
 	free_hist(state);
 	free(state->cwd.ctx);
+	env_index_free();
 }
 
 void	free_executable_cmd(t_executable_cmd cmd)
