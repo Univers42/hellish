@@ -14,19 +14,18 @@
 
 bool	finish_arith_sub(t_shell *state, t_expand_ctx *ctx, int j)
 {
-	const char	*s = ctx->s;
-	t_string	*outbuf;
-	int			*consumed;
-	int			expr_len;
-	char		*result;
+	char	*result;
+	t_token	tmp;
 
-	outbuf = ctx->outbuf;
-	consumed = ctx->consumed;
-	expr_len = (j - 2) - 3;
-	result = arith_expand(state, (char *)s + 3, expr_len);
+	tmp = (t_token){.start = ft_strndup(ctx->s + 3, (j - 2) - 3),
+		.len = (j - 2) - 3, .tt = TT_WORD, .allocated = true};
+	process_word_token(state, &tmp);
+	result = arith_expand(state, tmp.start, tmp.len);
+	if (tmp.allocated)
+		free(tmp.start);
 	if (result)
-		(vec_push_nstr(outbuf, result, ft_strlen(result)), free(result));
-	*consumed = j;
+		(vec_push_nstr(ctx->outbuf, result, ft_strlen(result)), free(result));
+	*ctx->consumed = j;
 	return (true);
 }
 
