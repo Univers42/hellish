@@ -64,16 +64,28 @@ static bool	is_cmd_position(t_tt tt)
 		|| tt == TT_BANG || tt == TT_DSEMI || tt == TT_BRACE_RIGHT);
 }
 
+static void	reclassify_word(t_token *t)
+{
+	t_tt	kw;
+
+	kw = match_kw_part1(t->start, t->len);
+	if (kw == TT_END)
+		kw = match_kw_part2(t->start, t->len);
+	if (kw != TT_END)
+		t->tt = kw;
+}
+
 void	reclassify_keywords(t_deque_tok *tokens)
 {
 	size_t	i;
 	t_token	*t;
 	bool	cmd_pos;
 	bool	after_redir;
-	t_tt	kw;
+	bool	for_name;
 
 	cmd_pos = true;
 	after_redir = false;
+	for_name = false;
 	i = 0;
 	while (i < tokens->deqtok.len)
 	{
@@ -82,14 +94,11 @@ void	reclassify_keywords(t_deque_tok *tokens)
 			continue ;
 		if (is_redirect(t->tt) && (after_redir = true, 1))
 			continue ;
+		if (for_name && (for_name = false, cmd_pos = true, 1))
+			continue ;
 		if (t->tt == TT_WORD && cmd_pos)
-		{
-			kw = match_kw_part1(t->start, t->len);
-			if (kw == TT_END)
-				kw = match_kw_part2(t->start, t->len);
-			if (kw != TT_END)
-				t->tt = kw;
-		}
+			reclassify_word(t);
+		for_name = (t->tt == TT_FOR);
 		cmd_pos = is_cmd_position(t->tt);
 	}
 }

@@ -294,7 +294,7 @@ static char	*expand_trim(t_shell *state, const char *name,
 	if (!val)
 		return (ft_strdup(""));
 	op_off = 1 + (op[1] == '%' || op[1] == '#');
-	pat = ft_strndup(op + op_off, slen - name_len - op_off);
+	pat = expand_param_word(state, op + op_off, slen - name_len - op_off);
 	if (op[0] == '%' && op[1] == '%')
 		result = trim_suffix_longest(val, pat);
 	else if (op[0] == '%')
