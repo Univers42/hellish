@@ -76,6 +76,7 @@ typedef struct s_token
 	char		*start;
 	int			len;
 	bool		allocated;
+	bool		split_eligible;
 	t_token_old	full_word;
 }	t_token;
 
