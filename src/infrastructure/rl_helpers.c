@@ -27,6 +27,8 @@ void	buff_readline_update(t_rl *l)
 
 void	buff_readline_reset(t_rl *l)
 {
+	if (l->no_compact)
+		return (buff_readline_update(l));
 	if (l->buff.len > l->cursor)
 		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx + l->cursor,
 			l->buff.len - l->cursor);
