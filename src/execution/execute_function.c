@@ -73,13 +73,20 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 /*
 ** Execute a function call: give it its own positional params by swapping in a
 ** freshly-built t_pos (saving the caller's by value — an O(1) struct copy, no
-** env mutation), clone+run the body, then restore the scope (`local` variables
-** via scope_leave, positional params by restoring the saved struct).
+** env mutation), run the body IN PLACE, then restore the scope (`local`
+** variables via scope_leave, positional params by restoring the saved struct).
+**
+** The body is run directly off fn->body (no per-call clone) — exactly as
+** execute_while/execute_for run loop bodies in place. Word expansion is
+** non-destructive (expand_word_ro clones each word it touches), so it never
+** mutates the shared body AST, which makes repeated and recursive calls safe.
+** Redirects re-resolve every call (commit_redir for non-heredocs, fresh
+** materialize_heredoc for heredocs), so the per-node redir cache is never read
+** stale across calls.
 */
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv)
 {
-	t_ast_node			body_copy;
 	t_executable_node	body_exe;
 	t_execution_state	status;
 	t_pos				saved;
@@ -87,11 +94,9 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	state->func_depth++;
 	saved = state->pos;
 	pos_build(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
-	body_copy = clone_ast(&fn->body);
 	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
-			&body_copy, true);
+			&fn->body, true);
 	status = execute_tree_node(state, &body_exe);
-	free_ast(&body_copy);
 	state->func_return = 0;
 	scope_leave(state);
 	pos_free(&state->pos);
