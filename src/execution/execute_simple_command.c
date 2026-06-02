@@ -113,7 +113,7 @@ static t_execution_state	handle_assign_only(t_shell *state,
 	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
-	return (res_status(0));
+	return (res_status(state->last_cmdsub_status));
 }
 
 t_execution_state	execute_simple_command(t_shell *state,
@@ -121,6 +121,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 {
 	t_executable_cmd	cmd;
 
+	state->last_cmdsub_status = 0;
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
 		procsub_close_fds_parent(state);
