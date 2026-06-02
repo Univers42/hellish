@@ -35,6 +35,59 @@ static char	*expand_case_word(t_shell *state, t_ast_node *node)
 	return (ret);
 }
 
+/* A subtoken whose glob metacharacters must be matched literally: single- or
+   double-quoted text, or the value of a double-quoted variable. */
+static bool	is_quoted_tok(t_tt tt)
+{
+	return (tt == TT_SQWORD || tt == TT_DQWORD || tt == TT_DQENVVAR);
+}
+
+/* Append a pattern subtoken, backslash-escaping glob metacharacters that came
+   from a quoted segment so case_match treats them as literals (POSIX: quoted
+   chars in a case pattern lose their special meaning). */
+static void	append_pat_tok(t_string *s, t_token t)
+{
+	int		i;
+	bool	q;
+
+	if (!t.start)
+		return ;
+	q = is_quoted_tok(t.tt);
+	i = 0;
+	while (i < t.len)
+	{
+		if (q && ft_strchr("*?[\\", t.start[i]))
+			vec_push_char(s, '\\');
+		vec_push_char(s, t.start[i]);
+		i++;
+	}
+}
+
+/* Like expand_case_word but for a PATTERN: quoted glob metacharacters are
+   escaped so they match literally, unquoted ones stay active. */
+static char	*expand_case_pattern(t_shell *state, t_ast_node *node)
+{
+	t_ast_node	copy;
+	t_string	s;
+	size_t		i;
+	char		*ret;
+
+	copy = clone_ast(node);
+	expand_tilde_word(state, &copy);
+	expand_cmd_substitutions(state, &copy);
+	expand_env_vars(state, &copy, false);
+	vec_init(&s);
+	s.elem_size = 1;
+	i = -1;
+	while (copy.children.ctx && ++i < copy.children.len
+		&& ((t_ast_node *)copy.children.ctx)[i].node_type == AST_TOKEN)
+		append_pat_tok(&s, ((t_ast_node *)copy.children.ctx)[i].token);
+	ret = ft_strndup(s.ctx ? (char *)s.ctx : "", s.len);
+	free(s.ctx);
+	free_ast(&copy);
+	return (ret);
+}
+
 static t_execution_state	run_case_body(t_shell *state, t_ast_node *body)
 {
 	t_executable_node	exe;
@@ -59,7 +112,7 @@ static bool	item_matches(t_shell *state, t_ast_node *item, const char *subj)
 	i = 0;
 	while (i + 1 < item->children.len)
 	{
-		pat = expand_case_word(state, vec_idx(&item->children, i));
+		pat = expand_case_pattern(state, vec_idx(&item->children, i));
 		m = case_match(subj, pat);
 		free(pat);
 		if (m)

@@ -11,15 +11,17 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "ft_builtins.h"
 
 t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
 {
-	int	stdin_bak;
-	int	stdout_bak;
-	int	stderr_bak;
-	int	status;
+	int		stdin_bak;
+	int		stdout_bak;
+	int		stderr_bak;
+	int		status;
+	t_vec	saves;
 
 	stdin_bak = dup(0);
 	stdout_bak = dup(1);
@@ -29,7 +31,9 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	exe->outfd = -1;
 	exe->next_infd = -1;
 	update_underscore_var(state, cmd);
+	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	status = builtin_func(((char **)(cmd->argv.ctx))[0])(state, cmd->argv);
+	restore_temp_assigns(state, &saves);
 	dup2(stdin_bak, 0);
 	dup2(stdout_bak, 1);
 	dup2(stderr_bak, 2);
