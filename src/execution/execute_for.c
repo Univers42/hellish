@@ -81,6 +81,34 @@ static t_execution_state	for_word_loop(t_shell *state,
 ** for NAME [in wordlist ;] do compound_list done
 ** children = [word_list...] + compound_list(body)
 */
+/* `for NAME; do ... done` with no `in` list iterates over "$@" (POSIX). The
+   parser sets node->negate when an `in` clause is present, so word_count==0 with
+   no `in` means "iterate the positional parameters" (vs an explicit empty list). */
+static t_execution_state	for_positional_loop(t_shell *state,
+		t_ast_node *node, char *var_name)
+{
+	t_execution_state	status;
+	char				*key;
+	int					i;
+	int					n;
+
+	status = res_status(0);
+	n = ft_atoi(env_expand(state, "#"));
+	state->loop_depth++;
+	i = 0;
+	while (++i <= n)
+	{
+		key = ft_itoa(i);
+		set_for_var(state, var_name, env_expand(state, key));
+		free(key);
+		status = run_body(state, vec_idx(&node->children, 0));
+		if (handle_loop_ctl(state))
+			break ;
+	}
+	state->loop_depth--;
+	return (status);
+}
+
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;
@@ -90,7 +118,10 @@ t_execution_state	execute_for(t_shell *state, t_executable_node *exe)
 	ft_assert(exe->node->children.len >= 1);
 	var_name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	word_count = exe->node->children.len - 1;
-	status = for_word_loop(state, exe->node, var_name, word_count);
+	if (word_count == 0 && !exe->node->negate)
+		status = for_positional_loop(state, exe->node, var_name);
+	else
+		status = for_word_loop(state, exe->node, var_name, word_count);
 	free(var_name);
 	return (status);
 }
