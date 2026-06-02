@@ -390,6 +390,14 @@ test: all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
+# Official speed verdict vs `bash --posix`. Always benchmarks the OPT build
+# (timing the default ASan/debug build would be meaningless). Override rounds /
+# scope:  make bench ROUNDS=7        make bench BENCH=micro
+bench:
+	@$(MAKE) --no-print-directory OPT=1 all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBenchmarking hellish vs bash --posix\033[0m\n\n" >&2
+	@(cd $(TEST_DIR); ROUNDS=$(ROUNDS) TIMEOUT_S=$(TIMEOUT_S) /bin/bash benchmark $(BENCH))
+
 norm:
 	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
 	output="$$( \
@@ -419,4 +427,4 @@ my_shell:
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
 
-.PHONY: test re all clean fclean norm my_shell help
+.PHONY: test bench re all clean fclean norm my_shell help
