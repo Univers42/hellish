@@ -13,6 +13,12 @@
 #ifndef HISTORY_PRIVATE_H
 # define HISTORY_PRIVATE_H
 
+/* Cap on history entries kept in memory and on disk (like bash HISTFILESIZE).
+   Bounds startup load time and the per-line readline/fork footprint. */
+# ifndef HIST_MAX
+#  define HIST_MAX 2000
+# endif
+
 # include "shell.h"
 # include <fcntl.h>
 # include <stdio.h>
