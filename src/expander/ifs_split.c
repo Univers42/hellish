@@ -30,11 +30,20 @@ bool	ifs_has_nonws(const char *ifs)
 	return (false);
 }
 
+/* Copy s[start..end) into a fresh string. Avoids ft_substr, which re-measures
+   the whole source with ft_strlen on every call (O(n^2) when splitting many
+   fields out of one long value). */
 static void	push_f(t_vec *out, const char *s, size_t start, size_t end)
 {
 	char	*f;
+	size_t	len;
 
-	f = ft_substr(s, start, end - start);
+	len = end - start;
+	f = malloc(len + 1);
+	if (!f)
+		return ;
+	ft_memcpy(f, s + start, len);
+	f[len] = '\0';
 	vec_push(out, &f);
 }
 
