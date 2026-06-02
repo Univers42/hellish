@@ -45,8 +45,13 @@ static t_ast_node	parse_case_item(t_shell *state, t_parser *parser,
 	(void)deque_pop_start(&tokens->deqtok);
 	skip_newlines(tokens);
 	if (pk(tokens)->tt == TT_DSEMI || pk(tokens)->tt == TT_ESAC)
-		return (init_ast_node_children(&body, AST_COMPOUND_LIST),
-			vec_push(&item.children, &body), item);
+	{
+		init_ast_node_children(&body, AST_COMPOUND_LIST);
+		vec_push(&item.children, &body);
+		if (pk(tokens)->tt == TT_DSEMI)
+			(void)deque_pop_start(&tokens->deqtok);
+		return (item);
+	}
 	push_parsed_compound_list(state, parser, tokens, &item);
 	if (parser->res == RES_OK && pk(tokens)->tt == TT_DSEMI)
 		(void)deque_pop_start(&tokens->deqtok);
