@@ -32,6 +32,8 @@ typedef struct s_op_map
 char		*tokenizer(char *str, t_deque_tok *ret);
 int			advance_dquoted(char **str);
 int			advance_squoted(char **str);
+int			advance_backtick(char **str);
+int			advance_brace_param(char **str);
 void		free_all_state(struct s_shell *state);
 void		print_tokens(t_deque_tok *tokens);
 char		*tt_to_str(t_tt tt);
