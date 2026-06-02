@@ -57,10 +57,35 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 	rp.prev_start = rp.i;
 	while (rp.i < rp.current_token.len
 		&& !is_special_char(rp.current_token.start[rp.i])
-		&& rp.current_token.start[rp.i] != '\\')
+		&& rp.current_token.start[rp.i] != '\\'
+		&& rp.current_token.start[rp.i] != '`')
 		rp.i++;
 	push_subtoken_node(&rp.current_node, rp.current_token,
 		create_interval(rp.prev_start, rp.i), TT_WORD);
+	*i = rp.i;
+	*ret = rp.current_node;
+}
+
+// Helper: reparse a `...` backtick command substitution as one TT_WORD
+// subtoken (so process_word_token can expand it), marked split-eligible.
+void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
+{
+	t_reparser	rp;
+	int			start;
+
+	create_reparser(&rp, *ret, t, i);
+	start = rp.i++;
+	while (rp.i < rp.current_token.len && rp.current_token.start[rp.i] != '`')
+	{
+		if (rp.current_token.start[rp.i] == '\\' && rp.i + 1 < rp.current_token.len)
+			rp.i++;
+		rp.i++;
+	}
+	rp.i += (rp.i < rp.current_token.len);
+	push_subtoken_node(&rp.current_node, rp.current_token,
+		create_interval(start, rp.i), TT_WORD);
+	((t_ast_node *)rp.current_node.children.ctx)
+	[rp.current_node.children.len - 1].token.split_eligible = true;
 	*i = rp.i;
 	*ret = rp.current_node;
 }
@@ -79,8 +104,14 @@ void	loop_node_rp(t_reparser *rp)
 		else if (rp->current_token.start[rp->i] == '$')
 			reparse_envvar(&rp->current_node, &rp->i,
 				rp->current_token, TT_ENVVAR);
+		else if (rp->current_token.start[rp->i] == '`')
+			reparse_backtick(&rp->current_node, &rp->i, rp->current_token);
 		else if (is_space(rp->current_token.start[rp->i]))
-			ft_assert(0);
+		{
+			push_subtoken_node(&rp->current_node, rp->current_token,
+				create_interval(rp->i, rp->i + 1), TT_WORD);
+			rp->i++;
+		}
 		else
 			reparse_norm_word(&rp->current_node, &rp->i, rp->current_token);
 	}
