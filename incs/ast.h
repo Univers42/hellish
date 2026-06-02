@@ -49,6 +49,7 @@ typedef struct s_ast_node
 	t_vec			children;
 	bool			has_redirect;
 	int				redir_idx;
+	bool			negate;
 }	t_ast_node;
 
 /* Vector type alias for AST nodes */
