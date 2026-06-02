@@ -50,6 +50,7 @@ typedef struct s_ast_node
 	bool			has_redirect;
 	int				redir_idx;
 	bool			negate;
+	char			*heredoc_body;
 }	t_ast_node;
 
 /* Vector type alias for AST nodes */

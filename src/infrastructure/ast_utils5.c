@@ -52,6 +52,10 @@ t_ast_node	clone_ast(t_ast_node *src)
 	dst.has_redirect = src->has_redirect;
 	dst.redir_idx = src->redir_idx;
 	dst.negate = src->negate;
+	if (src->heredoc_body)
+		dst.heredoc_body = ft_strdup(src->heredoc_body);
+	else
+		dst.heredoc_body = NULL;
 	vec_init(&dst.children);
 	dst.children.elem_size = sizeof(t_ast_node);
 	if (src->children.len)
@@ -77,6 +81,10 @@ t_ast_node	deep_clone_ast(t_ast_node *src)
 	dst.has_redirect = src->has_redirect;
 	dst.redir_idx = src->redir_idx;
 	dst.negate = src->negate;
+	if (src->heredoc_body)
+		dst.heredoc_body = ft_strdup(src->heredoc_body);
+	else
+		dst.heredoc_body = NULL;
 	vec_init(&dst.children);
 	dst.children.elem_size = sizeof(t_ast_node);
 	if (src->children.len)

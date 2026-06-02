@@ -19,6 +19,8 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	t_string		sep;
 	t_hdoc			req;
 
+	if (state->gather_in_func && capture_heredoc_to_node(state, curr))
+		return (-1);
 	wr = ft_mktemp(state, curr);
 	if (wr < 0)
 		return (-1);
