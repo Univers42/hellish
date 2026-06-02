@@ -34,6 +34,32 @@ int		builtin_export(t_shell *state, t_vec argv);
 int		builtin_unset(t_shell *state, t_vec argv);
 int		builtin_type(t_shell *state, t_vec argv);
 int		builtin_set(t_shell *state, t_vec argv);
+int		builtin_shift(t_shell *state, t_vec argv);
+int		builtin_colon(t_shell *state, t_vec argv);
+int		builtin_break(t_shell *state, t_vec argv);
+int		builtin_continue(t_shell *state, t_vec argv);
+int		builtin_eval(t_shell *state, t_vec argv);
+int		builtin_source(t_shell *state, t_vec argv);
+int		builtin_true(t_shell *state, t_vec argv);
+int		builtin_false(t_shell *state, t_vec argv);
+int		builtin_umask(t_shell *state, t_vec argv);
+int		builtin_command(t_shell *state, t_vec argv);
+int		builtin_return(t_shell *state, t_vec argv);
+int		builtin_getopts(t_shell *state, t_vec argv);
+int		builtin_exec(t_shell *state, t_vec argv);
+int		builtin_wait(t_shell *state, t_vec argv);
+int		builtin_times(t_shell *state, t_vec argv);
+int		builtin_trap(t_shell *state, t_vec argv);
+int		builtin_readonly(t_shell *state, t_vec argv);
+void	run_pending_traps(t_shell *state);
+void	run_exit_trap(t_shell *state);
+bool	is_readonly_var(t_shell *state, const char *key);
+
+typedef struct s_signame
+{
+	const char	*name;
+	int			num;
+}	t_signame;
 int		builtin_test(t_shell *state, t_vec argv);
 int		builtin_alias(t_shell *state, t_vec argv);
 int		builtin_unalias(t_shell *state, t_vec argv);
