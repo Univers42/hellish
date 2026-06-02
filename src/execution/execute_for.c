@@ -14,17 +14,15 @@
 
 int	handle_loop_ctl(t_shell *state);
 
+/* Run the for-loop body IN PLACE (no per-iteration clone). Word expansion is
+   non-destructive, so `body` survives for the next iteration; the AST owner
+   frees it once at top level. */
 static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 {
 	t_executable_node	body_exe;
-	t_ast_node			body_copy;
-	t_execution_state	status;
 
-	body_copy = clone_ast(body);
-	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &body_copy, true);
-	status = execute_tree_node(state, &body_exe);
-	free_ast(&body_copy);
-	return (status);
+	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, body, true);
+	return (execute_tree_node(state, &body_exe));
 }
 
 static void	set_for_var(t_shell *state, char *name, char *val)
@@ -38,17 +36,15 @@ static void	set_for_var(t_shell *state, char *name, char *val)
 static t_vec	expand_for_words(t_shell *state,
 		t_ast_node *node, size_t wc)
 {
-	t_vec		words;
-	size_t		i;
-	t_ast_node	copy;
+	t_vec	words;
+	size_t	i;
 
 	vec_init(&words);
 	words.elem_size = sizeof(char *);
 	i = 0;
 	while (i < wc)
 	{
-		copy = clone_ast(vec_idx(&node->children, i));
-		expand_word(state, &copy, &words, false);
+		expand_word_ro(state, vec_idx(&node->children, i), &words, false);
 		i++;
 	}
 	return (words);

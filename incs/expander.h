@@ -30,7 +30,10 @@ typedef struct s_expander_simple_cmd
 /* Expander functions */
 void		expand_word(t_shell *state, t_ast_node *node,
 				t_vec *args, bool keep_as_one);
+void		expand_word_ro(t_shell *state, t_ast_node *src,
+				t_vec *args, bool keep_as_one);
 char		*expand_word_single(t_shell *state, t_ast_node *curr);
+char		*expand_word_single_ro(t_shell *state, t_ast_node *curr);
 void		expand_tilde_word(t_shell *state, t_ast_node *curr);
 void		expand_cmd_substitutions(t_shell *state, t_ast_node *node);
 void		expand_env_vars(t_shell *state, t_ast_node *node, bool split_ctx);

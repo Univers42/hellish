@@ -12,17 +12,16 @@
 
 #include "execution_private.h"
 
+/* Run a loop child (condition/body) IN PLACE. Word expansion is now
+   non-destructive (expand_word_ro / clone-into-scratch), so `child` survives
+   intact for the next iteration; the loop owns it and frees it once at the
+   end. Mirrors execute_if.c run_child. */
 static t_execution_state	run_node(t_shell *state, t_ast_node *child)
 {
 	t_executable_node	child_exe;
-	t_ast_node			copy;
-	t_execution_state	status;
 
-	copy = clone_ast(child);
-	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &copy, true);
-	status = execute_tree_node(state, &child_exe);
-	free_ast(&copy);
-	return (status);
+	child_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, child, true);
+	return (execute_tree_node(state, &child_exe));
 }
 
 /* Consume a pending break/continue after a loop body. Returns 1 if the

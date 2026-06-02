@@ -46,7 +46,7 @@ static char	*expand_redir_fname(t_shell *state, t_ast_node *curr)
 	if (target->node_type == AST_PROC_SUB)
 		return (expand_proc_sub(state, target));
 	if (target->node_type == AST_WORD)
-		return (expand_word_single(state, target));
+		return (expand_word_single_ro(state, target));
 	return (NULL);
 }
 
@@ -112,13 +112,13 @@ int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 	int			src_fd;
 
 	ft_assert(curr->node_type == AST_REDIRECT);
-	if (curr->has_redirect)
+	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
+	tt = op_tok.tt;
+	if (curr->has_redirect && tt == TT_HEREDOC)
 	{
 		*redir_idx = curr->redir_idx;
 		return (0);
 	}
-	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
-	tt = op_tok.tt;
 	src_fd = parse_src_fd(tt, op_tok);
 	if (commit_redir(state, curr, tt, src_fd) < 0)
 		return (-1);
