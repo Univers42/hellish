@@ -80,6 +80,7 @@ static bool	word_is_plain_literal(t_ast_node *node)
 {
 	t_token	*t;
 	int		i;
+	int		lbr;
 	char	c;
 
 	if (node->children.len != 1
@@ -89,13 +90,19 @@ static bool	word_is_plain_literal(t_ast_node *node)
 	if (t->tt != TT_WORD)
 		return (false);
 	i = 0;
+	lbr = -1;
 	while (i < t->len)
 	{
-		c = t->start[i++];
-		if (c == '$' || c == '`' || c == '*' || c == '?' || c == '['
-			|| c == '~' || c == '{' || c == '\\' || c == '\'' || c == '"'
+		c = t->start[i];
+		if (c == '$' || c == '`' || c == '*' || c == '?' || c == '~'
+			|| c == '{' || c == '\\' || c == '\'' || c == '"'
 			|| c == ' ' || c == '\t' || c == '\n')
 			return (false);
+		if (c == '[')
+			lbr = i;
+		else if (c == ']' && lbr >= 0 && i > lbr + 1)
+			return (false);
+		i++;
 	}
 	return (true);
 }
