@@ -112,6 +112,7 @@ typedef struct s_shell
 	int					heredoc_idx;
 	char				*hd_src;
 	size_t				hd_pos;
+	char				*hd_stripped;
 	t_rl				rl;
 	t_prng				prng;
 	uint32_t			option_flags;
