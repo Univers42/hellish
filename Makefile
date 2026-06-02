@@ -82,6 +82,14 @@ SRCS :=		src/arith/eval.c\
 			src/builtins/cd_helpers2.c\
 			src/builtins/builtin_type.c\
 			src/builtins/builtin_set.c\
+			src/builtins/builtin_loopctl.c\
+			src/builtins/builtin_eval.c\
+			src/builtins/builtin_misc.c\
+			src/builtins/builtin_cmd2.c\
+			src/builtins/builtin_getopts.c\
+			src/builtins/builtin_proc.c\
+			src/builtins/builtin_trap.c\
+			src/builtins/builtin_readonly.c\
 			src/builtins/builtin_read.c\
 			src/builtins/collect_and_print_exported.c\
 			src/builtins/core_builtins.c\
@@ -113,6 +121,9 @@ SRCS :=		src/arith/eval.c\
 			src/execution/execute_if.c\
 			src/execution/execute_while.c\
 			src/execution/execute_for.c\
+			src/execution/execute_case.c\
+			src/execution/case_match.c\
+			src/execution/exec_string.c\
 			src/execution/execute_function.c\
 			src/execution/execute_simple_list.c\
 			src/execution/execute_tree_node.c\
@@ -159,6 +170,10 @@ SRCS :=		src/arith/eval.c\
 			src/expander/capture_subshell_output.c\
 			src/expander/create_procsub_output.c\
 			src/expander/expand_word.c\
+			src/expander/ifs_split.c\
+			src/expander/brace_expand.c\
+			src/expander/brace_expand_utils.c\
+			src/expander/brace_expand_seq.c\
 			src/expander/procsub_input.c\
 			src/expander/procsub_utils.c\
 			src/expander/redirect_from_ast_redir.c\
@@ -241,6 +256,7 @@ SRCS :=		src/arith/eval.c\
 			src/parsing/parse_if.c\
 			src/parsing/parse_while.c\
 			src/parsing/parse_for.c\
+			src/parsing/parse_case.c\
 			src/parsing/parse_function.c\
 			src/parsing/parse_pipeline.c\
 			src/parsing/parse_simple_cmd.c\
