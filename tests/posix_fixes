@@ -1,0 +1,24 @@
+set -- one two three; echo $# $2
+set -- a b c; echo $1$2$3
+set -- ; echo "count=$#"
+set a b c; echo $#
+echo $#
+cat <<EOF
+$(echo nested)
+EOF
+cat <<EOF
+sum=$((3+4))
+EOF
+cat <<EOF
+$(echo a) and $(echo b)
+EOF
+x="  sp  "; echo [$x]
+x=""; echo [$x]
+x="   "; echo [$x]
+x="a "; echo p${x}q
+echo [$(echo "  spaced  ")]
+echo "[$(echo "  x  ")]"
+echo "$(echo "a b c")"
+echo "outer $(echo "in ner") done"
+echo "$(echo "nested $(echo deep) sub")"
+echo "$((1 + 2))"
