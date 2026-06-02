@@ -1,0 +1,29 @@
+set -- a b c; echo ${10:-none}
+set -- 1 2 3 4 5 6 7 8 9 ten; echo ${10}
+echo ${x:-${undefined:-nested}}
+echo ${a:-${b:-${c:-deep}}}
+x=abc; echo ${x:-${y:-def}}
+echo ${x:-a b c}
+echo "${x:-a b c}"
+echo pre${x:-mid val}post
+echo ${x:-$(echo from cmd)}
+u=; echo X${u:-}Y
+echo a${x-}b
+echo ${x:-}
+echo {,a,b}
+echo {a,,b}
+echo {a,b,}
+echo [{,a,b}]
+x=$(false); echo "exit was $?"
+x=$(true); echo "exit was $?"
+x=$(exit 7); echo $?
+x=5; echo $?
+{ echo a; echo b; }
+{ echo grouped; } > /tmp/sh42eg; cat /tmp/sh42eg; rm -f /tmp/sh42eg
+x=5; { x=10; }; echo $x
+{ true; } && { echo ok; }
+IFS=,; x="1,2,,3"; echo $x
+IFS=,; x="1,2,,3"; set -- $x; echo $#
+IFS=:; p="/a::/b"; for d in $p; do echo "[$d]"; done
+echo ${x:-default}
+echo ${undefined-default}
