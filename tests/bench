@@ -1,0 +1,112 @@
+#!/bin/bash
+# ============================================================================
+#  hellish vs bash speed benchmark
+#  For every command in the given test-list files, time `hellish -c CMD` and
+#  `bash --posix -c CMD`, compute a per-test speedup (bash_time / hellish_time;
+#  >1 means hellish is FASTER), accumulate, and report a geometric-mean average.
+#
+#  Usage:  ./bench [-k REPS] [-r ROUNDS] [file ...]
+#          (default files = the perf-relevant corpus)
+# ============================================================================
+
+REPS=40          # invocations per timing batch
+ROUNDS=3         # batches per test; the fastest (min) batch is kept
+TIMEOUT_S=5      # skip a test if one invocation exceeds this
+files=()
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-k) REPS="$2"; shift 2;;
+		-r) ROUNDS="$2"; shift 2;;
+		*)  files+=("$1"); shift;;
+	esac
+done
+if [[ ${#files[@]} -eq 0 ]]; then
+	files=(pe posparam arith2 brace quoting2 control2 builtins2 \
+		cmdsub3 redir2 splitting2 builtins_posix3)
+fi
+
+BOLD="\e[1m"; GREEN="\e[0;32m"; RED="\e[0;31m"; YEL="\033[0;33m"
+GREY="\033[38;5;244m"; PUR="\033[0;35m"; END="\033[0m"
+
+HELLISH="$(cd .. && pwd)/build/bin/hellish"
+[[ -x "$HELLISH" ]] || { echo -e "${RED}hellish not found at $HELLISH${END}"; exit 1; }
+
+# time REPS invocations of "$1 -c $cmd"; echoes elapsed seconds (float), or
+# "TIMEOUT"/"ERR" — uses the shell's own EPOCHREALTIME for low overhead.
+time_batch() {
+	local bin="$1" mode="$2" cmd="$3" i start end
+	start=${EPOCHREALTIME/./}
+	i=0
+	while (( i < REPS )); do
+		if ! timeout "$TIMEOUT_S" "$bin" $mode "$cmd" </dev/null >/dev/null 2>&1; then
+			local rc=$?
+			# rc 124 = timeout; other non-zero is fine (commands may exit !=0)
+			[[ $rc -eq 124 ]] && { echo TIMEOUT; return; }
+		fi
+		((i++))
+	done
+	end=${EPOCHREALTIME/./}
+	echo "$(( end - start ))"   # microseconds
+}
+
+best_us() {  # min over ROUNDS of time_batch
+	local bin="$1" mode="$2" cmd="$3" r best="" v
+	for ((r=0; r<ROUNDS; r++)); do
+		v=$(time_batch "$bin" "$mode" "$cmd")
+		[[ "$v" == TIMEOUT ]] && { echo TIMEOUT; return; }
+		[[ -z "$best" || "$v" -lt "$best" ]] && best="$v"
+	done
+	echo "$best"
+}
+
+printf "${BOLD}${PUR}===== hellish vs bash benchmark (reps=%d rounds=%d) =====${END}\n" "$REPS" "$ROUNDS"
+printf "${GREY}speedup = bash_time / hellish_time  (>1.0 = hellish faster)${END}\n\n"
+
+tmp_ratios=$(mktemp)
+grand_h=0; grand_b=0; n_tests=0; n_faster=0; n_slower=0; n_skip=0
+
+for f in "${files[@]}"; do
+	[[ -f "$f" ]] || { printf "${YEL}skip missing file: %s${END}\n" "$f"; continue; }
+	file_h=0; file_b=0; file_n=0; file_sum_ln=0
+	while IFS= read -r cmd || [[ -n "$cmd" ]]; do
+		[[ -z "$cmd" || "$cmd" =~ ^[[:space:]]*# ]] && continue
+		h=$(best_us "$HELLISH" -c "$cmd")
+		b=$(best_us "bash" "--posix -c" "$cmd")
+		if [[ "$h" == TIMEOUT || "$b" == TIMEOUT || "$h" -le 0 || "$b" -le 0 ]]; then
+			((n_skip++)); continue
+		fi
+		((n_tests++)); ((file_n++))
+		grand_h=$((grand_h+h)); grand_b=$((grand_b+b))
+		file_h=$((file_h+h)); file_b=$((file_b+b))
+		ratio=$(awk -v b="$b" -v h="$h" 'BEGIN{printf "%.3f", b/h}')
+		echo "$ratio" >> "$tmp_ratios"
+		if awk -v r="$ratio" 'BEGIN{exit !(r>=1.0)}'; then
+			n_faster=$((n_faster+1))
+		else
+			n_slower=$((n_slower+1))
+		fi
+	done < "$f"
+	if (( file_n > 0 )); then
+		fr=$(awk -v b="$file_b" -v h="$file_h" 'BEGIN{printf "%.2f", b/h}')
+		col=$GREEN; awk -v r="$fr" 'BEGIN{exit !(r>=1.0)}' || col=$RED
+		printf "  %-16s %3d tests   ${col}%5sx${END}  (Σ hellish %d us / bash %d us)\n" \
+			"$f" "$file_n" "$fr" "$file_h" "$file_b"
+	fi
+done
+
+echo
+printf "${BOLD}${PUR}===================== SUMMARY =====================${END}\n"
+if (( n_tests == 0 )); then echo "no tests measured"; rm -f "$tmp_ratios"; exit 1; fi
+geo=$(awk '{s+=log($1); n++} END{if(n>0) printf "%.3f", exp(s/n)}' "$tmp_ratios")
+agg=$(awk -v b="$grand_b" -v h="$grand_h" 'BEGIN{printf "%.3f", b/h}')
+gcol=$GREEN; awk -v r="$geo" 'BEGIN{exit !(r>=1.0)}' || gcol=$RED
+printf "  tests measured : %d   (skipped %d)\n" "$n_tests" "$n_skip"
+printf "  hellish faster : ${GREEN}%d${END}   slower/equal : ${RED}%d${END}\n" "$n_faster" "$n_slower"
+printf "  total time     : hellish %d us vs bash %d us  (aggregate ${gcol}%sx${END})\n" "$grand_h" "$grand_b" "$agg"
+printf "  ${BOLD}AVERAGE SPEEDUP (geometric mean): ${gcol}%sx${END}\n" "$geo"
+if awk -v r="$geo" 'BEGIN{exit !(r>=1.0)}'; then
+	printf "  ${GREEN}${BOLD}>>> hellish is on average FASTER than bash <<<${END}\n"
+else
+	printf "  ${RED}${BOLD}>>> hellish is on average slower than bash — keep optimizing <<<${END}\n"
+fi
+rm -f "$tmp_ratios"
