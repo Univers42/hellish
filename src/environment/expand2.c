@@ -18,6 +18,20 @@
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 
+/* $LINENO : the line number currently being read/executed (input-line
+   granularity, like bash for multiple commands on one source line). */
+char	*lineno_str(t_shell *state)
+{
+	char	*s;
+
+	s = ft_itoa(state->rl.line);
+	if (!s)
+		return (ft_strlcpy(state->linebuf, "0", 2), state->linebuf);
+	ft_strlcpy(state->linebuf, s, sizeof(state->linebuf));
+	free(s);
+	return (state->linebuf);
+}
+
 static void	handle_readonly_assign(t_shell *state, t_env *el)
 {
 	ft_eprintf("%s: %s: readonly variable\n", state->ctx, el->key);

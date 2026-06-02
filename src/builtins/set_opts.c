@@ -15,17 +15,23 @@
 
 void	exit_clean(t_shell *state, int code);
 
-/* set -x : trace the command (PS4 '+ ') to stderr before it runs. */
-void	xtrace_print(t_vec *argv)
+/* set -x : trace the command to stderr before it runs, prefixed by $PS4
+   (default "+ "), the words separated by single spaces. */
+void	xtrace_print(t_shell *state, t_vec *argv)
 {
+	char	*ps4;
 	size_t	i;
 
-	ft_eprintf("+");
+	ps4 = env_expand(state, "PS4");
+	if (!ps4)
+		ps4 = "+ ";
+	ft_eprintf("%s", ps4);
 	i = 0;
 	while (i < argv->len)
 	{
-		ft_eprintf(" %s", ((char **)argv->ctx)[i]);
-		i++;
+		ft_eprintf("%s", ((char **)argv->ctx)[i]);
+		if (++i < argv->len)
+			ft_eprintf(" ");
 	}
 	ft_eprintf("\n");
 }

@@ -24,7 +24,7 @@ static t_signame	*trap_sig_table(void)
 	return (t);
 }
 
-static int	trap_sig_from_name(const char *s)
+int	trap_sig_from_name(const char *s)
 {
 	t_signame	*t;
 	int			i;
@@ -72,8 +72,10 @@ int	builtin_trap(t_shell *state, t_vec argv)
 	int		num;
 
 	av = (char **)argv.ctx;
-	if (argv.len == 1 || (argv.len == 2 && !ft_strcmp(av[1], "-p")))
+	if (argv.len == 1)
 		return (list_traps(state));
+	if (!ft_strcmp(av[1], "-p"))
+		return (print_traps_for(state, argv));
 	if (argv.len < 3)
 		return (1);
 	i = 1;

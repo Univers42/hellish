@@ -45,7 +45,7 @@ t_shell_func	*func_lookup(t_shell *state, const char *name);
 int				apply_set_flags(t_shell *state, t_vec argv);
 int				set_long_option(t_shell *state, char sign,
 					const char *name);
-void			xtrace_print(t_vec *argv);
+void			xtrace_print(t_shell *state, t_vec *argv);
 void			nounset_abort(t_shell *state,
 					const char *name, int len);
 void			scope_save(t_shell *state, const char *key);
