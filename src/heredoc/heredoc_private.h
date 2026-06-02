@@ -17,6 +17,7 @@
 # include "shell.h"
 # include "redir.h"
 # include "env.h"
+# include "expander.h"
 # include <unistd.h>
 # include "redir.h"
 # include "helpers.h"
