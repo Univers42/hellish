@@ -17,6 +17,30 @@ void	setup_completion(void);
 void	setup_vi_mode(void);
 void	setup_emacs_mode(void);
 
+/* Print every line of `prompt` except the last to rl_outstream, stripping the
+   \001/\002 width markers (they must not reach the terminal). Returns the final
+   line. readline only ever sees a single-line prompt, which avoids the cursor
+   drift and heavy full-line redraws that a multi-line prompt (embedded \n)
+   causes during ↑/↓ history navigation. */
+static char	*split_prompt(char *prompt)
+{
+	char	*nl;
+	size_t	i;
+
+	nl = ft_strrchr(prompt, '\n');
+	if (!nl)
+		return (prompt);
+	i = 0;
+	while (prompt + i <= nl)
+	{
+		if (prompt[i] != '\001' && prompt[i] != '\002')
+			fputc((unsigned char)prompt[i], rl_outstream);
+		i++;
+	}
+	fflush(rl_outstream);
+	return (nl + 1);
+}
+
 void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
@@ -40,7 +64,7 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 		fprintf(stderr, "[DEBUG PROMPT] visible width: %d\n",
 			visible_width_cstr(prompt));
 	}
-	ret = readline(prompt);
+	ret = readline(split_prompt(prompt));
 	if (!ret)
 		(close(outfd), exit (1));
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
