@@ -85,6 +85,7 @@ static t_execution_state	handle_func_call(t_shell *state,
 {
 	t_execution_state	res;
 	int					bak[3];
+	t_vec				saves;
 
 	bak[0] = dup(0);
 	bak[1] = dup(1);
@@ -94,9 +95,11 @@ static t_execution_state	handle_func_call(t_shell *state,
 	exe->outfd = -1;
 	exe->next_infd = -1;
 	procsub_close_fds_parent(state);
+	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	res = execute_func_call(state,
 			func_lookup(state, ((char **)(cmd->argv.ctx))[0]),
 			&cmd->argv);
+	restore_temp_assigns(state, &saves);
 	dup2(bak[0], 0);
 	dup2(bak[1], 1);
 	dup2(bak[2], 2);

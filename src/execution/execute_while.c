@@ -39,7 +39,8 @@ int	handle_loop_ctl(t_shell *state)
 		state->loop_continue--;
 		return (state->loop_continue != 0);
 	}
-	return (state->should_exit || get_g_sig()->should_unwind);
+	return (state->should_exit || state->func_return
+		|| get_g_sig()->should_unwind);
 }
 
 /*

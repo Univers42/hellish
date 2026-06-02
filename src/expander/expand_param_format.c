@@ -171,12 +171,17 @@ static const char	*find_trim_op(const char *s, int slen, int *name_len)
 	int	i;
 
 	i = 0;
-	if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
+	if (i < slen && ft_isdigit((unsigned char)s[i]))
+		while (i < slen && ft_isdigit((unsigned char)s[i]))
+			i++;
+	else if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
+	{
 		i++;
+		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
+			i++;
+	}
 	else
 		return (NULL);
-	while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
-		i++;
 	*name_len = i;
 	if (i < slen && (s[i] == '%' || s[i] == '#'))
 		return (&s[i]);
