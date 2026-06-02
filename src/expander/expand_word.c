@@ -129,6 +129,21 @@ static bool	name_is_plain(const char *s, int len)
    (under the default IFS) expands to exactly that value as one field — no
    split, no glob, no clone. Returns the env value to push, or NULL to fall
    back to the full pipeline. Special params / ${...} forms are excluded. */
+/* Does the value contain a char that would trigger field-splitting (default
+   IFS) or pathname expansion? Hand-rolled to avoid ft_strcspn building a 32-byte
+   bitmap on every hot-loop $var expansion. */
+static bool	needs_split_or_glob(const char *v)
+{
+	while (*v)
+	{
+		if (*v == ' ' || *v == '\t' || *v == '\n'
+			|| *v == '*' || *v == '?' || *v == '[')
+			return (true);
+		v++;
+	}
+	return (false);
+}
+
 static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 {
 	t_token	*t;
@@ -145,7 +160,7 @@ static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	if (ifs && ft_strcmp(ifs, " \t\n") != 0)
 		return (NULL);
 	v = env_expand_n(state, t->start, t->len);
-	if (!v || !*v || v[ft_strcspn(v, " \t\n*?[")] != '\0')
+	if (!v || !*v || needs_split_or_glob(v))
 		return (NULL);
 	return (v);
 }
