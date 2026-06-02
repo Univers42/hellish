@@ -59,7 +59,11 @@ t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 	{
 		ft_assert(((t_ast_node *)node->children.ctx)[i].node_type == AST_TOKEN);
 		curr_t = &((t_ast_node *)node->children.ctx)[i].token;
-		if (curr_t->tt == TT_ENVVAR)
+		if (curr_t->tt == TT_DQENVVAR && curr_t->len == 1
+			&& curr_t->start[0] == '@')
+			emit_positional_at(state, &curr_node, &ret);
+		else if (curr_t->tt == TT_ENVVAR
+			|| (curr_t->tt == TT_WORD && curr_t->split_eligible))
 			split_envvar(state, curr_t, &curr_node, &ret);
 		else if (curr_t->tt == TT_WORD || curr_t->tt == TT_SQWORD
 			|| curr_t->tt == TT_DQWORD || curr_t->tt == TT_DQENVVAR)
