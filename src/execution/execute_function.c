@@ -33,6 +33,32 @@ t_shell_func	*func_lookup(t_shell *state, const char *name)
 	return (NULL);
 }
 
+/* unset -f name: remove a stored function definition (POSIX). No-op if absent. */
+void	unset_function(t_shell *state, const char *name)
+{
+	t_shell_func	*arr;
+	size_t			i;
+
+	arr = (t_shell_func *)state->functions.ctx;
+	i = 0;
+	while (i < state->functions.len)
+	{
+		if (ft_strcmp(arr[i].name, name) == 0)
+		{
+			free(arr[i].name);
+			free_ast(&arr[i].body);
+			while (i + 1 < state->functions.len)
+			{
+				arr[i] = arr[i + 1];
+				i++;
+			}
+			state->functions.len--;
+			return ;
+		}
+		i++;
+	}
+}
+
 /*
 ** Store (or overwrite) a function definition.
 ** Clones the body AST so the original can be freed.

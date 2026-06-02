@@ -100,6 +100,7 @@ SRCS :=		src/arith/eval.c\
 			src/builtins/collect_and_print_exported.c\
 			src/builtins/core_builtins.c\
 			src/builtins/core_builtins2.c\
+			src/builtins/builtin_ulimit.c\
 			src/builtins/echo_flags.c\
 			src/builtins/echo_help.c\
 			src/builtins/exit.c\
