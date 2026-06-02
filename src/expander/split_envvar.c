@@ -106,7 +106,7 @@ void	split_envvar(t_shell *state, t_token *curr_t,
 	lead = is_ifs_char(curr_t->start[0], ifs);
 	trail = (curr_t->start[0] != '\0'
 			&& is_ifs_char(curr_t->start[ft_strlen(curr_t->start) - 1], ifs));
-	things = ft_split_str(curr_t->start, ifs);
+	things = ifs_split_posix(curr_t->start, ifs);
 	if (curr_t->allocated)
 		free((char *)curr_t->start);
 	curr_t->allocated = false;
