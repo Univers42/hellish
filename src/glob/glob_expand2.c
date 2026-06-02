@@ -61,6 +61,28 @@ t_vec_glob	word_to_glob(t_ast_node word)
 ** Expand a word node with glob matching
 ** Returns vector of matched filenames (or original word if no matches)
 */
+/*
+** A word with no wildcard tokens (*, ?, [..]) can never match anything
+** other than its own literal text, so we skip the directory scan entirely.
+** This mirrors what every POSIX shell does and avoids a readdir() per word.
+*/
+static bool	glob_has_wildcard(t_vec_glob glob)
+{
+	size_t	i;
+	t_glob	*g;
+
+	i = 0;
+	g = (t_glob *)glob.ctx;
+	while (i < glob.len)
+	{
+		if (g[i].ty == G_ASTERISK || g[i].ty == G_QUESTION
+			|| g[i].ty == G_BRACKET)
+			return (true);
+		i++;
+	}
+	return (false);
+}
+
 t_vec	expand_word_glob(t_ast_node word)
 {
 	t_vec		args;
@@ -71,6 +93,11 @@ t_vec	expand_word_glob(t_ast_node word)
 	glob = word_to_glob(word);
 	if (glob.len == 0)
 		return (vec_push(&args, &(char *){ft_strdup("")}), args);
+	if (!glob_has_wildcard(glob))
+	{
+		vec_push(&args, &(char *){(char *)word_to_string(word).ctx});
+		return (glob_free_tokens(&glob), args);
+	}
 	if (((t_glob *)glob.ctx)[0].ty == G_SLASH)
 		match_dir(&args, glob, "/", 1);
 	else
