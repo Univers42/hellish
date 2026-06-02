@@ -137,19 +137,42 @@ static void	free_specs(t_hd *sp, int n)
 	free(sp);
 }
 
+/* Is the delimiter line reachable from p without consuming it? Used to leave
+   an as-yet-unterminated heredoc (a simple top-level "cat <<EOF" whose body the
+   REPL still reads from the live stream) untouched. */
+static bool	delim_present(const char *p, t_hd *s)
+{
+	const char	*ls;
+
+	while (*p)
+	{
+		ls = p;
+		while (*p && *p != '\n')
+			p++;
+		if (*p == '\n')
+			p++;
+		if (is_delim_line(ls, p - ls, s))
+			return (true);
+	}
+	return (false);
+}
+
 /* out[0] = body-stripped source for the parser, out[1] = concatenated heredoc
-   bodies (each terminated by its delimiter line) in source order. */
-static void	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
+   bodies (each terminated by its delimiter line) in source order. Only
+   heredocs whose delimiter is present are extracted; returns the count. */
+static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 {
 	const char	*p;
 	const char	*ls;
 	size_t		cur;
 	size_t		intro;
 	int			si;
+	int			got;
 
 	p = str;
 	cur = 0;
 	si = 0;
+	got = 0;
 	while (*p)
 	{
 		intro = cur;
@@ -163,8 +186,13 @@ static void	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 		while (si < n && sp[si].line < intro)
 			si++;
 		while (si < n && sp[si].line == intro)
-			collect_body(&p, &cur, &out[1], &sp[si++]);
+		{
+			if (delim_present(p, &sp[si]))
+				(collect_body(&p, &cur, &out[1], &sp[si]), got++);
+			si++;
+		}
 	}
+	return (got);
 }
 
 bool	split_heredocs(const char *str, char **stripped, char **bodies)
@@ -173,6 +201,7 @@ bool	split_heredocs(const char *str, char **stripped, char **bodies)
 	t_hd		*sp;
 	t_string	out[2];
 	int			n;
+	int			got;
 
 	tt = (t_deque_tok){0};
 	deque_init(&tt.deqtok, 100, sizeof(t_token));
@@ -185,8 +214,10 @@ bool	split_heredocs(const char *str, char **stripped, char **bodies)
 	vec_init(&out[1]);
 	out[0].elem_size = 1;
 	out[1].elem_size = 1;
-	walk_and_strip(str, sp, n, out);
+	got = walk_and_strip(str, sp, n, out);
 	free_specs(sp, n);
+	if (got == 0)
+		return (free(out[0].ctx), free(out[1].ctx), false);
 	*stripped = (char *)out[0].ctx;
 	*bodies = (char *)out[1].ctx;
 	return (true);
