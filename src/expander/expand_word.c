@@ -187,6 +187,64 @@ static char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	return (v);
 }
 
+/* Literal text with no character that would need any expansion or quoting
+   handling ($ ` \ ' " ~ { } and glob/blank chars). Conservative on purpose so
+   the concat fast-path never has to reason about tilde/glob/brace rules. */
+static bool	is_plain_literal_text(const char *s, int len)
+{
+	int	i;
+
+	i = 0;
+	while (i < len)
+	{
+		if (ft_strchr("$`\\'\"~{}*?[] \t\n", s[i]))
+			return (false);
+		i++;
+	}
+	return (true);
+}
+
+/* A keep-as-one word (assignment value / quoted) built only from plain literal
+   TT_WORD pieces and plain $var TT_ENVVAR pieces concatenates to exactly one
+   field with no split/glob — build it directly, no clone. Returns the owned
+   string, or NULL to fall back. */
+static char	*try_simple_concat(t_shell *state, t_ast_node *node)
+{
+	t_string	out;
+	t_token		*t;
+	char		*v;
+	int			i;
+
+	if (node->children.len < 2)
+		return (NULL);
+	vec_init(&out);
+	out.elem_size = 1;
+	i = -1;
+	while (++i < (int)node->children.len)
+	{
+		if (((t_ast_node *)node->children.ctx)[i].node_type != AST_TOKEN)
+			return (free(out.ctx), NULL);
+		t = &((t_ast_node *)node->children.ctx)[i].token;
+		if (t->tt == TT_WORD)
+		{
+			if (!is_plain_literal_text(t->start, t->len))
+				return (free(out.ctx), NULL);
+			vec_push_nstr(&out, t->start, t->len);
+		}
+		else if (t->tt == TT_ENVVAR && name_is_plain(t->start, t->len))
+		{
+			v = env_expand_n(state, t->start, t->len);
+			if (v)
+				vec_push_str(&out, v);
+		}
+		else
+			return (free(out.ctx), NULL);
+	}
+	if (!out.ctx)
+		return (ft_strdup(""));
+	return ((char *)out.ctx);
+}
+
 /* A word that is exactly $((expr)) with no $ or backtick inside is pure
    arithmetic: evaluate it directly (no clone, no split/glob — the result is a
    number). Returns the result string (caller owns), or NULL to fall back.
@@ -261,6 +319,12 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 	v = try_simple_envvar(state, src);
 	if (v)
 		return ((void)vec_push(args, &(char *){ft_strdup(v)}));
+	if (keep_as_one)
+	{
+		v = try_simple_concat(state, src);
+		if (v)
+			return ((void)vec_push(args, &(char *){v}));
+	}
 	scratch = clone_ast(src);
 	expand_word(state, &scratch, args, keep_as_one);
 }
@@ -285,6 +349,9 @@ void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 	v = try_simple_envvar(state, src);
 	if (v)
 		return ((void)vec_push(args, &(char *){ft_strdup(v)}));
+	v = try_simple_concat(state, src);
+	if (v)
+		return ((void)vec_push(args, &(char *){v}));
 	scratch = clone_ast(src);
 	expand_word_glob_ctl(state, &scratch, args, true, true);
 }
