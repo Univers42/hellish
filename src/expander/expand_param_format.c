@@ -11,6 +11,45 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sh_input.h"
+#include "decomposer.h"
+
+void	exit_clean(t_shell *state, int code);
+
+/* Expand the word part of a ${name-word} form: tilde, command/arith and
+   parameter (incl. nested ${...}) expansion, but no splitting/globbing. */
+static char	*expand_param_word(t_shell *state, const char *word, int wlen)
+{
+	t_ast_node	w;
+	t_string	s;
+	char		*ret;
+
+	if (wlen <= 0)
+		return (ft_strdup(""));
+	w = reparse_word((t_token){.start = (char *)word, .len = wlen,
+			.tt = TT_WORD});
+	expand_tilde_word(state, &w);
+	expand_cmd_substitutions(state, &w);
+	expand_env_vars(state, &w, false);
+	s = word_to_string(w);
+	if (!s.ctx)
+		ret = ft_strdup("");
+	else
+		ret = ft_strndup((char *)s.ctx, s.len);
+	free(s.ctx);
+	free_ast(&w);
+	return (ret);
+}
+
+typedef struct s_pe_op
+{
+	const char	*name;
+	int			name_len;
+	char		opc;
+	bool		colon;
+	const char	*word;
+	int			wlen;
+}	t_pe_op;
 
 static char	*get_var_value(t_shell *state, const char *name, int len)
 {
@@ -39,83 +78,88 @@ static char	*expand_strlen(t_shell *state, const char *s, int slen)
 }
 
 /*
-** Handle colon operators: ${param:-word}, ${param:=word},
-** ${param:?word}, ${param:+word}
-** 'op' points to ':-', ':=', ':?', or ':+'.
-** name_len is the length of the parameter name.
+** ${param-word} ${param:-word} ${param+word} ${param:+word}
+** ${param=word} ${param:=word} ${param?word} ${param:?word}.
+** With a colon, "unset OR null" triggers; without, only "unset" triggers.
 */
-static char	*colon_default_or_alt(char *val, const char *op, int wlen)
+static char	*default_or_alt(t_shell *state, char *val, t_pe_op o)
 {
-	if (op[1] == '-')
+	bool	act;
+
+	act = (o.colon) ? is_unset_or_null(val) : (val == NULL);
+	if (o.opc == '-')
 	{
-		if (is_unset_or_null(val))
-			return (ft_strndup(op + 2, wlen));
+		if (act)
+			return (expand_param_word(state, o.word, o.wlen));
 		return (ft_strdup(val));
 	}
-	if (is_unset_or_null(val))
+	if (act)
 		return (ft_strdup(""));
-	return (ft_strndup(op + 2, wlen));
+	return (expand_param_word(state, o.word, o.wlen));
 }
 
-static char	*colon_err_or_assign(t_shell *state, char *val,
-	const char *name, const char *op, int name_len, int wlen)
+static char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 {
-	if (op[1] == '?')
+	bool	act;
+
+	act = (o.colon) ? is_unset_or_null(val) : (val == NULL);
+	if (o.opc == '?')
 	{
-		if (is_unset_or_null(val))
-		{
-			ft_eprintf("%s: %.*s: %.*s\n", state->ctx,
-				name_len, name, wlen, op + 2);
-			state->last_cmd_st_exe = create_exec_state(1, false);
-			set_cmd_status(state, state->last_cmd_st_exe);
-			return (ft_strdup(""));
-		}
+		if (!act)
+			return (ft_strdup(val));
+		ft_eprintf("%s: %.*s: %.*s\n", state->ctx, o.name_len, o.name,
+			o.wlen, o.word);
+		state->last_cmd_st_exe = create_exec_state(1, false);
+		set_cmd_status(state, state->last_cmd_st_exe);
+		if (state->metinp != INP_RL)
+			exit_clean(state, 1);
+		return (ft_strdup(""));
+	}
+	if (!act)
 		return (ft_strdup(val));
-	}
-	if (is_unset_or_null(val))
-	{
-		env_set(&state->env, env_create(
-				ft_strndup(name, name_len), ft_strndup(op + 2, wlen), false));
-		return (ft_strndup(op + 2, wlen));
-	}
-	return (ft_strdup(val));
+	val = expand_param_word(state, o.word, o.wlen);
+	env_set(&state->env, env_create(ft_strndup(o.name, o.name_len),
+			ft_strdup(val), false));
+	return (val);
 }
 
-static char	*expand_colon_op(t_shell *state, const char *name,
-	int name_len, const char *op, int slen)
+static char	*expand_param_op(t_shell *state, t_pe_op o)
 {
 	char	*val;
-	int		wlen;
 
-	val = get_var_value(state, name, name_len);
-	wlen = slen - name_len - 2;
-	if (op[0] == ':' && (op[1] == '-' || op[1] == '+'))
-		return (colon_default_or_alt(val, op, wlen));
-	if (op[0] == ':' && (op[1] == '?' || op[1] == '='))
-		return (colon_err_or_assign(state, val, name, op, name_len, wlen));
-	return (NULL);
+	val = get_var_value(state, o.name, o.name_len);
+	if (o.opc == '-' || o.opc == '+')
+		return (default_or_alt(state, val, o));
+	return (err_or_assign(state, val, o));
 }
 
-/*
-** Find the first occurrence of a colon operator (:-, :=, :?, :+)
-** within the brace content. Returns pointer to the ':' or NULL.
-*/
-static const char	*find_colon_op(const char *s, int slen)
+/* Detect a ${name[:]op word} form (op in -=?+); fill `o`, return true. */
+static bool	find_param_op(const char *s, int slen, t_pe_op *o)
 {
 	int	i;
 
 	i = 0;
-	if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
+	if (i < slen && ft_isdigit((unsigned char)s[i]))
+		while (i < slen && ft_isdigit((unsigned char)s[i]))
+			i++;
+	else if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
+	{
 		i++;
+		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
+			i++;
+	}
 	else
-		return (NULL);
-	while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
-		i++;
-	if (i < slen && s[i] == ':' && i + 1 < slen
-		&& (s[i + 1] == '-' || s[i + 1] == '='
-			|| s[i + 1] == '?' || s[i + 1] == '+'))
-		return (&s[i]);
-	return (NULL);
+		return (false);
+	o->name = s;
+	o->name_len = i;
+	o->colon = (i < slen && s[i] == ':');
+	i += o->colon;
+	if (i >= slen || !ft_strchr("-=?+", s[i]))
+		return (false);
+	o->opc = s[i];
+	o->word = s + i + 1;
+	o->wlen = slen - i - 1;
+	return (true);
 }
 
 /*
@@ -274,17 +318,14 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 {
 	const char	*op;
 	int			name_len;
+	t_pe_op		o;
 
 	if (slen <= 0)
 		return (ft_strdup(""));
 	if (s[0] == '#' && slen > 1)
 		return (expand_strlen(state, s + 1, slen - 1));
-	op = find_colon_op(s, slen);
-	if (op)
-	{
-		name_len = (int)(op - s);
-		return (expand_colon_op(state, s, name_len, op, slen));
-	}
+	if (find_param_op(s, slen, &o))
+		return (expand_param_op(state, o));
 	op = find_trim_op(s, slen, &name_len);
 	if (op)
 		return (expand_trim(state, s, name_len, op, slen));
