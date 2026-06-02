@@ -20,19 +20,26 @@
 static bool	word_all_unquoted(t_ast_node *node)
 {
 	size_t		i;
+	int			j;
 	t_ast_node	*c;
+	bool		has_brace;
 
 	if (!node->children.ctx || node->children.len == 0)
 		return (false);
+	has_brace = false;
 	i = 0;
 	while (i < node->children.len)
 	{
 		c = &((t_ast_node *)node->children.ctx)[i];
 		if (c->node_type != AST_TOKEN || c->token.tt != TT_WORD)
 			return (false);
+		j = 0;
+		while (j < c->token.len)
+			if (c->token.start[j++] == '{')
+				has_brace = true;
 		i++;
 	}
-	return (true);
+	return (has_brace);
 }
 
 /* Brace-expand `node` into multiple words, re-lexing each result and running
