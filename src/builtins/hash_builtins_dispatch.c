@@ -52,6 +52,10 @@ static void	init_builtin_hash(t_hash *h)
 	hash_set(h, "fg", (void *)builtin_fg);
 	hash_set(h, "bg", (void *)builtin_bg);
 	hash_set(h, "fc", (void *)builtin_fc);
+	hash_set(h, "history", (void *)builtin_history);
+	hash_set(h, "let", (void *)builtin_let);
+	hash_set(h, "kill", (void *)builtin_kill);
+	hash_set(h, "printf", (void *)builtin_printf);
 }
 
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
