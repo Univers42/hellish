@@ -53,6 +53,7 @@ void	expand_bs(int *i, t_string *full_file, char *line)
 void	expand_line(t_shell *state, t_string *full_file, char *line)
 {
 	int		i;
+	int		consumed;
 	bool	bs;
 
 	i = 0;
@@ -67,6 +68,13 @@ void	expand_line(t_shell *state, t_string *full_file, char *line)
 		}
 		if (line[i] == '$')
 		{
+			consumed = expand_dollar_sub(state, line + i,
+					(int)ft_strlen(line + i), full_file);
+			if (consumed > 0)
+			{
+				i += consumed;
+				continue ;
+			}
 			expand_dolar(state, &i, full_file, line);
 			continue ;
 		}
