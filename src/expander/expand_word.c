@@ -265,8 +265,38 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 	expand_word(state, &scratch, args, keep_as_one);
 }
 
+/* Assignment-value variant: like expand_word_ro but the result must NOT undergo
+   pathname expansion (POSIX forbids globbing an assignment RHS). keep_as_one is
+   always true here, so field-splitting is already suppressed too. */
+void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
+{
+	t_ast_node	scratch;
+	t_token		*t;
+	char		*v;
+
+	if (word_is_plain_literal(src))
+	{
+		t = &((t_ast_node *)src->children.ctx)[0].token;
+		return ((void)vec_push(args, &(char *){ft_strndup(t->start, t->len)}));
+	}
+	v = try_pure_arith(state, src);
+	if (v)
+		return ((void)vec_push(args, &(char *){v}));
+	v = try_simple_envvar(state, src);
+	if (v)
+		return ((void)vec_push(args, &(char *){ft_strdup(v)}));
+	scratch = clone_ast(src);
+	expand_word_glob_ctl(state, &scratch, args, true, true);
+}
+
 void	expand_word(t_shell *state, t_ast_node *node,
 					t_vec *args, bool keep_as_one)
+{
+	expand_word_glob_ctl(state, node, args, keep_as_one, false);
+}
+
+void	expand_word_glob_ctl(t_shell *state, t_ast_node *node,
+					t_vec *args, bool keep_as_one, bool no_glob)
 {
 	t_vec_nd	words;
 	size_t		i;
@@ -291,7 +321,8 @@ void	expand_word(t_shell *state, t_ast_node *node,
 	i = -1;
 	while (++i < words.len)
 	{
-		expand_node_glob(&((t_ast_node *)words.ctx)[i], args, keep_as_one);
+		expand_node_glob(&((t_ast_node *)words.ctx)[i], args, keep_as_one,
+			no_glob);
 		if (get_g_sig()->should_unwind)
 			while (i < words.len)
 				free_ast(&((t_ast_node *)words.ctx)[i++]);
