@@ -78,6 +78,7 @@ typedef struct s_shell
 	char				*dft_ctx;
 	char				*ctx;
 	char				*pid;
+	char				*last_bg_pid;
 	char				*last_cmd_st;
 	t_execution_state	last_cmd_st_exe;
 	t_history			hist;
