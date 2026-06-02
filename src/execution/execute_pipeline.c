@@ -113,6 +113,11 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 	}
 	else
 		res = res_status(0);
+	if (exe->node->negate)
+	{
+		res.status = !res.status;
+		res.pid = -1;
+	}
 	free(results.ctx);
 	return (res);
 }

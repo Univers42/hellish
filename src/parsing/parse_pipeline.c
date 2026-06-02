@@ -45,6 +45,11 @@ t_ast_node	parse_pipeline(t_shell *state,
 	ret = create_node_type(AST_COMMAND_PIPELINE);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
+	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BANG)
+	{
+		(void)deque_pop_start(&tokens->deqtok);
+		ret.negate = !ret.negate;
+	}
 	push_cmd_parsed(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);
