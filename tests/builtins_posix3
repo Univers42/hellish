@@ -1,0 +1,22 @@
+printf "%s\n" hello
+printf "%d-%d\n" 3 4
+printf "%05.2f\n" 3.14159
+printf "%x %X\n" 255 255
+printf "%c%c%c\n" abc def ghi
+printf "%b\n" "tab\there"
+printf "[%-6s]\n" hi
+printf "%d\n" 0x1f
+printf "%s %s\n" a b c d e f
+printf "%%d=%d\n" 7
+printf "%o\n" 64
+printf "%i\n" -7
+printf "abc\n"
+printf "%d " 1 2 3; echo
+let x=5+3; echo $x
+let "y = 2 * (3+4)"; echo $y
+let a=10; let a+=5; echo $a
+let z=0; echo $?
+let z=9; echo $?
+n=4; let "sq = n*n"; echo $sq
+let m=7%3; echo $m
+let "p = 2 ** 8"; echo $p

@@ -28,3 +28,9 @@ if true; then if true; then echo nested; fi; fi
 case hello in h???o) echo q;; esac
 case ab in [ab]*) echo bracket;; esac
 i=1; while [ $i -le 5 ]; do echo $i; i=$((i+1)); done | tr '\n' ','
+! true; echo $?
+! false; echo $?
+if ! false; then echo neg-works; fi
+! echo hi | grep zzz; echo $?
+! true | false; echo $?
+x=0; while ! [ $x -eq 3 ]; do x=$((x+1)); done; echo $x
