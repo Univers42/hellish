@@ -12,6 +12,22 @@
 
 #include "heredoc_private.h"
 
+/* Try to defer this heredoc's materialisation to execution time: from a stored
+   body (functions / pre-extracted hd_src) or, for a same-line -c/script
+   heredoc, straight from the unread remainder of rl.buff. Returns true if the
+   body was captured onto the node (caller skips eager temp-file writing). */
+static bool	try_defer_heredoc(t_shell *state, t_ast_node *curr,
+				bool is_pipeline)
+{
+	if ((state->gather_in_func || (!is_pipeline && state->hd_src))
+		&& capture_heredoc_to_node(state, curr))
+		return (true);
+	if (!is_pipeline && !state->gather_in_func && !state->hd_src
+		&& capture_heredoc_from_buff(state, curr))
+		return (true);
+	return (false);
+}
+
 static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 				bool is_pipeline)
 {
@@ -19,8 +35,7 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	t_string		sep;
 	t_hdoc			req;
 
-	if ((state->gather_in_func || (!is_pipeline && state->hd_src))
-		&& capture_heredoc_to_node(state, curr))
+	if (try_defer_heredoc(state, curr, is_pipeline))
 		return (-1);
 	wr = ft_mktemp(state, curr);
 	if (wr < 0)
