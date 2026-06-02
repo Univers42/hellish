@@ -17,6 +17,7 @@
 
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
+char	*build_flagstr(t_shell *state);
 
 /* If key[0..len) is an all-digit positive number, return it; else -1. "0" and
 ** anything non-numeric fall through (so $0 stays an ordinary env entry). */
@@ -52,6 +53,8 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 		return (state->pid);
 	else if (key[0] == '!' && len == 1)
 		return (state->last_bg_pid ? state->last_bg_pid : "");
+	else if (len == 1 && key[0] == '-')
+		return (build_flagstr(state));
 	else if (len == 0)
 		return ("");
 	else if (len == 1 && key[0] == '#')

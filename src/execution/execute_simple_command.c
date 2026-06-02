@@ -125,7 +125,7 @@ static t_execution_state	handle_assign_only(t_shell *state,
 								t_executable_node *exe)
 {
 	if (exe->modify_parent_ctx)
-		env_extend(&state->env, &cmd->pre_assigns, false);
+		env_extend(&state->env, &cmd->pre_assigns, state->opt_allexport);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);

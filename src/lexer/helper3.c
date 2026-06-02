@@ -66,14 +66,16 @@ static void	init_ops_group3(t_op_map ops[])
 	ops[15] = (t_op_map){";", TT_SEMICOLON};
 	ops[16] = (t_op_map){">&", TT_DUP_OUT};
 	ops[17] = (t_op_map){"<&", TT_DUP_IN};
-	ops[18] = (t_op_map){NULL, TT_END};
+	ops[18] = (t_op_map){"<>", TT_READWRITE};
+	ops[19] = (t_op_map){">|", TT_CLOBBER};
+	ops[20] = (t_op_map){NULL, TT_END};
 }
 
 void	parse_op(t_deque_tok *tokens, char **str)
 {
 	char		*start;
 	int			op_idx;
-	t_op_map	operators[19];
+	t_op_map	operators[21];
 	t_token		tmp;
 	int			fd_len;
 

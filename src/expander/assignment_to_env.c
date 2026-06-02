@@ -47,7 +47,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 	t_env	ret;
 	char	*v;
 
-	ret = (t_env){.exported = false};
+	ret = (t_env){.exported = state->opt_allexport};
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
 	ft_assert(node->children.len == 2);

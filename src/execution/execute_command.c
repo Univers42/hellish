@@ -80,6 +80,8 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
 	t_ast_type	ft;
 
+	if (state->opt_noexec && state->metinp != INP_RL)
+		return (res_status(0));
 	ft_assert(exe->node->children.len >= 1);
 	ft = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
 	if (ft == AST_FUNCTION_DEF)

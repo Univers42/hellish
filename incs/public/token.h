@@ -41,6 +41,8 @@ typedef enum e_tt
 	TT_PROC_SUB_OUT,
 	TT_DUP_OUT,
 	TT_DUP_IN,
+	TT_READWRITE,
+	TT_CLOBBER,
 	TT_IF,
 	TT_THEN,
 	TT_ELIF,

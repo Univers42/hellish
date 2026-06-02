@@ -368,6 +368,8 @@ void	expand_word_glob_ctl(t_shell *state, t_ast_node *node,
 	t_vec_nd	words;
 	size_t		i;
 
+	if (state->opt_noglob)
+		no_glob = true;
 	if (!keep_as_one && try_brace_expand(state, node, args))
 		return ;
 	if (!node->children.ctx || node->children.len == 0)
