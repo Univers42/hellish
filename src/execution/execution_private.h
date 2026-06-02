@@ -79,7 +79,7 @@ void				execute_pipeline_children(t_shell *state,
 t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_simple_command(t_shell *state,
 						t_executable_node *exe);
-void				reap_background_children(void);
+void				reap_background_children(t_shell *state);
 bool				should_execute(t_execution_state prev_status, t_tt prev_op);
 size_t				find_next_separator(t_ast_node *node,
 						size_t start, bool *found_amp);
