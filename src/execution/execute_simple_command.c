@@ -84,11 +84,23 @@ static t_execution_state	handle_func_call(t_shell *state,
 						t_executable_node *exe)
 {
 	t_execution_state	res;
+	int					bak[3];
 
+	bak[0] = dup(0);
+	bak[1] = dup(1);
+	bak[2] = dup(2);
+	set_up_redirection(state, exe);
+	exe->infd = -1;
+	exe->outfd = -1;
+	exe->next_infd = -1;
 	procsub_close_fds_parent(state);
 	res = execute_func_call(state,
 			func_lookup(state, ((char **)(cmd->argv.ctx))[0]),
 			&cmd->argv);
+	dup2(bak[0], 0);
+	dup2(bak[1], 1);
+	dup2(bak[2], 2);
+	(close(bak[0]), close(bak[1]), close(bak[2]));
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res);
