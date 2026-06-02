@@ -35,4 +35,5 @@ void	try_unset(t_shell *state, char *key)
 		i++;
 	}
 	state->env.len--;
+	env_index_mark_dirty();
 }
