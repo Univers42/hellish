@@ -42,6 +42,8 @@ void	xtrace_print(t_vec *argv);
 void	nounset_abort(t_shell *state, const char *name, int len);
 void	scope_save(t_shell *state, const char *key);
 void	scope_leave(t_shell *state);
+t_vec	apply_temp_assigns(t_shell *state, t_vec *pre);
+void	restore_temp_assigns(t_shell *state, t_vec *saves);
 int		builtin_local(t_shell *state, t_vec argv);
 int		builtin_colon(t_shell *state, t_vec argv);
 int		builtin_break(t_shell *state, t_vec argv);

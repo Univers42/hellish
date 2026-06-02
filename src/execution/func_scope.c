@@ -69,6 +69,48 @@ void	scope_leave(t_shell *state)
 	state->func_depth--;
 }
 
+/* Apply NAME=val prefix assignments (cmd->pre_assigns) temporarily before a
+   regular builtin or function runs, saving prior values so restore_temp_assigns
+   can revert them (POSIX: such assignments don't persist past a regular builtin
+   or function). Returns the save list (caller passes it to restore). */
+t_vec	apply_temp_assigns(t_shell *state, t_vec *pre)
+{
+	t_vec			saves;
+	t_scope_save	s;
+	t_env			*pa;
+	t_env			*e;
+	size_t			i;
+
+	vec_init(&saves);
+	saves.elem_size = sizeof(t_scope_save);
+	i = 0;
+	while (i < pre->len)
+	{
+		pa = (t_env *)vec_idx(pre, i++);
+		e = env_get(&state->env, pa->key);
+		s.depth = 0;
+		s.key = ft_strdup(pa->key);
+		s.existed = (e != NULL);
+		s.value = NULL;
+		if (e && e->value)
+			s.value = ft_strdup(e->value);
+		vec_push(&saves, &s);
+		env_set(&state->env, env_create(ft_strdup(pa->key),
+				ft_strdup(pa->value ? pa->value : ""), false));
+	}
+	return (saves);
+}
+
+void	restore_temp_assigns(t_shell *state, t_vec *saves)
+{
+	size_t	i;
+
+	i = saves->len;
+	while (i > 0)
+		restore_one(state, (t_scope_save *)vec_idx(saves, --i));
+	free(saves->ctx);
+}
+
 /* local name[=value] ... : make each name local to the current function. */
 int	builtin_local(t_shell *state, t_vec argv)
 {
