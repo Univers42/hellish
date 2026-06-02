@@ -27,7 +27,7 @@ void	manage_history(t_shell *state)
 		else
 			hist_entry = ft_strndup((char *)state->rl.buff.ctx,
 					state->rl.cursor - 1);
-		add_history(hist_entry);
+		add_history_line(hist_entry);
 		vec_push(&state->hist.hist_cmds, &hist_entry);
 		if (state->hist.append_fd >= 0)
 		{
