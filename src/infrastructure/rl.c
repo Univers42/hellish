@@ -41,10 +41,24 @@ static char	*split_prompt(char *prompt)
 	return (nl + 1);
 }
 
+static void	debug_dump_prompt(char *prompt)
+{
+	size_t	i;
+
+	if (!getenv("MINISHELL_DEBUG_PROMPT"))
+		return ;
+	fprintf(stderr, "[DEBUG PROMPT] bytes: ");
+	i = -1;
+	while (prompt[++i])
+		fprintf(stderr, "%02x ", (unsigned char)prompt[i]);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "[DEBUG PROMPT] visible width: %d\n",
+		visible_width_cstr(prompt));
+}
+
 void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
-	size_t	i;
 
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
@@ -54,16 +68,8 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 		setup_vi_mode();
 	else
 		setup_emacs_mode();
-	if (getenv("MINISHELL_DEBUG_PROMPT"))
-	{
-		fprintf(stderr, "[DEBUG PROMPT] bytes: ");
-		i = -1;
-		while (prompt[++i])
-			fprintf(stderr, "%02x ", (unsigned char)prompt[i]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "[DEBUG PROMPT] visible width: %d\n",
-			visible_width_cstr(prompt));
-	}
+	debug_dump_prompt(prompt);
+	mascot_install();
 	ret = readline(split_prompt(prompt));
 	if (!ret)
 		(close(outfd), exit (1));

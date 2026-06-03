@@ -57,4 +57,13 @@ void		prompt_branch(t_string *ret, t_prompt *p);
 void		prompt_venv(t_string *ret, t_prompt *p);
 void		prompt_time_and_pad(t_string *ret, t_prompt *p);
 
+/* the blinking devil mascot + its readline-idle animation */
+int			push_mascot(t_string *ret, size_t frame, int status);
+void		render_prompt(t_string *ret, size_t frame, int status);
+size_t		*anim_frame(void);
+int			*anim_status(void);
+int			mascot_hook(void);
+void		mascot_install(void);
+void		redraw_mascot(t_string *r);
+
 #endif

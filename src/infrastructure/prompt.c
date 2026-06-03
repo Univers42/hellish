@@ -57,23 +57,40 @@ t_string	prompt_more_input(t_parser *parser)
 	return (vec_push_str(&ret, " "), ret);
 }
 
-t_string	prompt_normal(t_shell *state)
+/* Build the whole prompt for a given animation frame and last exit status: the
+   blinking mascot, the box (user/cwd/branch/venv), the clock, and the arrow.
+   Called both by prompt_normal and, with an advancing frame, by the readline
+   idle hook -- so the mascot keeps blinking even while a command is typed. */
+void	render_prompt(t_string *ret, size_t frame, int status)
 {
-	t_string	ret;
 	t_prompt	p;
+	int			mascot_w;
 
-	ensure_locale();
-	vec_init(&ret);
-	ret.elem_size = 1;
-	p.exit_status = state->last_cmd_st_exe.status;
-	prompt_user_and_cwd(&ret, &p);
-	prompt_branch(&ret, &p);
-	prompt_venv(&ret, &p);
-	prompt_time_and_pad(&ret, &p);
+	p.exit_status = status;
+	mascot_w = push_mascot(ret, frame, status);
+	prompt_user_and_cwd(ret, &p);
+	p.vis_w += mascot_w;
+	prompt_branch(ret, &p);
+	prompt_venv(ret, &p);
+	prompt_time_and_pad(ret, &p);
 	free(p.short_cwd);
 	if (p.branch)
 		free(p.branch);
 	if (p.venv)
 		free(p.venv);
+}
+
+t_string	prompt_normal(t_shell *state)
+{
+	t_string	ret;
+	int			status;
+
+	ensure_locale();
+	vec_init(&ret);
+	ret.elem_size = 1;
+	status = state->last_cmd_st_exe.status;
+	(*anim_frame())++;
+	*anim_status() = status;
+	render_prompt(&ret, *anim_frame(), status);
 	return (ret);
 }
