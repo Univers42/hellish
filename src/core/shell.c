@@ -15,6 +15,7 @@
 #include "env.h"
 #include "sh_input.h"
 #include "job_control.h"
+#include "update.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -94,6 +95,8 @@ int	main(int argc, char **argv, char **envp)
 	(void)argc;
 	on(&state, argv, envp);
 	source_hellishrc(&state);
+	show_welcome(&state);
+	maybe_spawn_update_check(&state);
 	repl_shell(&state);
 	off(&state);
 }
