@@ -78,8 +78,12 @@ cp -a "$TEST_DIR/test_files" "$workdir/" 2>/dev/null || true
 cd "$workdir" || exit 1
 
 m_out=$(mktemp) m_err=$(mktemp)
-"$MINISHELL_PATH" -c "$teste" >"$m_out" 2>"$m_err"
-m_ext=$?
+# Pipe stdout through cat so capture blocks until every writer closes the fd,
+# including async process-substitution children (e.g. > >(awk ...)). Without
+# this, an orphaned writer can flush after the shell exits and be missed,
+# making such tests race. PIPESTATUS[0] keeps the shell's real exit status.
+"$MINISHELL_PATH" -c "$teste" 2>"$m_err" | cat >"$m_out"
+m_ext=${PIPESTATUS[0]}
 
 m_out_filtered=$(cat "$m_out" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$')
 m_err_filtered=$(cat "$m_err" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -o '[^:]*$' | head -n1 || true)
@@ -88,8 +92,8 @@ cp ./outfiles/* ./mini_outfiles/ 2>/dev/null || true
 rm -rf ./outfiles/*
 
 b_out=$(mktemp) b_err=$(mktemp)
-bash --posix -c "$teste" >"$b_out" 2>"$b_err"
-b_ext=$?
+bash --posix -c "$teste" 2>"$b_err" | cat >"$b_out"
+b_ext=${PIPESTATUS[0]}
 
 b_out_filtered=$(cat "$b_out" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$')
 b_err_filtered=$(cat "$b_err" | perl -pe 's/\e\[[0-9;]*[A-Za-z]//g' | grep -o '[^:]*$' | head -n1 || true)
