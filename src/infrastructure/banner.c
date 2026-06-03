@@ -6,84 +6,127 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/03 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/03 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/06/03 13:00:18 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "header.h"
 #include "update.h"
 #include "version.h"
 #include <unistd.h>
-#include <sys/ioctl.h>
+#include <stdlib.h>
 
-/* The terminal width, so the header can span the whole line. */
-static int	term_width(void)
-{
-	struct winsize	ws;
+/* The mascot, drawn as the welcome logo: the little dino, same shape as the
+   entrance animation. Pure line-art so it reads on any font; each line is the
+   same display width so the per-line centring keeps the art aligned. */
+static const char	*g_logo[] = {
+	HP_LOGO "      __    ",
+	HP_LOGO "     /o_)    ",
+	HP_LOGO " _.-/ /      ",
+	HP_LOGO "/      /     ",
+	HP_LOGO "\\_ (| (|     ",
+	HP_LOGO " \\|_|-|_|    ",
+	NULL
+};
 
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) == 0 && ws.ws_col > 0)
-		return (ws.ws_col);
-	return (80);
-}
-
-/* A full-width rounded rule from corner l to corner r. */
-static void	banner_rule(int cols, const char *l, const char *r)
+/* The left column: a greeting, the dino mascot, the hellish identity and the
+   current directory. HP_LOGO lines are centred and tinted with logo_color. */
+static void	build_left(const char **l, const char *welcome, const char *cwd)
 {
 	int	i;
 
-	ft_eprintf("\033[38;5;238m%s", l);
-	i = 2;
-	while (i < cols)
+	l[0] = welcome;
+	l[1] = "";
+	i = -1;
+	while (g_logo[++i])
+		l[i + 2] = g_logo[i];
+	l[i + 2] = "";
+	l[i + 3] = "hellish " HELLISH_VERSION " \xc2\xb7 a POSIX shell with bite";
+	l[i + 4] = cwd;
+	l[i + 5] = NULL;
+}
+
+/* The right column: getting-started tips, a divider, then the news block whose
+   final highlight line (`news`) is set by the caller. */
+static void	build_right(const char **r, const char *news)
+{
+	r[0] = HP_HEAD "Getting started";
+	r[1] = "";
+	r[2] = "help      explore commands & options";
+	r[3] = "update    fetch the latest release";
+	r[4] = HP_RULE;
+	r[5] = HP_HEAD "What's new";
+	r[6] = "";
+	r[7] = news;
+	r[8] = "See RELEASE.md for the details";
+	r[9] = NULL;
+}
+
+/* The news highlight: an update notice when the last background check found a
+   newer release, otherwise a friendly default. */
+static void	fill_news(char *note, size_t n)
+{
+	char	latest[64];
+
+	ft_strlcpy(note, "A fire-breathing dino now greets you", n);
+	if (read_cached_latest(latest, sizeof(latest))
+		&& hellish_version_cmp(latest, HELLISH_VERSION) > 0)
+		ft_snprintf(note, n, "v%s available - run update", latest);
+}
+
+/* The current directory, with a leading $HOME collapsed to "~". */
+static void	build_cwd(char *buf, size_t n)
+{
+	char	cwd[4096];
+	char	*home;
+	size_t	hl;
+
+	if (!getcwd(cwd, sizeof(cwd)))
 	{
-		ft_eprintf("\xe2\x94\x80");
-		i++;
-	}
-	ft_eprintf("%s\033[0m\n", r);
-}
-
-/* The mascot's horns + the name, version and one-line description. */
-static void	banner_line1(void)
-{
-	ft_eprintf("\n   \033[38;5;208m\xe2\x97\xa2\xe2\x97\xa3 ");
-	ft_eprintf("\xe2\x97\xa2\xe2\x97\xa3\033[0m    ");
-	ft_eprintf("\033[1;38;5;214mhellish %s\033[0m", HELLISH_VERSION);
-	ft_eprintf("  \033[38;5;245m\xc2\xb7  ");
-	ft_eprintf("a fast, POSIX-compliant shell, with horns\033[0m\n");
-}
-
-/* The mascot's face + the quick links, and an update notice when one is due. */
-static void	banner_line2(int has_update, const char *latest)
-{
-	ft_eprintf("   \033[38;5;196m(\033[38;5;208m");
-	ft_eprintf("\xe2\x80\xa2\xcf\x89\xe2\x80\xa2");
-	ft_eprintf("\033[38;5;196m)\033[0m    ");
-	ft_eprintf("\033[38;5;240m\xe2\x80\xba\033[0m ");
-	ft_eprintf("what's new + how to use: \033[4mRELEASE.md\033[0m   ");
-	ft_eprintf("\033[38;5;240m\xe2\x80\xba\033[0m ");
-	ft_eprintf("\033[1mhelp\033[0m \xc2\xb7 \033[1mupdate\033[0m\n");
-	if (!has_update)
+		ft_strlcpy(buf, "~", n);
 		return ;
-	ft_eprintf("           \033[38;5;220m\xe2\xac\x86 v%s", latest);
-	ft_eprintf(" available \xe2\x80\x94 run \033[1mupdate\033[0m\n");
+	}
+	home = getenv("HOME");
+	hl = 0;
+	if (home)
+		hl = ft_strlen(home);
+	if (hl && !ft_strncmp(cwd, home, hl) && (!cwd[hl] || cwd[hl] == '/'))
+	{
+		ft_strlcpy(buf, "~", n);
+		ft_strlcat(buf, cwd + hl, n);
+		return ;
+	}
+	ft_strlcpy(buf, cwd, n);
 }
 
-/* Print the welcome header once, on interactive (tty) startup. Spans the full
-   width; flags a newer release found by the last background check. Opt out
+/* Print the welcome panel once, on interactive (tty) startup. Spans the full
+   width and flags a newer release found by the last background check. Opt out
    with HELLISH_NO_BANNER. */
 void	show_welcome(t_shell *state)
 {
-	char	latest[64];
-	int		has_update;
-	int		cols;
+	const char	*l[16];
+	const char	*r[16];
+	t_panel		p;
+	char		buf[3][256];
+	char		*user;
 
 	if (state->metinp != INP_RL || !isatty(STDERR_FILENO))
 		return ;
 	if (getenv("HELLISH_NO_BANNER"))
 		return ;
-	cols = term_width();
-	has_update = (read_cached_latest(latest, sizeof(latest))
-			&& hellish_version_cmp(latest, HELLISH_VERSION) > 0);
-	banner_rule(cols, "\xe2\x95\xad", "\xe2\x95\xae");
-	banner_line1();
-	banner_line2(has_update, latest);
-	banner_rule(cols, "\xe2\x95\xb0", "\xe2\x95\xaf");
+	play_intro();
+	p.title = "hellish " HELLISH_VERSION;
+	p.logo_color = "\033[38;5;77m";
+	user = getenv("USER");
+	if (!user || !*user)
+		user = "friend";
+	ft_snprintf(buf[0], sizeof(buf[0]), HP_HEAD "Welcome back, %s!", user);
+	fill_news(buf[1], sizeof(buf[1]));
+	build_cwd(buf[2], sizeof(buf[2]));
+	build_left(l, buf[0], buf[2]);
+	build_right(r, buf[1]);
+	p.left = l;
+	p.right = r;
+	ft_eprintf("\033[H\033[2J\033[3J");
+	render_panel(&p);
 }
