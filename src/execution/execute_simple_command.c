@@ -73,16 +73,16 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 {
 	char	*argv0;
 
+	if (cmd->argv.len == 0 || !cmd->argv.ctx)
+		return (handle_assign_only(state, cmd, exe));
 	argv0 = ((char **)cmd->argv.ctx)[0];
-	if (cmd->argv.len > 0 && argv0 && argv0[0] == '\0')
+	if (argv0 && argv0[0] == '\0')
 		return (handle_empty_command(state, cmd, exe));
-	if (cmd->argv.len && func_lookup(state, argv0) && exe->modify_parent_ctx)
+	if (func_lookup(state, argv0) && exe->modify_parent_ctx)
 		return (handle_func_call(state, cmd, exe));
-	if (cmd->argv.len && builtin_func(argv0) && exe->modify_parent_ctx)
+	if (builtin_func(argv0) && exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, cmd, exe));
-	if (cmd->argv.len)
-		return (execute_cmd_bg(state, exe, cmd));
-	return (handle_assign_only(state, cmd, exe));
+	return (execute_cmd_bg(state, exe, cmd));
 }
 
 t_execution_state	execute_simple_command(t_shell *state,
