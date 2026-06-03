@@ -15,9 +15,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-/* Map one UTF-8 rune to its semantic colour (the blog's "colour roles"):
-   body blocks tint green, the eye/blink white, the spark yellow, spaces
-   reset. `*len` receives the rune's byte length. */
+/* Map one rune to its colour (the blog's "colour roles"): the logo is salmon,
+   its '#' strokes a brighter salmon, spaces reset. `*len` gets the byte len. */
 static const char	*rune_color(const char *s, int *len)
 {
 	unsigned char	c;
@@ -33,13 +32,9 @@ static const char	*rune_color(const char *s, int *len)
 		*len = 4;
 	if (*s == ' ')
 		return ("\033[0m");
-	if (*s == 'o' || *s == 'O')
-		return ("\033[38;5;231m");
-	if (*s == '*')
-		return ("\033[1;38;5;226m");
-	if (*s == '~')
-		return ("\033[38;5;208m");
-	return ("\033[38;5;77m");
+	if (*s == '#')
+		return ("\033[1;38;5;210m");
+	return ("\033[38;5;209m");
 }
 
 /* Emit one frame line: pad to centre, then walk runes grouping consecutive
@@ -106,22 +101,19 @@ void	play_intro(void)
 	size_t		n;
 	size_t		i;
 	int			pad;
-	int			reps;
 
 	if (!intro_enabled())
 		return ;
 	frames = intro_frames(&n);
-	pad = (header_cols() - 18) / 2;
+	pad = (header_cols() - 25) / 2;
 	if (pad < 0)
 		pad = 0;
 	i = 0;
-	reps = 0;
-	while (reps < 2)
+	while (i < n)
 	{
-		play_frame(frames[i % n], pad);
-		usleep(95000);
-		if (++i % n == 0)
-			reps++;
+		play_frame(frames[i], pad);
+		usleep(90000);
+		i++;
 	}
 	intro_mark_seen();
 }
