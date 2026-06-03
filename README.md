@@ -7,6 +7,40 @@ _This project was created as part of the 42 curriculum by dlesieur, alcacere_.
 
 ---
 
+## Install
+
+**One-liner (Linux x86-64):**
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/Univers42/42sh/main/install.sh | sh
+```
+
+**npm / pnpm / yarn:**
+
+```sh
+npm install -g hellish-shell      # or: pnpm add -g hellish-shell
+```
+
+**Docker:**
+
+```sh
+docker run --rm -it <login>/hellish-shell
+```
+
+**From source:**
+
+```sh
+git clone --recursive https://github.com/Univers42/42sh && cd 42sh
+make OPT=1 all && ./build/bin/hellish
+```
+
+Once installed, the shell checks for newer releases in the background (once a
+day, never blocking the prompt) and flags one in the welcome banner. Run
+`update` to check on demand, or `update --now` to self-update the binary.
+Opt out with `HELLISH_NO_UPDATE_CHECK=1` (and `HELLISH_NO_BANNER=1`).
+
+---
+
 ## <div style="color:rgba(250,75,100,90)" >What Is This Project?
 
 `hellish` is a full interactive shell implementation done as a long‑running

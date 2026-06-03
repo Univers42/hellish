@@ -8,3 +8,8 @@ build/
 out.dot
 tests/results.log
 .claude/
+
+# secrets / credentials — never commit
+.env
+.env.*
+!.env.example

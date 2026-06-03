@@ -40,6 +40,7 @@ int				set_positional_args(t_shell *state,
 void			pos_build(t_pos *pos, char **args, size_t n);
 void			pos_free(t_pos *pos);
 int				builtin_ulimit(t_shell *state, t_vec argv);
+int				builtin_update(t_shell *state, t_vec argv);
 void			unset_function(t_shell *state, const char *name);
 t_shell_func	*func_lookup(t_shell *state, const char *name);
 int				apply_set_flags(t_shell *state, t_vec argv);
