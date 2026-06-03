@@ -125,8 +125,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Build libft (in its directory)
 $(LIBFT_A):
-	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft\033[0m\n\n" >&2
-	@$(MAKE) -C vendor/libft -j20
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3)\033[0m\n\n" >&2
+	@$(MAKE) -C vendor/libft -j1
 	@printf "\n" >&2
 
 clean:
@@ -147,7 +147,12 @@ fclean: clean
 re: fclean all
 	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(BAPTIZE_SHELL)\033[0m\n\n" >&2
 
-test: all
+# Force a relink so the binary always matches the requested mode (debug here):
+# the OPT/debug object trees are separate but the binary path is shared, and
+# make won't relink on a mode switch alone.
+test:
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
@@ -155,6 +160,7 @@ test: all
 # (timing the default ASan/debug build would be meaningless). Override rounds /
 # scope:  make bench ROUNDS=7        make bench BENCH=micro
 bench:
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@$(MAKE) --no-print-directory OPT=1 all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBenchmarking hellish vs bash --posix\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); ROUNDS=$(ROUNDS) TIMEOUT_S=$(TIMEOUT_S) /bin/bash benchmark $(BENCH))
