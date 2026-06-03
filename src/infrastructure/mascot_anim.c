@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/03 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/03 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/06/03 13:00:20 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,12 +46,8 @@ int	mascot_hook(void)
 	return (0);
 }
 
-/* Arm the idle animation in the readline child (poll every ~90ms). Opt out
-   with HELLISH_NO_MASCOT, which leaves a plain, perfectly static prompt. */
+/* The prompt face has been removed, so there is no idle redraw to install. */
 void	mascot_install(void)
 {
-	if (getenv("HELLISH_NO_MASCOT"))
-		return ;
-	rl_event_hook = mascot_hook;
-	rl_set_keyboard_input_timeout(90000);
+	rl_event_hook = NULL;
 }

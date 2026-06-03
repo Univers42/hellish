@@ -18,6 +18,7 @@
 #include "update.h"
 #include <stdlib.h>
 #include <fcntl.h>
+#include <locale.h>
 #include <unistd.h>
 
 void		on(t_shell *state, char **argv, char **envp);
@@ -93,6 +94,7 @@ int	main(int argc, char **argv, char **envp)
 	if (is_login_shell)
 		argv[0]++;
 	(void)argc;
+	setlocale(LC_ALL, "");
 	on(&state, argv, envp);
 	source_hellishrc(&state);
 	show_welcome(&state);
