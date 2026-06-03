@@ -55,9 +55,22 @@ static void	emit_top_char(char c)
 	fputc((unsigned char)c, rl_outstream);
 }
 
-/* Repaint the whole sprite block in place: hardware-save the cursor, step up
-   onto the first sprite row, clear+print every row above the input line, then
-   restore the cursor exactly where readline left it. Works for any height. */
+/* How many screen rows separate the cursor from the first decorative row: the
+   count of prompt rows above the input, plus however many rows the input has
+   wrapped to reach the cursor (a 2-col arrow prefix + rl_point chars). */
+static int	rows_above(const char *s)
+{
+	int	cols;
+
+	cols = get_cols();
+	if (cols < 2)
+		cols = 80;
+	return (count_nl(s) + (2 + rl_point) / cols);
+}
+
+/* Repaint the decorative line(s) in place without disturbing what the user is
+   typing: hardware-save the cursor, step up onto the first decorative row,
+   clear+print every row above the input, then restore the cursor exactly. */
 void	redraw_top(t_string *r)
 {
 	char	*s;
@@ -69,7 +82,7 @@ void	redraw_top(t_string *r)
 	if (!last)
 		return ;
 	fputs("\0337", rl_outstream);
-	cursor_up(count_nl(s));
+	cursor_up(rows_above(s));
 	fputs("\r\033[2K", rl_outstream);
 	i = 0;
 	while (s + i < last)

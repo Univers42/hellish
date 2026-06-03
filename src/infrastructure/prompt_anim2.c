@@ -21,15 +21,14 @@ int	*anim_status(void)
 	return (&status);
 }
 
-/* readline idle tick: while the input line is empty, advance one frame and
-   repaint the top line; while the user is typing (rl_end > 0) we leave the
-   screen alone so a wrapped input line can never be corrupted. */
+/* readline idle tick (~every 90ms, whether or not the user is typing): advance
+   one frame and repaint the decorative line above the input. redraw_top works
+   out how far up that line is from the cursor, so the animation keeps gliding
+   even mid-command and the input line itself is never touched. */
 int	anim_hook(void)
 {
 	t_string	r;
 
-	if (rl_end > 0)
-		return (0);
 	(*anim_frame())++;
 	vec_init(&r);
 	r.elem_size = 1;

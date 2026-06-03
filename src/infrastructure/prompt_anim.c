@@ -34,28 +34,26 @@ int	*anim_style(void)
    place without disturbing readline's (bottom) input line. */
 int	style_has_top_line(int style)
 {
-	return (style == STYLE_FLAME || style == STYLE_EMBER
-		|| style == STYLE_BREATHE || style == STYLE_AURORA
-		|| style == STYLE_WAVE || style == STYLE_POWERLINE);
+	return (style == STYLE_GLOW || style == STYLE_BREATHE
+		|| style == STYLE_AURORA || style == STYLE_WAVE
+		|| style == STYLE_POWERLINE);
 }
 
 /* Render the full prompt for (style, frame); pass the remembered status so the
-   ember mascot keeps its mood while idle. */
+   status-coloured arrow stays correct while the line animates. */
 void	render_top(int style, size_t frame, t_string *ret)
 {
 	int	st;
 
 	st = *anim_status();
-	if (style == STYLE_FLAME)
-		style_flame(frame, st, ret);
+	if (style == STYLE_GLOW)
+		style_glow(frame, st, ret);
 	else if (style == STYLE_WAVE)
 		style_wave(frame, st, ret);
 	else if (style == STYLE_POWERLINE)
 		style_powerline(frame, st, ret);
 	else if (style == STYLE_AURORA)
 		style_aurora(frame, st, ret);
-	else if (style == STYLE_EMBER)
-		style_ember(frame, st, ret);
 	else
 		style_breathe(frame, st, ret);
 }

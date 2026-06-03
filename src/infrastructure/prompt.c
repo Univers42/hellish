@@ -22,10 +22,8 @@ static bool	render_style(t_shell *state, t_string *ret, int style)
 
 	f = state->prompt_frame;
 	st = state->last_cmd_st_exe.status;
-	if (style == STYLE_FLAME)
-		return (style_flame(f, st, ret), true);
-	if (style == STYLE_EMBER)
-		return (style_ember(f, st, ret), true);
+	if (style == STYLE_GLOW)
+		return (style_glow(f, st, ret), true);
 	if (style == STYLE_BREATHE)
 		return (style_breathe(f, st, ret), true);
 	if (style == STYLE_WAVE)

@@ -29,8 +29,7 @@
 
 enum e_prompt_style
 {
-	STYLE_FLAME,
-	STYLE_EMBER,
+	STYLE_GLOW,
 	STYLE_BREATHE,
 	STYLE_AURORA,
 	STYLE_WAVE,
@@ -55,22 +54,13 @@ void	style_aurora(size_t frame, int status, t_string *ret);
 void	style_wave(size_t frame, int status, t_string *ret);
 void	style_pulse(size_t frame, int status, t_string *ret);
 void	style_powerline(size_t frame, int status, t_string *ret);
-void	style_ember(size_t frame, int status, t_string *ret);
 
-/* hellish mascot bits (prompt_styles6.c) */
-void	push_imp(t_string *ret, size_t frame, int status);
-void	fuse_bar(t_string *ret, size_t frame, int n);
-int		fire_hue(size_t f);
-
-/* the big multi-line flame-devil sprite (prompt_styles8/9/10.c) */
-void	devil_line1(t_string *ret, size_t f);
-void	devil_line2(t_string *ret, size_t f, int st);
-void	devil_line3(t_string *ret, size_t f, int st);
-void	devil_line4(t_string *ret, size_t f);
-void	flame_info_user(t_string *ret, t_prompt *p);
-void	flame_info_branch(t_string *ret, t_prompt *p);
-void	flame_info_bar(t_string *ret, t_prompt *p, size_t frame);
-void	style_flame(size_t frame, int status, t_string *ret);
+/* the cute "glow" default: a breathing sparkle + a warm ray of light that
+   sweeps the rule, drawn over two lines (prompt_glow.c / prompt_glow2.c). */
+int		glow_pos(size_t frame, int w);
+int		glow_cell(int d);
+void	push_glow_bar(t_string *ret, size_t frame, int n);
+void	style_glow(size_t frame, int status, t_string *ret);
 
 /* readline-child idle animation (prompt_anim.c / prompt_anim2.c) */
 void	prompt_anim_install(int style);
