@@ -29,6 +29,7 @@
 
 enum e_prompt_style
 {
+	STYLE_FLAME,
 	STYLE_EMBER,
 	STYLE_BREATHE,
 	STYLE_AURORA,
@@ -59,6 +60,17 @@ void	style_ember(size_t frame, int status, t_string *ret);
 /* hellish mascot bits (prompt_styles6.c) */
 void	push_imp(t_string *ret, size_t frame, int status);
 void	fuse_bar(t_string *ret, size_t frame, int n);
+int		fire_hue(size_t f);
+
+/* the big multi-line flame-devil sprite (prompt_styles8/9/10.c) */
+void	devil_line1(t_string *ret, size_t f);
+void	devil_line2(t_string *ret, size_t f, int st);
+void	devil_line3(t_string *ret, size_t f, int st);
+void	devil_line4(t_string *ret, size_t f);
+void	flame_info_user(t_string *ret, t_prompt *p);
+void	flame_info_branch(t_string *ret, t_prompt *p);
+void	flame_info_bar(t_string *ret, t_prompt *p, size_t frame);
+void	style_flame(size_t frame, int status, t_string *ret);
 
 /* readline-child idle animation (prompt_anim.c / prompt_anim2.c) */
 void	prompt_anim_install(int style);

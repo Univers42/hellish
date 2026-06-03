@@ -13,7 +13,7 @@
 #include "prompt_styles.h"
 
 /* The hellish mascot's flicker: a warm, slightly irregular fire palette. */
-static int	fire_hue(size_t f)
+int	fire_hue(size_t f)
 {
 	static const int	pal[12] = {208, 214, 202, 220, 208, 196,
 		214, 209, 202, 214, 220, 208};

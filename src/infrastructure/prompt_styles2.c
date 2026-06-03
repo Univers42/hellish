@@ -12,13 +12,17 @@
 
 #include "prompt_styles.h"
 
-/* Pick the prompt style from $HELLISH_PROMPT_STYLE (default: aurora). */
+/* Pick the prompt style from $HELLISH_PROMPT_STYLE (default: flame). */
 int	select_prompt_style(void)
 {
 	char	*s;
 
 	s = getenv("HELLISH_PROMPT_STYLE");
 	if (!s)
+		return (STYLE_FLAME);
+	if (!ft_strcmp(s, "flame"))
+		return (STYLE_FLAME);
+	if (!ft_strcmp(s, "ember"))
 		return (STYLE_EMBER);
 	if (!ft_strcmp(s, "breathe"))
 		return (STYLE_BREATHE);
@@ -32,7 +36,7 @@ int	select_prompt_style(void)
 		return (STYLE_POWERLINE);
 	if (!ft_strcmp(s, "classic"))
 		return (STYLE_CLASSIC);
-	return (STYLE_EMBER);
+	return (STYLE_FLAME);
 }
 
 /* Left part of the aurora prompt: spinner, user, cwd and (if any) git branch.
