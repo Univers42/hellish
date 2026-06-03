@@ -16,16 +16,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-/* The mascot, drawn as the welcome logo: the little dino, same shape as the
-   entrance animation. Pure line-art so it reads on any font; each line is the
-   same display width so the per-line centring keeps the art aligned. */
+/* The welcome logo: the exact 42 file-header art (the same logo this file is
+   topped with). Each line is padded to the same display width so the per-line
+   centring keeps the art aligned; it is tinted salmon via logo_color. */
 static const char	*g_logo[] = {
-	HP_LOGO "      __    ",
-	HP_LOGO "     /o_)    ",
-	HP_LOGO " _.-/ /      ",
-	HP_LOGO "/      /     ",
-	HP_LOGO "\\_ (| (|     ",
-	HP_LOGO " \\|_|-|_|    ",
+	HP_LOGO "        :::      ::::::::",
+	HP_LOGO "      :+:      :+:    :+:",
+	HP_LOGO "    +:+ +:+         +:+  ",
+	HP_LOGO "  +#+  +:+       +#+     ",
+	HP_LOGO "+#+#+#+#+#+   +#+        ",
+	HP_LOGO "     #+#    #+#          ",
+	HP_LOGO "    ###   ########.fr    ",
 	NULL
 };
 
@@ -68,7 +69,7 @@ static void	fill_news(char *note, size_t n)
 {
 	char	latest[64];
 
-	ft_strlcpy(note, "A fire-breathing dino now greets you", n);
+	ft_strlcpy(note, "The 42 logo now greets you, in salmon", n);
 	if (read_cached_latest(latest, sizeof(latest))
 		&& hellish_version_cmp(latest, HELLISH_VERSION) > 0)
 		ft_snprintf(note, n, "v%s available - run update", latest);
@@ -116,7 +117,7 @@ void	show_welcome(t_shell *state)
 		return ;
 	play_intro();
 	p.title = "hellish " HELLISH_VERSION;
-	p.logo_color = "\033[38;5;77m";
+	p.logo_color = "\033[38;5;209m";
 	user = getenv("USER");
 	if (!user || !*user)
 		user = "friend";

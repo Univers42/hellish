@@ -12,38 +12,33 @@
 
 #include "header.h"
 
-/* The hellish mascot: a little dinosaur that breathes fire. Stored as plain
-   line-art (pure ASCII, so it reads as a dino on any font) and coloured at
-   runtime by role -- body green, eye white, flame orange. Only the head row
-   changes between frames, so the body lives in shared macros. */
-#define DINO_TOP "               __"
-#define DINO_B1 "     _.----._/ /"
-#define DINO_B2 "    /         /"
-#define DINO_B3 " __/ (  | (  |"
-#define DINO_B4 "/__.-'|_|--|_|"
-#define HEAD_IDLE "              /o_)"
-#define HEAD_BLINK "              / _)"
-#define HEAD_F1 "              /o_) ~"
-#define HEAD_F2 "              /o_) ~~"
-#define HEAD_F3 "              /o_) ~*~"
+/* The mascot is the 42 logo itself -- the exact art from the school's file
+   header. The entrance reveals it line by line, then holds; it is coloured
+   salmon at runtime (see rune_color), the pixels-to-characters idea from the
+   GitHub Copilot CLI banner applied to a logo we did not have to draw. */
+#define LOGO0 "        :::      ::::::::"
+#define LOGO1 "      :+:      :+:    :+:"
+#define LOGO2 "    +:+ +:+         +:+"
+#define LOGO3 "  +#+  +:+       +#+"
+#define LOGO4 "+#+#+#+#+#+   +#+"
+#define LOGO5 "     #+#    #+#"
+#define LOGO6 "    ###   ########.fr"
 
-static const char	*g_idle[] = {
-	DINO_TOP, HEAD_IDLE, DINO_B1, DINO_B2, DINO_B3, DINO_B4, NULL};
-static const char	*g_fire1[] = {
-	DINO_TOP, HEAD_F1, DINO_B1, DINO_B2, DINO_B3, DINO_B4, NULL};
-static const char	*g_fire2[] = {
-	DINO_TOP, HEAD_F2, DINO_B1, DINO_B2, DINO_B3, DINO_B4, NULL};
-static const char	*g_fire3[] = {
-	DINO_TOP, HEAD_F3, DINO_B1, DINO_B2, DINO_B3, DINO_B4, NULL};
-static const char	*g_blink[] = {
-	DINO_TOP, HEAD_BLINK, DINO_B1, DINO_B2, DINO_B3, DINO_B4, NULL};
+static const char	*g_r1[] = {LOGO0, NULL};
+static const char	*g_r2[] = {LOGO0, LOGO1, NULL};
+static const char	*g_r3[] = {LOGO0, LOGO1, LOGO2, NULL};
+static const char	*g_r4[] = {LOGO0, LOGO1, LOGO2, LOGO3, NULL};
+static const char	*g_r5[] = {LOGO0, LOGO1, LOGO2, LOGO3, LOGO4, NULL};
+static const char	*g_r6[] = {LOGO0, LOGO1, LOGO2, LOGO3, LOGO4, LOGO5, NULL};
+static const char	*g_full[] = {
+	LOGO0, LOGO1, LOGO2, LOGO3, LOGO4, LOGO5, LOGO6, NULL};
 
-/* The frame table: idle, a breath that flares up then dies down, then a blink.
-   `count` receives the number of frames. */
+/* The frame table: the logo drawn in row by row, then held. `count` receives
+   the number of frames. */
 const char	***intro_frames(size_t *count)
 {
 	static const char	**frames[] = {
-		g_idle, g_fire1, g_fire2, g_fire3, g_fire2, g_fire1, g_blink, g_idle};
+		g_r1, g_r2, g_r3, g_r4, g_r5, g_r6, g_full, g_full, g_full};
 
 	if (count)
 		*count = sizeof(frames) / sizeof(frames[0]);
