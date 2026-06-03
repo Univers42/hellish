@@ -13,8 +13,6 @@
 #include "builtins_private.h"
 #include "update.h"
 #include "version.h"
-#include <sys/wait.h>
-#include <unistd.h>
 
 /* Report how the running version compares to the latest release tag. */
 static void	print_status(const char *latest)
@@ -29,55 +27,23 @@ static void	print_status(const char *latest)
 	ft_printf("(you have %s).\n", HELLISH_VERSION);
 }
 
-/* Show every supported way to upgrade. */
-static void	print_install_hint(void)
+/* Tell the user how this copy upgrades, tailored to where it came from. */
+static void	print_update_hint(t_origin o, const char *repo)
 {
-	ft_printf("  upgrade with any of:\n");
-	ft_printf("    npm i -g %s@latest\n", HELLISH_PKG);
-	ft_printf("    docker pull <login>/%s:latest\n", HELLISH_PKG);
-	ft_printf("    curl -fsSL https://raw.githubusercontent.com/"
-		HELLISH_REPO "/main/install.sh | sh\n");
-	ft_printf("    (or just run:  update --now)\n");
+	char	cmd[1024];
+
+	origin_command(o, repo, cmd, sizeof(cmd));
+	ft_printf("  installed via \033[1m%s\033[0m — upgrade with:\n",
+		origin_label(o));
+	ft_printf("    %s\n", cmd);
+	ft_printf("  (or just run:  \033[1mupdate --now\033[0m)\n");
 }
 
-/* Run the canonical install script to self-update the binary. */
-static int	run_installer(void)
-{
-	char *const	av[] = {"sh", "-c", "curl -fsSL "
-		"https://raw.githubusercontent.com/" HELLISH_REPO
-		"/main/install.sh | sh", NULL};
-	pid_t		pid;
-	int			st;
-
-	ft_eprintf("hellish: running installer...\n");
-	pid = fork();
-	if (pid < 0)
-		return (1);
-	if (pid == 0)
-	{
-		execvp(av[0], av);
-		_exit(127);
-	}
-	waitpid(pid, &st, 0);
-	return (0);
-}
-
-/* `update`: check GitHub for a newer release; `--now` self-updates the binary,
-   `--version` just prints the running version. Refreshes the banner's cache. */
-int	builtin_update(t_shell *state, t_vec argv)
+/* Live-check GitHub, refresh the banner cache, and report + hint. */
+static int	do_check(t_origin origin, const char *repo)
 {
 	char	latest[64];
-	char	**av;
 
-	(void)state;
-	av = (char **)argv.ctx;
-	if (argv.len > 1 && !ft_strcmp(av[1], "--version"))
-	{
-		ft_printf("hellish %s\n", HELLISH_VERSION);
-		return (0);
-	}
-	if (argv.len > 1 && !ft_strcmp(av[1], "--now"))
-		return (run_installer());
 	ft_eprintf("hellish: checking for updates\xe2\x80\xa6\n");
 	if (!fetch_latest_tag(latest, sizeof(latest)))
 	{
@@ -87,6 +53,28 @@ int	builtin_update(t_shell *state, t_vec argv)
 	hellish_write_cache(latest);
 	print_status(latest);
 	if (hellish_version_cmp(latest, HELLISH_VERSION) > 0)
-		print_install_hint();
+		print_update_hint(origin, repo);
 	return (0);
+}
+
+/* `update`: compare against GitHub's latest release and, for `--now`, run the
+   upgrade that matches how this binary was installed (npm/pnpm/docker/source/
+   standalone). `--version` prints the running version. */
+int	builtin_update(t_shell *state, t_vec argv)
+{
+	char		repo[512];
+	t_origin	origin;
+	char		**av;
+
+	(void)state;
+	av = (char **)argv.ctx;
+	if (argv.len > 1 && !ft_strcmp(av[1], "--version"))
+	{
+		ft_printf("hellish %s\n", HELLISH_VERSION);
+		return (0);
+	}
+	origin = detect_origin(repo, sizeof(repo));
+	if (argv.len > 1 && !ft_strcmp(av[1], "--now"))
+		return (run_origin_update(origin, repo));
+	return (do_check(origin, repo));
 }
