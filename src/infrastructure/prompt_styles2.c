@@ -19,6 +19,8 @@ int	select_prompt_style(void)
 
 	s = getenv("HELLISH_PROMPT_STYLE");
 	if (!s)
+		return (STYLE_EMBER);
+	if (!ft_strcmp(s, "breathe"))
 		return (STYLE_BREATHE);
 	if (!ft_strcmp(s, "aurora"))
 		return (STYLE_AURORA);
@@ -30,7 +32,7 @@ int	select_prompt_style(void)
 		return (STYLE_POWERLINE);
 	if (!ft_strcmp(s, "classic"))
 		return (STYLE_CLASSIC);
-	return (STYLE_BREATHE);
+	return (STYLE_EMBER);
 }
 
 /* Left part of the aurora prompt: spinner, user, cwd and (if any) git branch.

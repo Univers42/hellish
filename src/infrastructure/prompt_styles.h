@@ -29,6 +29,7 @@
 
 enum e_prompt_style
 {
+	STYLE_EMBER,
 	STYLE_BREATHE,
 	STYLE_AURORA,
 	STYLE_WAVE,
@@ -53,12 +54,18 @@ void	style_aurora(size_t frame, int status, t_string *ret);
 void	style_wave(size_t frame, int status, t_string *ret);
 void	style_pulse(size_t frame, int status, t_string *ret);
 void	style_powerline(size_t frame, int status, t_string *ret);
+void	style_ember(size_t frame, int status, t_string *ret);
+
+/* hellish mascot bits (prompt_styles6.c) */
+void	push_imp(t_string *ret, size_t frame, int status);
+void	fuse_bar(t_string *ret, size_t frame, int n);
 
 /* readline-child idle animation (prompt_anim.c / prompt_anim2.c) */
 void	prompt_anim_install(int style);
 int		style_has_top_line(int style);
 size_t	*anim_frame(void);
 int		*anim_style(void);
+int		*anim_status(void);
 void	render_top(int style, size_t frame, t_string *ret);
 void	redraw_top(t_string *r);
 int		anim_hook(void);

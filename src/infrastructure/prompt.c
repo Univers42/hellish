@@ -22,6 +22,8 @@ static bool	render_style(t_shell *state, t_string *ret, int style)
 
 	f = state->prompt_frame;
 	st = state->last_cmd_st_exe.status;
+	if (style == STYLE_EMBER)
+		return (style_ember(f, st, ret), true);
 	if (style == STYLE_BREATHE)
 		return (style_breathe(f, st, ret), true);
 	if (style == STYLE_WAVE)
@@ -90,6 +92,7 @@ t_string	prompt_normal(t_shell *state)
 	ret.elem_size = 1;
 	state->prompt_frame++;
 	*anim_frame() = state->prompt_frame;
+	*anim_status() = state->last_cmd_st_exe.status;
 	if (render_style(state, &ret, select_prompt_style()))
 		return (ret);
 	p.exit_status = state->last_cmd_st_exe.status;

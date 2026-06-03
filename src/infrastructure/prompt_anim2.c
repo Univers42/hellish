@@ -12,6 +12,15 @@
 
 #include "prompt_styles.h"
 
+/* Last command status, shared parent -> child (fork) so the mascot keeps its
+   mood (e.g. angry after a failure) while the prompt idles. */
+int	*anim_status(void)
+{
+	static int	status;
+
+	return (&status);
+}
+
 /* readline idle tick: while the input line is empty, advance one frame and
    repaint the top line; while the user is typing (rl_end > 0) we leave the
    screen alone so a wrapped input line can never be corrupted. */

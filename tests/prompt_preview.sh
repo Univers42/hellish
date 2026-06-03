@@ -4,7 +4,10 @@
 # Then try one live:  HELLISH_PROMPT_STYLE=wave ./build/bin/hellish
 #
 # Styles (set $HELLISH_PROMPT_STYLE):
-#   breathe    (default) a single softly-pulsing sparkle on a calm, still line
+#   ember      (default) the hellish fire imp (◣ω◢) + a burning-fuse rule whose
+#              spark ● creeps toward your prompt; imp blinks, beams on success,
+#              scowls red on failure -- the brand, alive and idling on its own
+#   breathe    a single softly-pulsing sparkle on a calm, still line
 #   aurora     braille spinner + a colour gradient that flows along the rule
 #   wave       a live audio-waveform that scrolls
 #   pulse      ultra-minimal one line: a breathing orb + cwd + arrow
@@ -19,7 +22,7 @@ H="$(CDPATH= cd "$(dirname "$0")/.." && pwd)/build/bin/hellish"
 [ -x "$H" ] || { echo "build first: make OPT=1 all" >&2; exit 1; }
 COLS="${COLUMNS:-90}"
 
-for style in breathe aurora wave pulse powerline classic; do
+for style in ember breathe aurora wave pulse powerline classic; do
 	printf '\n\033[1m──────── %s ────────\033[0m\n' "$style"
 	# drive a real prompt through a pty, run two commands so a frame advances,
 	# then show the prompt lines (strip the bracketed-paste guards).
@@ -27,8 +30,8 @@ for style in breathe aurora wave pulse powerline classic; do
 		| HELLISH_PROMPT_STYLE="$style" COLUMNS="$COLS" \
 			script -qec "$H" /dev/null 2>/dev/null \
 		| sed 's/\r//g; s/\[?2004[hl]//g' \
-		| grep -aE '❯|✦|─|▁|▂|▃|▄|▅|▆|▇|█|○|◑|◔|●|⠋|⠙|⠹|⠸|⠼|in |·| ' \
+		| grep -aE '❯|✦|─|▁|▂|▃|▄|▅|▆|▇|█|○|◑|◔|●|◣|◢|ω|⠋|⠙|⠹|⠸|⠼|in |·| ' \
 		| grep -av '^true$\|^false$\|^exit$' \
 		| head -4
 done
-printf '\n\033[2mTry one live:  HELLISH_PROMPT_STYLE=aurora %s\033[0m\n' "$H"
+printf '\n\033[2mTry one live:  HELLISH_PROMPT_STYLE=ember %s\033[0m\n' "$H"

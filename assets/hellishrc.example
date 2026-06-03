@@ -18,9 +18,10 @@ set -o emacs            # line-editing mode (or: set -o vi)
 # set -C                # uncomment for noclobber (> won't overwrite files)
 
 # --- prompt style (experimental) ------------------------------------------
-# breathe (default, calm) | aurora (flowing) | wave | pulse | powerline | classic
-# All animate one frame per prompt (zero render cost) and set a beam cursor.
-export HELLISH_PROMPT_STYLE=breathe
+# ember (default): the hellish fire imp (the brand) + a burning-fuse rule
+# breathe (calm) | aurora (flowing) | wave | pulse | powerline | classic
+# The multi-line styles animate in place while idle and pause as you type.
+export HELLISH_PROMPT_STYLE=ember
 
 # --- aliases --------------------------------------------------------------
 alias ll='ls -lah'
