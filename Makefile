@@ -162,7 +162,8 @@ bench:
 norm:
 	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
 	output="$$( \
-	    norminette 2>&1 | grep -v 'OK!' | grep -v 'US' & \
+	    norminette src incs tests 2>&1 | grep -v 'OK!' | grep -v 'US' \
+	        | grep -v 'Notice:' & \
 	    pid=$$!; \
 	    while kill -0 $$pid 2>/dev/null; do \
 	        for dots in '.' '..' '...' '....' '.....' '......'; do \
