@@ -1,0 +1,2 @@
+# Never ship the downloaded binary; it is fetched per-platform at install time.
+bin/hellish
