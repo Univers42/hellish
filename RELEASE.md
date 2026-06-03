@@ -12,12 +12,13 @@ shows you how to drive the shell.
 
 **New**
 
-- **A living welcome header.** Full terminal width, with the hellish mascot,
-  the version, a one‑line description, and quick links. Shown once per
-  interactive session. (`HELLISH_NO_BANNER=1` to silence.)
-- **A blinking mascot in the prompt.** A tiny devil keeps blinking even while
-  you type — calm, not noisy. It cheers on success and frowns on a failed
-  command. (`HELLISH_NO_MASCOT=1` to silence.)
+- **A Claude‑style welcome panel.** A full‑width, two‑column box: a greeting
+  and the **42 logo in salmon** on the left; getting‑started tips and a
+  "What's new" block on the right. Shown once per session.
+  (`HELLISH_NO_BANNER=1` to silence.)
+- **A one‑time entrance animation.** On the very first run the logo draws in,
+  row by row, like the GitHub Copilot CLI banner; every later startup is
+  instant. (`HELLISH_ANIM=1` to replay it, `HELLISH_NO_ANIM=1` to skip.)
 - **Origin‑aware `update`.** The shell now knows *how it was installed* and
   upgrades the right way:
   | installed via | `update --now` runs |
@@ -67,10 +68,9 @@ it's sourced on interactive startup, the `.bashrc` analogue. A starter lives in
 
 | variable | effect |
 |---|---|
-| `HELLISH_NO_BANNER=1` | hide the welcome header |
-| `HELLISH_NO_MASCOT=1` | freeze the prompt mascot (no animation) |
+| `HELLISH_NO_BANNER=1` | hide the welcome panel entirely |
+| `HELLISH_ANIM=1` | replay the entrance animation on this startup |
+| `HELLISH_NO_ANIM=1` | never play the entrance animation |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates in the background |
 
 ---
-
-Source, issues, and full history: <https://github.com/Univers42/42sh>
