@@ -27,17 +27,13 @@ static char	*dup_key_from_node(t_ast_node *node)
 static char	*dup_value_from_args(t_vec *args)
 {
 	char	*val;
-	char	*dup;
 
 	if (!args->len)
 		return (NULL);
 	ft_assert(args->len == 1);
 	val = ((char **)args->ctx)[0];
 	if (val)
-	{
-		dup = ft_strdup(val);
-		return (free(val), dup);
-	}
+		return (val);
 	return (ft_strdup(""));
 }
 

@@ -98,13 +98,8 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
 long long	get_var_value(t_arith_parser *p, const char *name, int len)
 {
 	char	*val;
-	char	*key;
 
-	key = ft_strndup(name, len);
-	if (!key)
-		return (0);
-	val = env_expand_n(p->shell, key, len);
-	free(key);
+	val = env_expand_n(p->shell, (char *)name, len);
 	if (!val || !*val)
 		return (0);
 	if (is_simple_decimal(val))
