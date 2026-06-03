@@ -53,8 +53,15 @@ CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
 endif
 
-# Directories
+# Directories. Object trees are per build mode so the OPT benchmark build
+# never silently reuses stale debug/ASan objects (make won't rebuild on a
+# flag change alone). The binary path is shared and relinked for each mode,
+# so `make bench` always times a true OPT build.
+ifdef OPT
+OBJ_DIR := build/obj-opt
+else
 OBJ_DIR := build/obj
+endif
 BIN_DIR := build/bin
 LIBFT_DIR := vendor/libft/build/lib
 SRC_DIR := src
