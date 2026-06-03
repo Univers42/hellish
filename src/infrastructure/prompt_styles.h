@@ -29,6 +29,7 @@
 
 enum e_prompt_style
 {
+	STYLE_BREATHE,
 	STYLE_AURORA,
 	STYLE_WAVE,
 	STYLE_PULSE,
@@ -43,11 +44,23 @@ void	gather_info(t_prompt *p, size_t frame);
 void	free_info(t_prompt *p);
 void	push_spinner(t_string *ret, size_t f);
 
-/* style renderers; each builds a full (possibly multi-line) prompt into ret */
+/* style renderers; each builds a full (possibly multi-line) prompt into ret
+   from the animation frame and the last exit status (so the readline child can
+   re-render the animated top line without the shell state). */
 int		select_prompt_style(void);
-void	style_aurora(t_shell *state, t_string *ret);
-void	style_wave(t_shell *state, t_string *ret);
-void	style_pulse(t_shell *state, t_string *ret);
-void	style_powerline(t_shell *state, t_string *ret);
+void	style_breathe(size_t frame, int status, t_string *ret);
+void	style_aurora(size_t frame, int status, t_string *ret);
+void	style_wave(size_t frame, int status, t_string *ret);
+void	style_pulse(size_t frame, int status, t_string *ret);
+void	style_powerline(size_t frame, int status, t_string *ret);
+
+/* readline-child idle animation (prompt_anim.c / prompt_anim2.c) */
+void	prompt_anim_install(int style);
+int		style_has_top_line(int style);
+size_t	*anim_frame(void);
+int		*anim_style(void);
+void	render_top(int style, size_t frame, t_string *ret);
+void	redraw_top(t_string *r);
+int		anim_hook(void);
 
 #endif

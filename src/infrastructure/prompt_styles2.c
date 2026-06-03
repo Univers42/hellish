@@ -19,6 +19,8 @@ int	select_prompt_style(void)
 
 	s = getenv("HELLISH_PROMPT_STYLE");
 	if (!s)
+		return (STYLE_BREATHE);
+	if (!ft_strcmp(s, "aurora"))
 		return (STYLE_AURORA);
 	if (!ft_strcmp(s, "wave"))
 		return (STYLE_WAVE);
@@ -28,7 +30,7 @@ int	select_prompt_style(void)
 		return (STYLE_POWERLINE);
 	if (!ft_strcmp(s, "classic"))
 		return (STYLE_CLASSIC);
-	return (STYLE_AURORA);
+	return (STYLE_BREATHE);
 }
 
 /* Left part of the aurora prompt: spinner, user, cwd and (if any) git branch.
@@ -80,16 +82,16 @@ static void	push_aurora_fill(t_string *ret, t_prompt *p, size_t frame, int w)
 
 /* "aurora" (default): an animated braille spinner, segmented info and a colour
    gradient that drifts left each prompt, closed by a status-coloured arrow. */
-void	style_aurora(t_shell *state, t_string *ret)
+void	style_aurora(size_t frame, int status, t_string *ret)
 {
 	t_prompt	p;
 	int			w;
 
-	gather_info(&p, state->prompt_frame);
+	gather_info(&p, frame);
 	vec_push_ansi(ret, CUR_BEAM);
-	w = push_aurora_left(ret, &p, state->prompt_frame);
-	push_aurora_fill(ret, &p, state->prompt_frame, w);
-	if (p.exit_status == 0)
+	w = push_aurora_left(ret, &p, frame);
+	push_aurora_fill(ret, &p, frame, w);
+	if (status == 0)
 		vec_push_str(ret, "\001\033[1;38;5;76m\002");
 	else
 		vec_push_str(ret, "\001\033[1;38;5;203m\002");

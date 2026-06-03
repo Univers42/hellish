@@ -11,11 +11,13 @@
 /* ************************************************************************** */
 
 #include "rl_private.h"
+#include "prompt_styles.h"
 #include <locale.h>
 
 void	setup_completion(void);
 void	setup_vi_mode(void);
 void	setup_emacs_mode(void);
+int		select_prompt_style(void);
 
 /* Print every line of `prompt` except the last to rl_outstream, stripping the
    \001/\002 width markers (they must not reach the terminal). Returns the final
@@ -41,10 +43,24 @@ static char	*split_prompt(char *prompt)
 	return (nl + 1);
 }
 
+static void	debug_dump_prompt(char *prompt)
+{
+	size_t	i;
+
+	if (!getenv("MINISHELL_DEBUG_PROMPT"))
+		return ;
+	fprintf(stderr, "[DEBUG PROMPT] bytes: ");
+	i = -1;
+	while (prompt[++i])
+		fprintf(stderr, "%02x ", (unsigned char)prompt[i]);
+	fprintf(stderr, "\n");
+	fprintf(stderr, "[DEBUG PROMPT] visible width: %d\n",
+		visible_width_cstr(prompt));
+}
+
 void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
-	size_t	i;
 
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
@@ -54,16 +70,8 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 		setup_vi_mode();
 	else
 		setup_emacs_mode();
-	if (getenv("MINISHELL_DEBUG_PROMPT"))
-	{
-		fprintf(stderr, "[DEBUG PROMPT] bytes: ");
-		i = -1;
-		while (prompt[++i])
-			fprintf(stderr, "%02x ", (unsigned char)prompt[i]);
-		fprintf(stderr, "\n");
-		fprintf(stderr, "[DEBUG PROMPT] visible width: %d\n",
-			visible_width_cstr(prompt));
-	}
+	debug_dump_prompt(prompt);
+	prompt_anim_install(select_prompt_style());
 	ret = readline(split_prompt(prompt));
 	if (!ret)
 		(close(outfd), exit (1));

@@ -60,17 +60,17 @@ static void	pl_segment(t_string *ret, const char *txt, int bg, int next_bg)
 }
 
 /* "powerline": sleek angled segments (needs a Nerd Font for the  glyph). */
-void	style_powerline(t_shell *state, t_string *ret)
+void	style_powerline(size_t frame, int status, t_string *ret)
 {
 	t_prompt	p;
 
-	gather_info(&p, state->prompt_frame);
+	gather_info(&p, frame);
 	vec_push_ansi(ret, CUR_BEAM);
 	pl_segment(ret, p.user, 24, 31);
 	pl_segment(ret, p.short_cwd, 31, 240);
 	pl_segment(ret, p.time_buf, 240, -1);
 	vec_push_str(ret, A_RST "\n");
-	if (p.exit_status == 0)
+	if (status == 0)
 		vec_push_str(ret, "\001\033[1;38;5;76m\002");
 	else
 		vec_push_str(ret, "\001\033[1;38;5;203m\002");

@@ -17,14 +17,21 @@
    style was rendered (false => caller falls back to the classic box prompt). */
 static bool	render_style(t_shell *state, t_string *ret, int style)
 {
+	size_t	f;
+	int		st;
+
+	f = state->prompt_frame;
+	st = state->last_cmd_st_exe.status;
+	if (style == STYLE_BREATHE)
+		return (style_breathe(f, st, ret), true);
 	if (style == STYLE_WAVE)
-		return (style_wave(state, ret), true);
+		return (style_wave(f, st, ret), true);
 	if (style == STYLE_PULSE)
-		return (style_pulse(state, ret), true);
+		return (style_pulse(f, st, ret), true);
 	if (style == STYLE_POWERLINE)
-		return (style_powerline(state, ret), true);
+		return (style_powerline(f, st, ret), true);
 	if (style == STYLE_AURORA)
-		return (style_aurora(state, ret), true);
+		return (style_aurora(f, st, ret), true);
 	return (false);
 }
 
@@ -82,6 +89,7 @@ t_string	prompt_normal(t_shell *state)
 	vec_init(&ret);
 	ret.elem_size = 1;
 	state->prompt_frame++;
+	*anim_frame() = state->prompt_frame;
 	if (render_style(state, &ret, select_prompt_style()))
 		return (ret);
 	p.exit_status = state->last_cmd_st_exe.status;

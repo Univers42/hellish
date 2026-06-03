@@ -42,12 +42,12 @@ static void	push_status_arrow(t_string *ret, int status)
 }
 
 /* "wave": user + cwd, then an animated waveform rule, then the status arrow. */
-void	style_wave(t_shell *state, t_string *ret)
+void	style_wave(size_t frame, int status, t_string *ret)
 {
 	t_prompt	p;
 	int			n;
 
-	gather_info(&p, state->prompt_frame);
+	gather_info(&p, frame);
 	vec_push_ansi(ret, CUR_BEAM);
 	push_fg(ret, 117);
 	vec_push_str(ret, p.user);
@@ -60,28 +60,28 @@ void	style_wave(t_shell *state, t_string *ret)
 		n = 4;
 	if (n > 64)
 		n = 64;
-	push_wave(ret, state->prompt_frame, n);
+	push_wave(ret, frame, n);
 	vec_push_str(ret, A_RST "\n");
-	push_status_arrow(ret, p.exit_status);
+	push_status_arrow(ret, status);
 	free_info(&p);
 }
 
 /* "pulse": ultra-minimal single line - a breathing orb, the cwd, the arrow. */
-void	style_pulse(t_shell *state, t_string *ret)
+void	style_pulse(size_t frame, int status, t_string *ret)
 {
 	static const char	*orb[8] = {"\xe2\x97\x8b", "\xe2\x97\x94",
 		"\xe2\x97\x91", "\xe2\x97\x95", "\xe2\x97\x8f", "\xe2\x97\x95",
 		"\xe2\x97\x91", "\xe2\x97\x94"};
 	t_prompt			p;
 
-	gather_info(&p, state->prompt_frame);
+	gather_info(&p, frame);
 	vec_push_ansi(ret, CUR_BEAM);
-	push_fg(ret, aurora_hue(state->prompt_frame, 0));
-	vec_push_str(ret, (char *)orb[state->prompt_frame % 8]);
+	push_fg(ret, aurora_hue(frame, 0));
+	vec_push_str(ret, (char *)orb[frame % 8]);
 	vec_push_str(ret, A_RST " ");
 	push_fg(ret, 75);
 	vec_push_str(ret, p.short_cwd);
 	vec_push_str(ret, A_RST " ");
-	push_status_arrow(ret, p.exit_status);
+	push_status_arrow(ret, status);
 	free_info(&p);
 }
