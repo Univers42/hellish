@@ -88,20 +88,30 @@ int	panel_max_width(const char **lines)
 	return (best);
 }
 
-/* Print the rounded top border with `title` set into it, spanning `cols`. */
+/* Print the rounded top border with `title` set into it, spanning `cols`. The
+   title splits on its first space: the name is salmon, the version grey. */
 void	title_rule(const char *title, int cols)
 {
 	t_glyphs	g;
 	char		buf[256];
+	char		*sp;
 	int			fill;
+	int			w;
 
 	g = header_glyphs();
 	if (!title)
 		title = "";
 	header_clip(buf, sizeof(buf), title, cols - 8);
+	w = header_width(buf);
+	sp = ft_strchr(buf, ' ');
+	if (sp)
+		*sp = '\0';
 	ft_eprintf(C_FRAME "%s%s%s%s ", g.tl, g.h, g.h, g.h);
-	ft_eprintf(C_TITLE "%s " C_FRAME, buf);
-	fill = cols - header_width(buf) - 7;
+	ft_eprintf(C_TITLE "%s" C_RST, buf);
+	if (sp)
+		ft_eprintf(" " C_VER "%s", sp + 1);
+	ft_eprintf(" " C_FRAME);
+	fill = cols - w - 7;
 	while (fill-- > 0)
 		ft_eprintf("%s", g.h);
 	ft_eprintf("%s" C_RST "\n", g.tr);

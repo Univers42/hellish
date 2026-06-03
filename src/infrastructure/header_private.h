@@ -16,9 +16,11 @@
 # include "header.h"
 # include "shell.h"
 
-/* The shared palette: grey frame, warm title, cool headings, soft text. */
-# define C_FRAME "\033[38;5;238m"
-# define C_TITLE "\033[1;38;5;214m"
+/* The shared palette: a muted-salmon frame, salmon name, grey version, cool
+   headings, soft text. */
+# define C_FRAME "\033[38;5;173m"
+# define C_TITLE "\033[1;38;5;209m"
+# define C_VER   "\033[38;5;245m"
 # define C_HEAD  "\033[1;38;5;81m"
 # define C_TAG   "\033[38;5;250m"
 # define C_RST   "\033[0m"
