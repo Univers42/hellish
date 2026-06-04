@@ -67,6 +67,11 @@ long long		arith_parse_or(t_arith_parser *p);
 long long		arith_parse_ternary(t_arith_parser *p);
 long long		arith_parse_expr(t_arith_parser *p);
 
+//arith_climb.c / arith_climb2.c (precedence-climbing collapse of bitor..mul)
+long long		apply_binop(t_arith_parser *p, t_arith_tok type,
+					long long l, long long r);
+long long		arith_parse_binop(t_arith_parser *p, int min_prec);
+
 void			handle_angle_right(t_arith_lexer *lex);
 long long		parse_digits(const char *input, int *pos,
 					int len, int base);
