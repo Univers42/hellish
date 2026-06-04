@@ -15,7 +15,7 @@
 #include "redir.h"
 
 void	collect_body(const char **p, size_t *cur, t_string *body, t_hd *s);
-int		collect_specs(const char *str, t_deque_tok *tt, t_hd **out);
+int		collect_specs(const char *str, t_hd **out);
 
 static void	free_specs(t_hd *sp, int n)
 {
@@ -91,17 +91,12 @@ static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 
 bool	split_heredocs(const char *str, char **stripped, char **bodies)
 {
-	t_deque_tok	tt;
 	t_hd		*sp;
 	t_string	out[2];
 	int			n;
 	int			got;
 
-	tt = (t_deque_tok){0};
-	deque_init(&tt.deqtok, 100, sizeof(t_token));
-	tokenizer((char *)str, &tt);
-	n = collect_specs(str, &tt, &sp);
-	free(tt.deqtok.buff);
+	n = collect_specs(str, &sp);
 	if (n == 0)
 		return (free(sp), false);
 	vec_init(&out[0]);
