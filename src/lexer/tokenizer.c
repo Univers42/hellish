@@ -38,6 +38,19 @@ static void	emit_newline(char **str, t_deque_tok *ret)
 	(*str)++;
 }
 
+/* Skip inter-token noise: shell comments and backslash-newline line
+   continuations. The continuation must be removed here, not tokenised, else a
+   `\<newline>` becomes a spurious empty/newline argument (notably in sourced
+   function bodies, which the REPL's line-joining never reaches). */
+static bool	skip_noise(char **str)
+{
+	if (**str == '#')
+		return (skip_shell_comment(str), true);
+	if ((*str)[0] == '\\' && (*str)[1] == '\n')
+		return (*str += 2, true);
+	return (false);
+}
+
 char	*tokenizer(char *str, t_deque_tok *ret)
 {
 	char	*prompt;
@@ -47,11 +60,8 @@ char	*tokenizer(char *str, t_deque_tok *ret)
 	deque_clear(&ret->deqtok, NULL);
 	while (str && *str)
 	{
-		if (*str == '#')
-		{
-			skip_shell_comment(&str);
+		if (skip_noise(&str))
 			continue ;
-		}
 		prompt = try_parse_lexeme(&str, ret);
 		if (prompt)
 			break ;
