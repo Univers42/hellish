@@ -45,6 +45,8 @@ bool		is_space(char c);
 bool		is_word_boundary(const char *s);
 char		*parse_lexeme(t_deque_tok *tokens, char **str);
 void		parse_op(t_deque_tok *tokens, char **str);
+void		dbracket_toggle(const char *str, int *in_db);
+int			emit_dbracket_word(char **str, t_deque_tok *ret);
 void		reclassify_keywords(t_deque_tok *tokens);
 
 /* helpers used by debug/tables printing */
