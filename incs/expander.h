@@ -74,4 +74,14 @@ void		cleanup_proc_subs(t_shell *state);
 void		procsub_close_fds_parent(t_shell *state);
 void		procsub_detach_all(t_shell *state);
 
+/* Slab-backed allocator for short-lived argv word strings (word_slab.c).
+   word_free() also accepts plain malloc'd pointers (libc-free fallback), so a
+   command's argv (slab + malloc strings) frees uniformly. word_slab_push()
+   force-selects the allocator for the current expansion context (1=slab for
+   command argv, 0=malloc for values escaping to env) and returns the previous
+   setting so callers save/restore around nesting. */
+char		*word_strndup(const char *s, size_t n);
+void		word_free(void *p);
+int			word_slab_push(int on);
+
 #endif

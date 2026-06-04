@@ -92,7 +92,7 @@ void	free_executable_cmd(t_executable_cmd cmd)
 	}
 	i = -1;
 	while (++i < cmd.argv.len)
-		free(((char **)cmd.argv.ctx)[i]);
+		word_free(((char **)cmd.argv.ctx)[i]);
 	free(cmd.pre_assigns.ctx);
 	free(cmd.argv.ctx);
 }
