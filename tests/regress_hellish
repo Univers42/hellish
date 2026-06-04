@@ -48,3 +48,10 @@ FOO=val; printf 'cat <<EOF\n${FOO:-d}\n${BAR:-fb}\n${#FOO}\nEOF\n' > hd7.sh; . .
 [[ ( 1 == 1 || 9 == 8 ) && 3 == 3 ]] && echo grp
 [[ -n abc && -z "" ]] && echo flags
 [[ -f /etc/passwd && -d /etc ]] && echo fileand
+f(){ if [[ x ]]; then echo in; fi; }; g(){ echo g; }; f; g
+f(){ if [[ -n a ]]; then echo y; else echo n; fi; }; h(){ echo h; }; f; h
+if [[ 1 -lt 2 ]];then echo lt;fi
+[[ a ]]&&echo A; echo B
+[[ a ]]||echo no; echo after
+x=$( [[ a == a ]] && echo Y ); echo $x
+f(){ if [[ a == a ]]; then echo m; fi; }; f; echo done
