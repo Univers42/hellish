@@ -19,6 +19,8 @@
 #include <sys/times.h>
 #include <unistd.h>
 
+void	procsub_detach_all(t_shell *state);
+
 /* Build a NULL-terminated argv array from argv[1..] for execve. */
 static char	**dup_exec_argv(t_vec argv)
 {
@@ -46,7 +48,7 @@ int	builtin_exec(t_shell *state, t_vec argv)
 	char	**envp;
 
 	if (argv.len < 2)
-		return (0);
+		return (procsub_detach_all(state), 0);
 	if (find_cmd_path(state, ((char **)argv.ctx)[1], &path) != 0)
 	{
 		ft_eprintf("%s: exec: %s: not found\n", state->ctx,

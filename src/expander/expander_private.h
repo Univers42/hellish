@@ -111,6 +111,7 @@ char		*create_procsub_output(t_shell *state, const char *cmd);
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);
 void		procsub_close_fds_parent(t_shell *state);
 void		cleanup_proc_subs(t_shell *state);
+void		procsub_detach_all(t_shell *state);
 bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 int			parse_src_fd(t_tt tt, t_token op_tok);
 int			try_create_redir(t_shell *state, t_ast_node *curr,
