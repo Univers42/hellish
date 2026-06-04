@@ -30,3 +30,6 @@ cd /tmp; pushd /usr >/dev/null; basename "$PWD"; popd >/dev/null; basename "$PWD
 n=0; for i in 1 2 3 4; do n=$((n + i)); done; echo $n
 printf 'g(){ echo X \\\n  Y \\\n  Z; }\n' > c.sh; . ./c.sh; g
 eval "$(printf 'echo p \\\n  q \\\n  r')"
+printf 'f(){\n  cat <<A\nfirst\nA\n  cat <<B\nsecond\nB\n}\nf\n' > hd1.sh; . ./hd1.sh
+printf 'cat <<A\none\nA\ncat <<B\ntwo\nB\n' > hd2.sh; . ./hd2.sh
+printf 'g(){\n  cat <<A <<B\nx\nA\ny\nB\n}\ng\n' > hd3.sh; . ./hd3.sh
