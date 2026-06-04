@@ -81,6 +81,8 @@ int	set_long_option(t_shell *state, char sign, const char *name)
 		state->opt_noexec = on;
 	else if (!ft_strcmp(name, "verbose"))
 		state->opt_verbose = on;
+	else if (!ft_strcmp(name, "pipefail"))
+		state->opt_pipefail = on;
 	else
 		set_opt_edit_mode(state, name, on);
 	return (0);
