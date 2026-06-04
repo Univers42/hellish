@@ -71,6 +71,7 @@ static int	exec_string_inner(t_shell *state, char *str)
 	reclassify_keywords(&tt);
 	status = 0;
 	stop = false;
+	skip_delimiters(&tt);
 	while (!stop && ((t_token *)deque_peek(&tt.deqtok))->tt != TT_END)
 		status = run_one_stmt(state, &tt, &stop);
 	state->func_return = 0;
