@@ -112,6 +112,11 @@ void				update_underscore_var(t_shell *state,
 						t_executable_cmd *cmd);
 void				set_up_redirection(t_shell *state,
 						t_executable_node *exe);
+int					fd_setup_needed(t_executable_node *exe);
+void				take_backup_fds(int *bak, int persist);
+void				restore_backup_fds(int *bak, int persist);
+int					prep_redir(t_shell *state, t_executable_node *exe,
+						int *bak, int persist);
 void				apply_redirs_from_vec(t_shell *state,
 						t_executable_node *exe);
 void				apply_redirs_from_ast(t_shell *state,

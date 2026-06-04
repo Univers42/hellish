@@ -23,22 +23,17 @@ static t_execution_state	handle_func_call(t_shell *state,
 {
 	t_execution_state	res;
 	int					bak[3];
+	int					need;
 	t_vec				saves;
 
-	bak[0] = dup(0);
-	bak[1] = dup(1);
-	bak[2] = dup(2);
-	set_up_redirection(state, exe);
-	exe->infd = -1;
-	exe->outfd = -1;
-	exe->next_infd = -1;
+	need = prep_redir(state, exe, bak, 0);
 	procsub_close_fds_parent(state);
 	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	res = execute_func_call(state,
-			func_lookup(state, ((char **)(cmd->argv.ctx))[0]),
-			&cmd->argv);
+			func_lookup(state, ((char **)(cmd->argv.ctx))[0]), &cmd->argv);
 	restore_temp_assigns(state, &saves);
-	restore_fds(bak);
+	if (need)
+		restore_backup_fds(bak, 0);
 	free_executable_cmd(*cmd);
 	free_executable_node(exe);
 	return (res);
