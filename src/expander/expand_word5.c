@@ -20,7 +20,7 @@ static char	*push_plain_literal(t_ast_node *src, t_vec *args)
 	if (!word_is_plain_literal(src))
 		return (NULL);
 	t = &((t_ast_node *)src->children.ctx)[0].token;
-	v = ft_strndup(t->start, t->len);
+	v = word_strndup(t->start, t->len);
 	vec_push(args, &v);
 	return (v);
 }
@@ -67,9 +67,15 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 {
 	t_ast_node	scratch;
+	int			o;
 
+	o = word_slab_push(0);
 	if (fast_path_expand(state, src, args, true))
+	{
+		word_slab_push(o);
 		return ;
+	}
 	scratch = clone_ast(src);
 	expand_word_glob_ctl(state, &scratch, args, EW_KEEP_AS_ONE | EW_NO_GLOB);
+	word_slab_push(o);
 }

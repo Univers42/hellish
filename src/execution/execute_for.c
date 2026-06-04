@@ -30,7 +30,9 @@ static t_vec	expand_for_words(t_shell *state,
 {
 	t_vec	words;
 	size_t	i;
+	int		o;
 
+	o = word_slab_push(0);
 	vec_init(&words);
 	words.elem_size = sizeof(char *);
 	i = 0;
@@ -39,6 +41,7 @@ static t_vec	expand_for_words(t_shell *state,
 		expand_word_ro(state, vec_idx(&node->children, i), &words, false);
 		i++;
 	}
+	word_slab_push(o);
 	return (words);
 }
 
