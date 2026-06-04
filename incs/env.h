@@ -32,6 +32,8 @@ void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);
 char		**get_envp(t_shell *state, char *exe_path);
+char		**get_envp_all(t_shell *state, char *exe_path);
+char		*env_to_str(t_env *e);
 t_env		*env_nget(t_vec_env *env, char *key, int len);
 void		set_home(t_shell *state);
 void		set_shlvl(t_shell *state);
