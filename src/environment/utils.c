@@ -57,7 +57,7 @@ t_env	*env_get(t_vec_env *env, char *key)
 	return (&((t_env *)env->ctx)[idx]);
 }
 
-static char	*env_to_str(t_env *e)
+char	*env_to_str(t_env *e)
 {
 	t_string	s;
 	char		ch;
