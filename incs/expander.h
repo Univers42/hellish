@@ -67,5 +67,6 @@ int			expand_dollar_sub(t_shell *state, const char *s, int slen,
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);
 void		cleanup_proc_subs(t_shell *state);
 void		procsub_close_fds_parent(t_shell *state);
+void		procsub_detach_all(t_shell *state);
 
 #endif
