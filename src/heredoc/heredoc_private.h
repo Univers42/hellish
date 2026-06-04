@@ -48,6 +48,7 @@ void	process_redirect_group(t_shell *state, t_ast_node *parent,
 			size_t start, size_t end);
 int		gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline);
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line);
+void	expand_braced(t_shell *state, int *i, t_string *full_file, char *line);
 void	expand_bs(int *i, t_string *full_file, char *line);
 void	expand_line(t_shell *state, t_string *full_file, char *line);
 bool	is_sep(t_hdoc *req, t_string *alloc_line);
