@@ -41,3 +41,10 @@ FOO=val; printf 'cat <<EOF\n${FOO:-d}\n${BAR:-fb}\n${#FOO}\nEOF\n' > hd7.sh; . .
 [[ a == b ]] || echo neq_ok
 [[ abc != abd ]] && echo ne_ok
 [ x == x ] && echo single_eq
+[[ 1 == 1 && 2 == 2 ]] && echo combo
+[[ a == a || b == c ]] && echo or
+[[ 1 == 1 && 2 == 3 ]] || echo nope
+[[ ! 1 == 2 ]] && echo neg
+[[ ( 1 == 1 || 9 == 8 ) && 3 == 3 ]] && echo grp
+[[ -n abc && -z "" ]] && echo flags
+[[ -f /etc/passwd && -d /etc ]] && echo fileand
