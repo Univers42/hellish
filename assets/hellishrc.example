@@ -1,0 +1,35 @@
+# ~/.hellishrc — hellish startup configuration (the .bashrc analogue)
+#
+# Copy this file to ~/.hellishrc.  It is sourced in the current shell on
+# INTERACTIVE startup only (a plain `hellish` with a terminal).  It is NOT
+# sourced for `hellish -c '...'`, scripts, or piped input — same rule bash uses
+# for ~/.bashrc, so non-interactive runs stay fast and predictable.
+#
+# Anything valid in a hellish command line works here: exports, aliases,
+# functions, `set` options, parameter assignments, etc.
+
+# --- environment ----------------------------------------------------------
+export EDITOR=vi
+export PAGER=less
+export HISTSIZE=2000
+
+# --- shell options --------------------------------------------------------
+set -o emacs            # line-editing mode (or: set -o vi)
+# set -C                # uncomment for noclobber (> won't overwrite files)
+
+# --- aliases --------------------------------------------------------------
+alias ll='ls -lah'
+alias gs='git status'
+alias ..='cd ..'
+alias grep='grep --color=auto'
+
+# --- functions ------------------------------------------------------------
+mkcd() { mkdir -p "$1" && cd "$1"; }
+extract() {
+	case "$1" in
+		*.tar.gz|*.tgz) tar xzf "$1" ;;
+		*.tar.bz2)      tar xjf "$1" ;;
+		*.zip)          unzip "$1" ;;
+		*)              echo "extract: unknown archive '$1'" >&2 ;;
+	esac
+}

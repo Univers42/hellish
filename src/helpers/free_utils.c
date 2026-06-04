@@ -15,6 +15,8 @@
 #include "env.h"
 #include "expander.h"
 
+void	pos_free(t_pos *pos);
+
 void	free_redirects(t_vec_redir *v)
 {
 	size_t	i;
@@ -61,6 +63,7 @@ void	free_all_state(t_shell *state)
 	state->input = (t_string){};
 	free(state->last_cmd_st);
 	free(state->pid);
+	free(state->last_bg_pid);
 	free(state->ctx);
 	free(state->dft_ctx);
 	state->ctx = 0;
@@ -71,6 +74,8 @@ void	free_all_state(t_shell *state)
 	free_ast(&state->tree);
 	free_hist(state);
 	free(state->cwd.ctx);
+	pos_free(&state->pos);
+	env_index_free();
 }
 
 void	free_executable_cmd(t_executable_cmd cmd)

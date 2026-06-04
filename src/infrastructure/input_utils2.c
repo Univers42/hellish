@@ -19,13 +19,17 @@ static void	prepare_parser_and_prompt(t_shell *state,
 {
 	t_string	p;
 
-	(void)state;
 	*parser = (t_parser){.res = RES_INIT};
 	vec_init(&parser->parse_stack);
 	parser->parse_stack.elem_size = sizeof(int);
-	p = prompt_normal();
-	*prompt = ft_strdup(p.ctx);
-	free(p.ctx);
+	if (state->metinp == INP_RL)
+	{
+		p = prompt_normal(state);
+		*prompt = ft_strdup(p.ctx);
+		free(p.ctx);
+	}
+	else
+		*prompt = ft_strdup("");
 	*tt = (t_deque_tok){0};
 	deque_init(&tt->deqtok, 100, sizeof(t_token));
 	tt->looking_for = 0;

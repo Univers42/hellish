@@ -1,0 +1,20 @@
+case abc in abc) echo match;; esac
+case abc in xyz) echo no;; abc) echo yes;; esac
+case abc in a*) echo star;; esac
+case file.txt in *.txt) echo text;; *.md) echo md;; esac
+case x in a|b|x) echo alt;; esac
+case foo in *) echo default;; esac
+case "" in "") echo emptycase;; esac
+case hello in h???o) echo q;; esac
+case ab in [ab]*) echo bracket;; esac
+x=hello; case $x in hello) echo hi;; esac
+case dog in cat) echo c;; esac; echo exit=$?
+v=txt; case file.txt in *.$v) echo matched;; esac
+case abc in (abc) echo paren;; esac
+case ABC in abc) echo lower;; *) echo other;; esac
+for f in a.c b.h c.c; do case $f in *.c) echo "C:$f";; *.h) echo "H:$f";; esac; done
+case 5 in [0-9]) echo digit;; esac
+case word in w*d) echo wrapped;; esac
+case "" in ?) echo nonempty;; *) echo empty;; esac
+n=2; case $n in 1) echo one;; 2) echo two;; *) echo many;; esac
+case abcdef in *cd*) echo contains;; esac

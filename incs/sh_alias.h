@@ -23,7 +23,7 @@ typedef struct s_alias_entry
 	char	*value;
 }	t_alias_entry;
 
-struct s_shell;
+struct	s_shell;
 
 void	alias_table_init(t_hash *aliases);
 void	alias_table_free(t_hash *aliases);

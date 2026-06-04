@@ -12,21 +12,20 @@
 
 #include "reparser_private.h"
 
-bool	try_handle_paren_rp(t_reparser *rp, int prev_start)
+bool	try_handle_paren_rp(t_reparser *rp, int prev_start, t_tt tt)
 {
-	if (is_double_open_paren(rp->current_token, rp->i))
-	{
-		reparse_envvar_paren(&rp->current_node, &rp->i,
-			rp->current_token, prev_start);
-		return (true);
-	}
-	if (is_open_paren(rp->current_token, rp->i))
-	{
-		reparse_envvar_paren(&rp->current_node, &rp->i,
-			rp->current_token, prev_start);
-		return (true);
-	}
-	return (false);
+	t_paren_ctx	ctx;
+
+	if (!is_double_open_paren(rp->current_token, rp->i)
+		&& !is_open_paren(rp->current_token, rp->i))
+		return (false);
+	ctx.ret = &rp->current_node;
+	ctx.i = &rp->i;
+	ctx.t = rp->current_token;
+	ctx.prev_start = prev_start;
+	ctx.tt = tt;
+	reparse_envvar_paren(ctx);
+	return (true);
 }
 
 bool	try_handle_special_rp(t_reparser *rp, t_tt tt)

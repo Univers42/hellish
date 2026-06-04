@@ -23,7 +23,8 @@ bool	is_compound_terminator(t_tt tt)
 {
 	return (tt == TT_BRACE_RIGHT || tt == TT_THEN || tt == TT_ELIF
 		|| tt == TT_ELSE || tt == TT_FI || tt == TT_DO
-		|| tt == TT_DONE || tt == TT_ESAC || tt == TT_RBRACE);
+		|| tt == TT_DONE || tt == TT_ESAC || tt == TT_RBRACE
+		|| tt == TT_DSEMI);
 }
 
 bool	is_separator_before_terminator(t_ast_node *ret, t_deque_tok *tokens)

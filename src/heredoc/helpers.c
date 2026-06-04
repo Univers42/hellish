@@ -12,6 +12,15 @@
 
 #include "heredoc_private.h"
 
+/* Special/positional param names are a single char: digit ($1..$9),
+** or $#, $?, $$, $!, $@, $* (not recognised by env_len). */
+static int	special_param_len(char c)
+{
+	if (ft_isdigit((unsigned char)c) || ft_strchr("#?$!@*", c))
+		return (1);
+	return (0);
+}
+
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
@@ -19,6 +28,8 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 
 	(*i)++;
 	len = env_len(line + *i);
+	if (len == 0)
+		len = special_param_len(line[*i]);
 	if (len)
 	{
 		if (!full_file->ctx)
@@ -50,30 +61,41 @@ void	expand_bs(int *i, t_string *full_file, char *line)
 	(*i)++;
 }
 
+static bool	expand_dollar_char(t_shell *state, t_string *ff,
+				char *line, int *i)
+{
+	int	consumed;
+
+	consumed = expand_dollar_sub(state, line + *i,
+			(int)ft_strlen(line + *i), ff);
+	if (consumed > 0)
+	{
+		*i += consumed;
+		return (true);
+	}
+	expand_dolar(state, i, ff, line);
+	return (true);
+}
+
 void	expand_line(t_shell *state, t_string *full_file, char *line)
 {
 	int		i;
 	bool	bs;
 
 	i = 0;
-	bs = 0;
+	bs = false;
 	while (line[i])
 	{
 		if (bs)
 		{
 			expand_bs(&i, full_file, line);
 			bs = false;
-			continue ;
 		}
-		if (line[i] == '$')
-		{
-			expand_dolar(state, &i, full_file, line);
-			continue ;
-		}
+		else if (line[i] == '$')
+			expand_dollar_char(state, full_file, line, &i);
 		else if (line[i] == '\\')
-			bs = true;
+			bs = (i++, true);
 		else
-			vec_push(full_file, &line[i]);
-		i++;
+			vec_push(full_file, &line[i++]);
 	}
 }

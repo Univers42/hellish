@@ -1,0 +1,30 @@
+echo $(echo hi)
+echo `echo hi`
+echo "$(echo hi)"
+echo "`echo hi`"
+x=$(echo value); echo $x
+x=`echo value`; echo $x
+echo $(echo a)$(echo b)
+echo $(echo one two three)
+echo "$(echo one two three)"
+echo a$(echo b)c
+echo $(echo $(echo nested))
+echo "$(echo "$(echo deep)")"
+echo $(true; echo after)
+echo $(echo line1; echo line2)
+echo "$(echo line1; echo line2)"
+echo $(printf 'no_newline')
+n=$(printf 'a\nb\nc'); echo "$n" | wc -l
+echo result=$(expr 2 + 3 2>/dev/null || echo 5)
+for x in $(echo 1 2 3); do echo "i$x"; done
+if [ "$(echo yes)" = "yes" ]; then echo matched; fi
+echo $(echo hello | tr a-z A-Z)
+echo length:$(echo abc | wc -c)
+x=$(false); echo "exit was $?"
+echo $(echo '*')
+echo "before $(echo mid) after"
+echo $((1 + $(echo 2)))
+echo `echo nested \`echo deep\``
+count=$(echo a b c d | wc -w); echo $count
+echo $(cd /tmp && pwd)
+echo "$(printf '%s' trimmed)"

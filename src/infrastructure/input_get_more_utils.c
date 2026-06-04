@@ -19,11 +19,14 @@ void	reset_status_and_prompt(t_shell *state, char **prompt)
 	set_cmd_status(state, res_status(0));
 	if (*prompt)
 		free(*prompt);
+	if (state->metinp == INP_RL)
 	{
-		p = prompt_normal();
+		p = prompt_normal(state);
 		*prompt = ft_strdup(p.ctx);
 		free(p.ctx);
 	}
+	else
+		*prompt = ft_strdup("");
 }
 
 void	handle_ctrl_c(t_shell *state, t_deque_tok *tt, char **prompt)

@@ -6,43 +6,21 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/22 19:35:39 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/22 19:35:39 by marvin           ###   ########.fr       */
+/*   Updated: 2026/06/02 00:00:00 by marvin           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "executor.h"
 #include "sys.h"
 
-static char	**build_full_envp(t_shell *state)
+/* Run `cmd` in a forked child that shares the current shell state (so it sees
+   functions, variables, $$, etc. — fixing $(f) for a shell function), with its
+   stdout connected to the pipe. The child runs in-process (no re-exec). */
+static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
+					const char *cmd)
 {
-	char	**ret;
-	size_t	i;
-	size_t	j;
-	t_env	*e;
-	char	*tmp;
-
-	ret = ft_calloc(state->env.len + 1, sizeof(char *));
-	i = -1;
-	j = 0;
-	while (++i < state->env.len)
-	{
-		e = &((t_env *)state->env.ctx)[i];
-		if (!e->key || !e->value)
-			continue ;
-		tmp = ft_strjoin(e->key, "=");
-		ret[j] = ft_strjoin(tmp, e->value);
-		free(tmp);
-		j++;
-	}
-	return (ret);
-}
-
-static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
-{
-	pid_t		pid;
-	char *const	argv[]
-		= {(char *)PATH_HELLISH, (char *)"-c", (char *)cmd, NULL};
-	char		**envp;
+	pid_t	pid;
 
 	pid = fork();
 	if (pid == -1)
@@ -52,16 +30,21 @@ static pid_t	fork_and_exec_sh(t_shell *state, int pipefd[2], const char *cmd)
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		envp = build_full_envp(state);
-		execve(PATH_HELLISH, argv, envp);
-		if (envp)
-			free_tab(envp);
-		exit(127);
+		state->traps[0] = NULL;
+		exit(exec_string(state, (char *)cmd) & 0xFF);
 	}
 	return (pid);
 }
 
-static char	*read_pipe_and_wait(pid_t pid, int readfd)
+static void	update_cmdsub_status(t_shell *state, int status)
+{
+	if (WIFEXITED(status))
+		state->last_cmdsub_status = WEXITSTATUS(status);
+	else if (WIFSIGNALED(status))
+		state->last_cmdsub_status = 128 + WTERMSIG(status);
+}
+
+static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 {
 	t_string	out;
 	char		*ret;
@@ -72,8 +55,10 @@ static char	*read_pipe_and_wait(pid_t pid, int readfd)
 	out.elem_size = 1;
 	vec_append_fd(readfd, &out);
 	close(readfd);
+	status = 0;
 	while (waitpid(pid, &status, 0) == -1 && errno == EINTR)
 		;
+	update_cmdsub_status(state, status);
 	ret = malloc(out.len + 1);
 	if (!ret)
 		return (free(out.ctx), ft_strdup(""));
@@ -97,7 +82,7 @@ char	*capture_subshell_output(t_shell *state, const char *cmd)
 		return (ft_strdup(""));
 	if (pipe(pipefd) == -1)
 		return (ft_strdup(""));
-	pid = fork_and_exec_sh(state, pipefd, cmd);
+	pid = fork_and_run_inproc(state, pipefd, cmd);
 	if (pid == -1)
 	{
 		close(pipefd[0]);
@@ -105,5 +90,5 @@ char	*capture_subshell_output(t_shell *state, const char *cmd)
 		return (ft_strdup(""));
 	}
 	close(pipefd[1]);
-	return (read_pipe_and_wait(pid, pipefd[0]));
+	return (read_pipe_and_wait(state, pid, pipefd[0]));
 }

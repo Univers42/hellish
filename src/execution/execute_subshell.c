@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "ft_builtins.h"
 
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 {
@@ -21,12 +22,14 @@ t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 	if (pid == 0)
 	{
 		set_unwind_sig();
+		state->traps[0] = NULL;
 		set_up_redirection(state, exe);
 		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
 		free_executable_node(exe);
 		exe->outfd = 1;
 		exe->infd = 0;
 		res = execute_tree_node(state, exe);
+		run_exit_trap(state);
 		forward_exit_status(res);
 	}
 	if (pid < 0)

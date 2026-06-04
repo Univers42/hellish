@@ -1,0 +1,30 @@
+set -- a b c; echo $@
+set -- a b c; echo "$@"
+set -- a b c; echo $*
+set -- a b c; echo "$*"
+set -- a b c; IFS=,; echo "$*"
+set -- a b c; for x in "$@"; do echo "[$x]"; done
+set -- "a b" c; for x in "$@"; do echo "[$x]"; done
+set -- a b c; x="$@"; echo "[$x]"
+set -- a b c; printf "<%s>" "$@"; echo
+set -- one two three; shift; echo $@
+set -- one two three; shift 2; echo $1
+: && echo colon
+: ${x:=assigned}; echo $x
+for i in 1 2 3 4 5; do if [ $i -eq 3 ]; then break; fi; echo $i; done
+for i in 1 2 3 4 5; do if [ $i -eq 3 ]; then continue; fi; echo $i; done
+for a in 1 2 3; do for b in x y; do if [ $a = 2 ]; then break 2; fi; echo $a$b; done; done
+i=0; while [ $i -lt 10 ]; do i=$((i+1)); if [ $i -eq 5 ]; then break; fi; echo $i; done
+echo {a,b,c}
+echo pre{a,b,c}post
+echo {1..5}
+echo {5..1}
+echo {a..e}
+echo a{b,c}d{e,f}
+echo {01..05}
+echo {0..10..2}
+echo {a,b,{c,d}}
+echo "{a,b,c}"
+echo {a}
+echo file{1..3}.txt
+echo X{a..c}Y

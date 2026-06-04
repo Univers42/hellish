@@ -1,0 +1,15 @@
+# Keep the build context small: we only COPY build/bin/hellish.
+.git
+.github
+vendor
+tests
+docs
+node_modules
+npm/bin/hellish
+*.o
+*.a
+*.dot
+out.dot
+.env
+.env.*
+*.log

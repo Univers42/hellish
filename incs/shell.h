@@ -68,6 +68,26 @@ typedef struct s_shell_func
 	t_ast_node	body;
 }	t_shell_func;
 
+/* One saved variable for function scope: its value at the moment it was made
+   local / before positional params were replaced, restored on return. */
+typedef struct s_scope_save
+{
+	int		depth;
+	char	*key;
+	char	*value;
+	bool	existed;
+}	t_scope_save;
+
+/* Positional parameters $1..$count, stored outside the env so function calls
+   swap them in O(1) (a struct copy) instead of mutating the env hash 10x per
+   call. args[i] == $(i+1); args is NULL-terminated; cnt_str caches $#. */
+typedef struct s_pos
+{
+	char	**args;
+	int		count;
+	char	cnt_str[12];
+}	t_pos;
+
 typedef struct s_shell
 {
 	t_string			input;
@@ -78,12 +98,41 @@ typedef struct s_shell
 	char				*dft_ctx;
 	char				*ctx;
 	char				*pid;
+	char				*last_bg_pid;
 	char				*last_cmd_st;
 	t_execution_state	last_cmd_st_exe;
 	t_history			hist;
 	bool				should_exit;
+	int					loop_break;
+	int					loop_continue;
+	int					loop_depth;
+	int					func_return;
+	int					func_depth;
+	t_pos				pos;
+	t_vec				local_saves;
+	int					getopts_pos;
+	bool				input_expanded;
+	int					last_cmdsub_status;
+	bool				opt_errexit;
+	bool				opt_nounset;
+	bool				opt_xtrace;
+	bool				opt_noglob;
+	bool				opt_noclobber;
+	bool				opt_allexport;
+	bool				opt_noexec;
+	bool				opt_verbose;
+	bool				opt_pipefail;
+	char				flagbuf[16];
+	char				linebuf[16];
+	int					errexit_off;
+	char				*traps[32];
+	t_vec				readonly_vars;
 	t_vec_redir			redirects;
 	int					heredoc_idx;
+	char				*hd_src;
+	size_t				hd_pos;
+	char				*hd_stripped;
+	bool				gather_in_func;
 	t_rl				rl;
 	t_prng				prng;
 	uint32_t			option_flags;
