@@ -19,7 +19,7 @@ static long long	parse_bitor_nse(t_arith_parser *p)
 
 	old = p->no_side_effects;
 	p->no_side_effects = true;
-	val = arith_parse_bitor(p);
+	val = arith_parse_binop(p, 1);
 	p->no_side_effects = old;
 	return (val);
 }
@@ -42,7 +42,7 @@ long long	arith_parse_and(t_arith_parser *p)
 	long long		left;
 	t_arith_token	tok;
 
-	left = arith_parse_bitor(p);
+	left = arith_parse_binop(p, 1);
 	while (!p->error)
 	{
 		tok = arith_lexer_peek(p->lexer);
@@ -52,7 +52,7 @@ long long	arith_parse_and(t_arith_parser *p)
 			if (left == 0)
 				(void)parse_bitor_nse(p);
 			else
-				left = (arith_parse_bitor(p) != 0);
+				left = (arith_parse_binop(p, 1) != 0);
 		}
 		else
 			break ;
