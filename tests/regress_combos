@@ -1,0 +1,721 @@
+[[ "a" = "a" ]] && echo T || echo F
+[[ "a" == "a" ]] && echo T || echo F
+[[ "a" != "a" ]] && echo T || echo F
+[[ "a" = "b" ]] && echo T || echo F
+[[ "a" == "b" ]] && echo T || echo F
+[[ "a" != "b" ]] && echo T || echo F
+[[ "a" = "abc" ]] && echo T || echo F
+[[ "a" == "abc" ]] && echo T || echo F
+[[ "a" != "abc" ]] && echo T || echo F
+[[ "a" = "" ]] && echo T || echo F
+[[ "a" == "" ]] && echo T || echo F
+[[ "a" != "" ]] && echo T || echo F
+[[ "a" = "a b" ]] && echo T || echo F
+[[ "a" == "a b" ]] && echo T || echo F
+[[ "a" != "a b" ]] && echo T || echo F
+[[ "a" = "xyz" ]] && echo T || echo F
+[[ "a" == "xyz" ]] && echo T || echo F
+[[ "a" != "xyz" ]] && echo T || echo F
+[[ "b" = "a" ]] && echo T || echo F
+[[ "b" == "a" ]] && echo T || echo F
+[[ "b" != "a" ]] && echo T || echo F
+[[ "b" = "b" ]] && echo T || echo F
+[[ "b" == "b" ]] && echo T || echo F
+[[ "b" != "b" ]] && echo T || echo F
+[[ "b" = "abc" ]] && echo T || echo F
+[[ "b" == "abc" ]] && echo T || echo F
+[[ "b" != "abc" ]] && echo T || echo F
+[[ "b" = "" ]] && echo T || echo F
+[[ "b" == "" ]] && echo T || echo F
+[[ "b" != "" ]] && echo T || echo F
+[[ "b" = "a b" ]] && echo T || echo F
+[[ "b" == "a b" ]] && echo T || echo F
+[[ "b" != "a b" ]] && echo T || echo F
+[[ "b" = "xyz" ]] && echo T || echo F
+[[ "b" == "xyz" ]] && echo T || echo F
+[[ "b" != "xyz" ]] && echo T || echo F
+[[ "abc" = "a" ]] && echo T || echo F
+[[ "abc" == "a" ]] && echo T || echo F
+[[ "abc" != "a" ]] && echo T || echo F
+[[ "abc" = "b" ]] && echo T || echo F
+[[ "abc" == "b" ]] && echo T || echo F
+[[ "abc" != "b" ]] && echo T || echo F
+[[ "abc" = "abc" ]] && echo T || echo F
+[[ "abc" == "abc" ]] && echo T || echo F
+[[ "abc" != "abc" ]] && echo T || echo F
+[[ "abc" = "" ]] && echo T || echo F
+[[ "abc" == "" ]] && echo T || echo F
+[[ "abc" != "" ]] && echo T || echo F
+[[ "abc" = "a b" ]] && echo T || echo F
+[[ "abc" == "a b" ]] && echo T || echo F
+[[ "abc" != "a b" ]] && echo T || echo F
+[[ "abc" = "xyz" ]] && echo T || echo F
+[[ "abc" == "xyz" ]] && echo T || echo F
+[[ "abc" != "xyz" ]] && echo T || echo F
+[[ "" = "a" ]] && echo T || echo F
+[[ "" == "a" ]] && echo T || echo F
+[[ "" != "a" ]] && echo T || echo F
+[[ "" = "b" ]] && echo T || echo F
+[[ "" == "b" ]] && echo T || echo F
+[[ "" != "b" ]] && echo T || echo F
+[[ "" = "abc" ]] && echo T || echo F
+[[ "" == "abc" ]] && echo T || echo F
+[[ "" != "abc" ]] && echo T || echo F
+[[ "" = "" ]] && echo T || echo F
+[[ "" == "" ]] && echo T || echo F
+[[ "" != "" ]] && echo T || echo F
+[[ "" = "a b" ]] && echo T || echo F
+[[ "" == "a b" ]] && echo T || echo F
+[[ "" != "a b" ]] && echo T || echo F
+[[ "" = "xyz" ]] && echo T || echo F
+[[ "" == "xyz" ]] && echo T || echo F
+[[ "" != "xyz" ]] && echo T || echo F
+[[ "a b" = "a" ]] && echo T || echo F
+[[ "a b" == "a" ]] && echo T || echo F
+[[ "a b" != "a" ]] && echo T || echo F
+[[ "a b" = "b" ]] && echo T || echo F
+[[ "a b" == "b" ]] && echo T || echo F
+[[ "a b" != "b" ]] && echo T || echo F
+[[ "a b" = "abc" ]] && echo T || echo F
+[[ "a b" == "abc" ]] && echo T || echo F
+[[ "a b" != "abc" ]] && echo T || echo F
+[[ "a b" = "" ]] && echo T || echo F
+[[ "a b" == "" ]] && echo T || echo F
+[[ "a b" != "" ]] && echo T || echo F
+[[ "a b" = "a b" ]] && echo T || echo F
+[[ "a b" == "a b" ]] && echo T || echo F
+[[ "a b" != "a b" ]] && echo T || echo F
+[[ "a b" = "xyz" ]] && echo T || echo F
+[[ "a b" == "xyz" ]] && echo T || echo F
+[[ "a b" != "xyz" ]] && echo T || echo F
+[[ "xyz" = "a" ]] && echo T || echo F
+[[ "xyz" == "a" ]] && echo T || echo F
+[[ "xyz" != "a" ]] && echo T || echo F
+[[ "xyz" = "b" ]] && echo T || echo F
+[[ "xyz" == "b" ]] && echo T || echo F
+[[ "xyz" != "b" ]] && echo T || echo F
+[[ "xyz" = "abc" ]] && echo T || echo F
+[[ "xyz" == "abc" ]] && echo T || echo F
+[[ "xyz" != "abc" ]] && echo T || echo F
+[[ "xyz" = "" ]] && echo T || echo F
+[[ "xyz" == "" ]] && echo T || echo F
+[[ "xyz" != "" ]] && echo T || echo F
+[[ "xyz" = "a b" ]] && echo T || echo F
+[[ "xyz" == "a b" ]] && echo T || echo F
+[[ "xyz" != "a b" ]] && echo T || echo F
+[[ "xyz" = "xyz" ]] && echo T || echo F
+[[ "xyz" == "xyz" ]] && echo T || echo F
+[[ "xyz" != "xyz" ]] && echo T || echo F
+[[ 0 -eq 0 ]] && echo T || echo F
+[[ 0 -ne 0 ]] && echo T || echo F
+[[ 0 -lt 0 ]] && echo T || echo F
+[[ 0 -gt 0 ]] && echo T || echo F
+[[ 0 -le 0 ]] && echo T || echo F
+[[ 0 -ge 0 ]] && echo T || echo F
+[[ 0 -eq 1 ]] && echo T || echo F
+[[ 0 -ne 1 ]] && echo T || echo F
+[[ 0 -lt 1 ]] && echo T || echo F
+[[ 0 -gt 1 ]] && echo T || echo F
+[[ 0 -le 1 ]] && echo T || echo F
+[[ 0 -ge 1 ]] && echo T || echo F
+[[ 0 -eq 5 ]] && echo T || echo F
+[[ 0 -ne 5 ]] && echo T || echo F
+[[ 0 -lt 5 ]] && echo T || echo F
+[[ 0 -gt 5 ]] && echo T || echo F
+[[ 0 -le 5 ]] && echo T || echo F
+[[ 0 -ge 5 ]] && echo T || echo F
+[[ 0 -eq -3 ]] && echo T || echo F
+[[ 0 -ne -3 ]] && echo T || echo F
+[[ 0 -lt -3 ]] && echo T || echo F
+[[ 0 -gt -3 ]] && echo T || echo F
+[[ 0 -le -3 ]] && echo T || echo F
+[[ 0 -ge -3 ]] && echo T || echo F
+[[ 0 -eq 100 ]] && echo T || echo F
+[[ 0 -ne 100 ]] && echo T || echo F
+[[ 0 -lt 100 ]] && echo T || echo F
+[[ 0 -gt 100 ]] && echo T || echo F
+[[ 0 -le 100 ]] && echo T || echo F
+[[ 0 -ge 100 ]] && echo T || echo F
+[[ 0 -eq 42 ]] && echo T || echo F
+[[ 0 -ne 42 ]] && echo T || echo F
+[[ 0 -lt 42 ]] && echo T || echo F
+[[ 0 -gt 42 ]] && echo T || echo F
+[[ 0 -le 42 ]] && echo T || echo F
+[[ 0 -ge 42 ]] && echo T || echo F
+[[ 1 -eq 0 ]] && echo T || echo F
+[[ 1 -ne 0 ]] && echo T || echo F
+[[ 1 -lt 0 ]] && echo T || echo F
+[[ 1 -gt 0 ]] && echo T || echo F
+[[ 1 -le 0 ]] && echo T || echo F
+[[ 1 -ge 0 ]] && echo T || echo F
+[[ 1 -eq 1 ]] && echo T || echo F
+[[ 1 -ne 1 ]] && echo T || echo F
+[[ 1 -lt 1 ]] && echo T || echo F
+[[ 1 -gt 1 ]] && echo T || echo F
+[[ 1 -le 1 ]] && echo T || echo F
+[[ 1 -ge 1 ]] && echo T || echo F
+[[ 1 -eq 5 ]] && echo T || echo F
+[[ 1 -ne 5 ]] && echo T || echo F
+[[ 1 -lt 5 ]] && echo T || echo F
+[[ 1 -gt 5 ]] && echo T || echo F
+[[ 1 -le 5 ]] && echo T || echo F
+[[ 1 -ge 5 ]] && echo T || echo F
+[[ 1 -eq -3 ]] && echo T || echo F
+[[ 1 -ne -3 ]] && echo T || echo F
+[[ 1 -lt -3 ]] && echo T || echo F
+[[ 1 -gt -3 ]] && echo T || echo F
+[[ 1 -le -3 ]] && echo T || echo F
+[[ 1 -ge -3 ]] && echo T || echo F
+[[ 1 -eq 100 ]] && echo T || echo F
+[[ 1 -ne 100 ]] && echo T || echo F
+[[ 1 -lt 100 ]] && echo T || echo F
+[[ 1 -gt 100 ]] && echo T || echo F
+[[ 1 -le 100 ]] && echo T || echo F
+[[ 1 -ge 100 ]] && echo T || echo F
+[[ 1 -eq 42 ]] && echo T || echo F
+[[ 1 -ne 42 ]] && echo T || echo F
+[[ 1 -lt 42 ]] && echo T || echo F
+[[ 1 -gt 42 ]] && echo T || echo F
+[[ 1 -le 42 ]] && echo T || echo F
+[[ 1 -ge 42 ]] && echo T || echo F
+[[ 5 -eq 0 ]] && echo T || echo F
+[[ 5 -ne 0 ]] && echo T || echo F
+[[ 5 -lt 0 ]] && echo T || echo F
+[[ 5 -gt 0 ]] && echo T || echo F
+[[ 5 -le 0 ]] && echo T || echo F
+[[ 5 -ge 0 ]] && echo T || echo F
+[[ 5 -eq 1 ]] && echo T || echo F
+[[ 5 -ne 1 ]] && echo T || echo F
+[[ 5 -lt 1 ]] && echo T || echo F
+[[ 5 -gt 1 ]] && echo T || echo F
+[[ 5 -le 1 ]] && echo T || echo F
+[[ 5 -ge 1 ]] && echo T || echo F
+[[ 5 -eq 5 ]] && echo T || echo F
+[[ 5 -ne 5 ]] && echo T || echo F
+[[ 5 -lt 5 ]] && echo T || echo F
+[[ 5 -gt 5 ]] && echo T || echo F
+[[ 5 -le 5 ]] && echo T || echo F
+[[ 5 -ge 5 ]] && echo T || echo F
+[[ 5 -eq -3 ]] && echo T || echo F
+[[ 5 -ne -3 ]] && echo T || echo F
+[[ 5 -lt -3 ]] && echo T || echo F
+[[ 5 -gt -3 ]] && echo T || echo F
+[[ 5 -le -3 ]] && echo T || echo F
+[[ 5 -ge -3 ]] && echo T || echo F
+[[ 5 -eq 100 ]] && echo T || echo F
+[[ 5 -ne 100 ]] && echo T || echo F
+[[ 5 -lt 100 ]] && echo T || echo F
+[[ 5 -gt 100 ]] && echo T || echo F
+[[ 5 -le 100 ]] && echo T || echo F
+[[ 5 -ge 100 ]] && echo T || echo F
+[[ 5 -eq 42 ]] && echo T || echo F
+[[ 5 -ne 42 ]] && echo T || echo F
+[[ 5 -lt 42 ]] && echo T || echo F
+[[ 5 -gt 42 ]] && echo T || echo F
+[[ 5 -le 42 ]] && echo T || echo F
+[[ 5 -ge 42 ]] && echo T || echo F
+[[ -3 -eq 0 ]] && echo T || echo F
+[[ -3 -ne 0 ]] && echo T || echo F
+[[ -3 -lt 0 ]] && echo T || echo F
+[[ -3 -gt 0 ]] && echo T || echo F
+[[ -3 -le 0 ]] && echo T || echo F
+[[ -3 -ge 0 ]] && echo T || echo F
+[[ -3 -eq 1 ]] && echo T || echo F
+[[ -3 -ne 1 ]] && echo T || echo F
+[[ -3 -lt 1 ]] && echo T || echo F
+[[ -3 -gt 1 ]] && echo T || echo F
+[[ -3 -le 1 ]] && echo T || echo F
+[[ -3 -ge 1 ]] && echo T || echo F
+[[ -3 -eq 5 ]] && echo T || echo F
+[[ -3 -ne 5 ]] && echo T || echo F
+[[ -3 -lt 5 ]] && echo T || echo F
+[[ -3 -gt 5 ]] && echo T || echo F
+[[ -3 -le 5 ]] && echo T || echo F
+[[ -3 -ge 5 ]] && echo T || echo F
+[[ -3 -eq -3 ]] && echo T || echo F
+[[ -3 -ne -3 ]] && echo T || echo F
+[[ -3 -lt -3 ]] && echo T || echo F
+[[ -3 -gt -3 ]] && echo T || echo F
+[[ -3 -le -3 ]] && echo T || echo F
+[[ -3 -ge -3 ]] && echo T || echo F
+[[ -3 -eq 100 ]] && echo T || echo F
+[[ -3 -ne 100 ]] && echo T || echo F
+[[ -3 -lt 100 ]] && echo T || echo F
+[[ -3 -gt 100 ]] && echo T || echo F
+[[ -3 -le 100 ]] && echo T || echo F
+[[ -3 -ge 100 ]] && echo T || echo F
+[[ -3 -eq 42 ]] && echo T || echo F
+[[ -3 -ne 42 ]] && echo T || echo F
+[[ -3 -lt 42 ]] && echo T || echo F
+[[ -3 -gt 42 ]] && echo T || echo F
+[[ -3 -le 42 ]] && echo T || echo F
+[[ -3 -ge 42 ]] && echo T || echo F
+[[ 100 -eq 0 ]] && echo T || echo F
+[[ 100 -ne 0 ]] && echo T || echo F
+[[ 100 -lt 0 ]] && echo T || echo F
+[[ 100 -gt 0 ]] && echo T || echo F
+[[ 100 -le 0 ]] && echo T || echo F
+[[ 100 -ge 0 ]] && echo T || echo F
+[[ 100 -eq 1 ]] && echo T || echo F
+[[ 100 -ne 1 ]] && echo T || echo F
+[[ 100 -lt 1 ]] && echo T || echo F
+[[ 100 -gt 1 ]] && echo T || echo F
+[[ 100 -le 1 ]] && echo T || echo F
+[[ 100 -ge 1 ]] && echo T || echo F
+[[ 100 -eq 5 ]] && echo T || echo F
+[[ 100 -ne 5 ]] && echo T || echo F
+[[ 100 -lt 5 ]] && echo T || echo F
+[[ 100 -gt 5 ]] && echo T || echo F
+[[ 100 -le 5 ]] && echo T || echo F
+[[ 100 -ge 5 ]] && echo T || echo F
+[[ 100 -eq -3 ]] && echo T || echo F
+[[ 100 -ne -3 ]] && echo T || echo F
+[[ 100 -lt -3 ]] && echo T || echo F
+[[ 100 -gt -3 ]] && echo T || echo F
+[[ 100 -le -3 ]] && echo T || echo F
+[[ 100 -ge -3 ]] && echo T || echo F
+[[ 100 -eq 100 ]] && echo T || echo F
+[[ 100 -ne 100 ]] && echo T || echo F
+[[ 100 -lt 100 ]] && echo T || echo F
+[[ 100 -gt 100 ]] && echo T || echo F
+[[ 100 -le 100 ]] && echo T || echo F
+[[ 100 -ge 100 ]] && echo T || echo F
+[[ 100 -eq 42 ]] && echo T || echo F
+[[ 100 -ne 42 ]] && echo T || echo F
+[[ 100 -lt 42 ]] && echo T || echo F
+[[ 100 -gt 42 ]] && echo T || echo F
+[[ 100 -le 42 ]] && echo T || echo F
+[[ 100 -ge 42 ]] && echo T || echo F
+[[ 42 -eq 0 ]] && echo T || echo F
+[[ 42 -ne 0 ]] && echo T || echo F
+[[ 42 -lt 0 ]] && echo T || echo F
+[[ 42 -gt 0 ]] && echo T || echo F
+[[ 42 -le 0 ]] && echo T || echo F
+[[ 42 -ge 0 ]] && echo T || echo F
+[[ 42 -eq 1 ]] && echo T || echo F
+[[ 42 -ne 1 ]] && echo T || echo F
+[[ 42 -lt 1 ]] && echo T || echo F
+[[ 42 -gt 1 ]] && echo T || echo F
+[[ 42 -le 1 ]] && echo T || echo F
+[[ 42 -ge 1 ]] && echo T || echo F
+[[ 42 -eq 5 ]] && echo T || echo F
+[[ 42 -ne 5 ]] && echo T || echo F
+[[ 42 -lt 5 ]] && echo T || echo F
+[[ 42 -gt 5 ]] && echo T || echo F
+[[ 42 -le 5 ]] && echo T || echo F
+[[ 42 -ge 5 ]] && echo T || echo F
+[[ 42 -eq -3 ]] && echo T || echo F
+[[ 42 -ne -3 ]] && echo T || echo F
+[[ 42 -lt -3 ]] && echo T || echo F
+[[ 42 -gt -3 ]] && echo T || echo F
+[[ 42 -le -3 ]] && echo T || echo F
+[[ 42 -ge -3 ]] && echo T || echo F
+[[ 42 -eq 100 ]] && echo T || echo F
+[[ 42 -ne 100 ]] && echo T || echo F
+[[ 42 -lt 100 ]] && echo T || echo F
+[[ 42 -gt 100 ]] && echo T || echo F
+[[ 42 -le 100 ]] && echo T || echo F
+[[ 42 -ge 100 ]] && echo T || echo F
+[[ 42 -eq 42 ]] && echo T || echo F
+[[ 42 -ne 42 ]] && echo T || echo F
+[[ 42 -lt 42 ]] && echo T || echo F
+[[ 42 -gt 42 ]] && echo T || echo F
+[[ 42 -le 42 ]] && echo T || echo F
+[[ 42 -ge 42 ]] && echo T || echo F
+[[ 1 == 1 && 2 == 2 ]] && echo AND || echo no
+[[ 1 == 1 || 2 == 2 ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && 2 == 2 ]] && echo NG || echo no
+[[ ( 1 == 1 || 2 == 2 ) && ( 1 == 1 && 2 == 2 ) ]] && echo GRP || echo no
+[[ 1 == 1 && 2 == 3 ]] && echo AND || echo no
+[[ 1 == 1 || 2 == 3 ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && 2 == 3 ]] && echo NG || echo no
+[[ ( 1 == 1 || 2 == 3 ) && ( 1 == 1 && 2 == 3 ) ]] && echo GRP || echo no
+[[ 1 == 1 && -n y ]] && echo AND || echo no
+[[ 1 == 1 || -n y ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && -n y ]] && echo NG || echo no
+[[ ( 1 == 1 || -n y ) && ( 1 == 1 && -n y ) ]] && echo GRP || echo no
+[[ 1 == 1 && -z "" ]] && echo AND || echo no
+[[ 1 == 1 || -z "" ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && -z "" ]] && echo NG || echo no
+[[ ( 1 == 1 || -z "" ) && ( 1 == 1 && -z "" ) ]] && echo GRP || echo no
+[[ 1 == 1 && 9 -ge 9 ]] && echo AND || echo no
+[[ 1 == 1 || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( 1 == 1 || 9 -ge 9 ) && ( 1 == 1 && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ 1 == 1 && 1 -ge 9 ]] && echo AND || echo no
+[[ 1 == 1 || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( 1 == 1 ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( 1 == 1 || 1 -ge 9 ) && ( 1 == 1 && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ 1 == 2 && 2 == 2 ]] && echo AND || echo no
+[[ 1 == 2 || 2 == 2 ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && 2 == 2 ]] && echo NG || echo no
+[[ ( 1 == 2 || 2 == 2 ) && ( 1 == 2 && 2 == 2 ) ]] && echo GRP || echo no
+[[ 1 == 2 && 2 == 3 ]] && echo AND || echo no
+[[ 1 == 2 || 2 == 3 ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && 2 == 3 ]] && echo NG || echo no
+[[ ( 1 == 2 || 2 == 3 ) && ( 1 == 2 && 2 == 3 ) ]] && echo GRP || echo no
+[[ 1 == 2 && -n y ]] && echo AND || echo no
+[[ 1 == 2 || -n y ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && -n y ]] && echo NG || echo no
+[[ ( 1 == 2 || -n y ) && ( 1 == 2 && -n y ) ]] && echo GRP || echo no
+[[ 1 == 2 && -z "" ]] && echo AND || echo no
+[[ 1 == 2 || -z "" ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && -z "" ]] && echo NG || echo no
+[[ ( 1 == 2 || -z "" ) && ( 1 == 2 && -z "" ) ]] && echo GRP || echo no
+[[ 1 == 2 && 9 -ge 9 ]] && echo AND || echo no
+[[ 1 == 2 || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( 1 == 2 || 9 -ge 9 ) && ( 1 == 2 && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ 1 == 2 && 1 -ge 9 ]] && echo AND || echo no
+[[ 1 == 2 || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( 1 == 2 ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( 1 == 2 || 1 -ge 9 ) && ( 1 == 2 && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ -n x && 2 == 2 ]] && echo AND || echo no
+[[ -n x || 2 == 2 ]] && echo OR || echo no
+[[ ! ( -n x ) && 2 == 2 ]] && echo NG || echo no
+[[ ( -n x || 2 == 2 ) && ( -n x && 2 == 2 ) ]] && echo GRP || echo no
+[[ -n x && 2 == 3 ]] && echo AND || echo no
+[[ -n x || 2 == 3 ]] && echo OR || echo no
+[[ ! ( -n x ) && 2 == 3 ]] && echo NG || echo no
+[[ ( -n x || 2 == 3 ) && ( -n x && 2 == 3 ) ]] && echo GRP || echo no
+[[ -n x && -n y ]] && echo AND || echo no
+[[ -n x || -n y ]] && echo OR || echo no
+[[ ! ( -n x ) && -n y ]] && echo NG || echo no
+[[ ( -n x || -n y ) && ( -n x && -n y ) ]] && echo GRP || echo no
+[[ -n x && -z "" ]] && echo AND || echo no
+[[ -n x || -z "" ]] && echo OR || echo no
+[[ ! ( -n x ) && -z "" ]] && echo NG || echo no
+[[ ( -n x || -z "" ) && ( -n x && -z "" ) ]] && echo GRP || echo no
+[[ -n x && 9 -ge 9 ]] && echo AND || echo no
+[[ -n x || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( -n x ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( -n x || 9 -ge 9 ) && ( -n x && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ -n x && 1 -ge 9 ]] && echo AND || echo no
+[[ -n x || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( -n x ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( -n x || 1 -ge 9 ) && ( -n x && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ -z "" && 2 == 2 ]] && echo AND || echo no
+[[ -z "" || 2 == 2 ]] && echo OR || echo no
+[[ ! ( -z "" ) && 2 == 2 ]] && echo NG || echo no
+[[ ( -z "" || 2 == 2 ) && ( -z "" && 2 == 2 ) ]] && echo GRP || echo no
+[[ -z "" && 2 == 3 ]] && echo AND || echo no
+[[ -z "" || 2 == 3 ]] && echo OR || echo no
+[[ ! ( -z "" ) && 2 == 3 ]] && echo NG || echo no
+[[ ( -z "" || 2 == 3 ) && ( -z "" && 2 == 3 ) ]] && echo GRP || echo no
+[[ -z "" && -n y ]] && echo AND || echo no
+[[ -z "" || -n y ]] && echo OR || echo no
+[[ ! ( -z "" ) && -n y ]] && echo NG || echo no
+[[ ( -z "" || -n y ) && ( -z "" && -n y ) ]] && echo GRP || echo no
+[[ -z "" && -z "" ]] && echo AND || echo no
+[[ -z "" || -z "" ]] && echo OR || echo no
+[[ ! ( -z "" ) && -z "" ]] && echo NG || echo no
+[[ ( -z "" || -z "" ) && ( -z "" && -z "" ) ]] && echo GRP || echo no
+[[ -z "" && 9 -ge 9 ]] && echo AND || echo no
+[[ -z "" || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( -z "" ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( -z "" || 9 -ge 9 ) && ( -z "" && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ -z "" && 1 -ge 9 ]] && echo AND || echo no
+[[ -z "" || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( -z "" ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( -z "" || 1 -ge 9 ) && ( -z "" && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && 2 == 2 ]] && echo AND || echo no
+[[ 5 -gt 3 || 2 == 2 ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && 2 == 2 ]] && echo NG || echo no
+[[ ( 5 -gt 3 || 2 == 2 ) && ( 5 -gt 3 && 2 == 2 ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && 2 == 3 ]] && echo AND || echo no
+[[ 5 -gt 3 || 2 == 3 ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && 2 == 3 ]] && echo NG || echo no
+[[ ( 5 -gt 3 || 2 == 3 ) && ( 5 -gt 3 && 2 == 3 ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && -n y ]] && echo AND || echo no
+[[ 5 -gt 3 || -n y ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && -n y ]] && echo NG || echo no
+[[ ( 5 -gt 3 || -n y ) && ( 5 -gt 3 && -n y ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && -z "" ]] && echo AND || echo no
+[[ 5 -gt 3 || -z "" ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && -z "" ]] && echo NG || echo no
+[[ ( 5 -gt 3 || -z "" ) && ( 5 -gt 3 && -z "" ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && 9 -ge 9 ]] && echo AND || echo no
+[[ 5 -gt 3 || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( 5 -gt 3 || 9 -ge 9 ) && ( 5 -gt 3 && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ 5 -gt 3 && 1 -ge 9 ]] && echo AND || echo no
+[[ 5 -gt 3 || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( 5 -gt 3 ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( 5 -gt 3 || 1 -ge 9 ) && ( 5 -gt 3 && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && 2 == 2 ]] && echo AND || echo no
+[[ 5 -lt 3 || 2 == 2 ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && 2 == 2 ]] && echo NG || echo no
+[[ ( 5 -lt 3 || 2 == 2 ) && ( 5 -lt 3 && 2 == 2 ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && 2 == 3 ]] && echo AND || echo no
+[[ 5 -lt 3 || 2 == 3 ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && 2 == 3 ]] && echo NG || echo no
+[[ ( 5 -lt 3 || 2 == 3 ) && ( 5 -lt 3 && 2 == 3 ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && -n y ]] && echo AND || echo no
+[[ 5 -lt 3 || -n y ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && -n y ]] && echo NG || echo no
+[[ ( 5 -lt 3 || -n y ) && ( 5 -lt 3 && -n y ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && -z "" ]] && echo AND || echo no
+[[ 5 -lt 3 || -z "" ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && -z "" ]] && echo NG || echo no
+[[ ( 5 -lt 3 || -z "" ) && ( 5 -lt 3 && -z "" ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && 9 -ge 9 ]] && echo AND || echo no
+[[ 5 -lt 3 || 9 -ge 9 ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && 9 -ge 9 ]] && echo NG || echo no
+[[ ( 5 -lt 3 || 9 -ge 9 ) && ( 5 -lt 3 && 9 -ge 9 ) ]] && echo GRP || echo no
+[[ 5 -lt 3 && 1 -ge 9 ]] && echo AND || echo no
+[[ 5 -lt 3 || 1 -ge 9 ]] && echo OR || echo no
+[[ ! ( 5 -lt 3 ) && 1 -ge 9 ]] && echo NG || echo no
+[[ ( 5 -lt 3 || 1 -ge 9 ) && ( 5 -lt 3 && 1 -ge 9 ) ]] && echo GRP || echo no
+[[ 1 == 1 && 2 == 2 && 3 == 3 ]] && echo chain3
+[[ 1 == 2 || 2 == 3 || 3 == 3 ]] && echo orchain
+[[ ! 1 == 2 ]] && echo neg
+[[ ! ! 1 == 1 ]] && echo dneg
+[[ ( ( 1 == 1 ) ) ]] && echo nestgrp
+[[ -n abc && ! -z abc ]] && echo bothnz
+[[ -e /etc ]] && echo Y || echo N
+[[ -f /etc ]] && echo Y || echo N
+[[ -d /etc ]] && echo Y || echo N
+[[ -r /etc ]] && echo Y || echo N
+[[ -s /etc ]] && echo Y || echo N
+[[ -L /etc ]] && echo Y || echo N
+[[ -e /etc/hosts ]] && echo Y || echo N
+[[ -f /etc/hosts ]] && echo Y || echo N
+[[ -d /etc/hosts ]] && echo Y || echo N
+[[ -r /etc/hosts ]] && echo Y || echo N
+[[ -s /etc/hosts ]] && echo Y || echo N
+[[ -L /etc/hosts ]] && echo Y || echo N
+[[ -e /nonesuch ]] && echo Y || echo N
+[[ -f /nonesuch ]] && echo Y || echo N
+[[ -d /nonesuch ]] && echo Y || echo N
+[[ -r /nonesuch ]] && echo Y || echo N
+[[ -s /nonesuch ]] && echo Y || echo N
+[[ -L /nonesuch ]] && echo Y || echo N
+[[ -e /bin/sh ]] && echo Y || echo N
+[[ -f /bin/sh ]] && echo Y || echo N
+[[ -d /bin/sh ]] && echo Y || echo N
+[[ -r /bin/sh ]] && echo Y || echo N
+[[ -s /bin/sh ]] && echo Y || echo N
+[[ -L /bin/sh ]] && echo Y || echo N
+[[ -e / ]] && echo Y || echo N
+[[ -f / ]] && echo Y || echo N
+[[ -d / ]] && echo Y || echo N
+[[ -r / ]] && echo Y || echo N
+[[ -s / ]] && echo Y || echo N
+[[ -L / ]] && echo Y || echo N
+[[ -z "" ]] && echo Z || echo NZ
+[[ -n "" ]] && echo NN || echo EE
+[[ -z "x" ]] && echo Z || echo NZ
+[[ -n "x" ]] && echo NN || echo EE
+[[ -z "a b" ]] && echo Z || echo NZ
+[[ -n "a b" ]] && echo NN || echo EE
+[[ -z "0" ]] && echo Z || echo NZ
+[[ -n "0" ]] && echo NN || echo EE
+[ a == a ] && echo bracket_eq
+test abc == abc && echo test_eq
+[ a == b ] || echo bracket_ne
+[ 5 -gt 3 ] && echo bint
+v='hello'; echo "[${v}]"
+v='hello'; echo "len=${#v}"
+v='hello'; echo "${v:-DEF}"
+v='hello'; echo "${v:+SET}"
+v='hello'; echo "${v#*/}"
+v='hello'; echo "${v##*/}"
+v='hello'; echo "${v%/*}"
+v='hello'; echo "${v%%/*}"
+v=''; echo "[${v}]"
+v=''; echo "len=${#v}"
+v=''; echo "${v:-DEF}"
+v=''; echo "${v:+SET}"
+v=''; echo "${v#*/}"
+v=''; echo "${v##*/}"
+v=''; echo "${v%/*}"
+v=''; echo "${v%%/*}"
+v='a/b/c'; echo "[${v}]"
+v='a/b/c'; echo "len=${#v}"
+v='a/b/c'; echo "${v:-DEF}"
+v='a/b/c'; echo "${v:+SET}"
+v='a/b/c'; echo "${v#*/}"
+v='a/b/c'; echo "${v##*/}"
+v='a/b/c'; echo "${v%/*}"
+v='a/b/c'; echo "${v%%/*}"
+v='x.y.z'; echo "[${v}]"
+v='x.y.z'; echo "len=${#v}"
+v='x.y.z'; echo "${v:-DEF}"
+v='x.y.z'; echo "${v:+SET}"
+v='x.y.z'; echo "${v#*/}"
+v='x.y.z'; echo "${v##*/}"
+v='x.y.z'; echo "${v%/*}"
+v='x.y.z'; echo "${v%%/*}"
+v='  pad  '; echo "[${v}]"
+v='  pad  '; echo "len=${#v}"
+v='  pad  '; echo "${v:-DEF}"
+v='  pad  '; echo "${v:+SET}"
+v='  pad  '; echo "${v#*/}"
+v='  pad  '; echo "${v##*/}"
+v='  pad  '; echo "${v%/*}"
+v='  pad  '; echo "${v%%/*}"
+echo "${undef:-fallback}"
+echo "${undef:=now}"; echo "$undef"
+unset u; echo "${u:+x}"; u=1; echo "${u:+x}"
+set -- one two three; echo "$#"; echo "$1-$2-$3"; echo "$*"
+set -- a b c; for x in "$@"; do echo "<$x>"; done
+echo $(( 1+2 ))
+echo $(( 10-3 ))
+echo $(( 4*5 ))
+echo $(( 20/3 ))
+echo $(( 20%3 ))
+echo $(( 2**8 ))
+echo $(( (1+2)*3 ))
+echo $(( 7&3 ))
+echo $(( 7|8 ))
+echo $(( 5^1 ))
+echo $(( 1<<4 ))
+echo $(( 256>>2 ))
+echo $(( 5>3 ))
+echo $(( 3>=3 ))
+echo $(( 2<1 ))
+echo $(( 1==1 ))
+echo $(( 1!=2 ))
+echo $(( !0 ))
+echo $(( ~0 ))
+echo $(( -5+3 ))
+echo $(( 1&&1 ))
+echo $(( 0||1 ))
+echo $(( 3>2?10:20 ))
+echo $(( a=5,a*2 ))
+a=5; echo $((a++)); echo $a; echo $((++a))
+i=0; while [ $i -lt 5 ]; do printf "%d" $i; i=$((i+1)); done; echo
+echo {a,b,c}
+echo x{a,b}y
+echo {a,b}{c,d}
+echo pre{1,2,3}post
+echo {a,b,c}.txt
+echo "{a,b}"
+echo '{a,b}'
+v=p; echo $v{1,2,3}
+echo a{b}c
+echo {}
+echo {a}
+printf 'cat <<EOF\nplain line\nEOF\n' > h.sh; . ./h.sh
+v=world; printf 'cat <<EOF\nhello $v\nbraced ${v}\nEOF\n' > h.sh; . ./h.sh
+v=world; printf 'cat <<"EOF"\nno $v\nno ${v}\nEOF\n' > h.sh; . ./h.sh
+printf 'cat <<EOF\na\nEOF\ncat <<EOF\nb\nEOF\n' > h.sh; . ./h.sh
+printf 'cat <<A; cat <<B\nfirst\nA\nsecond\nB\n' > h.sh; . ./h.sh
+printf 'f(){ cat <<EOF\ninfunc ${1}\nEOF\n}\nf ARG\n' > h.sh; . ./h.sh
+v=6.6.32; printf 'cat <<EOF\nver=${v}-x\nv2=$v\nEOF\n' > h.sh; . ./h.sh
+printf 'cat <<EOF\n$(( 2 + 3 ))\n${HOME:+yes}\nEOF\n' > h.sh; . ./h.sh
+printf 'cat <<-EOF\n\tstripped\nEOF\n' > h.sh; . ./h.sh
+n=hi; printf 'cat <<EOF\na${n}b\n${n}${n}\nEOF\n' > h.sh; . ./h.sh
+printf 'cat <<EOF\n${undef:-D}\n${#n}\nEOF\n' > h.sh; n=abc; . ./h.sh
+printf 'read x <<EOF\nfromhd\nEOF\necho got=$x\n' > h.sh; . ./h.sh
+printf 'cat <<E1\nbody1\nE1\ncat <<E2\nbody2\nE2\ncat <<E3\nbody3\nE3\n' > h.sh; . ./h.sh
+printf 'echo a \\\nb \\\nc\n' > c.sh; . ./c.sh
+printf 'for i in 1 \\\n2 \\\n3; do printf "%%s" "$i"; done; echo\n' > c.sh; . ./c.sh
+printf 'if true && \\\ntrue; then echo cont_if; fi\n' > c.sh; . ./c.sh
+printf 'g(){ echo p \\\nq \\\nr; }\ng\n' > c.sh; . ./c.sh
+echo 'single quoted'
+echo "double quoted"
+echo "a\"b"
+echo 'a'\''b'
+echo "tab	here"
+v=x; echo "$v"'$v'
+echo "$( echo nested )"
+echo `echo backtick`
+echo a"b"c'd'e
+printf "%s\n" "one two" three
+for i in a b c; do echo $i; done
+i=0; while [ $i -lt 3 ]; do echo $i; i=$((i+1)); done
+i=0; until [ $i -ge 3 ]; do echo $i; i=$((i+1)); done
+if [ 1 -eq 1 ]; then echo yes; else echo no; fi
+if [ 1 -eq 2 ]; then echo a; elif [ 2 -eq 2 ]; then echo b; else echo c; fi
+case xyz in x*) echo star;; *) echo other;; esac
+case abc in a) echo a;; abc) echo full;; esac
+for x in {1,2,3}; do echo n$x; done
+f(){ echo "args=$#"; for a in "$@"; do echo "$a"; done; }; f one two
+v=foo; if [[ $v == foo && -n $v ]]; then echo match; fi
+v=5; if [[ $v -gt 3 && $v -lt 10 ]]; then echo inrange; fi
+for v in a b c; do [[ $v == b ]] && echo "found $v"; done
+x=1; [[ $x == 1 ]] && [[ $x -eq 1 ]] && echo both
+v=hello; [[ ${#v} -eq 5 && $v == hello ]] && echo lenmatch
+n=0; while [[ $n -lt 3 ]]; do echo $n; n=$((n+1)); done
+v=""; [[ -z $v || $v == x ]] && echo emptyok
+a=1; b=2; [[ ( $a -eq 1 || $b -eq 9 ) && $b -eq 2 ]] && echo grpcombo
+echo hello | cat
+echo a; echo b | tr a-z A-Z
+printf "%s\n" c b a | sort
+echo $(echo nested $(echo deep))
+x=$(printf "1\n2\n3"); echo "$x" | wc -l
+echo one two three | wc -w
+true && echo t || echo f; false && echo t || echo f
+echo $(( 0x1f )) 2>/dev/null; true
+echo $(( 010 )) 2>/dev/null; true
+echo $(( 1+2*3-4 )) 2>/dev/null; true
+echo $(( (5+5)/2 )) 2>/dev/null; true
+echo $(( 100%7 )) 2>/dev/null; true
+echo $(( 2*2*2*2 )) 2>/dev/null; true
+echo $(( 15&9 )) 2>/dev/null; true
+echo $(( 15|16 )) 2>/dev/null; true
+echo $(( 12^10 )) 2>/dev/null; true
+echo $(( 1<<8 )) 2>/dev/null; true
+echo $(( 1024>>3 )) 2>/dev/null; true
+echo $(( -(-5) )) 2>/dev/null; true
+echo $(( +7 )) 2>/dev/null; true
+echo $(( 0==0 )) 2>/dev/null; true
+echo $(( 5%%2 )) 2>/dev/null; true
+echo $(( 3*3>8 )) 2>/dev/null; true
+echo $(( 10/0 )) 2>/dev/null; true
+echo $(( 1?2?3:4:5 )) 2>/dev/null; true
+echo $(( a=3;b=4;a*b )) 2>/dev/null; true
+echo $(( 1+1==2 )) 2>/dev/null; true
+echo $(( 5>3&&2<4 )) 2>/dev/null; true
+echo $(( 0||0||1 )) 2>/dev/null; true
+echo $((2#1010))
+echo $((8#17))
+echo $((16#ff))
+x=10; echo $((x*x)); echo $((x-=3)); echo $x
+echo $(( 3 > 2 ? 100 : 200 ))
+case abc in a*|b*) echo ab;; *) echo other;; esac
+case foo in bar|foo|baz) echo matched;; esac
+case "" in "") echo empty;; *) echo nonempty;; esac
+case file.txt in *.txt) echo text;; *.md) echo md;; esac
+for f in one.c two.h three.c; do case $f in *.c) echo "C: $f";; esac; done
+case 5 in [0-9]) echo digit;; *) echo no;; esac
+case ABC in [A-Z]*) echo upper;; esac
+echo $(echo $(echo $(echo deep)))
+x=$(echo hi); y=$(echo "$x there"); echo "$y"
+echo "count: $(echo a b c d | wc -w)"
+v=$(printf "%s-%s" a b); echo "$v"
+echo "$(date +x 2>/dev/null >/dev/null; echo ok)"
+n=3; echo "$(for i in $(seq 1 $n 2>/dev/null || echo 1 2 3); do printf x; done)"
+printf "%s|%s|%s\n" a b c
+printf "%d-%d\n" 7 42
+printf "%05d\n" 42
+printf "%c%c%c\n" h i 33
+printf "%%literal%%\n"
+printf "%s\n" a b c d
+printf "[%5s]\n" hi
+printf "[%-5s]\n" hi
+printf "%x %o\n" 255 8
+set -- a b c d e; echo "$#"; shift 2; echo "$#"; echo "$1"
+set -- x y z; echo "${1}${2}${3}"
+f(){ echo "${1:-none}"; }; f; f given
+v=path/to/file.tar.gz; echo "${v##*.}"; echo "${v%%.*}"; echo "${v%.*}"
+v=HELLO; echo "${#v}"
+echo "a  b   c"
+echo a  b   c
+echo "*"; echo "?"
+echo '$HOME stays literal'
+echo "exit=$?"
+x="y z"; for w in $x; do echo "w=$w"; done
+IFS=,; x="a,b,c"; for w in $x; do echo "$w"; done
+n=0; [[ $n -ge 0 && $n -le 15 ]] && echo "$n in range"
+n=0; [[ $(( n * 2 )) -eq 0 ]] && echo arithok
+n=1; [[ $n -ge 0 && $n -le 15 ]] && echo "$n in range"
+n=1; [[ $(( n * 2 )) -eq 2 ]] && echo arithok
+n=7; [[ $n -ge 0 && $n -le 15 ]] && echo "$n in range"
+n=7; [[ $(( n * 2 )) -eq 14 ]] && echo arithok
+n=15; [[ $n -ge 0 && $n -le 15 ]] && echo "$n in range"
+n=15; [[ $(( n * 2 )) -eq 30 ]] && echo arithok
+v=abc; [[ -n $v && ${#v} -eq 3 && $v == abc ]] && echo triple
+x=5; y=5; [[ $x -eq $y && $x == $y ]] && echo eqboth
+for i in 1 2 3 4 5; do [[ $((i % 2)) -eq 0 ]] && echo "$i even" || echo "$i odd"; done
