@@ -55,7 +55,7 @@ static void	replace_arg_if_trailing_equal(t_vec *argv, size_t idx,
 	dup = dup_full_token_if_available(node);
 	if (!dup)
 		return ;
-	free(((char **)argv->ctx)[idx]);
+	word_free(((char **)argv->ctx)[idx]);
 	((char **)argv->ctx)[idx] = dup;
 }
 

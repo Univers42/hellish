@@ -41,7 +41,7 @@ static void	free_old_argv(t_executable_cmd *cmd)
 
 	i = 0;
 	while (i < (int)cmd->argv.len)
-		free(((char **)cmd->argv.ctx)[i++]);
+		word_free(((char **)cmd->argv.ctx)[i++]);
 	free(cmd->argv.ctx);
 }
 
