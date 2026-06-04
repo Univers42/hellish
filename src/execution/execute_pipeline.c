@@ -97,7 +97,6 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
 	t_vec_exe_res		results;
 	t_execution_state	res;
-	t_execution_state	*plast;
 
 	results = (t_vec_exe_res){0};
 	vec_init(&results);
@@ -105,12 +104,7 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 	execute_pipeline_children(state, exe, &results);
 	procsub_close_fds_parent(state);
 	if (results.len > 0)
-	{
-		plast = (t_execution_state *)vec_idx(&results, results.len - 1);
-		res = *plast;
-		if (res.pid != -1)
-			exe_res_set_status(&res);
-	}
+		res = pipeline_status(state, &results);
 	else
 		res = res_status(0);
 	if (exe->node->negate)

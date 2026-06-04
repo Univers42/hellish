@@ -17,6 +17,8 @@ static void	fill_builtin_hash1(t_hash *h)
 	hash_set(h, "echo", (void *)builtin_echo);
 	hash_set(h, "export", (void *)builtin_export);
 	hash_set(h, "cd", (void *)builtin_cd);
+	hash_set(h, "pushd", (void *)builtin_pushd);
+	hash_set(h, "popd", (void *)builtin_popd);
 	hash_set(h, "exit", (void *)builtin_exit);
 	hash_set(h, "pwd", (void *)builtin_pwd);
 	hash_set(h, "env", (void *)builtin_env);
