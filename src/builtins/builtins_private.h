@@ -81,6 +81,11 @@ int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, int *ret);
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 
+/* [[ ]] conditional: eval_test = flat single test (also [ and test);
+   eval_bracketed = dispatcher (validate/strip close, route [[ to db_or). */
+int		eval_test(char **av, int ac);
+int		eval_bracketed(t_shell *st, char **av, int ac, int dbr);
+
 void	update_pwd_vars(t_shell *state);
 bool	is_redir_operator(char *s);
 int		count_real_args(t_vec argv);

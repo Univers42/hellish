@@ -15,12 +15,6 @@
 
 bool	is_word_boundary(const char *s);
 
-static void	skip_shell_comment(char **str)
-{
-	while (**str && **str != '\n')
-		(*str)++;
-}
-
 static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
 {
 	if (**str == '\'' || **str == '"' || **str == '$'
@@ -45,32 +39,54 @@ static void	emit_newline(char **str, t_deque_tok *ret)
 static bool	skip_noise(char **str)
 {
 	if (**str == '#')
-		return (skip_shell_comment(str), true);
+	{
+		while (**str && **str != '\n')
+			(*str)++;
+		return (true);
+	}
 	if ((*str)[0] == '\\' && (*str)[1] == '\n')
 		return (*str += 2, true);
 	return (false);
+}
+
+/* One tokenizing step: toggle [[ ]] mode, parse a lexeme, or emit an operator.
+   Inside [[ ]], &&/||/(/) are emitted as WORD tokens (not operators). Returns a
+   non-null continuation prompt if a lexeme is unterminated, else NULL. */
+static char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
+{
+	char	*prompt;
+
+	dbracket_toggle(*str, in_db);
+	prompt = try_parse_lexeme(str, ret);
+	if (prompt)
+		return (prompt);
+	if (**str == '\n')
+		emit_newline(str, ret);
+	else if (is_space(**str))
+		(*str)++;
+	else if (*in_db && emit_dbracket_word(str, ret))
+		return (NULL);
+	else if (**str)
+		parse_op(ret, str);
+	return (NULL);
 }
 
 char	*tokenizer(char *str, t_deque_tok *ret)
 {
 	char	*prompt;
 	t_token	tmp;
+	int		in_db;
 
 	prompt = 0;
+	in_db = 0;
 	deque_clear(&ret->deqtok, NULL);
 	while (str && *str)
 	{
 		if (skip_noise(&str))
 			continue ;
-		prompt = try_parse_lexeme(&str, ret);
+		prompt = tokenize_step(&str, ret, &in_db);
 		if (prompt)
 			break ;
-		if (*str == '\n')
-			emit_newline(&str, ret);
-		else if (is_space(*str))
-			str++;
-		else if (*str)
-			parse_op(ret, &str);
 	}
 	tmp = create_token(0, 0, TT_END);
 	deque_push_end(&ret->deqtok, &tmp);

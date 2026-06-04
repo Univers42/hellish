@@ -60,6 +60,8 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 		&& rp.current_token.start[rp.i] != '\\'
 		&& rp.current_token.start[rp.i] != '`')
 		rp.i++;
+	if (rp.i == rp.prev_start && rp.i < rp.current_token.len)
+		rp.i++;
 	push_subtoken_node(&rp.current_node, rp.current_token,
 		create_interval(rp.prev_start, rp.i), TT_WORD);
 	*i = rp.i;
