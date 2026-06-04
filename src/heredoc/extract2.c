@@ -45,15 +45,22 @@ static bool	delim_present(const char *p, t_hd *s)
 	return (false);
 }
 
-static void	advance_hd(const char **p, size_t cur,
+/* Collect every heredoc body whose operator sits on the current line. ln pins
+   the operator line so multiple specs sharing it (`cat <<A <<B`) all match even
+   as collect_body bumps *cur past consumed body lines, keeping the line counter
+   in sync so the next command's heredocs still resolve. */
+static void	advance_hd(const char **p, size_t *cur,
 				t_string *out, t_walk_ctx *c)
 {
-	while (c->si < c->n && c->sp[c->si].line < cur)
+	size_t	ln;
+
+	ln = *cur;
+	while (c->si < c->n && c->sp[c->si].line < ln)
 		c->si++;
-	while (c->si < c->n && c->sp[c->si].line == cur)
+	while (c->si < c->n && c->sp[c->si].line == ln)
 	{
 		if (delim_present(*p, &c->sp[c->si]))
-			c->got += (collect_body(p, &cur, &out[1], &c->sp[c->si]), 1);
+			c->got += (collect_body(p, cur, &out[1], &c->sp[c->si]), 1);
 		c->si++;
 	}
 }
@@ -76,7 +83,8 @@ static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 		if (*p == '\n')
 			p++;
 		vec_push_nstr(&out[0], ls, p - ls);
-		advance_hd(&p, cur++, out, &c);
+		advance_hd(&p, &cur, out, &c);
+		cur++;
 	}
 	return (c.got);
 }
