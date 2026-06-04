@@ -13,14 +13,27 @@
 #include "lexer.h"
 #include "helpers.h"
 
+/* A `[[`/`]]` token ends at whitespace, end-of-string, or any shell
+   metacharacter that terminates a word (`; & | ( ) < >`). Without `;` & co
+   here, `]]` before `;` (e.g. `[[ x ]];`) was not recognised and conditional
+   mode leaked into the rest of the input, mangling later `()`/braces. */
+static int	is_db_boundary(char c)
+{
+	if (c == '\0' || c == '\n' || is_space(c))
+		return (1);
+	if (c == ';' || c == '&' || c == '|')
+		return (1);
+	if (c == '(' || c == ')' || c == '<' || c == '>')
+		return (1);
+	return (0);
+}
+
 /* Is `str` exactly the 2-char token `tok` ([[ or ]]) at a word boundary? */
 static int	is_dbracket_tok(const char *str, const char *tok)
 {
 	if (ft_strncmp(str, tok, 2) != 0)
 		return (0);
-	if (str[2] == '\0' || is_space(str[2]) || str[2] == '\n')
-		return (1);
-	return (0);
+	return (is_db_boundary(str[2]));
 }
 
 /* Toggle conditional mode on `[[` / `]]`. While set, the tokenizer emits
