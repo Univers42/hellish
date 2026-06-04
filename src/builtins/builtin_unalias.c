@@ -19,23 +19,13 @@ static void	unalias_all(t_shell *state)
 	alias_table_init(&state->aliases);
 }
 
-int	builtin_unalias(t_shell *state, t_vec argv)
+static int	unalias_names(t_shell *state, t_vec argv)
 {
 	size_t	i;
 	int		ret;
 	char	**av;
 
 	av = (char **)argv.ctx;
-	if (argv.len < 2)
-	{
-		ft_eprintf("%s: unalias: usage: unalias [-a] name ...\n", state->ctx);
-		return (2);
-	}
-	if (ft_strcmp(av[1], "-a") == 0)
-	{
-		unalias_all(state);
-		return (0);
-	}
 	ret = 0;
 	i = 1;
 	while (i < argv.len)
@@ -48,4 +38,23 @@ int	builtin_unalias(t_shell *state, t_vec argv)
 		i++;
 	}
 	return (ret);
+}
+
+int	builtin_unalias(t_shell *state, t_vec argv)
+{
+	char	**av;
+
+	av = (char **)argv.ctx;
+	if (argv.len < 2)
+	{
+		ft_eprintf("%s: unalias: usage: unalias [-a] name ...\n",
+			state->ctx);
+		return (2);
+	}
+	if (ft_strcmp(av[1], "-a") == 0)
+	{
+		unalias_all(state);
+		return (0);
+	}
+	return (unalias_names(state, argv));
 }

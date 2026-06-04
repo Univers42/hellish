@@ -1,0 +1,40 @@
+echo hi > /tmp/sh42_r1; cat /tmp/sh42_r1; rm -f /tmp/sh42_r1
+echo a > /tmp/sh42_r2; echo b >> /tmp/sh42_r2; cat /tmp/sh42_r2; rm -f /tmp/sh42_r2
+echo err 2>/dev/null; echo ok
+ls /nonexistent_xyz 2>/dev/null; echo $?
+ls /nonexistent_xyz 2>&1 | grep -c .
+echo out 1>&2 2>/dev/null; echo done
+cat < /etc/hostname >/dev/null; echo $?
+printf 'a\nb\nc\n' > /tmp/sh42_r3; wc -l < /tmp/sh42_r3; rm -f /tmp/sh42_r3
+echo x >/tmp/sh42_r4 2>&1; cat /tmp/sh42_r4; rm -f /tmp/sh42_r4
+cat <<EOF
+heredoc line
+EOF
+cat <<-EOF
+	tab-stripped
+	EOF
+cat <<'EOF'
+$novar literal
+EOF
+x=hi; cat <<EOF
+var=$x
+EOF
+cat <<EOF
+$(echo cmdsub)
+EOF
+cat <<EOF
+arith=$((6*7))
+EOF
+echo first; echo second >/tmp/sh42_r5; cat /tmp/sh42_r5; rm -f /tmp/sh42_r5
+{ echo a; echo b; } > /tmp/sh42_r6; cat /tmp/sh42_r6; rm -f /tmp/sh42_r6
+echo data | cat
+echo data | cat | cat
+true | false; echo $?
+false | true; echo $?
+echo abc | rev 2>/dev/null || echo abc
+seq 1 5 | head -3
+echo hello | wc -c
+printf '%s\n' a b c | sort -r
+echo redirect > /tmp/sh42_r7 && cat < /tmp/sh42_r7; rm -f /tmp/sh42_r7
+echo multi > /tmp/sh42_r8; echo multi2 > /tmp/sh42_r8; cat /tmp/sh42_r8; rm -f /tmp/sh42_r8
+2>/dev/null echo leading_redir

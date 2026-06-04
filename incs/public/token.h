@@ -41,6 +41,8 @@ typedef enum e_tt
 	TT_PROC_SUB_OUT,
 	TT_DUP_OUT,
 	TT_DUP_IN,
+	TT_READWRITE,
+	TT_CLOBBER,
 	TT_IF,
 	TT_THEN,
 	TT_ELIF,
@@ -76,7 +78,8 @@ typedef struct s_token
 	char		*start;
 	int			len;
 	bool		allocated;
-	t_token_old	full_word;
+	bool		split_eligible;
+	t_token_old	*full_word;
 }	t_token;
 
 static inline t_token	create_token(char *start, int len, t_tt token_type)
@@ -87,7 +90,7 @@ static inline t_token	create_token(char *start, int len, t_tt token_type)
 			.start = start,
 			.len = len,
 			.allocated = false,
-			.full_word = {.present = false, .start = NULL, .len = 0}
+			.full_word = NULL
 		});
 }
 
@@ -100,7 +103,7 @@ static inline t_token	create_tok4(char *start, int len,
 			.start = start,
 			.len = len,
 			.allocated = allocated,
-			.full_word = {.present = false, .start = NULL, .len = 0}
+			.full_word = NULL
 		});
 }
 

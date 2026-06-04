@@ -12,19 +12,19 @@
 
 #include "expander_private.h"
 
-static void	init_word_node(t_ast_node *n)
+void	init_word_node(t_ast_node *n)
 {
 	*n = (t_ast_node){.node_type = AST_WORD};
 	vec_init(&n->children);
 	n->children.elem_size = sizeof(t_ast_node);
 }
 
-static void	push_token_node(t_ast_node *curr_node, t_ast_node *child)
+void	push_token_node(t_ast_node *curr_node, t_ast_node *child)
 {
 	vec_push(&curr_node->children, child);
 }
 
-static void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
+void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
 {
 	if (cust_act_bef_reset)
 		cust_act_bef_reset(ptr);
@@ -32,7 +32,7 @@ static void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
 }
 
 /* free children.ctx pointer of an ast node prior to zeroing the node */
-static void	free_children(void *p)
+void	free_children(void *p)
 {
 	t_ast_node	*n;
 
@@ -43,31 +43,19 @@ static void	free_children(void *p)
 		free(n->children.ctx);
 }
 
-// node -> split node
-t_vec_nd	split_words(t_shell *state, t_ast_node *node)
+/* Release a consumed subtoken's own allocations.
+   split_envvar/emit_positional_at build fresh field nodes, so start
+   (clone-owned) and full_word would leak if not freed here. */
+void	free_token_res(t_token *t)
 {
-	t_vec_nd	ret;
-	t_token		*curr_t;
-	t_ast_node	curr_node;
-	int			i;
-
-	vec_init(&ret);
-	ret.elem_size = sizeof(t_ast_node);
-	init_word_node(&curr_node);
-	i = -1;
-	while (++i < (int)node->children.len)
+	if (t->allocated)
+		free((char *)t->start);
+	t->allocated = false;
+	if (t->full_word)
 	{
-		ft_assert(((t_ast_node *)node->children.ctx)[i].node_type == AST_TOKEN);
-		curr_t = &((t_ast_node *)node->children.ctx)[i].token;
-		if (curr_t->tt == TT_ENVVAR)
-			split_envvar(state, curr_t, &curr_node, &ret);
-		else if (curr_t->tt == TT_WORD || curr_t->tt == TT_SQWORD
-			|| curr_t->tt == TT_DQWORD || curr_t->tt == TT_DQENVVAR)
-			push_token_node(&curr_node, &((t_ast_node *)node->children.ctx)[i]);
-		else
-			ft_assert(0);
+		if (t->full_word->allocated)
+			free(t->full_word->start);
+		free(t->full_word);
+		t->full_word = NULL;
 	}
-	if (curr_node.children.len)
-		vec_push(&ret, &curr_node);
-	return (ft_reset(node, sizeof(t_ast_node), free_children), ret);
 }

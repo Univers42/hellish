@@ -12,12 +12,10 @@
 
 #include "glob_private.h"
 
-int				is_letter(unsigned char c);
-int				is_digit_char(unsigned char c);
-int				is_alnum_char(unsigned char c);
-unsigned char	to_lower(unsigned char c);
-int				ft_strcoll(const char *s1, const char *s2);
-
+/* POSIX pathname expansion sorts per the current collation; in the C/POSIX
+   locale (and C.UTF-8, the usual environment) that is byte order, matching
+   bash --posix. ft_strcmp gives exactly that — the old ft_strcoll case-folded
+   and skipped punctuation, diverging from bash's glob order. */
 void	glob_sort_inner(char **arr, int low, int high)
 {
 	int		i;
@@ -31,9 +29,9 @@ void	glob_sort_inner(char **arr, int low, int high)
 	j = high;
 	while (i <= j)
 	{
-		while (ft_strcoll(arr[i], pivot) < 0)
+		while (ft_strcmp(arr[i], pivot) < 0)
 			i++;
-		while (ft_strcoll(arr[j], pivot) > 0)
+		while (ft_strcmp(arr[j], pivot) > 0)
 			j--;
 		if (i <= j)
 			ft_swap(&arr[i++], &arr[j--], sizeof(char *));

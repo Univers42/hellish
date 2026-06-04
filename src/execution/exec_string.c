@@ -1,0 +1,111 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   exec_string.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/06/02 00:00:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/06/02 00:00:00 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "execution_private.h"
+#include "lexer.h"
+#include "parser.h"
+#include "decomposer.h"
+#include "redir.h"
+
+int		run_parsed(t_shell *state, t_ast_node *ast);
+bool	must_stop(t_shell *state);
+
+/* Lex `str` once, then parse + execute it one statement at a time (the REPL
+   normally feeds the parser one line at a time). Used by eval, command and the
+   dot/source builtin. `str` must stay valid for the whole call. */
+static void	skip_delimiters(t_deque_tok *tt)
+{
+	t_tt	t;
+
+	t = ((t_token *)deque_peek(&tt->deqtok))->tt;
+	while (t == TT_NEWLINE || t == TT_SEMICOLON)
+	{
+		(void)deque_pop_start(&tt->deqtok);
+		t = ((t_token *)deque_peek(&tt->deqtok))->tt;
+	}
+}
+
+static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
+{
+	t_parser	parser;
+	t_ast_node	ast;
+	int			status;
+
+	parser = (t_parser){.res = RES_OK};
+	vec_init(&parser.parse_stack);
+	parser.parse_stack.elem_size = sizeof(int);
+	ast = parse_simple_list(state, &parser, tt);
+	if (parser.res == RES_OK)
+		status = run_parsed(state, &ast);
+	else
+	{
+		set_cmd_status(state, res_status(2));
+		status = 2;
+	}
+	free_ast(&ast);
+	free(parser.parse_stack.ctx);
+	*stop = (parser.res != RES_OK || must_stop(state));
+	if (!*stop)
+		skip_delimiters(tt);
+	return (status);
+}
+
+static int	exec_string_inner(t_shell *state, char *str)
+{
+	t_deque_tok	tt;
+	int			status;
+	bool		stop;
+
+	tt = (t_deque_tok){0};
+	deque_init(&tt.deqtok, 100, sizeof(t_token));
+	tokenizer(str, &tt);
+	reclassify_keywords(&tt);
+	status = 0;
+	stop = false;
+	skip_delimiters(&tt);
+	while (!stop && ((t_token *)deque_peek(&tt.deqtok))->tt != TT_END)
+		status = run_one_stmt(state, &tt, &stop);
+	state->func_return = 0;
+	free(tt.deqtok.buff);
+	return (status);
+}
+
+/* Extract heredoc bodies up front (so they aren't parsed as commands) and feed
+   them to the heredoc reader via state->hd_src. hd_src is saved/restored so
+   nested command substitutions each get their own body stream. */
+int	exec_string(t_shell *state, char *str)
+{
+	char	*stripped;
+	char	*bodies;
+	char	*prev_src;
+	size_t	prev_pos;
+	int		status;
+
+	prev_src = state->hd_src;
+	prev_pos = state->hd_pos;
+	stripped = NULL;
+	bodies = NULL;
+	if (ft_strnstr(str, "<<", ft_strlen(str))
+		&& split_heredocs(str, &stripped, &bodies))
+	{
+		state->hd_src = bodies;
+		state->hd_pos = 0;
+		status = exec_string_inner(state, stripped);
+		free(stripped);
+	}
+	else
+		status = exec_string_inner(state, str);
+	free(bodies);
+	state->hd_src = prev_src;
+	state->hd_pos = prev_pos;
+	return (status);
+}

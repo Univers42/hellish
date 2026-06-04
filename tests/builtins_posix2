@@ -1,0 +1,18 @@
+exec echo replaced
+echo before; exec echo done
+echo a; exec true; echo never
+trap "echo bye" EXIT; echo hi
+trap "echo cleanup" EXIT; echo work; exit 0
+echo a; exit 3; echo b
+readonly RX=5; echo $RX
+readonly RX=5; RX=9 2>/dev/null; echo $RX
+readonly RX=5; RX=9; echo done
+trap "echo got" USR1; kill -USR1 $$; echo after
+trap "" INT; echo ignoring; echo done
+trap "echo x" INT; trap - INT; echo reset-ok
+wait; echo waited
+sleep 0.05 & wait; echo bgdone
+eval exit 0; echo never2
+. /dev/null; echo sourced-null
+readonly RO=hi; export RO; echo $RO
+trap 'echo a' EXIT; trap 'echo b' EXIT; echo last-wins

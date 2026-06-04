@@ -1,0 +1,28 @@
+x="a b c"; echo $x
+x="a b c"; echo "$x"
+x="a   b   c"; echo $x
+x="  leading"; echo "[$x]"
+x="trailing  "; echo "[$x]"
+x="a b c"; set -- $x; echo $#
+IFS=:; x="a:b:c"; echo $x
+IFS=:; x="a:b:c"; for w in $x; do echo $w; done
+IFS=,; x="1,2,,3"; echo $x
+IFS=,; x="1,2,,3"; set -- $x; echo $#
+x=""; echo "[$x]"
+x=""; echo $x end
+x="one two"; echo first $x last
+unset IFS; x="a b"; echo $x
+IFS=' '; x="a  b"; set -- $x; echo $#
+x="a:b c"; IFS=': '; set -- $x; echo $#
+echo $(echo "w1 w2 w3") | wc -w
+for w in $(printf 'a\nb\nc'); do echo "[$w]"; done
+x="* ? ["; echo "$x"
+n="  42  "; echo $((n))
+IFS=,; set -- a,b,c; echo $1
+v="x y z"; echo ${v}
+v="x y z"; echo "${v}"
+empty=; echo a${empty}b
+empty=; echo a $empty b
+s="a b"; t="$s c"; echo "$t"
+IFS=:; p="/usr:/bin:/sbin"; for d in $p; do echo $d; done
+x="word"; echo ${x}${x}

@@ -25,11 +25,11 @@ static bool	next_is_quoted_empty(t_ast_node *node, size_t i)
 }
 
 static void	process_env_token(t_shell *state, t_ast_node *node,
-				t_token *curr_tt, size_t i)
+				t_token *curr_tt, t_env_tok_pos pos)
 {
 	if (curr_tt->len == 0)
 	{
-		if (next_is_quoted_empty(node, i))
+		if (next_is_quoted_empty(node, pos.idx))
 		{
 			curr_tt->start = "";
 			curr_tt->len = 0;
@@ -43,10 +43,10 @@ static void	process_env_token(t_shell *state, t_ast_node *node,
 		}
 	}
 	else
-		expand_token(state, curr_tt);
+		expand_token(state, curr_tt, pos.split_ctx);
 }
 
-void	expand_env_vars(t_shell *state, t_ast_node *node)
+void	expand_env_vars(t_shell *state, t_ast_node *node, bool split_ctx)
 {
 	t_token	*curr_tt;
 	size_t	i;
@@ -63,7 +63,8 @@ void	expand_env_vars(t_shell *state, t_ast_node *node)
 			|| curr_tt->tt == TT_DQWORD)
 			;
 		else if (curr_tt->tt == TT_DQENVVAR || curr_tt->tt == TT_ENVVAR)
-			process_env_token(state, node, curr_tt, i);
+			process_env_token(state, node, curr_tt,
+				(t_env_tok_pos){i, split_ctx});
 		else
 			ft_assert(0);
 		i++;

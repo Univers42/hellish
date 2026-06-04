@@ -46,11 +46,15 @@ static void	scan_until_matching(int *i, t_token t, int *depth)
 	}
 }
 
-void	reparse_envvar_paren(t_ast_node *ret, int *i, t_token t, int prev_start)
+void	reparse_envvar_paren(t_paren_ctx ctx)
 {
-	int	depth;
+	int			depth;
+	t_ast_node	*pushed;
 
-	depth = get_initial_paren_depth(i, t);
-	scan_until_matching(i, t, &depth);
-	push_subtoken_node(ret, t, create_interval(prev_start - 1, *i), TT_WORD);
+	depth = get_initial_paren_depth(ctx.i, ctx.t);
+	scan_until_matching(ctx.i, ctx.t, &depth);
+	push_subtoken_node(ctx.ret, ctx.t,
+		create_interval(ctx.prev_start - 1, *ctx.i), TT_WORD);
+	pushed = &((t_ast_node *)ctx.ret->children.ctx)[ctx.ret->children.len - 1];
+	pushed->token.split_eligible = (ctx.tt != TT_DQENVVAR);
 }

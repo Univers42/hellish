@@ -17,10 +17,9 @@ int	expand_simple_cmd_word(t_shell *state,
 {
 	if (!exp->found_first && is_export(*exp->curr))
 		exp->export = true;
-	expand_word(state, exp->curr, &ret->argv, false);
+	expand_word_ro(state, exp->curr, &ret->argv, false);
 	if (get_g_sig()->should_unwind)
 		return (1);
 	exp->found_first = true;
-	replace_trailing_equal_with_full_token(exp->curr, &ret->argv);
 	return (0);
 }

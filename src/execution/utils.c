@@ -13,37 +13,8 @@
 #include "execution_private.h"
 #include "sys.h"
 
-void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
+static void	apply_redir_now(t_redir redir)
 {
-	char	*last;
-
-	if (cmd->argv.len > 0)
-	{
-		last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
-		if (last)
-			env_set(&state->env,
-				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
-	}
-}
-
-void	update_underscore_var(t_shell *state, t_executable_cmd *cmd)
-{
-	set_last_underscore_var(state, cmd);
-}
-
-void	apply_redir(t_shell *state, int idx)
-{
-	t_redir	redir;
-
-	if (idx < 0 || !state->redirects.ctx || (size_t)idx >= state->redirects.len)
-	{
-		if (state->ctx)
-			ft_eprintf(MSG_INT_ERR_REDIR_IDX, state->ctx, idx);
-		else
-			ft_eprintf(MSG_INT_ERR_REDIR_IDX, NAME, idx);
-		exit(EXIT_GENERAL_ERR);
-	}
-	redir = ((t_redir *)state->redirects.ctx)[(size_t)idx];
 	if (redir.close_fd)
 	{
 		close(redir.src_fd);
@@ -59,6 +30,20 @@ void	apply_redir(t_shell *state, int idx)
 		dup2(redir.fd, redir.src_fd);
 		close(redir.fd);
 	}
+}
+
+void	apply_redir(t_shell *state, int idx)
+{
+	if (idx < 0 || !state->redirects.ctx
+		|| (size_t)idx >= state->redirects.len)
+	{
+		if (state->ctx)
+			ft_eprintf(MSG_INT_ERR_REDIR_IDX, state->ctx, idx);
+		else
+			ft_eprintf(MSG_INT_ERR_REDIR_IDX, NAME, idx);
+		exit(EXIT_GENERAL_ERR);
+	}
+	apply_redir_now(((t_redir *)state->redirects.ctx)[(size_t)idx]);
 }
 
 void	apply_redirs_from_vec(t_shell *state, t_executable_node *exe)

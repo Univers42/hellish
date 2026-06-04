@@ -17,6 +17,7 @@
 # include "shell.h"
 # include "libft.h"
 # include <stdlib.h>
+# include <limits.h>
 # include "helpers.h"
 # include "env.h"
 
@@ -43,6 +44,13 @@ long long		get_var_value(t_arith_parser *p, const char *name, int len);
 void			set_var_value(t_arith_parser *p, const char *name, int len,
 					long long val);
 void			expect(t_arith_parser *p, t_arith_tok type);
+bool			is_compound_op(t_arith_tok op);
+long long		apply_op(long long l, long long r,
+					t_arith_tok op, t_arith_parser *p);
+long long		try_compound_assign(t_arith_parser *p,
+					t_arith_token *var, long long val);
+long long		arith_parse_unary(t_arith_parser *p);
+long long		arith_parse_primary(t_arith_parser *p);
 long long		arith_parse_exponent(t_arith_parser *p);
 long long		arith_parse_multiplicative(t_arith_parser *p);
 long long		arith_parse_additive(t_arith_parser *p);
@@ -58,6 +66,12 @@ long long		arith_parse_and(t_arith_parser *p);
 long long		arith_parse_or(t_arith_parser *p);
 long long		arith_parse_ternary(t_arith_parser *p);
 long long		arith_parse_expr(t_arith_parser *p);
+
+void			handle_angle_right(t_arith_lexer *lex);
+long long		parse_digits(const char *input, int *pos,
+					int len, int base);
+long long		parse_base_n(t_arith_lexer *lex, int *pos,
+					long long base);
 
 // set.c
 void			set_simple_op(t_arith_lexer *lex, int type);

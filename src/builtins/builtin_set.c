@@ -12,19 +12,13 @@
 
 #include "builtins_private.h"
 
-static int	handle_set_o(t_shell *state, t_vec argv)
+int	handle_set_o(t_shell *state, t_vec argv)
 {
 	char	**av;
 
 	av = (char **)argv.ctx;
 	if (argv.len < 3)
-	{
-		if (state->edit_mode == 0)
-			ft_printf("vi\ton\nemacs\toff\n");
-		else
-			ft_printf("vi\toff\nemacs\ton\n");
-		return (0);
-	}
+		return (list_set_options(state));
 	if (ft_strcmp(av[2], "vi") == 0)
 	{
 		state->edit_mode = 0;
@@ -37,33 +31,57 @@ static int	handle_set_o(t_shell *state, t_vec argv)
 		state->rl.edit_mode = 1;
 		return (0);
 	}
-	ft_eprintf("%s: set: %s: invalid option name\n", state->ctx, av[2]);
-	return (1);
+	return (set_long_option(state, av[1][0], av[2]));
 }
 
-int	builtin_set(t_shell *state, t_vec argv)
+/* Cache the decimal of $# in the fixed buffer so env_expand can return it. */
+static void	pos_set_cnt(t_pos *pos)
+{
+	char	*s;
+
+	s = ft_itoa(pos->count);
+	if (s)
+		ft_strlcpy(pos->cnt_str, s, sizeof(pos->cnt_str));
+	else
+		ft_strlcpy(pos->cnt_str, "0", sizeof(pos->cnt_str));
+	free(s);
+}
+
+/* Fill `pos` with fresh dups of args[0..n-1]. */
+void	pos_build(t_pos *pos, char **args, size_t n)
 {
 	size_t	i;
-	t_env	*e;
-	char	**av;
 
-	av = (char **)argv.ctx;
-	if (argv.len >= 2 && ft_strcmp(av[1], "-o") == 0)
-		return (handle_set_o(state, argv));
-	if (argv.len >= 2 && ft_strcmp(av[1], "+o") == 0)
-		return (handle_set_o(state, argv));
+	pos->args = ft_calloc(n + 1, sizeof(char *));
 	i = 0;
-	while (i < state->env.len)
+	while (pos->args && args && i < n)
 	{
-		e = &((t_env *)state->env.ctx)[i];
-		if (e->key)
-		{
-			if (e->value)
-				ft_printf("%s=%s\n", e->key, e->value);
-			else
-				ft_printf("%s\n", e->key);
-		}
+		pos->args[i] = ft_strdup(args[i]);
 		i++;
 	}
+	pos->count = (int)n;
+	pos_set_cnt(pos);
+}
+
+/* Release the strings + array owned by `pos`. */
+void	pos_free(t_pos *pos)
+{
+	size_t	i;
+
+	if (pos->args)
+	{
+		i = 0;
+		while (pos->args[i])
+			free(pos->args[i++]);
+		free(pos->args);
+	}
+	pos->args = NULL;
+	pos->count = 0;
+}
+
+int	set_positional_args(t_shell *state, char **args, size_t n)
+{
+	pos_free(&state->pos);
+	pos_build(&state->pos, args, n);
 	return (0);
 }

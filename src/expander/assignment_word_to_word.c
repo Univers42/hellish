@@ -12,6 +12,27 @@
 
 #include "expander_private.h"
 
+/* Turn the key token "NAME" into "NAME=". The old code did token.len++, which
+   only works when the token points into the source buffer (the '=' is the next
+   byte). In a cloned body the key is a strndup'd "NAME\0", so build an
+   explicit "NAME=" instead. */
+static void	append_eq_to_token(t_token *t)
+{
+	char	*ke;
+
+	ke = malloc(t->len + 2);
+	if (!ke)
+		return ;
+	ft_memcpy(ke, t->start, t->len);
+	ke[t->len] = '=';
+	ke[t->len + 1] = '\0';
+	if (t->allocated)
+		free(t->start);
+	t->start = ke;
+	t->len++;
+	t->allocated = true;
+}
+
 void	assignment_word_to_word(t_ast_node *node)
 {
 	t_ast_node	ret;
@@ -26,7 +47,7 @@ void	assignment_word_to_word(t_ast_node *node)
 	ft_assert(node->children.len == 2);
 	left = ((t_ast_node *)node->children.ctx)[0];
 	right = ((t_ast_node *)node->children.ctx)[1];
-	left.token.len++;
+	append_eq_to_token(&left.token);
 	vec_push(&ret.children, &left);
 	if (right.node_type == AST_WORD)
 	{

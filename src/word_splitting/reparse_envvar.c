@@ -12,16 +12,16 @@
 
 #include "reparser_private.h"
 
-static void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
+void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
 {
 	*i = rp->i;
 	*ret = rp->current_node;
 }
 
-static bool	handle_envvar_paren_or_special(t_reparser *rp,
-				int prev_start, t_tt tt)
+bool	handle_envvar_paren_or_special(t_reparser *rp,
+			int prev_start, t_tt tt)
 {
-	if (try_handle_paren_rp(rp, prev_start))
+	if (try_handle_paren_rp(rp, prev_start, tt))
 		return (true);
 	if (try_handle_special_rp(rp, tt))
 		return (true);
@@ -44,59 +44,26 @@ void	handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt)
 	}
 }
 
-static void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
+void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 {
 	push_subtoken_node(&rp->current_node, rp->current_token,
 		create_interval(prev_start, rp->i), tt);
 }
 
-static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
+/* Advance rp->i to the matching close quote `q` (leaving it on the quote),
+   so braces inside a quoted segment of ${...} are not counted. */
+void	skip_quoted_in_brace(t_reparser *rp, char q)
 {
-	int	start;
+	const char	*s;
+	int			len;
 
-	if (rp->i >= rp->current_token.len
-		|| rp->current_token.start[rp->i] != '{')
-		return (false);
+	s = rp->current_token.start;
+	len = rp->current_token.len;
 	rp->i++;
-	start = rp->i;
-	while (rp->i < rp->current_token.len
-		&& rp->current_token.start[rp->i] != '}')
+	while (rp->i < len && s[rp->i] != q)
+	{
+		if (q == '"' && s[rp->i] == '\\' && rp->i + 1 < len)
+			rp->i++;
 		rp->i++;
-	push_subtoken_node(&rp->current_node, rp->current_token,
-		create_interval(start, rp->i), tt);
-	if (rp->i < rp->current_token.len)
-		rp->i++;
-	return (true);
-}
-
-void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
-{
-	t_reparser	rp;
-	int			prev_start;
-
-	ft_assert(t.start[(*i)++] == '$');
-	create_reparser(&rp, *ret, t, i);
-	prev_start = rp.i;
-	if (handle_envvar_brace(&rp, tt))
-	{
-		update_envvar_result(ret, i, &rp);
-		return ;
 	}
-	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
-	{
-		update_envvar_result(ret, i, &rp);
-		return ;
-	}
-	consume_ident_rp(&rp);
-	if (prev_start == rp.i)
-	{
-		if (handle_envvar_empty(&rp, prev_start, tt))
-		{
-			update_envvar_result(ret, i, &rp);
-			return ;
-		}
-	}
-	else
-		handle_envvar_ident(&rp, prev_start, tt);
-	update_envvar_result(ret, i, &rp);
 }

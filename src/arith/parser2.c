@@ -12,7 +12,7 @@
 
 #include "arith_private.h"
 
-static long long	parse_expr_no_side_effects(t_arith_parser *p)
+static long long	parse_expr_nse(t_arith_parser *p)
 {
 	bool		old;
 	long long	val;
@@ -24,7 +24,7 @@ static long long	parse_expr_no_side_effects(t_arith_parser *p)
 	return (val);
 }
 
-static long long	parse_ternary_no_side_effects(t_arith_parser *p)
+static long long	parse_ternary_nse(t_arith_parser *p)
 {
 	bool		old;
 	long long	val;
@@ -36,44 +36,48 @@ static long long	parse_ternary_no_side_effects(t_arith_parser *p)
 	return (val);
 }
 
+/* Handle the true-branch of a ternary when cond != 0 */
+static long long	ternary_true(t_arith_parser *p)
+{
+	long long		then_val;
+	t_arith_token	tok;
+
+	then_val = arith_parse_expr(p);
+	tok = arith_lexer_peek(p->lexer);
+	if (tok.type != ATOK_TERNC)
+	{
+		p->error = true;
+		return (0);
+	}
+	arith_lexer_advance(p->lexer);
+	(void)parse_ternary_nse(p);
+	return (then_val);
+}
+
 /* Ternary: or ('?' expr ':' ternary)? */
 long long	arith_parse_ternary(t_arith_parser *p)
 {
 	long long		cond;
-	long long		then_val;
 	long long		else_val;
 	t_arith_token	tok;
 
 	cond = arith_parse_or(p);
 	tok = arith_lexer_peek(p->lexer);
-	if (tok.type == ATOK_TERNQ)
+	if (tok.type != ATOK_TERNQ)
+		return (cond);
+	arith_lexer_advance(p->lexer);
+	if (cond != 0)
+		return (ternary_true(p));
+	(void)parse_expr_nse(p);
+	tok = arith_lexer_peek(p->lexer);
+	if (tok.type != ATOK_TERNC)
 	{
-		arith_lexer_advance(p->lexer);
-		if (cond != 0)
-		{
-			then_val = arith_parse_expr(p);
-			tok = arith_lexer_peek(p->lexer);
-			if (tok.type != ATOK_TERNC)
-			{
-				p->error = true;
-				return (0);
-			}
-			arith_lexer_advance(p->lexer);
-			(void)parse_ternary_no_side_effects(p);
-			return (then_val);
-		}
-		(void)parse_expr_no_side_effects(p);
-		tok = arith_lexer_peek(p->lexer);
-		if (tok.type != ATOK_TERNC)
-		{
-			p->error = true;
-			return (0);
-		}
-		arith_lexer_advance(p->lexer);
-		else_val = arith_parse_ternary(p);
-		return (else_val);
+		p->error = true;
+		return (0);
 	}
-	return (cond);
+	arith_lexer_advance(p->lexer);
+	else_val = arith_parse_ternary(p);
+	return (else_val);
 }
 
 /* Expression: ternary (',' ternary)* - comma operator */

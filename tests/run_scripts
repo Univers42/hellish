@@ -1,0 +1,168 @@
+#!/usr/bin/env bash
+# run_scripts - compare hellish against `bash --posix` on each tests/scripts/*.sh
+#
+# For every script it runs both shells with a clean, private HOME and tmp
+# workdir and a fixed set of args, captures STDOUT + exit code (stderr text is
+# ignored on purpose), diffs them, and prints PASS / DIFF per script followed by
+# a summary and short diffs for any divergence.
+#
+# Scripts whose basename contains "xfail" are expected to diverge until the
+# corresponding feature is implemented; they are reported separately and do not
+# count against the pass rate.
+#
+# Usage: tests/run_scripts            # run all
+#        tests/run_scripts 11 17 31   # run only scripts matching these tokens
+set -u
+
+here=$(cd "$(dirname "$0")" && pwd)
+scripts_dir="$here/scripts"
+hellish="$here/../build/bin/hellish"
+hellish=$(cd "$(dirname "$hellish")" && pwd)/$(basename "$hellish")
+bash_bin=$(command -v bash)
+
+if [ ! -x "$hellish" ]; then
+	echo "building hellish (binary missing)..." >&2
+	( cd "$here/.." && make OPT=1 all ) >/dev/null 2>&1 || {
+		echo "FATAL: could not build $hellish" >&2
+		exit 2
+	}
+fi
+
+# Fixed, deterministic per-script argument lists. Scripts not listed get none.
+script_args() {
+	case "$1" in
+		03_for_args.sh)      printf '%s\n' alpha beta gamma ;;
+		10_positional_shift.sh) printf '%s\n' p1 p2 p3 ;;
+		11_getopts.sh)       printf '%s\n' -v -n widget -c 3 extra1 extra2 ;;
+		31_calculator.sh)    printf '%s\n' 10 plus 5 times 3 minus 4 ;;
+		*) : ;;
+	esac
+}
+
+# Colors only when stdout is a terminal.
+if [ -t 1 ]; then
+	C_PASS=$'\033[32m'; C_FAIL=$'\033[31m'; C_XFAIL=$'\033[33m'; C_RST=$'\033[0m'
+else
+	C_PASS=""; C_FAIL=""; C_XFAIL=""; C_RST=""
+fi
+
+filters=("$@")
+matches_filter() {
+	[ "${#filters[@]}" -eq 0 ] && return 0
+	local name=$1 f
+	for f in "${filters[@]}"; do
+		case "$name" in *"$f"*) return 0 ;; esac
+	done
+	return 1
+}
+
+# Per-script wall-clock limit. hellish has known perf bugs that can make some
+# constructs hang; a timeout keeps one bad script from stalling the whole run.
+# A timed-out run exits 124 and is reported as a divergence.
+TIME_LIMIT=${TIME_LIMIT:-20}
+
+# Run one script under one shell in a clean sandbox; echo "<exit>" and leave
+# stdout in the given output file. stderr is discarded.
+run_one() {
+	local shell_kind=$1 script=$2 outfile=$3; shift 3
+	local sandbox
+	sandbox=$(mktemp -d)
+	# Clean, deterministic environment.
+	local rc
+	if [ "$shell_kind" = hellish ]; then
+		env -i HOME="$sandbox" PATH="$PATH" LC_ALL=C TERM=dumb PWD="$sandbox" \
+			timeout "$TIME_LIMIT" "$hellish" "$script" "$@" >"$outfile" 2>/dev/null
+		rc=$?
+	else
+		env -i HOME="$sandbox" PATH="$PATH" LC_ALL=C TERM=dumb PWD="$sandbox" \
+			timeout "$TIME_LIMIT" "$bash_bin" --posix "$script" "$@" >"$outfile" 2>/dev/null
+		rc=$?
+	fi
+	rm -rf "$sandbox"
+	return $rc
+}
+
+total=0
+pass=0
+fail=0
+xfail_expected=0   # xfail scripts that (still) diverge -> expected
+xfail_pass=0       # xfail scripts that now match -> feature implemented!
+declare -a diverged=()
+
+printf '%-34s %-8s %s\n' "SCRIPT" "STATUS" "DETAIL"
+printf '%-34s %-8s %s\n' "------" "------" "------"
+
+tmpd=$(mktemp -d)
+trap 'rm -rf "$tmpd"' EXIT
+
+for script in "$scripts_dir"/*.sh; do
+	name=$(basename "$script")
+	matches_filter "$name" || continue
+
+	# Read fixed args for this script into an array.
+	mapfile -t args < <(script_args "$name")
+
+	h_out="$tmpd/$name.hellish"
+	b_out="$tmpd/$name.bash"
+
+	run_one hellish "$script" "$h_out" "${args[@]}"
+	h_rc=$?
+	run_one bash "$script" "$b_out" "${args[@]}"
+	b_rc=$?
+
+	is_xfail=0
+	case "$name" in *xfail*) is_xfail=1 ;; esac
+
+	if diff -q "$h_out" "$b_out" >/dev/null 2>&1 && [ "$h_rc" -eq "$b_rc" ]; then
+		same=1
+	else
+		same=0
+	fi
+
+	total=$((total + 1))
+	if [ "$is_xfail" -eq 1 ]; then
+		if [ "$same" -eq 1 ]; then
+			xfail_pass=$((xfail_pass + 1))
+			printf '%-34s %sXPASS%s    feature now matches bash (rc h=%s b=%s)\n' \
+				"$name" "$C_PASS" "$C_RST" "$h_rc" "$b_rc"
+		else
+			xfail_expected=$((xfail_expected + 1))
+			printf '%-34s %sXFAIL%s    expected divergence (feature pending)\n' \
+				"$name" "$C_XFAIL" "$C_RST"
+		fi
+		continue
+	fi
+
+	if [ "$same" -eq 1 ]; then
+		pass=$((pass + 1))
+		printf '%-34s %sPASS%s     rc=%s\n' "$name" "$C_PASS" "$C_RST" "$h_rc"
+	else
+		fail=$((fail + 1))
+		diverged+=("$name")
+		printf '%-34s %sDIFF%s     hellish-rc=%s bash-rc=%s\n' \
+			"$name" "$C_FAIL" "$C_RST" "$h_rc" "$b_rc"
+	fi
+done
+
+real_total=$((pass + fail))
+echo
+echo "================================================================"
+echo "  $pass/$real_total scripts match bash --posix"
+if [ "$xfail_expected" -gt 0 ] || [ "$xfail_pass" -gt 0 ]; then
+	echo "  xfail: $xfail_expected still pending, $xfail_pass now matching"
+fi
+echo "================================================================"
+
+if [ "${#diverged[@]}" -gt 0 ]; then
+	echo
+	echo "Diverging scripts (real differences for the dev team):"
+	for name in "${diverged[@]}"; do
+		echo
+		echo "----- $name -----"
+		echo "  (< hellish   > bash)"
+		diff "$tmpd/$name.hellish" "$tmpd/$name.bash" | sed 's/^/  /' | head -40
+	done
+fi
+
+# Exit non-zero if any non-xfail script diverged.
+[ "$fail" -eq 0 ]

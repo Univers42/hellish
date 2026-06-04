@@ -12,6 +12,24 @@
 
 #include "heredoc_private.h"
 
+/* When executing a string (command substitution, eval, source) the heredoc
+   bodies were extracted up front into state->hd_src; serve lines from there
+   instead of the live input stream. Returns 0 at end-of-source (EOF-like). */
+static int	read_hd_src_line(t_shell *state, t_string *out)
+{
+	size_t	start;
+
+	if (!state->hd_src[state->hd_pos])
+		return (0);
+	start = state->hd_pos;
+	while (state->hd_src[state->hd_pos] && state->hd_src[state->hd_pos] != '\n')
+		state->hd_pos++;
+	if (state->hd_src[state->hd_pos] == '\n')
+		state->hd_pos++;
+	vec_push_nstr(out, state->hd_src + start, state->hd_pos - start);
+	return (4);
+}
+
 bool	get_line_heredoc(t_shell *state,
 		t_hdoc *req, t_string *alloc_line)
 {
@@ -23,7 +41,10 @@ bool	get_line_heredoc(t_shell *state,
 	else
 		prompt = "heredoc> ";
 	vec_init(alloc_line);
-	stat = buff_readline(state, alloc_line, prompt);
+	if (state->hd_src)
+		stat = read_hd_src_line(state, alloc_line);
+	else
+		stat = buff_readline(state, alloc_line, prompt);
 	state->rl.has_finished = false;
 	if (stat == 0)
 		ft_eprintf("%s: warning: here-document at"
@@ -55,6 +76,20 @@ bool	is_sep(t_hdoc *req, t_string *alloc_line)
 	return (false);
 }
 
+/* <<- : strip leading TABS (not spaces) from a heredoc line. */
+static void	strip_leading_tabs(t_string *l)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < l->len && ((char *)l->ctx)[i] == '\t')
+		i++;
+	if (i == 0)
+		return ;
+	ft_memmove(l->ctx, (char *)l->ctx + i, l->len - i + 1);
+	l->len -= i;
+}
+
 // should brake
 void	process_line(t_shell *state, t_hdoc *req)
 {
@@ -63,6 +98,8 @@ void	process_line(t_shell *state, t_hdoc *req)
 
 	if (get_line_heredoc(state, req, &alloc_line))
 		return ;
+	if (req->remove_tabs)
+		strip_leading_tabs(&alloc_line);
 	if (is_sep(req, &alloc_line))
 		return (free(alloc_line.ctx), (void)(req->finished = true));
 	line = (char *)alloc_line.ctx;
@@ -76,35 +113,4 @@ void	process_line(t_shell *state, t_hdoc *req)
 	else if (line)
 		vec_push_str(&req->full_file, line);
 	free(alloc_line.ctx);
-}
-
-void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
-{
-	while (!req->finished)
-	{
-		process_line(state, req);
-	}
-	if (req->full_file.len)
-	{
-		if (!vec_ensure_space_n(&req->full_file, 1))
-			return ;
-		((char *)req->full_file.ctx)[req->full_file.len] = '\0';
-		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
-	}
-	(close(wr_fd), free(req->full_file.ctx));
-}
-
-bool	contains_quotes(t_ast_node node)
-{
-	size_t	i;
-
-	if (node.node_type == AST_TOKEN
-		&& (node.token.tt == TT_DQENVVAR || node.token.tt == TT_DQWORD
-			|| node.token.tt == TT_SQWORD))
-		return (true);
-	i = -1;
-	while (++i < node.children.len)
-		if (contains_quotes(((t_ast_node *)node.children.ctx)[i]))
-			return (true);
-	return (false);
 }

@@ -27,6 +27,16 @@ static int	process_dquote_char_rp(t_reparser *rp, bool *pushed_any)
 		rp->prev_start = rp->i;
 		return (1);
 	}
+	if (rp->current_token.start[rp->i] == '`')
+	{
+		flush_pending_segment_rp(rp, pushed_any);
+		reparse_backtick(&rp->current_node, &rp->i, rp->current_token);
+		((t_ast_node *)rp->current_node.children.ctx)
+		[rp->current_node.children.len - 1].token.split_eligible = false;
+		*pushed_any = true;
+		rp->prev_start = rp->i;
+		return (1);
+	}
 	return (0);
 }
 

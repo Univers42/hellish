@@ -3,100 +3,102 @@
 /*                                                        :::      ::::::::   */
 /*   prompt_metadata.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 16:35:57 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/16 04:57:00 by marvin           ###   ########.fr       */
+/*   Updated: 2026/06/02 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "prompt_private.h"
-#include <signal.h>
-#include <sys/wait.h>
+#include <fcntl.h>
 
-static char	*run_git_cmd(const char *cmd)
+/* Turn a .git/HEAD payload into a branch name (or short SHA when detached). */
+static char	*parse_head(const char *buf)
 {
-	int		pp[2];
-	pid_t	pid;
-	char	buf[256];
-	ssize_t	n;
+	int	len;
 
-	if (pipe(pp))
-		return (NULL);
-	pid = fork();
-	if (pid == 0)
+	if (ft_strncmp(buf, "ref: refs/heads/", 16) == 0)
 	{
-		close(pp[0]);
-		dup2(pp[1], STDOUT_FILENO);
-		close(pp[1]);
-		dup2(open("/dev/null", 0), STDERR_FILENO);
-		execl("/bin/sh", "sh", "-c", cmd, NULL);
-		_exit(127);
+		len = 0;
+		while (buf[16 + len] && buf[16 + len] != '\n' && buf[16 + len] != '\r')
+			len++;
+		return (ft_strndup(buf + 16, len));
 	}
-	close(pp[1]);
-	if (pid < 0)
-		return (close(pp[0]), NULL);
-	n = read(pp[0], buf, sizeof(buf) - 1);
-	close(pp[0]);
-	waitpid(pid, NULL, 0);
-	if (n <= 0)
-		return (NULL);
-	buf[n] = '\0';
-	while (n > 0 && (buf[n - 1] == '\n' || buf[n - 1] == '\r'))
-		buf[--n] = '\0';
-	if (n == 0)
-		return (NULL);
-	return (ft_strdup(buf));
-}
-
-void	get_git_info(char **branch, int *dirty)
-{
-	char	*res;
-
-	*branch = NULL;
-	*dirty = 0;
-	res = run_git_cmd(
-			"timeout 0.15 git rev-parse --abbrev-ref HEAD 2>/dev/null");
-	if (!res)
-		return ;
-	*branch = res;
-	res = run_git_cmd(
-			"timeout 0.15 git diff --quiet HEAD 2>/dev/null; echo $?");
-	if (res)
-	{
-		if (res[0] == '1')
-			*dirty = 1;
-		free(res);
-	}
-}
-
-char	*get_venv_name(void)
-{
-	const char	*venv;
-	const char	*conda;
-	const char	*p;
-
-	venv = getenv("VIRTUAL_ENV");
-	conda = getenv("CONDA_DEFAULT_ENV");
-	p = NULL;
-	if (conda && *conda)
-		return (ft_strdup(conda));
-	if (venv && *venv)
-	{
-		p = ft_strrchr(venv, '/');
-		if (p)
-			return (ft_strdup(p + 1));
-		return (ft_strdup(venv));
-	}
+	if (ft_isalnum((unsigned char)buf[0]))
+		return (ft_strndup(buf, 7));
 	return (NULL);
 }
 
-void	get_timebuf(char *buf, size_t buflen)
+static char	*read_head_file(const char *path)
 {
-	time_t		now;
-	struct tm	tm;
+	char	buf[256];
+	int		fd;
+	ssize_t	n;
 
-	now = time(NULL);
-	localtime_r(&now, &tm);
-	strftime(buf, buflen, "%H:%M:%S", &tm);
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return (NULL);
+	n = read(fd, buf, sizeof(buf) - 1);
+	close(fd);
+	if (n <= 0)
+		return (NULL);
+	buf[n] = '\0';
+	return (parse_head(buf));
+}
+
+/* Branch for the repo whose root is `dir`: <dir>/.git/HEAD, or, when .git is a
+   gitdir file (submodules/worktrees), the referenced gitdir's HEAD. */
+static char	*branch_for_dir(const char *dir)
+{
+	char	path[PATH_MAX];
+	char	buf[PATH_MAX];
+	char	*br;
+	int		fd;
+	ssize_t	n;
+
+	ft_strlcpy(path, dir, sizeof(path));
+	ft_strlcat(path, "/.git/HEAD", sizeof(path));
+	br = read_head_file(path);
+	if (br != NULL)
+		return (br);
+	ft_strlcpy(path, dir, sizeof(path));
+	ft_strlcat(path, "/.git", sizeof(path));
+	fd = open(path, O_RDONLY);
+	if (fd < 0)
+		return (NULL);
+	n = read(fd, buf, sizeof(buf) - 1);
+	close(fd);
+	if (n <= 0 || ft_strncmp(buf, "gitdir: ", 8) != 0)
+		return (NULL);
+	buf[ft_strcspn(buf, "\r\n")] = '\0';
+	ft_strlcpy(path, buf + 8, sizeof(path));
+	ft_strlcat(path, "/HEAD", sizeof(path));
+	return (read_head_file(path));
+}
+
+/* Fork-free git branch: walk up from $PWD reading .git/HEAD directly. No
+   subprocess (the old version forked sh->timeout->git twice per prompt). */
+void	get_git_info(char **branch, int *dirty)
+{
+	char	cwd[PATH_MAX];
+	char	*slash;
+
+	*branch = NULL;
+	*dirty = 0;
+	if (!getcwd(cwd, sizeof(cwd)))
+		return ;
+	while (1)
+	{
+		if (cwd[0])
+			*branch = branch_for_dir(cwd);
+		else
+			*branch = branch_for_dir("/");
+		if (*branch)
+			return ;
+		slash = ft_strrchr(cwd, '/');
+		if (!slash || slash == cwd)
+			return ;
+		*slash = '\0';
+	}
 }

@@ -61,18 +61,22 @@ static void	replace_argv_entries_with_full_token(t_vec *argv,
 }
 
 /* Perform assignment -> word conversion, expand into argv and apply fixup.
-   Returns 1 on unwind request, 0 otherwise. */
+   Operates on a private clone so the caller's node stays intact (loops reuse
+   it). Returns 1 on unwind request, 0 otherwise. */
 static int	expand_assignment_word_and_fixup(t_shell *state,
 					t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
 	t_token_old	full;
+	t_ast_node	scratch;
+	int			flags;
 
 	full = capture_original_full_token(exp->curr);
-	assignment_word_to_word(exp->curr);
+	scratch = clone_ast(exp->curr);
+	assignment_word_to_word(&scratch);
+	flags = EW_NO_GLOB;
 	if (exp->export)
-		expand_word(state, exp->curr, &ret->argv, true);
-	else
-		expand_word(state, exp->curr, &ret->argv, false);
+		flags |= EW_KEEP_AS_ONE;
+	expand_word_glob_ctl(state, &scratch, &ret->argv, flags);
 	if (get_g_sig()->should_unwind)
 		return (1);
 	replace_argv_entries_with_full_token(&ret->argv, full);

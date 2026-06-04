@@ -38,6 +38,24 @@ static bool	redir_requires_next(const char *arg)
 	return (false);
 }
 
+/* True if `arg` is not a cd operand: a pending skip target, a redirection
+   operator (possibly consuming the next word), or a -L/-P option. */
+static bool	cd_skip_arg(char *arg, bool *skip_next)
+{
+	if (*skip_next)
+	{
+		*skip_next = false;
+		return (true);
+	}
+	if (is_redir_operator(arg))
+	{
+		if (redir_requires_next(arg))
+			*skip_next = true;
+		return (true);
+	}
+	return (!ft_strcmp(arg, "-L") || !ft_strcmp(arg, "-P"));
+}
+
 char	*get_first_real_arg(t_vec argv)
 {
 	size_t	i;
@@ -49,20 +67,9 @@ char	*get_first_real_arg(t_vec argv)
 	while (i < argv.len)
 	{
 		arg = ((char **)argv.ctx)[i];
-		if (skip_next)
-		{
-			skip_next = false;
-			i++;
-			continue ;
-		}
-		if (is_redir_operator(arg))
-		{
-			if (redir_requires_next(arg))
-				skip_next = true;
-			i++;
-			continue ;
-		}
-		return (arg);
+		if (!cd_skip_arg(arg, &skip_next))
+			return (arg);
+		i++;
 	}
 	return (NULL);
 }

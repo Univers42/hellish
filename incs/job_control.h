@@ -29,13 +29,13 @@ typedef enum e_job_status
 
 typedef struct s_job
 {
-	int			id;
-	pid_t		pgid;
+	int				id;
+	pid_t			pgid;
 	t_job_status	status;
-	int			exit_code;
-	char		*cmd;
-	bool		notified;
-	bool		bg;
+	int				exit_code;
+	char			*cmd;
+	bool			notified;
+	bool			bg;
 }	t_job;
 
 typedef struct s_job_table
@@ -47,7 +47,7 @@ typedef struct s_job_table
 	int		previous;
 }	t_job_table;
 
-struct s_shell;
+struct	s_shell;
 
 void	job_table_init(t_job_table *jt);
 t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg);

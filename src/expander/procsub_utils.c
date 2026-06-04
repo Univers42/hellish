@@ -32,6 +32,25 @@ void	procsub_close_fds_parent(t_shell *state)
 	}
 }
 
+/* `exec` with a redirection to a process substitution keeps that substitution
+   alive for the rest of the session: a persistent fd (1/2) holds the pipe open,
+   so the child only finishes once the shell exits. Detach such procsubs
+   (pid = -1) so cleanup still closes our fd but never blocks in waitpid for a
+   child the shell is itself feeding; the kernel reaps them at exit. */
+void	procsub_detach_all(t_shell *state)
+{
+	size_t	i;
+
+	if (!state->proc_subs.ctx)
+		return ;
+	i = 0;
+	while (i < state->proc_subs.len)
+	{
+		((t_procsub_entry *)state->proc_subs.ctx)[i].pid = -1;
+		i++;
+	}
+}
+
 void	cleanup_proc_subs(t_shell *state)
 {
 	size_t			i;
