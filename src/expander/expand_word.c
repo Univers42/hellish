@@ -17,31 +17,31 @@
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
 
-/* A word participates in brace expansion only if it is entirely unquoted
-   (all TT_WORD subtokens); quotes/vars inhibit it. */
-static bool	word_all_unquoted(t_ast_node *node)
+/* A word participates in brace expansion when an *unquoted* part (a TT_WORD
+   subtoken) contains a '{': bash brace-expands the unquoted `/{a,b}` in
+   "$LFS"/{a,b} while quoted/var subtokens are carried along as literal text.
+   Braces that live only inside quotes ("{a,b}") have no TT_WORD subtoken and
+   so are correctly left untouched. */
+static bool	word_has_unquoted_brace(t_ast_node *node)
 {
 	size_t		i;
 	int			j;
 	t_ast_node	*c;
-	bool		has_brace;
 
 	if (!node->children.ctx || node->children.len == 0)
 		return (false);
-	has_brace = false;
 	i = 0;
 	while (i < node->children.len)
 	{
-		c = &((t_ast_node *)node->children.ctx)[i];
+		c = &((t_ast_node *)node->children.ctx)[i++];
 		if (c->node_type != AST_TOKEN || c->token.tt != TT_WORD)
-			return (false);
+			continue ;
 		j = 0;
 		while (j < c->token.len)
 			if (c->token.start[j++] == '{')
-				has_brace = true;
-		i++;
+				return (true);
 	}
-	return (has_brace);
+	return (false);
 }
 
 static void	expand_brace_result(t_shell *state, t_vec *results, t_vec *args)
@@ -72,9 +72,9 @@ bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 	char		*fs;
 	t_vec		results;
 
-	if (!word_all_unquoted(node))
+	if (!word_has_unquoted_brace(node))
 		return (false);
-	flat = word_to_string(*node);
+	flat = word_to_brace_src(*node);
 	fs = ft_strndup((char *)flat.ctx, flat.len);
 	free(flat.ctx);
 	if (brace_find_expandable(fs, &(int){0}) < 0)
