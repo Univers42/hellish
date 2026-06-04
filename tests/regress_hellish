@@ -37,3 +37,7 @@ printf 'fa(){\n cat > outfiles/leak <<VIM\n" vimrc comment with a quote\nsyntax 
 FOO=6.6.32-dlesieur; printf 'cat <<EOF\nv=${FOO}\nw=$FOO\na${FOO}b\nEOF\n' > hd5.sh; . ./hd5.sh
 FOO=val; printf 'cat <<"EOF"\n${FOO}\n$FOO\nEOF\n' > hd6.sh; . ./hd6.sh
 FOO=val; printf 'cat <<EOF\n${FOO:-d}\n${BAR:-fb}\n${#FOO}\nEOF\n' > hd7.sh; . ./hd7.sh
+[[ a == a ]] && echo eq_ok
+[[ a == b ]] || echo neq_ok
+[[ abc != abd ]] && echo ne_ok
+[ x == x ] && echo single_eq
