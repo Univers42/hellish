@@ -29,6 +29,8 @@ int				builtin_echo(t_shell *state, t_vec argv);
 int				builtin_pwd(t_shell *state, t_vec argv);
 int				builtin_exit(t_shell *state, t_vec argv);
 int				builtin_cd(t_shell *state, t_vec argv);
+int				builtin_pushd(t_shell *state, t_vec argv);
+int				builtin_popd(t_shell *state, t_vec argv);
 int				builtin_env(t_shell *state, t_vec argv);
 int				builtin_export(t_shell *state, t_vec argv);
 int				builtin_unset(t_shell *state, t_vec argv);

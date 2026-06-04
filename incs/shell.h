@@ -121,6 +121,7 @@ typedef struct s_shell
 	bool				opt_allexport;
 	bool				opt_noexec;
 	bool				opt_verbose;
+	bool				opt_pipefail;
 	char				flagbuf[16];
 	char				linebuf[16];
 	int					errexit_off;
