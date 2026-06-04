@@ -22,20 +22,9 @@
 #include "lexer.h"
 #include "redir.h"
 
-static size_t	line_of(const char *str, const char *p)
-{
-	size_t	ln;
-
-	ln = 0;
-	while (str < p)
-		if (*str++ == '\n')
-			ln++;
-	return (ln);
-}
-
 /* Literal delimiter of a heredoc: drop quote characters and one level of
    backslash escaping (`<<'EOF'`, `<<"EOF"`, `<<\EOF` all delimit on EOF). */
-static char	*hd_delim(t_token *t)
+char	*hd_delim(t_token *t)
 {
 	char	*d;
 	int		i;
@@ -62,28 +51,25 @@ static char	*hd_delim(t_token *t)
 	return (d);
 }
 
-int	collect_specs(const char *str, t_deque_tok *tt, t_hd **out)
+/* Advance *p past one heredoc's body (up to and including its delimiter line),
+   bumping *line for each line consumed so the spec collector's line counter
+   stays aligned with physical lines. Nothing is copied: body bytes are never
+   re-tokenised as shell. */
+void	skip_one_body(const char **p, size_t *line, t_hd *s)
 {
-	t_vec		v;
-	t_hd		sp;
-	t_token		*tok;
-	size_t		i;
+	const char	*ls;
 
-	vec_init(&v);
-	v.elem_size = sizeof(t_hd);
-	i = 0;
-	while (i + 1 < tt->deqtok.len)
+	while (**p)
 	{
-		tok = (t_token *)deque_idx(&tt->deqtok, i++);
-		if (tok->tt != TT_HEREDOC)
-			continue ;
-		sp.dash = (tok->len >= 3 && tok->start[2] == '-');
-		sp.line = line_of(str, tok->start);
-		sp.delim = hd_delim((t_token *)deque_idx(&tt->deqtok, i));
-		vec_push(&v, &sp);
+		ls = *p;
+		while (**p && **p != '\n')
+			(*p)++;
+		if (**p == '\n')
+			(*p)++;
+		(*line)++;
+		if (is_delim_line(ls, *p - ls, s))
+			return ;
 	}
-	*out = (t_hd *)v.ctx;
-	return ((int)v.len);
 }
 
 bool	is_delim_line(const char *line, size_t len, t_hd *s)
