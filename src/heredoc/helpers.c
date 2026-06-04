@@ -27,6 +27,8 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 	char	*env;
 
 	(*i)++;
+	if (line[*i] == '{')
+		return (expand_braced(state, i, full_file, line));
 	len = env_len(line + *i);
 	if (len == 0)
 		len = special_param_len(line[*i]);
