@@ -91,7 +91,7 @@ int	test_file_op(const char *op, const char *path)
 
 int	test_str_op(const char *op, const char *s1, const char *s2)
 {
-	if (ft_strcmp(op, "=") == 0)
+	if (ft_strcmp(op, "=") == 0 || ft_strcmp(op, "==") == 0)
 		return (ft_strcmp(s1, s2) != 0);
 	if (ft_strcmp(op, "!=") == 0)
 		return (ft_strcmp(s1, s2) == 0);
