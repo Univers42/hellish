@@ -31,6 +31,34 @@ void	update_underscore_var(t_shell *state, t_executable_cmd *cmd)
 	set_last_underscore_var(state, cmd);
 }
 
+/* True iff set_up_redirection would do any fd work for this node. Lets callers
+   skip the dup/dup2/close save+restore dance entirely for a plain command with
+   no redirections and no pipe fds (the common hot-loop case). */
+int	fd_setup_needed(t_executable_node *exe)
+{
+	return (exe->next_infd != -1 || exe->outfd != 1
+		|| exe->infd != 0 || exe->redirs.len != 0);
+}
+
+/* Save fds + apply redirections only when the command has any (no redir + no
+   pipe fds → the hot case skips dup/dup2/close). Always clears the node's fd
+   fields so teardown won't re-close them. Returns 1 if fds were saved. */
+int	prep_redir(t_shell *state, t_executable_node *exe, int *bak, int persist)
+{
+	int	need;
+
+	need = persist || fd_setup_needed(exe);
+	if (need)
+	{
+		take_backup_fds(bak, persist);
+		set_up_redirection(state, exe);
+	}
+	exe->infd = -1;
+	exe->outfd = -1;
+	exe->next_infd = -1;
+	return (need);
+}
+
 void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
 	if (exe->next_infd != -1)
