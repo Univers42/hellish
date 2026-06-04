@@ -87,13 +87,17 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens)
 {
 	t_ast_node	ret;
-	t_token		name_tok;
+	t_tt		next;
 
 	init_ast_node_children(&ret, AST_FOR);
 	vec_push_int(&parser->parse_stack, TT_FOR);
 	(void)deque_pop_start(&tokens->deqtok);
-	name_tok = *(t_token *)deque_pop_start(&tokens->deqtok);
-	ret.token = name_tok;
+	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	if (next == TT_END)
+		return (parser->res = RES_GETMOREINPUT, ret);
+	if (!is_word_token(next))
+		return (parser->res = RES_ERR, ret);
+	ret.token = *(t_token *)deque_pop_start(&tokens->deqtok);
 	if (!parse_for_in_clause(state, parser, tokens, &ret))
 		return (ret);
 	if (!expect_for_kw(state, parser, tokens, TT_DO))
