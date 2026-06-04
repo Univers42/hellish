@@ -28,3 +28,5 @@ x=5; y=7; diff <(echo $x) <(echo $y) >/dev/null && echo same || echo differ
 for x in a b c; do echo "$x"; done
 cd /tmp; pushd /usr >/dev/null; basename "$PWD"; popd >/dev/null; basename "$PWD"
 n=0; for i in 1 2 3 4; do n=$((n + i)); done; echo $n
+printf 'g(){ echo X \\\n  Y \\\n  Z; }\n' > c.sh; . ./c.sh; g
+eval "$(printf 'echo p \\\n  q \\\n  r')"
