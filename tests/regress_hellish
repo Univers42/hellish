@@ -34,3 +34,6 @@ printf 'f(){\n  cat <<A\nfirst\nA\n  cat <<B\nsecond\nB\n}\nf\n' > hd1.sh; . ./h
 printf 'cat <<A\none\nA\ncat <<B\ntwo\nB\n' > hd2.sh; . ./hd2.sh
 printf 'g(){\n  cat <<A <<B\nx\nA\ny\nB\n}\ng\n' > hd3.sh; . ./hd3.sh
 printf 'fa(){\n cat > outfiles/leak <<VIM\n" vimrc comment with a quote\nsyntax on\nVIM\n}\nfb(){\n cat > outfiles/real <<SYS\nsyslog-body\nSYS\n}\n' > hd4.sh; . ./hd4.sh; fb; cat outfiles/real
+FOO=6.6.32-dlesieur; printf 'cat <<EOF\nv=${FOO}\nw=$FOO\na${FOO}b\nEOF\n' > hd5.sh; . ./hd5.sh
+FOO=val; printf 'cat <<"EOF"\n${FOO}\n$FOO\nEOF\n' > hd6.sh; . ./hd6.sh
+FOO=val; printf 'cat <<EOF\n${FOO:-d}\n${BAR:-fb}\n${#FOO}\nEOF\n' > hd7.sh; . ./hd7.sh
