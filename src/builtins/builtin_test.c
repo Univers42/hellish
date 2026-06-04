@@ -35,6 +35,7 @@ static int	test_binary(char **av, int ac, int *i)
 	if (*i + 2 >= ac)
 		return (1);
 	if (ft_strcmp(av[*i + 1], "=") == 0
+		|| ft_strcmp(av[*i + 1], "==") == 0
 		|| ft_strcmp(av[*i + 1], "!=") == 0)
 		return (test_str_op(av[*i + 1], av[*i], av[*i + 2]));
 	if (ft_strncmp(av[*i + 1], "-", 1) == 0)
