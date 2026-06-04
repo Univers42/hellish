@@ -1,0 +1,25 @@
+echo `echo hi`
+echo "`echo hi`"
+x=`echo value`; echo $x
+echo a`echo b`c
+echo `echo one two three`
+echo `echo nested \`echo deep\``
+for i in `seq 1 3`; do echo $i; done
+echo $((1 + $(echo 2)))
+echo $(( $(echo 3) * $(echo 4) ))
+echo $(( `echo 10` + 5 ))
+echo ${undefined-default}
+x=; echo ${x-default}
+x=set; echo ${x-default}
+x=; echo ${x+plus}
+echo ${undefined+plus}
+x=val; echo ${x+plus}
+echo ${undefined:-d}
+echo ${undefined=assigned}; echo $undefined
+case abc in abc) echo m;; esac
+case file.c in *.c) echo C;; *.h) echo H;; esac
+case x in a|b|x) echo alt;; esac
+n=2; case $n in 1) echo one;; 2) echo two;; *) echo many;; esac
+case hello in h???o) echo q;; esac
+case ab in [ab]*) echo b;; esac
+for f in a.c b.h; do case $f in *.c) echo "C:$f";; *.h) echo "H:$f";; esac; done

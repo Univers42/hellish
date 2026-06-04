@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "ft_builtins.h"
 
 /*
 ** Look up a function by name in the shell's function table.
@@ -30,6 +31,33 @@ t_shell_func	*func_lookup(t_shell *state, const char *name)
 		i++;
 	}
 	return (NULL);
+}
+
+/* unset -f name: remove a stored function definition (POSIX).
+** No-op if absent. */
+void	unset_function(t_shell *state, const char *name)
+{
+	t_shell_func	*arr;
+	size_t			i;
+
+	arr = (t_shell_func *)state->functions.ctx;
+	i = 0;
+	while (i < state->functions.len)
+	{
+		if (ft_strcmp(arr[i].name, name) == 0)
+		{
+			free(arr[i].name);
+			free_ast(&arr[i].body);
+			while (i + 1 < state->functions.len)
+			{
+				arr[i] = arr[i + 1];
+				i++;
+			}
+			state->functions.len--;
+			return ;
+		}
+		i++;
+	}
 }
 
 /*
@@ -69,43 +97,36 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 	return (res_status(0));
 }
 
-static void	set_positional_params(t_shell *state, t_vec *argv)
-{
-	size_t	i;
-	char	key[2];
-	char	**av;
-	char	*count;
-
-	av = (char **)argv->ctx;
-	i = 1;
-	key[1] = '\0';
-	while (i < argv->len && i <= 9)
-	{
-		key[0] = '0' + i;
-		env_set(&state->env, env_create(ft_strdup(key),
-				ft_strdup(av[i]), false));
-		i++;
-	}
-	count = ft_itoa(argv->len - 1);
-	env_set(&state->env, env_create(ft_strdup("#"), count, false));
-}
-
 /*
-** Execute a function call: clone body, set positional params, execute.
+** Execute a function call: give it its own positional params by swapping in a
+** freshly-built t_pos (saving the caller's by value — an O(1) struct copy, no
+** env mutation), run the body IN PLACE, then restore the scope (`local`
+** variables via scope_leave, positional params by restoring the saved struct).
+**
+** The body is run directly off fn->body (no per-call clone) — exactly as
+** execute_while/execute_for run loop bodies in place. Word expansion is
+** non-destructive (expand_word_ro clones each word it touches), so it never
+** mutates the shared body AST, which makes repeated and recursive calls safe.
+** Redirects re-resolve every call (commit_redir for non-heredocs, fresh
+** materialize_heredoc for heredocs), so the per-node redir cache is never read
+** stale across calls.
 */
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv)
 {
-	t_ast_node			body_copy;
 	t_executable_node	body_exe;
 	t_execution_state	status;
+	t_pos				saved;
 
-	if (argv->len > 1)
-		set_positional_params(state, argv);
-	body_copy = clone_ast(&fn->body);
+	state->func_depth++;
+	saved = state->pos;
+	pos_build(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
 	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
-			&body_copy, true);
+			&fn->body, true);
 	status = execute_tree_node(state, &body_exe);
-	free_ast(&body_copy);
+	state->func_return = 0;
+	scope_leave(state);
+	pos_free(&state->pos);
+	state->pos = saved;
 	return (status);
 }

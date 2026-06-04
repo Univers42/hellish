@@ -52,6 +52,48 @@ t_string	parse_single_cmd(t_string hist, size_t *cur)
 	return (cmd);
 }
 
+/* readline edits each history entry as one logical line, so an entry with an
+   embedded newline (a \-continuation or quoted-newline command) desyncs its
+   cursor model and corrupts the display on ↑/↓ (you get stuck, needing ^C).
+   Feed readline a single-line form: drop a \ that escapes a newline (join the
+   continuation) and turn any other newline into a space. */
+static void	fill_hist_buf(const char *cmd, char *buf)
+{
+	size_t	i;
+	size_t	j;
+
+	i = 0;
+	j = 0;
+	while (cmd[i])
+	{
+		if (cmd[i] == '\\' && cmd[i + 1] == '\n')
+		{
+			i += 2;
+			buf[j++] = ' ';
+		}
+		else if (cmd[i] == '\n')
+		{
+			i++;
+			buf[j++] = ' ';
+		}
+		else
+			buf[j++] = cmd[i++];
+	}
+	buf[j] = '\0';
+}
+
+void	add_history_line(const char *cmd)
+{
+	char	*buf;
+
+	buf = malloc(ft_strlen(cmd) + 1);
+	if (!buf)
+		return (add_history(cmd));
+	fill_hist_buf(cmd, buf);
+	add_history(buf);
+	free(buf);
+}
+
 t_vec	parse_hist_file(t_string hist)
 {
 	size_t	cur;
@@ -65,57 +107,6 @@ t_vec	parse_hist_file(t_string hist)
 	{
 		cmd = (char *)parse_single_cmd(hist, &cur).ctx;
 		vec_push(&ret, &cmd);
-		add_history(cmd);
 	}
-	return (ret);
-}
-
-void	parse_history_file(t_shell *state)
-{
-	t_string	hist;
-	int			fd;
-	char		*hist_file_path;
-
-	hist_file_path = get_hist_file_path(state);
-	if (!hist_file_path)
-		return ;
-	fd = open(hist_file_path, O_RDONLY | O_CREAT, 0666);
-	if (fd < 0)
-	{
-		warning_error("Can't open the history file for reading");
-		free(hist_file_path);
-		return ;
-	}
-	vec_init(&hist);
-	hist.elem_size = 1;
-	vec_append_fd(fd, &hist);
-	close(fd);
-	state->hist.hist_cmds = parse_hist_file(hist);
-	state->hist.append_fd = open(hist_file_path,
-			O_CREAT | O_WRONLY | O_APPEND, 0666);
-	if (state->hist.append_fd < 0)
-		warning_error("Can't open the history file for writing");
-	free(hist_file_path);
-	free(hist.ctx);
-}
-
-t_string	encode_cmd_hist(char *cmd)
-{
-	t_string	ret;
-
-	vec_init(&ret);
-	ret.elem_size = 1;
-	while (*cmd)
-	{
-		if (*cmd == '\\')
-			vec_push_char(&ret, '\\');
-		if (*cmd == '\n')
-			vec_push_char(&ret, '\\');
-		vec_push_char(&ret, *cmd);
-		cmd++;
-	}
-	vec_push_char(&ret, '\n');
-	vec_ensure_space_n(&ret, 1);
-	((char *)ret.ctx)[ret.len] = '\0';
 	return (ret);
 }

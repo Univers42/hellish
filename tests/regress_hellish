@@ -1,0 +1,30 @@
+a=5; echo $((a))
+a=0; echo $((a = 42)); echo $a
+a=5; echo $((a++)); echo $a
+a=5; echo $((++a)); echo $a
+a=10; echo $((a += 5)); echo $a
+a=1; b=2; echo $((a = b = 7)); echo $a; echo $b
+a=0; echo $((1 ? (a += 3) : (a += 7))); echo $a
+x=5; echo done; true
+set -o pipefail; false | true; echo $?
+set -o pipefail; true | true; echo $?
+set -o pipefail; true | false | true; echo $?
+false | true; echo $?
+[[ -f /etc/hostname ]] && echo present || echo absent
+[[ -d /tmp ]] && echo isdir
+[[ 1 -eq 1 ]] && echo eq
+[[ 2 -ne 1 ]] && echo ne
+[[ ! -f /no/such/file ]] && echo absent
+v=abc; [[ "$v" = abc ]] && echo match
+v=abc; [[ "$v" != xyz ]] && echo differ
+[[ -n abc ]] && echo nonempty
+[[ -z "" ]] && echo empty
+X=/tmp; echo "$X"/{a,b,c}
+echo /tmp/{x,y}/z
+echo a{1,2}b{3,4}
+echo "{a,b}"
+p=hi; cat <(echo "$p")
+x=5; y=7; diff <(echo $x) <(echo $y) >/dev/null && echo same || echo differ
+for x in a b c; do echo "$x"; done
+cd /tmp; pushd /usr >/dev/null; basename "$PWD"; popd >/dev/null; basename "$PWD"
+n=0; for i in 1 2 3 4; do n=$((n + i)); done; echo $n

@@ -12,15 +12,23 @@
 
 #include "reparser_private.h"
 
-// Helper: set full_word for all children of a node
+// Helper: set full_word for all children of a node. Each child owns its own
+// allocation (the start is borrowed from the source, allocated=false) so the
+// AST can be freed/cloned without sharing or double-freeing the struct.
 static void	set_full_word_for_children(void *ctx, size_t len,
 				t_token_old full_word)
 {
-	size_t	i;
+	size_t		i;
+	t_token_old	*p;
 
 	i = 0;
 	while (i < len)
-		((t_ast_node *)ctx)[i++].token.full_word = full_word;
+	{
+		p = malloc(sizeof(t_token_old));
+		if (p)
+			*p = full_word;
+		((t_ast_node *)ctx)[i++].token.full_word = p;
+	}
 }
 
 // Helper: recursively reparse all children except AST_PROC_SUB

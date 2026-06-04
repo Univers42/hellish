@@ -42,7 +42,7 @@ static int	get_digit(char c, int base)
 	return (-1);
 }
 
-static long long	parse_digits(const char *input, int *pos, int len, int base)
+long long	parse_digits(const char *input, int *pos, int len, int base)
 {
 	long long	val;
 	int			digit;
@@ -67,8 +67,15 @@ void	lex_number(t_arith_lexer *lex)
 	int			pos;
 
 	start = lex->pos;
-	base = get_base(lex->input, lex->pos, lex->len, &pos);
-	val = parse_digits(lex->input, &pos, lex->len, base);
+	pos = lex->pos;
+	val = parse_digits(lex->input, &pos, lex->len, 10);
+	if (pos < lex->len && lex->input[pos] == '#')
+		val = parse_base_n(lex, &pos, val);
+	else
+	{
+		base = get_base(lex->input, lex->pos, lex->len, &pos);
+		val = parse_digits(lex->input, &pos, lex->len, base);
+	}
 	lex->current.type = ATOK_NUM;
 	lex->current.num_val = val;
 	lex->current.start = lex->input + start;

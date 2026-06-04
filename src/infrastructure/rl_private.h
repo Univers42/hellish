@@ -22,6 +22,7 @@
 # include <stdio.h>
 # include <wchar.h>
 # include "helpers.h"
+# include "prompt_private.h"
 
 int		return_last_line(t_shell *state, t_string *ret);
 int		return_new_line(t_shell *state, t_string *ret);

@@ -13,6 +13,24 @@
 #include "execution_private.h"
 #include "sys.h"
 
+void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
+{
+	char	*last;
+
+	if (cmd->argv.len > 0)
+	{
+		last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
+		if (last)
+			env_set(&state->env,
+				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
+	}
+}
+
+void	update_underscore_var(t_shell *state, t_executable_cmd *cmd)
+{
+	set_last_underscore_var(state, cmd);
+}
+
 void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
 	if (exe->next_infd != -1)

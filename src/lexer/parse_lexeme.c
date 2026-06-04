@@ -14,6 +14,7 @@
 
 /* forward declaration to avoid implicit declaration warning */
 char	*tokenize_subshell(t_deque_tok *tokens, char **str);
+char	*parse_quote(t_deque_tok *tokens, char **str, char q);
 
 /* Check if current position should end word parsing */
 bool	is_word_boundary(const char *s);
@@ -31,21 +32,6 @@ static int	parse_generic(char **str)
 }
 
 /* unify single/double-quote advance and prompt handling */
-char	*parse_quote(t_deque_tok *tokens, char **str, char q)
-{
-	if (q == '\'')
-	{
-		if (advance_squoted(str))
-			return (tokens->looking_for = '\'', LEXER_SQUOTE_PROMPT);
-	}
-	else if (q == '"')
-	{
-		if (advance_dquoted(str))
-			return (tokens->looking_for = '"', LEXER_DQUOTE_PROMPT);
-	}
-	return (0);
-}
-
 /* push the final word token */
 static void	push_word_token(t_deque_tok *tokens, char *start, char *end)
 {
@@ -55,9 +41,7 @@ static void	push_word_token(t_deque_tok *tokens, char *start, char *end)
 	deque_push_end(&tokens->deqtok, &tmp);
 }
 
-static int	handle_next_chunk(t_deque_tok *tokens,
-							char **str,
-							char **out_prompt)
+static int	handle_special(t_deque_tok *tokens, char **str, char **out)
 {
 	char	*res;
 
@@ -65,22 +49,33 @@ static int	handle_next_chunk(t_deque_tok *tokens,
 	{
 		res = tokenize_subshell(tokens, str);
 		if (res)
-		{
-			*out_prompt = res;
-			return (-1);
-		}
+			return (*out = res, -1);
 		return (1);
 	}
+	if (**str == '`')
+		return (advance_backtick(str), 1);
+	if (**str == '$' && (*str)[1] == '{')
+		return (advance_brace_param(str), 1);
+	return (0);
+}
+
+static int	handle_next_chunk(t_deque_tok *tokens,
+							char **str,
+							char **out_prompt)
+{
+	int		ret;
+	char	*res;
+
+	ret = handle_special(tokens, str, out_prompt);
+	if (ret != 0)
+		return (ret);
 	if (parse_generic(str) == 0)
 		return (1);
 	if (**str == '\'' || **str == '"')
 	{
 		res = parse_quote(tokens, str, **str);
 		if (res)
-		{
-			*out_prompt = res;
-			return (-1);
-		}
+			return (*out_prompt = res, -1);
 		return (1);
 	}
 	return (0);

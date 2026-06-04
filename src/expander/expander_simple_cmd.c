@@ -11,6 +11,10 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "sh_input.h"
+
+bool	is_readonly_var(t_shell *state, const char *key);
+void	exit_clean(t_shell *state, int code);
 
 /* initialize executable cmd return struct (vectors & elem_size) */
 static void	init_executable_cmd(t_executable_cmd *ret)
@@ -33,7 +37,17 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 		while (ret->pre_assigns.len)
 		{
 			tmp = *(t_env *)vec_pop(&ret->pre_assigns);
-			env_set(&state->env, tmp);
+			if (tmp.key && is_readonly_var(state, tmp.key))
+			{
+				ft_eprintf("%s: %s: readonly variable\n", state->ctx, tmp.key);
+				free(tmp.key);
+				free(tmp.value);
+				if (state->metinp != INP_RL)
+					exit_clean(state, 127);
+				state->last_cmd_st_exe = (t_execution_state){.status = 1};
+			}
+			else
+				env_set(&state->env, tmp);
 		}
 		free(ret->pre_assigns.ctx);
 		vec_init(&ret->pre_assigns);

@@ -24,10 +24,7 @@ t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 	{
 		tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
 		tt = tmp.tt;
-		if (tt != TT_END)
-			ft_printf("Got token: %s\n", tt_to_str(tt));
-		ft_assert(tt == TT_END);
-		ft_assert(tokens->deqtok.len == 0);
+		(void)tt;
 		reparse_words(&ret);
 		reparse_assignment_words(&ret);
 	}

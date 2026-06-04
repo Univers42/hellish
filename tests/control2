@@ -1,0 +1,36 @@
+if true; then echo yes; fi
+if false; then echo yes; else echo no; fi
+if false; then echo a; elif true; then echo b; else echo c; fi
+if [ 1 -eq 1 ]; then echo eq; fi
+if [ -z "" ]; then echo empty; fi
+if [ -n "x" ]; then echo nonempty; fi
+for i in 1 2 3; do echo $i; done
+for i in a b c; do echo -n $i; done; echo
+for i in $(seq 1 3); do echo "n=$i"; done
+i=0; while [ $i -lt 3 ]; do echo $i; i=$((i+1)); done
+i=0; until [ $i -ge 3 ]; do echo $i; i=$((i+1)); done
+for i in 1 2 3 4 5; do if [ $i -eq 3 ]; then break; fi; echo $i; done
+for i in 1 2 3 4 5; do if [ $i -eq 3 ]; then continue; fi; echo $i; done
+case abc in abc) echo match;; esac
+case abc in xyz) echo no;; abc) echo yes;; esac
+case abc in a*) echo star;; esac
+case file.txt in *.txt) echo text;; *.md) echo md;; esac
+case x in a|b|x) echo alt;; esac
+case foo in *) echo default;; esac
+for f in a b c; do for g in 1 2; do echo $f$g; done; done
+n=3; while [ $n -gt 0 ]; do echo $n; n=$((n-1)); done
+if [ "a" = "a" ]; then echo streq; fi
+if [ "a" != "b" ]; then echo strneq; fi
+if [ 5 -gt 3 ] && [ 2 -lt 4 ]; then echo both; fi
+case "" in "") echo emptycase;; esac
+for x in; do echo never; done; echo doneloop
+if true; then if true; then echo nested; fi; fi
+case hello in h???o) echo q;; esac
+case ab in [ab]*) echo bracket;; esac
+i=1; while [ $i -le 5 ]; do echo $i; i=$((i+1)); done | tr '\n' ','
+! true; echo $?
+! false; echo $?
+if ! false; then echo neg-works; fi
+! echo hi | grep zzz; echo $?
+! true | false; echo $?
+x=0; while ! [ $x -eq 3 ]; do x=$((x+1)); done; echo $x

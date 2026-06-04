@@ -1,0 +1,181 @@
+#!/bin/bash
+# ============================================================================
+#  benchmark — the OFFICIAL "is hellish faster than bash?" verdict
+#
+#  Runs three workload classes, each timed best-of-N wall-clock against
+#  `bash --posix`, and reports a per-test ratio plus a geometric-mean verdict:
+#
+#      ratio = bash_time / hellish_time      (> 1.00  => hellish is FASTER)
+#
+#  Output equality is verified first; a workload whose output differs from
+#  bash is marked MISMATCH and excluded from the speed average (we only race
+#  workloads that compute the same thing).
+#
+#  Classes:
+#    micro   - tight loops / calls / expansion (where a shell's per-op cost shows)
+#    corpus  - tests/scripts/*.sh   (realistic small POSIX programs)
+#    hard    - tests/hard/*.sh      (large 100-500 line real programs)
+#
+#  The geometric mean is the correct average for ratios; we also print the
+#  median, the win/tie/loss count, and the summed wall-clock per shell.
+#
+#  Usage:  ./benchmark [-r ROUNDS] [-t TIMEOUT_S] [micro|corpus|hard ...]
+#          ROUNDS  (env or -r) batches per test; the fastest is kept (default 5)
+#          with no class args, all three run.
+#  Re-run from the repo via:  make bench   [ROUNDS=7]
+# ============================================================================
+
+set -u
+ROUNDS="${ROUNDS:-5}"
+TIMEOUT_S="${TIMEOUT_S:-20}"
+
+classes=()
+while [[ $# -gt 0 ]]; do
+	case "$1" in
+		-r) ROUNDS="$2"; shift 2;;
+		-t) TIMEOUT_S="$2"; shift 2;;
+		micro|corpus|hard) classes+=("$1"); shift;;
+		*) echo "unknown arg: $1" >&2; exit 2;;
+	esac
+done
+[[ ${#classes[@]} -eq 0 ]] && classes=(micro corpus hard)
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/.." && pwd)"
+HELLISH="$ROOT/build/bin/hellish"
+BOLD="\e[1m"; GREEN="\e[0;32m"; RED="\e[0;31m"; YEL="\e[0;33m"; GREY="\e[38;5;244m"; END="\e[0m"
+[[ -x "$HELLISH" ]] || { echo -e "${RED}hellish not built at $HELLISH (run: make OPT=1 all)${END}"; exit 1; }
+
+# ---- accumulators (parallel arrays keyed by class) -------------------------
+declare -A C_LOGSUM C_N C_WIN C_TIE C_LOSS C_HMS C_BMS
+ALL_RATIOS=()
+
+# best_us <out_file> <shell-cmd...> : run ROUNDS times, echo the MIN elapsed
+# MICROSECONDS (min = least OS-contended run; µs avoids the ±1ms quantization
+# that makes 1-3ms scripts swing wildly between runs).
+best_us() {
+	local out="$1"; shift
+	local best=999999999 r s e us
+	for ((r=0; r<ROUNDS; r++)); do
+		s=$(date +%s%N)
+		timeout "$TIMEOUT_S" "$@" >"$out" 2>/dev/null
+		e=$(date +%s%N)
+		us=$(( (e - s) / 1000 ))
+		(( us < best )) && best=$us
+	done
+	echo "$best"
+}
+
+# race <class> <name> <kind:file|cmd> <payload>
+race() {
+	local class="$1" name="$2" kind="$3" payload="$4"
+	local ho bo hms bms ratio verdict col
+	ho=$(mktemp); bo=$(mktemp)
+	if [[ "$kind" == file ]]; then
+		hus=$(best_us "$ho" "$HELLISH" "$payload")
+		bus=$(best_us "$bo" bash --posix "$payload")
+	else
+		hus=$(best_us "$ho" "$HELLISH" -c "$payload")
+		bus=$(best_us "$bo" bash --posix -c "$payload")
+	fi
+	# equality gate: only race workloads that produce identical output
+	if ! diff -q "$ho" "$bo" >/dev/null 2>&1; then
+		printf "  ${YEL}%-26s  MISMATCH (excluded)${END}\n" "$name"
+		rm -f "$ho" "$bo"; return
+	fi
+	rm -f "$ho" "$bo"
+	(( hus < 1 )) && hus=1; (( bus < 1 )) && bus=1
+	ratio=$(awk -v b="$bus" -v h="$hus" 'BEGIN{printf "%.3f", b/h}')
+	if   awk -v x="$ratio" 'BEGIN{exit !(x>1.05)}'; then verdict="FASTER"; col="$GREEN"
+	elif awk -v x="$ratio" 'BEGIN{exit !(x<0.95)}'; then verdict="slower"; col="$RED"
+	else verdict="~tie";   col="$GREY"; fi
+	printf "  %-26s h=%7.2fms b=%7.2fms  ${col}%5sx %s${END}\n" \
+		"$name" "$(awk -v u=$hus 'BEGIN{printf "%.3f",u/1000}')" \
+		"$(awk -v u=$bus 'BEGIN{printf "%.3f",u/1000}')" "$ratio" "$verdict"
+	C_LOGSUM[$class]=$(awk -v s="${C_LOGSUM[$class]:-0}" -v x="$ratio" 'BEGIN{printf "%.6f", s+log(x)}')
+	C_N[$class]=$(( ${C_N[$class]:-0} + 1 ))
+	C_HMS[$class]=$(( ${C_HMS[$class]:-0} + hus ))
+	C_BMS[$class]=$(( ${C_BMS[$class]:-0} + bus ))
+	if [[ "$verdict" == FASTER ]]; then C_WIN[$class]=$(( ${C_WIN[$class]:-0}+1 ))
+	elif [[ "$verdict" == slower ]]; then C_LOSS[$class]=$(( ${C_LOSS[$class]:-0}+1 ))
+	else C_TIE[$class]=$(( ${C_TIE[$class]:-0}+1 )); fi
+	ALL_RATIOS+=("$ratio")
+}
+
+run_micro() {
+	echo -e "${BOLD}── micro (tight loops / calls / expansion) ──${END}"
+	race micro "while-arith 50k"   cmd 'i=0; while [ $i -lt 50000 ]; do i=$((i+1)); done; echo $i'
+	race micro "for-seq 5k"        cmd 'n=0; for x in $(seq 1 5000); do n=$((n+x)); done; echo $n'
+	race micro "func-call 5k"      cmd 'f(){ :; }; i=0; while [ $i -lt 5000 ]; do f a b c; i=$((i+1)); done; echo done'
+	race micro "func+positional 5k" cmd 'f(){ x=$1; y=$2; echo "$x$y" >/dev/null; }; i=0; while [ $i -lt 5000 ]; do f aa bb; i=$((i+1)); done; echo done'
+	race micro "recursion fib18"   cmd 'fib(){ if [ "$1" -lt 2 ]; then echo "$1"; else a=$(fib $(($1-1))); b=$(fib $(($1-2))); echo $((a+b)); fi; }; fib 18'
+	race micro "var-concat 30k"    cmd 'a=x; b=y; i=0; while [ $i -lt 30000 ]; do z="$a$b$i"; i=$((i+1)); done; echo "$z"'
+	race micro "cmdsub 3k"         cmd 'i=0; t=0; while [ $i -lt 3000 ]; do v=$(echo $i); t=$((t+1)); i=$((i+1)); done; echo $t'
+	race micro "builtin-dispatch 30k" cmd 'i=0; while [ $i -lt 30000 ]; do : a b c; i=$((i+1)); done; echo $i'
+	race micro "param-expand 20k"  cmd 'p=/a/b/c/file.txt; i=0; while [ $i -lt 20000 ]; do b=${p##*/}; d=${p%/*}; i=$((i+1)); done; echo "$b $d"'
+	race micro "glob-noop 10k"     cmd 'i=0; while [ $i -lt 10000 ]; do x=nowild_$i; i=$((i+1)); done; echo "$x"'
+}
+
+run_dir() {
+	local class="$1" dir="$2" label="$3" f name
+	echo -e "${BOLD}── $label ──${END}"
+	for f in "$dir"/*.sh; do
+		[[ -e "$f" ]] || continue
+		name="$(basename "$f")"
+		[[ "$name" == *xfail* || "$name" == run.sh ]] && continue
+		race "$class" "$name" file "$f"
+	done
+}
+
+echo -e "${BOLD}hellish vs bash --posix${END}   (ratio = bash/hellish; >1.00 = hellish faster)"
+echo -e "${GREY}rounds=$ROUNDS (best-of), timeout=${TIMEOUT_S}s, bin=$HELLISH${END}\n"
+for c in "${classes[@]}"; do
+	case "$c" in
+		micro)  run_micro;;
+		corpus) run_dir corpus "$HERE/scripts" "corpus (tests/scripts realistic programs)";;
+		hard)   run_dir hard "$HERE/hard" "hard (tests/hard 100-500 line programs)";;
+	esac
+	echo
+done
+
+# ---- summary ---------------------------------------------------------------
+echo -e "${BOLD}════════════════════ SUMMARY ════════════════════${END}"
+g_log=0; g_n=0; g_hms=0; g_bms=0; g_w=0; g_t=0; g_l=0
+for c in "${classes[@]}"; do
+	n=${C_N[$c]:-0}; [[ $n -eq 0 ]] && continue
+	gm=$(awk -v s="${C_LOGSUM[$c]:-0}" -v n="$n" 'BEGIN{printf "%.3f", exp(s/n)}')
+	hms=${C_HMS[$c]:-0}; bms=${C_BMS[$c]:-0}
+	wall=$(awk -v b="$bms" -v h="$hms" 'BEGIN{printf "%.3f", (h>0)? b/h : 0}')
+	printf "  %-7s  n=%-2d  geomean ${BOLD}%sx${END}  wall %dms vs %dms (${BOLD}%sx${END})  W/T/L=%d/%d/%d\n" \
+		"$c" "$n" "$gm" "$((hms/1000))" "$((bms/1000))" "$wall" "${C_WIN[$c]:-0}" "${C_TIE[$c]:-0}" "${C_LOSS[$c]:-0}"
+	g_log=$(awk -v a="$g_log" -v b="${C_LOGSUM[$c]:-0}" 'BEGIN{printf "%.6f", a+b}')
+	g_n=$(( g_n + n )); g_hms=$(( g_hms + hms )); g_bms=$(( g_bms + bms ))
+	g_w=$(( g_w + ${C_WIN[$c]:-0} )); g_t=$(( g_t + ${C_TIE[$c]:-0} )); g_l=$(( g_l + ${C_LOSS[$c]:-0} ))
+done
+[[ $g_n -eq 0 ]] && { echo "  no comparable workloads"; exit 1; }
+# median ratio
+median=$(printf '%s\n' "${ALL_RATIOS[@]}" | sort -n | awk '{a[NR]=$0} END{print (NR%2)? a[(NR+1)/2] : (a[NR/2]+a[NR/2+1])/2}')
+GEO=$(awk -v s="$g_log" -v n="$g_n" 'BEGIN{printf "%.3f", exp(s/n)}')
+WALL=$(awk -v b="$g_bms" -v h="$g_hms" 'BEGIN{printf "%.3f", b/h}')
+echo "  ──────────────────────────────────────────────"
+printf "  ${BOLD}OVERALL  n=%d  geomean %sx  median %sx  wall %sx  W/T/L=%d/%d/%d${END}\n" \
+	"$g_n" "$GEO" "$median" "$WALL" "$g_w" "$g_t" "$g_l"
+# coverage (% of tasks faster/parity/slower) + average magnitude within each bucket
+printf '%s\n' "${ALL_RATIOS[@]}" | awk -v n="$g_n" '
+	{ r=$1; if(r>1.02){fw++; sw+=log(r)} else if(r<0.98){fl++; sl+=log(r)} else fp++ }
+	END{
+		printf "  coverage : faster %d%% (%d/%d) | parity %d%% (%d) | slower %d%% (%d)\n",
+			int(fw*100/n+0.5), fw, n, int(fp*100/n+0.5), fp, int(fl*100/n+0.5), fl
+		wf=(fw>0)?exp(sw/fw):1; lf=(fl>0)?exp(sl/fl):1
+		printf "  magnitude: when faster avg %.2fx (+%d%%) | when slower avg %.2fx (-%d%%)\n",
+			wf, int((wf-1)*100+0.5), lf, int((1-lf)*100+0.5)
+	}'
+echo -e "  ${GREY}geomean = equal weight per task;  wall = total time to run everything (throughput)${END}"
+# Three-way verdict with a parity band (per-task geomean is noisy near 1.0).
+if awk -v x="$GEO" 'BEGIN{exit !(x>1.02)}'; then
+	echo -e "  ${GREEN}${BOLD}VERDICT: hellish is FASTER than bash --posix on average (geomean ${GEO}x).${END}"
+elif awk -v x="$GEO" 'BEGIN{exit !(x<0.98)}'; then
+	echo -e "  ${RED}${BOLD}VERDICT: hellish is SLOWER than bash --posix on average (geomean ${GEO}x).${END}"
+else
+	echo -e "  ${YEL}${BOLD}VERDICT: hellish is AT PARITY per-task (geomean ${GEO}x), and FASTER by wall-clock (${WALL}x).${END}"
+fi

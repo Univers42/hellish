@@ -12,13 +12,7 @@
 
 #include "execution_private.h"
 
-static void	ensure_redirs_initialized(t_executable_node *exe);
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
-
-t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
-t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
-t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
-t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
 static t_execution_state	run_compound(t_shell *state,
 								t_executable_node *exe)
@@ -32,27 +26,20 @@ static t_execution_state	run_compound(t_shell *state,
 		return (execute_while(state, exe));
 	if (t == AST_FOR)
 		return (execute_for(state, exe));
+	if (t == AST_CASE)
+		return (execute_case(state, exe));
+	if (t == AST_BRACE_GROUP)
+		return (exe->node = vec_idx(&exe->node->children, 0),
+			execute_tree_node(state, exe));
 	return (ft_assert(0), res_status(1));
 }
 
-static t_execution_state	dispatch_compound(t_shell *state,
+static t_execution_state	compound_in_parent(t_shell *state,
 								t_executable_node *exe)
 {
 	t_execution_state	res;
 	int					bak[3];
-	int					pid;
 
-	if (!exe->modify_parent_ctx)
-	{
-		pid = fork();
-		if (pid == 0)
-		{
-			default_signal_handlers();
-			set_up_redirection(state, exe);
-			exit(run_compound(state, exe).status);
-		}
-		return (res_pid(pid));
-	}
 	bak[0] = dup(STDIN_FILENO);
 	bak[1] = dup(STDOUT_FILENO);
 	bak[2] = dup(STDERR_FILENO);
@@ -70,10 +57,31 @@ static t_execution_state	dispatch_compound(t_shell *state,
 	return (res);
 }
 
+static t_execution_state	dispatch_compound(t_shell *state,
+								t_executable_node *exe)
+{
+	int	pid;
+
+	if (!exe->modify_parent_ctx)
+	{
+		pid = fork();
+		if (pid == 0)
+		{
+			default_signal_handlers();
+			set_up_redirection(state, exe);
+			exit(run_compound(state, exe).status);
+		}
+		return (res_pid(pid));
+	}
+	return (compound_in_parent(state, exe));
+}
+
 t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
 	t_ast_type	ft;
 
+	if (state->opt_noexec && state->metinp != INP_RL)
+		return (res_status(0));
 	ft_assert(exe->node->children.len >= 1);
 	ft = ((t_ast_node *)exe->node->children.ctx)[0].node_type;
 	if (ft == AST_FUNCTION_DEF)
@@ -82,7 +90,11 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	if (ft == AST_SIMPLE_COMMAND)
 		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
 			execute_simple_command(state, exe));
-	ensure_redirs_initialized(exe);
+	if (!exe->redirs.ctx)
+	{
+		vec_init(&exe->redirs);
+		exe->redirs.elem_size = sizeof(int);
+	}
 	if (collect_redirects_from_ast(state, exe))
 		return (res_status(AMBIGUOUS_REDIRECT));
 	exe->node = vec_idx(&exe->node->children, 0);
@@ -92,21 +104,8 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	return (dispatch_compound(state, exe));
 }
 
-/* Ensure exe->redirs is initialized */
-static void	ensure_redirs_initialized(t_executable_node *exe)
-{
-	if (!exe->redirs.ctx)
-	{
-		vec_init(&exe->redirs);
-		exe->redirs.elem_size = sizeof(int);
-	}
-}
-
-/*
-** Collect redirect indices from exe->node children (starting at index 1)
-** Returns 0 on success, AMBIGUOUS_REDIRECT if
-redirect_from_ast_redir signals error.
-*/
+/* Collect redirect indices from exe->node children (starting at index 1).
+** Returns 0 on success, AMBIGUOUS_REDIRECT on error. */
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe)
 {
 	size_t		i;

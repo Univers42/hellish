@@ -1,0 +1,40 @@
+x=hello; echo ${x}
+x=hello; echo ${x}world
+echo ${undefined:-default}
+echo ${undefined-default}
+x=; echo ${x:-default}
+x=; echo ${x-default}
+x=set; echo ${x:-default}
+echo ${undefined:=assigned}; echo done
+x=; echo ${x:=assigned}; echo $x
+x=val; echo ${x:+plus}
+x=; echo ${x:+plus}
+echo ${undefined:+plus}
+x=; echo ${x+plus}
+echo ${undefined+plus}
+x=abcdef; echo ${#x}
+echo ${#undefined}
+x=helloworld; echo ${x#hello}
+x=helloworld; echo ${x#h*o}
+x=helloworld; echo ${x##h*o}
+path=/usr/local/bin; echo ${path##*/}
+path=/usr/local/bin; echo ${path#*/}
+x=helloworld; echo ${x%world}
+x=helloworld; echo ${x%o*}
+x=helloworld; echo ${x%%o*}
+file=archive.tar.gz; echo ${file%.gz}
+file=archive.tar.gz; echo ${file%%.*}
+file=archive.tar.gz; echo ${file#*.}
+x=abc; echo ${x:-${undefined:-nested}}
+a=1; b=2; echo ${a}${b}
+echo ${HOME:+has_home}
+x=foo; echo "${x}"
+x=foo; echo "${x:-bar}"
+x="a b"; echo ${#x}
+x=test; echo prefix${x}suffix
+echo ${x-}end
+x=  ; echo "[${x}]"
+unset y; echo ${y:-empty}
+x=value; unset x; echo ${x:-after_unset}
+echo ${PATH:+pathset}
+x=12345; echo ${x#1}${x%5}

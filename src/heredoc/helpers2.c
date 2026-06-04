@@ -81,6 +81,7 @@ static void	process_child_node(t_shell *state, t_ast_node *node,
 int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 {
 	size_t	i;
+	bool	saved_in_func;
 
 	if (!node || should_skip_node(node))
 		return (0);
@@ -90,8 +91,13 @@ int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 			gather_heredoc(state, node, in_pipeline);
 		return (0);
 	}
+	saved_in_func = state->gather_in_func;
+	if (node->node_type == AST_FUNCTION_DEF || node->node_type == AST_FOR
+		|| node->node_type == AST_WHILE || node->node_type == AST_UNTIL)
+		state->gather_in_func = true;
 	i = 0;
 	while (i < node->children.len && !get_g_sig()->should_unwind)
 		process_child_node(state, node, &i, in_pipeline);
+	state->gather_in_func = saved_in_func;
 	return (0);
 }

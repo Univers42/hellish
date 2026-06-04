@@ -32,6 +32,9 @@ void	expand_tilde_word(t_shell *state, t_ast_node *curr)
 	should_expand |= token_starts_with(*first, PREV_DIR)
 		&& curr->children.len == 1 && first->len == 2;
 	should_expand |= token_starts_with(*first, START_PREV_DIR);
+	should_expand |= first->start[0] == '~' && curr->children.len == 1
+		&& first->len >= 2 && first->start[1] != '/'
+		&& first->start[1] != '+' && first->start[1] != '-';
 	if (should_expand)
 		expand_tilde_token(state, first);
 }

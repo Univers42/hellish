@@ -53,8 +53,15 @@ CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
 endif
 
-# Directories
+# Directories. Object trees are per build mode so the OPT benchmark build
+# never silently reuses stale debug/ASan objects (make won't rebuild on a
+# flag change alone). The binary path is shared and relinked for each mode,
+# so `make bench` always times a true OPT build.
+ifdef OPT
+OBJ_DIR := build/obj-opt
+else
 OBJ_DIR := build/obj
+endif
 BIN_DIR := build/bin
 LIBFT_DIR := vendor/libft/build/lib
 SRC_DIR := src
@@ -65,228 +72,7 @@ LIBFT_A := $(LIBFT_DIR)/libft.a
 LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
 
 # Source and object files
-SRCS :=		src/arith/eval.c\
-			src/arith/helpers1.c\
-			src/arith/helpers2.c\
-			src/arith/helpers3.c\
-			src/arith/helpers4.c\
-			src/arith/helpers5.c\
-			src/arith/helpers6.c\
-			src/arith/helpers7.c\
-			src/arith/helpers8.c\
-			src/arith/lexer.c\
-			src/arith/parser.c\
-			src/arith/parser2.c\
-			src/arith/set.c\
-			src/builtins/cd_helpers1.c\
-			src/builtins/cd_helpers2.c\
-			src/builtins/builtin_type.c\
-			src/builtins/builtin_set.c\
-			src/builtins/builtin_read.c\
-			src/builtins/collect_and_print_exported.c\
-			src/builtins/core_builtins.c\
-			src/builtins/core_builtins2.c\
-			src/builtins/echo_flags.c\
-			src/builtins/echo_help.c\
-			src/builtins/exit.c\
-			src/builtins/exit_helpers.c\
-			src/builtins/export_helpers.c\
-			src/builtins/export_helpers2.c\
-			src/builtins/hash_builtins_dispatch.c\
-			src/builtins/try_unset.c\
-			src/builtins/utils.c\
-			src/builtins/utils2.c\
-			src/core/helpers.c\
-			src/core/init.c\
-			src/core/on.c\
-			src/core/opt.c\
-			src/core/shell.c\
-			src/environment/conv.c\
-			src/environment/expand.c\
-			src/environment/helpers.c\
-			src/environment/init_dft_env.c\
-			src/environment/utils.c\
-			src/environment/utils2.c\
-			src/execution/exe_error.c\
-			src/execution/exe_path.c\
-			src/execution/execute_command.c\
-			src/execution/execute_if.c\
-			src/execution/execute_while.c\
-			src/execution/execute_for.c\
-			src/execution/execute_function.c\
-			src/execution/execute_simple_list.c\
-			src/execution/execute_tree_node.c\
-			src/execution/find_cmd_path.c\
-			src/execution/run.c\
-			src/execution/execute_top_level.c\
-			src/execution/res_utils.c\
-			src/execution/run_utils.c\
-			src/execution/exe_bg.c\
-			src/execution/execute_builtin.c\
-			src/execution/execute_pipeline.c\
-			src/execution/execute_range.c\
-			src/execution/execute_simple_command.c\
-			src/execution/execute_subshell.c\
-			src/execution/utils.c\
-			src/execution/utils2.c\
-			src/expander/assignment_to_env.c\
-			src/expander/assignment_word_to_word.c\
-			src/expander/expand_cmd_substitution.c\
-			src/expander/expand_env_vars.c\
-			src/expander/expand_export_value.c\
-			src/expander/expand_param_format.c\
-			src/expander/expand_node_glob.c\
-			src/expander/expand_simple_cmd_assignment.c\
-			src/expander/expand_tilde_token.c\
-			src/expander/expand_tilde_word.c\
-			src/expander/expand_token.c\
-			src/expander/expand_word_single.c\
-			src/expander/expander_simple_cmd.c\
-			src/expander/expander_split.c\
-			src/expander/process_arith_sub.c\
-			src/expander/process_arith_sub_utils.c\
-			src/expander/process_arith_sub_utils2.c\
-			src/expander/process_cmd_sub.c\
-			src/expander/replace_trailing_equal_with_full_token.c\
-			src/expander/split_envvar.c\
-			src/expander/word_to_string.c\
-			src/expander/word_to_utils.c\
-			src/expander/expand_cmd_simple_word.c\
-			src/expander/process_word_token.c\
-			src/expander/create_redir.c\
-			src/expander/expand_cmd_sub.c\
-			src/expander/utils2.c\
-			src/expander/capture_subshell_output.c\
-			src/expander/create_procsub_output.c\
-			src/expander/expand_word.c\
-			src/expander/procsub_input.c\
-			src/expander/procsub_utils.c\
-			src/expander/redirect_from_ast_redir.c\
-			src/expander/debug.c\
-			src/expander/process_simple_child.c\
-			src/expander/utils.c\
-			src/expander/utils3.c\
-			src/glob/glob_bracket.c\
-			src/glob/glob_dir.c\
-			src/glob/glob_expand_utils.c\
-			src/glob/glob_expand_utils2.c\
-			src/glob/glob_match_at.c\
-			src/glob/glob_tokenizer_utils.c\
-			src/glob/glob_tokenizer.c\
-			src/glob/glob_utils.c\
-			src/glob/parse_bracket.c\
-			src/glob/tokenizer.c\
-			src/glob/ft_strcoll.c\
-			src/glob/glob_expand.c\
-			src/glob/glob_expand2.c\
-			src/glob/glob_match.c\
-			src/glob/glob_sort.c\
-			src/glob/pattern_matcher.c\
-			src/glob/pattern_matcher_utils.c\
-			src/glob/utils.c\
-			src/helpers/checked_atoi.c\
-			src/helpers/free_utils.c\
-			src/helpers/utils.c\
-			src/helpers/var_name.c\
-			src/helpers/verbose.c\
-			src/heredoc/helpers.c\
-			src/heredoc/reader.c\
-			src/heredoc/helpers1.c\
-			src/heredoc/collect.c\
-			src/heredoc/helpers2.c\
-			src/infrastructure/ast.c\
-			src/infrastructure/ast_utils.c\
-			src/infrastructure/ast_utils2.c\
-			src/infrastructure/ast_utils3.c\
-			src/infrastructure/ast_utils4.c\
-			src/infrastructure/ast_utils5.c\
-			src/infrastructure/error.c\
-			src/infrastructure/history.c\
-			src/infrastructure/history_utils.c\
-			src/infrastructure/input.c\
-			src/infrastructure/input_get_more.c\
-			src/infrastructure/input_get_more_utils.c\
-			src/infrastructure/input_get_more_utils2.c\
-			src/infrastructure/input_get_more_utils3.c\
-			src/infrastructure/input_utils2.c\
-			src/infrastructure/input_utils3.c\
-			src/infrastructure/input_utils4.c\
-			src/infrastructure/prompt_metadata.c\
-			src/infrastructure/prompt_utils.c\
-			src/infrastructure/prompt_utils2.c\
-			src/infrastructure/rl.c\
-			src/infrastructure/rl_helpers.c\
-			src/infrastructure/rl_helpers2.c\
-			src/infrastructure/rl_multi_line.c\
-			src/infrastructure/visible_with_cstr.c\
-			src/infrastructure/prompt.c\
-			src/lexer/debug.c\
-			src/lexer/helper2.c\
-			src/lexer/helper4.c\
-			src/lexer/keywords.c\
-			src/lexer/lexer_advance.c\
-			src/lexer/parse_subshell.c\
-			src/lexer/print_tokens.c\
-			src/lexer/print_tokens_utils.c\
-			src/lexer/singletons.c\
-			src/lexer/singletons_kw.c\
-			src/lexer/tables.c\
-			src/lexer/tables_utils.c\
-			src/lexer/tokenizer.c\
-			src/lexer/parse_lexeme.c\
-			src/lexer/helper3.c\
-			src/parsing/compound_list.c\
-			src/parsing/parse_arith.c\
-			src/parsing/parse_cmd.c\
-			src/parsing/parse_if.c\
-			src/parsing/parse_while.c\
-			src/parsing/parse_for.c\
-			src/parsing/parse_function.c\
-			src/parsing/parse_pipeline.c\
-			src/parsing/parse_simple_cmd.c\
-			src/parsing/parse_subshell.c\
-			src/parsing/parse_tokens.c\
-			src/parsing/simple_list.c\
-			src/parsing/utils2.c\
-			src/parsing/utils4.c\
-			src/parsing/utils3.c\
-			src/parsing/utils5.c\
-			src/parsing/utils6.c\
-			src/parsing/utils.c\
-			src/parsing/parse_redirect.c\
-			src/parsing/parser_proc_sub.c\
-			src/word_splitting/reparse_assign_words.c\
-			src/word_splitting/reparse_dquote.c\
-			src/word_splitting/reparse_dquote_utils.c\
-			src/word_splitting/reparse_envar_plain.c\
-			src/word_splitting/reparse_envvar.c\
-			src/word_splitting/reparse_envvar_paren.c\
-			src/word_splitting/reparse_envvar_utils.c\
-			src/word_splitting/reparse_escape.c\
-			src/word_splitting/reparse_word.c\
-			src/word_splitting/utils.c\
-			src/word_splitting/utils2.c\
-			src/word_splitting/verif.c\
-			src/builtins/builtin_test.c\
-			src/builtins/builtin_test_ops.c\
-			src/builtins/builtin_alias.c\
-			src/builtins/builtin_unalias.c\
-			src/builtins/builtin_hash.c\
-			src/builtins/builtin_jobs.c\
-			src/builtins/builtin_fg.c\
-			src/builtins/builtin_bg.c\
-			src/builtins/builtin_fc.c\
-			src/alias/alias.c\
-			src/alias/alias_expand.c\
-			src/job_control/job_table.c\
-			src/job_control/job_utils.c\
-			src/infrastructure/history_expand.c\
-			src/completion/completion.c\
-			src/completion/complete_commands.c\
-			src/completion/complete_variables.c\
-			src/completion/complete_files.c\
-			src/editing/vi_mode.c\
-			src/editing/emacs_mode.c
+SRCS := $(shell find $(SRC_DIR) -name '*.c' | sort)
 
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
@@ -339,8 +125,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Build libft (in its directory)
 $(LIBFT_A):
-	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft\033[0m\n\n" >&2
-	@$(MAKE) -C vendor/libft -j20
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3)\033[0m\n\n" >&2
+	@$(MAKE) -C vendor/libft -j1
 	@printf "\n" >&2
 
 clean:
@@ -361,14 +147,29 @@ fclean: clean
 re: fclean all
 	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(BAPTIZE_SHELL)\033[0m\n\n" >&2
 
-test: all
+# Force a relink so the binary always matches the requested mode (debug here):
+# the OPT/debug object trees are separate but the binary path is shared, and
+# make won't relink on a mode switch alone.
+test:
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
+
+# Official speed verdict vs `bash --posix`. Always benchmarks the OPT build
+# (timing the default ASan/debug build would be meaningless). Override rounds /
+# scope:  make bench ROUNDS=7        make bench BENCH=micro
+bench:
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory OPT=1 all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBenchmarking hellish vs bash --posix\033[0m\n\n" >&2
+	@(cd $(TEST_DIR); ROUNDS=$(ROUNDS) TIMEOUT_S=$(TIMEOUT_S) /bin/bash benchmark $(BENCH))
 
 norm:
 	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
 	output="$$( \
-	    norminette 2>&1 | grep -v 'OK!' | grep -v 'US' & \
+	    norminette src incs tests 2>&1 | grep -v 'OK!' | grep -v 'US' \
+	        | grep -v 'Notice:' & \
 	    pid=$$!; \
 	    while kill -0 $$pid 2>/dev/null; do \
 	        for dots in '.' '..' '...' '....' '.....' '......'; do \
@@ -394,4 +195,4 @@ my_shell:
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
 
-.PHONY: test re all clean fclean norm my_shell help
+.PHONY: test bench re all clean fclean norm my_shell help

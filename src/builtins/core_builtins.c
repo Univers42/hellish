@@ -21,8 +21,11 @@ int	builtin_export(t_shell *st, t_vec av)
 
 	i = 1;
 	status = 0;
-	if (av.len == 1)
+	if (av.len == 1 || (av.len == 2
+			&& !ft_strcmp(((char **)av.ctx)[1], "-p")))
 		return (collect_and_print_exported(st), 0);
+	if (av.len > 1 && !ft_strcmp(((char **)av.ctx)[1], "-p"))
+		i = 2;
 	while (i < av.len)
 	{
 		idx = (int)i;
@@ -49,6 +52,15 @@ int	builtin_exit(t_shell *state, t_vec argv)
 	if (handle_too_many_args(state, argv, i))
 		return (0);
 	return (exit_clean(state, ret), 0);
+}
+
+/* The ':' null utility: expand args (already done before we run) and
+   succeed. Used for side effects like `: ${x:=default}` and as a true-ish. */
+int	builtin_colon(t_shell *state, t_vec argv)
+{
+	(void)state;
+	(void)argv;
+	return (0);
 }
 
 int	builtin_echo(t_shell *state, t_vec argv)
@@ -78,19 +90,6 @@ int	builtin_env(t_shell *state, t_vec argv)
 		e = &((t_env *)state->env.ctx)[i];
 		if (e->exported)
 			ft_printf("%s=%s\n", e->key, e->value);
-	}
-	return (0);
-}
-
-int	builtin_unset(t_shell *state, t_vec argv)
-{
-	size_t	i;
-
-	i = 1;
-	while (i < argv.len)
-	{
-		try_unset(state, ((char **)argv.ctx)[i]);
-		i++;
 	}
 	return (0);
 }

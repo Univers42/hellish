@@ -85,17 +85,10 @@ void	set_shlvl(t_shell *state)
 
 t_env	*env_nget(t_vec_env *env, char *key, int len)
 {
-	t_env	*curr;
-	int		i;
+	int	idx;
 
-	i = env->len - 1;
-	while (i >= 0)
-	{
-		curr = vec_idx(env, i);
-		if (ft_strncmp(key, curr->key, len) == 0
-			&& curr->key[len] == 0)
-			return (curr);
-		i--;
-	}
-	return (0);
+	idx = env_index_find(env, key, len);
+	if (idx < 0)
+		return (0);
+	return (&((t_env *)env->ctx)[idx]);
 }

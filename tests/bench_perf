@@ -1,0 +1,14 @@
+i=0; while [ $i -lt 2000 ]; do i=$((i+1)); done
+i=0; while [ $i -lt 2000 ]; do j=$((i*2+1)); i=$((i+1)); done
+for i in $(seq 1 2000); do echo $i; done
+for i in $(seq 1 1000); do x="item-$i"; echo "${x%-*}"; done
+n=0; for w in $(seq 1 1500); do n=$((n+w)); done; echo $n
+f(){ :; }; i=0; while [ $i -lt 3000 ]; do f; i=$((i+1)); done
+f(){ echo $1 >/dev/null; }; i=0; while [ $i -lt 2000 ]; do f hi; i=$((i+1)); done
+i=0; while [ $i -lt 1500 ]; do ! false; i=$((i+1)); done
+i=0; while [ $i -lt 1500 ]; do case $i in *5) :;; *) :;; esac; i=$((i+1)); done
+s=; i=0; while [ $i -lt 1000 ]; do s="$s$i"; i=$((i+1)); done; echo ${#s}
+i=0; while [ $i -lt 1500 ]; do v="value_$i"; echo "${v}" >/dev/null; i=$((i+1)); done
+i=0; while [ $i -lt 1000 ]; do x=$((i*i % 7)); i=$((i+1)); done; echo done
+a=1 b=2 c=3; i=0; while [ $i -lt 2000 ]; do echo $a$b$c >/dev/null; i=$((i+1)); done
+i=0; while [ $i -lt 1200 ]; do if [ $i -gt 600 ]; then :; else :; fi; i=$((i+1)); done

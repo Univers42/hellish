@@ -32,9 +32,17 @@ void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);
 char		**get_envp(t_shell *state, char *exe_path);
+char		**get_envp_all(t_shell *state, char *exe_path);
+char		*env_to_str(t_env *e);
 t_env		*env_nget(t_vec_env *env, char *key, int len);
 void		set_home(t_shell *state);
 void		set_shlvl(t_shell *state);
+
+/* O(1) env name index (env_index.c) — fast path over the env vector. */
+int			env_index_find(t_vec_env *env, const char *key, int len);
+void		env_index_add(t_vec_env *env, int idx);
+void		env_index_mark_dirty(void);
+void		env_index_free(void);
 
 static inline char	*env_get_ifs(t_vec_env *v)
 {
