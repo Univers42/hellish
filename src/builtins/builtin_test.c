@@ -86,28 +86,33 @@ static int	eval_test(char **av, int ac)
 	return (result);
 }
 
+/* `[` and `[[ ]]` are bracketed forms: their last argument must be the matching
+   close (`]` or `]]`). `test` has no brackets. Single-test `[[ ]]` reuses the
+   same evaluator; internal &&/|| is not handled (the shell splits on those). */
 int	builtin_test(t_shell *state, t_vec argv)
 {
 	char	**av;
 	int		ac;
+	char	*close;
 
 	(void)state;
 	av = (char **)argv.ctx;
 	ac = (int)argv.len;
-	if (ac > 0 && ft_strcmp(av[0], "[") == 0)
+	if (ac > 0 && (ft_strcmp(av[0], "[") == 0 || ft_strcmp(av[0], "[[") == 0))
 	{
-		if (ac < 2 || ft_strcmp(av[ac - 1], "]") != 0)
-		{
-			ft_eprintf("%s: [: missing `]'\n", state->ctx);
-			return (2);
-		}
-		av++;
+		close = "]";
+		if (av[0][1])
+			close = "]]";
+		if (ac < 2 || ft_strcmp(av[ac - 1], close) != 0)
+			return (ft_eprintf("%s: %s: missing `%s'\n", state->ctx,
+					av[0], close), 2);
+		av += 1;
 		ac -= 2;
 	}
 	else
 	{
-		av++;
-		ac--;
+		av += 1;
+		ac -= 1;
 	}
 	return (eval_test(av, ac));
 }
