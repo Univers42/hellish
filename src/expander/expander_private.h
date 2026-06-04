@@ -102,6 +102,7 @@ typedef struct s_env_tok_pos
 }	t_env_tok_pos;
 
 t_string	word_to_string(t_ast_node node);
+t_string	word_to_brace_src(t_ast_node node);
 t_string	word_to_hrdoc_string(t_ast_node node);
 t_env		assignment_to_env(t_shell *state, t_ast_node *node);
 t_env		assignment_to_env(t_shell *state, t_ast_node *node);
