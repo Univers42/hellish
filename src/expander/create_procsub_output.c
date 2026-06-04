@@ -32,9 +32,9 @@ static pid_t	fork_and_exec_procsub(t_shell *state,
 		close(pipefd[1]);
 		dup2(pipefd[0], STDIN_FILENO);
 		close(pipefd[0]);
-		envp = get_envp(state, PATH_HELLISH);
+		envp = get_envp_all(state, PATH_HELLISH);
 		execve(PATH_HELLISH, argv_sh, envp);
-		envp = get_envp(state, PROC_SELF_EXE);
+		envp = get_envp_all(state, PROC_SELF_EXE);
 		execve(PROC_SELF_EXE, argv_ms, envp);
 		if (envp)
 			free_tab(envp);
