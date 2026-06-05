@@ -15,15 +15,31 @@
 
 # include "header.h"
 # include "shell.h"
+# include <wchar.h>
 
 /* The shared palette: a muted-salmon frame, salmon name, grey version, cool
-   headings, soft text. */
+   headings, soft text, a vivid salmon "warn" and a soft green "ok". */
 # define C_FRAME "\033[38;5;173m"
 # define C_TITLE "\033[1;38;5;209m"
 # define C_VER   "\033[38;5;245m"
 # define C_HEAD  "\033[1;38;5;81m"
 # define C_TAG   "\033[38;5;250m"
+# define C_WARN  "\033[1;38;5;203m"
+# define C_OK    "\033[38;5;78m"
 # define C_RST   "\033[0m"
+
+/* Running state for header_clip: the destination, how far it is filled, its
+   capacity, the columns used so far and the column budget, plus the multibyte
+   decode state. */
+typedef struct s_clip
+{
+	char		*dst;
+	size_t		o;
+	size_t		size;
+	int			used;
+	int			max;
+	mbstate_t	st;
+}	t_clip;
 
 /* The two content-column widths of a rendered panel. */
 typedef struct s_cols
@@ -57,5 +73,9 @@ void		body_row(const t_panel *p, const char *l, const char *r, t_cols c);
 
 /* Print the closing rounded border, spanning `cols` columns. */
 void		bottom_rule(int cols);
+
+/* Length in bytes of an ANSI CSI escape at `s` (0 if none) — so width and
+   centring can step over embedded colours. */
+int			skip_ansi(const char *s);
 
 #endif

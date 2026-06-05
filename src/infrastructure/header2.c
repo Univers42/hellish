@@ -77,7 +77,7 @@ int	panel_max_width(const char **lines)
 		s = *lines;
 		if (*s == '\001')
 			w = 0;
-		else if (*s == '\002' || *s == '\003')
+		else if (*s >= '\002' && *s <= '\005')
 			w = header_width(s + 1);
 		else
 			w = header_width(s);

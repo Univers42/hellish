@@ -16,10 +16,13 @@
 # include <stddef.h>
 
 /* Line markers, used as a one-byte prefix on a panel line to pick its style:
-   a horizontal rule, a coloured logo line, or an accented heading. */
+   a horizontal rule, a coloured logo line, an accented heading, a strong
+   "needs attention" line (warn) or a calm "all good" line (ok). */
 # define HP_RULE "\001"
 # define HP_LOGO "\003"
 # define HP_HEAD "\002"
+# define HP_WARN "\004"
+# define HP_OK   "\005"
 
 /* The one glyph set every header shares. Picked at runtime: real Unicode box
    art when the locale is UTF-8, plain ASCII otherwise — so the same code looks
