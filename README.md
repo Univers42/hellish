@@ -41,6 +41,19 @@ Opt out with `HELLISH_NO_UPDATE_CHECK=1` (and `HELLISH_NO_BANNER=1`).
 
 ---
 
+## <div style="color:rgba(250,75,100,90)" >Documentation
+
+The four pillars of hellish, each its own deep-dive (status: ✅ shipped · 🚧 in progress · 📋 planned):
+
+| Pillar | What's inside |
+|---|---|
+| **[Interactive Experience](docs/interactive.md)** | Editing, history, completion, prompt — plus syntax highlighting & autosuggestions (roadmap) |
+| **[Bash Compatibility & Scripting](docs/scripting.md)** | Feature matrix vs bash, the "it built an LFS distro" proof, arrays roadmap |
+| **[Performance & Robustness](docs/performance.md)** | Benchmarks vs bash & dash, the test/conformance/leak gates |
+| **[What hellish Is (and Isn't) + Install](docs/product.md)** | The pitch, honest positioning, install methods, roadmap |
+
+---
+
 ## <div style="color:rgba(250,75,100,90)" >What Is This Project?
 
 `hellish` is a full interactive shell implementation done as a long‑running
