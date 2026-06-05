@@ -12,6 +12,7 @@
 
 #include "builtins_private.h"
 #include "update.h"
+#include "update_menu.h"
 #include "version.h"
 
 /* Report how the running version compares to the latest release tag. */
@@ -27,16 +28,17 @@ static void	print_status(const char *latest)
 	ft_printf("(you have %s).\n", HELLISH_VERSION);
 }
 
-/* Tell the user how this copy upgrades, tailored to where it came from. */
+/* Strongly nudge the user to upgrade, tailored to where this copy came from. */
 static void	print_update_hint(t_origin o, const char *repo)
 {
 	char	cmd[1024];
 
 	origin_command(o, repo, cmd, sizeof(cmd));
-	ft_printf("  installed via \033[1m%s\033[0m — upgrade with:\n",
-		origin_label(o));
+	ft_printf("  \033[1;38;5;203mYou should update.\033[0m installed via "
+		"\033[1m%s\033[0m — upgrade with:\n", origin_label(o));
 	ft_printf("    %s\n", cmd);
-	ft_printf("  (or just run:  \033[1mupdate --now\033[0m)\n");
+	ft_printf("  or run \033[1mupdate --now\033[0m to pick a method and "
+		"reinstall the binary yourself.\n");
 }
 
 /* Live-check GitHub, refresh the banner cache, and report + hint. */
@@ -75,6 +77,6 @@ int	builtin_update(t_shell *state, t_vec argv)
 	}
 	origin = detect_origin(repo, sizeof(repo));
 	if (argv.len > 1 && !ft_strcmp(av[1], "--now"))
-		return (run_origin_update(origin, repo));
+		return (update_interactive(origin, repo));
 	return (do_check(origin, repo));
 }
