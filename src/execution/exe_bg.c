@@ -35,6 +35,6 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 		exit(actually_run(state, &cmd->argv));
 	}
 	procsub_close_fds_parent(state);
-	free_executable_cmd(*cmd);
+	free_executable_cmd(state, *cmd);
 	return (free_executable_node(exe), res_pid(pid));
 }

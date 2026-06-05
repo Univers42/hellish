@@ -71,15 +71,21 @@ typedef struct s_token_old
 	int		len;
 }	t_token_old;
 
+/* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
+   re-evaluates without re-lexing/re-parsing. Defined in arith.h; owned by the
+   token, freed in free_node, never shared across clones. */
+typedef struct s_arith_cache	t_arith_cache;
+
 /* token struct used in AST and lexer */
 typedef struct s_token
 {
-	t_tt		tt;
-	char		*start;
-	int			len;
-	bool		allocated;
-	bool		split_eligible;
-	t_token_old	*full_word;
+	t_tt			tt;
+	char			*start;
+	int				len;
+	bool			allocated;
+	bool			split_eligible;
+	t_token_old		*full_word;
+	t_arith_cache	*arith_cache;
 }	t_token;
 
 static inline t_token	create_token(char *start, int len, t_tt token_type)

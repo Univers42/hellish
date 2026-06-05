@@ -25,6 +25,14 @@ long long		arith_eval(t_shell *state, const char *expr,
 					int len, bool *error);
 char			*arith_expand(t_shell *state, const char *expr, int len);
 
+/* Shared eval helpers (eval.c), reused by the cached path (eval_cached.c). */
+long long		arith_run(t_shell *state, t_arith_lexer *lexer, bool *error);
+char			*arith_lltoa(long long value);
+char			*arith_fail(t_shell *state, const char *expr, int len);
+long long		arith_eval_cached(t_shell *state, t_arith_cache *c,
+					bool *error);
+void			arith_advance_toks(t_arith_lexer *lex);
+
 //lexer
 void			skip_whitespace(t_arith_lexer *lex);
 bool			is_var_start(char c);

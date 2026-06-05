@@ -34,7 +34,7 @@ static t_execution_state	handle_func_call(t_shell *state,
 	restore_temp_assigns(state, &saves);
 	if (need)
 		restore_backup_fds(bak, 0);
-	free_executable_cmd(*cmd);
+	free_executable_cmd(state, *cmd);
 	free_executable_node(exe);
 	return (res);
 }
@@ -45,7 +45,7 @@ static t_execution_state	handle_empty_command(t_shell *state,
 {
 	ft_eprintf("%s: command not found\n", state->ctx);
 	procsub_close_fds_parent(state);
-	free_executable_cmd(*cmd);
+	free_executable_cmd(state, *cmd);
 	free_executable_node(exe);
 	return (res_status(COMMAND_NOT_FOUND));
 }
@@ -57,7 +57,7 @@ static t_execution_state	handle_assign_only(t_shell *state,
 	if (exe->modify_parent_ctx)
 		env_extend(&state->env, &cmd->pre_assigns, state->opt_allexport);
 	procsub_close_fds_parent(state);
-	free_executable_cmd(*cmd);
+	free_executable_cmd(state, *cmd);
 	free_executable_node(exe);
 	return (res_status(state->last_cmdsub_status));
 }
@@ -73,7 +73,8 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 	argv0 = ((char **)cmd->argv.ctx)[0];
 	if (argv0 && argv0[0] == '\0')
 		return (handle_empty_command(state, cmd, exe));
-	if (func_lookup(state, argv0) && exe->modify_parent_ctx)
+	if (state->functions.len && func_lookup(state, argv0)
+		&& exe->modify_parent_ctx)
 		return (handle_func_call(state, cmd, exe));
 	if (builtin_func(argv0) && exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, cmd, exe));
@@ -85,11 +86,12 @@ t_execution_state	execute_simple_command(t_shell *state,
 {
 	t_executable_cmd	cmd;
 
+	cmd = (t_executable_cmd){0};
 	state->last_cmdsub_status = 0;
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
 		procsub_close_fds_parent(state);
-		free_executable_cmd(cmd);
+		free_executable_cmd(state, cmd);
 		free_executable_node(exe);
 		if (get_g_sig()->should_unwind)
 			return (res_status(CANCELED));

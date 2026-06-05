@@ -35,7 +35,7 @@ int	handle_set_o(t_shell *state, t_vec argv)
 }
 
 /* Cache the decimal of $# in the fixed buffer so env_expand can return it. */
-static void	pos_set_cnt(t_pos *pos)
+void	pos_set_cnt(t_pos *pos)
 {
 	char	*s;
 
@@ -60,10 +60,12 @@ void	pos_build(t_pos *pos, char **args, size_t n)
 		i++;
 	}
 	pos->count = (int)n;
+	pos->args_owned = true;
 	pos_set_cnt(pos);
 }
 
-/* Release the strings + array owned by `pos`. */
+/* Release the positional array; string elements are freed only when owned (a
+   borrowed set points into the caller's argv, which owns/frees the strings). */
 void	pos_free(t_pos *pos)
 {
 	size_t	i;
@@ -71,12 +73,14 @@ void	pos_free(t_pos *pos)
 	if (pos->args)
 	{
 		i = 0;
-		while (pos->args[i])
-			free(pos->args[i++]);
+		if (pos->args_owned)
+			while (pos->args[i])
+				free(pos->args[i++]);
 		free(pos->args);
 	}
 	pos->args = NULL;
 	pos->count = 0;
+	pos->args_owned = false;
 }
 
 int	set_positional_args(t_shell *state, char **args, size_t n)

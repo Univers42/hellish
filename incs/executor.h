@@ -25,7 +25,13 @@ typedef struct executable_cmd_s
 	t_vec_env	pre_assigns;
 	t_vec		argv;
 	char		*fname;
+	bool		pooled;
 }	t_executable_cmd;
+
+/* argv backing pool (free_utils2.c): borrow on expand, return on teardown. */
+void				argv_pool_acquire(t_shell *state, t_executable_cmd *cmd);
+void				argv_pool_release(t_shell *state, t_executable_cmd *cmd);
+void				free_argv_pool(t_shell *state);
 
 typedef struct executable_node_s
 {

@@ -70,6 +70,7 @@ void	arith_lexer_init(t_arith_lexer *lex, const char *input, int len)
 	lex->len = len;
 	lex->error = false;
 	lex->error_msg = NULL;
+	lex->toks = NULL;
 	lex->current.type = ATOK_EOF;
 	arith_lexer_advance(lex);
 }
