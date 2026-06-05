@@ -75,10 +75,11 @@ void	free_all_state(t_shell *state)
 	free_hist(state);
 	free(state->cwd.ctx);
 	pos_free(&state->pos);
+	free_argv_pool(state);
 	env_index_free();
 }
 
-void	free_executable_cmd(t_executable_cmd cmd)
+void	free_executable_cmd(t_shell *state, t_executable_cmd cmd)
 {
 	size_t	i;
 	t_env	*e;
@@ -94,7 +95,7 @@ void	free_executable_cmd(t_executable_cmd cmd)
 	while (++i < cmd.argv.len)
 		word_free(((char **)cmd.argv.ctx)[i]);
 	free(cmd.pre_assigns.ctx);
-	free(cmd.argv.ctx);
+	argv_pool_release(state, &cmd);
 }
 
 void	free_executable_node(t_executable_node *node)

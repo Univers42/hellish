@@ -40,6 +40,7 @@ static t_token	clone_token(t_token tok)
 
 	out = tok;
 	out.allocated = false;
+	out.arith_cache = NULL;
 	out.full_word = dup_full_word(tok.full_word, false);
 	return (out);
 }
@@ -49,6 +50,7 @@ static t_token	deep_clone_token(t_token tok)
 	t_token	out;
 
 	out = tok;
+	out.arith_cache = NULL;
 	if (tok.start)
 	{
 		out.start = ft_strndup(tok.start, tok.len);

@@ -87,6 +87,11 @@ void	arith_lexer_advance(t_arith_lexer *lex)
 {
 	char	c;
 
+	if (lex->toks)
+	{
+		arith_advance_toks(lex);
+		return ;
+	}
 	skip_whitespace(lex);
 	if (lex->pos >= lex->len)
 	{

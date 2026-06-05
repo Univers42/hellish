@@ -68,15 +68,30 @@ typedef struct s_arith_token
 	int			len;		/* length of token */
 }	t_arith_token;
 
-/* Lexer state */
+/* A pure $((...)) expression lexed once: the token array (with var_name/start
+   pointing into the persistent source bytes) plus the source identity so the
+   cache is only reused for the same bytes. Variables still resolve live. */
+typedef struct s_arith_cache
+{
+	t_arith_token	*toks;
+	int				ntoks;
+	const char		*src;
+	int				srclen;
+}	t_arith_cache;
+
+/* Lexer state. When `toks` is set the lexer replays that cached array (using
+   `pos` as the token index, so the parser's pos-based backtracking rewinds it
+   transparently); otherwise it scans `input` with `pos` as the byte offset. */
 typedef struct s_arith_lexer
 {
-	const char		*input;
-	int				pos;
-	int				len;
-	t_arith_token	current;
-	bool			error;
-	char			*error_msg;
+	const char			*input;
+	int					pos;
+	int					len;
+	t_arith_token		current;
+	bool				error;
+	char				*error_msg;
+	const t_arith_token	*toks;
+	int					ntoks;
 }	t_arith_lexer;
 
 /* Parser/evaluator state */
@@ -94,9 +109,16 @@ char			*arith_expand(t_shell *state, const char *expr, int len);
 long long		arith_eval(t_shell *state,
 					const char *expr, int len, bool *error);
 
+/* Cached arithmetic: lex once into *cachep, then re-evaluate live. */
+char			*arith_expand_cached(t_shell *state, const char *expr,
+					int len, t_arith_cache **cachep);
+void			arith_cache_free(t_arith_cache *c);
+
 /* Lexer functions */
 void			arith_lexer_init(t_arith_lexer *lex,
 					const char *input, int len);
+void			arith_lexer_init_toks(t_arith_lexer *lex,
+					const t_arith_token *toks, int ntoks);
 void			arith_lexer_advance(t_arith_lexer *lex);
 t_arith_token	arith_lexer_peek(t_arith_lexer *lex);
 
