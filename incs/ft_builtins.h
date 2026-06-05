@@ -40,6 +40,8 @@ int				builtin_shift(t_shell *state, t_vec argv);
 int				set_positional_args(t_shell *state,
 					char **args, size_t n);
 void			pos_build(t_pos *pos, char **args, size_t n);
+void			pos_borrow(t_pos *pos, char **args, size_t n);
+void			pos_set_cnt(t_pos *pos);
 void			pos_free(t_pos *pos);
 int				builtin_ulimit(t_shell *state, t_vec argv);
 int				builtin_update(t_shell *state, t_vec argv);

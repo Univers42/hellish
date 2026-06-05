@@ -117,12 +117,13 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	t_executable_node	body_exe;
 	t_execution_state	status;
 	t_pos				saved;
+	t_ast_node			body;
 
 	state->func_depth++;
 	saved = state->pos;
-	pos_build(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
-	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO,
-			&fn->body, true);
+	pos_borrow(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
+	body = fn->body;
+	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &body, true);
 	status = execute_tree_node(state, &body_exe);
 	state->func_return = 0;
 	scope_leave(state);

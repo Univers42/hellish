@@ -64,7 +64,7 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	if (need)
 		restore_backup_fds(bak, persist);
 	procsub_close_fds_parent(state);
-	free_executable_cmd(*cmd);
+	free_executable_cmd(state, *cmd);
 	free_executable_node(exe);
 	return (res_status(status));
 }

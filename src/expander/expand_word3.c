@@ -13,18 +13,25 @@
 #include "expander_private.h"
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
+char	*arith_expand_cached(t_shell *state, const char *expr, int len,
+			t_arith_cache **cachep);
 
+/* A piece of a keep-as-one word: plain literal text (unquoted or inside double
+   quotes) or a plain $name (likewise). Double-quoted vars expand without field
+   splitting, exactly the keep-as-one semantics, so they share this fast path;
+   special params ($?, $@, ${...}) fail name_is_plain and take the slow path. */
 static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 {
 	char	*v;
 
-	if (t->tt == TT_WORD)
+	if (t->tt == TT_WORD || t->tt == TT_DQWORD)
 	{
 		if (!is_plain_literal_text(t->start, t->len))
 			return (0);
 		vec_push_nstr(out, t->start, t->len);
 	}
-	else if (t->tt == TT_ENVVAR && name_is_plain(t->start, t->len))
+	else if ((t->tt == TT_ENVVAR || t->tt == TT_DQENVVAR)
+		&& name_is_plain(t->start, t->len))
 	{
 		v = env_expand_n(state, t->start, t->len);
 		if (v)
@@ -102,5 +109,6 @@ char	*try_pure_arith(t_shell *state, t_ast_node *node)
 			return (NULL);
 		i++;
 	}
-	return (arith_expand(state, t->start + 3, t->len - 5));
+	return (arith_expand_cached(state, t->start + 3, t->len - 5,
+			&t->arith_cache));
 }

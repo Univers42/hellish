@@ -86,7 +86,15 @@ typedef struct s_pos
 	char	**args;
 	int		count;
 	char	cnt_str[12];
+	bool	args_owned;
 }	t_pos;
+
+/* Depth-indexed pool of reusable argv backing vectors: one slot per nesting
+   level (command substitution, subshells, function bodies). A simple command
+   borrows its slot, fills/reuses the backing array, and resets (not frees) it
+   on teardown, so the steady state does zero per-command malloc/free. Past this
+   depth a command falls back to a fresh vector (correctness preserved). */
+# define ARGV_POOL_DEPTH 64
 
 typedef struct s_shell
 {
@@ -143,6 +151,8 @@ typedef struct s_shell
 	t_hash				aliases;
 	t_hash				cmd_cache;
 	int					edit_mode;
+	t_vec				argv_pool[ARGV_POOL_DEPTH];
+	int					argv_pool_depth;
 }	t_shell;
 
 /* Directory matcher ctx for glob expansion */

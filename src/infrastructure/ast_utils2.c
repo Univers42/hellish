@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "ast_private.h"
+#include "arith.h"
 
 void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 {
@@ -27,6 +28,7 @@ void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 
 void	free_node(t_ast_node *node)
 {
+	arith_cache_free(node->token.arith_cache);
 	if (node->token.allocated)
 		free(node->token.start);
 	if (node->token.full_word)
