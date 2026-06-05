@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "header.h"
+#include "header_private.h"
 #include "shell.h"
 #include <unistd.h>
 #include <stdlib.h>
@@ -61,54 +62,33 @@ int	header_cols(void)
 	return (80);
 }
 
-/* Display width of a UTF-8 string in terminal columns (ANSI-free input). */
+/* Display width of a UTF-8 string in terminal columns. ANSI colour escapes are
+   skipped (zero width), so cells may embed colours without breaking alignment.
+*/
 int	header_width(const char *s)
 {
 	mbstate_t	st;
 	wchar_t		wc;
 	size_t		len;
 	int			total;
-	int			w;
+	int			esc;
 
 	ft_memset(&st, 0, sizeof(st));
 	total = 0;
 	while (*s)
 	{
+		esc = skip_ansi(s);
+		if (esc)
+		{
+			s += esc;
+			continue ;
+		}
 		len = mbrtowc(&wc, s, MB_CUR_MAX, &st);
 		if (len == (size_t) - 1 || len == (size_t) - 2 || len == 0)
 			break ;
-		w = wcwidth(wc);
-		if (w > 0)
-			total += w;
+		if (wcwidth(wc) > 0)
+			total += wcwidth(wc);
 		s += len;
 	}
 	return (total);
-}
-
-/* Copy up to `max` display columns of `src` into `dst`; returns width used. */
-int	header_clip(char *dst, size_t size, const char *src, int max)
-{
-	mbstate_t	st;
-	wchar_t		wc;
-	size_t		len;
-	size_t		o;
-	int			used;
-
-	ft_memset(&st, 0, sizeof(st));
-	o = 0;
-	used = 0;
-	while (*src && o + 1 < size)
-	{
-		len = mbrtowc(&wc, src, MB_CUR_MAX, &st);
-		if (len == (size_t) - 1 || len == (size_t) - 2 || len == 0)
-			break ;
-		if (used + ft_max(wcwidth(wc), 0) > max || o + len >= size)
-			break ;
-		ft_memcpy(dst + o, src, len);
-		o += len;
-		used += ft_max(wcwidth(wc), 0);
-		src += len;
-	}
-	dst[o] = '\0';
-	return (used);
 }

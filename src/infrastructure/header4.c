@@ -12,6 +12,22 @@
 
 #include "header_private.h"
 
+/* Length in bytes of an ANSI CSI escape (ESC '[' … final) at `s`, else 0. Used
+   so width/centring ignore embedded colours. */
+int	skip_ansi(const char *s)
+{
+	int	i;
+
+	if (s[0] != 27 || s[1] != '[')
+		return (0);
+	i = 2;
+	while (s[i] && (s[i] < '@' || s[i] > '~'))
+		i++;
+	if (s[i])
+		i++;
+	return (i);
+}
+
 /* The number of body rows: the taller of the two columns. */
 static int	panel_rows(const t_panel *p)
 {

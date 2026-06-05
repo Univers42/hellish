@@ -36,7 +36,8 @@ const char	*panel_nth(const char **a, int i)
 }
 
 /* Emit one column cell, reading its leading marker for style: a rule, a
-   coloured logo line, an accented heading, or plain muted text. */
+   coloured logo line, an accented heading, a strong warn line, a calm ok line,
+   or plain muted text. */
 static void	emit_marked(const char *line, int width, int align,
 		const char *logo_color)
 {
@@ -48,6 +49,10 @@ static void	emit_marked(const char *line, int width, int align,
 		return (emit_cell(line + 1, width, align, C_HEAD));
 	if (line[0] == '\003')
 		return (emit_cell(line + 1, width, 1, logo_color));
+	if (line[0] == '\004')
+		return (emit_cell(line + 1, width, align, C_WARN));
+	if (line[0] == '\005')
+		return (emit_cell(line + 1, width, align, C_OK));
 	emit_cell(line, width, align, C_TAG);
 }
 
