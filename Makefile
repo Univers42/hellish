@@ -189,7 +189,16 @@ fclean: clean
 	@rm -rf build
 	@printf "\n" >&2
 
-re: fclean all
+# Run fclean THEN all, strictly in order. As plain prerequisites
+# (`re: fclean all`) a parallel build (-j, which OPT/my_shell turns on) races:
+# `all` starts compiling while `fclean` is still `rm -rf`-ing the build tree, so
+# objects/.d files land in a directory that then vanishes ("can't create .o: No
+# such file"; libft's "opening dependency file build-libc/...: No such file").
+# Two separate sub-makes guarantee the ordering. OPT/SAFE are command-line
+# overrides, so they propagate to the sub-makes automatically.
+re:
+	@$(MAKE) --no-print-directory fclean
+	@$(MAKE) --no-print-directory all
 	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(BAPTIZE_SHELL)\033[0m\n\n" >&2
 
 # Force a relink so the binary always matches the requested mode (debug here):

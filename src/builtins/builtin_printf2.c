@@ -40,26 +40,38 @@ static void	run_format(t_pf *pf, const char *fmt)
 	}
 }
 
+/* The format is argv[1], unless argv[1] is the end-of-options marker "--"
+   (as in `printf -- '-'`), in which case the real format is argv[2]. Returns
+   the index of the format word so a single leading "--" is consumed, matching
+   bash. */
+static int	pf_fmt_index(t_vec argv)
+{
+	if (argv.len >= 2 && !ft_strncmp(((char **)argv.ctx)[1], "--", 3))
+		return (2);
+	return (1);
+}
+
 /* printf format [arguments] : POSIX printf. The format is reused while
    arguments remain and it contains at least one consuming conversion. */
 int	builtin_printf(t_shell *state, t_vec argv)
 {
 	t_pf		pf;
 	t_string	out;
+	int			fmt_idx;
 
-	if (argv.len < 2)
-		return (ft_eprintf(
-				"%s: printf: usage: printf format [arguments]\n",
+	fmt_idx = pf_fmt_index(argv);
+	if ((int)argv.len <= fmt_idx)
+		return (ft_eprintf("%s: printf: usage: printf format [arguments]\n",
 				state->ctx), 2);
 	vec_init(&out);
 	out.elem_size = 1;
-	pf = (t_pf){.out = &out, .av = (char **)argv.ctx,
-		.argc = (int)argv.len, .argi = 2, .used = false, .stop = false};
-	run_format(&pf, pf.av[1]);
+	pf = (t_pf){.out = &out, .av = (char **)argv.ctx, .argc = (int)argv.len,
+		.argi = fmt_idx + 1, .used = false, .stop = false};
+	run_format(&pf, pf.av[fmt_idx]);
 	while (!pf.stop && pf.argi < pf.argc && pf.used)
 	{
 		pf.used = false;
-		run_format(&pf, pf.av[1]);
+		run_format(&pf, pf.av[fmt_idx]);
 	}
 	if (out.len && write(STDOUT_FILENO, out.ctx, out.len))
 	{

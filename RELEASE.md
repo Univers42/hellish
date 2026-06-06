@@ -12,7 +12,7 @@ shows you how to drive the shell.
 
 **New**
 
-- **A Claude‑style welcome panel.** A full‑width, two‑column box: a greeting
+- **A welcome panel.** A full‑width, two‑column box: a greeting
   and the **42 logo in salmon** on the left; getting‑started tips and a
   "What's new" block on the right. Shown once per session.
   (`HELLISH_NO_BANNER=1` to silence.)
