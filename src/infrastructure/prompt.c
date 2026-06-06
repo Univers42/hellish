@@ -12,6 +12,10 @@
 
 #include "prompt_private.h"
 
+/* Map the last open compound token to a short human label for the continuation
+   prompt. The parser pushes these token types onto parse_stack as it enters
+   compound commands; prompt_more_input walks the stack and formats "if while >
+   " so the user can see exactly how deep they are in a nested construct. */
 static const char	*prompt_label(t_tt curr)
 {
 	if (curr == TT_BRACE_LEFT)
@@ -33,6 +37,10 @@ static const char	*prompt_label(t_tt curr)
 	return (NULL);
 }
 
+/* Build the PS2-style continuation prompt from the parser's open-construct
+   stack: "if > ", "if while > ", etc. The last space is replaced by '>' to
+   give it the feel of a depth indicator. An empty stack (shouldn't happen
+   here, but guarded) just produces "> ". */
 t_string	prompt_more_input(t_parser *parser)
 {
 	t_string	ret;
@@ -80,6 +88,11 @@ void	render_prompt(t_string *ret, size_t frame, int status)
 		xfree(p.venv);
 }
 
+/* Build the primary prompt for an interactive read. The frame counter is
+   advanced here so each readline call shows the next blink frame, giving the
+   mascot a heartbeat feel even when the user types slowly. The status is
+   snapshotted before rendering so the arrow colour reflects the command that
+   just finished, not a half-updated value. */
 t_string	prompt_normal(t_shell *state)
 {
 	t_string	ret;

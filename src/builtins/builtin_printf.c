@@ -12,6 +12,9 @@
 
 #include "printf_private.h"
 
+/* Consume the next positional argument from the format call's argv. Returns
+   NULL when all arguments are exhausted — conversions that receive NULL
+   treat it as an empty string or zero, matching POSIX printf behaviour. */
 static const char	*pf_next_arg(t_pf *pf)
 {
 	if (pf->argi < pf->argc)
@@ -19,7 +22,10 @@ static const char	*pf_next_arg(t_pf *pf)
 	return (NULL);
 }
 
-/* "%[flags][width][.prec]" + "ll" for integers + conv for snprintf. */
+/* Build a snprintf format specifier from the raw text between '%' and the
+   conversion character. We inject "ll" before integer conversions so the
+   same snprintf call works for both 32-bit and 64-bit ints — otherwise the
+   stack layout passed to snprintf would be wrong on 64-bit targets. */
 static void	pf_build_spec(char *dst, const char *spec, int speclen, char conv)
 {
 	int	k;
@@ -33,6 +39,9 @@ static void	pf_build_spec(char *dst, const char *spec, int speclen, char conv)
 	dst[k + 1] = '\0';
 }
 
+/* Render the conversion into `buf` (4096 bytes). We use a fixed-size stack
+   buffer because POSIX printf output per conversion is bounded and we do
+   not want to malloc for every %-token. snprintf guarantees no overflow. */
 static void	pf_conv_str(char *fmt, const char *arg, char conv, char *buf)
 {
 	if (conv == 's')
@@ -53,6 +62,10 @@ static void	pf_conv_str(char *fmt, const char *arg, char conv, char *buf)
 	}
 }
 
+/* Handle one conversion: %%, %c, %b (backslash-escape string), and the
+   full snprintf-delegated set. pf->used is set to true whenever we consume
+   an argument — the outer loop in builtin_printf uses that to decide whether
+   to re-run the format string against the remaining arguments. */
 void	pf_conv(t_pf *pf, const char *spec, int speclen, char conv)
 {
 	char		buf[4096];

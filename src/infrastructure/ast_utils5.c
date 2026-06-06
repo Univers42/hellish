@@ -34,6 +34,10 @@ static t_token_old	*dup_full_word(t_token_old *src, bool deep)
 	return (out);
 }
 
+/* Shallow-clone a token: copy all fields but clear allocated (we borrow the
+   original's start pointer without owning it) and drop the arith_cache (the
+   receiver recomputes it if needed). full_word gets a new struct but still
+   borrows the start buffer (allocated=false); safe for short-lived use. */
 static t_token	clone_token(t_token tok)
 {
 	t_token	out;
@@ -45,6 +49,10 @@ static t_token	clone_token(t_token tok)
 	return (out);
 }
 
+/* Deep-clone a token: strdup the start buffer and the full_word buffer so the
+   copy is completely independent of the original lexer allocation. Used by
+   deep_clone_ast for command-substitution fork paths where the parent's tree
+   may be freed before the forked child finishes using it. */
 static t_token	deep_clone_token(t_token tok)
 {
 	t_token	out;
@@ -60,6 +68,10 @@ static t_token	deep_clone_token(t_token tok)
 	return (out);
 }
 
+/* Shallow-clone an entire AST subtree: new node structs and child vectors are
+   allocated, but token start buffers are borrowed (not owned). Safe as long as
+   the original tree outlives all clones. Used internally where lifetime is
+   guaranteed; otherwise use deep_clone_ast. */
 t_ast_node	clone_ast(t_ast_node *src)
 {
 	t_ast_node	dst;
@@ -89,6 +101,10 @@ t_ast_node	clone_ast(t_ast_node *src)
 	return (dst);
 }
 
+/* Deep-clone: every string buffer is strdup'd; the copy is fully independent.
+   Used when forking for command substitution -- the child needs its own tree
+   because the parent frees it on the next REPL iteration while the child
+   is still running. */
 t_ast_node	deep_clone_ast(t_ast_node *src)
 {
 	t_ast_node	dst;

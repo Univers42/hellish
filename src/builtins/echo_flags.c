@@ -12,6 +12,13 @@
 
 #include "builtins_private.h"
 
+/* echo's option parsing is surprisingly subtle. An argument is a flag word
+   only if it starts with '-' and every subsequent character is one of n/e/E.
+   The moment we hit a character that is not in that set we stop scanning for
+   flags and treat that argument as the first thing to print — so `echo -n -z`
+   prints " -z" rather than silently ignoring -z. */
+
+/* True if `c` is one of the three meaningful flag letters for echo. */
 static int	is_flag_char(char c)
 {
 	return (ft_strchr("nEe", c) != NULL);
@@ -27,6 +34,10 @@ static void	apply_flag_char(char c, int *tn, int *te)
 		*te = 0;
 }
 
+/* Try to interpret one argument as a flag token. We work on local copies of
+   the n and e flags so a partially-valid token (e.g. "-ne\x00") does not
+   corrupt the real flags — only commit when the whole token is valid.
+   Returns 1 if it was a valid flag word, 0 if the caller should stop. */
 static int	process_flag_token(char *token, int *tn, int *te)
 {
 	size_t	j;
@@ -55,6 +66,8 @@ static int	process_flag_token(char *token, int *tn, int *te)
 	return (1);
 }
 
+/* Scan argv[1..] for flag words. Returns the index of the first non-flag
+   argument (which is also the first thing that should be printed). */
 int	parse_flags(t_vec argv, int *n, int *e)
 {
 	size_t	i;
@@ -69,6 +82,10 @@ int	parse_flags(t_vec argv, int *n, int *e)
 	return (i);
 }
 
+/* Print argv[i..end] with a space between each pair. If `e` is set, each
+   argument goes through e_parser which handles \n, \t, \c etc. — a \c
+   inside any argument causes e_parser to return 1, which stops printing and
+   signals the caller to suppress the newline too. */
 int	print_args(int e, t_vec argv, size_t i)
 {
 	while (i < argv.len)

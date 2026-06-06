@@ -17,6 +17,11 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
+/* Translate a history specifier to a 0-based array index. NULL means "most
+   recent". Positive numbers are 1-based history positions; negative numbers
+   are relative offsets from the end (e.g. -1 = last entry). Both are clamped
+   to the valid range rather than returning an error so fc is tolerant of
+   out-of-range values from scripts. */
 int	fc_resolve_idx(t_shell *state, const char *s)
 {
 	int	n;
@@ -37,6 +42,8 @@ int	fc_resolve_idx(t_shell *state, const char *s)
 	return (n);
 }
 
+/* Print history entries first..last (inclusive, 0-based). Line numbers are
+   shown 1-based (matching `history` output) unless -n was passed. */
 static void	fc_print_entries(t_shell *state, int first, int last, bool nonums)
 {
 	int	i;
@@ -61,6 +68,10 @@ static bool	fc_check_nonums(char **av, int ac)
 	return (false);
 }
 
+/* fc -l [first [last]]: list history entries. With no range, default to the
+   last 16 entries. Reversed (-r) swaps first and last. -n suppresses line
+   numbers. The range arguments may be omitted individually — ac tracks which
+   were given. */
 int	fc_list(t_shell *state, char **av, int ac, bool reverse)
 {
 	int		first;
@@ -90,6 +101,10 @@ int	fc_list(t_shell *state, char **av, int ac, bool reverse)
 	return (0);
 }
 
+/* Write history entries first..last to a mkstemp() temp file and leave its
+   path in tmpf[0..63]. The temp file is later opened by the editor and then
+   read back by fc_run_editor. Returns 1 on failure (can't create file or
+   can't write); the caller must not proceed if this returns 1. */
 int	fc_write_tmp(t_shell *state, char *tmpf, int first, int last)
 {
 	int		fd;

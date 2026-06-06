@@ -12,6 +12,10 @@
 
 #include "rl_private.h"
 
+/* Re-sync the has_line flag from the raw buffer state. The buffer acts as a
+   ring: data already consumed lives below cursor, unread data above it. We
+   never remove consumed bytes until buff_readline_reset; until then cursor is
+   our read pointer and has_line just says "is there more to deliver?". */
 void	buff_readline_update(t_rl *l)
 {
 	if (!l->buff.ctx || l->buff.len == 0)
@@ -25,6 +29,10 @@ void	buff_readline_update(t_rl *l)
 	l->has_line = l->cursor != l->buff.len;
 }
 
+/* Slide the unconsumed tail to the front of the buffer (compaction). The
+   no_compact flag suppresses this when the caller wants to keep the raw bytes
+   in place — used after a heredoc extraction where the stripped text is kept
+   alive as a separate allocation. */
 void	buff_readline_reset(t_rl *l)
 {
 	if (l->no_compact)
@@ -41,11 +49,15 @@ void	buff_readline_reset(t_rl *l)
 	buff_readline_update(l);
 }
 
+/* Zero-initialise all fields: cursor=0, has_line=false, buff empty. */
 void	buff_readline_init(t_rl *ret)
 {
 	*ret = (t_rl){};
 }
 
+/* Update the error-message context string to reflect the current line number.
+   Bash writes "script: line N:" in error output — we mirror that here.
+   Only runs when should_update_ctx is set (non-interactive script mode). */
 void	update_ctx(t_shell *state)
 {
 	if (!state->rl.should_update_ctx)
@@ -55,6 +67,10 @@ void	update_ctx(t_shell *state)
 			state->dft_ctx, state->rl.line);
 }
 
+/* Non-TTY path: read raw bytes straight from fd 0 (piped script). We stop on
+   the first newline so the REPL loop still gets one command at a time, or on
+   EOF to signal end-of-script. SIGINT during the read sets status=2 so the
+   caller can cancel the current command without exiting the shell. */
 int	get_more_input_notty(t_shell *state)
 {
 	char	buff[4096 * 2];

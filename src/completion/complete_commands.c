@@ -10,6 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Command completion helpers used by the readline generator in
+   complete_commands2.c.  The generator is stateful (readline calls it
+   repeatedly with increasing state_gen until it returns NULL), so we use
+   file-scope statics for the PATH scan.  cmd_gen_cleanup/init reset them
+   between completion sessions so stale directory handles can't leak. */
+
 #include "completion_private.h"
 #include "libft.h"
 #include <readline/readline.h>
@@ -17,6 +23,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
+/* Built-in names offered before PATH scan.  Checked first so the user
+   gets `echo` immediately even if /bin/echo appears much later. */
 char	*g_builtins[] = {
 	"echo", "export", "cd", "exit", "pwd", "env", "unset", "type", "set",
 	"read", "test", "alias", "unalias", "hash", "jobs", "fg", "bg", "fc",
@@ -26,6 +34,7 @@ char	*g_builtins[] = {
 int		g_cmd_idx;
 char	*g_path_dirs_cache;
 
+/* Free a NULL-terminated array of strings (result of ft_split). */
 void	free_split(char **arr)
 {
 	int	i;
@@ -41,6 +50,8 @@ void	free_split(char **arr)
 	xfree(arr);
 }
 
+/* Release the split PATH array and the cached PATH string.  Called both
+   when the generator is done and at init to reset from a prior session. */
 void	cmd_gen_cleanup(char ***path_dirs)
 {
 	free_split(*path_dirs);
@@ -49,6 +60,10 @@ void	cmd_gen_cleanup(char ***path_dirs)
 	g_path_dirs_cache = NULL;
 }
 
+/* Reset the generator: re-read PATH from the environment (not from our
+   internal env vec -- readline completion runs without a t_shell pointer)
+   and split on ':'.  g_cmd_idx rewinds to 0 so builtins are offered
+   again before the PATH scan. */
 void	cmd_gen_init(char ***path_dirs, int *dir_idx)
 {
 	g_cmd_idx = 0;
@@ -62,6 +77,8 @@ void	cmd_gen_init(char ***path_dirs, int *dir_idx)
 	*dir_idx = 0;
 }
 
+/* Return the next directory entry whose name starts with `text`, or NULL
+   when the directory is exhausted.  The caller opens and closes `d`. */
 char	*cmd_gen_scan_dir(DIR *d, const char *text, size_t tlen)
 {
 	struct dirent	*ent;
@@ -77,6 +94,10 @@ char	*cmd_gen_scan_dir(DIR *d, const char *text, size_t tlen)
 	return (NULL);
 }
 
+/* Iterate PATH directories one at a time, advancing dir_idx on each
+   call.  Opens the directory, scans for a match, then closes it and
+   returns.  If no match in a given dir, tries the next.  When all dirs
+   are exhausted it cleans up and returns NULL to signal "done". */
 char	*cmd_gen_dirs(char ***path_dirs, int *dir_idx, size_t tlen,
 	const char *text)
 {

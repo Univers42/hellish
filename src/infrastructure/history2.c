@@ -60,6 +60,10 @@ static void	load_and_persist(t_shell *state, const char *path, bool trimmed)
 	close(fd);
 }
 
+/* Load $HOME/.hellish_history, feed the entries to readline, and rewrite the
+   file if it was trimmed. We open the file with O_CREAT so the first run
+   creates it silently instead of erroring. The append_fd stays open for the
+   whole session so manage_history() can add each new command atomically. */
 void	parse_history_file(t_shell *state)
 {
 	t_string	hist;
@@ -88,6 +92,10 @@ void	parse_history_file(t_shell *state)
 	xfree(path);
 }
 
+/* Encode a command for the history file: prefix every backslash with an extra
+   backslash, and prefix every newline with a backslash (so a multi-line command
+   round-trips cleanly through the file). The entry is terminated with a bare
+   '\n'. Reverse of the decode done in process_parse_single_cmd. */
 t_string	encode_cmd_hist(char *cmd)
 {
 	t_string	ret;
@@ -109,6 +117,10 @@ t_string	encode_cmd_hist(char *cmd)
 	return (ret);
 }
 
+/* Build the full path to the history file by joining $HOME and HIST_FILE.
+   Returns a heap-allocated string the caller must xfree, or NULL if HOME is
+   unset. A '/' is appended only when HOME does not already end with one, so
+   both "/home/user" and "/home/user/" work correctly. */
 char	*get_hist_file_path(t_shell *state)
 {
 	t_env		*env;

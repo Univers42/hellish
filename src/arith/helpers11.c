@@ -12,6 +12,9 @@
 
 #include "arith_private.h"
 
+/* Evaluate arith_parse_binop (bitor level, min_prec=1) with side effects
+   suppressed -- used to silently consume the false side of && without firing
+   any assignments or increments inside it. */
 static long long	parse_bitor_nse(t_arith_parser *p)
 {
 	bool		old;
@@ -24,6 +27,9 @@ static long long	parse_bitor_nse(t_arith_parser *p)
 	return (val);
 }
 
+/* Same as parse_bitor_nse but for a full && expression -- used by
+   arith_parse_or to consume the dead right operand of a true ||
+   without side effects. */
 static long long	parse_and_nse(t_arith_parser *p)
 {
 	bool		old;
@@ -36,7 +42,11 @@ static long long	parse_and_nse(t_arith_parser *p)
 	return (val);
 }
 
-/* And: bitor ('&&' bitor)* */
+/* Logical AND: bitor ('&&' bitor)*. Short-circuits: if left is already 0 the
+   right operand is parsed with no_side_effects so we advance past it without
+   triggering any variable writes. If left is non-zero the right operand is
+   evaluated normally and the result is converted to 0/1. This is how bash
+   handles `(( 0 && (x=5) ))` -- x stays unchanged. */
 long long	arith_parse_and(t_arith_parser *p)
 {
 	long long		left;
@@ -60,7 +70,11 @@ long long	arith_parse_and(t_arith_parser *p)
 	return (left);
 }
 
-/* Or: and ('||' and)* */
+/* Logical OR: and ('||' and)*. Short-circuits: if left is non-zero the
+   result is already 1 and the right operand is consumed with no_side_effects.
+   If left is 0 the right operand is evaluated normally and its boolean value
+   becomes the result. Mirrors the && short-circuit above but with the
+   condition inverted. */
 long long	arith_parse_or(t_arith_parser *p)
 {
 	long long		left;

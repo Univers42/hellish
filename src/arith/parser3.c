@@ -12,6 +12,12 @@
 
 #include "arith_private.h"
 
+/* Try to parse a compound assignment like +=, -=, <<=, &=, etc. We peek at
+   the next operator; if it's not a compound-capable op, return val unchanged.
+   Otherwise we speculatively advance to check the *following* token is '='.
+   If not, we back the lexer up (restore pos + current) and fall through as a
+   plain read. This two-token lookahead is the only place we manually save and
+   restore the lexer cursor. */
 long long	try_compound_assign(t_arith_parser *p,
 	t_arith_token *var, long long val)
 {
@@ -37,6 +43,9 @@ long long	try_compound_assign(t_arith_parser *p,
 	return (val);
 }
 
+/* Prefix ++: consume the '++' token (already peeked by the caller), then
+   demand a VAR token. Increment, store, and return the new value -- in
+   contrast to the post-increment in primary_var which returns the old one. */
 static long long	handle_prefix_inc(t_arith_parser *p)
 {
 	t_arith_token	tok;
@@ -52,6 +61,8 @@ static long long	handle_prefix_inc(t_arith_parser *p)
 	return (val);
 }
 
+/* Prefix --: mirror of handle_prefix_inc. Subtract one, store, return
+   the new (decremented) value. */
 static long long	handle_prefix_dec(t_arith_parser *p)
 {
 	t_arith_token	tok;
@@ -67,7 +78,11 @@ static long long	handle_prefix_dec(t_arith_parser *p)
 	return (val);
 }
 
-/* Unary: ('++' | '--' | '+' | '-' | '!' | '~') unary | postfix */
+/* Unary: ('++' | '--' | '+' | '-' | '!' | '~') unary | primary. Unary plus
+   is a no-op (consumed for symmetry with unary minus). Logical NOT maps to C
+   !. Bitwise NOT maps to C ~. All six recurse on arith_parse_unary so that
+   "-~x" and "!!x" work. Fall through to arith_parse_primary when no prefix
+   matches. */
 long long	arith_parse_unary(t_arith_parser *p)
 {
 	t_arith_token	tok;

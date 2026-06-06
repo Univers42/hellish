@@ -12,9 +12,11 @@
 
 #include "arith_private.h"
 
-/* Binding power of a binary operator (higher binds tighter), or 0 if `type`
-   is not one of the collapsed bitor..multiplicative operators. Mirrors the
-   precedence the old per-level descent encoded by nesting order. */
+/* Binding power of a binary operator: higher number = tighter binding.
+   Returns 0 for any token that isn't in the collapsed range (bitor..mul),
+   which is the loop-exit sentinel in arith_parse_binop. The numbers map to
+   the C/POSIX precedence table: * / % (8) > + - (7) > << >> (6) > comparisons
+   (5) > == != (4) > & (3) > ^ (2) > | (1). */
 static int	binop_prec(t_arith_tok type)
 {
 	if (type == ATOK_MUL || type == ATOK_DIV || type == ATOK_MOD)
@@ -37,10 +39,13 @@ static int	binop_prec(t_arith_tok type)
 	return (0);
 }
 
-/* Precedence-climbing replacement for the bitor..multiplicative descent:
-   one loop driven by binop_prec instead of ~8 nested functions. Operands are
-   exponents (next-tighter level); left-assoc via the prec+1 recursive call.
-   Pure ops, so the no_side_effects flag only matters inside apply_binop. */
+/* Precedence-climbing loop replacing ~8 nested descent functions (bitor down
+   to multiplicative). One loop is enough: peek at the next operator, get its
+   binding power, and stop if it's below min_prec. Left-associativity is the
+   default -- achieved by recursing with (prec + 1) so an equal-precedence op
+   to the right binds less tightly than the current one. Call with min_prec=1
+   to consume the full bitor..mul range. Operators above this range (&&, ||,
+   ternary, comma, assignment) are still handled by separate functions. */
 long long	arith_parse_binop(t_arith_parser *p, int min_prec)
 {
 	long long		left;

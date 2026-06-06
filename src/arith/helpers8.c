@@ -12,8 +12,12 @@
 
 #include "arith_private.h"
 
-/* Decimal text of val into buf[32], returning the start (handles LLONG_MIN by
-   formatting the magnitude as unsigned). */
+/* Fill buf[32] with the decimal representation of val, right-to-left.
+   Returns a pointer to the start of the number inside buf. The unsigned-
+   magnitude trick handles LLONG_MIN whose absolute value can't be represented
+   as a positive signed long long. This is the inline version used to format
+   the new value for env_set; the public arith_lltoa in eval.c is a strdup
+   wrapper around the same logic. */
 static char	*ll_to_buf(char *buf, long long val)
 {
 	int					i;
@@ -38,6 +42,11 @@ static char	*ll_to_buf(char *buf, long long val)
 	return (buf + i);
 }
 
+/* Write `val` back into the shell environment under the given variable name.
+   The no_side_effects guard is the key: dead branches of a ternary, or the
+   false side of && / ||, call this with no_side_effects=true and their
+   assignments are silently dropped. That's the POSIX-required behaviour and
+   what makes `x=1; (( 0 && (x=99) )); echo $x` print 1, not 99. */
 void	set_var_value(t_arith_parser *p, const char *name, int len,
 	long long val)
 {
@@ -53,7 +62,10 @@ void	set_var_value(t_arith_parser *p, const char *name, int len,
 			true));
 }
 
-/* A plain base-10 integer (no leading zero, so octal "010" is excluded). */
+/* Return true when `s` looks like a plain base-10 integer (no leading zero,
+   so "010" is excluded -- that would be an octal literal if re-evaluated).
+   An optional leading sign is accepted. When this check passes, ft_atol is
+   enough and we avoid the more expensive recursive arith_eval call. */
 static int	is_simple_decimal(const char *s)
 {
 	if (*s == '-' || *s == '+')
@@ -70,9 +82,12 @@ static int	is_simple_decimal(const char *s)
 	return (1);
 }
 
-/* A variable's value may itself be an arithmetic expression / another name
-   (POSIX: recursive evaluation), e.g. x=y; y=5 -> $((x))==5. Bounded depth
-   guards against cycles like x=x. */
+/* A variable's value may be another name or an expression -- POSIX allows
+   `x=y; y=5; echo $((x))` to print 5 via recursive evaluation. We dup the
+   string because arith_eval may modify the input buffer. The static `depth`
+   counter caps recursion at 100 levels to kill cycles like `x=x` before
+   we blow the C stack. depth is shared across all active evaluations in the
+   process, so nested $((...)) in subshells is still bounded. */
 static long long	resolve_recursive(t_arith_parser *p, const char *val)
 {
 	static int	depth;
@@ -95,6 +110,12 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
 	return (r);
 }
 
+/* Look up a variable in the shell environment and return its numeric value.
+   An unset or empty variable is 0 (POSIX). A simple decimal string is parsed
+   with ft_atol (fast path). Anything else -- hex, octal, another name, an
+   expression -- goes through resolve_recursive which re-invokes the full
+   arithmetic evaluator. That's what makes `((16#ff))` and indirect
+   references work. */
 long long	get_var_value(t_arith_parser *p, const char *name, int len)
 {
 	char	*val;

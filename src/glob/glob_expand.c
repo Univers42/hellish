@@ -12,6 +12,10 @@
 
 #include "glob_private.h"
 
+/* A '-' at the very start or very end of a bracket class is a literal dash,
+   not a range operator. POSIX: "[-abc]" and "[abc-]" include '-' literally.
+   Return 1 (consumed) if we handled it, 0 to let the caller try the range
+   logic next. */
 static int	handle_dash_literal(t_bracket_ctx *ctx)
 {
 	if (ctx->start[ctx->i] == '-' && (ctx->i == 0 || ctx->i == ctx->len - 1))
@@ -23,6 +27,10 @@ static int	handle_dash_literal(t_bracket_ctx *ctx)
 	return (0);
 }
 
+/* Determine whether the bytes starting at ctx->i form a range expression
+   "c-c" (current char, dash, closing char). Guards: there must be at least
+   two more bytes, the second must be '-', and the third must not be ']' or '['
+   (a dash before the closing bracket is a literal, not a range). */
 static bool	is_valid_range_pattern(t_bracket_ctx *ctx)
 {
 	return (
@@ -32,6 +40,12 @@ static bool	is_valid_range_pattern(t_bracket_ctx *ctx)
 		&& peek_bracket(ctx, 2) != '[');
 }
 
+/* Expand a range if the current position looks like one. Handles backslash-
+   escaped endpoints: if the start char is '\\' we treat it as a literal '-'
+   and collapse; if the end char is '\\' we look one byte further for the
+   actual endpoint. On an invalid range (start > end) we fall back to treating
+   the first char and the dash as literals. Returns 1 on success, 0 if no
+   range was found (caller continues with char-by-char logic). */
 static int	handle_range(t_bracket_ctx *ctx)
 {
 	int	range_count;
@@ -58,6 +72,11 @@ static int	handle_range(t_bracket_ctx *ctx)
 	return (0);
 }
 
+/* Walk the bracket content byte-by-byte, expanding ranges, POSIX classes, and
+   backslash escapes into ctx->buf. The 1000-byte cap on buf_pos is a safety
+   limit -- a bracket with 1000+ distinct characters after expansion is
+   degenerate and we'd rather truncate than overflow. Normal real-world cases
+   (e.g. [a-z0-9_]) expand to at most ~63 characters. */
 static void	expand_bracket_content(t_bracket_ctx *ctx)
 {
 	while (ctx->i < ctx->len && ctx->buf_pos < 1000)
@@ -74,6 +93,12 @@ static void	expand_bracket_content(t_bracket_ctx *ctx)
 	}
 }
 
+/* Expand a raw bracket expression content (the bytes between '[' and ']',
+   not including the brackets or the optional '!' negation flag) into a flat
+   string of matching characters. The result is malloc'd; *out_len receives its
+   length. Returns NULL on allocation failure or if len <= 0. The "leading
+   bracket special" case handles the POSIX rule that ']' as the first character
+   is literal, not the closing bracket. */
 char	*glob_expand_bracket(const char *start, int len, int *out_len)
 {
 	t_bracket_ctx	ctx;

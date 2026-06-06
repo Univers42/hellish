@@ -16,6 +16,8 @@
 #include "libft.h"
 #include <stdlib.h>
 
+/* Retrieve the history entry at absolute index (0 = oldest) or relative
+   negative index (-1 = most recent). Returns NULL when out of range. */
 char	*hist_entry_at(t_shell *state, int idx)
 {
 	t_vec	*cmds;
@@ -28,11 +30,14 @@ char	*hist_entry_at(t_shell *state, int idx)
 	return (((char **)cmds->ctx)[idx]);
 }
 
+/* The last saved command — shorthand for hist_entry_at(state, -1). */
 char	*hist_last(t_shell *state)
 {
 	return (hist_entry_at(state, -1));
 }
 
+/* !str : most recent history entry whose first `len` bytes match `prefix`.
+   Searches newest-first so !vi always finds the latest vi invocation. */
 char	*hist_search_prefix(t_shell *state, const char *prefix, int len)
 {
 	int	i;

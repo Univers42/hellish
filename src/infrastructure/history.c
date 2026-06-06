@@ -13,6 +13,11 @@
 #include "history_private.h"
 #include "libft.h"
 
+/* Walk one raw history entry (from the file) into cmd, unescaping the encoding
+   used by encode_cmd_hist. A backslash before a newline is the escape for a
+   real newline in the original command (a \-continuation or a here-string
+   body). A lone \n terminates the entry. The bool *bs tracks whether we just
+   consumed a backslash so the pair is processed atomically. */
 static void	process_parse_single_cmd(t_string hist, size_t *cur,
 				t_string *cmd, bool *bs)
 {
@@ -38,6 +43,9 @@ static void	process_parse_single_cmd(t_string hist, size_t *cur,
 	}
 }
 
+/* Public wrapper: allocate and return one decoded entry from the history
+   buffer. The returned t_string's .ctx is NUL-terminated for safe use as a
+   C string but .len does not include the terminator. */
 t_string	parse_single_cmd(t_string hist, size_t *cur)
 {
 	t_string	cmd;
@@ -82,6 +90,11 @@ static void	fill_hist_buf(const char *cmd, char *buf)
 	buf[j] = '\0';
 }
 
+/* Feed a command string to readline's history, pre-processing it into a single
+   logical line: a \<newline> pair (line continuation) becomes a space, and a
+   bare \n (embedded newline in a multi-line command) also becomes a space.
+   Without this, readline's history movement gets confused by embedded newlines
+   and can lock up or display garbled lines on ↑. */
 void	add_history_line(const char *cmd)
 {
 	char	*buf;
@@ -94,6 +107,9 @@ void	add_history_line(const char *cmd)
 	xfree(buf);
 }
 
+/* Decode the entire history file buffer into a vector of heap-allocated C
+   strings, one per command. The caller owns each string and is responsible for
+   freeing them (see free_hist). */
 t_vec	parse_hist_file(t_string hist)
 {
 	size_t	cur;

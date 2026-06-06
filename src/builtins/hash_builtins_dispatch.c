@@ -12,6 +12,16 @@
 
 #include "builtins_private.h"
 
+/* The dispatch table lives in a static t_hash inside builtin_func() and is
+   built exactly once (lazy-init on first call). We split the registration
+   into two helpers only to stay within the 42-norm 25-line limit per
+   function — both fill the same hash table `h`.
+
+   Why a hash table and not a switch? The builtin name arrives as a string;
+   hashing gives O(1) lookup with no strcmp chain and no need to intern the
+   name. The function pointers are cast to void* for storage and back to
+   t_builtin_fn on retrieval — ugly but correct because data/code pointer
+   sizes match on all the targets we care about (Linux x86-64/arm64). */
 static void	fill_builtin_hash1(t_hash *h)
 {
 	hash_set(h, "echo", (void *)builtin_echo);
@@ -74,6 +84,11 @@ static void	init_builtin_hash(t_hash *h)
 	fill_builtin_hash2(h);
 }
 
+/* Look up a builtin by name. The hash table is initialised on the first call
+   (the `!h.ctx` guard) and then reused for every subsequent lookup — so the
+   cost is one hash + one pointer dereference in the steady state. Returns
+   NULL when `name` is not a builtin, so callers can branch on that to decide
+   whether to fork a child process. */
 int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
 {
 	static t_hash	h = {0};

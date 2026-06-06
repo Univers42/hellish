@@ -17,6 +17,13 @@ int		test_file_op(const char *op, const char *path);
 int		test_str_op(const char *op, const char *s1, const char *s2);
 int		test_int_op(const char *op, const char *s1, const char *s2);
 
+/* All test functions follow the POSIX convention: 0 = true, 1 = false,
+   2 = error. This is the *inverse* of C's boolean, which trips everyone up
+   at least once. Keep it in mind when reading the returns below. */
+
+/* Evaluate a unary test: -z/-n (string length) or any single-letter -X
+   flag (file tests). Returns 1 (false) when the operator is unrecognised or
+   the operand is missing rather than crashing. */
 static int	test_unary(char **av, int ac, int *i)
 {
 	if (*i + 1 >= ac)
@@ -30,6 +37,8 @@ static int	test_unary(char **av, int ac, int *i)
 	return (1);
 }
 
+/* Evaluate a binary test: `a op b`. String ops are = == != and integer
+   comparison ops are -eq -ne -gt -ge -lt -le. Unrecognised ops return 1. */
 static int	test_binary(char **av, int ac, int *i)
 {
 	if (*i + 2 >= ac)
@@ -43,6 +52,10 @@ static int	test_binary(char **av, int ac, int *i)
 	return (1);
 }
 
+/* Route to the right evaluator based on token count: 1 = non-empty string,
+   2 = unary op + operand, 3 = binary a op b. Anything else is an error (2).
+   Note: `i` is the start index and `ac` is the count — so the effective
+   range is av[i..i+ac-1]. */
 static int	eval_test_result(char **av, int ac, int i)
 {
 	int	result;
@@ -63,6 +76,10 @@ static int	eval_test_result(char **av, int ac, int i)
 	return (result);
 }
 
+/* Entry point for the flat POSIX test evaluator: handles leading '!' and
+   delegates to eval_test_result. Used by both the [ ] and [[ ]] evaluators;
+   the [[ ]] one (db_or / db_and / …) calls this for each leaf primary it
+   finds, after stripping the surrounding brackets. */
 int	eval_test(char **av, int ac)
 {
 	int	i;

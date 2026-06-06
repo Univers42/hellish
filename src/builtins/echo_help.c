@@ -12,6 +12,10 @@
 
 #include "builtins_private.h"
 
+/* Parse an octal (\0NNN) or hex (\xNN) numeric escape in echo -e. The `str`
+   pointer is advanced past the digits that were consumed so the caller's
+   loop lands on the next character to process. Only the first 2 hex or 3
+   octal digits are taken; the rest are printed literally. */
 void	parse_numeric_escape(char **str)
 {
 	int				base;
@@ -34,6 +38,9 @@ void	parse_numeric_escape(char **str)
 	ft_putchar_fd((char)c, 1);
 }
 
+/* Emit the character that corresponds to a single-letter escape (\n, \t …).
+   Returns 1 if the escape was recognised and printed, 0 if not — the caller
+   then prints a literal backslash followed by the character. */
 static int	backslash_writer(char *s)
 {
 	if (*s == 'n')
@@ -59,6 +66,11 @@ static int	backslash_writer(char *s)
 	return (1);
 }
 
+/* Interpret the string `s` with escape processing (echo -e). Walk character
+   by character; on a backslash peek one ahead. '\c' returns 1 immediately,
+   telling the caller to suppress the trailing newline and stop all output.
+   Everything else is routed through backslash_writer or parse_numeric_escape;
+   unrecognised escapes print the backslash and the following character. */
 int	e_parser(char *s)
 {
 	while (*s)

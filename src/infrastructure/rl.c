@@ -41,6 +41,9 @@ static char	*split_prompt(char *prompt)
 	return (nl + 1);
 }
 
+/* Dump the raw prompt bytes and computed visible width to stderr when the env
+   var MINISHELL_DEBUG_PROMPT is set. Handy for chasing cursor-drift bugs where
+   a missing \001/\002 bracket is expanding the width by N ESC bytes. */
 static void	debug_dump_prompt(char *prompt)
 {
 	size_t	i;
@@ -56,6 +59,11 @@ static void	debug_dump_prompt(char *prompt)
 		visible_width_cstr(prompt));
 }
 
+/* The readline-in-a-forked-child trick: we cannot call readline in the parent
+   because it installs global signal handlers and terminal state that would
+   corrupt the parent shell. fork → child calls readline → writes over a pipe
+   → exits. stdin/stdout are inherited; rl_outstream is redirected to stderr
+   so readline's display uses the right fd. Exit 0 = line, 1 = EOF (^D). */
 void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
@@ -78,6 +86,10 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
 }
 
+/* Parent side of the fork: drain the pipe into the buffer and wait for the
+   child. If the child was killed by a signal (e.g. SIGINT in readline),
+   return 2 to propagate the interrupt; otherwise use the child's exit status
+   (0 = line, 1 = EOF). The waitpid loop retries on EINTR. */
 int	attach_input_readline(t_rl *l, int pp[2], int pid)
 {
 	int	status;
@@ -97,6 +109,10 @@ int	attach_input_readline(t_rl *l, int pp[2], int pid)
 	return (WEXITSTATUS(status));
 }
 
+/* Entry point for the readline fork dance: create the pipe, fork, and hand
+   each side to its respective function. The child never returns (bg_readline
+   always _exit()s); ft_assert(0) below is just a belt-and-suspenders guard in
+   case the compiler does not see that. */
 int	get_more_input_readline(t_rl *l, char *prompt)
 {
 	int	pp[2];

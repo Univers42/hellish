@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal header for the history subsystem. File format: each command is one
+   logical line terminated by a bare '\n'. Real newlines (from \-continuation or
+   quoted newlines inside the command) are stored as '\' + '\n'. Backslashes are
+   doubled. This escaping is symmetric: encode_cmd_hist writes, parse_single_cmd
+   reads. See history.c and history2.c for the encode/decode pair. */
 #ifndef HISTORY_PRIVATE_H
 # define HISTORY_PRIVATE_H
 

@@ -17,6 +17,12 @@ int				is_digit_char(unsigned char c);
 int				is_alnum_char(unsigned char c);
 unsigned char	to_lower(unsigned char c);
 
+/* NOTE: ft_strcoll is no longer used by glob_sort (which switched to ft_strcmp
+   for POSIX byte-order compliance). It is kept here in case other code needs
+   a locale-flavoured comparison. The algorithm is: skip non-alphanumeric chars
+   from both strings in lockstep, compare the next alnum pair case-insensitively
+   repeat. Ties are broken by a final plain ft_strcmp on the originals. This
+   gives a "natural sort" feel but is NOT what bash uses for glob ordering. */
 static void	skip_non_alnum(const char **p1, const char **p2)
 {
 	while (**p1 && !is_alnum_char((unsigned char)**p1))
@@ -25,6 +31,9 @@ static void	skip_non_alnum(const char **p1, const char **p2)
 		(*p2)++;
 }
 
+/* Compare the current alphanumeric characters (case-folded) from both strings
+   and advance past them. Returns non-zero on a difference so the caller can
+   stop; returns 0 and advances both pointers on a match. */
 static int	compare_alnum_chars(const char **p1, const char **p2)
 {
 	int	c1;
@@ -39,6 +48,10 @@ static int	compare_alnum_chars(const char **p1, const char **p2)
 	return (0);
 }
 
+/* After one string runs out of alphanumeric characters, compare whatever
+   is left (skipping leading non-alnum from both sides). If both are exhausted
+   simultaneously they're equal at this level. Otherwise the one with remaining
+   alnum chars wins. */
 static int	handle_remaining_chars(const char *p1, const char *p2)
 {
 	while (*p1 && !is_alnum_char((unsigned char)*p1))
@@ -50,6 +63,9 @@ static int	handle_remaining_chars(const char *p1, const char *p2)
 	return (0);
 }
 
+/* Case-insensitive collation with non-alnum skipping. The final ft_strcmp
+   tie-break ensures that two strings which are identical modulo case and
+   punctuation still produce a stable, deterministic order. */
 int	ft_strcoll(const char *s1, const char *s2)
 {
 	const char	*p1;

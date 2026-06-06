@@ -10,8 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Readline vi editing mode.  The show-mode-in-prompt variable makes
+   readline prefix the prompt with "(ins)" or "(cmd)" in vi mode so the
+   user always knows which sub-mode they are in -- a quality-of-life
+   touch that bash also enables by default in vi mode. */
+
 #include <readline/readline.h>
 
+/* Switch to vi key bindings (rl_editing_mode=0).  The mode indicator
+   appears in the prompt automatically once show-mode-in-prompt is on. */
 void	setup_vi_mode(void)
 {
 	rl_editing_mode = 0;

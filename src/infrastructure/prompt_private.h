@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal header for the prompt subsystem. Shared by prompt.c, prompt_utils*.c
+   prompt_metadata*.c and the mascot files. The t_prompt struct collects all the
+   metadata gathered during one render pass so each segment function can both
+   contribute text to `ret` and update p->vis_w (accumulated visible width)
+   for the padding calculation at the end. */
 #ifndef PROMPT_PRIVATE_H
 # define PROMPT_PRIVATE_H
 # include "shell.h"

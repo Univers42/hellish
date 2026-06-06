@@ -10,10 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* PWD/OLDPWD rotation (called by `cd`) and get_envp_all for process
+   substitutions that need to inherit shell-local variables too. */
+
 #include "env.h"
 #include "../builtins/builtins_private.h"
 
-// this one should be put into env/
+/* Rotate PWD -> OLDPWD, then set PWD to the new cwd (state->cwd.ctx).
+   If PWD didn't exist before, OLDPWD is unset entirely (POSIX 2.5.3).
+   Called after the chdir succeeds, not before, so state->cwd is fresh. */
 void	update_pwd_vars(t_shell *state)
 {
 	t_env	*pwd;

@@ -12,7 +12,16 @@
 
 #include "builtins_private.h"
 
-/* replace builtin_export loop with calls to helpers */
+/* export [-p] [name[=value] ...]: mark variables for export to the environment
+   of subsequent commands. Must run in the parent shell — forking would make
+   the assignment invisible to the rest of the session.
+
+   `export` alone (or `export -p`) prints the current export list in a form
+   that can be fed back to the shell. When arguments are given, -p is treated
+   as a signal to skip the first arg and start processing from argv[2]. Each
+   argument goes through process_arg(), which handles NAME, NAME=val, and the
+   `export NAME value` two-word form. Accumulates errors but keeps going — a
+   single bad identifier should not stop the valid ones. */
 int	builtin_export(t_shell *st, t_vec av)
 {
 	size_t	i;
@@ -37,6 +46,12 @@ int	builtin_export(t_shell *st, t_vec av)
 	return (0);
 }
 
+/* exit [n]: terminate the shell with status n (0–255), or with $? when n is
+   omitted. In an interactive session the word "exit" is printed to stderr
+   before leaving (bash/ksh compat). The POSIX exit-code rules: numeric
+   check, then mask to 8 bits in exit_clean. Too-many-args exits 1 (bash
+   compat), and a non-numeric argument exits 2 — that specific code matters
+   for scripts that test $? afterwards. */
 int	builtin_exit(t_shell *state, t_vec argv)
 {
 	int		ret;
@@ -63,6 +78,12 @@ int	builtin_colon(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* echo [-n|-e|-E] [args ...]: print the arguments separated by spaces. The
+   option parsing is intentionally lenient — any leading word that starts with
+   '-' and contains only the letters n/e/E is treated as a flag word (so
+   `-ne` works, but `-z` stops flag scanning and is printed literally). -n
+   suppresses the trailing newline; -e enables backslash escape processing
+   handled by e_parser(); -E explicitly disables it. */
 int	builtin_echo(t_shell *state, t_vec argv)
 {
 	int		n;
@@ -78,6 +99,11 @@ int	builtin_echo(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* env: list every variable currently marked exported, one KEY=value per line.
+   We intentionally ignore argv (no -i/-u/-0 options yet). Note that env(1)
+   as a standalone utility can run a command with a modified environment, but
+   here we only implement the listing half — enough for scripts that do
+   `env | grep …`. */
 int	builtin_env(t_shell *state, t_vec argv)
 {
 	size_t	i;

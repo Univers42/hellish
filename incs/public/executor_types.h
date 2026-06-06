@@ -10,29 +10,34 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Core execution result types: kept in a separate header so they can be
+   included without pulling in the full t_shell definition (avoids
+   circular dependency between executor.h and shell.h). */
+
 #ifndef EXECUTOR_TYPES_H
 # define EXECUTOR_TYPES_H
 
 # include <stdbool.h>
 
+/* Top-level parse/execute result code.  RES_GETMOREINPUT is the key one:
+   it signals that the input ended mid-compound-command (e.g. `if` with no
+   `fi` yet) and the REPL should display PS2 and read another line. */
 typedef enum s_res_t
 {
-	RES_OK,
-	RES_ERR,
-	RES_GETMOREINPUT,
-	RES_INIT,
+	RES_OK,           /* execution succeeded */
+	RES_ERR,          /* execution failed (hard error) */
+	RES_GETMOREINPUT, /* input is syntactically incomplete, need more */
+	RES_INIT,         /* initial / uninitialised state */
 }	t_result_type;
 
-/**
- * status = exit status for the current command or executor
- * pid = process id (child pid) associated with the execution
- * ctrl_c = true if the execution was interrupted by a SIGINT
- */
+/* Return value from every execute_* function.  All three fields flow up
+   the call stack so the REPL can set $?, $!, and re-display the prompt
+   correctly after a Ctrl-C even inside a subshell. */
 typedef struct s_execution_state
 {
-	int		status;
-	int		pid;
-	bool	ctrl_c;
+	int		status;  /* exit status (what becomes $?) */
+	int		pid;     /* child PID for background jobs (what becomes $!) */
+	bool	ctrl_c;  /* true if SIGINT was received during this command */
 }	t_execution_state;
 
 static inline t_execution_state	create_exec_state(int status,

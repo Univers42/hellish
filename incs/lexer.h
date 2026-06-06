@@ -10,6 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Lexer public API and data structures.
+   tokenizer() is the entry point: it scans a NUL-terminated string and
+   fills a t_deque_tok with t_token values.  Tokens are NOT copied -- they
+   are char* slices into the original string (or into allocated expansions
+   for the few cases that need it).  The caller must keep the string alive
+   at least as long as the token deque. */
+
 #ifndef LEXER_H
 # define LEXER_H
 
@@ -17,16 +24,21 @@
 # include "token.h"
 
 struct	s_shell;
+
+/* A deque of tokens plus the closing char we are looking for in
+   multi-line input (e.g. ')' after '(' makes us ask for more input). */
 typedef struct s_deque_tok
 {
-	t_deque		deqtok;
-	char		looking_for;
+	t_deque		deqtok;       /* the token deque */
+	char		looking_for;  /* '\0' normally; ')' / '}' if incomplete */
 }	t_deque_tok;
 
+/* One entry in the operator string-to-token-type table.  The table is
+   sorted longest-first so the lexer can match greedily (>> before >). */
 typedef struct s_op_map
 {
-	char	*str;
-	t_tt	t;
+	char	*str; /* operator string e.g. ">>" */
+	t_tt	t;   /* token type e.g. TT_APPEND */
 }	t_op_map;
 
 char		*tokenizer(char *str, t_deque_tok *ret);

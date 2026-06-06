@@ -12,6 +12,10 @@
 
 #include "builtins_private.h"
 
+/* Measure the length of a redirection token prefix (the part that is NOT
+   the target path): optional digits + '<' or '>' + optional second '<'/'>.
+   Returns 0 when the argument does not start like a redirection. This is
+   the shared implementation used by both the cd and utils paths. */
 int	parse_redir_len(const char *arg)
 {
 	int	j;
@@ -30,6 +34,8 @@ int	parse_redir_len(const char *arg)
 	return (j);
 }
 
+/* True if `arg` is a bare redirection operator with no attached path: the
+   next word in argv is the target. e.g. ">" needs next, ">file" does not. */
 bool	redir_needs_next(const char *arg)
 {
 	int	len;
@@ -42,6 +48,9 @@ bool	redir_needs_next(const char *arg)
 	return (false);
 }
 
+/* True if `s` starts with a redirection operator: an optional fd number
+   followed by '<' or '>'. Used by cd and count_real_args to skip redirection
+   tokens that the executor may leave in the argv of builtins. */
 bool	is_redir_operator(char *s)
 {
 	int	i;
@@ -58,6 +67,8 @@ bool	is_redir_operator(char *s)
 	return (false);
 }
 
+/* Return 1 if the argv contains two or more real (non-redirect, non-option)
+   arguments — used by builtin_cd to detect the "too many arguments" error. */
 int	check_args(t_vec argv)
 {
 	int	real_args;

@@ -12,10 +12,12 @@
 
 #include "glob_private.h"
 
-/*
-** Expand a character range like a-z into individual characters
-** Returns number of characters added to buf
-*/
+/* Expand a character range (e.g. 'a'-'z') into individual bytes in `buf`
+   starting at buf_pos. Returns the count of characters added, or -1 when
+   start > end (invalid range; the caller reverts to treating the dash as a
+   literal). POSIX says ranges are locale-dependent; we use byte order
+   (matching the C locale and bash --posix) to avoid locale-induced surprises
+   on UTF-8 systems. */
 int	expand_range(char start, char end, char *buf, int buf_pos)
 {
 	char	c;
@@ -34,6 +36,12 @@ int	expand_range(char start, char end, char *buf, int buf_pos)
 	return (count);
 }
 
+/* Check whether `s` starts with a POSIX character class like [:alpha:], and
+   if so expand the class members into `buf` at *buf_pos. Returns the number
+   of bytes consumed from `s` (the full "[:name:]" length) so the caller can
+   skip past the class, or 0 if the prefix doesn't match any known class.
+   The class member strings are pre-built ASCII sets stored in arith_private.h
+   via get_classes_singleton() -- no locale calls, no dynamic allocation. */
 int	check_posix_class(const char *s, int len, char *buf, int *buf_pos)
 {
 	int						i;
@@ -58,9 +66,11 @@ int	check_posix_class(const char *s, int len, char *buf, int *buf_pos)
 	return (0);
 }
 
-/*
-** Check if character matches a bracket expression
-*/
+/* Test whether character `c` is in the bracket expression's char_set. A linear
+   scan is fine here -- bracket classes are small (at most a few dozen chars
+   after range expansion), and this runs once per filename character per bracket
+   token, not in an inner loop. BRACKET_NEGATED flips the result so [^abc]
+   matches anything except a, b, and c. */
 bool	glob_char_in_class(char c, t_glob *bracket)
 {
 	int		i;

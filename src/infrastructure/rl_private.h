@@ -10,6 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal header for the buffered readline layer. readline is always called
+   in a forked child (see rl.c: get_more_input_readline + bg_readline) because
+   it installs global signal handlers and terminal state that would corrupt the
+   parent shell's state if called directly. The child writes the line over a
+   pipe and exits; the parent reads into a ring buffer (t_rl) and parcels it
+   out one logical line at a time via buff_readline/return_new_line. */
 #ifndef RL_PRIVATE_H
 # define RL_PRIVATE_H
 

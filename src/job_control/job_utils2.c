@@ -10,11 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* job_by_spec: resolve a jobspec (the argument to fg/bg/wait) to a
+   t_job*.  POSIX jobspec syntax: %%, %+, % = current; %- = previous;
+   %N = job number N; %string = job whose cmd starts with string.
+   Empty spec also resolves to current.  Returns NULL on no match. */
+
 #include "job_control.h"
 #include "shell.h"
 #include "libft.h"
 #include <stdio.h>
 
+/* Find the first job whose cmd prefix matches `str`.  Used for the
+   `%string` jobspec form (e.g. `fg %vim` brings back vim). */
 static t_job	*job_by_str(t_job_table *jt, const char *str)
 {
 	int	i;

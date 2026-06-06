@@ -13,6 +13,8 @@
 #include "builtins_private.h"
 #include "job_control.h"
 
+/* Scan all option words for -l (long format) and -p (PIDs only). We use
+   ft_strchr so combined flags like -lp work without writing two branches. */
 static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
 {
 	int	i;
@@ -30,6 +32,10 @@ static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
 	}
 }
 
+/* jobs [-l] [-p]: list background (and stopped) jobs. We update statuses
+   first via job_update_status (which reaps any that have finished since the
+   last check) so the listing is accurate. -p prints only the process-group
+   ID, useful for `kill $(jobs -p)`. -l adds the PID column. */
 int	builtin_jobs(t_shell *state, t_vec argv)
 {
 	t_job_table	*jt;

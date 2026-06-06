@@ -13,7 +13,8 @@
 #include "builtins_private.h"
 #include <sys/resource.h>
 
-/* ulimit -a : list every resource with its label. */
+/* Show every resource in the table with its label (the -a output). `hard`
+   follows the same -1/0/1 convention: -1 means show the soft limit. */
 static void	ulimit_show_all(int hard)
 {
 	const t_ulim	*t;
@@ -28,6 +29,10 @@ static void	ulimit_show_all(int hard)
 	}
 }
 
+/* Parse the option words: -H/-S set the hard/soft selector, -a returns the
+   special sentinel -2 to trigger show_all, and any other letter selects
+   the resource. Returns the index of the first non-flag argument (i.e. the
+   limit value, if present) — or -2 for -a. */
 static int	ulimit_parse_flags(char **av, int len, char *opt, int *hard)
 {
 	int	i;

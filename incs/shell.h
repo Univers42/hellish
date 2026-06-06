@@ -10,6 +10,21 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* t_shell is the single source of truth for the running shell instance.
+   Every subsystem (lexer, parser, executor, builtins, job control) takes
+   a t_shell* and reads or writes fields here -- it is the god struct that
+   ties everything together.  There is exactly ONE t_shell alive at any
+   given time (subshells fork and get a copy in the child).
+   Field groupings (logical order in the struct):
+     - I/O state: input, metinp, rl, edit_mode
+     - Execution state: tree, last_cmd_st*, should_exit, loop_*, func_*
+     - Environment: env, cwd
+     - Shell options: opt_* booleans, option_flags
+     - Job/async: job_table, bg_job_count, proc_subs, last_bg_pid
+     - Aliases, cmd cache, functions
+     - Heredoc tracking: redirects, heredoc_idx, hd_*
+     - Miscellaneous: pos, local_saves, traps, readonly_vars, prng */
+
 #ifndef SHELL_H
 # define SHELL_H
 
@@ -57,19 +72,27 @@ typedef enum e_option
 	OPT_COMMAND
 }	t_option;
 
+/* One open process substitution (<(cmd) or >(cmd)).
+   The shell opens a named pipe in /proc/self/fd, forks the child to
+   write/read it, and passes the fd path to the parent command.  After
+   the parent command exits, cleanup_proc_subs() collects these. */
 typedef struct s_procsub_entry
 {
-	pid_t	pid;
-	int		fd;
-	char	*path;
+	pid_t	pid;  /* child PID running the substitution body */
+	int		fd;   /* the open fd on the shell side */
+	char	*path; /* /proc/self/fd/<fd> string given to the command */
 }	t_procsub_entry;
 
 typedef t_vec	t_vec_procsub;
 
+/* A user-defined shell function.  The body is the AST of the compound
+   list between the braces, deep-cloned at definition time so the
+   original parse tree can be freed.  Functions live in state->functions
+   (a t_vec of t_shell_func) and are called by execute_simple_command. */
 typedef struct s_shell_func
 {
-	char		*name;
-	t_ast_node	body;
+	char		*name; /* heap-allocated function name */
+	t_ast_node	body; /* deep-cloned AST of the function body */
 }	t_shell_func;
 
 /* One saved variable for function scope: its value at the moment it was made
@@ -96,67 +119,96 @@ typedef struct s_pos
 /* Depth-indexed pool of reusable argv backing vectors: one slot per nesting
    level (command substitution, subshells, function bodies). A simple command
    borrows its slot, fills/reuses the backing array, and resets (not frees) it
-   on teardown, so the steady state does zero per-command malloc/free. Past this
-   depth a command falls back to a fresh vector (correctness preserved). */
+   on teardown, so the steady state does zero per-command malloc/free.
+   Past this depth a command falls back to a fresh vector. */
 # define ARGV_POOL_DEPTH 64
 
 typedef struct s_shell
 {
-	t_string			input;
-	t_vec_env			env;
-	t_string			cwd;
-	t_ast_node			tree;
-	int					metinp;
-	char				*dft_ctx;
-	char				*ctx;
-	char				*pid;
-	char				*last_bg_pid;
-	char				*last_cmd_st;
-	t_execution_state	last_cmd_st_exe;
-	t_history			hist;
-	bool				should_exit;
-	int					loop_break;
-	int					loop_continue;
-	int					loop_depth;
-	int					func_return;
-	int					func_depth;
-	t_pos				pos;
-	t_vec				local_saves;
-	int					getopts_pos;
-	bool				input_expanded;
-	int					last_cmdsub_status;
-	bool				opt_errexit;
-	bool				opt_nounset;
-	bool				opt_xtrace;
-	bool				opt_noglob;
-	bool				opt_noclobber;
-	bool				opt_allexport;
-	bool				opt_noexec;
-	bool				opt_verbose;
-	bool				opt_pipefail;
-	char				flagbuf[16];
-	char				linebuf[16];
-	int					errexit_off;
-	char				*traps[32];
-	t_vec				readonly_vars;
-	t_vec_redir			redirects;
-	int					heredoc_idx;
-	char				*hd_src;
-	size_t				hd_pos;
-	char				*hd_stripped;
-	bool				gather_in_func;
-	t_rl				rl;
-	t_prng				prng;
-	uint32_t			option_flags;
-	int					bg_job_count;
-	t_vec_procsub		proc_subs;
-	t_vec				functions;
-	t_job_table			job_table;
-	t_hash				aliases;
-	t_hash				cmd_cache;
-	int					edit_mode;
+	/* --- I/O and readline state --- */
+	t_string			input;       /* current input line buffer */
+	t_vec_env			env;         /* the shell's variable store */
+	t_string			cwd;         /* current working directory string */
+	t_ast_node			tree;        /* parsed AST for current input */
+	int					metinp;      /* input method: INP_RL / FILE / ARG */
+	char				*dft_ctx;    /* default shell name for error msgs */
+	char				*ctx;        /* active error context (argv[0]) */
+
+	/* --- special variables (borrowed ptrs or small buffers, not freed) --- */
+	char				*pid;        /* $$ as a string (set once at init) */
+	char				*last_bg_pid; /* $! last background PID string */
+	char				*last_cmd_st; /* $? as a string (updated per cmd) */
+	t_execution_state	last_cmd_st_exe; /* structured copy of last status */
+
+	/* --- history and session --- */
+	t_history			hist;        /* readline history state */
+	bool				should_exit; /* set by `exit` builtin */
+
+	/* --- loop/function control flow --- */
+	int					loop_break;    /* pending break depth (>0 = active) */
+	int					loop_continue; /* pending continue depth */
+	int					loop_depth;    /* current nesting depth of loops */
+	int					func_return;   /* pending return value from `return` */
+	int					func_depth;    /* current function call depth */
+
+	/* --- positional parameters and local variable saves --- */
+	t_pos				pos;         /* $1..$N, $#, $* for current scope */
+	t_vec				local_saves; /* t_scope_save stack for `local` */
+	int					getopts_pos; /* OPTIND state for `getopts` builtin */
+
+	/* --- expansion state --- */
+	bool				input_expanded;    /* alias expansion already done */
+	int					last_cmdsub_status; /* $? inside $(...) body */
+
+	/* --- set -o options (each maps to one POSIX flag) --- */
+	bool				opt_errexit;   /* -e: exit on first error */
+	bool				opt_nounset;   /* -u: error on unset variable use */
+	bool				opt_xtrace;    /* -x: print commands before running */
+	bool				opt_noglob;    /* -f: disable pathname expansion */
+	bool				opt_noclobber; /* -C: refuse to overwrite via > */
+	bool				opt_allexport; /* -a: export every variable on set */
+	bool				opt_noexec;    /* -n: parse but don't execute */
+	bool				opt_verbose;   /* -v: print input lines as read */
+	bool				opt_pipefail;  /* pipefail: status = last failure */
+
+	/* small scratch buffers -- avoids allocs for $- and $LINENO */
+	char				flagbuf[16];  /* scratch for build_flagstr ($-) */
+	char				linebuf[16];  /* scratch for lineno_str ($LINENO) */
+
+	int					errexit_off; /* >0: -e is suspended (in conditions) */
+
+	/* --- traps and readonly vars --- */
+	char				*traps[32];  /* trap strings, indexed by signal num */
+	t_vec				readonly_vars; /* names that cannot be reassigned */
+
+	/* --- heredoc runtime state --- */
+	t_vec_redir			redirects;   /* active redirections for current cmd */
+	int					heredoc_idx; /* next slot in the redirect vector */
+	char				*hd_src;     /* raw heredoc body string (pre-expand) */
+	size_t				hd_pos;      /* read position within hd_src */
+	char				*hd_stripped; /* tab-stripped heredoc body */
+	bool				gather_in_func; /* true while gathering heredocs */
+
+	/* --- readline and PRNG --- */
+	t_rl				rl;          /* readline line/column tracking */
+	t_prng				prng;        /* cheap PRNG for $RANDOM */
+	uint32_t			option_flags; /* bitmask of e_opt_flag values */
+
+	/* --- job control and async --- */
+	int					bg_job_count; /* running background job count */
+	t_vec_procsub		proc_subs;   /* open process substitutions */
+	t_vec				functions;   /* t_shell_func list (user-defined fns) */
+	t_job_table			job_table;   /* background job list */
+
+	/* --- alias and command cache --- */
+	t_hash				aliases;     /* alias name -> t_alias_entry */
+	t_hash				cmd_cache;   /* command name -> resolved path cache */
+
+	int					edit_mode;   /* 0=vi, 1=emacs (rl_editing_mode) */
+
+	/* --- argv slab pool (zero-malloc fast path for simple commands) --- */
 	t_vec				argv_pool[ARGV_POOL_DEPTH];
-	int					argv_pool_depth;
+	int					argv_pool_depth; /* current borrow depth */
 }	t_shell;
 
 /* Directory matcher ctx for glob expansion */

@@ -12,9 +12,10 @@
 
 #include "glob_private.h"
 
-/*
-** Free all allocated memory in glob tokens
-*/
+/* Free a glob token vector, including any char_set buffers owned by bracket
+   tokens. The token array itself (tokens->ctx) is freed last. Safe to call
+   with tokens->ctx == NULL (e.g. if glob_tokenize returned an empty vector).
+   NULL-clears ctx and len so callers can safely call this multiple times. */
 void	glob_free_tokens(t_vec_glob *tokens)
 {
 	size_t	i;
@@ -38,18 +39,19 @@ void	glob_free_tokens(t_vec_glob *tokens)
 	tokens->len = 0;
 }
 
-/*
-** Check if character is a glob special character (when unquoted)
-*/
+/* Return true for the three POSIX glob metacharacters when unquoted.
+   Note: '/' is intentionally excluded -- slashes are path separators, not
+   wildcards; they're handled by the directory-walk structure, not matching. */
 bool	glob_is_special(char c)
 {
 	return (c == '*' || c == '?' || c == '[');
 }
 
-/*
-** Check if pattern segment ends at current position
-** (next is slash or end of pattern)
-*/
+/* Check whether `offset` is the last token in the current path segment.
+   A segment ends when the next token is G_SLASH or there are no more tokens.
+   Used by the pattern matchers to decide if a successful character match is
+   also the end of the component -- without this check, "ab" would match "abc"
+   because the literal match succeeds but there's still a 'c' left. */
 bool	finished_pattern(t_vec_glob patt, size_t offset)
 {
 	t_glob	curr;
@@ -62,9 +64,10 @@ bool	finished_pattern(t_vec_glob patt, size_t offset)
 	return (false);
 }
 
-/*
-** Get path for opendir (use "." for empty path)
-*/
+/* Return the path for opendir. An empty string isn't a valid path on Linux
+   (opendir("") returns ENOENT), so we substitute "." which always refers to
+   the current directory. Relative glob patterns start with an empty path and
+   need this substitution. */
 char	*get_curr_path(char *path)
 {
 	if (*path)
@@ -72,9 +75,8 @@ char	*get_curr_path(char *path)
 	return (".");
 }
 
-/*
-** Helper to free string elements in a vector
-*/
+/* Free one element of a char* vector. Takes a void* to match the vec_destroy
+   callback signature; derefs the double-pointer and frees the string. */
 void	free_str_elem(void *el)
 {
 	xfree(*(char **)el);
