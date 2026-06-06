@@ -27,11 +27,11 @@
    (pre-command NAME=VALUE words come before it). */
 typedef struct s_expander_simple_cmd
 {
-	size_t		i;           /* current child node index */
-	t_ast_node	*curr;       /* shorthand for children[i] */
+	size_t		i; /* current child node index */
+	t_ast_node	*curr; /* shorthand for children[i] */
 	bool		found_first; /* true once the command word is seen */
-	bool		export;      /* true when expanding an `export` command */
-	int			exit_stat;   /* running exit status for the command */
+	bool		export; /* true when expanding an `export` command */
+	int			exit_stat; /* running exit status for the command */
 }	t_expander_simple_cmd;
 
 /* expand_word_glob_ctl `flags` bits: keep the word as one field (no field

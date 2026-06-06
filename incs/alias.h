@@ -22,12 +22,12 @@
 
 # include "libft.h"
 
-typedef t_vec	t_vec_glob;    /* ctx => t_glob* (glob match results) */
-typedef t_vec	t_string;      /* ctx => char* (byte string / string vec) */
+typedef t_vec	t_vec_glob; /* ctx => t_glob* (glob match results) */
+typedef t_vec	t_string; /* ctx => char* (byte string / string vec) */
 typedef t_vec	t_vec_exe_res; /* ctx => t_execution_state* */
-typedef t_vec	t_vec_redir;   /* ctx => t_redir* (redirect records) */
-typedef t_vec	t_vec_nd;      /* ctx => t_ast_node* (AST node children) */
-typedef t_vec	t_vec_env;     /* ctx => t_env* (environment entries) */
+typedef t_vec	t_vec_redir; /* ctx => t_redir* (redirect records) */
+typedef t_vec	t_vec_nd; /* ctx => t_ast_node* (AST node children) */
+typedef t_vec	t_vec_env; /* ctx => t_env* (environment entries) */
 
 # ifndef T_VEC_INT_DEFINED
 #  define T_VEC_INT_DEFINED

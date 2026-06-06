@@ -29,8 +29,8 @@ struct	s_shell;
    multi-line input (e.g. ')' after '(' makes us ask for more input). */
 typedef struct s_deque_tok
 {
-	t_deque		deqtok;       /* the token deque */
-	char		looking_for;  /* '\0' normally; ')' / '}' if incomplete */
+	t_deque		deqtok; /* the token deque */
+	char		looking_for; /* '\0' normally; ')' / '}' if incomplete */
 }	t_deque_tok;
 
 /* One entry in the operator string-to-token-type table.  The table is
@@ -38,7 +38,7 @@ typedef struct s_deque_tok
 typedef struct s_op_map
 {
 	char	*str; /* operator string e.g. ">>" */
-	t_tt	t;   /* token type e.g. TT_APPEND */
+	t_tt	t; /* token type e.g. TT_APPEND */
 }	t_op_map;
 
 char		*tokenizer(char *str, t_deque_tok *ret);
