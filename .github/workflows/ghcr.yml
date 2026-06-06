@@ -1,0 +1,51 @@
+name: Publish to GHCR
+
+# Publishes the hellish container image to the GitHub Container Registry
+# (ghcr.io) so it appears under the repo's "Packages". Uses the built-in
+# GITHUB_TOKEN -- no external secret needed. Runs on every version tag, and can
+# be triggered by hand for an existing version (workflow_dispatch).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'image version tag to publish (e.g. 2.3.2)'
+        required: true
+        default: 'latest'
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ghcr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: build + push to ghcr.io
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Log in to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push
+        run: |
+          # ghcr image paths must be lowercase.
+          IMG=$(echo "ghcr.io/${{ github.repository_owner }}/hellish" | tr '[:upper:]' '[:lower:]')
+          if [ "${{ github.event_name }}" = "push" ]; then
+            V="${GITHUB_REF_NAME#v}"
+          else
+            V="${{ inputs.version }}"
+          fi
+          echo "publishing $IMG:$V and $IMG:latest"
+          docker build -f docker/Dockerfile.release -t "$IMG:$V" -t "$IMG:latest" .
+          docker push "$IMG:$V"
+          docker push "$IMG:latest"
