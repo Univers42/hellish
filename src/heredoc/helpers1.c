@@ -28,6 +28,12 @@ static bool	try_defer_heredoc(t_shell *state, t_ast_node *curr,
 	return (false);
 }
 
+/* Attempt to defer a heredoc (capture body to node) or, failing that,
+   create the temp file eagerly.  The sep.ctx guard handles the edge case
+   where the delimiter was a pure variable ($X) that expanded to empty:
+   we fall back to a literal '$' so write_heredoc does not loop forever
+   looking for an empty delimiter line.  Returns -1 if deferred or on
+   error; the redir_idx from ft_mktemp otherwise. */
 static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 				bool is_pipeline)
 {
@@ -57,6 +63,11 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	return (write_heredoc(state, wr, &req), xfree(sep.ctx), curr->redir_idx);
 }
 
+/* Process all AST_REDIRECT children of `parent` in the range [start,end).
+   For each heredoc (TT_HEREDOC token) we call create_heredoc_tempfile;
+   for all other redirect types we call gather_heredoc which handles non-
+   heredoc redirects as a no-op and heredocs the same way.  The is_pipeline
+   flag propagates the context so pipeline heredocs can be deferred. */
 void	process_redirect_group(t_shell *state, t_ast_node *parent,
 								size_t start, size_t end)
 {
@@ -80,6 +91,9 @@ void	process_redirect_group(t_shell *state, t_ast_node *parent,
 	}
 }
 
+/* Return true for node types that carry no heredoc operators and need no
+   recursion: NULL nodes, process substitutions (they have their own gather
+   pass), raw AST_TOKEN nodes, and AST_WORD nodes (leaf words). */
 bool	should_skip_node(t_ast_node *node)
 {
 	if (!node)
@@ -93,6 +107,10 @@ bool	should_skip_node(t_ast_node *node)
 	return (false);
 }
 
+/* Recurse into a child that is NOT an AST_REDIRECT, advancing *idx.  The
+   in_pipeline flag is inferred from the parent's type so pipeline heredocs
+   are flagged correctly even when we do not have a dedicated is_pipe
+   parameter here. */
 void	recurse_non_redirect_child(t_shell *state,
 									t_ast_node *node,
 									size_t *idx)

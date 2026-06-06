@@ -14,8 +14,10 @@
 #include "lexer.h"
 #include "sys.h"
 
-/* Capture original full token when safe 
-(assignment child's original word or word node) */
+/* Grab the original (pre-expansion) full token for an assignment word so it
+   can be restored into argv after expansion.  This is needed because `export
+   f(x)=val` and similar compound-assignment forms expand into "f(x)=" which
+   must be replaced by the original text in the argv display. */
 static t_token_old	capture_original_full_token(t_ast_node *node)
 {
 	t_token_old	full;
@@ -35,8 +37,10 @@ static t_token_old	capture_original_full_token(t_ast_node *node)
 	return (full);
 }
 
-/* Replace argv entries ending with '=' 
-using provided full token (dup) */
+/* After expansion, argv entries that end with '=' come from assignment words
+   that field-split to "NAME=".  Replace them with a dup of the full original
+   token so export/typeset display the full assignment text, not just "NAME=".
+   Only present is checked — zero-length or NULL full.start entries skip. */
 static void	replace_argv_entries_with_full_token(t_vec *argv,
 				t_token_old full)
 {
@@ -83,6 +87,11 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 	return (0);
 }
 
+/* Expand one AST_ASSIGNMENT_WORD child of a simple command.  Before the
+   first real command word (exp->found_first == false), the assignment is
+   staged in pre_assigns — it may become a temporary env var for the command.
+   After the command name is known, the assignment becomes an argv word
+   (e.g. `export VAR=val`) and is expanded with no glob (EW_NO_GLOB). */
 int	expand_simple_cmd_assignment(t_shell *state,
 		t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {

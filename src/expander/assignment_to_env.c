@@ -13,7 +13,9 @@
 #include "expander_private.h"
 #include "sys.h"
 
-/* duplicate LHS key from assignment node */
+/* Copy the assignment LHS (variable name) out of the first child token of
+   an AST_ASSIGNMENT_WORD node.  The first child is always a TT_WORD whose
+   content is the bare name without the trailing '='. */
 static char	*dup_key_from_node(t_ast_node *node)
 {
 	return (ft_strndup(
@@ -22,8 +24,10 @@ static char	*dup_key_from_node(t_ast_node *node)
 	));
 }
 
-/* duplicate first expanded arg value 
-(transfer ownership of inner ptr), or "" */
+/* Take the single expanded value string out of `args` (ownership transfer).
+   The caller's expand_word_assign_ro is expected to have produced exactly
+   one field (keep-as-one + no-glob).  The ft_assert(args->len == 1) fires
+   in debug builds if that contract is violated. */
 static char	*dup_value_from_args(t_vec *args)
 {
 	char	*val;
@@ -37,6 +41,11 @@ static char	*dup_value_from_args(t_vec *args)
 	return (ft_strdup(""));
 }
 
+/* Convert a VAR=value AST node into a t_env ready to be pushed into the
+   environment.  The RHS (child [1]) is expanded with assignment semantics
+   (keep-as-one, no glob, malloc allocator rather than slab) so the resulting
+   value is safe to store long-term.  The opt_allexport flag pre-marks the
+   env entry as exported if `set -a` is active. */
 t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 {
 	t_vec	args;

@@ -17,6 +17,12 @@
 
 void	pos_free(t_pos *pos);
 
+/* Tear down one command's redirect list. Three cleanup duties in one pass:
+   (1) unlink() any here-doc tmpfiles (should_delete marks them), (2) close
+   any file descriptor we opened for a persistent fd redir (is_dup and
+   close_fd are the two cases where we do NOT own the fd), (3) free the
+   filename string. Finally reset the vec to a pristine zero-length state so
+   the next command can vec_push into it without re-initialising. */
 void	free_redirects(t_vec_redir *v)
 {
 	size_t	i;
@@ -40,6 +46,10 @@ void	free_redirects(t_vec_redir *v)
 	v->elem_size = sizeof(t_redir);
 }
 
+/* Walk the function table and release each entry: the name string and the
+   whole body AST. The vec's backing array itself is freed last, same pattern
+   as every other vec-of-structs we own. Called once at shutdown from
+   free_all_state. */
 static void	free_functions(t_vec *fns)
 {
 	size_t			i;
@@ -71,6 +81,13 @@ static void	free_traps(t_shell *state)
 	}
 }
 
+/* The single canonical shutdown path. Order is deliberate: functions first
+   (they may reference variables), then per-command scratch (input, AST,
+   redirects, proc subs), then session data (history, cwd, positional args,
+   the argv pool, traps). env_index_free() must come after all env lookups;
+   word_slab_teardown() is last so any stray word_free() calls during the
+   earlier steps still work. alloc_live_report() is the ft_malloc leak oracle
+   -- it's a no-op on libc builds and a canary for the slab backend. */
 void	free_all_state(t_shell *state)
 {
 	free_functions(&state->functions);
@@ -97,6 +114,11 @@ void	free_all_state(t_shell *state)
 	alloc_live_report();
 }
 
+/* Release one expanded command. pre_assigns are KEY=value pairs pushed
+   before the command (e.g. `FOO=bar cmd`); each needs both key and value
+   freed. argv is a vec of word-slab pointers, so we go through word_free()
+   rather than xfree() -- both paths (slab and heap) route correctly. The
+   argv backing array returns to the pool via argv_pool_release. */
 void	free_executable_cmd(t_shell *state, t_executable_cmd cmd)
 {
 	size_t	i;
@@ -116,6 +138,10 @@ void	free_executable_cmd(t_shell *state, t_executable_cmd cmd)
 	argv_pool_release(state, &cmd);
 }
 
+/* Release the redirect list embedded in an executable AST node. The node
+   itself is stack-allocated by the executor, so only its heap-allocated
+   children (redirs.ctx) need freeing. vec_init resets it to a safe empty
+   state so the node can be reused or safely inspected after freeing. */
 void	free_executable_node(t_executable_node *node)
 {
 	xfree(node->redirs.ctx);

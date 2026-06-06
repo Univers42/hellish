@@ -12,6 +12,11 @@
 
 #include "parser_private.h"
 
+/* Consume one element of a simple command: a word argument, a redirect, or
+   a process substitution `<(...)` / `>(...)`. Returns true if something was
+   consumed, false when the next token ends the command (e.g. `;`, `|`, `&&`,
+   or any keyword). Returning false is normal termination for the scanner
+   loop, not an error. */
 static bool	parse_and_push_simple_cmd_child(t_shell *state,
 											t_parser *res,
 											t_deque_tok *tokens,
@@ -31,6 +36,13 @@ static bool	parse_and_push_simple_cmd_child(t_shell *state,
 	return (false);
 }
 
+/* Parse a simple command: word [redirect|word|procsub]...
+   We scan greedily until parse_and_push_simple_cmd_child returns false.
+   The initial is_simple_cmd_token check protects against being called on a
+   keyword or operator -- if it fails we hand off to the unexpected-token
+   handler rather than producing an empty AST node. ST_SCANNING is a
+   convenience macro that always evaluates to 1 (loop forever; break inside
+   is the exit). */
 t_ast_node	parse_simple_command(t_shell *state, t_parser *res,
 								t_deque_tok *tokens)
 {

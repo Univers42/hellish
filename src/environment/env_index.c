@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/02 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/02 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/06/06 03:09:05 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,10 @@
 
 #include "env_private.h"
 
+/**
+TODO: to refactorize when I have more time into either a singleton pattern
+or structure of types, until then it works I don't touch.
+*/
 t_eix	*g_tab;
 size_t	g_cap;
 size_t	g_count;

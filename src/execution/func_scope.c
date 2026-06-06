@@ -38,6 +38,11 @@ void	scope_save(t_shell *state, const char *key)
 	vec_push(&state->local_saves, &s);
 }
 
+/* Restore one saved variable to its pre-function value.  If it existed
+   before the function was called, put it back; if it did not exist,
+   unset it (try_unset) and free the key/value strings.  The env_create
+   path always strdup's value, so we pass s->value directly -- env_set
+   takes ownership and we must not xfree it afterward. */
 void	restore_one(t_shell *state, t_scope_save *s)
 {
 	if (s->existed)
@@ -72,6 +77,10 @@ void	scope_leave(t_shell *state)
 	state->func_depth--;
 }
 
+/* Save the current value of pa->key then apply the temporary assignment.
+   depth=0 marks this as a "temporary assign" save (as opposed to a `local`
+   save at func_depth>0) so restore_temp_assigns can iterate the same saves
+   vec without confusing the two kinds of saves. */
 static void	save_and_apply_one(t_shell *state, t_vec *saves, t_env *pa)
 {
 	t_scope_save	s;

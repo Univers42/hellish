@@ -33,6 +33,10 @@ static char	*build_proc_sub_result(t_shell *state, t_ast_node *cmd_word,
 	return (result);
 }
 
+/* Top-level process-substitution expander: reads the direction token
+   (TT_PROC_SUB_IN or TT_PROC_SUB_OUT) to choose input/output mode, then
+   delegates to create_procsub_input/output.  The returned string is the
+   /dev/fd/N path that the shell word is replaced with. */
 char	*expand_proc_sub(t_shell *state, t_ast_node *node)
 {
 	t_token		*tok;

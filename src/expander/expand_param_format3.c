@@ -12,6 +12,9 @@
 
 #include "expander_private.h"
 
+/* ${val%%pattern} — remove the LONGEST suffix of `val` that matches
+   `pattern`.  Scan from i=0 forward: the first position where the remainder
+   of val matches the pattern gives the longest possible suffix to remove. */
 char	*trim_suffix_longest(const char *val, const char *pattern)
 {
 	int	i;
@@ -26,6 +29,9 @@ char	*trim_suffix_longest(const char *val, const char *pattern)
 	return (ft_strdup(val));
 }
 
+/* ${val#pattern} — remove the SHORTEST prefix of `val` that matches.
+   We try prefixes of increasing length (0, 1, 2, …) and return the first
+   match.  This naturally gives the shortest (leftmost) match. */
 char	*trim_prefix_shortest(const char *val, const char *pattern)
 {
 	int		vlen;
@@ -48,6 +54,9 @@ char	*trim_prefix_shortest(const char *val, const char *pattern)
 	return (ft_strdup(val));
 }
 
+/* ${val##pattern} — remove the LONGEST prefix of `val` that matches.
+   We try prefixes in decreasing length order (longest first) and return the
+   first match, so the suffix after the match is as short as possible. */
 char	*trim_prefix_longest(const char *val, const char *pattern)
 {
 	int		vlen;
@@ -70,6 +79,10 @@ char	*trim_prefix_longest(const char *val, const char *pattern)
 	return (ft_strdup(val));
 }
 
+/* Dispatcher for prefix/suffix trimming operators (#, ##, %, %%).
+   op_off accounts for single vs double operator (# vs ##, % vs %%):
+   1 for single, 2 for double.  The pattern is extracted from the raw spec
+   and expanded (so ${x#${y}} works) before being passed to the trimmer. */
 char	*expand_trim(t_shell *state, t_trim_ctx ctx)
 {
 	char	*val;

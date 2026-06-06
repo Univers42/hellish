@@ -10,6 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal types and prototypes for the word-splitting "second parse pass".
+   After the lexer produces flat TT_WORD tokens, the reparser walks each one
+   character by character and decomposes it into typed subtokens: TT_SQWORD
+   (literal), TT_DQWORD (literal, no IFS split), TT_ENVVAR / TT_DQENVVAR
+   (variable expansion), TT_WORD (split-eligible plain text or $(...)).
+   t_reparser is the shared state threaded through every recursive helper so
+   we avoid passing five arguments to every function. t_paren_ctx bundles the
+   same state specifically for the $(...) / $((...)) sub-scanner. */
 #ifndef REPARSER_PRIVATE_H
 # define REPARSER_PRIVATE_H
 

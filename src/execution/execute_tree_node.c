@@ -18,7 +18,13 @@ t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_case(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
 
-/* dispatch to the right executor for each node */
+/* Single dispatch point for the AST executor.  Every recursive call
+   from the specialised executors (execute_if, execute_while, ...) comes
+   back here, so set_cmd_status is called consistently on every node --
+   that keeps $? correct even for nested constructs.  The ft_assert(0)
+   at the bottom is the "exhausted all known node types" guard: if the
+   parser ever emits a type we forgot to handle, we crash loudly instead
+   of silently returning 0 and hiding the bug. */
 t_execution_state	execute_tree_node(t_shell *state,
 						t_executable_node *exe)
 {

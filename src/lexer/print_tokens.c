@@ -15,7 +15,9 @@
 
 const char	*get_token_display_name(t_token *curr);
 
-// Helper to print the lexeme and padding for non-empty tokens
+/* Print the lexeme text (with escape-sequence substitution) and pad with
+   spaces to reach column width w_lexeme. Uses visible_lexeme_len to get
+   the true display width so multi-byte or escaped chars are padded right. */
 static void	print_token_lexeme(t_token *curr,
 						size_t w_lexeme)
 {
@@ -31,7 +33,8 @@ static void	print_token_lexeme(t_token *curr,
 		ft_printf(" ");
 }
 
-// Helper to print the lexeme and padding for empty tokens
+/* For tokens with len == 0 (e.g. TT_END), print the EMPTY placeholder
+   string and pad to column width so the table stays aligned. */
 static void	print_token_empty(size_t w_lexeme)
 {
 	const char	*emp;
@@ -46,6 +49,9 @@ static void	print_token_empty(size_t w_lexeme)
 		ft_printf(" ");
 }
 
+/* Render one row of the token table: ║ type ║ len ║ lexeme ║. The type
+   name is coloured per the colour map so operators, keywords and words are
+   visually distinct even in a long token list. */
 static void	print_token_row(t_token *curr,
 						size_t w_name,
 						size_t w_len,
@@ -68,6 +74,8 @@ static void	print_token_row(t_token *curr,
 	ft_printf(ASCII_MAGENTA " ║" RESET_TERM "\n");
 }
 
+/* Iterate over the full token deque and emit each row. The TT_END sentinel
+   is included so we can confirm the deque is properly terminated. */
 static void	print_token_rows(t_deque_tok *tokens,
 						size_t w_name,
 						size_t w_len,
@@ -84,6 +92,10 @@ static void	print_token_rows(t_deque_tok *tokens,
 	}
 }
 
+/* Pretty-print the token deque as a Unicode box-drawing table. Column widths
+   are measured first so the table auto-fits the actual token content. Enable
+   with VERBOSE / PRINT_TOKENS at compile or run time for debugging the lexer
+   without changing any shell logic. */
 void	print_tokens(t_deque_tok *tokens)
 {
 	size_t	w_name;

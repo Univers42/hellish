@@ -12,6 +12,12 @@
 
 #include "core.h"
 
+/* Recognise one command-line flag and OR its bit into *flags. Note that -c
+   also sets OPT_FLAG_VERBOSE -- that's intentional: -c scripts should print
+   what they run, matching bash -c behaviour. --debug=<subsystem> is parsed
+   with a plain strncmp prefix so we don't need getopt or any state machine;
+   unknown flags are silently ignored (they may be filenames for the caller
+   to handle). */
 static void	process_opt_flag(const char *arg, uint32_t *flags)
 {
 	const char	*v;
@@ -34,6 +40,10 @@ static void	process_opt_flag(const char *arg, uint32_t *flags)
 	}
 }
 
+/* Walk argv[1..] and collect all recognised flags into a bitmask. We start
+   at index 1 (skip argv[0]) and keep going until NULL. Non-flag arguments
+   (script file, -c payload) are just left alone here; mode_input() deals
+   with them. Returns 0 for the trivial "no flags" case. */
 uint32_t	select_mode_from_argv(char **argv)
 {
 	int			i;

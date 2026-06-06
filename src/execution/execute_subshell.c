@@ -13,6 +13,17 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
+/* Run a ( compound-list ) in a forked child.  Key points:
+   - set_unwind_sig installs the child's SIGTERM handler so a kill to the
+     child group unwinds cleanly without a double-free.
+   - The EXIT trap (traps[0]) is cleared: it belongs to the parent shell,
+     not the subshell; the child runs run_exit_trap at the end from its own
+     (now-empty) table.
+   - We call free_executable_node before execute_tree_node so the pipe fds
+     (next_infd etc.) have already been closed; then we reset infd/outfd so
+     set_up_redirection does not try to dup2 the now-closed values.
+   - forward_exit_status encodes the child's exit code via _exit so the
+     parent's waitpid gets the right WEXITSTATUS. */
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	res;

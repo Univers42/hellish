@@ -12,12 +12,19 @@
 
 #include "lexer.h"
 
+/* Build a token of type tt spanning fd_len bytes starting at start, store it
+   in *out, and return fd_len so callers can use it as both token length and
+   "how many bytes to skip" in one expression. */
 int	create_token_consume(char *start, int fd_len, t_tt tt, t_token *out)
 {
 	*out = create_token(start, fd_len, tt);
 	return (fd_len);
 }
 
+/* Given that str[0..fd_len-1] are digits and p points at the redirect char,
+   pick the right token type (including two-char forms like >& and <<) and
+   return the total span length. Longer forms are checked first so `>>`
+   wins over `>` when fd_len digits precede the `>>`. */
 static int	fd_redir_type(char *str, char *p, int fd_len, t_token *out)
 {
 	if (*p == '>' && *(p + 1) == '&')
@@ -39,7 +46,11 @@ static int	fd_redir_type(char *str, char *p, int fd_len, t_token *out)
 	return (0);
 }
 
-/* Check if string starts with a fd-prefixed redirect like 2> or 1>> */
+/* Check whether str starts with an fd-prefixed redirect (e.g. 2>, 1>>).
+   We allow 1-2 digit fd numbers -- 0, 1, 2 are the common ones; bash also
+   handles 9. We reject fd_len > 2 to avoid eating a decimal integer that
+   happens to precede a `>` in an expression context. Returns 0 if no match,
+   otherwise the total span length and fills *out with the token. */
 int	check_fd_redirect(char *str, t_token *out)
 {
 	int		fd_len;

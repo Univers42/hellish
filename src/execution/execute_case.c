@@ -66,6 +66,10 @@ static char	*expand_case_pattern(t_shell *state, t_ast_node *node)
 	return (ret);
 }
 
+/* Run the matched case-item body.  We clone the AST body before executing
+   because execute_tree_node may destructively consume word nodes; cloning
+   keeps the original intact so the surrounding AST is not corrupted if
+   this case statement is inside a function that is called more than once. */
 static t_execution_state	run_case_body(t_shell *state, t_ast_node *body)
 {
 	t_executable_node	exe;

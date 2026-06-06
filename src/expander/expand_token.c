@@ -15,8 +15,12 @@
 char	*expand_param_format(t_shell *state, const char *s, int slen);
 void	nounset_abort(t_shell *state, const char *name, int len);
 
-/* Join the positional parameters $1..$# with the first char of IFS (space by
-   default). Used for $@/$*; quoted "$@" multi-field is a known limitation. */
+/* Join all positional parameters into a single string separated by the first
+   character of IFS (space by default).  This is the $* / unquoted $@
+   expansion: POSIX says "$@" in a split context should produce one field per
+   positional — that case is handled separately in emit_positional_at.
+   Note: getting $# as a string to do ft_atoi on it is slightly clunky but
+   avoids adding a separate counter field to t_shell. */
 char	*join_positionals(t_shell *state)
 {
 	t_string	out;
@@ -93,6 +97,13 @@ static bool	expand_positional(t_shell *state, t_token *curr_tt, bool split_ctx)
 	return (true);
 }
 
+/* Expand a single $-token (TT_ENVVAR or TT_DQENVVAR) in place.  Priority:
+     1. $@ / $* in a split context (emit_positional_at or join_positionals)
+     2. Empty-token edge cases (bare $ or $'')
+     3. ${...} format operators (expand_param_format handles -, =, ?, +, #, %)
+     4. Plain $name lookup (expand_simple_var, honours set -u / nounset)
+   The result is written back into curr_tt->start in-place; allocated flag
+   tracks ownership so free_token_res can release it safely. */
 void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 {
 	char	*fmt;

@@ -12,7 +12,11 @@
 
 #include "expander_private.h"
 
-// Helper: find the closing parenthesis for command substitution
+/* Scan forward from s[2] (past the opening '$(') to find the matching ')'.
+   Nested $(...) or plain (...) are tracked with `depth` so that
+   $(echo $(uname)) terminates at the outer ')' rather than the inner one.
+   Returns the index of the byte AFTER the closing ')', or -1 if unmatched
+   (incomplete command substitution — just leave it unexpanded). */
 static int	find_cmd_sub_end(const char *s, int slen)
 {
 	int	depth;
@@ -34,7 +38,8 @@ static int	find_cmd_sub_end(const char *s, int slen)
 	return (j);
 }
 
-// Helper: extract the command string inside $(...)
+/* Copy the command text from inside $(...) into a fresh NUL-terminated
+   string so capture_subshell_output can treat it as a plain C string. */
 static char	*extract_cmd_inner(const char *s, int inlen)
 {
 	char	*inner;
@@ -47,7 +52,8 @@ static char	*extract_cmd_inner(const char *s, int inlen)
 	return (inner);
 }
 
-// Helper: push the result of command substitution into outbuf
+/* Append the substitution output to outbuf, skipping an empty result
+   entirely.  The subout string is always freed here regardless. */
 static void	push_cmd_sub_result(t_string *outbuf, char *subout)
 {
 	if (!subout)
@@ -57,7 +63,9 @@ static void	push_cmd_sub_result(t_string *outbuf, char *subout)
 	xfree(subout);
 }
 
-// Helper: encapsulate the main logic for command substitution
+/* Run the command substitution body: extract the inner string, run it,
+   push the stripped output into ctx->outbuf, and report how many input
+   bytes were consumed so the caller can advance its scan position. */
 static bool	do_cmd_sub(t_shell *state, t_expand_ctx *ctx, int j)
 {
 	int		inlen;
@@ -75,8 +83,11 @@ static bool	do_cmd_sub(t_shell *state, t_expand_ctx *ctx, int j)
 	return (true);
 }
 
-/* Try to process command substitution $(...) at start of `s`. On success push
-   captured output into outbuf, set *consumed and return true. */
+/* Recognise and process $(...) at the start of ctx->s.  On success the
+   captured output is appended to outbuf, *consumed is set to the number of
+   input bytes used (including the outer parens), and true is returned.
+   Returns false with no side-effects if s does not start with $( or the
+   substitution is malformed. */
 bool	process_cmd_sub(t_shell *state, t_expand_ctx *ctx)
 {
 	int	j;

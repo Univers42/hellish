@@ -33,6 +33,11 @@ static void	append_eq_to_token(t_token *t)
 	t->allocated = true;
 }
 
+/* Convert an AST_ASSIGNMENT_WORD into a plain AST_WORD so that generic word
+   expansion can handle it.  The key token gets a "=" appended (making it
+   "NAME=") and the right-hand-side children are flatly spliced in after it.
+   Called before expand_word_glob_ctl for `export NAME=val` argv expansion,
+   but NOT for pre-command assignments (those go through assignment_to_env). */
 void	assignment_word_to_word(t_ast_node *node)
 {
 	t_ast_node	ret;

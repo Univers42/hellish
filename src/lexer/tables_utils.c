@@ -13,7 +13,11 @@
 #include "lexer.h"
 #include "sys.h"
 
-/* Compute column widths dynamically for a neat table */
+/* Walk every token in the deque and track the maximum string widths for the
+   three debug-table columns (type name, decimal length, visible lexeme). We
+   seed with minimums (4/"len"/ft_strlen(EMPTY)) so single-token inputs still
+   produce a readable table. The lexeme width uses visible_lexeme_len, which
+   accounts for escape sequences like `\n` rendered as two chars. */
 void	compute_columns(t_deque_tok *tokens, size_t *w_name,
 		size_t *w_len, size_t *w_lexeme)
 {

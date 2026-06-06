@@ -12,6 +12,9 @@
 
 #include "expander_private.h"
 
+/* True when s[0..len) is a valid bare variable name ([A-Za-z_][A-Za-z0-9_]*).
+   Used to gate the fast-path: $? $@ $# $1 and ${...} forms all fail this
+   check and must go through the general expand_token path. */
 bool	name_is_plain(const char *s, int len)
 {
 	int	i;
@@ -28,8 +31,10 @@ bool	name_is_plain(const char *s, int len)
 	return (true);
 }
 
-/* Does the value contain a char that would trigger field-splitting (default
-   IFS) or pathname expansion? */
+/* Quick check: does the expanded value need IFS splitting or globbing?
+   With the default IFS (" \t\n"), any whitespace means splitting; *, ?, [
+   mean glob candidates.  If neither fires, the value is safe to use as-is
+   without copying it through the full pipeline. */
 bool	needs_split_or_glob(const char *v)
 {
 	while (*v)
@@ -42,7 +47,10 @@ bool	needs_split_or_glob(const char *v)
 	return (false);
 }
 
-/* The single non-empty sub-token of a word, skipping empty TT_WORD pieces. */
+/* Return the one non-empty token child of `node`, or NULL if the word has
+   zero, more than one, or a non-token child.  Empty TT_WORD pieces (from
+   adjacent quotes like a""b) are harmless padding and are skipped.  Used
+   by the fast-path to detect words like $HOME that are a single $var. */
 t_token	*lone_nonempty_token(t_ast_node *node)
 {
 	t_token		*t;
@@ -65,6 +73,11 @@ t_token	*lone_nonempty_token(t_ast_node *node)
 	return (t);
 }
 
+/* Fast path for the extremely common case `$PLAIN_VAR` (one TT_ENVVAR token,
+   plain name, default IFS, value has no split/glob chars).  Returns the
+   env value directly (caller must NOT free it — borrowed pointer) or NULL
+   to fall back to the slow path.  The IFS check matters: a non-default IFS
+   could split even a simple value and must use the full pipeline. */
 char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 {
 	t_token	*t;
@@ -83,7 +96,9 @@ char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	return (v);
 }
 
-/* Literal text with no character that would need any expansion or quoting. */
+/* True when s[0..len) has no character that triggers any shell expansion,
+   quoting, or field splitting.  Used by concat_one_token to decide whether
+   a TT_WORD or TT_DQWORD slice can be appended verbatim to the output. */
 bool	is_plain_literal_text(const char *s, int len)
 {
 	int	i;

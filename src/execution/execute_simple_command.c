@@ -17,6 +17,12 @@ void	apply_alias(t_shell *state, t_executable_cmd *cmd);
 void	replace_null_argv_with_empty(t_executable_cmd *cmd);
 void	restore_fds(int *bak);
 
+/* Run a shell function in the parent process.  Pre-assignment NAME=val
+   words are applied temporarily around the call (POSIX: they must be
+   visible inside the function body) then undone via restore_temp_assigns
+   when it returns.  Redirects are saved/restored with prep_redir so the
+   function's stderr/stdout don't bleed back into the caller.  The argv
+   and redirect resources belong to the cmd struct and are freed last. */
 static t_execution_state	handle_func_call(t_shell *state,
 						t_executable_cmd *cmd,
 						t_executable_node *exe)
@@ -39,6 +45,10 @@ static t_execution_state	handle_func_call(t_shell *state,
 	return (res);
 }
 
+/* A command whose argv[0] expanded to an empty string is not a valid
+   command name.  We emit the "command not found" diagnostic using the
+   expansion context (state->ctx) and return 127, the POSIX exit code for
+   a command that was not found. */
 static t_execution_state	handle_empty_command(t_shell *state,
 						t_executable_cmd *cmd,
 						t_executable_node *exe)
@@ -50,6 +60,12 @@ static t_execution_state	handle_empty_command(t_shell *state,
 	return (res_status(COMMAND_NOT_FOUND));
 }
 
+/* No command word, only NAME=val assignments.  POSIX: when run in the
+   parent context these assignments become permanent environment variables;
+   inside a subshell or pipeline child they'd normally be discarded, but
+   modify_parent_ctx is false there so we skip env_extend.  The last
+   command-substitution status ($?) is preserved so `x=$(cmd)` sets $?
+   correctly even though there is no foreground command here. */
 static t_execution_state	handle_assign_only(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
@@ -62,6 +78,17 @@ static t_execution_state	handle_assign_only(t_shell *state,
 	return (res_status(state->last_cmdsub_status));
 }
 
+/* Route the expanded command to its handler.  Priority order matters:
+   - empty argv    -> assign_only (NAME=val list with no command)
+   - argv[0]==""   -> error (expansion produced empty string)
+   - function name -> handle_func_call IN PARENT (functions can cd, set
+     variables, etc. -- they MUST run in parent, never in a fork)
+   - builtin name  -> execute_builtin_cmd_fg IN PARENT (same reason: cd,
+     export, read etc. modify parent state)
+   - anything else -> execute_cmd_bg which forks and calls execve.
+   The modify_parent_ctx guard for functions and builtins ensures that
+   when they appear as non-last pipeline stages they still fork (the
+   pipeline executor cleared modify_parent_ctx for those). */
 static t_execution_state	dispatch_cmd(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
@@ -81,6 +108,12 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 	return (execute_cmd_bg(state, exe, cmd));
 }
 
+/* The full lifecycle of a simple command: expand its AST word nodes into
+   a concrete argv + pre-assign list (expand_simple_command), sanitise any
+   NULL pointers that can appear after glob/IFS expansion, apply aliases,
+   optionally print the trace (set -x), then dispatch.  An expansion error
+   (ambiguous redirect, signal unwind) short-circuits before dispatch.
+   The cmd struct is always freed on all paths to stay leak-flat. */
 t_execution_state	execute_simple_command(t_shell *state,
 									t_executable_node *exe)
 {

@@ -13,7 +13,10 @@
 #include "expander_private.h"
 #include "brace_expand.h"
 
-/* Is there a top-level (depth-0) comma between s[open+1] and s[close-1]? */
+/* Determine if the brace body contains a top-level comma (depth 0), which
+   distinguishes comma-alternation from a bare {word} that should NOT expand.
+   Inner braces are tracked so {a,{b,c}} is correctly seen as having one
+   top-level comma between 'a' and the inner group. */
 static bool	has_top_comma(const char *s, int open, int close)
 {
 	int	depth;
@@ -63,8 +66,9 @@ int	brace_find_expandable(const char *s, int *close)
 	return (-1);
 }
 
-/* Split the body (between open+1 and close-1) on top-level commas, recursively
-   expanding each piece, accumulating fully expanded strings into `out`. */
+/* Recursively expand one comma alternative of a brace group and push all
+   resulting strings into `out`.  Recursion handles nested braces inside each
+   alternative: {a{1,2},b} → "a1", "a2", "b" via two push_piece calls. */
 static void	push_piece(const char *s, int start, int len, t_vec *out)
 {
 	t_vec	sub;
@@ -101,9 +105,11 @@ static void	split_commas(const char *s, int open, int close, t_vec *out)
 	}
 }
 
-/* Return the alternatives of the group at [open..close]: a generated sequence
-   if the body is "X..Y[..step]", otherwise the recursively expanded comma
-   pieces. */
+/* Return the list of alternative strings inside the brace group at
+   s[open..close].  A sequence spec (A..B[..S]) is detected first and
+   generates elements via run_seq; otherwise split_commas tokenises on
+   top-level commas and brace_expand_str recursively expands each piece.
+   The returned t_vec owns its strings; caller must destroy it. */
 t_vec	brace_alternatives(const char *s, int open, int close)
 {
 	t_vec	out;

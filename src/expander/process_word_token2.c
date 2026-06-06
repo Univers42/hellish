@@ -36,6 +36,11 @@ static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
 		xfree(ctx->outbuf->ctx);
 }
 
+/* Scan a TT_WORD token for $(...), $((...)), and `...` substitutions.
+   Characters are copied character-by-character until a substitution prefix
+   is recognised; substitution helpers flush any accumulated prefix, expand,
+   and advance pos by the number of consumed input bytes.  If nothing
+   changed `tok` is left untouched and the output buffer is discarded. */
 void	process_word_token(t_shell *state, t_token *tok)
 {
 	t_string			outbuf;

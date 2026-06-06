@@ -16,8 +16,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-/* Output buffering is disabled: it lost output when the shell process was
-   replaced (exec) or exited directly (exit). */
+/* Output buffering was removed: the tmpfile approach it replaced swallowed
+   output whenever the shell process exited via exec or the exit builtin
+   before we could flush (the tmpfile just disappeared). Now we return -1 to
+   signal "no buffer active" and flush_output_buffer() is a safe no-op when
+   buf_fd < 0. Keeping the pair of functions lets us switch buffering back on
+   per-fd in the future without touching the call sites in the REPL. */
 int	setup_output_buffer(t_shell *state, int *bak)
 {
 	(void)state;
@@ -25,6 +29,11 @@ int	setup_output_buffer(t_shell *state, int *bak)
 	return (-1);
 }
 
+/* Drain the tmpfile buffer back to the real stdout in 4 KB chunks. With
+   buf_fd == -1 (buffering disabled) we return immediately. The lseek to
+   offset 0 rewinds the tmpfile before reading -- easy to forget and produces
+   a silent no-output bug. dup2 restores the original stdout fd first so the
+   write goes to the right place even if the shell inherited a weird setup. */
 void	flush_output_buffer(int buf_fd, int bak)
 {
 	char	tmp[4096];

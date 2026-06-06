@@ -13,6 +13,10 @@
 #include "execution_private.h"
 #include "cmd_hash.h"
 
+/* A matching file was found in PATH but it lacks execute permission.  Set
+   errno=EACCES so err_1_errno prints the right strerror, free the shell
+   state (we are inside a forked child), and return EXE_PERM_DENIED (126)
+   to propagate the correct exit code up through find_exe_path_wrapper. */
 int	handle_perm_denied(t_shell *state, char *cmd_name)
 {
 	errno = EACCES;

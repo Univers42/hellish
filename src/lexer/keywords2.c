@@ -16,6 +16,13 @@ void	reclassify_word(t_token *t);
 bool	is_redirect(t_tt tt);
 bool	is_cmd_position(t_tt tt);
 
+/* Advance the context flags for one token and decide whether to skip
+   reclassification. We skip when:
+     - We just saw a redirect and this is its target filename (after_redir).
+     - We just saw a redirect operator itself (set after_redir for next turn).
+     - The previous token was `for` and this is the loop variable name
+       (for_name) -- `for do` is valid; `do` must not become TT_DO here.
+   Returns true if the token should be left as TT_WORD. */
 static bool	step_token(t_token *t, bool *cmd_pos,
 						bool *after_redir, bool *for_name)
 {
@@ -38,6 +45,13 @@ static bool	step_token(t_token *t, bool *cmd_pos,
 	return (false);
 }
 
+/* Second pass over the token deque: upgrade TT_WORD tokens that appear in
+   command position to their keyword types. This two-pass design lets us
+   tokenise first (context-free) and classify keywords in a separate linear
+   scan, keeping the tokenizer itself simple. The state machine tracks
+   cmd_pos (are we at the start of a command?), after_redir (is the next
+   word a redirect target?), and for_name (is the next word a for-variable?).
+   `in` is handled separately by the parser, not here. */
 void	reclassify_keywords(t_deque_tok *tokens)
 {
 	size_t	i;

@@ -12,9 +12,11 @@
 
 #include "reparser_private.h"
 
-// Helper: set full_word for all children of a node. Each child owns its own
-// allocation (the start is borrowed from the source, allocated=false) so the
-// AST can be freed/cloned without sharing or double-freeing the struct.
+/* Stamp every child node with a pointer to the full-word token covering the
+   whole original raw text. Each child gets its own heap copy (xmalloc of the
+   struct value) so free_ast can safely free them independently -- if we just
+   stored the same pointer in all children we'd get a double-free at cleanup.
+   The allocated=true flag on full_word tells the destructor to xfree it. */
 static void	set_full_word_for_children(void *ctx, size_t len,
 				t_token_old full_word)
 {
@@ -31,7 +33,10 @@ static void	set_full_word_for_children(void *ctx, size_t len,
 	}
 }
 
-// Helper: recursively reparse all children except AST_PROC_SUB
+/* Recursively walk every child and call reparse_words on it. We skip
+   AST_PROC_SUB because process substitution bodies have already been parsed
+   as a sub-shell; re-parsing their word tokens would corrupt the AST since
+   the tokens are borrowed from an inner parse context, not this one. */
 static void	reparse_children_words(t_ast_node *node)
 {
 	size_t		i;
@@ -47,6 +52,13 @@ static void	reparse_children_words(t_ast_node *node)
 	}
 }
 
+/* The second-pass entry point for a whole AST subtree. For AST_WORD nodes
+   with exactly one child (the raw token), replace the child vec with the
+   fully parsed subtoken tree from reparse_word(). The temp/new_ctx dance
+   avoids a double-free when reparse_word returns the same backing allocation
+   (it may reuse the child vec if it only adds one node). The full_word pointer
+   is stamped on every new child so the expander can reconstruct the original
+   text for error messages and ${!var} style indirect references. */
 void	reparse_words(t_ast_node *node)
 {
 	t_ast_node	temp;

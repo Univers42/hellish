@@ -12,11 +12,11 @@
 
 #include "parser_private.h"
 
-/*
-** Check if current tokens match function definition pattern:
-** WORD ( ) { ... }
-** Returns true if first 3 tokens are WORD BRACE_LEFT BRACE_RIGHT
-*/
+/* Look ahead three tokens to decide if we are at a function definition.
+   We require WORD ( ) as the first three tokens -- the `()` is TT_BRACE_LEFT
+   + TT_BRACE_RIGHT. No whitespace or other tokens between them; the lexer
+   would have split them otherwise. The function body (`{ ... }` or a
+   compound-list) is NOT checked here -- parse_func_body handles that. */
 bool	is_function_def(t_deque_tok *tokens)
 {
 	t_token	*t0;
@@ -33,6 +33,11 @@ bool	is_function_def(t_deque_tok *tokens)
 		&& t2->tt == TT_BRACE_RIGHT);
 }
 
+/* Parse the function body after `name()`. If it starts with TT_LBRACE
+   we enter the explicit `{ compound_list }` path and consume the braces.
+   Otherwise (e.g. a compound command like `while ... done`) we hand off
+   directly to parse_compound_list. The TT_RBRACE-vs-TT_END check prevents
+   an infinite-input prompt when the user types `f() {` and forgets `}`. */
 static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 					t_deque_tok *tokens)
 {
@@ -60,10 +65,11 @@ static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 	return (body);
 }
 
-/*
-** Parse a function definition: name() { compound_list }
-** AST_FUNCTION_DEF: token = name, children[0] = body
-*/
+/* Parse a function definition: name() { compound_list }
+   Pops the three guaranteed tokens (name, `(`, `)`) before doing anything
+   else, then skips newlines. If input ends right after `)` we return early
+   with RES_GETMOREINPUT so the REPL prompts for the body. AST_FUNCTION_DEF:
+   ret.token = the name token, children[0] = body AST. */
 t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens)
 {

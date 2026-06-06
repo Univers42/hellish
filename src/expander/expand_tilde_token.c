@@ -41,6 +41,10 @@ static void	expand_tilde_user(t_token *t)
 	t->allocated = true;
 }
 
+/* Replace the leading tilde prefix of token `t` with the appropriate path.
+   Dispatch: ~+ → $PWD, ~- → $OLDPWD, ~name → getpwnam(name)->pw_dir,
+   ~ alone → $HOME.  If the required env var or passwd entry is absent the
+   token is left unchanged (POSIX: unresolvable tilde stays literal). */
 void	expand_tilde_token(t_shell *state, t_token *t)
 {
 	int			template_len;

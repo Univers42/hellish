@@ -12,6 +12,10 @@
 
 #include "reparser_private.h"
 
+/* Return a pointer to the first child token of a word node, or NULL if the
+   node has no children or the first child is not a plain AST_TOKEN. This is
+   where we verify the shape is what we expect before mutating it; bailing out
+   on unexpected shapes avoids crashes on malformed ASTs during fuzzing. */
 static t_token	*get_first_token_ptr(t_ast_node *word)
 {
 	if (!word->children.ctx || word->children.len == 0)
@@ -21,6 +25,10 @@ static t_token	*get_first_token_ptr(t_ast_node *word)
 	return (&((t_ast_node *)word->children.ctx)[0].token);
 }
 
+/* Scan for the first '=' in tok and return its offset. Returns -1 if absent
+   or if the token is empty/NULL. We use ft_strnchr (bounded search) rather
+   than strchr because tok->start is not necessarily NUL-terminated -- it is a
+   slice into the raw input buffer. */
 static int	find_eq_pos(t_token *tok)
 {
 	char	*eq;
@@ -33,6 +41,13 @@ static int	find_eq_pos(t_token *tok)
 	return ((int)(eq - tok->start));
 }
 
+/* Mutate the AST_WORD node into an AST_ASSIGNMENT_WORD by inserting a new
+   root node that carries the key name as a TT_WORD child, then the original
+   word node (now representing the value) as a second child. We patch
+   first_token->start and len in-place to trim off the "key=" prefix so the
+   original raw text is not duplicated -- everything still points into the
+   same input buffer. This is the cheapest correct way to split KEY=val
+   without re-allocating the token strings. */
 static void	apply_assignment_split(t_ast_node *word,
 				t_token *first_token, int eq_pos)
 {
@@ -49,6 +64,11 @@ static void	apply_assignment_split(t_ast_node *word,
 	*word = new_root;
 }
 
+/* Attempt to re-classify one AST_WORD as an AST_ASSIGNMENT_WORD if it
+   matches the pattern IDENT=value. Guard order matters: we check tt, then
+   the '=' exists, then the left side is a valid POSIX identifier -- all must
+   pass before we mutate the node. Early returns on any failure leave the node
+   unchanged so normal word expansion picks it up. */
 void	reparse_assignment_word(t_ast_node *word)
 {
 	t_token	*first_token;
@@ -69,6 +89,11 @@ void	reparse_assignment_word(t_ast_node *word)
 	apply_assignment_split(word, first_token, eq_pos);
 }
 
+/* Recursively walk the AST and promote eligible word nodes to assignment
+   words. We skip AST_REDIRECT subtrees (the filename in `>foo=bar` is not an
+   assignment) and AST_PROC_SUB bodies (they are their own shell context).
+   Every AST_WORD leaf gets tried last, after its children have been walked,
+   matching the depth-first order that the POSIX spec implies. */
 void	reparse_assignment_words(t_ast_node *node)
 {
 	size_t	i;

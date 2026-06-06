@@ -12,6 +12,9 @@
 
 #include "execution_private.h"
 
+/* Rebuild the candidate path "dir/exe_name" in `temp`, reusing the same
+   allocation by clearing it first (vec_clear does not free, just resets
+   len to 0) so we avoid one malloc/free pair per PATH directory entry. */
 static void	reset_string(t_string *temp, const char *dir, const char *exe_name)
 {
 	char	*joined;
@@ -22,6 +25,12 @@ static void	reset_string(t_string *temp, const char *dir, const char *exe_name)
 	xfree(joined);
 }
 
+/* Walk PATH and return the first directory that contains exe_name with
+   execute permission.  A name containing '/' short-circuits to a strdup
+   of the name itself (direct path, no search needed).  perm_denied is
+   set if a matching file existed but lacked X_OK -- callers use this to
+   distinguish "not found" from "found but not executable" (exit 126 vs
+   127).  We stat() to skip directories that happen to match the name. */
 char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied)
 {
 	t_string	temp;

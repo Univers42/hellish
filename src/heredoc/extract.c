@@ -72,6 +72,9 @@ void	skip_one_body(const char **p, size_t *line, t_hd *s)
 	}
 }
 
+/* Return true if [line, line+len) is the delimiter line for heredoc spec
+   s.  We strip any leading TABs when dash mode (<<-) is active, and
+   ignore any trailing newline when comparing lengths. */
 bool	is_delim_line(const char *line, size_t len, t_hd *s)
 {
 	size_t	i;

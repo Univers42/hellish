@@ -12,6 +12,11 @@
 
 #include "execution_private.h"
 
+/* Stat `path` and report whether it is a directory.  The enoent out-param
+   lets callers distinguish "does not exist" from "is a directory" without
+   a second stat call.  critical_error_errno_ctx is called for unexpected
+   stat failures (EPERM etc.) because those indicate a system problem, not
+   a user error. */
 bool	check_is_a_dir(char *path, bool *enoent)
 {
 	struct stat	info;
@@ -29,6 +34,8 @@ bool	check_is_a_dir(char *path, bool *enoent)
 	return (S_ISDIR(info.st_mode));
 }
 
+/* Emit "command not found" for cmd_name and free all shell state (we are
+   in a child process at this point), returning 127 (POSIX exit code). */
 int	cmd_not_found(t_shell *state, char *cmd_name)
 {
 	err_2(state, cmd_name, "command not found");
@@ -36,6 +43,10 @@ int	cmd_not_found(t_shell *state, char *cmd_name)
 	return (COMMAND_NOT_FOUND);
 }
 
+/* path_of_exe existed but stat'd as ENOENT (race condition: file was
+   deleted between access() and stat()).  We set errno=ENOENT explicitly
+   before calling err_1_errno so the error message is consistent even if
+   some intervening call clobbered it. */
 int	no_such_file_or_dir(t_shell *state,
 						char *cmd_name, char *path_of_exe)
 {
@@ -58,11 +69,11 @@ static int	errex_code(t_shell *state,
 	return (ex);
 }
 
-/**
- * check if either file, dir, or executable permission error
- * For recognized script extensions (.sh, .hell, .hellish)
- * only require the file to be readable, not executable.
- */
+/* Validate a command given as a direct path (contains '/').  A missing
+   file -> COMMAND_NOT_FOUND; a directory -> EXE_PERM_DENIED.  Shell
+   script extensions (.sh/.hell/.hellish) only need to be readable, not
+   executable (the shell will interpret them directly), so we skip the
+   X_OK check for those.  Everything else requires X_OK (POSIX). */
 int	handle_direct_path_error(t_shell *state, char *cmd_name,
 									char **path_of_exe)
 {

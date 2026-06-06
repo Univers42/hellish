@@ -12,6 +12,9 @@
 
 #include "parser_private.h"
 
+/* Parse one pipeline and push it as a child of ret. Pops the parse_stack
+   entry previously pushed by parse_simple_list_op (the op token that
+   preceded this pipeline) before returning, keeping the stack balanced. */
 static int	parse_and_push_pipeline(t_shell *state,
 									t_parser *parser,
 									t_deque_tok *tokens,
@@ -27,6 +30,9 @@ static int	parse_and_push_pipeline(t_shell *state,
 	return (0);
 }
 
+/* Handle one iteration of the simple-list loop: consume the operator token,
+   skip newlines, detect end-of-input, and parse the next pipeline. Returns
+   1 when the loop should stop (no more operators), 2 on error/incomplete. */
 static int	parse_simple_list_op(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -42,6 +48,10 @@ static int	parse_simple_list_op(t_shell *state, t_parser *parser,
 	return (parse_and_push_pipeline(state, parser, tokens, ret));
 }
 
+/* At the very end of a simple-list we expect either a newline (which we
+   consume silently as the statement terminator) or TT_END (end of input,
+   also clean). Anything else is a syntax error -- e.g. an unexpected `fi`
+   or `done` that has no matching opener at this level. */
 static void	handle_final_newline_or_end(t_shell *state, t_parser *parser,
 										t_ast_node *ret,
 										t_deque_tok *tokens)
@@ -52,8 +62,9 @@ static void	handle_final_newline_or_end(t_shell *state, t_parser *parser,
 		handle_unexpected_token(state, parser, *ret, tokens);
 }
 
-/* Run parse_simple_list_op repeatedly until it signals "no more ops" (1)
-   or "error / need more input" (2). Returns the same status code. */
+/* Drain simple-list operators (`; & && ||`) one at a time until the token
+   stream is exhausted or an error is signalled. Status codes: 1 = done
+   cleanly, 2 = error or need more input (caller checks parser->res). */
 static int	process_all_simple_list_ops(t_shell *state, t_parser *parser,
 										t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -69,6 +80,12 @@ static int	process_all_simple_list_ops(t_shell *state, t_parser *parser,
 	}
 }
 
+/* Parse a simple-list: pipeline [; & && || pipeline]... [\n|EOF].
+   This is the outermost grammar production -- the direct child of the
+   top-level parse_tokens call. It rejects TT_ARITH_START at the start
+   (a bare `((` without a matching `))` already tokenised is a hard error)
+   and any token that cannot begin a command. The first pipeline is mandatory;
+   subsequent op-pipeline pairs are optional. */
 t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens)
 {

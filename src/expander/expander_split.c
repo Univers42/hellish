@@ -12,6 +12,8 @@
 
 #include "expander_private.h"
 
+/* Initialise an empty AST_WORD node ready to receive child tokens.
+   Used when building fresh field nodes during IFS splitting. */
 void	init_word_node(t_ast_node *n)
 {
 	*n = (t_ast_node){.node_type = AST_WORD};
@@ -19,6 +21,9 @@ void	init_word_node(t_ast_node *n)
 	n->children.elem_size = sizeof(t_ast_node);
 }
 
+/* Append `child` into curr_node's children vector (transfer of ownership).
+   Called when a non-splitting token (quoted, or non-IFS text) stays in the
+   current accumulation field rather than starting a new one. */
 void	push_token_node(t_ast_node *curr_node, t_ast_node *child)
 {
 	vec_push(&curr_node->children, child);

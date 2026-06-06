@@ -12,6 +12,11 @@
 
 #include "lexer.h"
 
+/* Maximal-munch operator match: walk the null-terminated needles table and
+   return the index of the longest entry that is a prefix of haystack. This
+   ensures `>>` beats `>` and `&&` beats `&`, matching POSIX rule 2 of
+   operator recognition. Returns -1 if nothing matched (the caller asserts
+   this never happens for well-formed input). */
 int	longest_matching_str(t_op_map *needles, char *haystack)
 {
 	int	max_idx;
@@ -35,7 +40,10 @@ int	longest_matching_str(t_op_map *needles, char *haystack)
 	return (max_idx);
 }
 
-/* fill pipe and heredoc/append family */
+/* Operator table -- group 1: pipe, heredocs, left-redirect, open-paren
+   family. Note that `((` must appear before `(` so the longest-match scan
+   picks TT_ARITH_START over TT_BRACE_LEFT, and `<<-` before `<<` for the
+   same reason. */
 static void	init_ops_group1(t_op_map ops[])
 {
 	ops[0] = (t_op_map){"|", TT_PIPE};
@@ -46,7 +54,9 @@ static void	init_ops_group1(t_op_map ops[])
 	ops[5] = (t_op_map){"((", TT_ARITH_START};
 }
 
-/* fill arithmetic/braces and process-substitution family */
+/* Operator table -- group 2: right-paren, process substitution `<(` / `>(`,
+   and append `>>`. Process-sub tokens are longer than `<` / `>` so they win
+   the longest-match race automatically. */
 static void	init_ops_group2(t_op_map ops[])
 {
 	ops[6] = (t_op_map){")", TT_BRACE_RIGHT};
@@ -55,7 +65,9 @@ static void	init_ops_group2(t_op_map ops[])
 	ops[9] = (t_op_map){">>", TT_APPEND};
 }
 
-/* fill redirects, logicals and misc */
+/* Operator table -- group 3: bare redirects, logicals, ;;, and the full
+   redirect family (>&, <&, <>, >|). `;;` must appear before `;` so the
+   double-semicolon in case clauses is not split into two separators. */
 static void	init_ops_group3(t_op_map ops[])
 {
 	ops[10] = (t_op_map){">", TT_REDIRECT_RIGHT};
@@ -71,6 +83,10 @@ static void	init_ops_group3(t_op_map ops[])
 	ops[20] = (t_op_map){NULL, TT_END};
 }
 
+/* Emit the operator token that starts at *str. First try fd-prefixed form
+   (e.g. `2>`); if none, run the full operator table through longest-match.
+   The ft_assert guards against reaching a character that is neither a word
+   nor a recognised operator -- that would be a bug in is_word_boundary. */
 void	parse_op(t_deque_tok *tokens, char **str)
 {
 	char		*start;

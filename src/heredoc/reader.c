@@ -30,6 +30,12 @@ static int	read_hd_src_line(t_shell *state, t_string *out)
 	return (4);
 }
 
+/* Read one line of heredoc body.  Source priority: if hd_src is set (we
+   are executing a string -- eval/source/cmdsub) we serve from the
+   pre-extracted body stream; otherwise we call the readline layer.  EOF
+   (stat==0) or Ctrl-D (stat==2) trigger the POSIX "delimited by EOF"
+   warning and mark req->finished so the caller loop terminates.  A stat
+   of 4 from read_hd_src_line means "got a line". */
 bool	get_line_heredoc(t_shell *state,
 		t_hdoc *req, t_string *alloc_line)
 {
@@ -58,6 +64,12 @@ bool	get_line_heredoc(t_shell *state,
 	return (false);
 }
 
+/* Return true when alloc_line is exactly the delimiter.  We check both
+   NUL-terminated (write path) and newline-terminated (readline path)
+   forms so the comparison works regardless of whether the caller appended
+   a trailing newline.  The leading-newline guard avoids matching the
+   delimiter in the middle of a line (POSIX: delimiter must be on its own
+   line starting at column 0). */
 bool	is_sep(t_hdoc *req, t_string *alloc_line)
 {
 	size_t	sep_len;
@@ -90,7 +102,11 @@ static void	strip_leading_tabs(t_string *l)
 	l->len -= i;
 }
 
-// should brake
+/* Read one heredoc line, strip leading tabs if <<- mode, check for the
+   delimiter, and either expand+append the line into req->full_file or
+   append it verbatim (when the delimiter was quoted).  Sets req->finished
+   on the delimiter line so write_heredoc exits its loop.  The alloc_line
+   buffer is freed here after we are done with it. */
 void	process_line(t_shell *state, t_hdoc *req)
 {
 	t_string	alloc_line;

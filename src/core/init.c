@@ -14,8 +14,10 @@
 #include "env.h"
 #include "ft_builtins.h"
 
-/* $0 + positional params $1.. from argv[base..] ($0 = `zero`). Lets a script
-   (or -c command_name args) see its arguments, per POSIX. */
+/* Wire up $0 and $1.. $N from argv[base..]. Called in two places: -c mode
+   where base=4 and the optional command-name argv[3] becomes $0, and script
+   mode where base=2 and argv[1] (the script path) becomes $0. Both paths
+   converge here so positional-arg handling stays in exactly one place. */
 static void	set_argv_params(t_shell *state, char **argv, int base, char *zero)
 {
 	int	n;
@@ -27,7 +29,12 @@ static void	set_argv_params(t_shell *state, char **argv, int base, char *zero)
 	env_set(&state->env, env_create(ft_strdup("0"), ft_strdup(zero), false));
 }
 
-/* Helper for reading file into buffer */
+/* Slurp the whole file fd into the readline buffer so the non-interactive
+   code-path can reuse the same parse loop that handles interactive input.
+   The trailing '\n' push is the classic trick: the last line of many scripts
+   has no newline, and without it the parser stalls waiting for more input.
+   buff_readline_update() then builds the cursor-relative view the tokenizer
+   expects. Caller is responsible for the open(); we take ownership of fd. */
 void	read_file_to_buffer(int fd, t_shell *state)
 {
 	char	ch;
@@ -42,7 +49,10 @@ void	read_file_to_buffer(int fd, t_shell *state)
 	state->rl.should_update_ctx = true;
 }
 
-/* Helper for updating ctx after file read */
+/* Point ctx and dft_ctx at the script filename. ctx is what shows up in
+   error messages ("script.sh: line 3: ...") while dft_ctx is the fallback
+   used before any script name is set. Switching metinp to INP_FILE tells the
+   REPL not to prompt and not to source ~/.hellishrc. */
 void	update_ctx_from_file(t_shell *state, char **argv)
 {
 	xfree(state->dft_ctx);
@@ -52,6 +62,11 @@ void	update_ctx_from_file(t_shell *state, char **argv)
 	state->metinp = INP_FILE;
 }
 
+/* -c mode: push argv[2] (the inline script string) into the readline buffer
+   and mark it as INP_ARG so the REPL runs exactly once then exits. no_compact
+   suppresses the multiline-continuation join because -c input is already a
+   complete command. An optional argv[3] becomes $0 (bash compat), and
+   argv[4..] become $1..$N. Missing argv[2] is a fatal usage error. */
 void	init_arg(t_shell *state, char **argv)
 {
 	if (!argv[2])
@@ -70,6 +85,10 @@ void	init_arg(t_shell *state, char **argv)
 		set_argv_params(state, argv, 4, argv[3]);
 }
 
+/* Script-file mode: open argv[1] and read it into the readline buffer. We
+   separate the open+error step from the buffer-fill step so handle_file_open_
+   error() can do the right exit code without the buffer state being half-set.
+   no_compact mirrors -c mode (the file is already the full source). */
 void	init_file(t_shell *state, char **argv)
 {
 	int	fd;

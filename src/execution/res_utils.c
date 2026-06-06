@@ -12,16 +12,27 @@
 
 #include "execution_private.h"
 
+/* Build an execution result that already carries a concrete exit status.
+   pid=-1 signals "no background child to wait for". */
 t_execution_state	res_status(int status)
 {
 	return ((t_execution_state){.status = status, .pid = -1});
 }
 
+/* Build an execution result that points at a running child.  status=-1
+   signals "not yet known -- must waitpid before reading".  Callers call
+   exe_res_set_status to block until the child exits and fill in status. */
 t_execution_state	res_pid(int pid)
 {
 	return ((t_execution_state){.status = -1, .pid = pid});
 }
 
+/* Block until the child recorded in res->pid exits and decode its wait
+   status into res->status.  POSIX signal-killed encoding: 128 + signum.
+   We restart on EINTR (the inner while(1)/waitpid loop) so a SIGCHLD
+   from an unrelated background job does not cause us to lose track of
+   this specific child.  Ctrl-C (SIGINT from the terminal) is noted in
+   ctrl_c so the parent can print a newline or exit a script. */
 void	exe_res_set_status(t_execution_state *res)
 {
 	int	status;

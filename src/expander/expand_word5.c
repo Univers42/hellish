@@ -51,7 +51,11 @@ static char	*fast_path_expand(t_shell *state, t_ast_node *src,
 	return (NULL);
 }
 
-/* Non-destructive variant: expand the words of `src` into `args`. */
+/* Non-destructive variant: expand `src` into `args` while leaving `src`
+   intact.  This is required anywhere a node is reused across iterations
+   (for-loop variable words, redirect targets in loops).  The fast paths in
+   fast_path_expand are tried first; if they fire, no clone is needed at all.
+   Only on the slow path do we pay for clone_ast. */
 void	expand_word_ro(t_shell *state, t_ast_node *src,
 			t_vec *args, bool keep_as_one)
 {
@@ -63,7 +67,12 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 	expand_word(state, &scratch, args, keep_as_one);
 }
 
-/* Assignment-value variant: like expand_word_ro but no pathname expansion. */
+/* Assignment-value expansion: like expand_word_ro but pathname expansion is
+   suppressed (EW_NO_GLOB).  POSIX says VAR=value does not glob — only cmd
+   args do.  Also disables the word slab (word_slab_push(0)) because the
+   resulting string will be stored into the environment, which outlives the
+   current command, so it must be a plain malloc'd pointer, not slab memory.
+   The saved `o` is restored to avoid poisoning the caller's slab state. */
 void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 {
 	t_ast_node	scratch;
