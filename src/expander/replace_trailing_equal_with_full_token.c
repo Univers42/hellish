@@ -12,6 +12,9 @@
 
 #include "expander_private.h"
 
+/* Wrap a freshly allocated string in a minimal AST_TOKEN / TT_ENVVAR node
+   with allocated=true.  Used by split_envvar and emit_positional_at to build
+   field tokens from IFS-split pieces without going through the parser. */
 t_ast_node	new_env_node(char *new_start)
 {
 	t_ast_node	ret;
@@ -26,7 +29,9 @@ t_ast_node	new_env_node(char *new_start)
 	return (ret);
 }
 
-/* return strdup of node's full token when safe, NULL otherwise */
+/* Return a dup of the original source text for `node` (via get_old_token),
+   or NULL when no full_word annotation is present.  This text is used to
+   replace the "trailing-equals" argv entry with the original user text. */
 static char	*dup_full_token_if_available(t_ast_node *node)
 {
 	t_token_old	full;
@@ -40,7 +45,10 @@ static char	*dup_full_token_if_available(t_ast_node *node)
 	return (ft_strndup(full.start, full.len));
 }
 
-/* replace argv[idx] with full token dup if it ends with '=' */
+/* If argv[idx] ends with '=', it came from an assignment-word expansion that
+   field-split the value away.  Replace it with the original source text so
+   `export` and similar builtins display the full "NAME=value" rather than
+   just "NAME=". */
 static void	replace_arg_if_trailing_equal(t_vec *argv, size_t idx,
 				t_ast_node *node)
 {
@@ -59,6 +67,9 @@ static void	replace_arg_if_trailing_equal(t_vec *argv, size_t idx,
 	((char **)argv->ctx)[idx] = dup;
 }
 
+/* Walk the entire argv vector and replace any "NAME=" entry with the original
+   full token text from `node`.  Called after expand_word_glob_ctl so the
+   field-split product is patched up before being handed to the executor. */
 void	replace_trailing_equal_with_full_token(t_ast_node *node, t_vec *argv)
 {
 	size_t	ai;

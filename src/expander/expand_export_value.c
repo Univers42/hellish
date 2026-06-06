@@ -13,7 +13,9 @@
 #include "../builtins/builtins_private.h"
 #include "sys.h"
 
-// Helper: Append a variable expansion to the output buffer
+/* Look up substart[0..len) in the environment and append the value to out.
+   A missing variable contributes nothing (no error — this is export-time,
+   not a regular expansion context). */
 static void	append_var_expansion(t_shell *st, t_string *out,
 								char *substart, int len)
 {
@@ -24,13 +26,16 @@ static void	append_var_expansion(t_shell *st, t_string *out,
 		vec_push_str(out, rep);
 }
 
-// Helper: Expand a single character to the output buffer
+/* Append a single literal character to the output buffer. */
 static void	append_ch(t_string *out, char c)
 {
 	vec_push(out, &c);
 }
 
-// Helper: Expand variables in a string and append to output buffer
+/* Expand $var references inside an export value string.  Only the simple
+   $name form (is_var_name_p1 / is_var_name_p2) is expanded — no ${},
+   $(()), or `...`.  This is the "lightweight" expansion used by `export
+   VAR=$OTHER` where the value comes from a previous env assignment. */
 static void	expand_vars_to_buffer(t_shell *st, t_string *out, char *val)
 {
 	size_t	i;
@@ -53,6 +58,10 @@ static void	expand_vars_to_buffer(t_shell *st, t_string *out, char *val)
 	}
 }
 
+/* Expand $var references inside an export string (val), return the result.
+   `val` is freed by this function; the caller must NOT use it afterwards.
+   When allow_expand is false the original string is returned unchanged.
+   This guards against double-expansion of values that are already literals. */
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand)
 {
 	t_string	out;

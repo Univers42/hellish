@@ -15,6 +15,8 @@
 #include "shell.h"
 #include "../parsing/parser_private.h"
 
+/* Map a redirect operator to its default source fd: reads (<, heredoc, <&,
+   <>) default to stdin (0); writes (>, >>, >&, >|) default to stdout (1). */
 int	get_default_src_fd(t_tt tt)
 {
 	if (tt == TT_REDIRECT_LEFT || tt == TT_HEREDOC || tt == TT_DUP_IN
@@ -23,6 +25,9 @@ int	get_default_src_fd(t_tt tt)
 	return (STDOUT_FILENO);
 }
 
+/* True when `node` is a simple command or a one-child command wrapper around
+   a simple command.  Used by the expander to decide if a subcommand can be
+   inlined into the parent process substitution group. */
 bool	node_is_groupable(t_ast_node *node)
 {
 	t_ast_node	*first;
@@ -39,6 +44,8 @@ bool	node_is_groupable(t_ast_node *node)
 	return (false);
 }
 
+/* True for any token type that introduces a redirection.  All eight forms
+   recognised by the shell — <, >, >>, <<, <&, >&, <>, >| — are listed. */
 bool	is_redirect(t_tt tt)
 {
 	if (tt == TT_REDIRECT_LEFT
@@ -53,6 +60,9 @@ bool	is_redirect(t_tt tt)
 	return (false);
 }
 
+/* Track nesting depth while scanning inside a process substitution.  Opening
+   tokens ({, <(...), >(...)) increment depth; } decrements it.  When depth
+   reaches 0 the scanner knows it has left the process substitution body. */
 void	proc_sub_update_depth(t_token curr, int *depth)
 {
 	if (curr.tt == TT_BRACE_LEFT || curr.tt == TT_PROC_SUB_IN
@@ -62,6 +72,9 @@ void	proc_sub_update_depth(t_token curr, int *depth)
 		(*depth)--;
 }
 
+/* Signal the parser that more input is needed to complete a construct
+   (incomplete $(, mismatched parens, etc.).  Sets looking_for so the
+   next readline prompt shows the right continuation character (PS2). */
 int	handle_end_token(t_parser *parser, t_deque_tok *tokens)
 {
 	parser->res = RES_GETMOREINPUT;

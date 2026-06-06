@@ -28,8 +28,11 @@ static void	append_token_text(t_string *s, t_token curr, size_t total_children)
 	}
 }
 
-/* Append one subtoken so it re-lexes back to itself: vars keep their '$',
-   quoted runs keep their quotes. */
+/* Serialise one subtoken in a form that can be re-lexed as the same token
+   type: $var tokens get their '$' re-prepended, quoted tokens get their
+   quote characters re-added, bare TT_WORD text is copied as-is.  This is
+   the inverse of the lexer for brace expansion's flatten-then-re-parse
+   cycle. */
 static void	brace_src_append(t_string *s, t_token t)
 {
 	if (is_envvar_token(t.tt))
