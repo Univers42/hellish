@@ -26,14 +26,12 @@ jobs:
     name: Submodules & hygiene
     runs-on: ubuntu-latest
     steps:
+      # checkout's recursive submodule handling rewrites the deep test
+      # submodule's git@ URL to https via the token (a raw `git submodule
+      # update --init --recursive` can't auth that SSH URL in CI).
       - uses: actions/checkout@v4
-      - name: Initialise submodules
-        run: |
-          if ! git submodule update --init --recursive 2>sub.err; then
-            echo "::error::Could not fetch submodules. Are the pinned commits of"
-            echo "::error::vendor/libft and vendor/scripts pushed to their remotes?"
-            cat sub.err; exit 1
-          fi
+        with:
+          submodules: recursive
       - name: Submodules are populated
         run: |
           test -d vendor/libft/srcs || { echo "::error::vendor/libft is empty (its pin points at the mass-deletion main). Pin a full-tree commit."; exit 1; }
@@ -97,10 +95,17 @@ jobs:
         run: pip install --quiet norminette==3.3.59
       - name: norminette src incs
         run: |
-          if ! norminette src incs; then
-            echo "::error::Norm violations — run 'make norm' locally. See CONTRIBUTING.md."
+          # norminette exits non-zero on NOTICES too (e.g. GLOBAL_VAR_DETECTED on
+          # the banner's const tables, UNKNOWN_ESCAPE on \033 art) -- those are
+          # warnings, not 42-norm violations. Fail only on real errors, exactly
+          # like `make norm`.
+          norminette src incs 2>&1 | tee norm.out || true
+          if grep -qE 'Error!|: KO|Error: ' norm.out; then
+            echo "::error::Norm violations -- run 'make norm' locally. See CONTRIBUTING.md."
+            grep -E 'Error!|Error: ' norm.out
             exit 1
           fi
+          echo "norm clean (real errors: 0; notices ignored, matching make norm)"
 
   # ── Tests ────────────────────────────────────────────────────────────────
   # The debug build (SAFE=1) is used so AddressSanitizer / LeakSanitizer are
