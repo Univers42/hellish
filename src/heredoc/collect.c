@@ -59,10 +59,6 @@ char	*first_non_tab(char *line)
 	return (line);
 }
 
-/* Defer a heredoc inside a function body: copy its raw body (up to and
-   including the delimiter line) out of state->hd_src onto the node. The body is
-   re-materialised at call time (materialize_heredoc) because the temp-file /
-   redirect index created now would be freed before the function is invoked. */
 /* Check if the line [ls, le) is exactly the delimiter string (with
    leading TABs stripped when dash/<<- mode is active).  The comparison
    is byte-exact: a delimiter with trailing whitespace or a partial match

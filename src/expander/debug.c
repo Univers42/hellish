@@ -12,6 +12,11 @@
 
 #include "expander_private.h"
 
+/* Emit a redirect error to stderr.  Two cases:
+     expanded_name == NULL → the expansion produced no words (ambiguous);
+       print the original token text if available, else "ambiguous redirect"
+     expanded_name != NULL → the open() call failed; print the OS error via
+       strerror(errno) so the user sees the real reason (ENOENT, EACCES…). */
 void	print_redir_err(t_shell *state,
 		t_token_old full_token, char *expanded_name)
 {

@@ -24,6 +24,10 @@
 # include <readline/readline.h>
 # include <fcntl.h>
 
+/* Spec for one << operator found during the pre-scan in collect_specs.
+   delim is the literal delimiter string (quotes stripped).  dash is true
+   for <<- (strip leading tabs).  line is the source line number where the
+   << operator appeared so advance_hd can match bodies to operators. */
 typedef struct s_hd
 {
 	char	*delim;
@@ -31,6 +35,10 @@ typedef struct s_hd
 	size_t	line;
 }	t_hd;
 
+/* Iteration context for walk_and_strip / advance_hd.  sp/n is the full
+   spec array; si is the index of the next spec to process; got counts
+   how many bodies were actually extracted (some specs may lack a matching
+   delimiter in the string and are skipped). */
 typedef struct s_walk_ctx
 {
 	t_hd	*sp;

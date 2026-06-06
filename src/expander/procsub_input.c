@@ -13,8 +13,11 @@
 #include "expander_private.h"
 #include "sys.h"
 
-/* fork child, wire child's stdout to pipefd[1],
-exec preferred binary then /bin/sh */
+/* Fork a child for a <(cmd) process substitution.  The child connects its
+   stdout to pipefd[1] and exec's the preferred shell binary.  Two exec
+   attempts are made: PATH_HELLISH first (the installed shell), then
+   PROC_SELF_EXE (the currently running binary via /proc/self/exe) as a
+   fallback when running from the build tree.  exit(127) if both fail. */
 static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 						const char *cmd)
 {
@@ -44,6 +47,10 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 	return (pid);
 }
 
+/* Create a <(cmd) process substitution: the child writes to pipefd[1],
+   the parent keeps pipefd[0] open and returns its /dev/fd/N path.  The
+   caller (expand_proc_sub) uses that path as a word that expands to a
+   readable fd the outer command can open for its input. */
 char	*create_procsub_input(t_shell *state, const char *cmd)
 {
 	int				pipefd[2];

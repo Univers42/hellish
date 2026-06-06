@@ -22,7 +22,7 @@
      4. Command subst.    – $(...) `...`  (process_cmd_sub / try_backtick_ctx)
      5. Arithmetic        – $((...))      (process_arith_sub)
      6. Field splitting   – IFS split on unquoted expansions (split_words)
-     7. Pathname (glob)   – * ? [...]     (expand_node_glob -> expand_word_glob)
+     7. Pathname (glob)   – * ? [...]   (expand_node_glob / expand_word_glob)
 
    Quoting ('' "" \) is tracked by the token type (TT_SQWORD, TT_DQWORD …)
    so quoted pieces never reach field-splitting or globbing.              */

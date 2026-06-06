@@ -12,6 +12,10 @@
 
 #include "expander_private.h"
 
+/* Populate the debug colour map with the second batch of token-type names.
+   Split across two functions only because the norm limits function length;
+   this half covers semicolons, newlines, and the quoted-word / env-var
+   token types used by the VERBOSE expander dump. */
 void	init_color_map_part2(t_hash *map)
 {
 	hash_set(map, "TT_SEMICOLON", (void *)ASCII_MAGENTA);

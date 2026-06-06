@@ -12,6 +12,10 @@
 
 #include "expander_private.h"
 
+/* Flatten a heredoc word node back to a raw string for the unexpanded
+   heredoc pass.  Unlike word_to_string (which drops the '$'), we keep the
+   '$' prefix on TT_ENVVAR / TT_DQENVVAR so the heredoc expander sees the
+   original $var text and can expand it at heredoc-write time. */
 t_string	word_to_hrdoc_string(t_ast_node node)
 {
 	t_token		curr;

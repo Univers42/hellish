@@ -31,7 +31,11 @@ static void	push_braced_val(t_arith_expand_ctx *ctx, int start, int j)
 		vec_push_str(ctx->out, v);
 }
 
-/* Append the value of a ${...} parameter. ctx->i points just past '$'. */
+/* Expand a ${name} or ${name:-word} reference inside arithmetic text.
+   We re-use expand_param_format for the format operators (so ${#x} etc.
+   work in $(( ${#var} + 1 ))), falling back to plain env_expand_n for a
+   bare name.  The brace-depth scanner is hand-rolled here rather than
+   re-using the full lexer to keep this path fast and dependency-free. */
 static void	append_braced(t_arith_expand_ctx *ctx)
 {
 	int	start;
@@ -79,7 +83,10 @@ static void	append_simple(t_arith_expand_ctx *ctx)
 	*ctx->i = j;
 }
 
-/* Substitute $var / ${...} parameters in the arith text textually. */
+/* Walk the arithmetic expression text and expand every $name / ${...}
+   reference into its string value.  The result is a pure-numeric string
+   that arith_expand can evaluate without seeing any $ characters.
+   Everything that is not a $ is copied verbatim (operators, literals). */
 static void	arith_vars_loop(t_arith_expand_ctx *ctx)
 {
 	const char	*s;
@@ -107,6 +114,10 @@ static void	arith_vars_loop(t_arith_expand_ctx *ctx)
 	}
 }
 
+/* Public entry: expand all $var / ${...} references in arithmetic expression
+   text `s[0..len)` and return the result as a freshly allocated string.
+   Called by finish_arith_sub when the expression contains a '$' after
+   process_word_token has already handled any nested $(...) / `...`. */
 char	*expand_arith_vars(t_shell *state, const char *s, int len)
 {
 	t_string			out;

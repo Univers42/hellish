@@ -43,6 +43,11 @@ static pid_t	fork_and_exec_procsub(t_shell *state,
 	return (pid);
 }
 
+/* Create a >(cmd) process substitution: the shell writes to pipefd[1] and
+   the child reads from pipefd[0] and runs `cmd`.  The parent gets back the
+   /dev/fd/N path for pipefd[1] as a string it can use as a redirect target.
+   The child entry is registered in state->proc_subs so cleanup_proc_subs
+   can close the fd and reap the child once the outer command finishes. */
 char	*create_procsub_output(t_shell *state, const char *cmd)
 {
 	int				pipefd[2];
