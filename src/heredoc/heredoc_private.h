@@ -65,5 +65,7 @@ void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req);
 bool	contains_quotes(t_ast_node node);
 bool	is_delim_line(const char *line, size_t len, t_hd *s);
 bool	split_heredocs(const char *str, char **stripped, char **bodies);
+int		specs_on_line(const char *ls, size_t len, size_t line, t_vec *v);
+bool	heredoc_incomplete(const char *str);
 
 #endif

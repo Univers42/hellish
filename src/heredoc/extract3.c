@@ -40,7 +40,7 @@ static void	push_spec(t_vec *v, t_deque_tok *tt, size_t i, size_t line)
 
 /* Tokenise a single command line (copied so its NUL terminates the lexer) and
    append a spec for every `<<word` on it; return the operator count. */
-static int	specs_on_line(const char *ls, size_t len, size_t line, t_vec *v)
+int	specs_on_line(const char *ls, size_t len, size_t line, t_vec *v)
 {
 	t_deque_tok	tt;
 	char		*copy;
