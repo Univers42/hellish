@@ -253,5 +253,25 @@ my_shell:
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
+# Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
+# anyone can try it without chasing readline/toolchain deps on their own host.
+# `docker-test` builds + smoke-tests all four distros; `docker-<distro>` drops
+# you into an interactive hellish there. See docker/ and docker-compose.yml.
+docker-build:
+	docker compose build
+docker-test:
+	@chmod +x docker/test.sh && docker/test.sh
+docker-alpine:
+	docker compose run --rm alpine
+docker-debian:
+	docker compose run --rm debian
+docker-ubuntu:
+	docker compose run --rm ubuntu
+docker-arch:
+	docker compose run --rm arch
+docker-clean:
+	docker compose down --rmi local 2>/dev/null || true
 
-.PHONY: test bench re all clean fclean norm my_shell help safe_banner
+.PHONY: test bench re all clean fclean norm my_shell help safe_banner \
+	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
+	docker-arch docker-clean

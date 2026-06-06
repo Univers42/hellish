@@ -1,0 +1,53 @@
+# Try hellish in a clean, dependency-complete container on four distros.
+# It builds the shell FROM SOURCE inside each image, so you never fight missing
+# readline/ncurses/toolchain on your host -- the container has exactly what is
+# needed and nothing else.
+#
+#   docker compose build                 # build all four images
+#   docker compose run --rm alpine       # interactive hellish on Alpine
+#   docker compose run --rm arch         # ... or Arch, Debian, Ubuntu
+#   make docker-test                     # build + smoke-test every distro
+#
+# Each service builds with the same docker/Dockerfile, only BASE differs.
+name: hellish
+
+services:
+  alpine:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "alpine:3.20"
+    image: hellish:alpine
+    tty: true
+    stdin_open: true
+
+  debian:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "debian:stable-slim"
+    image: hellish:debian
+    tty: true
+    stdin_open: true
+
+  ubuntu:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "ubuntu:24.04"
+    image: hellish:ubuntu
+    tty: true
+    stdin_open: true
+
+  arch:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "archlinux:base-devel"
+    image: hellish:arch
+    tty: true
+    stdin_open: true
