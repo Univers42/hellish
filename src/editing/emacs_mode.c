@@ -15,6 +15,7 @@
    the text API -- belt-and-suspenders because some readline versions
    only honour one or the other, and it costs nothing. */
 
+#include <stdio.h>
 #include <readline/readline.h>
 
 /* Activate emacs key bindings.  This is the default readline mode, but

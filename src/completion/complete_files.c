@@ -15,6 +15,7 @@
    directory completion -- readline appends '/' instead automatically). */
 
 #include "libft.h"
+#include <stdio.h>
 #include <readline/readline.h>
 
 /* Hand off to rl_filename_completion_function, which handles tilde

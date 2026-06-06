@@ -1,0 +1,16 @@
+# Build context for docker/Dockerfile (build-from-source): ship the sources and
+# the checked-out submodules, but never host build artifacts or git internals.
+# (BuildKit uses this file in preference to the repo-root .dockerignore for this
+# specific Dockerfile, so the binary-only root image stays lean too.)
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+*.log

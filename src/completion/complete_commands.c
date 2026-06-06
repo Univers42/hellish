@@ -18,6 +18,7 @@
 
 #include "completion_private.h"
 #include "libft.h"
+#include <stdio.h>
 #include <readline/readline.h>
 #include <stdlib.h>
 #include <dirent.h>
