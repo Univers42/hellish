@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1
+# ============================================================================
+# Multi-stage RELEASE image for Docker Hub: compile hellish in a builder stage,
+# then ship only the binary + the readline runtime on a slim base. Small,
+# self-contained, and glibc-consistent (builder and runtime share the base).
+#
+#   docker build -f docker/Dockerfile.release -t <user>/hellish-shell:latest .
+#   docker run --rm -it <user>/hellish-shell
+# ============================================================================
+
+FROM debian:stable-slim AS builder
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        build-essential libreadline-dev git ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY . .
+RUN make fclean >/dev/null 2>&1 || true; make OPT=1 SAFE=1
+
+FROM debian:stable-slim
+LABEL org.opencontainers.image.title="hellish" \
+      org.opencontainers.image.description="A fast, POSIX-compliant shell, with horns." \
+      org.opencontainers.image.source="https://github.com/Univers42/hellish" \
+      org.opencontainers.image.licenses="MIT"
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends libreadline8 ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --create-home --shell /usr/local/bin/hellish hellish
+COPY --from=builder /src/build/bin/hellish /usr/local/bin/hellish
+ENV HELLISH_NO_UPDATE_CHECK=1
+USER hellish
+WORKDIR /home/hellish
+ENTRYPOINT ["/usr/local/bin/hellish"]
