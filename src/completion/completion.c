@@ -17,6 +17,7 @@
    default filename completion (which we want for non-dollar arguments). */
 
 #include "libft.h"
+#include <stdio.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <stdlib.h>

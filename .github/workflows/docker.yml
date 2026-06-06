@@ -1,0 +1,38 @@
+name: Docker distros
+
+# Build hellish FROM SOURCE in a clean container on four distros to prove it
+# compiles + runs without depending on the host's packages. This is heavy
+# (a full build per distro), so it runs on pushes to the long-lived branches,
+# on PRs that touch the Docker setup, and on demand -- NOT on every code PR
+# (the fast `build` matrix in ci.yml already covers compilation on ubuntu).
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    paths:
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  distros:
+    name: Build-from-source · ${{ matrix.distro }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        distro: [alpine, debian, ubuntu, arch]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build + smoke-test hellish in ${{ matrix.distro }}
+        run: |
+          chmod +x docker/test.sh
+          docker/test.sh ${{ matrix.distro }}

@@ -15,6 +15,7 @@
    user always knows which sub-mode they are in -- a quality-of-life
    touch that bash also enables by default in vi mode. */
 
+#include <stdio.h>
 #include <readline/readline.h>
 
 /* Switch to vi key bindings (rl_editing_mode=0).  The mode indicator

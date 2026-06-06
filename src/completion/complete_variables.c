@@ -17,6 +17,7 @@
    then var_gen_dollar prepends it back so readline shows "$HOME" etc. */
 
 #include "libft.h"
+#include <stdio.h>
 #include <readline/readline.h>
 #include <stdlib.h>
 
