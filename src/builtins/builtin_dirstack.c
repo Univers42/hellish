@@ -24,12 +24,12 @@ static void	ds_refresh(t_shell *state)
 {
 	char	*cwd;
 
-	cwd = getcwd(NULL, 0);
+	cwd = x_getcwd();
 	if (cwd)
 	{
 		state->cwd.len = 0;
 		vec_push_str(&state->cwd, cwd);
-		free(cwd);
+		xfree(cwd);
 	}
 	update_pwd_vars(state);
 }
@@ -40,10 +40,10 @@ static void	ds_print(void)
 	char	*cwd;
 	int		i;
 
-	cwd = getcwd(NULL, 0);
+	cwd = x_getcwd();
 	if (cwd)
 		ft_printf("%s", cwd);
-	free(cwd);
+	xfree(cwd);
 	i = (int)g_dirstack.len - 1;
 	while (i >= 0)
 	{
@@ -65,9 +65,9 @@ int	builtin_pushd(t_shell *state, t_vec argv)
 		vec_init(&g_dirstack);
 		g_dirstack.elem_size = sizeof(char *);
 	}
-	old = getcwd(NULL, 0);
+	old = x_getcwd();
 	if (chdir(((char **)argv.ctx)[1]) != 0)
-		return (free(old), ft_eprintf("%s: pushd: %s: %s\n", state->ctx,
+		return (xfree(old), ft_eprintf("%s: pushd: %s: %s\n", state->ctx,
 				((char **)argv.ctx)[1], strerror(errno)), 1);
 	if (old)
 		vec_push(&g_dirstack, &old);
@@ -86,12 +86,12 @@ int	builtin_popd(t_shell *state, t_vec argv)
 	if (chdir(top) != 0)
 	{
 		ft_eprintf("%s: popd: %s: %s\n", state->ctx, top, strerror(errno));
-		return (free(top), 1);
+		return (xfree(top), 1);
 	}
-	free(top);
+	xfree(top);
 	ds_refresh(state);
 	ds_print();
 	if (g_dirstack.len == 0)
-		(free(g_dirstack.ctx), g_dirstack = (t_vec){0});
+		(xfree(g_dirstack.ctx), g_dirstack = (t_vec){0});
 	return (0);
 }

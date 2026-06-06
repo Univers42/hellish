@@ -21,9 +21,9 @@ void	cmd_hash_remove(t_hash *ht, const char *name)
 	e = (t_cmd_hash_entry *)hash_del(ht, name);
 	if (!e)
 		return ;
-	free(e->name);
-	free(e->path);
-	free(e);
+	xfree(e->name);
+	xfree(e->path);
+	xfree(e);
 }
 
 void	cmd_hash_clear(t_hash *ht)
@@ -73,7 +73,7 @@ int	hash_add_from_path(t_shell *state, const char *name)
 		return (1);
 	}
 	cmd_hash_insert(&state->cmd_cache, name, path);
-	free(path);
+	xfree(path);
 	return (0);
 }
 

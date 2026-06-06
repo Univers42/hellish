@@ -35,7 +35,7 @@ char	*gopt_arg(t_shell *state, t_vec argv, int idx)
 	}
 	k = ft_itoa(idx);
 	v = env_expand(state, k);
-	return (free(k), v);
+	return (xfree(k), v);
 }
 
 void	gopt_commit_optind(t_shell *state, int optind)

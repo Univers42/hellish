@@ -48,7 +48,7 @@ t_execution_state	execute_range_background(t_shell *state,
 		critical_error_errno_ctx("fork");
 	procsub_close_fds_parent(state);
 	state->bg_job_count++;
-	free(state->last_bg_pid);
+	xfree(state->last_bg_pid);
 	state->last_bg_pid = ft_itoa(pid);
 	if (state->metinp == INP_RL)
 		ft_printf("[%d] %d\n", state->bg_job_count, pid);

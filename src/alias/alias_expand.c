@@ -41,7 +41,7 @@ static char	*build_expanded(const char *val, const char *rest)
 
 	vlen = ft_strlen(val);
 	rlen = ft_strlen(rest);
-	result = malloc(vlen + rlen + 1);
+	result = xmalloc(vlen + rlen + 1);
 	if (!result)
 		return (NULL);
 	ft_memcpy(result, val, vlen);
@@ -68,7 +68,7 @@ char	*alias_expand_input(t_hash *aliases, const char *input)
 	if (!word)
 		return (NULL);
 	val = alias_get(aliases, word);
-	free(word);
+	xfree(word);
 	if (!val)
 		return (NULL);
 	result = build_expanded(val, input + pos + wlen);

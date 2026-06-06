@@ -35,7 +35,7 @@ unsigned long	eix_hash(const char *s, int len)
 
 void	env_index_free(void)
 {
-	free(g_tab);
+	xfree(g_tab);
 	g_tab = NULL;
 	g_cap = 0;
 	g_count = 0;
@@ -83,8 +83,8 @@ void	env_index_reset(t_vec_env *env)
 	cap = 16;
 	while (cap < (env->len + 1) * 2)
 		cap *= 2;
-	free(g_tab);
-	g_tab = malloc(cap * sizeof(t_eix));
+	xfree(g_tab);
+	g_tab = xmalloc(cap * sizeof(t_eix));
 	if (!g_tab)
 	{
 		g_cap = 0;

@@ -30,7 +30,7 @@ static char	*expand_case_word(t_shell *state, t_ast_node *node)
 	expand_env_vars(state, &copy, false);
 	s = word_to_string(copy);
 	ret = ft_strndup((char *)s.ctx, s.len);
-	free(s.ctx);
+	xfree(s.ctx);
 	free_ast(&copy);
 	return (ret);
 }
@@ -61,7 +61,7 @@ static char	*expand_case_pattern(t_shell *state, t_ast_node *node)
 		ret = ft_strndup((char *)s.ctx, s.len);
 	else
 		ret = ft_strndup("", s.len);
-	free(s.ctx);
+	xfree(s.ctx);
 	free_ast(&copy);
 	return (ret);
 }
@@ -92,7 +92,7 @@ static bool	item_matches(t_shell *state, t_ast_node *item, const char *subj)
 	{
 		pat = expand_case_pattern(state, vec_idx(&item->children, i));
 		m = case_match(subj, pat);
-		free(pat);
+		xfree(pat);
 		if (m)
 			return (true);
 		i++;
@@ -125,5 +125,5 @@ t_execution_state	execute_case(t_shell *state, t_executable_node *exe)
 			break ;
 		}
 	}
-	return (free(subj), st);
+	return (xfree(subj), st);
 }

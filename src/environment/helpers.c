@@ -20,12 +20,12 @@ void	init_cwd(t_shell *state)
 	char	*cwd;
 
 	vec_init(&state->cwd);
-	cwd = getcwd(NULL, 0);
+	cwd = x_getcwd();
 	if (cwd)
 		vec_push_str(&state->cwd, cwd);
 	else
 		ft_eprintf(MSG_GETCWD_SHINIT);
-	free(cwd);
+	xfree(cwd);
 }
 
 void	set_home(t_shell *state)
@@ -36,12 +36,12 @@ void	set_home(t_shell *state)
 	e = env_get(&state->env, HOME);
 	if (!e || !e->value || !e->value[0])
 	{
-		cwd = getcwd(NULL, 0);
+		cwd = x_getcwd();
 		if (!cwd)
 			cwd = ft_strdup(TMP_DIR);
 		env_set(&state->env, env_create(ft_strdup(HOME),
 				ft_strdup(cwd), true));
-		free(cwd);
+		xfree(cwd);
 	}
 }
 
@@ -50,12 +50,12 @@ void	set_cwd(t_shell *state)
 	char	*cwd;
 
 	init_cwd(state);
-	cwd = getcwd(NULL, 0);
+	cwd = x_getcwd();
 	if (cwd)
 		vec_push_str(&state->cwd, cwd);
 	else
 		ft_eprintf(MSG_GETCWD_SHINIT);
-	free(cwd);
+	xfree(cwd);
 }
 
 void	set_shlvl(t_shell *state)

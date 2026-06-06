@@ -35,8 +35,8 @@ char	*quick_sub(t_shell *state, const char *input)
 	else
 		nw = ft_strndup(c2 + 1, ft_strcspn(c2 + 1, "\n"));
 	res = replace_first(hist_last(state), old, nw);
-	free(old);
-	free(nw);
+	xfree(old);
+	xfree(nw);
 	if (!res)
 		return (ft_eprintf("%s: :s: substitution failed\n", state->ctx),
 			ft_strdup(""));
@@ -57,7 +57,7 @@ static char	*expand_bang_loop(t_shell *state, t_string *result,
 	{
 		ft_eprintf("%s: !%.*s: event not found\n",
 			state->ctx, (int)adv, input + i + 1);
-		free(result->ctx);
+		xfree(result->ctx);
 		return (ft_strdup(""));
 	}
 	vec_push_str(result, sub);

@@ -58,5 +58,5 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 		else
 			ret.value = ft_strdup("");
 	}
-	return (free(args.ctx), ret);
+	return (xfree(args.ctx), ret);
 }

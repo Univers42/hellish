@@ -28,12 +28,12 @@ void	glob_free_tokens(t_vec_glob *tokens)
 		g = &((t_glob *)tokens->ctx)[i];
 		if (g->char_set)
 		{
-			free(g->char_set);
+			xfree(g->char_set);
 			g->char_set = NULL;
 		}
 		i++;
 	}
-	free(tokens->ctx);
+	xfree(tokens->ctx);
 	tokens->ctx = NULL;
 	tokens->len = 0;
 }
@@ -77,5 +77,5 @@ char	*get_curr_path(char *path)
 */
 void	free_str_elem(void *el)
 {
-	free(*(char **)el);
+	xfree(*(char **)el);
 }

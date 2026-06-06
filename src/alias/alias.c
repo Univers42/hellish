@@ -26,9 +26,9 @@ static void	free_alias_entry(void *ptr)
 	e = (t_alias_entry *)ptr;
 	if (e)
 	{
-		free(e->name);
-		free(e->value);
-		free(e);
+		xfree(e->name);
+		xfree(e->value);
+		xfree(e);
 	}
 }
 
@@ -45,11 +45,11 @@ int	alias_set(t_hash *aliases, const char *name, const char *value)
 	old = (t_alias_entry *)hash_get(aliases, name);
 	if (old)
 	{
-		free(old->value);
+		xfree(old->value);
 		old->value = ft_strdup(value);
 		return (0);
 	}
-	entry = malloc(sizeof(t_alias_entry));
+	entry = xmalloc(sizeof(t_alias_entry));
 	if (!entry)
 		return (1);
 	entry->name = ft_strdup(name);

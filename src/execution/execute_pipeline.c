@@ -60,6 +60,7 @@ static void	finalize_child_parent(t_exec_child_ctx *c)
 		c->prev_infd = -1;
 	else
 		c->prev_infd = (*c->pp)[0];
+	free_executable_node(c->curr_exe);
 }
 
 void	execute_pipeline_children(t_shell *state,
@@ -112,6 +113,6 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 		res.status = !res.status;
 		res.pid = -1;
 	}
-	free(results.ctx);
+	xfree(results.ctx);
 	return (res);
 }

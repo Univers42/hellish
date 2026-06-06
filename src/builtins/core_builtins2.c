@@ -81,7 +81,7 @@ int	builtin_cd(t_shell *state, t_vec argv)
 			((char **)argv.ctx)[0], arg, strerror(errno));
 		return (1);
 	}
-	cwd = getcwd(NULL, 0);
-	return (cd_refresh_cwd(state, argv, cwd), free(cwd),
+	cwd = x_getcwd();
+	return (cd_refresh_cwd(state, argv, cwd), xfree(cwd),
 		update_pwd_vars(state), 0);
 }

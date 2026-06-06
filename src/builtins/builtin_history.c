@@ -20,7 +20,7 @@ static void	clear_history_list(t_shell *state)
 
 	i = 0;
 	while (i < state->hist.hist_cmds.len)
-		free(((char **)state->hist.hist_cmds.ctx)[i++]);
+		xfree(((char **)state->hist.hist_cmds.ctx)[i++]);
 	state->hist.hist_cmds.len = 0;
 }
 

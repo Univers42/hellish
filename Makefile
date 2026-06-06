@@ -53,6 +53,27 @@ CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
 endif
 
+# Allocator backend selector. SAFE=1 links against libc malloc/free (keeps
+# AddressSanitizer meaningful); SAFE=0 links against the custom ft_malloc heap
+# inside libft (faster, less battle-tested). The default tracks the build mode:
+# the debug/ASan build is SAFE, the optimized build exercises ft_malloc. An
+# explicit `SAFE=...` on the command line always wins; `make my_shell` forces 1.
+# libft is built into a per-SAFE tree so the two backends never share objects.
+ifdef OPT
+SAFE ?= 0
+else
+SAFE ?= 1
+endif
+ifeq ($(SAFE),0)
+SAFE_TAG := ft
+# Force-pull ft_malloc's leak oracle from libft.a so the weakly-referenced
+# malloc_live_bytes in alloc_stats.c binds (a weak ref alone won't pull an
+# archive member). At SAFE=1 there is no -u, so the weak ref resolves to NULL.
+LDFLAGS += -Wl,-u,malloc_live_bytes
+else
+SAFE_TAG := libc
+endif
+
 # Directories. Object trees are per build mode so the OPT benchmark build
 # never silently reuses stale debug/ASan objects (make won't rebuild on a
 # flag change alone). The binary path is shared and relinked for each mode,
@@ -63,7 +84,7 @@ else
 OBJ_DIR := build/obj
 endif
 BIN_DIR := build/bin
-LIBFT_DIR := vendor/libft/build/lib
+LIBFT_DIR := vendor/libft/build-$(SAFE_TAG)/lib
 SRC_DIR := src
 TEST_DIR := tests
 BIN_TEST := tester
@@ -87,7 +108,16 @@ endif
 # Add this variable at the top with your other variables
 COMPILED := 0
 
-all: $(BIN_DIR)/$(BAPTIZE_SHELL)
+all: safe_banner $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# Announce the active allocator before building so it is never a surprise.
+safe_banner:
+	@if [ "$(SAFE)" = "0" ]; then \
+		printf "\n  \033[1;31m⚠  SAFE=0\033[0m \033[1;37m— custom ft_malloc heap (faster, UNSAFE).\033[0m\n" >&2; \
+		printf "  \033[90mPass SAFE=1 for the libc allocator. Stability is on you.\033[0m\n\n" >&2; \
+	else \
+		printf "\n  \033[1;32m✓  SAFE=1\033[0m \033[1;37m— libc malloc/free.\033[0m \033[90m(OPT build defaults to SAFE=0 ft_malloc)\033[0m\n\n" >&2; \
+	fi
 
 # Link the final binary
 $(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
@@ -123,10 +153,12 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 # Include dependency files if present
 -include $(DEPS)
 
-# Build libft (in its directory)
+# Build libft (in its directory) into a per-SAFE tree so the libc and ft_malloc
+# archives coexist and never reuse each other's objects.
 $(LIBFT_A):
-	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3)\033[0m\n\n" >&2
-	@$(MAKE) -C vendor/libft -j1
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3, %s)\033[0m\n\n" \
+		"$(if $(filter ft,$(SAFE_TAG)),ft_malloc,libc)" >&2
+	@$(MAKE) -C vendor/libft -j1 SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
 	@printf "\n" >&2
 
 clean:
@@ -139,7 +171,8 @@ fclean: clean
 	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mBinary removed\033[0m\n\n" >&2
 	@printf "  \033[1;35m●\033[0m \033[1;37mCleaning libft\033[0m" >&2
-	@$(MAKE) -C vendor/libft fclean
+	@$(MAKE) -C vendor/libft fclean BUILD_DIR=build-$(SAFE_TAG)
+	@rm -rf vendor/libft/build-ft vendor/libft/build-libc vendor/libft/build
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mlibft cleaned\033[0m\n" >&2
 	@rm -rf build
 	@printf "\n" >&2
@@ -186,8 +219,13 @@ norm:
 	fi
 
 
+# Install as the login shell. This is the binary you live in, so it is rebuilt
+# optimized AND safe (OPT=1 SAFE=1 -> libc allocator) by default. You may force
+# the custom heap with `make my_shell SAFE=0`, but then stability is on you.
 my_shell:
-	@echo "Installing hellish shell..."
+	@$(MAKE) --no-print-directory re OPT=1 \
+		SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1)
+	@echo "Installing hellish shell (OPT=1 SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1))..."
 	sudo install -m 755 build/bin/hellish /usr/bin/hellish
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
@@ -195,4 +233,4 @@ my_shell:
 	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
 
 
-.PHONY: test bench re all clean fclean norm my_shell help
+.PHONY: test bench re all clean fclean norm my_shell help safe_banner

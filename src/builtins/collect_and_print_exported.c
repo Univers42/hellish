@@ -56,10 +56,10 @@ static void	print_and_free_list(t_vec *list)
 	{
 		s = ((char **)list->ctx)[j];
 		ft_printf("%s\n", s);
-		free(s);
+		xfree(s);
 		j++;
 	}
-	free(list->ctx);
+	xfree(list->ctx);
 }
 
 /* public entry: collect, sort and print exported variables */

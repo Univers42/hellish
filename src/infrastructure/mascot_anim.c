@@ -42,7 +42,7 @@ int	mascot_hook(void)
 	render_prompt(&r, *anim_frame(), *anim_status());
 	vec_push_char(&r, 0);
 	redraw_mascot(&r);
-	free(r.ctx);
+	xfree(r.ctx);
 	return (0);
 }
 

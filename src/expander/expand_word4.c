@@ -80,5 +80,5 @@ void	expand_word_glob_ctl(t_shell *state, t_ast_node *node,
 	gctx.keep_as_one = keep_as_one;
 	gctx.no_glob = no_glob;
 	glob_loop(&gctx, &words);
-	(free(words.ctx), free_ast(node));
+	(xfree(words.ctx), free_ast(node));
 }

@@ -67,8 +67,8 @@ static t_execution_state	for_word_loop(t_shell *state,
 	state->loop_depth--;
 	i = 0;
 	while (i < words.len)
-		free(((char **)words.ctx)[i++]);
-	free(words.ctx);
+		xfree(((char **)words.ctx)[i++]);
+	xfree(words.ctx);
 	return (status);
 }
 
@@ -95,7 +95,7 @@ static t_execution_state	for_positional_loop(t_shell *state,
 	{
 		key = ft_itoa(i);
 		set_for_var(state, var_name, env_expand(state, key));
-		free(key);
+		xfree(key);
 		status = run_body(state, vec_idx(&node->children, 0));
 		if (handle_loop_ctl(state))
 			break ;
@@ -117,6 +117,6 @@ t_execution_state	execute_for(t_shell *state, t_executable_node *exe)
 		status = for_positional_loop(state, exe->node, var_name);
 	else
 		status = for_word_loop(state, exe->node, var_name, word_count);
-	free(var_name);
+	xfree(var_name);
 	return (status);
 }

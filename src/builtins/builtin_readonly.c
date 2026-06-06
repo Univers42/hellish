@@ -85,7 +85,7 @@ int	builtin_readonly(t_shell *state, t_vec argv)
 			env_set(&state->env, env_create(ft_strdup(name),
 					ft_strdup(eq + 1), false));
 		mark_readonly(state, name);
-		free(name);
+		xfree(name);
 	}
 	return (0);
 }

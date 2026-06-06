@@ -86,7 +86,7 @@ void	job_remove(t_job_table *jt, int id)
 	{
 		if (jt->jobs[i].id == id && jt->jobs[i].pgid)
 		{
-			free(jt->jobs[i].cmd);
+			xfree(jt->jobs[i].cmd);
 			ft_memset(&jt->jobs[i], 0, sizeof(t_job));
 			jt->count--;
 			return ;

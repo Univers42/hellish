@@ -53,7 +53,7 @@ static void	replace_argv_entries_with_full_token(t_vec *argv,
 		if (s && s[0] && s[ft_strlen(s) - 1] == EQ)
 		{
 			orig = ft_strndup(full.start, full.len);
-			free(((char **)argv->ctx)[ai]);
+			xfree(((char **)argv->ctx)[ai]);
 			((char **)argv->ctx)[ai] = orig;
 		}
 		ai++;

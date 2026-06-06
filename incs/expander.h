@@ -83,5 +83,6 @@ void		procsub_detach_all(t_shell *state);
 char		*word_strndup(const char *s, size_t n);
 void		word_free(void *p);
 int			word_slab_push(int on);
+void		word_slab_teardown(void);
 
 #endif

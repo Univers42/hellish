@@ -37,6 +37,10 @@ enum e_opt_flag
 };
 
 void	parse_and_execute_input(t_shell *state);
+/* getcwd(NULL,0) onto the active fn_* heap; see helpers/x_getcwd.c */
+char	*x_getcwd(void);
+/* opt-in ft_malloc live-bytes report at exit; see helpers/alloc_stats.c */
+void	alloc_live_report(void);
 
 typedef enum e_option
 {

@@ -42,13 +42,13 @@ char	*fmt_num(long v, int width)
 	while (dlen++ < width)
 	{
 		pad = ft_strjoin("0", digits);
-		free(digits);
+		xfree(digits);
 		digits = pad;
 	}
 	if (v >= 0)
 		return (digits);
 	out = ft_strjoin("-", digits);
-	return (free(digits), out);
+	return (xfree(digits), out);
 }
 
 static void	set_seq_width(t_seq *q, char **p)

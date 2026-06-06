@@ -20,10 +20,10 @@ static void	split_envvar_nonws(t_token *curr_t, char **things,
 	int	i;
 
 	if (curr_t->allocated)
-		free((char *)curr_t->start);
+		xfree((char *)curr_t->start);
 	curr_t->allocated = false;
 	if (!things[0])
-		return ((void)free(things));
+		return ((void)xfree(things));
 	push_new_env_child(curr_node, things[0]);
 	i = 1;
 	while (things[i])
@@ -31,7 +31,7 @@ static void	split_envvar_nonws(t_token *curr_t, char **things,
 		push_and_reinit_curr_node(ret, curr_node);
 		push_new_env_child(curr_node, things[i++]);
 	}
-	free(things);
+	xfree(things);
 }
 
 static void	distribute_fields(char **things, t_ast_node *curr_node,
@@ -41,7 +41,7 @@ static void	distribute_fields(char **things, t_ast_node *curr_node,
 
 	if (!things[0])
 	{
-		free(things);
+		xfree(things);
 		return ;
 	}
 	push_new_env_child(curr_node, things[0]);
@@ -53,7 +53,7 @@ static void	distribute_fields(char **things, t_ast_node *curr_node,
 	}
 	if (trail)
 		push_and_reinit_curr_node(ret, curr_node);
-	free(things);
+	xfree(things);
 }
 
 /*
@@ -81,7 +81,7 @@ void	split_envvar(t_shell *state, t_token *curr_t,
 				ifs));
 	things = ifs_split_posix(curr_t->start, ifs);
 	if (curr_t->allocated)
-		free((char *)curr_t->start);
+		xfree((char *)curr_t->start);
 	curr_t->allocated = false;
 	if (lead && curr_node->children.len)
 		push_and_reinit_curr_node(ret, curr_node);

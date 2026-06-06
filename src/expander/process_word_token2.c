@@ -18,22 +18,22 @@ static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
 
 	if (ctx->changed)
 	{
-		newstr = malloc(ctx->outbuf->len + 1);
+		newstr = xmalloc(ctx->outbuf->len + 1);
 		if (newstr)
 		{
 			if (ctx->outbuf->len)
 				memcpy(newstr, ctx->outbuf->ctx, ctx->outbuf->len);
 			newstr[ctx->outbuf->len] = '\0';
 			if (ctx->tok->allocated && ctx->tok->start)
-				free((char *)ctx->tok->start);
+				xfree((char *)ctx->tok->start);
 			ctx->tok->start = newstr;
 			ctx->tok->len = ctx->outbuf->len;
 			ctx->tok->allocated = true;
 		}
-		free(ctx->outbuf->ctx);
+		xfree(ctx->outbuf->ctx);
 	}
 	else
-		free(ctx->outbuf->ctx);
+		xfree(ctx->outbuf->ctx);
 }
 
 void	process_word_token(t_shell *state, t_token *tok)

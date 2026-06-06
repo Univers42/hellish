@@ -31,7 +31,7 @@ static int	handle_found_path(t_shell *state,
 		errno = EISDIR;
 		err_1_errno(state, cmd_name);
 		free_all_state(state);
-		free(*path_of_exe);
+		xfree(*path_of_exe);
 		return (EXE_PERM_DENIED);
 	}
 	return (0);

@@ -40,8 +40,8 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 			if (tmp.key && is_readonly_var(state, tmp.key))
 			{
 				ft_eprintf("%s: %s: readonly variable\n", state->ctx, tmp.key);
-				free(tmp.key);
-				free(tmp.value);
+				xfree(tmp.key);
+				xfree(tmp.value);
 				if (state->metinp != INP_RL)
 					exit_clean(state, 127);
 				state->last_cmd_st_exe = (t_execution_state){.status = 1};
@@ -49,7 +49,7 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 			else
 				env_set(&state->env, tmp);
 		}
-		free(ret->pre_assigns.ctx);
+		xfree(ret->pre_assigns.ctx);
 		vec_init(&ret->pre_assigns);
 	}
 }

@@ -130,6 +130,7 @@ char		*trim_suffix_longest(const char *val, const char *pattern);
 char		*trim_prefix_shortest(const char *val, const char *pattern);
 char		*trim_prefix_longest(const char *val, const char *pattern);
 char		*expand_trim(t_shell *state, t_trim_ctx ctx);
+char		*expand_subst(t_shell *state, t_trim_ctx ctx);
 bool		parse_seq(const char *body, t_seq *q);
 void		run_seq(t_seq q, t_vec *out);
 char		*fmt_num(long v, int width);

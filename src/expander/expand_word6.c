@@ -23,13 +23,13 @@ static char	*build_proc_sub_result(t_shell *state, t_ast_node *cmd_word,
 	if (!cmd_str.ctx)
 		return (ft_strdup(BLACK_HOLE));
 	if (!vec_ensure_space_n(&cmd_str, 1))
-		return (free(cmd_str.ctx), NULL);
+		return (xfree(cmd_str.ctx), NULL);
 	((char *)cmd_str.ctx)[cmd_str.len] = '\0';
 	if (is_input)
 		result = create_procsub_input(state, (char *)cmd_str.ctx);
 	else
 		result = create_procsub_output(state, (char *)cmd_str.ctx);
-	free(cmd_str.ctx);
+	xfree(cmd_str.ctx);
 	return (result);
 }
 

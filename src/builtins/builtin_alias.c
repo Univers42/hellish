@@ -32,8 +32,8 @@ static int	set_alias_arg(t_shell *state, const char *arg)
 	name = ft_substr(arg, 0, eq - arg);
 	value = ft_strdup(eq + 1);
 	alias_set(&state->aliases, name, value);
-	free(name);
-	free(value);
+	xfree(name);
+	xfree(value);
 	return (0);
 }
 

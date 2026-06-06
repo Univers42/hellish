@@ -33,7 +33,7 @@ char	*join_positionals(t_shell *state)
 	{
 		k = ft_itoa(i);
 		v = env_expand(state, k);
-		free(k);
+		xfree(k);
 		if (i > 1 && env_get_ifs(&state->env))
 			vec_push(&out, &env_get_ifs(&state->env)[0]);
 		if (v)

@@ -89,7 +89,7 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
 	err = false;
 	r = arith_eval(p->shell, dup, (int)ft_strlen(dup), &err);
 	depth--;
-	free(dup);
+	xfree(dup);
 	if (err)
 		p->error = true;
 	return (r);

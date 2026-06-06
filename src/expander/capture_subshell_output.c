@@ -30,6 +30,7 @@ static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
+		xfree(state->traps[0]);
 		state->traps[0] = NULL;
 		exit(exec_string(state, (char *)cmd) & 0xFF);
 	}
@@ -59,9 +60,9 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 	while (waitpid(pid, &status, 0) == -1 && errno == EINTR)
 		;
 	update_cmdsub_status(state, status);
-	ret = malloc(out.len + 1);
+	ret = xmalloc(out.len + 1);
 	if (!ret)
-		return (free(out.ctx), ft_strdup(""));
+		return (xfree(out.ctx), ft_strdup(""));
 	if (out.len)
 		ft_memcpy(ret, out.ctx, out.len);
 	ret[out.len] = '\0';
@@ -69,7 +70,7 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 	while (nlen > 0 && ret[nlen - 1] == '\n')
 		nlen--;
 	ret[nlen] = '\0';
-	free(out.ctx);
+	xfree(out.ctx);
 	return (ret);
 }
 

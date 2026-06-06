@@ -21,7 +21,7 @@ static t_token_old	*dup_full_word(t_token_old *src, bool deep)
 
 	if (!src)
 		return (NULL);
-	out = malloc(sizeof(t_token_old));
+	out = xmalloc(sizeof(t_token_old));
 	if (!out)
 		return (NULL);
 	*out = *src;

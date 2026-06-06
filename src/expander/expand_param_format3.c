@@ -39,10 +39,10 @@ char	*trim_prefix_shortest(const char *val, const char *pattern)
 		sub = ft_strndup(val, i);
 		if (pat_match_pub(pattern, sub))
 		{
-			free(sub);
+			xfree(sub);
 			return (ft_strdup(val + i));
 		}
-		free(sub);
+		xfree(sub);
 		i++;
 	}
 	return (ft_strdup(val));
@@ -61,10 +61,10 @@ char	*trim_prefix_longest(const char *val, const char *pattern)
 		sub = ft_strndup(val, i);
 		if (pat_match_pub(pattern, sub))
 		{
-			free(sub);
+			xfree(sub);
 			return (ft_strdup(val + i));
 		}
-		free(sub);
+		xfree(sub);
 		i--;
 	}
 	return (ft_strdup(val));
@@ -93,5 +93,5 @@ char	*expand_trim(t_shell *state, t_trim_ctx ctx)
 		result = trim_prefix_shortest(val, pat);
 	else
 		result = ft_strdup(val);
-	return (free(pat), result);
+	return (xfree(pat), result);
 }
