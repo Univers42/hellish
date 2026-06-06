@@ -14,9 +14,12 @@
 #include "executor.h"
 #include "sys.h"
 
-/* Run `cmd` in a forked child that shares the current shell state (so it sees
-   functions, variables, $$, etc. — fixing $(f) for a shell function), with its
-   stdout connected to the pipe. The child runs in-process (no re-exec). */
+/* Fork a child for $(...) command substitution.  The child inherits the full
+   shell state (so shell functions, local variables, $$ all work), connects
+   its stdout to pipefd[1], then runs the command string via exec_string.
+   "In-process" means: no execve of a fresh shell binary — the clone of the
+   shell state IS the subshell.  The EXIT trap is cleared so it cannot fire
+   inside the substitution. */
 static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 					const char *cmd)
 {
@@ -74,6 +77,12 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
 	return (ret);
 }
 
+/* Top-level $(...) capture: pipe + fork + drain + wait.  The classic
+   trailing-newline strip mandated by POSIX is done by walking nlen back
+   from the end of the buffer.  The exit status is saved in
+   state->last_cmdsub_status so callers like $? pick it up correctly.
+   If the pipe() or fork() fails we return an empty string rather than
+   crashing — worst case the command appears to produce no output. */
 char	*capture_subshell_output(t_shell *state, const char *cmd)
 {
 	int		pipefd[2];

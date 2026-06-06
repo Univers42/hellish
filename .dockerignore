@@ -13,3 +13,4 @@ out.dot
 .env
 .env.*
 *.log
+*.cl*

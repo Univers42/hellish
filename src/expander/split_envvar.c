@@ -12,6 +12,10 @@
 
 #include "expander_private.h"
 
+/* Finalise curr_node as a complete field: push it to `ret` only if it has
+   accumulated at least one token (empty fields between leading/trailing IFS
+   whitespace are discarded this way), then reinitialise curr_node as a
+   fresh empty AST_WORD ready to collect the next field. */
 void	push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node)
 {
 	if (curr_node->children.len)
@@ -21,8 +25,9 @@ void	push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node)
 	curr_node->children.elem_size = sizeof(t_ast_node);
 }
 
-/* helper: create an env node from new_start and
-	push it into curr_node->children */
+/* Wrap a freshly allocated string in a TT_ENVVAR node and append it to
+   curr_node.  This is how IFS-split pieces and $@ elements are represented
+   inside the field accumulator before it is handed to the glob stage. */
 void	push_new_env_child(t_ast_node *curr_node, char *new_start)
 {
 	t_ast_node	tmp;
@@ -31,6 +36,9 @@ void	push_new_env_child(t_ast_node *curr_node, char *new_start)
 	vec_push(&curr_node->children, &tmp);
 }
 
+/* True when `c` is a non-NUL IFS character.  The NUL guard is important:
+   ft_strchr will find '\0' at the end of any string, so without it every
+   end-of-string test would falsely report an IFS character. */
 bool	is_ifs_char(char c, const char *ifs)
 {
 	return (c != '\0' && ifs != NULL && ft_strchr(ifs, c) != NULL);

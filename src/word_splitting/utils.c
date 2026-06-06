@@ -12,6 +12,12 @@
 
 #include "reparser_private.h"
 
+/* Carve a subtoken out of token t using [offset.start, offset.end) and push
+   it as a new child of ret. The child's token type is set to tt so the
+   expander knows what to do with it (TT_SQWORD = literal, TT_ENVVAR = expand,
+   TT_DQWORD = literal-no-split, etc.). children.elem_size is set on the temp
+   so vec_push copies the right number of bytes. This is the single routine
+   all reparse helpers funnel through -- one place to add tracing or asserts. */
 void	push_subtoken_node(t_ast_node *ret,
 			t_token t,
 			t_interval offset,
@@ -24,6 +30,11 @@ void	push_subtoken_node(t_ast_node *ret,
 	vec_push(&ret->children, &tmp);
 }
 
+/* Return true iff the first `len` bytes of s form a valid POSIX identifier:
+   first char [a-zA-Z_], remaining chars [a-zA-Z0-9_]. Used both to validate
+   the key side of a KEY=val assignment and to check if a ${...} expansion
+   body is a plain name. len <= 0 or a non-ident first char short-circuits
+   immediately to avoid reading past the end of the token. */
 bool	is_valid_ident(char *s, int len)
 {
 	int			i;

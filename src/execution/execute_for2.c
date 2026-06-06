@@ -12,6 +12,11 @@
 
 #include "execution_private.h"
 
+/* Assign the loop variable for one for-loop iteration.  If the variable
+   already exists we update it in place (swap the value string, reuse the
+   env entry) to avoid creating duplicate entries.  If it is new we create
+   a non-exported entry; it will become exported only if allexport is set
+   via env_set (which calls env_check_export). */
 void	set_for_var(t_shell *state, char *name, char *val)
 {
 	t_env	*old;

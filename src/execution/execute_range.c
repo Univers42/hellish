@@ -31,6 +31,11 @@ static void	errexit_check(t_shell *state, t_execution_state st,
 	exit_clean(state, st.status);
 }
 
+/* Run one pipeline/command node from the sequence, inheriting the
+   surrounding exe's fds and redirects (via struct copy).  We immediately
+   wait for any forked child via exe_res_set_status so the status is known
+   before the next && / || decision.  ft_assert(status != -1) confirms we
+   did not accidentally leave a zombie unwaited. */
 static void	execute_then(t_executable_node *exe,
 							t_ast_node *child,
 							t_shell *state,
@@ -46,8 +51,12 @@ static void	execute_then(t_executable_node *exe,
 	ft_assert(status->status != -1);
 }
 
-/* Execute a range of children [start, end) as a sequence.
-** Handles && and || chaining within the range. */
+/* Execute the range of AST children [start, end) as a sequential
+   AND-OR list.  AST_TOKEN children carry the operator (&&, ||, ;, etc.)
+   and shift the `op` variable that should_execute reads.  Non-token
+   children are command nodes; we run them if should_execute says yes.
+   errexit_check fires after the last command in the range, not after each
+   one, to match POSIX behaviour for AND-OR lists under set -e. */
 t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 							size_t start, size_t end)
 {

@@ -26,7 +26,9 @@ static bool	is_int_str(const char *s)
 	return (true);
 }
 
-/* Format `v` left-padded with zeros to `width` digits (sign kept outside). */
+/* Format a number for a zero-padded brace sequence like {01..10}.
+   The width is the digit count of the wider endpoint (so {01..10} → 01,
+   02, …, 10).  The sign is applied after padding so -01 works correctly. */
 char	*fmt_num(long v, int width)
 {
 	char	*digits;
@@ -90,7 +92,11 @@ static bool	fill_seq_ab(t_seq *q, char **p, int n)
 	return (free_tab(p), true);
 }
 
-/* Parse "A..B[..S]" into a t_seq; return false if not a valid sequence. */
+/* Parse a brace sequence spec "A..B" or "A..B..S" into a t_seq.  The body
+   is split on ".." so {1..10} → ["1", "10"] and {a..z..2} → ["a","z","2"].
+   Alpha ranges (q->alpha) use the ASCII values of single characters; numeric
+   ranges require both endpoints to be valid integers.  Zero-padded endpoints
+   ({01..05}) set q->width for fmt_num output padding. */
 bool	parse_seq(const char *body, t_seq *q)
 {
 	char	**p;

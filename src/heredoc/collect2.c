@@ -42,6 +42,10 @@ bool	capture_heredoc_from_buff(t_shell *state, t_ast_node *node)
 	return (ok);
 }
 
+/* Assemble the t_hdoc descriptor for write_heredoc.  The `expand` flag
+   is false when the delimiter was quoted (`<<"EOF"` or `<<'EOF'`): POSIX
+   says a quoted delimiter suppresses $, ` and \ expansion in the body.
+   contains_quotes() walks the delimiter AST node to detect any quoting. */
 static t_hdoc	build_hdoc_req(t_ast_node *node, bool is_pipe, t_string *sep)
 {
 	t_hdoc	req;
@@ -57,7 +61,11 @@ static t_hdoc	build_hdoc_req(t_ast_node *node, bool is_pipe, t_string *sep)
 	return (req);
 }
 
-/* Build temp file for a deferred heredoc at redirect-setup time. */
+/* Build the temp file for a heredoc that was deferred (its body lives in
+   node->heredoc_body rather than hd_src).  We temporarily swap hd_src to
+   point at the stored body so write_heredoc can read from it via the
+   normal read_hd_src_line path.  The prior hd_src/hd_pos are saved and
+   restored so nested command substitutions each get their own stream. */
 int	materialize_heredoc(t_shell *state, t_ast_node *node, int *redir_idx)
 {
 	char		*saved_src;
@@ -81,6 +89,11 @@ int	materialize_heredoc(t_shell *state, t_ast_node *node, int *redir_idx)
 	return (0);
 }
 
+/* Process one AST_REDIRECT node that carries a heredoc operator (<<
+   or <<-).  If deferral is appropriate (inside a function body or when
+   hd_src is available) we capture the raw body onto the node and skip
+   writing the temp file; otherwise we eagerly write the body to the temp
+   file via write_heredoc so the fd is ready when the command forks. */
 void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 {
 	int			wr_fd;

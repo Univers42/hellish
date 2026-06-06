@@ -12,7 +12,11 @@
 
 #include "lexer.h"
 
-/* unify single/double-quote advance and prompt handling */
+/* Advance past a quoted span and return the continuation prompt if the quote
+   is not closed before end-of-input. The caller (parse_lexeme or
+   tokenize_subshell) already verified that **str == q. On unterminated
+   input we store the missing char in tokens->looking_for so the REPL can
+   show the user a targeted prompt ('>' for squote, "> for dquote). */
 char	*parse_quote(t_deque_tok *tokens, char **str, char q)
 {
 	if (q == '\'')

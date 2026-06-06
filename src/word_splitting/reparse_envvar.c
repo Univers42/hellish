@@ -12,12 +12,19 @@
 
 #include "reparser_private.h"
 
+/* Write the reparser's updated position and current node back to the caller's
+   out-parameters. Every branch in reparse_envvar ends with this call so the
+   caller's *i and *ret stay consistent no matter which path we took. */
 void	update_envvar_result(t_ast_node *ret, int *i, t_reparser *rp)
 {
 	*i = rp->i;
 	*ret = rp->current_node;
 }
 
+/* After the '$', check if the next character opens a $(...) or $((...))
+   substitution or is one of the single-character specials ($?, $$, $!, $#,
+   $@, $*, $-, $0-$9). Returns true if a sub-parser claimed the token so
+   the caller knows it can skip the plain-ident path. */
 bool	handle_envvar_paren_or_special(t_reparser *rp,
 			int prev_start, t_tt tt)
 {
@@ -28,6 +35,10 @@ bool	handle_envvar_paren_or_special(t_reparser *rp,
 	return (false);
 }
 
+/* When a bare $ is immediately followed by a quote (e.g. $'...' in some
+   shells, or a parser artefact), delegate to the appropriate quote parser
+   rather than treating the quote as a literal. The TT_DQENVVAR guard keeps
+   this from firing inside a double-quoted context where $" is not valid. */
 void	handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt)
 {
 	if (prev_start < rp->current_token.len
@@ -44,6 +55,10 @@ void	handle_envvar_quote(t_reparser *rp, int prev_start, t_tt tt)
 	}
 }
 
+/* Push a plain variable-name subtoken: the span [prev_start, rp->i) holds
+   the identifier characters already consumed by consume_ident_rp(). The tt
+   argument (TT_ENVVAR or TT_DQENVVAR) carries quoting context so the
+   expander knows whether to IFS-split the expansion result. */
 void	handle_envvar_ident(t_reparser *rp, int prev_start, t_tt tt)
 {
 	push_subtoken_node(&rp->current_node, rp->current_token,

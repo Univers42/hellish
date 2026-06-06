@@ -14,6 +14,11 @@
 
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
 
+/* Dispatch a compound command (if/while/for/case/brace-group) that has
+   already been identified.  Brace groups { } run their single child in
+   place; every other type has a dedicated executor.  ft_assert(0) is the
+   "should never happen" guard -- if we forgot a node type, crash loudly
+   rather than silently returning 0. */
 static t_execution_state	run_compound(t_shell *state,
 								t_executable_node *exe)
 {
@@ -34,6 +39,12 @@ static t_execution_state	run_compound(t_shell *state,
 	return (ft_assert(0), res_status(1));
 }
 
+/* Run a compound command IN THE PARENT process (needed when it can modify
+   parent state -- e.g. `{ cd /; }` must change the parent's cwd).  We
+   save stdin/stdout/stderr with dup, redirect per the node, run, then
+   restore.  The three-slot bak[] is the classic fd-save idiom: dup gives
+   us a copy at the lowest free fd, dup2 puts it back, close drops the
+   copy.  Forgetting the close would leak an fd per loop iteration. */
 static t_execution_state	compound_in_parent(t_shell *state,
 								t_executable_node *exe)
 {
@@ -57,6 +68,13 @@ static t_execution_state	compound_in_parent(t_shell *state,
 	return (res);
 }
 
+/* Decide whether a compound command forks or runs in the parent.  A
+   subshell ( ... ) always forks (handled earlier).  Anything else forks
+   UNLESS modify_parent_ctx is set -- that flag is true when we're the
+   last (or only) command in a pipeline that feeds the parent's stdout,
+   so redirections and variable changes must survive the call.  The child
+   resets signal handlers to defaults (they were set to SIG_IGN for job
+   control) before running. */
 static t_execution_state	dispatch_compound(t_shell *state,
 								t_executable_node *exe)
 {
@@ -76,6 +94,15 @@ static t_execution_state	dispatch_compound(t_shell *state,
 	return (compound_in_parent(state, exe));
 }
 
+/* Central dispatch for an AST_COMMAND node.  The command node's first
+   child tells us what kind of command it is: function definition, simple
+   command, or a compound.  Simple commands and function defs are handed
+   off immediately (they manage their own redirects).  Compounds need
+   their redirect list built first from the sibling AST_REDIRECT children
+   (children[1..]), then are routed to dispatch_compound which decides
+   fork-vs-parent.  Subshells are a special case: they always need a fork
+   but their modify_parent_ctx=true forces compound_in_parent path that
+   handles the fd save/restore before forking. */
 t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 {
 	t_ast_type	ft;
@@ -104,8 +131,13 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	return (dispatch_compound(state, exe));
 }
 
-/* Collect redirect indices from exe->node children (starting at index 1).
-** Returns 0 on success, AMBIGUOUS_REDIRECT on error. */
+/* Walk the AST_COMMAND's children from index 1 onward (index 0 is the
+   actual command); every child must be an AST_REDIRECT.  We resolve each
+   redirect to a concrete t_redir (file open, dup target, heredoc fd) via
+   redirect_from_ast_redir and push its index into exe->redirs.  The
+   indices rather than the t_redir structs are stored so the redirect
+   table lives in one place (state->redirects) and children can share an
+   entry if the same redirect appears twice. */
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe)
 {
 	size_t		i;

@@ -16,10 +16,11 @@ char	*arith_expand(t_shell *state, const char *expr, int len);
 char	*arith_expand_cached(t_shell *state, const char *expr, int len,
 			t_arith_cache **cachep);
 
-/* A piece of a keep-as-one word: plain literal text (unquoted or inside double
-   quotes) or a plain $name (likewise). Double-quoted vars expand without field
-   splitting, exactly the keep-as-one semantics, so they share this fast path;
-   special params ($?, $@, ${...}) fail name_is_plain and take the slow path. */
+/* Append one token to `out` for the keep-as-one fast path.  Plain literal
+   TT_WORD / TT_DQWORD text is appended directly; TT_ENVVAR / TT_DQENVVAR
+   with a simple name is looked up and appended.  Returns 1 on success, 0
+   when the token is something we cannot handle here (complex ${}, $@, etc.)
+   and the caller must fall through to the full slow path. */
 static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 {
 	char	*v;
@@ -42,7 +43,10 @@ static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 	return (1);
 }
 
-/* A keep-as-one word built only from plain literal and plain $var pieces. */
+/* Fast path for multi-piece words like "prefix$VAR/suffix": if every child
+   token is either plain literal text or a simple $name, concatenate them
+   directly without a clone or the full pipeline.  Returns NULL the moment
+   anything unsupported appears so the caller falls back gracefully. */
 char	*try_simple_concat(t_shell *state, t_ast_node *node)
 {
 	t_string	out;
@@ -67,7 +71,10 @@ char	*try_simple_concat(t_shell *state, t_ast_node *node)
 	return ((char *)out.ctx);
 }
 
-/* The single non-empty TT_WORD child of `node`, or NULL. */
+/* Return the unique non-empty TT_WORD child of `node`, or NULL.  Unlike
+   lone_nonempty_token, this only accepts TT_WORD — TT_ENVVAR etc. return
+   NULL immediately so try_pure_arith doesn't misidentify a $((…))-like
+   token stored in a variable. */
 static t_token	*lone_word_token(t_ast_node *node)
 {
 	t_token		*t;
@@ -90,8 +97,10 @@ static t_token	*lone_word_token(t_ast_node *node)
 	return (t);
 }
 
-/* A word that is exactly $((expr)) with no $ or backtick inside is pure
-   arithmetic: evaluate directly. */
+/* Fast path for a word that is just $((expr)) with no nested $ or backtick.
+   No variable substitution needed — we can hand the raw expression bytes
+   straight to arith_expand.  A cached result is reused if the arithmetic
+   token has already been evaluated this session (t->arith_cache). */
 char	*try_pure_arith(t_shell *state, t_ast_node *node)
 {
 	t_token	*t;

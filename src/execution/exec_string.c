@@ -22,6 +22,10 @@ bool	must_stop(t_shell *state);
 /* Lex `str` once, then parse + execute it one statement at a time (the REPL
    normally feeds the parser one line at a time). Used by eval, command and the
    dot/source builtin. `str` must stay valid for the whole call. */
+/* Drop any leading newline/semicolon tokens from the token queue before
+   the next statement is parsed.  exec_string feeds multiple statements
+   from a single token stream, so after each statement the queue may have
+   stale statement-separators that would confuse the next parse call. */
 static void	skip_delimiters(t_deque_tok *tt)
 {
 	t_tt	t;
@@ -34,6 +38,12 @@ static void	skip_delimiters(t_deque_tok *tt)
 	}
 }
 
+/* Parse and execute one statement from the token queue.  On a parse error
+   we set $? to 2 (syntax error) and signal stop so the caller breaks out
+   of the loop.  The AST is freed unconditionally -- it is a per-statement
+   allocation and must not escape this function.  *stop is also set when
+   the shell hits an unconditional-exit condition (break outside loop,
+   return outside function, exit, SIGTERM unwind). */
 static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 {
 	t_parser	parser;
@@ -59,6 +69,10 @@ static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 	return (status);
 }
 
+/* Lex `str` once into a token queue, then parse + execute it statement
+   by statement until end-of-tokens or a stop condition.  Clearing
+   func_return at the end prevents a `return` inside eval from propagating
+   out of exec_string into the caller's function frame. */
 static int	exec_string_inner(t_shell *state, char *str)
 {
 	t_deque_tok	tt;

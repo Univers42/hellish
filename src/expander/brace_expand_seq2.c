@@ -13,6 +13,11 @@
 #include "expander_private.h"
 #include "brace_expand.h"
 
+/* Generate all elements of a parsed brace sequence into `out`.  If step is 0
+   it defaults to 1; if the sign of the given step is wrong for the direction
+   of the range (a > b but step > 0), the step is negated so the loop always
+   terminates.  Alpha ranges emit single-char strings; numeric ranges use
+   fmt_num with optional zero-padding from q.width. */
 void	run_seq(t_seq q, t_vec *out)
 {
 	long	i;

@@ -12,6 +12,13 @@
 
 #include "parser_private.h"
 
+/* Consume one `op pipeline` pair inside a compound-list (e.g. `; cmd` or
+   `&& cmd`). Returns true when the loop should stop: either the next token
+   is not a compound-list operator, or we hit a compound terminator (do/then/
+   fi/done/esac/;;) after a separator -- that's the `;` before `done` pattern.
+   Pushes the operator token and the next pipeline as children of ret.
+   Gotcha: we must check is_separator_before_terminator before consuming more
+   input, otherwise `do ; done` would try to parse `done` as a command. */
 bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -42,6 +49,11 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	return (vec_pop(&parser->parse_stack), false);
 }
 
+/* Parse a compound-list: a sequence of pipelines separated by `; & && ||
+   \n`. Used as the body of if/while/for/case/function and for subshells.
+   Leading newlines are consumed first (POSIX allows `if\n\ncmd\nthen`).
+   TT_ARITH_START here is always an error -- `(( ))` cannot open a list.
+   The loop runs until parse_compound_list_s signals "done". */
 t_ast_node	parse_compound_list(t_shell *state,
 								t_parser *parser, t_deque_tok *tokens)
 {

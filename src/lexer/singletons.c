@@ -15,6 +15,10 @@
 void	init_color_map_part2(t_hash *map);
 void	init_color_map_kw(t_hash *map);
 
+/* Lazy-initialised singleton hash-map from token-type name to ANSI colour
+   string. Built once on first call; all subsequent calls return the same
+   pointer. Splitting the initialisation across init_color_map_part2 and
+   init_color_map_kw keeps each function under 25 lines (42 norm). */
 t_hash	*get_color_map(void)
 {
 	static t_hash	map;
@@ -43,6 +47,10 @@ t_hash	*get_color_map(void)
 	return (&map);
 }
 
+/* Populate the token-type name table. We initialise every slot to
+   "TT_UNKNOWN" first, then overwrite known entries. That way an out-of-range
+   tt value always yields a valid string rather than a NULL dereference.
+   Spread across group1/2/3 + kw1/kw2 to stay within the 25-line limit. */
 static void	init_tt_names_group1(const char **names)
 {
 	int	i;
@@ -88,6 +96,9 @@ static void	init_tt_names_group3(const char **names)
 void	init_tt_names_kw1(const char **names);
 void	init_tt_names_kw2(const char **names);
 
+/* Return the singleton array mapping t_tt enum values to their string names.
+   Safe to call from any thread after the first call completes because there
+   is no memory allocation after the one-time init (static array, no free). */
 const char	**get_tt_names(void)
 {
 	static const char	*names[256];

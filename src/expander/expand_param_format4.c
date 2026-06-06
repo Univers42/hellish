@@ -12,10 +12,10 @@
 
 #include "expander_private.h"
 
-/*
-** Find suffix/prefix removal operators: %, %%, #, ##
-** Returns pointer to the operator, or NULL if not found.
-*/
+/* Scan the ${...} body for a # / ## or % / %% operator that follows the
+   variable name.  Sets *name_len to the length of the name prefix so the
+   caller knows where the operator starts.  Returns a pointer to the first
+   operator character, or NULL if no trim operator is present. */
 static const char	*find_trim_op(const char *s, int slen, int *name_len)
 {
 	int	i;
@@ -38,10 +38,10 @@ static const char	*find_trim_op(const char *s, int slen, int *name_len)
 	return (NULL);
 }
 
-/*
-** Find a pattern-substitution operator: ${name/pat/rep} or ${name//pat/rep}.
-** Returns a pointer to the '/', or NULL if the spec is not a substitution.
-*/
+/* Scan the ${...} body for a / operator after the variable name.  The
+   difference between ${n/p/r} and ${n//p/r} (global replace) is detected
+   later by expand_subst, not here.  Returns a pointer to the first '/', or
+   NULL if no substitution operator is present. */
 static const char	*find_subst_op(const char *s, int slen, int *name_len)
 {
 	int	i;
@@ -64,12 +64,14 @@ static const char	*find_subst_op(const char *s, int slen, int *name_len)
 	return (NULL);
 }
 
-/*
-** Main entry: expand a parameter format token.
-** The token->start points to the content between ${ and }.
-** e.g. for ${HOME:-/tmp}, start="HOME:-/tmp", len=10
-** Returns allocated string, or NULL if not a special format.
-*/
+/* Top-level ${...} dispatcher.  `s` is the raw text between the braces,
+   `slen` its byte count.  Priority order — first match wins:
+     ${#v}      → length of v                  (expand_strlen)
+     ${v:-w}    → default/alt operators        (find_param_op → expand_param_op)
+     ${v#p} etc → trim operators               (find_trim_op → expand_trim)
+     ${v/p/r}   → substitution                 (find_subst_op → expand_subst)
+     plain $v   → returns NULL (caller falls through to env_expand_n)
+   Returns a freshly allocated string, or NULL if it is just a plain name. */
 char	*expand_param_format(t_shell *state, const char *s, int slen)
 {
 	const char	*op;

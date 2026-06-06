@@ -25,6 +25,13 @@ static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 	return (execute_tree_node(state, &body_exe));
 }
 
+/* Expand all word-list children of the for node (indices 0..wc-1) into a
+   flat list of strings, with field splitting and glob expansion.  We push
+   a fresh word-slab frame first (word_slab_push) so the expanded strings
+   are allocated there and released in one shot with a matching pop, which
+   avoids any per-word xfree in for_word_loop.  The returned vec's strings
+   still need individual xfree because they were strdup'd by expand_word_ro
+   from the slab. */
 static t_vec	expand_for_words(t_shell *state,
 		t_ast_node *node, size_t wc)
 {
@@ -45,6 +52,10 @@ static t_vec	expand_for_words(t_shell *state,
 	return (words);
 }
 
+/* Run the body once per expanded word.  set_for_var updates the loop
+   variable in the environment before each iteration.  After the loop the
+   expanded words are freed individually (they were strdup'd by the
+   expander); the backing array (words.ctx) is plain heap via xfree. */
 static t_execution_state	for_word_loop(t_shell *state,
 		t_ast_node *node, char *var_name, size_t wc)
 {
@@ -72,13 +83,10 @@ static t_execution_state	for_word_loop(t_shell *state,
 	return (status);
 }
 
-/*
-** for NAME [in wordlist ;] do compound_list done
-** children = [word_list...] + compound_list(body)
-*/
-/* `for NAME; do ... done` with no `in` iterates over "$@" (POSIX).
-** Parser sets node->negate when an `in` clause is present, so word_count==0
-** with no `in` means "iterate positional parameters" (vs an explicit empty). */
+/* `for NAME; do ... done` with no `in` iterates over "$@" (POSIX).  The
+   parser sets node->negate when an explicit `in` clause was parsed, so
+   word_count==0 AND !node->negate is the reliable signal for "iterate
+   positional parameters" (rather than an explicit empty word list). */
 static t_execution_state	for_positional_loop(t_shell *state,
 		t_ast_node *node, char *var_name)
 {
@@ -104,6 +112,10 @@ static t_execution_state	for_positional_loop(t_shell *state,
 	return (status);
 }
 
+/* for NAME [in wordlist]; do body; done.  The AST stores the variable
+   name in the node's token; children are [word...body].  word_count is
+   children.len-1 (last child is always the body).  Two dispatch paths:
+   no `in` clause -> positional params ($@), else -> explicit word list. */
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;

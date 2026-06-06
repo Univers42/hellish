@@ -12,7 +12,11 @@
 
 #include "reparser_private.h"
 
-/* Helper: reparse single-quoted region */
+/* Consume a single-quoted region and emit a TT_SQWORD subtoken covering
+   the content (not the surrounding quotes). Single-quoting in POSIX is
+   "preserve everything literally" -- no expansions, no escapes, not even
+   a backslash. The ft_assert guards verify the caller placed *i on a quote
+   and that the region ended properly (no runaway string). */
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -30,7 +34,11 @@ void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-/* Helper: reparse backslash escape */
+/* Consume one backslash escape outside quotes and emit a TT_SQWORD subtoken
+   (the escaped char is treated as literal, same as single-quoting). The edge
+   case is a backslash at end-of-token (prev_start--): the lexer may have
+   produced a trailing backslash for a continuation line; we still push it as
+   a literal rather than dropping it. */
 void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -48,7 +56,11 @@ void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-/* Helper: reparse normal word region */
+/* Consume a run of plain characters (no quotes, $, \, or backtick) and emit
+   a TT_WORD subtoken. The loop stops at any "special" character so the main
+   dispatch loop (loop_node_rp) can handle it. The fallthrough `rp.i++` after
+   the loop is the safety valve: if we ended up on a lone special we couldn't
+   classify, advance one character anyway to prevent an infinite loop. */
 void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -68,8 +80,12 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-/* Helper: reparse a `...` backtick command substitution as one TT_WORD
-   subtoken (so process_word_token can expand it), marked split-eligible. */
+/* Consume a `...` backtick command substitution and emit the whole span as
+   a single TT_WORD subtoken -- process_word_token handles the actual $(...)
+   expansion later. We scan for the closing backtick, honouring backslash
+   escapes inside (POSIX: \\ \$ \` are the only active escapes in backtick
+   context). split_eligible is true here because the output of an unquoted
+   command substitution is subject to IFS word splitting. */
 void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 {
 	t_reparser	rp;
@@ -93,7 +109,11 @@ void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 	*ret = rp.current_node;
 }
 
-/* Main loop for reparsing a word token */
+/* Dispatch loop: walk the token character by character and call the right
+   sub-parser for each quoting/expansion context. Spaces inside a plain
+   (unquoted) word are emitted as TT_WORD subtokens -- the expander later
+   uses them as IFS split boundaries. Unknown characters fall through to
+   reparse_norm_word, which absorbs them as a literal run. */
 void	loop_node_rp(t_reparser *rp)
 {
 	while (rp->i < rp->current_token.len)

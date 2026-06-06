@@ -46,6 +46,11 @@ static void	process_env_token(t_shell *state, t_ast_node *node,
 		expand_token(state, curr_tt, pos.split_ctx);
 }
 
+/* Walk the subtoken children of `node` and expand every TT_ENVVAR /
+   TT_DQENVVAR in place.  TT_WORD / TT_SQWORD / TT_DQWORD subtokens are
+   already literal — they pass through unchanged.  `split_ctx` is false
+   for double-quoted expansions and true otherwise; it governs whether $@
+   is re-split into separate fields later. */
 void	expand_env_vars(t_shell *state, t_ast_node *node, bool split_ctx)
 {
 	t_token	*curr_tt;

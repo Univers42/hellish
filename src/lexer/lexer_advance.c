@@ -40,6 +40,10 @@ static void	advance_cmdsub(char **str)
 	}
 }
 
+/* Advance past a double-quoted span. Double quotes still expand $(...),
+   so we must recurse into advance_cmdsub when we see `$(` to avoid treating
+   the closing `"` inside the substitution as the outer quote's end. The
+   prev_bs flag handles `\"` escapes while avoiding a double-count on `\\`. */
 int	advance_dquoted(char **str)
 {
 	bool	prev_bs;
@@ -106,6 +110,10 @@ int	advance_backtick(char **str)
 	return (0);
 }
 
+/* Advance past a single-quoted span. Single quotes are the simplest case:
+   nothing is special inside them -- not even backslash -- so we just scan
+   forward to the matching `'`. Returns 1 if the quote was never closed
+   (caller will prompt for more input). */
 int	advance_squoted(char **str)
 {
 	ft_assert(**str == '\'');

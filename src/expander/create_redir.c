@@ -63,6 +63,11 @@ static bool	handle_devfd_redir(char *fname, t_redir *ret)
 	return (ret->fd >= 0);
 }
 
+/* Build a t_redir from a redirect token type, filename, and source fd.
+   Dispatch: &fd (dup) → create_dup_redir; /dev/fd/N (process subst result)
+   → handle_devfd_redir (dup the existing fd rather than re-opening it);
+   everything else → open_file_redir.  Heredocs are asserted out here since
+   they follow a completely different path (materialize_heredoc). */
 bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");

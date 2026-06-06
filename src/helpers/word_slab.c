@@ -27,6 +27,10 @@ static t_slab_allocator	g_wslab;
 static int				g_wslab_up;
 static int				g_on;
 
+/* Enable or disable slab allocation for the current expansion context,
+   returning the previous state so callers can restore it. Pass 1 for argv
+   words (they die together at command end), 0 for assignment/for-loop values
+   that may survive into the environment and must live on the general heap. */
 int	word_slab_push(int on)
 {
 	int	old;
@@ -36,6 +40,10 @@ int	word_slab_push(int on)
 	return (old);
 }
 
+/* Lazy-init the slab on first use: five size classes cover the common word
+   lengths (16/32/64/128/256 bytes) with generous slab counts (512/512/
+   256/128/64 objects per cache). Larger strings fall through to xmalloc in
+   word_strndup but that is rare -- shell argv words are nearly always short. */
 static void	word_slab_boot(void)
 {
 	slab_init(&g_wslab);
@@ -47,6 +55,10 @@ static void	word_slab_boot(void)
 	g_wslab_up = 1;
 }
 
+/* Duplicate n bytes of s into a NUL-terminated string. Picks the slab when
+   g_on is set (argv context) or falls back to xmalloc when slab is off or
+   the allocation is larger than the biggest cache. The slab is booted on
+   first use so no explicit initialisation call is required at startup. */
 char	*word_strndup(const char *s, size_t n)
 {
 	char	*p;
@@ -66,6 +78,11 @@ char	*word_strndup(const char *s, size_t n)
 	return (ft_memcpy(p, s, n), p[n] = '\0', p);
 }
 
+/* Release a word pointer regardless of which allocator produced it. When the
+   slab is up, slab_free() routes to the right cache or to fn_free() for
+   oversized/xmalloc pointers. When the slab was never started (g_wslab_up==0)
+   we fall straight through to xfree -- this handles early-exit paths where
+   word_slab_boot() was never called. NULL is always safe. */
 void	word_free(void *p)
 {
 	if (p == NULL)

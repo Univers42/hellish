@@ -15,6 +15,9 @@
 
 bool	is_word_boundary(const char *s);
 
+/* Decide whether the current position starts a quoted/dollar/word lexeme
+   that needs parse_lexeme, or a bare operator. The OR with !is_word_boundary
+   is the catch-all: any run of non-special chars is a plain word. */
 static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
 {
 	if (**str == '\'' || **str == '"' || **str == '$'
@@ -23,6 +26,9 @@ static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
 	return (0);
 }
 
+/* Emit a single TT_NEWLINE token and advance past the '\n'. Newlines are
+   kept as real tokens (not skipped like spaces) because the grammar uses
+   them as statement separators inside compound commands. */
 static void	emit_newline(char **str, t_deque_tok *ret)
 {
 	t_token	tmp;
@@ -49,9 +55,10 @@ static bool	skip_noise(char **str)
 	return (false);
 }
 
-/* One tokenizing step: toggle [[ ]] mode, parse a lexeme, or emit an operator.
-   Inside [[ ]], &&/||/(/) are emitted as WORD tokens (not operators). Returns a
-   non-null continuation prompt if a lexeme is unterminated, else NULL. */
+/* One tokenizing step: toggle [[ ]] mode, parse a lexeme, or emit an
+   operator. Inside [[ ]], &&/||/(/) are emitted as WORD tokens so the parser
+   does not split the conditional. Returns a continuation prompt if a lexeme
+   is unterminated, else NULL. */
 static char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 {
 	char	*prompt;
@@ -71,6 +78,13 @@ static char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 	return (NULL);
 }
 
+/* Top-level tokenizer. Walk the raw input string until exhausted, producing
+   a token deque that ends with TT_END. Returns NULL on success or a
+   continuation-prompt string when input is incomplete (unterminated quote,
+   open subshell, line continuation). The caller re-prompts the user with
+   that string and appends more text before calling back. The deque is cleared
+   at the start so the same t_deque_tok can be reused across REPL turns
+   without leaking the previous command's tokens. */
 char	*tokenizer(char *str, t_deque_tok *ret)
 {
 	char	*prompt;

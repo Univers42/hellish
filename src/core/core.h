@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Private header for src/core/: wires together init, option-parsing, and
+   startup helpers. Nothing outside core/ should include this.
+   The duplicate prototypes (init_arg, init_file, init_stdin_notty) are a
+   build artefact; C allows repeated identical prototypes, but a cleanup
+   pass could remove them. */
 #ifndef CORE_H
 # define CORE_H
 

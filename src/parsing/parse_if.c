@@ -12,6 +12,10 @@
 
 #include "parser_private.h"
 
+/* Consume a required keyword token. Newlines before it are skipped because
+   POSIX allows `if ...\nthen` on separate lines. TT_END means the user hit
+   Enter before closing the construct -- signal RES_GETMOREINPUT so the REPL
+   can prompt for continuation. Any other mismatch is a syntax error. */
 static bool	expect_token(t_shell *state, t_parser *parser,
 						t_deque_tok *tokens, t_tt expected)
 {
@@ -34,6 +38,10 @@ static bool	expect_token(t_shell *state, t_parser *parser,
 	return (true);
 }
 
+/* Parse a single `elif condition then body` branch. The `elif` token has
+   already been confirmed by parse_elif_chain; we pop it here and parse the
+   condition compound-list, then require `then`, then the body. Children are
+   appended to ret (the if-node) as alternating condition/body pairs. */
 static bool	parse_elif_one(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -47,6 +55,10 @@ static bool	parse_elif_one(t_shell *state, t_parser *parser,
 	return (parser->res == RES_OK);
 }
 
+/* Consume zero or more `elif ... then ...` branches followed by an optional
+   `else ...` branch. The executor finds elif/else bodies by walking the
+   children array: odd positions are conditions, even are bodies, and the
+   final child with no following condition is the else body (if present). */
 static bool	parse_elif_chain(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -71,10 +83,10 @@ static bool	parse_elif_chain(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-/*
-** if compound_list then compound_list [elif ...] [else ...] fi
-** AST_IF children: pairs of (condition, body), optional last = else body
-*/
+/* Parse: if compound_list then compound_list [elif ...] [else ...] fi
+   AST_IF children: alternating condition/body compound_list nodes, with an
+   optional unpaired trailing child for the else body. The TT_IF token is
+   popped here (it was already recognised by the keyword classifier). */
 t_ast_node	parse_if_command(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens)
 {

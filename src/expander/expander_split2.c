@@ -12,8 +12,12 @@
 
 #include "expander_private.h"
 
-/* Dispatch one subtoken: envvar/$@ are split into fresh field nodes;
-   plain words are moved into curr_node. */
+/* Route one expanded subtoken to its destination field.  TT_DQENVVAR "$@"
+   in a split context is re-emitted as one field per positional parameter.
+   TT_ENVVAR and split-eligible TT_WORD subtokens (those whose value came
+   from a variable, so split_eligible is set) go through split_envvar for
+   IFS field splitting.  All other tokens (literal text, single-quoted, and
+   double-quoted vars) are appended to curr_node verbatim. */
 static void	split_one_child(t_shell *state, t_ast_node *child,
 				t_ast_node *curr_node, t_vec_nd *ret)
 {
@@ -33,7 +37,11 @@ static void	split_one_child(t_shell *state, t_ast_node *child,
 		ft_assert(0);
 }
 
-/* node -> split node */
+/* IFS-split an already-expanded word node into a vector of field nodes.
+   Each child subtoken is dispatched through split_one_child, which either
+   appends it to the current accumulation field (curr_node) or finalises
+   that field and starts a new one.  The original `node` is zeroed-out
+   after processing so its children aren't double-freed. */
 t_vec_nd	split_words(t_shell *state, t_ast_node *node)
 {
 	t_vec_nd	ret;

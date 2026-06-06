@@ -15,6 +15,10 @@
 
 void	try_unset(t_shell *state, char *key);
 
+/* Roll back temporary NAME=val assignments after a builtin or function
+   returns.  We iterate in reverse (LIFO) so nested saves unwind in the
+   correct order.  The saves vec backing is freed with xfree after the
+   loop because restore_one does NOT free the vec itself. */
 void	restore_temp_assigns(t_shell *state, t_vec *saves)
 {
 	size_t	i;
@@ -25,6 +29,10 @@ void	restore_temp_assigns(t_shell *state, t_vec *saves)
 	xfree(saves->ctx);
 }
 
+/* Write the initial value for a `local` variable.  If no '=' was given
+   the variable is set to "" (not unset) so `${local_var:-default}` does
+   not fall through to the default.  The key string is owned by the env
+   entry after env_create; do not xfree it here. */
 static void	local_set_var(t_shell *state, char *key, char *eq)
 {
 	if (eq)

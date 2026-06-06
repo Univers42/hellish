@@ -12,6 +12,9 @@
 
 #include "reparser_private.h"
 
+/* Determine if we're entering $((  (depth 2) or $( (depth 1) and advance *i
+   past the opening paren(s). The depth is what scan_until_matching uses to
+   know when to stop: for $((...)) both levels must close before we're done. */
 static int	get_initial_paren_depth(int *i, t_token t)
 {
 	if (*i + 1 < t.len && t.start[*i] == '(' && t.start[*i + 1] == '(')
@@ -23,12 +26,20 @@ static int	get_initial_paren_depth(int *i, t_token t)
 	return (1);
 }
 
+/* Atomic update: adjust depth by delta and advance position by count.
+   Keeping both updates together prevents the scan loop from observing a
+   partially updated state between the depth change and the index move. */
 static void	consume_depth_idx(int *depth, int *i, int delta, int count)
 {
 	*depth += delta;
 	*i += count;
 }
 
+/* Scan through a $(...)  or $((...)) until depth reaches 0. The $((...))
+   case is tricky: at depth 2 we look for (( and )) pairs to handle nested
+   arithmetic like $((a * (b + c))). At depth 1 a single ) closes; at depth 2
+   only )) closes (single ) just opens a nested level). This correctly handles
+   `echo $((1 + (2 * 3)))` without a separate arithmetic parser here. */
 static void	scan_until_matching(int *i, t_token t, int *depth)
 {
 	while (*i < t.len && *depth > 0)
@@ -46,6 +57,10 @@ static void	scan_until_matching(int *i, t_token t, int *depth)
 	}
 }
 
+/* Emit a $(...) or $((...)) span as a single TT_WORD subtoken starting at
+   prev_start - 1 (the '$') through the closing paren. split_eligible is
+   false inside double-quotes (TT_DQENVVAR) -- the output of a double-quoted
+   command substitution must not be IFS-split, matching bash behaviour. */
 void	reparse_envvar_paren(t_paren_ctx ctx)
 {
 	int			depth;

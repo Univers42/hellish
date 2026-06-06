@@ -12,6 +12,11 @@
 
 #include "parser_private.h"
 
+/* Parse a subshell command: ( compound_list ). The leading `(` is TT_BRACE_LEFT
+   (the lexer's operator token), not TT_LBRACE (the keyword). We push
+   TT_BRACE_LEFT onto the parse stack so error messages can tell the user
+   which open `(` is unclosed. The trailing `)` must be present; if not,
+   unexpected() sets RES_ERR. */
 t_ast_node	parse_subshell(t_shell *state,
 						t_parser *parser,
 						t_deque_tok *tokens)
@@ -37,7 +42,11 @@ t_ast_node	parse_subshell(t_shell *state,
 		vec_pop(&parser->parse_stack), ret);
 }
 
-/* { compound-list ; } : a group command run in the current shell (no fork). */
+/* Parse a brace group: { compound_list ; } -- runs in the current shell, no
+   fork. The braces are keyword tokens (TT_LBRACE / TT_RBRACE), distinct from
+   the operator tokens that open/close subshells (TT_BRACE_LEFT/RIGHT). The
+   trailing `}` must be preceded by `;` or newline (the grammar enforces this
+   via is_separator_before_terminator in compound_list.c). */
 t_ast_node	parse_brace_group(t_shell *state,
 						t_parser *parser,
 						t_deque_tok *tokens)

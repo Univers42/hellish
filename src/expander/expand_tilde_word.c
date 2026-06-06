@@ -13,6 +13,14 @@
 #include "expander_private.h"
 #include "sys.h"
 
+/* Apply tilde expansion to the first subtoken of `curr` when it is a bare
+   TT_WORD.  All recognised prefix forms are tried in order; the first that
+   matches triggers expand_tilde_token and the function returns.  Only a
+   leading TT_WORD participates — a word that starts with $VAR or a quoted
+   token is never tilde-expanded.  Forms handled:
+     ~ alone, ~/, ~name  → HOME / ~name's home (getpwnam)
+     ~+  ~+/            → $PWD
+     ~-  ~-/            → $OLDPWD                                       */
 void	expand_tilde_word(t_shell *state, t_ast_node *curr)
 {
 	t_token	*first;

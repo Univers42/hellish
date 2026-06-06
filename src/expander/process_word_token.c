@@ -13,6 +13,12 @@
 #include "expander_private.h"
 #include "sys.h"
 
+/* Attempt to expand a $((...)) arithmetic substitution at the current scan
+   position.  If the three-char prefix IS_DOLLAR LPAREN LPAREN is found, a
+   fresh t_expand_ctx is initialised from ctx->s+ctx->pos and
+   process_arith_sub is called.  Any text preceding the substitution that
+   has not yet been written to outbuf is flushed first so the output stays
+   in order.  Returns true and advances ctx->pos on success. */
 bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
 {
 	const char		*s;
@@ -40,6 +46,10 @@ bool	try_arith_sub_ctx(t_word_token_ctx *ctx)
 	return (false);
 }
 
+/* Attempt to expand $(...) at the current scan position.  Mirrors
+   try_arith_sub_ctx but calls process_cmd_sub instead.  The arith check
+   must run first (try_arith_sub_ctx) because $((…)) shares the $( prefix
+   and would be mis-parsed as a command substitution otherwise. */
 bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
 {
 	const char		*s;
@@ -87,6 +97,12 @@ static char	*unescape_backtick(const char *s, int len)
 	return (out);
 }
 
+/* Handle a `...` backtick command substitution at the current scan position.
+   Backticks have different escape semantics than $(...): backslash only
+   escapes `, $, and \ inside them.  unescape_backtick strips those escapes
+   before handing the text to capture_subshell_output so the subshell sees
+   the command the user intended.  On an unmatched backtick, return false
+   and leave the literal ` in place rather than treating it as an error. */
 bool	try_backtick_ctx(t_word_token_ctx *ctx)
 {
 	const char	*s;

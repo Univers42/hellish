@@ -14,6 +14,9 @@
 
 bool	is_redirect(t_tt tt);
 
+/* Match shell keywords that are exactly the right length and spelling.
+   Splitting into two functions keeps each under the 25-line norm limit.
+   Part1 handles the if/elif/else/fi/while/until family. */
 static t_tt	match_kw_part1(const char *s, int len)
 {
 	if (len == 2 && ft_strncmp(s, "if", 2) == 0)
@@ -33,6 +36,9 @@ static t_tt	match_kw_part1(const char *s, int len)
 	return (TT_END);
 }
 
+/* Part2 handles for/do/done/case/esac and the special single-char keywords
+   `{`, `}`, and `!`. Note that `{` and `}` are keywords, not operators;
+   the operator table handles `(` and `)`. */
 static t_tt	match_kw_part2(const char *s, int len)
 {
 	if (len == 3 && ft_strncmp(s, "for", 3) == 0)
@@ -54,6 +60,10 @@ static t_tt	match_kw_part2(const char *s, int len)
 	return (TT_END);
 }
 
+/* Return true if tt is a token that puts the parser in "command position":
+   the very next word may be a keyword. The full list mirrors the POSIX rule
+   that a WORD is a reserved word only when it appears at the start of a
+   command or after certain structural tokens (pipe, semicolon, do, etc.). */
 bool	is_cmd_position(t_tt tt)
 {
 	return (tt == TT_SEMICOLON || tt == TT_PIPE || tt == TT_AND
@@ -64,6 +74,9 @@ bool	is_cmd_position(t_tt tt)
 		|| tt == TT_BANG || tt == TT_DSEMI || tt == TT_BRACE_RIGHT);
 }
 
+/* If the token's text matches a reserved word, upgrade its type from TT_WORD
+   to the corresponding keyword token type. Called only when the token is in
+   command position (determined by reclassify_keywords). */
 void	reclassify_word(t_token *t)
 {
 	t_tt	kw;

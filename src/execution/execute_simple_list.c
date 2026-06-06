@@ -27,6 +27,11 @@ void	reap_background_children(t_shell *state)
 		;
 }
 
+/* Decide whether to run the next command based on the operator that
+   separates it from the previous one.  ; and newline always run.  &&
+   short-circuits on failure; || short-circuits on success.  Ctrl-C
+   (ctrl_c=true) stops execution regardless of operator so an interrupted
+   pipeline does not stumble forward into the right-hand side. */
 bool	should_execute(t_execution_state prev_status, t_tt prev_op)
 {
 	if (prev_status.ctrl_c)
@@ -73,6 +78,14 @@ size_t	find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
 	return (node->children.len);
 }
 
+/* Run an AST_SIMPLE_LIST or AST_COMPOUND_LIST.  These are sequences of
+   pipelines separated by ; & newline && ||.  We scan forward from the
+   current index to the next separator, execute the range as a foreground
+   or background group, then run any pending traps (POSIX requires traps
+   to fire after each simple command completes).  Background ranges (&)
+   fork and return immediately; exit/break/continue/return/signal-unwind
+   all break the outer loop so the shell does not run commands after an
+   unconditional exit. */
 t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;

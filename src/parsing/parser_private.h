@@ -10,6 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal parser header -- included ONLY by the parsing/ .c files. It
+   aggregates all the forward declarations that the parser sub-modules need
+   from each other so we avoid a web of pairwise includes. Public API lives
+   in incs/parser.h; nothing outside src/parsing/ should include this file. */
 #ifndef PARSER_PRIVATE_H
 # define PARSER_PRIVATE_H
 

@@ -20,6 +20,9 @@
 #include <errno.h>
 #include <unistd.h>
 
+/* --help: dump the flag reference, free everything, and exit cleanly.
+   Calling free_all_state first means valgrind/ASan stay quiet even when
+   --help is the only thing the user asked for. */
 static void	print_opts(char **argv, t_shell *state)
 {
 	ft_printf("Usage: %s [options] [file]\n", argv[0]);
@@ -33,6 +36,10 @@ static void	print_opts(char **argv, t_shell *state)
 	exit(0);
 }
 
+/* Decide how we read commands. Priority: explicit -c string > script file >
+   non-tty stdin (pipe) > interactive readline. The argv[1][0] != '-' check
+   is intentionally broad: any first argument that is not a flag is taken as
+   a file name; unknown flags fall through to interactive mode too. */
 static void	mode_input(char **argv, t_shell *state)
 {
 	if (argv[1] && ft_strcmp(argv[1], "-c") == 0)
@@ -45,6 +52,10 @@ static void	mode_input(char **argv, t_shell *state)
 		init_history(state);
 }
 
+/* Zero-initialise every table that survives across commands: redirect list,
+   process-sub tracking, shell-function list, job table, alias table, and the
+   command-hash cache. All use a consistent "zero-length vec" starting point
+   so any early-exit path can safely call free/cleanup on them. */
 static void	init_tables(t_shell *state)
 {
 	vec_init(&state->redirects);
@@ -58,9 +69,9 @@ static void	init_tables(t_shell *state)
 	cmd_hash_init(&state->cmd_cache);
 }
 
-/* The name the shell reports itself as in diagnostics: the basename of argv[0]
-   (bash uses "bash", not the full path it was launched from). A script overrides
-   this later with the script name. */
+/* The name the shell reports in diagnostics: the basename of argv[0]
+   (bash uses "bash", not the full path it was launched from). A script
+   overrides this later with the script name. */
 static char	*shell_basename(char *arg0)
 {
 	char	*slash;
@@ -71,6 +82,12 @@ static char	*shell_basename(char *arg0)
 	return (arg0);
 }
 
+/* Bootstrap the whole shell. Order matters: signals first (Ctrl-C must be
+   safe the moment we start reading), then env (commands may read it during
+   init), then tables (used by init_history / mode_input), then the input
+   source. The PRNG seed (Knuth constant) is fixed so $RANDOM is repeatable
+   across machines for test scripts. bg_job_count starts at 0 -- it is the
+   counter for the unique job IDs we hand out. */
 void	on(t_shell *state, char **argv, char **envp)
 {
 	set_unwind_sig();

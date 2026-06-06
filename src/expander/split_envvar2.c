@@ -12,8 +12,10 @@
 
 #include "expander_private.h"
 
-/* Field splitting for a non-whitespace IFS (e.g. IFS=,): empty fields are
-   preserved. Emits all fields, the first joining any accumulated text. */
+/* Non-whitespace IFS splitting (e.g. IFS=, or IFS=:).  Unlike whitespace
+   IFS, empty fields are preserved: "a,,b" splits into "a", "", "b".
+   The first split piece joins the existing curr_node accumulation so that
+   literal"$var"literal fuses correctly around the variable boundary. */
 static void	split_envvar_nonws(t_token *curr_t, char **things,
 				t_ast_node *curr_node, t_vec_nd *ret)
 {
@@ -56,11 +58,15 @@ static void	distribute_fields(char **things, t_ast_node *curr_node,
 	xfree(things);
 }
 
-/*
-** POSIX field splitting: leading/trailing IFS in the expanded value acts as a
-** delimiter against adjacent literal text (so [$x] with x="  a  " -> [, a, ]),
-** while a genuinely empty value creates no delimiter ([$x] x="" -> []).
-*/
+/* POSIX IFS field splitting for a single expanded variable token.
+   When IFS has non-whitespace chars, use split_envvar_nonws (empty-field
+   preserving).  Otherwise (default IFS " \t\n"):
+     - leading IFS chars in the value split it from any preceding literal
+       text (push curr_node, start fresh)
+     - trailing IFS chars in the value split it from any following literal
+       text (distribute_fields passes trail=true, which pushes an extra node)
+   A genuinely empty value creates no split: [$x] with x="" stays as one
+   empty field if surrounded by literals, or zero fields on its own. */
 void	split_envvar(t_shell *state, t_token *curr_t,
 			t_ast_node *curr_node, t_vec_nd *ret)
 {

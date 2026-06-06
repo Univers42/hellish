@@ -12,6 +12,10 @@
 
 #include "parser_private.h"
 
+/* Convenience wrappers that call the parse_* function and push the result
+   onto ret->children in one step. These reduce the boilerplate throughout the
+   parser: every compound command needs to push sub-lists, redirects, and
+   words, and the two-line parse+push pattern repeats dozens of times. */
 void	push_parsed_word(t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	tmp_node;
@@ -47,6 +51,8 @@ void	push_parsed_compound_list(t_shell *state, t_parser *parser,
 	vec_push(&ret->children, &tmp_node);
 }
 
+/* One-liner helper used in boolean expressions after a push_parsed_* call
+   to keep the caller's expression short without breaking the 42 norm. */
 bool	check_res_ok(t_parser *res)
 {
 	return (res->res == RES_OK);

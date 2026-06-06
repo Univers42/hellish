@@ -17,6 +17,8 @@
 void	collect_body(const char **p, size_t *cur, t_string *body, t_hd *s);
 int		collect_specs(const char *str, t_hd **out);
 
+/* Release the spec array produced by collect_specs.  Each entry owns its
+   delim string (allocated by hd_delim); the array itself is xfree'd last. */
 static void	free_specs(t_hd *sp, int n)
 {
 	int	i;
@@ -65,6 +67,12 @@ static void	advance_hd(const char **p, size_t *cur,
 	}
 }
 
+/* Walk the source line by line: emit each line into out[0] (the stripped
+   source for the parser), and after each line call advance_hd to pull any
+   heredoc bodies that start on that line into out[1].  The result is a
+   parser-safe source string (no heredoc bodies) plus a packed body stream
+   in source order.  Returns the count of heredoc bodies actually extracted
+   (some operators may not have their delimiter present in the string). */
 static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 {
 	const char	*p;
@@ -89,6 +97,10 @@ static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 	return (c.got);
 }
 
+/* Public entry point: split `str` into a body-free version (*stripped) and
+   a packed heredoc body stream (*bodies).  Returns false if no heredoc
+   bodies could be extracted (no << operators, or none with a matching
+   delimiter in the string).  Callers must xfree both output strings. */
 bool	split_heredocs(const char *str, char **stripped, char **bodies)
 {
 	t_hd		*sp;

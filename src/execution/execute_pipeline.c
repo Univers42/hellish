@@ -12,6 +12,13 @@
 
 #include "execution_private.h"
 
+/* Wire up pipe fds for one element of a pipeline.  Non-last elements get a
+   fresh pipe: write end goes to curr_exe->outfd (child will dup2 it to
+   stdout), read end lands in curr_exe->next_infd (the PARENT saves it as
+   prev_infd so the NEXT child picks it up as its stdin).  The last element
+   just inherits the pipeline's own outfd (typically stdout=1).  After this
+   call the pipe ends are in the exe struct -- the parent closes them in
+   finalize_child_parent to avoid exhausting the fd table. */
 void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 									t_executable_node *curr_exe, int (*pp)[2])
 {
@@ -29,8 +36,11 @@ void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 	}
 }
 
-/* prepare per-child execution state (copy template,
-init redirs, set fds/node, setup pipe) */
+/* Stamp out a fresh t_executable_node for one pipeline element.  We copy
+   the template (inheriting modify_parent_ctx, redirs, etc.) then zero the
+   redirs vec so each child builds its own redirect list independently.
+   The modify_parent_ctx flag is only kept for the last stage -- inner
+   stages always fork, so they can't modify parent state anyway. */
 static void	prepare_child_exec(t_exec_child_ctx *c)
 {
 	size_t	last_index;
@@ -48,8 +58,13 @@ static void	prepare_child_exec(t_exec_child_ctx *c)
 		c->exe, c->curr_exe, c->pp);
 }
 
-/* finalize parent-side after child execution: close fds
-and set prev_infd for next child */
+/* Parent-side cleanup after dispatching one pipeline stage.  We close
+   the write end (outfd) and the now-consumed read end (infd) of the pipe
+   from the perspective of the parent -- if we left them open the child
+   reading from the next pipe stage would never see EOF.  Then we slide
+   the new pipe read end (pp[0]) forward as prev_infd for the next child
+   to inherit as its stdin.  free_executable_node drops any redirect
+   vec memory that belongs to this stage. */
 static void	finalize_child_parent(t_exec_child_ctx *c)
 {
 	if (c->curr_exe->outfd >= 0 && c->curr_exe->outfd != STDOUT_FILENO)
@@ -63,6 +78,11 @@ static void	finalize_child_parent(t_exec_child_ctx *c)
 	free_executable_node(c->curr_exe);
 }
 
+/* Drive the pipeline loop: one iteration per AST_COMMAND child.  Each
+   child is prepared (pipe wiring), dispatched via execute_command (which
+   may fork or run inline if modify_parent_ctx), then finalized in the
+   parent (fd cleanup, prev_infd advance).  Results (pid or immediate
+   status) accumulate in `results` for pipeline_status to harvest. */
 void	execute_pipeline_children(t_shell *state,
 								t_executable_node *exe,
 								t_vec_exe_res *results)
@@ -93,7 +113,14 @@ void	execute_pipeline_children(t_shell *state,
 	}
 }
 
-/* Always returns status */
+/* Top-level pipeline executor.  Runs all children, closes any lingering
+   process-substitution fds in the parent (they were opened for the
+   children and would otherwise never close), then collects the exit
+   status.  A leading `!` (node->negate) flips the status between 0 and
+   1 and clears the pid so callers treat it as an immediate status not a
+   background job.  pipefail vs last-stage logic lives in pipeline_status.
+   The results vec is freed here -- each element was either already waited
+   (pipefail_scan) or is a pid that pipeline_status just waitpid'd. */
 t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
 	t_vec_exe_res		results;

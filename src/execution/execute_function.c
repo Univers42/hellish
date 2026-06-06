@@ -60,10 +60,11 @@ void	unset_function(t_shell *state, const char *name)
 	}
 }
 
-/*
-** Store (or overwrite) a function definition.
-** Clones the body AST so the original can be freed.
-*/
+/* Store (or overwrite) a function definition.  We deep_clone_ast the
+   body so the caller can free the parse tree after this call.  On an
+   overwrite we free the old body first (free_ast) to avoid leaking the
+   previous definition -- redefining a function many times should stay
+   memory-flat. */
 static void	store_function(t_shell *state, char *name, t_ast_node *body)
 {
 	t_shell_func	*existing;
@@ -81,10 +82,11 @@ static void	store_function(t_shell *state, char *name, t_ast_node *body)
 	vec_push(&state->functions, &new_fn);
 }
 
-/*
-** Execute a function definition: store the body in the function table.
-** AST_FUNCTION_DEF: token = name, children[0] = body
-*/
+/* Register a shell function.  The function name lives in the node's
+   token; children[0] is the body compound-list.  The function table is a
+   flat vec of t_shell_func -- a linear scan is fine because the number of
+   functions is small.  Returns status 0 (defining a function always
+   succeeds unless OOM). */
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 {
 	char		*name;

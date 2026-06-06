@@ -12,6 +12,13 @@
 
 #include "parser_private.h"
 
+/* Top-level parse entry point called from the REPL after tokenisation.
+   Runs parse_simple_list to build the full AST, then -- if that succeeded --
+   pops and discards the TT_END sentinel, and runs the two re-parse passes
+   that upgrade raw TT_WORD tokens: reparse_words (splits composite words
+   like `a"b"c` into parts) and reparse_assignment_words (promotes `VAR=val`
+   to assignment nodes). The AST is optionally printed in dot format for
+   debugging when PRINT_AST is set. */
 t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 {
 	t_tt		tt;

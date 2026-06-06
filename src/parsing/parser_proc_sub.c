@@ -15,6 +15,10 @@
 void	proc_sub_update_depth(t_token curr, int *depth);
 int		handle_end_token(t_parser *parser, t_deque_tok *tokens);
 
+/* Track the text span covered by the process substitution body. *start is
+   set on the first token seen; *end advances to past-the-end of each token.
+   We also keep *prev so that when depth reaches 0 (the `)` is consumed and
+   we stop the loop) we can set cmd_end to the end of the last real token. */
 static void	update_cmd_bounds(t_token curr, const char **start,
 							const char **end, t_token *prev)
 {
@@ -24,6 +28,11 @@ static void	update_cmd_bounds(t_token curr, const char **start,
 	*prev = curr;
 }
 
+/* Scan the token stream inside `<(...)` / `>(...)` to find the exact text
+   span of the inner command. We track nesting depth (proc_sub_update_depth
+   handles `(` / `)`) and record the bounds with update_cmd_bounds. The inner
+   command text is later passed to the executor as a single word token to be
+   re-evaluated in a subshell with a connected pipe. */
 static int	collect_proc_sub_command(t_parser *parser, t_deque_tok *tokens,
 								const char **cmd_start, const char **cmd_end)
 {
@@ -50,6 +59,10 @@ static int	collect_proc_sub_command(t_parser *parser, t_deque_tok *tokens,
 	return (0);
 }
 
+/* Wrap the process-substitution command text in an AST_WORD > AST_TOKEN
+   subtree. The cmd_copy was allocated by ft_strndup; the TT_WORD token's
+   `owned` flag (the `true` in create_tok4) tells the AST destructor to free
+   it, so ownership transfers here and the caller must not free cmd_copy. */
 static t_ast_node	create_word_node(char *cmd_copy, int len)
 {
 	t_ast_node	word_node;
@@ -66,6 +79,10 @@ static t_ast_node	create_word_node(char *cmd_copy, int len)
 	return (word_node);
 }
 
+/* Validate that we captured a non-empty span, duplicate the text into a
+   heap buffer (the original input may be freed before the executor runs),
+   then build and push the AST_WORD node. Returns 1 on any failure with
+   RES_ERR already set so the caller can return early. */
 static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 						const char *cmd_end, t_ast_node *ret)
 {
@@ -84,6 +101,11 @@ static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 	return (0);
 }
 
+/* Parse a process substitution: `<(cmd)` or `>(cmd)`. The operator token
+   (TT_PROC_SUB_IN / TT_PROC_SUB_OUT) is consumed first and stored as the
+   first child, then we find the inner command span and push it as a word.
+   At execution time the word text is re-evaluated via a /dev/fd/N path.
+   AST_PROC_SUB: children[0]=operator token, children[1]=cmd word. */
 t_ast_node	parse_proc_sub(t_shell *state,
 					t_parser *parser,
 					t_deque_tok *tokens)

@@ -16,8 +16,10 @@
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 
-/* init executable cmd: fresh pre_assigns vector (rare), argv borrows a
-   reusable backing from the shell's depth-indexed pool. */
+/* Prepare an executable_cmd for a new simple command.  pre_assigns holds
+   VAR=val assignments that precede the command name; argv borrows its
+   storage from the shell's per-call-depth argv pool to avoid malloc on
+   every command — see argv_pool_acquire for the recycling logic. */
 static void	init_executable_cmd(t_shell *state, t_executable_cmd *ret)
 {
 	*ret = (t_executable_cmd){};
@@ -26,7 +28,11 @@ static void	init_executable_cmd(t_shell *state, t_executable_cmd *ret)
 	argv_pool_acquire(state, ret);
 }
 
-/* If no argv produced but pre_assigns present, transfer them into shell env */
+/* If the simple command is assignment-only (no command name, only VAR=val
+   words), transfer the pre_assigns into the current shell environment.
+   POSIX says "VAR=x" alone is equivalent to a shell assignment.  Readonly
+   variable violations are caught here and result in a non-zero exit status
+   (or exit in non-interactive mode). */
 static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 												t_executable_cmd *ret)
 {
@@ -54,7 +60,11 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 	}
 }
 
-/* node -> expanded executable cmd (concise, delegates to helpers) */
+/* Expand all children of a simple command AST node into an executable_cmd.
+   The children are: AST_WORD (command name / arg), AST_ASSIGNMENT_WORD
+   (pre-command VAR=val), AST_REDIRECT, and AST_PROC_SUB.  Each is routed
+   through process_simple_child.  Assignment-only commands (no name found)
+   are handled by apply_pre_assigns_if_assignment_only at the end. */
 int	expand_simple_command(t_shell *state, t_ast_node *node,
 						t_executable_cmd *ret, t_vec_int *redirects)
 {

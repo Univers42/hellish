@@ -12,6 +12,14 @@
 
 #include "execution_private.h"
 
+/* Entry point called once per parsed statement by the REPL.  It wraps the
+   whole execution lifecycle for one top-level tree: pre-scan heredocs
+   (gather_heredocs fills temp files before any child forks), execute the
+   tree, clean up process-substitution fds, and record the exit status.
+   Ctrl-C while running a script (non-interactive: metinp != INP_RL) sets
+   should_exit so the script aborts rather than just printing a newline.
+   The verbose(CLAP_PRINT) call at the end is the "execution applause"
+   hook -- a hook for debug/test output after each top-level command. */
 void	execute_top_level(t_shell *state)
 {
 	t_executable_node	exe;

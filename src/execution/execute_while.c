@@ -43,11 +43,12 @@ int	handle_loop_ctl(t_shell *state)
 		|| get_g_sig()->should_unwind);
 }
 
-/*
-** AST_WHILE: children[0]=condition, children[1]=body
-** While condition exits 0, execute body. Return last body status.
-** AST_UNTIL: same but loop while condition exits non-zero.
-*/
+/* while/until loop executor.  The condition is run with errexit_off++
+   (POSIX: -e must not fire on a while/until condition), and the body
+   status is what the whole loop returns.  loop_depth++ lets break/
+   continue know there is an enclosing loop to target.  handle_loop_ctl
+   drains one level of break/continue (or stops entirely if the shell
+   is exiting), so nested loops each consume exactly one level. */
 t_execution_state	execute_while(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;

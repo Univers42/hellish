@@ -12,6 +12,10 @@
 
 #include "parser_private.h"
 
+/* Placeholder validation hook -- currently a no-op with all parameters
+   voided. Left in place as an extension point for stricter redirect-target
+   validation (e.g. rejecting `> ` with no filename) without changing the
+   calling code. */
 void	validate_next_token_is_properly_set_for_redirect(t_deque_tok *tokens,
 													t_shell *state,
 													t_parser *parser,
@@ -27,6 +31,13 @@ void	validate_next_token_is_properly_set_for_redirect(t_deque_tok *tokens,
 	(void)next;
 }
 
+/* Parse a redirect: op [procsub | word]. The operator token (>, >>, <, <<,
+   etc.) is consumed first and becomes the first AST_TOKEN child. The target
+   is either a process substitution `<(cmd)` / `>(cmd)` or a plain word (file
+   name, heredoc label, fd number). Process subs take priority because the
+   lexer already classified `<(` as TT_PROC_SUB_IN, so we just peek and
+   branch. Missing or wrong target triggers unexpected() which sets RES_ERR
+   and returns a partial node for the caller to propagate upward. */
 t_ast_node	parse_redirect(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens)
