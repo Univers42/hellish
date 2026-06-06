@@ -12,8 +12,7 @@ module. It ships with **two allocators you can swap at compile time** (libc
 `malloc` or our own `ft_malloc`) so you can A/B their behaviour and speed.
 
 - **Latest:** v2.3.0 — compile-time `SAFE` allocator, `${var/pat/rep}`
-  substitution, a leak-clean run across the whole test corpus, and a fully
-  humanized, commented codebase.
+  substitution, a leak-clean run across the whole test corpus
 
 ---
 
