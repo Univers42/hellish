@@ -19,12 +19,17 @@ void	run_pending_traps(t_shell *state);
    scripts and tight loops) — bg_job_count stays 0 until the first `&`. */
 void	reap_background_children(t_shell *state)
 {
-	int	status;
+	int		status;
+	pid_t	pid;
 
 	if (state->bg_job_count == 0)
 		return ;
-	while (waitpid(-1, &status, WNOHANG) > 0)
-		;
+	pid = waitpid(-1, &status, WNOHANG);
+	while (pid > 0)
+	{
+		bg_done_record(state, pid, status);
+		pid = waitpid(-1, &status, WNOHANG);
+	}
 }
 
 /* Decide whether to run the next command based on the operator that

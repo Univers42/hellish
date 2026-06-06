@@ -56,6 +56,9 @@ void	parse_and_execute_input(t_shell *state);
 char	*x_getcwd(void);
 /* release the pushd/popd dir stack at exit; builtins/builtin_dirstack.c */
 void	free_dirstack(t_shell *state);
+/* remember / recover a finished bg child's status; src/execution/bg_done.c */
+void	bg_done_record(t_shell *state, pid_t pid, int status);
+int		bg_done_take(t_shell *state, pid_t pid, int *status);
 /* opt-in ft_malloc live-bytes report at exit; see helpers/alloc_stats.c */
 void	alloc_live_report(void);
 
@@ -125,6 +128,18 @@ typedef struct s_pos
    Past this depth a command falls back to a fresh vector. */
 # define ARGV_POOL_DEPTH 64
 
+/* Ring of finished-but-not-yet-waited background children. reap_background_
+   children() reaps with waitpid() and would otherwise discard the exit status,
+   so a later `wait <pid>` would race; we stash (pid, status) here and `wait`
+   recovers it -- matching bash, which remembers a finished job until waited. */
+# define BG_DONE_MAX 128
+
+typedef struct s_bg_done
+{
+	pid_t	pid;
+	int		status;
+}	t_bg_done;
+
 typedef struct s_shell
 {
 	/* --- I/O and readline state --- */
@@ -187,6 +202,8 @@ typedef struct s_shell
 	uint32_t			option_flags; /* bitmask of e_opt_flag values */
 	/* --- job control and async --- */
 	int					bg_job_count; /* running background job count */
+	t_bg_done			bg_done[BG_DONE_MAX]; /* finished bg job statuses */
+	int					bg_done_next; /* next write slot in bg_done ring */
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
 	t_job_table			job_table; /* background job list */

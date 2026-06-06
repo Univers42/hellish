@@ -65,6 +65,24 @@ int	builtin_exec(t_shell *state, t_vec argv)
 	exit(126);
 }
 
+/* waitpid() failed (ECHILD): the child was already reaped by
+   reap_background_children's WNOHANG poll between list items. bash remembers a
+   finished job's status until `wait` collects it, so recover the status we
+   stashed at reap time; only a genuinely unknown pid yields 127. */
+static int	reaped_job_status(t_shell *state, pid_t pid)
+{
+	int	status;
+
+	if (bg_done_take(state, pid, &status))
+	{
+		if (WIFEXITED(status))
+			return (WEXITSTATUS(status));
+		if (WIFSIGNALED(status))
+			return (128 + WTERMSIG(status));
+	}
+	return (127);
+}
+
 /* wait [pid]: wait for background children (all of them if no pid given). */
 int	builtin_wait(t_shell *state, t_vec argv)
 {
@@ -76,7 +94,7 @@ int	builtin_wait(t_shell *state, t_vec argv)
 	{
 		pid = (pid_t)ft_atoi(((char **)argv.ctx)[1]);
 		if (waitpid(pid, &status, 0) < 0)
-			return (127);
+			return (reaped_job_status(state, pid));
 		if (WIFEXITED(status))
 			return (WEXITSTATUS(status));
 		return (128 + WTERMSIG(status));
