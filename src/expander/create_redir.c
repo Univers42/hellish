@@ -86,6 +86,9 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	return (open_file_redir(tt, ret));
 }
 
+/* Wrap a pre-created heredoc fd into a t_redir.  The fd is already open for
+   reading (or pointing at a pipe) when this is called; we just fill the
+   struct fields correctly so the executor can dup2 it to stdin. */
 bool	create_redir_heredoc(int heredoc_fd, t_redir *ret)
 {
 	if (heredoc_fd < 0)

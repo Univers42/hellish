@@ -12,6 +12,11 @@
 
 #include "expander_private.h"
 
+/* Paren-classification predicates used by proc_arith to advance the depth
+   counter while scanning inside a $((...)) body.  The _v1 variants require
+   a bounds check (j+1 < slen); the non-_v1 ones do not (caller guarantees
+   room) — this split was made to avoid redundant comparisons in the hot
+   scanning loop of process_arith_sub.                                    */
 bool	is_double_open_paren_v1(int slen, const char *s, int j)
 {
 	return (s[j] == '(' && j + 1 < slen && s[j + 1] == '(');

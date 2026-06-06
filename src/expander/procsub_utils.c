@@ -12,6 +12,10 @@
 
 #include "expander_private.h"
 
+/* Close all open pipe fds on the parent side of registered process
+   substitutions.  Called after the outer command has been forked so the
+   parent's copy of the write-end (for >(cmd)) does not keep the child's
+   pipe alive indefinitely when the command closes its copy. */
 void	procsub_close_fds_parent(t_shell *state)
 {
 	size_t			i;
@@ -33,10 +37,10 @@ void	procsub_close_fds_parent(t_shell *state)
 }
 
 /* `exec` with a redirection to a process substitution keeps that substitution
-   alive for the rest of the session: a persistent fd (1/2) holds the pipe open,
+   alive for the rest of the session: a persistent fd (1/2) holds it open,
    so the child only finishes once the shell exits. Detach such procsubs
-   (pid = -1) so cleanup still closes our fd but never blocks in waitpid for a
-   child the shell is itself feeding; the kernel reaps them at exit. */
+   (pid = -1) so cleanup still closes our fd but never blocks in waitpid
+   for a child the shell is feeding; the kernel reaps them at exit. */
 void	procsub_detach_all(t_shell *state)
 {
 	size_t	i;
@@ -51,6 +55,11 @@ void	procsub_detach_all(t_shell *state)
 	}
 }
 
+/* Reap all process substitution children and release their resources.
+   Closes parent-side fds first (stops feeding >(cmd) children), then
+   waitpid's for each child with pid > 0 (detached ones have pid == -1 and
+   are skipped — the kernel will reap them at shell exit).  The proc_subs
+   vec is reset so state is clean for the next command. */
 void	cleanup_proc_subs(t_shell *state)
 {
 	size_t			i;
