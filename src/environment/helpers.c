@@ -10,11 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Shell init helpers: cwd tracking, HOME/SHLVL seeding, and the fast
+   env_nget path.  These run once at startup -- correctness > speed here.
+   The tricky one is set_shlvl: we parse the parent's value with a cap of
+   42 (the school limit) to avoid exploding SHLVL on deeply-nested shells
+   that someone ssh'd into 200 times. */
+
 #include "shell.h"
 #include "env.h"
 #include "libft.h"
 #include "sys.h"
 
+/* Seed state->cwd from getcwd().  If the syscall fails (deleted dir,
+   permissions) we emit a warning and leave cwd empty rather than crash.
+   The vec_push_str copies the string, so the getcwd buffer is freed. */
 void	init_cwd(t_shell *state)
 {
 	char	*cwd;
@@ -28,6 +37,9 @@ void	init_cwd(t_shell *state)
 	xfree(cwd);
 }
 
+/* Ensure HOME is set.  If the inherited env lacks it (rare but possible
+   with stripped environments), fall back to the current working dir, and
+   if even that fails, to /tmp. Worst case the user can still `cd`. */
 void	set_home(t_shell *state)
 {
 	t_env	*e;
@@ -45,6 +57,10 @@ void	set_home(t_shell *state)
 	}
 }
 
+/* Initialise the cwd vec and immediately push the actual path into it.
+   The double-push (init_cwd already pushes once) looks redundant but
+   init_cwd is called separately by subshell init paths that don't call
+   set_cwd; keep them decoupled. */
 void	set_cwd(t_shell *state)
 {
 	char	*cwd;
@@ -58,6 +74,8 @@ void	set_cwd(t_shell *state)
 	xfree(cwd);
 }
 
+/* Increment SHLVL (capped via ft_checked_atoi's flags=42 to avoid huge
+   values from weird nesting).  Missing or non-numeric -> treat as 1. */
 void	set_shlvl(t_shell *state)
 {
 	t_env	*e;
@@ -83,6 +101,9 @@ void	set_shlvl(t_shell *state)
 	}
 }
 
+/* Fast env lookup by key with explicit length (avoids a strlen when the
+   caller already knows it).  Returns a pointer into the vector -- valid
+   until the next env_set/env_unset that could trigger a realloc. */
 t_env	*env_nget(t_vec_env *env, char *key, int len)
 {
 	int	idx;

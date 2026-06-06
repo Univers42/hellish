@@ -10,6 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Abstract Syntax Tree types and node definition.
+   Every parsed construct becomes a t_ast_node.  The tree is purely
+   structural: it mirrors the grammar and carries raw tokens.  Expansion
+   ($VAR, globs, heredocs) happens later in the executor/expander phases,
+   not during parsing, so the same AST can be executed multiple times
+   (e.g. inside a loop) without re-parsing. */
+
 #ifndef AST_H
 # define AST_H
 
@@ -19,6 +26,8 @@
 /* Forward declaration */
 typedef struct s_shell	t_shell;
 
+/* Node type: what grammar production this node represents.
+   The executor switches on this to dispatch to the right handler. */
 typedef enum e_ast_type
 {
 	AST_COMMAND_PIPELINE,
@@ -42,15 +51,18 @@ typedef enum e_ast_type
 	AST_FUNCTION_DEF
 }	t_ast_type;
 
+/* The universal AST node.  Used for EVERY grammar construct (commands,
+   words, redirections, control structures).  children is a t_vec of
+   t_ast_node (value, not pointer -- nodes are embedded). */
 typedef struct s_ast_node
 {
-	t_ast_type		node_type;
-	t_token			token;
-	t_vec			children;
-	bool			has_redirect;
-	int				redir_idx;
-	bool			negate;
-	char			*heredoc_body;
+	t_ast_type		node_type;    /* what this node is */
+	t_token			token;        /* the primary token (word text, op, etc.) */
+	t_vec			children;     /* child nodes (t_ast_node[], owned) */
+	bool			has_redirect; /* true if any child is a redirection */
+	int				redir_idx;    /* index into state->redirects */
+	bool			negate;       /* true for `! cmd` (pipeline negation) */
+	char			*heredoc_body; /* raw body string for a HERE-doc node */
 }	t_ast_node;
 
 /* Vector type alias for AST nodes */

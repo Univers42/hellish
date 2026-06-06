@@ -12,9 +12,11 @@
 
 #include "arith_private.h"
 
-/* Lex `expr` fully into a malloc'd token array (incl. the terminal EOF/ERROR).
-   *ntoks receives the count. Returns NULL on allocation failure. The tokens'
-   var_name/start pointers reference `expr`, which must outlive the cache. */
+/* Lex the entire expression into a freshly-malloc'd token array and return it.
+   The array includes the terminating EOF or ERROR token. var_name and start
+   fields in the tokens point into `expr`, so the caller must keep expr alive
+   for as long as the cache lives. Returns NULL on alloc failure (the caller
+   transparently falls back to uncached evaluation). */
 static t_arith_token	*lex_all(const char *expr, int len, int *ntoks)
 {
 	t_arith_lexer	lex;
@@ -35,8 +37,10 @@ static t_arith_token	*lex_all(const char *expr, int len, int *ntoks)
 	return ((t_arith_token *)v.ctx);
 }
 
-/* (Re)build the cache for `expr`; leaves *cachep NULL on failure so the caller
-   transparently falls back to uncached evaluation. */
+/* Build or rebuild the token-array cache for `expr`. Always frees the old
+   cache first so we don't leak. On any allocation failure *cachep is left
+   NULL and the caller falls back to plain arith_expand -- graceful
+   degradation, not a crash. */
 static void	cache_build(t_arith_cache **cachep, const char *expr, int len)
 {
 	t_arith_cache	*c;
@@ -62,8 +66,11 @@ static void	cache_build(t_arith_cache **cachep, const char *expr, int len)
 	*cachep = c;
 }
 
-/* Evaluate from the cached token array (no re-lexing). Variables resolve live
-   inside arith_run, so loop bodies see updated values. */
+/* Replay a cached token array through arith_run. The lexer is initialized in
+   token-replay mode (arith_lexer_init_toks), so no byte-scanning happens.
+   Variable lookups inside arith_run still hit the live environment, which
+   means loop bodies like `while (( i++ < 10 ))` see the updated value of `i`
+   on every iteration despite the tokens being pre-baked. */
 long long	arith_eval_cached(t_shell *state, t_arith_cache *c, bool *error)
 {
 	t_arith_lexer	lexer;
@@ -72,8 +79,12 @@ long long	arith_eval_cached(t_shell *state, t_arith_cache *c, bool *error)
 	return (arith_run(state, &lexer, error));
 }
 
-/* Expand a pure $((expr)) using the per-token cache: lex once, re-evaluate
-   many times. Falls back to uncached arith_expand if the cache can't build. */
+/* Cached $((...)) expansion: lex once, evaluate many times. The cache is
+   keyed by (pointer identity, length) -- if the caller passes the same
+   persistent source string every call (e.g. an AST node's byte slice), the
+   lex work is done only once and subsequent iterations pay only for the
+   parse+evaluate pass. Falls back to arith_expand if the cache fails to
+   build or becomes stale. */
 char	*arith_expand_cached(t_shell *state, const char *expr, int len,
 			t_arith_cache **cachep)
 {

@@ -10,11 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Job display and notification helpers.  job_print is the single place
+   that formats a job line (used by both `jobs` and the async Done
+   notification).  job_notify is called at each prompt: it polls, prints
+   any finished jobs, then removes them.  The notified flag prevents
+   printing the same "Done" line twice if the prompt is re-drawn quickly. */
+
 #include "job_control.h"
 #include "shell.h"
 #include "libft.h"
 #include <stdio.h>
 
+/* Translate a t_job_status enum to the human string that `jobs` shows. */
 static const char	*job_status_str(t_job_status s)
 {
 	if (s == JOB_RUNNING)
@@ -28,6 +35,9 @@ static const char	*job_status_str(t_job_status s)
 	return ("Unknown");
 }
 
+/* Print one job in `jobs` format.  current/prev are the job IDs (not
+   slot indices) that get '+'/'-' markers.  show_pid adds the pgid column,
+   which `jobs -l` requests but the async notification doesn't need. */
 void	job_print(t_job *job, int current, int prev, bool show_pid)
 {
 	char	mark;
@@ -45,6 +55,10 @@ void	job_print(t_job *job, int current, int prev, bool show_pid)
 			job->id, mark, job_status_str(job->status), job->cmd);
 }
 
+/* Called before each prompt.  Polls all running jobs, then prints and
+   removes any that finished.  The notified flag is set to true just
+   before removal so the loop can't double-print if job_remove shifts
+   the count. */
 void	job_notify(t_shell *state)
 {
 	t_job_table	*jt;
@@ -66,6 +80,9 @@ void	job_notify(t_shell *state)
 	}
 }
 
+/* Promote `id` to current job, demoting the old current to previous.
+   Called when `fg` or `bg` brings a specific job to the foreground so
+   the '+'/'-' markers in `jobs` output stay correct. */
 void	job_set_current(t_job_table *jt, int id)
 {
 	jt->previous = jt->current;

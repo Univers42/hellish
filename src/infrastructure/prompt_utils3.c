@@ -12,6 +12,9 @@
 
 #include "prompt_private.h"
 
+/* Subset of glyphs reused here from prompt_utils.c. Defined again rather than
+   shared through a header so each translation unit is self-contained; the
+   compiler merges identical string literals anyway. */
 #define G_H   "\xe2\x94\x80"
 #define G_TR  "\xe2\x95\xae"
 #define G_BL  "\xe2\x95\xb0"
@@ -23,6 +26,9 @@
 #define C_ERR  "\033[1m\033[38;5;203m"
 #define C_RST  "\033[0m"
 
+/* Push `count` horizontal rule characters (the box-drawing ─) as a spacer in
+   the frame colour, with a leading and trailing plain space. Used to fill the
+   gap between the left segment (user/cwd/branch) and the right clock. */
 static void	push_fill(t_string *ret, int count)
 {
 	vec_push_str(ret, " ");
@@ -33,6 +39,11 @@ static void	push_fill(t_string *ret, int count)
 	vec_push_str(ret, " ");
 }
 
+/* Close the top row with the clock and then emit the second row (the arrow).
+   The fill width is computed as: terminal columns − visible content already
+   accumulated − clock width − 2 border chars. A minimum of 3 is enforced so
+   the box never collapses to zero on very narrow terminals. The arrow colour
+   is green (C_OK) on exit 0, red (C_ERR) otherwise. */
 void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 {
 	int	right_w;

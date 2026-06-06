@@ -12,6 +12,10 @@
 
 #include "input_private.h"
 
+/* Initialise the parser, token deque, and prompt string for one command cycle.
+   For an interactive session (INP_RL) we build the coloured prompt via
+   prompt_normal(); for scripts/pipes we use an empty string (no prompt needed).
+*/
 static void	prepare_parser_and_prompt(t_shell *state,
 									t_parser *parser,
 									t_deque_tok *tt,
@@ -35,6 +39,10 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	tt->looking_for = 0;
 }
 
+/* After the parse loop settles: execute the tree if parsing succeeded, handle
+   any lingering signal cancellation, save history, and free all scratch
+   allocations. should_exit is also updated here: a non-interactive interrupt
+   or an exhausted input stream ends the shell. */
 static void	finalize_parser_and_cleanup(t_shell *state,
 										t_parser *parser,
 										t_deque_tok *tt,
@@ -60,6 +68,12 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 		|| state->rl.has_finished;
 }
 
+/* One full command cycle: build the prompt, read+lex+parse until we have a
+   complete command (or hit EOF/error), execute it, then clean up. This is the
+   inner body of the shell's REPL; shell.c calls it in a loop until should_exit
+   is set. All memory allocated during a cycle is freed before returning, so
+   even a long-running script stays leak-flat (the pile of xfree at the bottom
+   of finalize_parser_and_cleanup is the whole trick). */
 void	parse_and_execute_input(t_shell *state)
 {
 	t_deque_tok		tt;

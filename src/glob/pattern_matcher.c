@@ -12,9 +12,12 @@
 
 #include "glob_private.h"
 
-/*
-** Match literal pattern tokens
-*/
+/* Match one or more consecutive G_LITERAL tokens against the start of `name`.
+   The while loop consumes a run of literals without recursing for each byte,
+   which is the common fast path (most patterns are mostly literal text). On
+   any mismatch return 0 immediately. If the match reaches a segment boundary
+   (finished_pattern), the name must also be exhausted there. Otherwise we
+   recurse to handle the next token type after the literal run. */
 size_t	match_g_literal(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
@@ -41,9 +44,11 @@ size_t	match_g_literal(char *name, t_vec_glob patt, size_t offset,
 	return (matches_pattern(name, patt, offset, false));
 }
 
-/*
-** Main pattern matching dispatcher
-*/
+/* Main dispatcher: look at the current token type and delegate to the matching
+   function. Returns the token-offset past the last matched token on success,
+   or 0 on failure. The offset returned (not byte count) lets the caller know
+   how far the pattern was consumed -- the directory walker uses this to detect
+   partial matches that require descending into subdirectories. */
 size_t	matches_pattern(char *name, t_vec_glob patt, size_t offset, bool first)
 {
 	t_glob	curr;

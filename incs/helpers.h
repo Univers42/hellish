@@ -10,13 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Miscellaneous helper functions used across multiple subsystems.
+   free_all_state is the big cleanup called at exit or before exec.
+   The var-name predicates (is_var_name_p*) are used by both the lexer
+   and the env expand code -- they live here to avoid duplication. */
+
 #ifndef HELPERS_H
 # define HELPERS_H
 
 # include "shell.h"
 # include "alias.h"
 
-// Forward declarations to avoid circular dependency
+/* Forward declarations to avoid circular dependency */
 typedef struct executable_cmd_s		t_executable_cmd;
 typedef struct executable_node_s	t_executable_node;
 typedef struct s_execution_state	t_execution_state;

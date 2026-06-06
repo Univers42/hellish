@@ -14,7 +14,9 @@
 
 char	*node_name_compound(t_ast_type tn);
 
-/* Original function - enhanced with tree output */
+/* Map a node type enum to its string name for debug output (DOT labels and the
+   text tree). Simple types are handled here; compound types (if/while/for ...)
+   are split into node_name_compound to keep each function under 25 lines. */
 char	*node_name(t_ast_type tn)
 {
 	if (tn == AST_COMMAND_PIPELINE)
@@ -42,7 +44,8 @@ char	*node_name(t_ast_type tn)
 	return (node_name_compound(tn));
 }
 
-/* Original function - kept as is */
+/* Recursive S-expression dump: "(TYPE >token< (child ...) ...)". Useful as a
+   compact one-liner representation during interactive debugging sessions. */
 void	print_node(t_ast_node node)
 {
 	size_t	i;
@@ -56,7 +59,9 @@ void	print_node(t_ast_node node)
 	ft_printf(")");
 }
 
-/* Original function - kept as is */
+/* Write the token's text to outfd with minimal escaping so it is safe inside a
+   DOT double-quoted label: backslash, double-quote, and single-quote are all
+   escaped. Characters that do not need escaping are emitted verbatim. */
 void	print_token_str(t_ast_node node, int outfd)
 {
 	int		i;
@@ -78,7 +83,10 @@ void	print_token_str(t_ast_node node, int outfd)
 	}
 }
 
-/* Enhanced DOT node printing with colors and shapes */
+/* Emit one DOT node declaration and its edges to children, using a random
+   uint32 id per child (from the shell's PRNG) so node names never clash across
+   recursive calls. Edge labels show the child index for ordered constructs like
+   for-loop headers. Colors and shapes are assigned by type (see get_node_*). */
 void	print_dot_node(t_shell *state, t_ast_node node, uint32_t id, int outfd)
 {
 	size_t		i;
@@ -107,7 +115,11 @@ void	print_dot_node(t_shell *state, t_ast_node node, uint32_t id, int outfd)
 	}
 }
 
-/* Enhanced DOT output with better styling */
+/* Write out.dot and also dump the text tree to stdout. The DOT boilerplate sets
+   up a top-to-bottom digraph with a light background; paste the file into
+   https://dreampuf.github.io/GraphvizOnline/ to visualise without installing
+   Graphviz locally. The text tree print follows immediately in the terminal for
+   a quick structural overview. */
 void	print_ast_dot(t_shell *state, t_ast_node node)
 {
 	int	outfd;

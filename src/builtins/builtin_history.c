@@ -13,7 +13,10 @@
 #include "builtins_private.h"
 #include "history.h"
 
-/* history -c : drop every entry but keep the vector usable (elem_size/cap). */
+/* Wipe all history entries. We free each string individually and reset the
+   length to 0, but leave the backing allocation in place (just set .len=0)
+   so the vector is immediately reusable without a reinit. The on-disk file
+   is not touched here — manage_history() handles persistence at exit. */
 static void	clear_history_list(t_shell *state)
 {
 	size_t	i;
@@ -24,6 +27,9 @@ static void	clear_history_list(t_shell *state)
 	state->hist.hist_cmds.len = 0;
 }
 
+/* Compute the first index to print. With a positive numeric arg n, print
+   only the last n entries. Without one (or n >= total), print everything
+   (return 0). This mimics `history 10` showing the ten most-recent entries. */
 static int	history_start(t_shell *state, t_vec argv)
 {
 	char	**av;

@@ -12,6 +12,10 @@
 
 #include "builtins_private.h"
 
+/* Split an export argument into its name and optional value parts. If `str`
+   contains '=', everything before it is the identifier and everything after
+   is the value. Without '=', *val is left NULL (mark existing var exported
+   without changing its value). Both *ident and *val are heap-allocated. */
 void	parse_export_arg(char *str, char **ident, char **val)
 {
 	char	*eq;
@@ -29,6 +33,9 @@ void	parse_export_arg(char *str, char **ident, char **val)
 	}
 }
 
+/* Validate an identifier per POSIX: starts with a letter or underscore
+   (is_var_name_p1), followed by zero or more letters/digits/underscores
+   (is_var_name_p2), and nothing else. Returns false for empty strings too. */
 bool	ft_is_valid_ident(char *id)
 {
 	int	i;
@@ -41,6 +48,10 @@ bool	ft_is_valid_ident(char *id)
 	return (!id[i]);
 }
 
+/* If *val is enclosed in matching single or double quotes, remove them and
+   replace *val with the unquoted copy. Returns the quote character (so the
+   caller knows whether to expand the value) or '\0' if no quotes were found.
+   The old *val is freed, so this is an in-place replace. */
 char	strip_surrounding_quotes(char **val)
 {
 	size_t	vlen;
@@ -64,6 +75,10 @@ char	strip_surrounding_quotes(char **val)
 	return (0);
 }
 
+/* Handle the two-word `export NAME value` form. If *val is empty and the
+   next word does not contain '=', treat it as the value and advance *i.
+   This lets `export FOO bar` work like `export FOO=bar` — a bash extension
+   that some scripts rely on inadvertently. */
 void	consume_following_value(t_vec av, int *i, char **val)
 {
 	int		idx;

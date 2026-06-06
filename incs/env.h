@@ -10,17 +10,26 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Public API for the shell environment subsystem.
+   The environment is a t_vec_env (a growable array of t_env) rather than
+   the raw `char **environ`.  This gives us O(1) lookup (via the index in
+   env_index.c), exported/non-exported distinction, and clean ownership.
+   Key rule: t_env OWNS its key and value strings; never alias them. */
+
 #ifndef ENV_H
 # define ENV_H
 
 # include "shell.h"
 # include "helpers.h"
 
+/* One shell variable.  exported=true means it will appear in the envp[]
+   passed to execve (i.e. child processes see it).  exported=false makes
+   it a shell-local variable, invisible to children. */
 typedef struct s_env
 {
-	bool	exported;
-	char	*key;
-	char	*value;
+	bool	exported; /* true => visible to child processes via execve */
+	char	*key;     /* heap-allocated variable name (owned) */
+	char	*value;   /* heap-allocated value string (owned) */
 }	t_env;
 
 t_env		env_create(char *key, char *value, bool exported);
@@ -38,7 +47,8 @@ t_env		*env_nget(t_vec_env *env, char *key, int len);
 void		set_home(t_shell *state);
 void		set_shlvl(t_shell *state);
 
-/* O(1) env name index (env_index.c) — fast path over the env vector. */
+/* O(1) env name index (env_index.c) -- lazy hash table over the vector.
+   Pass len<0 to use strlen(key).  Returns vector position, -1 if absent. */
 int			env_index_find(t_vec_env *env, const char *key, int len);
 void		env_index_add(t_vec_env *env, int idx);
 void		env_index_mark_dirty(void);

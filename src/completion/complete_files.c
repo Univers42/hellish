@@ -10,9 +10,15 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* File completion: delegate entirely to readline's built-in filename
+   generator.  We just clear the append char (no trailing space after a
+   directory completion -- readline appends '/' instead automatically). */
+
 #include "libft.h"
 #include <readline/readline.h>
 
+/* Hand off to rl_filename_completion_function, which handles tilde
+   expansion, hidden files, and directory slash appending for us. */
 char	**complete_files(const char *text, int start, int end)
 {
 	(void)start;

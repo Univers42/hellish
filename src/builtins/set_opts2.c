@@ -60,7 +60,12 @@ int	apply_set_flags(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* Build the value of $- : one letter per currently-set option flag (POSIX). */
+/* Build the value of $- (the flag string): append one letter for each
+   currently-enabled option. The 'i' flag appears when the shell is running
+   interactively (INP_RL), not as a separately toggled option — POSIX says
+   $- must include 'i' for interactive shells. We write into state->flagbuf
+   (a fixed-size field in t_shell) so the returned pointer stays valid until
+   the next call. env_expand("−") calls this to get the current value. */
 char	*build_flagstr(t_shell *state)
 {
 	int	k;

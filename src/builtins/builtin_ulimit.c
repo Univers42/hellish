@@ -13,7 +13,14 @@
 #include "builtins_private.h"
 #include <sys/resource.h>
 
-/* The XSI resources ulimit can query/set. */
+/* The table of resources ulimit can query/set. Each entry has:
+     opt    — the single-letter flag (e.g. 'f' for -f file size)
+     res    — the RLIMIT_* constant passed to getrlimit/setrlimit
+     scale  — divide kernel units by this to get displayed units
+     label  — the description printed by -a
+
+   We return a pointer to the static array from a function rather than
+   exposing a global so the definition stays in this translation unit. */
 t_ulim	*ulim_table(void)
 {
 	static t_ulim	t[] = {
@@ -57,6 +64,10 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label)
 	}
 }
 
+/* Set a resource limit. `hard` == 1 means set the hard limit, 0 means soft,
+   -1 means both (the default when neither -H nor -S was given). We always
+   call getrlimit first so we only overwrite the field(s) the user specified
+   and leave the other one unchanged. */
 int	ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard)
 {
 	struct rlimit	rl;

@@ -16,6 +16,12 @@
 #include <errno.h>
 #include <string.h>
 
+/* Parse the optional signal specifier from the argument list. Accepts:
+     -TERM  or  -15   (embedded in the first word)
+     -s TERM          (next word is the signal name)
+     -n 15            (next word is the signal number)
+   Default when none of these match is SIGTERM. Advances *i past the
+   specifier words so the caller knows where the target list starts. */
 static int	kill_parse_sig(char **av, int *i)
 {
 	int	sig;
@@ -32,7 +38,12 @@ static int	kill_parse_sig(char **av, int *i)
 	return (sig);
 }
 
-/* kill -l | kill [-s SIG | -SIG | -n NUM] target ... */
+/* kill -l | kill [-s SIG | -SIG | -n NUM] target ...: send a signal to
+   processes or job specs. Targets beginning with '%' are job specs resolved
+   via job_by_spec (signal goes to the whole process group, hence
+   kill(-pgid, sig)). Plain integers are treated as PIDs. Returns the
+   bitwise-or of all individual target results so a single failure propagates
+   even when other targets succeed. */
 int	builtin_kill(t_shell *state, t_vec argv)
 {
 	char	**av;

@@ -13,6 +13,13 @@
 #include "builtins_private.h"
 #include <sys/stat.h>
 
+/* The file-test operators follow the 0=true/1=false convention of the whole
+   test evaluator. The !S_IS…() / !(bit) pattern keeps each branch to one
+   line: the macro returns non-zero when the type matches, so we invert to
+   get 0 (true) when it matches and 1 (false) otherwise. */
+
+/* Handle the less common mode flags: -g (setgid), -s (non-empty), -u (setuid),
+   -S (socket). Falls through to 1 (false) on anything unrecognised. */
 static int	test_mode_flag(const char *op, struct stat *st)
 {
 	if (ft_strcmp(op, "-g") == 0)
@@ -42,6 +49,8 @@ static int	test_mode_flag(const char *op, struct stat *st)
 	return (1);
 }
 
+/* File-type flags that need a successful stat() first: -b (block dev), -c
+   (char dev), -d (dir), -f (regular file), -p (named pipe / FIFO). */
 static int	test_file_type(const char *op, struct stat *st)
 {
 	if (ft_strcmp(op, "-b") == 0)
@@ -57,6 +66,9 @@ static int	test_file_type(const char *op, struct stat *st)
 	return (test_mode_flag(op, st));
 }
 
+/* Permission checks via access(2): -r readable, -w writable, -x executable.
+   access() uses the real UID/GID, not effective — fine for interactive use
+   and consistent with what POSIX mandates for these operators. */
 static int	test_file_access(const char *op, const char *path)
 {
 	if (ft_strcmp(op, "-r") == 0)
@@ -68,6 +80,12 @@ static int	test_file_access(const char *op, const char *path)
 	return (1);
 }
 
+/* Top-level file-test dispatcher. -e just needs stat() to succeed. -L/-h
+   use lstat() so they test the symlink itself, not what it points to. The
+   access checks are handled before stat() so we do not need a struct stat
+   for them. Everything else calls stat() first and returns 1 (false) on
+   error, which is correct: a file that cannot be stat'd is not a regular
+   file, not a directory, etc. */
 int	test_file_op(const char *op, const char *path)
 {
 	struct stat	st;
@@ -89,6 +107,8 @@ int	test_file_op(const char *op, const char *path)
 	return (test_file_type(op, &st));
 }
 
+/* String comparison operators. We accept both `=` (POSIX) and `==` (bash
+   extension) for equality. Return 0 (true) on match, 1 (false) otherwise. */
 int	test_str_op(const char *op, const char *s1, const char *s2)
 {
 	if (ft_strcmp(op, "=") == 0 || ft_strcmp(op, "==") == 0)

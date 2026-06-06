@@ -12,6 +12,9 @@
 
 #include "builtins_private.h"
 
+/* Signal end-of-options: set the name var to '?' and advance OPTIND past
+   the terminator (one extra for "--" so it is not presented as an operand).
+   Returns 1 so the calling while loop exits. */
 static int	gopt_done(t_shell *state, t_getopts *g, char *cur)
 {
 	gopt_set_char(state, g->name, '?');
@@ -23,6 +26,15 @@ static int	gopt_done(t_shell *state, t_getopts *g, char *cur)
 	return (1);
 }
 
+/* getopts optstring name [arg ...]: the POSIX option-parsing loop helper.
+   Each call sets `name` to the next option letter and $OPTARG when the
+   option takes an argument. Returns 0 while options remain, 1 when done or
+   on error (so `while getopts …; do` works naturally).
+
+   The state->getopts_pos field persists the character position within a
+   multi-option word (e.g. `-abc`) between calls — reset to 0 means "start
+   at the beginning of the next word". The tail-recursive call when pos is
+   exhausted advances to the next word cleanly without a separate loop. */
 int	builtin_getopts(t_shell *state, t_vec argv)
 {
 	t_getopts	g;

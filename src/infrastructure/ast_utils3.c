@@ -12,6 +12,9 @@
 
 #include "ast_private.h"
 
+/* Second half of the node_name dispatch: compound commands (if/while/for/case
+   and their substructure). ft_assert(0) at the bottom is a guard; every valid
+   t_ast_type must have been handled by here or by node_name in ast_utils.c. */
 char	*node_name_compound(t_ast_type tn)
 {
 	if (tn == AST_IF)
@@ -34,7 +37,9 @@ char	*node_name_compound(t_ast_type tn)
 	return (0);
 }
 
-/* Helper: print all children of a node recursively */
+/* Recurse into every child of node in order, updating depth_stack[depth] to
+   mark whether each child is the last at its level (for the "└── " vs "├── "
+   connector choice). */
 static void	print_all_children(t_ast_node node, int *depth_stack, int depth)
 {
 	size_t	i;
@@ -52,7 +57,9 @@ static void	print_all_children(t_ast_node node, int *depth_stack, int depth)
 	}
 }
 
-/* Helper: print a collapsed pipeline node (single child) */
+/* A pipeline with exactly one stage is just a simple command; skip the
+   redundant PIPELINE wrapper and show its child directly to keep the tree
+   compact. Still recurses into that child's own children normally. */
 static void	print_collapsed_pipeline(t_ast_node node,
 									int *depth_stack,
 									int depth)
@@ -75,7 +82,9 @@ static void	print_collapsed_pipeline(t_ast_node node,
 	}
 }
 
-/* Helper: print a left-associative list node */
+/* For SIMPLE_LIST and COMPOUND_LIST with more than one child, the children are
+   interleaved command/operator/command. We hand them to
+   print_sequence_range_ctx which finds the operator and shows it at depth. */
 static void	print_left_associative_list(t_ast_node node,
 										int *depth_stack,
 										int depth)
@@ -91,7 +100,11 @@ static void	print_left_associative_list(t_ast_node node,
 	print_sequence_range_ctx(&ctx, 0, (int)node.children.len - 1);
 }
 
-/* Main recursive print function */
+/* Recursive tree printer with three special cases:
+   - A single-child COMMAND_PIPELINE is collapsed (the extra wrapper is noise).
+   - A multi-child SIMPLE_LIST or COMPOUND_LIST is shown in left-associative
+     form with the operator tokens rendered as junction nodes (not as children).
+   - Everything else: print the node header then recurse into children. */
 void	print_tree_recursive(t_ast_node node, int *depth_stack, int depth)
 {
 	print_tree_prefix(depth_stack, depth,

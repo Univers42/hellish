@@ -12,7 +12,8 @@
 
 #include "ast_private.h"
 
-/* Print a single child at index using ctx */
+/* Print the child at `idx` from ctx->children, marking it as the last child
+   at ctx->depth so the connector prints "└── " rather than "├── ". */
 static void	print_single_child(t_print_seq_ctx *ctx, int idx)
 {
 	if (ctx->depth_stack)
@@ -20,7 +21,9 @@ static void	print_single_child(t_print_seq_ctx *ctx, int idx)
 	print_tree_recursive(ctx->children[idx], ctx->depth_stack, ctx->depth);
 }
 
-/* Print children linearly from start to end using ctx */
+/* When no operator token is found in [start, end], fall back to printing
+   the children in order without special junction rendering. Covers list
+   nodes that contain only commands and no visible operator token. */
 static void	print_children_linear(t_print_seq_ctx *ctx, int start, int end)
 {
 	int	i;
@@ -36,7 +39,11 @@ static void	print_children_linear(t_print_seq_ctx *ctx, int start, int end)
 	}
 }
 
-/* Print operator node and recurse on left/right using ctx */
+/* Emit the operator node (e.g. "OP &&") at ctx->depth, then recurse into the
+   left subtree [start .. op_idx-1] (one level deeper) and the right sibling
+   (the node immediately after the operator, at the same depth). This models
+   the left-associative parse tree structure: "a && b && c" is "(a && b) && c".
+*/
 static void	print_op_and_left_right(t_print_seq_ctx *ctx,
 									int start,
 									int op_idx,
@@ -61,6 +68,11 @@ static void	print_op_and_left_right(t_print_seq_ctx *ctx,
 	}
 }
 
+/* Render children [start .. end] of a list node. We scan from the right
+   looking for the last AST_TOKEN (the operator); if found, split into the
+   left subtree and the right operand with the operator as a junction; if not
+   found, fall back to linear printing. The right-to-left scan preserves the
+   left-associative shape: we always split at the rightmost operator first. */
 void	print_sequence_range_ctx(t_print_seq_ctx *ctx,
 								int start,
 								int end)

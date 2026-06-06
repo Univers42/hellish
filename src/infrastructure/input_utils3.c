@@ -15,6 +15,10 @@
 
 char	*expand_history(t_shell *state, const char *input);
 
+/* True if `s` ends with an odd number of backslashes followed by a newline --
+   the POSIX line-continuation marker. The parity walk is necessary because
+   "\\\\\n" (two backslashes + newline) is not a continuation: the backslashes
+   escape each other and the newline terminates the command. */
 bool	ends_with_bs_nl(t_string s)
 {
 	size_t	i;
@@ -37,6 +41,9 @@ bool	ends_with_bs_nl(t_string s)
 	return (unterminated);
 }
 
+/* Strip trailing \<newline> continuations by popping the last two bytes (the
+   backslash and the newline) and reading another line with a ">" prompt. This
+   repeats until no continuation remains, so "echo hello \<CR>\<CR>" works. */
 void	extend_bs(t_shell *state)
 {
 	char	*prompt;
@@ -51,6 +58,10 @@ void	extend_bs(t_shell *state)
 	}
 }
 
+/* True when the token deque contains nothing meaningful: either fewer than two
+   entries (the deque always keeps a sentinel), or exactly one token that is a
+   lone newline (an empty line). Saves the parser from wasting a full parse
+   attempt on blank input. */
 bool	is_empty_token_list(t_deque_tok *tokens)
 {
 	if (tokens->deqtok.len < 2)

@@ -12,7 +12,10 @@
 
 #include "arith_private.h"
 
-/* Additive: multiplicative (('+' | '-') multiplicative)* */
+/* Additive: multiplicative (('+' | '-') multiplicative)*. The left-to-right
+   loop is the classic iterative descent for left-associative operators. Note:
+   this function is kept for code paths that bypass the precedence climber
+   (e.g. helpers5.c's mul/div which calls arith_parse_exponent directly). */
 long long	arith_parse_additive(t_arith_parser *p)
 {
 	long long		left;
@@ -38,7 +41,8 @@ long long	arith_parse_additive(t_arith_parser *p)
 	return (left);
 }
 
-/* Shift: additive (('<<' | '>>') additive)* */
+/* Shift: additive (('<<' | '>>') additive)*. Shift binds tighter than
+   comparison but looser than addition, matching the C precedence table. */
 long long	arith_parse_shift(t_arith_parser *p)
 {
 	long long		left;
@@ -64,6 +68,9 @@ long long	arith_parse_shift(t_arith_parser *p)
 	return (left);
 }
 
+/* Store a relational comparison result (0 or 1) into *res. The `op` enum
+   encodes the operator: 0=<, 1=<=, 2=>, 3>=. Splitting into a helper keeps
+   do_relop at a single-statement call and avoids repeating the advance. */
 static void	cmp_result(int *res, long long a, long long b, int op)
 {
 	if (op == 0)
@@ -76,6 +83,9 @@ static void	cmp_result(int *res, long long a, long long b, int op)
 		*res = (a >= b);
 }
 
+/* Advance past one relational operator, evaluate the right operand (a shift
+   expression), and update *left with the 0/1 comparison result. Called once
+   per iteration of the arith_parse_relational loop. */
 static void	do_relop(t_arith_parser *p, int *res, long long *left, int op)
 {
 	long long	right;
@@ -86,6 +96,9 @@ static void	do_relop(t_arith_parser *p, int *res, long long *left, int op)
 	*left = *res;
 }
 
+/* Relational: shift (('<' | '<=' | '>' | '>=') shift)*. Returns 0 or 1 per
+   comparison; chaining like `1 < 2 < 3` is valid (left-to-right) but gives
+   the same result as in C (value, not mathematical chaining). */
 long long	arith_parse_relational(t_arith_parser *p)
 {
 	long long		left;

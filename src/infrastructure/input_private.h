@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal header for the input pipeline: the bridge from raw readline bytes
+   to a parsed, executable AST. The pipeline is:
+     readline_cmd → buff_readline → get_more_tokens → try_parse_tokens
+   get_more_tokens loops until the tokenizer stops requesting more input (its
+   return value is a continuation prompt or NULL meaning "done"). */
 #ifndef INPUT_PRIVATE_H
 # define INPUT_PRIVATE_H
 

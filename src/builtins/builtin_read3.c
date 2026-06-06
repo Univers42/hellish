@@ -13,8 +13,12 @@
 #include "builtins_private.h"
 #include <unistd.h>
 
-/* read [-r] var... : consume leading option words (only -r is honoured: raw,
-   no backslash processing) and return the index of the first variable name. */
+/* Scan leading option words (anything starting with '-' and having at least
+   one more character). Only -r is meaningful: set *raw so read_one_line and
+   next_field skip backslash processing. Other letters are silently ignored —
+   we parse them rather than stopping so `-rp "prompt: "` does not treat `-p`
+   as the first variable name. Returns the index of the first non-option arg
+   (i.e., the first variable name). */
 size_t	parse_read_opts(t_vec argv, bool *raw)
 {
 	size_t	i;
@@ -36,6 +40,11 @@ size_t	parse_read_opts(t_vec argv, bool *raw)
 	return (i);
 }
 
+/* read [-r] [var ...]: read one line from stdin and split it into variables.
+   If no variable names are given, the whole line goes into $REPLY (POSIX).
+   Returns 1 on EOF even if some data was read (mimics bash), so `while read
+   line; do …; done` processes the last line before stopping even when the
+   file lacks a trailing newline. */
 int	builtin_read(t_shell *state, t_vec argv)
 {
 	char	*line;

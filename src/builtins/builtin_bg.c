@@ -14,6 +14,9 @@
 #include "job_control.h"
 #include <signal.h>
 
+/* Validate that a job exists and is currently stopped before resuming it in
+   the background. A job already running in the background cannot be bg'd
+   again — report an error rather than sending a redundant SIGCONT. */
 static int	bg_check_job(t_shell *state, t_job *job, char *spec)
 {
 	if (!job)
@@ -33,6 +36,11 @@ static int	bg_check_job(t_shell *state, t_job *job, char *spec)
 	return (0);
 }
 
+/* bg [%job]: resume a stopped job in the background with SIGCONT. The `[n]+`
+   vs `[n]-` prefix mimics bash: `+` for the current job, `-` for the
+   previous. We do NOT take the terminal away (no tcsetpgrp) since the job
+   runs in the background — it will get SIGTTOU if it tries to write to the
+   terminal while we own it. */
 int	builtin_bg(t_shell *state, t_vec argv)
 {
 	t_job	*job;

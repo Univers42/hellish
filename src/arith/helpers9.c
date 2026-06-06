@@ -12,6 +12,10 @@
 
 #include "arith_private.h"
 
+/* Assert that the current token matches `type` and advance past it. If the
+   token doesn't match, set p->error and return without advancing -- the error
+   will propagate upward through every caller that guards on p->error. Used
+   mainly to consume the mandatory ')' after a parenthesized sub-expression. */
 void	expect(t_arith_parser *p, t_arith_tok type)
 {
 	if (p->lexer->current.type != type)

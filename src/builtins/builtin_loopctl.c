@@ -12,7 +12,15 @@
 
 #include "builtins_private.h"
 
-/* break [n]: exit from the n innermost enclosing loops (default 1). */
+/* break and continue must be builtins because they affect the CURRENT shell's
+   loop state. A forked child setting state->loop_break would disappear.
+
+   The loop_depth / loop_break / loop_continue fields are inspected after each
+   iteration body returns: loop_break > 0 means "unwind one level and
+   decrement", letting `break 2` bubble up through nested loops correctly.
+   Out-of-range n is silently clamped to loop_depth (POSIX allows this). */
+
+/* break [n]: set the break-out counter for the n innermost loops. */
 int	builtin_break(t_shell *state, t_vec argv)
 {
 	int	n;
@@ -30,7 +38,9 @@ int	builtin_break(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* continue [n]: resume the n-th enclosing loop (default 1). */
+/* continue [n]: skip to the next iteration of the n-th enclosing loop. Works
+   like break but sets loop_continue instead, so the loop body knows to jump
+   back to the condition test rather than exit the loop entirely. */
 int	builtin_continue(t_shell *state, t_vec argv)
 {
 	int	n;

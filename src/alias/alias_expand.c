@@ -10,10 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Alias expansion at the input level: given a raw input line, check
+   whether the first word is an alias and, if so, splice the alias value
+   in front of the remaining input.  Only the first word is expanded here
+   (no recursive/chained expansion -- that happens in the lexer which
+   calls this again on the resulting string up to ALIAS_MAX_DEPTH times).
+   Returns NULL if the first word is not an alias (caller keeps input). */
+
 #include "sh_alias.h"
 #include "libft.h"
 #include <stdlib.h>
 
+/* Advance past blanks so the first word check handles leading spaces. */
 static size_t	skip_whitespace(const char *s, size_t i)
 {
 	while (s[i] && (s[i] == ' ' || s[i] == '\t'))
@@ -21,6 +29,9 @@ static size_t	skip_whitespace(const char *s, size_t i)
 	return (i);
 }
 
+/* Measure the first word: stop at whitespace or any shell metachar.
+   This mirrors the lexer's idea of where a word ends, so we don't
+   accidentally include a redirection operator in the alias name. */
 static size_t	word_len(const char *s, size_t i)
 {
 	size_t	start;
@@ -33,6 +44,9 @@ static size_t	word_len(const char *s, size_t i)
 	return (i - start);
 }
 
+/* Concatenate alias-value + the remaining input (rest).  The caller
+   passes input+pos+wlen as rest, so the old command word is replaced
+   but everything after it (args, redirections) is preserved exactly. */
 static char	*build_expanded(const char *val, const char *rest)
 {
 	char	*result;

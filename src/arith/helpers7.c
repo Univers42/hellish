@@ -12,7 +12,10 @@
 
 #include "arith_private.h"
 
-/* Equality: relational (('==' | '!=') relational)* */
+/* Equality: relational (('==' | '!=') relational)*. Returns 0 or 1. Equality
+   binds tighter than & but looser than the relational operators, exactly as
+   in C -- `a < b == c < d` groups as `(a<b) == (c<d)`, not `a < (b==c) < d`.
+   This ordering trips up beginners writing bitfield tests. */
 long long	arith_parse_equality(t_arith_parser *p)
 {
 	long long		left;
@@ -38,7 +41,11 @@ long long	arith_parse_equality(t_arith_parser *p)
 	return (left);
 }
 
-/* Exponent: unary ('**' exponent)? - right associative */
+/* Exponent: unary ('**' exponent)? -- right-associative, so 2**3**2 is
+   2**(3**2) = 512, not (2**3)**2 = 64. Achieved by recursing on
+   arith_parse_exponent rather than calling unary again. Negative exponents
+   return 0 (integer math, like bash). The iterative multiplication avoids
+   importing <math.h> and stays on integer types throughout. */
 long long	arith_parse_exponent(t_arith_parser *p)
 {
 	long long		base;

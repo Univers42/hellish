@@ -12,10 +12,10 @@
 
 #include "glob_private.h"
 
-/*
-** Match a literal pattern segment against a name
-** Returns number of characters matched, or -1 on failure
-*/
+/* Match a G_LITERAL token against the start of `name`. Returns the number of
+   characters consumed (g->len) on success, or -1 on mismatch. The caller
+   advances the name pointer by that amount. A literal can span multiple
+   characters (e.g. the token for "hello" has len=5). */
 int	match_literal(const char *name, t_glob *g)
 {
 	if (ft_strncmp(name, g->start, g->len) != 0)
@@ -23,9 +23,10 @@ int	match_literal(const char *name, t_glob *g)
 	return (g->len);
 }
 
-/*
-** Match a question mark (single character, not leading dot)
-*/
+/* Match '?': exactly one non-NUL character. The leading-dot rule applies:
+   if this is the first character in the path component (is_first) and the
+   name starts with '.', reject -- POSIX requires hidden files to be excluded
+   from wildcards unless the pattern itself starts with a dot. */
 int	match_question(const char *name, bool is_first)
 {
 	if (*name == '\0')
@@ -35,9 +36,10 @@ int	match_question(const char *name, bool is_first)
 	return (1);
 }
 
-/*
-** Match a bracket expression
-*/
+/* Match a G_BRACKET token: the current character must be in the pre-expanded
+   char_set (or excluded from it if BRACKET_NEGATED). The same leading-dot
+   rule applies as for '?': hidden files are never matched by a bracket that
+   appears at the start of a path component. */
 int	match_bracket(const char *name, t_glob *g, bool is_first)
 {
 	if (*name == '\0')
@@ -49,10 +51,13 @@ int	match_bracket(const char *name, t_glob *g, bool is_first)
 	return (1);
 }
 
-/*
-** Recursive matching for asterisk
-** Try to match rest of pattern at each position
-*/
+/* Match '*': try to match the remainder of the pattern starting at offset+1
+   at every possible position in name. The loop walks name forward one char
+   at a time and tries glob_match_at at each position -- classic backtracking.
+   Leading-dot guard fires first: a '*' at the start of a component never
+   matches a hidden file (".*" would need the literal dot in the pattern).
+   The final call after the loop handles the empty-suffix case (* matches
+   the empty string, so the rest of the pattern must match at EOL). */
 bool	match_asterisk_recursive(const char *name, t_vec_glob *pattern,
 									size_t offset, bool is_first)
 {
@@ -67,10 +72,10 @@ bool	match_asterisk_recursive(const char *name, t_vec_glob *pattern,
 	return (glob_match_at(name, pattern, offset + 1));
 }
 
-/*
-** Match a complete pattern against a filename
-** Pattern should not contain slashes (single path component)
-*/
+/* Top-level match entry point: does `name` match the entire `pattern`?
+   The pattern must not contain G_SLASH tokens (each path component is matched
+   separately by the directory walker). Simply delegates to glob_match_at with
+   offset 0. */
 bool	glob_match(const char *name, t_vec_glob *pattern)
 {
 	return (glob_match_at(name, pattern, 0));

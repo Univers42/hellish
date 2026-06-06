@@ -13,6 +13,10 @@
 #include "prompt_private.h"
 #include <fcntl.h>
 
+/* Detect an active Python/conda virtual environment. CONDA_DEFAULT_ENV wins
+   over VIRTUAL_ENV because conda users usually have both set but the conda
+   one is the meaningful name. For VIRTUAL_ENV we use only the last path
+   component, matching how fish and starship show the env name. */
 char	*get_venv_name(void)
 {
 	const char	*venv;
@@ -33,6 +37,9 @@ char	*get_venv_name(void)
 	return (NULL);
 }
 
+/* Fill `buf` with the current local time in HH:MM:SS format. localtime_r is
+   the thread-safe variant of localtime; we use it even though the shell is
+   single-threaded as a defensive habit. */
 void	get_timebuf(char *buf, size_t buflen)
 {
 	time_t		now;

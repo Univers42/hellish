@@ -12,8 +12,10 @@
 
 #include "prompt_private.h"
 
-/* The startup banner now carries the mascot; the interactive prompt stays
-   clean and begins directly with the prompt box. */
+/* The mascot (blinking devil face) was removed from the live prompt in favour
+   of the static intro animation shown once at startup. This stub keeps the
+   signature intact so the rest of the prompt pipeline compiles unchanged.
+   The prompt box now starts directly with the user/cwd line. */
 int	push_mascot(t_string *ret, size_t frame, int status)
 {
 	(void)ret;

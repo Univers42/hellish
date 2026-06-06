@@ -12,6 +12,10 @@
 
 #include "printf_private.h"
 
+/* Single pass through the format string: handle backslash escapes (passed
+   to pf_escape), % conversions (pf_conv), and literal characters. A '\c'
+   escape sets pf->stop which aborts both this pass and the outer loop in
+   builtin_printf immediately. */
 static void	run_format(t_pf *pf, const char *fmt)
 {
 	int		i;

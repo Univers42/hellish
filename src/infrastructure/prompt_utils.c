@@ -58,6 +58,9 @@ static void	abbreviate_home(char *cwd)
 	cwd[0] = '~';
 }
 
+/* Emit the top row of the two-row prompt box: "╭─ user in ~/cwd". Also sets
+   up p->cols and p->vis_w (visible width so far) for the right-side padding
+   calculation done later in prompt_time_and_pad. */
 void	prompt_user_and_cwd(t_string *ret, t_prompt *p)
 {
 	char	cwd[PATH_MAX + 1];
@@ -86,6 +89,9 @@ void	prompt_user_and_cwd(t_string *ret, t_prompt *p)
 	p->vis_w += (int)ft_strlen(p->short_cwd);
 }
 
+/* Append " on <branch>" when inside a git repo. The git info is read directly
+   from .git/HEAD (no subprocess) so the prompt returns instantly even in repos
+   with thousands of commits. */
 void	prompt_branch(t_string *ret, t_prompt *p)
 {
 	p->branch = NULL;
@@ -100,6 +106,10 @@ void	prompt_branch(t_string *ret, t_prompt *p)
 	p->vis_w += (int)ft_strlen(p->branch);
 }
 
+/* Append "(venv-name)" if a Python virtual environment or conda env is active.
+   CONDA_DEFAULT_ENV wins over VIRTUAL_ENV so conda users get the right name.
+   For VIRTUAL_ENV we strip the leading path and show just the directory name
+   (the env's basename), matching how fish and starship do it. */
 void	prompt_venv(t_string *ret, t_prompt *p)
 {
 	p->venv = get_venv_name();

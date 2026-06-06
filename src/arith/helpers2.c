@@ -12,7 +12,10 @@
 
 #include "arith_private.h"
 
-/* Handle '*' or '**' (exponentiation) */
+/* '*' is ambiguous: look one character ahead. If the next char is also '*'
+   we emit ATOK_POW (**); otherwise a plain multiplication ATOK_MUL. The
+   two-char case advances pos by 2, the one-char case uses set_simple_op
+   which advances by 1. */
 static void	handle_star(t_arith_lexer *lex)
 {
 	if (lex->pos + 1 < lex->len && lex->input[lex->pos + 1] == '*')
@@ -25,7 +28,9 @@ static void	handle_star(t_arith_lexer *lex)
 		set_simple_op(lex, ATOK_MUL);
 }
 
-/* Handle '<' and '>' with their two-char variants */
+/* '<' can start three different tokens: '<=' (ATOK_LE), '<<' (ATOK_LSHIFT),
+   or plain '<' (ATOK_LT). We peek one byte ahead and emit accordingly. The
+   right-angle equivalent lives in helpers10.c as handle_angle_right. */
 static void	handle_angle_left(t_arith_lexer *lex)
 {
 	if (lex->pos + 1 < lex->len && lex->input[lex->pos + 1] == '=')
@@ -44,6 +49,10 @@ static void	handle_angle_left(t_arith_lexer *lex)
 		set_simple_op(lex, ATOK_LT);
 }
 
+/* '+' doubles to '++' (ATOK_INC); '-' doubles to '--' (ATOK_DEC). If the
+   next character doesn't match, emit the single-char operator. The parser
+   then decides prefix vs. postfix based on whether this comes before or
+   after a variable token. */
 static void	handle_plus_minus(t_arith_lexer *lex, char c)
 {
 	if (c == '+' && lex->pos + 1 < lex->len
@@ -66,6 +75,9 @@ static void	handle_plus_minus(t_arith_lexer *lex, char c)
 		set_simple_op(lex, ATOK_MINUS);
 }
 
+/* Catch-all for the single-character operators that don't have a two-char
+   variant and weren't already handled: / % ( ) ? : , ~ ^. Each maps to its
+   ATOK_* constant. If none match, the caller falls through to set_lex_error. */
 static void	handle_common_single(t_arith_lexer *lex, char c)
 {
 	if (c == '+' || c == '-')
@@ -90,6 +102,11 @@ static void	handle_common_single(t_arith_lexer *lex, char c)
 		set_simple_op(lex, ATOK_BXOR);
 }
 
+/* Top-level operator dispatcher: decode one operator token starting at
+   lex->input[lex->pos]. All the multi-character operators are handled by
+   dedicated helpers; the residual single-char ones go through
+   handle_common_single. An unrecognised character sets ATOK_ERROR via
+   set_lex_error -- the parser will then propagate p->error upward. */
 void	lex_operator(t_arith_lexer *lex)
 {
 	char	c;

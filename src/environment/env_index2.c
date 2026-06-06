@@ -10,8 +10,16 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Incremental update and lookup for the env hash index.
+   The dirty flag is the escape hatch: any operation that shuffles vector
+   entries (unset, bulk import) marks the index dirty so the next lookup
+   rebuilds from scratch.  Staying dirty is always correct, just slower. */
+
 #include "env_private.h"
 
+/* Called whenever the env vector is structurally changed in a way that
+   could invalidate cached positions (e.g. unset shifts later entries).
+   The next env_index_find will trigger a full rebuild automatically. */
 void	env_index_mark_dirty(void)
 {
 	g_dirty = 1;
@@ -30,8 +38,12 @@ void	env_index_add(t_vec_env *env, int idx)
 	eix_put(eix_hash(((t_env *)env->ctx)[idx].key, -1), idx);
 }
 
-/* Return the vector position of `key` (len bytes, or strlen if len<0).
-   Verifies against the vector; returns -1 if not found. */
+/* O(1) lookup by name.  Two-level check: hash table says "try slot m",
+   then we verify the actual key bytes in the vector.  This means a hash
+   collision or a stale slot (after an unset+re-add) can never silently
+   return the wrong variable -- worst case we fall through to -1.
+   len < 0 means "use strlen", handy when callers already know the key
+   is NUL-terminated and don't want to re-measure. */
 int	env_index_find(t_vec_env *env, const char *key, int len)
 {
 	unsigned long	h;

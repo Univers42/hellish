@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Internal header for the AST debug/utility layer. These utilities are only
+   used during development (--debug-parser / --debug-lexer) and for freeing
+   the tree after execution. Production code never calls print_ast_dot or
+   print_ast_tree in a live interactive session; they are conditionally reached
+   only when the relevant debug flags are active at startup. */
 #ifndef AST_PRIVATE_H
 # define AST_PRIVATE_H
 # include "shell.h"

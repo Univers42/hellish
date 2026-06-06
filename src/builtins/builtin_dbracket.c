@@ -12,6 +12,20 @@
 
 #include "builtins_private.h"
 
+/* Recursive-descent parser for [[ … ]] compound conditions.
+   Grammar (left-recursive eliminated):
+     or      ::= and ('||' and)*
+     and     ::= not ('&&' not)*
+     not     ::= '!' not | primary
+     primary ::= '(' or ')' | <flat test tokens>
+
+   The flat-test fallback in db_primary collects everything up to the next
+   &&/||/) and hands it to eval_test — so `[[ -f foo && -d bar ]]` works
+   without needing to teach the recursive descent about every test operator.
+
+   Return convention (same as POSIX test): 0 = true, 1 = false, 2 = error.
+   The forward declarations below satisfy the mutual-recursion requirement. */
+
 static int	db_or(char **av, int ac, int *i);
 static int	db_and(char **av, int ac, int *i);
 static int	db_not(char **av, int ac, int *i);

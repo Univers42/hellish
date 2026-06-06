@@ -14,6 +14,9 @@
 #include "sh_alias.h"
 #include "cmd_hash.h"
 
+/* type name ...: classify each name. Exit status 0 only when all names were
+   found; 1 if any one was not. Errors do not abort — we keep going and let
+   the accumulated status speak for itself at the end. */
 int	builtin_type(t_shell *state, t_vec argv)
 {
 	size_t	i;
