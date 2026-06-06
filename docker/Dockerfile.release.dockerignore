@@ -1,0 +1,15 @@
+# Build context for docker/Dockerfile.release (multi-stage): the builder stage
+# compiles from source, so ship sources + checked-out submodules but never host
+# build artifacts or git internals.
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+*.log
