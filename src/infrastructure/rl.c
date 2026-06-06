@@ -63,7 +63,9 @@ static void	debug_dump_prompt(char *prompt)
    because it installs global signal handlers and terminal state that would
    corrupt the parent shell. fork → child calls readline → writes over a pipe
    → exits. stdin/stdout are inherited; rl_outstream is redirected to stderr
-   so readline's display uses the right fd. Exit 0 = line, 1 = EOF (^D). */
+   so readline's display uses the right fd. Exit 0 = line, 1 = EOF (^D). One
+   trap: readline's buffer is libc-malloc'd, so free(ret) uses libc free, not
+   xfree -- at SAFE=0 that would hit the ft_malloc heap and corrupt it. */
 void	bg_readline(int outfd, char *prompt, int edit_mode)
 {
 	char	*ret;
@@ -81,8 +83,6 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 	ret = readline(split_prompt(prompt));
 	if (!ret)
 		(close(outfd), exit (1));
-	/* readline() returns libc-malloc'd memory: free it with libc free, not
-	   xfree, so SAFE=0 (the ft_malloc heap) cannot be corrupted. */
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
 }
 

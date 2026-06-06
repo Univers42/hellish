@@ -17,12 +17,11 @@
 
 void			update_pwd_vars(t_shell *state);
 
-/* The directory stack lives in a file-scope static vec. We use a static
-   rather than putting it in t_shell to keep the struct smaller and because
-   the stack is only meaningful in the interactive session anyway — subshells
-   do not inherit it. Elements are heap-allocated path strings; pushd owns
-   them and popd frees them. */
-static t_vec	g_dirstack;
+/* The directory stack lives in t_shell (state->dirstack), not a file-scope
+   global -- the norm allows exactly one global (the signal), and threading it
+   through state keeps subshells honest. Elements are heap-allocated path
+   strings; pushd owns them, popd frees them, and free_all_state() drops any
+   that survive to exit so a never-popped stack does not leak. */
 
 /* After a chdir, refresh the cached cwd and PWD/OLDPWD, as cd does. */
 static void	ds_refresh(t_shell *state)
@@ -40,7 +39,7 @@ static void	ds_refresh(t_shell *state)
 }
 
 /* Print the stack bash-style: current dir first, then the saved dirs. */
-static void	ds_print(void)
+static void	ds_print(t_shell *state)
 {
 	char	*cwd;
 	int		i;
@@ -49,10 +48,10 @@ static void	ds_print(void)
 	if (cwd)
 		ft_printf("%s", cwd);
 	xfree(cwd);
-	i = (int)g_dirstack.len - 1;
+	i = (int)state->dirstack.len - 1;
 	while (i >= 0)
 	{
-		ft_printf(" %s", ((char **)g_dirstack.ctx)[i]);
+		ft_printf(" %s", ((char **)state->dirstack.ctx)[i]);
 		i--;
 	}
 	ft_printf("\n");
@@ -69,18 +68,18 @@ int	builtin_pushd(t_shell *state, t_vec argv)
 	if (argv.len < 2)
 		return (ft_eprintf("%s: pushd: directory argument required\n",
 				state->ctx), 1);
-	if (g_dirstack.elem_size == 0)
+	if (state->dirstack.elem_size == 0)
 	{
-		vec_init(&g_dirstack);
-		g_dirstack.elem_size = sizeof(char *);
+		vec_init(&state->dirstack);
+		state->dirstack.elem_size = sizeof(char *);
 	}
 	old = x_getcwd();
 	if (chdir(((char **)argv.ctx)[1]) != 0)
 		return (xfree(old), ft_eprintf("%s: pushd: %s: %s\n", state->ctx,
 				((char **)argv.ctx)[1], strerror(errno)), 1);
 	if (old)
-		vec_push(&g_dirstack, &old);
-	return (ds_refresh(state), ds_print(), 0);
+		vec_push(&state->dirstack, &old);
+	return (ds_refresh(state), ds_print(state), 0);
 }
 
 /* popd: pop the top of the directory stack and cd back to it. We remove the
@@ -93,10 +92,10 @@ int	builtin_popd(t_shell *state, t_vec argv)
 	char	*top;
 
 	(void)argv;
-	if (g_dirstack.len == 0)
+	if (state->dirstack.len == 0)
 		return (ft_eprintf("%s: popd: directory stack empty\n", state->ctx), 1);
-	top = ((char **)g_dirstack.ctx)[g_dirstack.len - 1];
-	g_dirstack.len--;
+	top = ((char **)state->dirstack.ctx)[state->dirstack.len - 1];
+	state->dirstack.len--;
 	if (chdir(top) != 0)
 	{
 		ft_eprintf("%s: popd: %s: %s\n", state->ctx, top, strerror(errno));
@@ -104,8 +103,22 @@ int	builtin_popd(t_shell *state, t_vec argv)
 	}
 	xfree(top);
 	ds_refresh(state);
-	ds_print();
-	if (g_dirstack.len == 0)
-		(xfree(g_dirstack.ctx), g_dirstack = (t_vec){0});
+	ds_print(state);
+	if (state->dirstack.len == 0)
+		(xfree(state->dirstack.ctx), state->dirstack = (t_vec){0});
 	return (0);
+}
+
+/* Drop the whole directory stack at shutdown: free each saved path, then the
+   backing array. popd frees as it pops, but a stack that is pushed and never
+   fully popped would otherwise leak its survivors at exit. */
+void	free_dirstack(t_shell *state)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < state->dirstack.len)
+		xfree(((char **)state->dirstack.ctx)[i++]);
+	xfree(state->dirstack.ctx);
+	state->dirstack = (t_vec){0};
 }
