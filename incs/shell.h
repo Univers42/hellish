@@ -190,6 +190,7 @@ typedef struct s_shell
 	size_t				hd_pos;      /* read position within hd_src */
 	char				*hd_stripped; /* tab-stripped heredoc body */
 	bool				gather_in_func; /* true while gathering heredocs */
+	bool				gathering_compound; /* mid incomplete compound cmd */
 
 	/* --- readline and PRNG --- */
 	t_rl				rl;          /* readline line/column tracking */

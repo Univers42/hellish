@@ -108,6 +108,7 @@ void	default_parser_loop(t_shell *state, t_parser *parser,
 
 	while (parser->res == RES_GETMOREINPUT || parser->res == RES_INIT)
 	{
+		state->gathering_compound = (parser->res == RES_GETMOREINPUT);
 		s = get_more_tokens(state, prompt, tt);
 		if (handle_eof(s, state))
 			break ;

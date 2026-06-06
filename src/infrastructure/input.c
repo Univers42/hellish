@@ -13,6 +13,8 @@
 #include "input_private.h"
 #include "helpers.h"
 
+bool	heredoc_incomplete(const char *str);
+
 /* Report EOF or truncated input with the right error to match bash's wording.
    If the tokenizer was waiting for a closing `, do:  or fi when EOF arrived,
    it says "looking for `X'"; otherwise "unexpected end of file". The "exit"
@@ -42,6 +44,9 @@ static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 	*prompt = (extend_bs(state), tokenizer((char *)state->input.ctx, tt));
 	if (*prompt)
 		*prompt = ft_strdup(*prompt);
+	else if (state->gathering_compound && state->input.ctx
+		&& heredoc_incomplete((char *)state->input.ctx))
+		*prompt = ft_strdup("> ");
 }
 
 /* Keep reading lines until the tokenizer stops asking for more (prompt becomes
