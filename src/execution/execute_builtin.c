@@ -45,6 +45,14 @@ void	restore_backup_fds(int *bak, int persist)
 	close(bak[2]);
 }
 
+/* Run a builtin IN THE PARENT process (the only way its side effects --
+   cd, export, read, set -- reach the caller).  The redirection dance is:
+   save 0/1/2, redirect, run, restore.  The persist flag skips both save
+   and restore for a bare `exec`: that command's whole point is to keep
+   the redirections alive, so restoring them would undo the effect.
+   Pre-assignments (NAME=val before the command) are applied temporarily
+   around the call and rolled back by restore_temp_assigns so they don't
+   pollute the environment after the builtin returns. */
 t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)

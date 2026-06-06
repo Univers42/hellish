@@ -42,6 +42,11 @@ invalid redirect index %d\n"
 
 # define NAME "shell"
 
+/* Iteration context for execute_pipeline_children.  Bundles everything
+   the loop body needs across prepare_child_exec and finalize_child_parent
+   so we do not have to pass eight separate arguments to each helper.
+   pp points at the pipe pair created for the current stage; prev_infd is
+   threaded forward as each stage's stdin fd. */
 typedef struct s_exec_child_ctx
 {
 	t_shell				*state;
@@ -54,7 +59,9 @@ typedef struct s_exec_child_ctx
 	t_vec_exe_res		*results;		/* results vector */
 }	t_exec_child_ctx;
 
-/* helper prototypes (ensure visible despite include-order */
+/* Helper prototypes -- declared here rather than in the public header so
+   they are available to every .c in this directory regardless of inclusion
+   order, without polluting the global namespace. */
 char				*env_expand(t_shell *state, char *key);
 void				free_tab(char **tab);
 void				err_1_errno(t_shell *state, char *p1);
@@ -135,6 +142,10 @@ void				set_for_var(t_shell *state, char *name, char *val);
 void				restore_one(t_shell *state, t_scope_save *s);
 void				restore_temp_assigns(t_shell *state, t_vec *saves);
 
+/* Zero-initialise a t_executable_node with the given fds and node
+   pointer.  next_infd=-1 means "no pipe-read-end to close".  The redirs
+   vec is left zeroed (elem_size=0) -- callers that need a redirect list
+   must call vec_init(&exe.redirs) themselves. */
 static inline t_executable_node	create_exe_node(int infd,
 										int outfd,
 										t_ast_node *node,

@@ -15,7 +15,10 @@
 
 int	get_default_src_fd(t_tt tt);
 
-/* noclobber (set -C): `>` may not truncate an existing regular file. */
+/* Implement the `set -C` / noclobber guard for `>` redirections.  When active,
+   attempting to truncate an existing regular file with `>` is an error; the
+   user must use `>|` (TT_CLOBBER) to override.  Only TT_REDIRECT_RIGHT is
+   guarded; append (`>>`) and read-write (`<>`) are always allowed. */
 static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
 {
 	struct stat	st;
@@ -27,7 +30,10 @@ static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
 	return (0);
 }
 
-/* parse optional leading fd from operator token (e.g. "2>") */
+/* Extract the numeric fd prefix from an operator token (e.g. "2>" → fd 2).
+   The default fd depends on direction: < → 0 (stdin), > → 1 (stdout).
+   The token's start pointer already includes the digits before the operator
+   symbol, so we just scan them off and compute the decimal value. */
 int	parse_src_fd(t_tt tt, t_token op_tok)
 {
 	int		src_fd;
@@ -47,8 +53,10 @@ int	parse_src_fd(t_tt tt, t_token op_tok)
 	return (src_fd);
 }
 
-/* expand the filename (child index 1)
-into a single string (transfer ownership) */
+/* Expand the redirect target (child index 1) to a single string.  Process
+   substitutions (<(...)) are handled specially — they return a /dev/fd/N
+   path rather than a filename.  Plain word targets use expand_word_single_ro
+   which reports ambiguous redirections (field-splitting result != 1 field). */
 static char	*expand_redir_fname(t_shell *state, t_ast_node *curr)
 {
 	t_ast_node	*target;
@@ -73,6 +81,10 @@ static t_token_old	get_target_token(t_ast_node *curr)
 	return (init_token_old());
 }
 
+/* Expand and open one redirection, storing the t_redir in state->redirects.
+   Noclobber check happens before the open() call.  On success the redir_idx
+   is recorded in curr->redir_idx so the executor can retrieve the fd later.
+   On failure (ambiguous or file error) print a message and return -1. */
 int	try_create_redir(t_shell *state, t_ast_node *curr,
 			t_tt tt, int src_fd)
 {

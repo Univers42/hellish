@@ -12,6 +12,12 @@
 
 #include "execution_private.h"
 
+/* Child body for a background command group (& operator).  We move into
+   our own process group (setpgid) so job-control signals from the terminal
+   don't reach us.  stdin is redirected from /dev/null (POSIX: background
+   commands that try to read stdin get EOF, not a blocking read from the
+   tty).  SIGINT/SIGQUIT/SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the
+   user can keep typing without accidentally killing the background job. */
 static void	bg_child_body(t_shell *state, t_executable_node *exe,
 				size_t start, size_t end)
 {
@@ -34,7 +40,11 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 	exit(res.status);
 }
 
-/* Execute a command sequence in the background */
+/* Fork a background job, bump the bg counter, record $! (last_bg_pid),
+   and print "[n] pid" if running interactively.  The parent always returns
+   status 0 immediately (background jobs never block the parent).  We count
+   jobs so reap_background_children knows whether to bother calling waitpid
+   at all -- no jobs means no syscall overhead. */
 t_execution_state	execute_range_background(t_shell *state,
 										t_executable_node *exe,
 										size_t start, size_t end)

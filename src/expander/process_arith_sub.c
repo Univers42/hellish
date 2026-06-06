@@ -13,8 +13,10 @@
 #include "expander_private.h"
 #include "sys.h"
 
-// helper: finalize arithmetic substitution handling
-
+/* Advance `j` by one "token" inside a $((...)) body, adjusting the paren
+   depth counter.  Double-paren sequences (( and )) track the outer $((…))
+   delimiters; single parens track any nested sub-expressions like
+   $((a * (b + c))).  This keeps depth counts correct without a full parse. */
 static void	proc_arith(int slen, const char *s, int *j, int *depth)
 {
 	if (is_double_open_paren_v1(slen, s, *j))
@@ -28,6 +30,11 @@ static void	proc_arith(int slen, const char *s, int *j, int *depth)
 	(*j)++;
 }
 
+/* Recognise and expand a $((...)) arithmetic substitution at ctx->s[0].
+   Depth starts at 2 (the two opening parens) and we scan forward handling
+   nested parens via proc_arith; when depth returns to 0, finish_arith_sub
+   evaluates the expression and pushes the result.  Returns false if the
+   sequence is not $((…)) or is unterminated. */
 bool	process_arith_sub(t_shell *state, t_expand_ctx *ctx)
 {
 	const char	*s = ctx->s;

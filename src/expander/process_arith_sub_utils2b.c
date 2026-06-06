@@ -14,6 +14,12 @@
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
 
+/* Complete a $((...)) expansion once the closing )) has been found at j.
+   Steps: (1) extract the raw expression text between $((…)), (2) run
+   process_word_token on it in case there are nested $(...) or `...` inside,
+   (3) if any $ remains after that, expand variable names textually via
+   expand_arith_vars, (4) evaluate the resulting numeric expression via
+   arith_expand and push the result string to outbuf. */
 bool	finish_arith_sub(t_shell *state, t_expand_ctx *ctx, int j)
 {
 	char	*result;
@@ -43,18 +49,21 @@ bool	finish_arith_sub(t_shell *state, t_expand_ctx *ctx, int j)
 	return (true);
 }
 
+/* Closing )) drops depth by 2 (it closes the outer $(( )) brackets). */
 void	handle_double_close_paren(int *depth, int *j)
 {
 	*depth -= 2;
 	*j += 2;
 }
 
+/* A single ( that is NOT part of a (( bumps depth by 1 only. */
 void	handle_single_open_paren(int *depth, int *j)
 {
 	(*depth)++;
 	(*j)++;
 }
 
+/* A single ) that is NOT part of )) drops depth by 1. */
 void	handle_single_close_paren(int *depth, int *j)
 {
 	(*depth)--;

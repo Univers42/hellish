@@ -29,8 +29,13 @@ static void	push_glob_no_split(t_vec *args, t_vec *glob_words)
 	vec_push(args, &temp.ctx);
 }
 
-/* POSIX: when no_glob is set we stringify the word verbatim instead of
-   scanning the filesystem. */
+/* Perform pathname expansion (globbing) on a single post-split field node.
+   When no_glob (set -f or assignment context), the word is just stringified
+   and pushed verbatim.  Otherwise expand_word_glob runs the filesystem scan.
+   keep_as_one means multiple glob matches are joined with spaces into a
+   single arg rather than pushed as separate argv entries — useful for
+   double-quoted globs like "$(*)" where word boundary suppression is wanted
+   but you still want the glob results joined. */
 void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
 			bool no_glob)
 {

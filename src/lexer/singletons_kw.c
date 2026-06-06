@@ -12,6 +12,8 @@
 
 #include "lexer.h"
 
+/* Keyword token names -- part 1: the if/while/until/for/do/done family.
+   Called from get_tt_names() during one-time initialisation. */
 void	init_tt_names_kw1(const char **names)
 {
 	names[TT_IF] = "TT_IF";
@@ -26,6 +28,7 @@ void	init_tt_names_kw1(const char **names)
 	names[TT_DONE] = "TT_DONE";
 }
 
+/* Keyword token names -- part 2: case/esac/in, braces, ! and ;;. */
 void	init_tt_names_kw2(const char **names)
 {
 	names[TT_CASE] = "TT_CASE";
@@ -37,6 +40,9 @@ void	init_tt_names_kw2(const char **names)
 	names[TT_DSEMI] = "TT_DSEMI";
 }
 
+/* Map all keyword token names to the magenta colour so they stand out in the
+   debug token table. This is intentionally uniform -- one colour for all
+   keywords makes it easy to spot structural tokens at a glance. */
 void	init_color_map_kw(t_hash *map)
 {
 	hash_set(map, "TT_IF", (void *)ASCII_MAGENTA);

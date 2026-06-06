@@ -16,8 +16,11 @@
 
 void	exit_clean(t_shell *state, int code);
 
-/* Expand the word part of a ${name-word} form: tilde, command/arith and
-   parameter (incl. nested ${...}) expansion, but no splitting/globbing. */
+/* Expand the word part of a ${name:-word} or similar operator.  The word
+   goes through a full tilde/command-subst/parameter pass but NOT field
+   splitting or globbing (POSIX says the word is expanded in double-quote
+   context).  This is what makes ${VAR:-~/bin} expand the ~ correctly while
+   ${VAR:-*.c} does NOT produce a glob list. */
 char	*expand_param_word(t_shell *state, const char *word, int wlen)
 {
 	t_ast_node	w;
@@ -44,6 +47,9 @@ char	*expand_param_word(t_shell *state, const char *word, int wlen)
 	return (ret);
 }
 
+/* Thin wrapper: look up `name[0..len)` in the environment.  Returns NULL if
+   the variable is unset (distinct from set-but-empty, which returns "").
+   Centralised here so every expand_param_* helper uses the same lookup. */
 char	*pf_get_var_value(t_shell *state, const char *name, int len)
 {
 	return (env_expand_n(state, (char *)name, len));
@@ -54,10 +60,9 @@ static bool	is_unset_or_null(const char *val)
 	return (val == NULL || *val == '\0');
 }
 
-/*
-** Handle ${#parameter} - string length
-** Returns the length of the value as a string, or "0" if unset.
-*/
+/* ${#param} — return the length of the variable's value as a decimal string.
+   An unset variable counts as length 0 rather than an error (unless set -u).
+   The result is always a fresh malloc'd string (ft_itoa allocates). */
 char	*expand_strlen(t_shell *state, const char *s, int slen)
 {
 	char	*val;
@@ -70,10 +75,13 @@ char	*expand_strlen(t_shell *state, const char *s, int slen)
 	return (result);
 }
 
-/*
-** ${param-word} ${param:-word} ${param+word} ${param:+word}
-** With a colon, "unset OR null" triggers; without, only "unset" triggers.
-*/
+/* Handle the default/alternate family of parameter operators:
+     ${p-w}  → w if p is UNSET,          else p
+     ${p:-w} → w if p is UNSET OR EMPTY, else p
+     ${p+w}  → "" if p is UNSET,         else w
+     ${p:+w} → "" if p is UNSET OR EMPTY, else w
+   The colon variant (o.colon) treats an empty string the same as unset.
+   `val` is NULL for unset, "" for set-but-empty (pf_get_var_value contract). */
 char	*default_or_alt(t_shell *state, char *val, t_pe_op o)
 {
 	bool	act;

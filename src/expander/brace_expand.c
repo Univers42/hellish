@@ -33,7 +33,9 @@ int	brace_match(const char *s, int open)
 	return (-1);
 }
 
-/* Cartesian combine: pre + each(mids) + each(posts) -> out. */
+/* Cartesian product: for every (mid, post) pair build pre+mid+post and push
+   it into `out`.  Empty strings are silently dropped (bash does not generate
+   "" from {,} or {a,} unless there is actual content). */
 static void	combine(t_vec *out, const char *pre, t_vec *mids, t_vec *posts)
 {
 	size_t	a;
@@ -60,8 +62,10 @@ static void	combine(t_vec *out, const char *pre, t_vec *mids, t_vec *posts)
 	}
 }
 
-/* Expand the body's comma alternatives or numeric/alpha sequence, recursing
-   into each piece, then combine with the (recursively expanded) postscript. */
+/* Expand the brace group at s[open..close] into a list of strings, then do
+   a cartesian combine with the pre-brace text and the recursively expanded
+   post-brace tail.  Recursion handles nested braces naturally: each `mid`
+   from brace_alternatives is already fully expanded before combine. */
 static t_vec	expand_at(const char *s, int open, int close)
 {
 	t_vec	mids;

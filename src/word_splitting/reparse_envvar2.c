@@ -12,6 +12,11 @@
 
 #include "reparser_private.h"
 
+/* Advance rp->i by one "logical unit" inside a ${...} while tracking the
+   nesting depth. Quotes swallow their content so inner braces don't count
+   (e.g. ${"}" is the variable named "}"). An opening brace bumps depth; a
+   closing brace that hits depth==0 stops the scan (caller's loop exits on
+   the next iteration). Everything else is consumed one character at a time. */
 static void	scan_brace_depth(t_reparser *rp, int *depth)
 {
 	char	c;
@@ -33,6 +38,11 @@ static void	scan_brace_depth(t_reparser *rp, int *depth)
 		rp->i++;
 }
 
+/* Handle ${...} variable expansion. Consume the '{', then scan until the
+   matching '}' (depth-tracked, quote-aware), then push the interior as a
+   subtoken. Returns false immediately if the character after $ is not '{',
+   letting the caller fall through to the ident/special path. The final
+   rp->i++ skips the closing '}' so the main loop continues past it. */
 static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 {
 	int	start;
@@ -53,6 +63,12 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 	return (true);
 }
 
+/* Parse a $... expansion: consume the '$' then dispatch on the next char.
+   Priority: ${brace} > $(paren)/special > plain identifier > lone-$ literal.
+   The lone-$ case (prev_start == rp.i after consume_ident_rp) means the '$'
+   was not followed by anything we recognise as an expansion; we call
+   handle_envvar_empty which emits the '$' as a literal and optionally
+   re-delegates to a quote parser if the very next char is a quote. */
 void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 {
 	t_reparser	rp;

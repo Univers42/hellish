@@ -15,6 +15,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+/* Convert a token type to its human-readable name for debug output. The
+   names table covers values 0-255; anything outside that range (should never
+   happen) returns "TT_INVALID" so we never dereference out-of-bounds. */
 char	*tt_to_str(t_tt tt)
 {
 	const char	**names;
@@ -25,6 +28,9 @@ char	*tt_to_str(t_tt tt)
 	return ("TT_INVALID");
 }
 
+/* Look up the ANSI colour assigned to this token type. Falls back to blue
+   when the colour map is unavailable or the type has no entry -- blue is
+   visually neutral and never clashes with the magenta table borders. */
 const char	*token_color(t_tt tt)
 {
 	t_hash			*map;
@@ -41,6 +47,9 @@ const char	*token_color(t_tt tt)
 	return (ASCII_BLUE);
 }
 
+/* Calculate the number of columns a lexeme will occupy on screen, expanding
+   `\n` and `\t` to two-char escape sequences. This is used to pad columns
+   in the debug table to the same width without calling wcswidth. */
 size_t	visible_lexeme_len(t_token *t)
 {
 	size_t			i;
@@ -60,6 +69,9 @@ size_t	visible_lexeme_len(t_token *t)
 	return (len);
 }
 
+/* Print the token's raw bytes to stdout, substituting `\n` / `\t` with
+   their two-character escape representation. We never add surrounding quotes
+   so the displayed text is exactly what was in the input, just readable. */
 void	print_visible_lexeme_noquotes(t_token *t)
 {
 	size_t			i;

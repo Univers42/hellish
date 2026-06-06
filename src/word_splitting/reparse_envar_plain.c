@@ -12,6 +12,11 @@
 
 #include "reparser_private.h"
 
+/* Handle a backslash inside a double-quoted context (called from the dquote
+   scanner for the older non-reparser path). If the next char is one of the
+   four POSIX active-escape chars (", $, \) or a backtick, emit the pair as
+   TT_SQWORD (literal, no further processing). Otherwise emit the backslash
+   alone (the next char will be picked up by the surrounding scanner). */
 void	reparse_dq_bs(t_ast_node *ret, int *i, t_token t)
 {
 	ft_assert(t.start[*i] == '\\');
@@ -23,6 +28,11 @@ void	reparse_dq_bs(t_ast_node *ret, int *i, t_token t)
 	(*i)++;
 }
 
+/* If the character at *i is one of the single-character POSIX special
+   variables ($? $$ $# $@ $* $! $- $0-$9), consume it and push a subtoken of
+   type tt. Returns false for anything else so the caller knows to try the
+   plain-ident path next. This is deliberately a separate function rather than
+   part of the brace handler so we can unit-test the special-var set easily. */
 bool	reparse_special_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 {
 	int		prev_start;

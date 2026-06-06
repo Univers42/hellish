@@ -15,6 +15,10 @@
 
 int	handle_perm_denied(t_shell *state, char *cmd_name);
 
+/* Post-process a path that passed the initial access(F_OK) check.  A race
+   can make the file disappear between access() and stat(), yielding ENOENT
+   here; we distinguish that from an EISDIR (tried to exec a directory).
+   Both are errors; both free the path string and return an error code. */
 static int	handle_found_path(t_shell *state,
 				char *cmd_name,
 				char **path_of_exe)
@@ -37,6 +41,9 @@ static int	handle_found_path(t_shell *state,
 	return (0);
 }
 
+/* Handle a command name that contains '/': use it as-is (no PATH search).
+   We still validate it through handle_direct_path_error to produce the
+   right error message and exit code for missing/non-executable files. */
 static int	handle_direct_path(t_shell *state,
 				char *cmd_name,
 				char **path_of_exe)
@@ -53,6 +60,10 @@ static int	handle_direct_path(t_shell *state,
 	return (0);
 }
 
+/* Walk PATH directories looking for cmd_name.  We split $PATH on ':' each
+   call (no caching of the split) because PATH can change between commands.
+   The perm_denied flag from exe_path distinguishes exit code 126 (found
+   but not executable) from 127 (not found). */
 static int	search_path_dirs(t_shell *state, char *cmd_name,
 				char **path_of_exe)
 {
@@ -75,6 +86,12 @@ static int	search_path_dirs(t_shell *state, char *cmd_name,
 	return (0);
 }
 
+/* Command-hash cache (like bash `hash`): check the cache first; if the
+   cached path is still executable we skip the PATH walk entirely.  On a
+   miss, search PATH, insert the result, then validate the found path.  The
+   access(X_OK) guard on the cached entry evicts stale entries (the binary
+   was deleted or its permissions changed) so `hash` never causes a
+   persistent "command not found" for commands that should exist. */
 static int	handle_path_lookup(t_shell *state,
 				char *cmd_name,
 				char **path_of_exe)
@@ -95,6 +112,10 @@ static int	handle_path_lookup(t_shell *state,
 	return (handle_found_path(state, cmd_name, path_of_exe));
 }
 
+/* Top-level path resolution: direct path (has '/') or PATH hash + search.
+   Returns 0 + *path_of_exe filled on success, or an error code and
+   *path_of_exe=NULL on failure.  All error paths have already printed
+   the relevant diagnostic before returning. */
 int	find_cmd_path(t_shell *state, char *cmd_name, char **path_of_exe)
 {
 	if (ft_strchr(cmd_name, '/'))

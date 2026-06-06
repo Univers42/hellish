@@ -12,6 +12,10 @@
 
 #include "parser_private.h"
 
+/* Same semantics as expect_token in parse_if.c: skip leading newlines,
+   demand exactly the expected keyword, signal RES_GETMOREINPUT on TT_END,
+   or set RES_ERR on any other token. Separate copy here keeps the function
+   count per-file manageable under the 42 norm. */
 static bool	expect_kw(t_shell *state, t_parser *parser,
 					t_deque_tok *tokens, t_tt expected)
 {
@@ -34,10 +38,10 @@ static bool	expect_kw(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-/*
-** while compound_list do compound_list done
-** AST_WHILE children: [0]=condition, [1]=body
-*/
+/* Parse: while compound_list do compound_list done
+   AST_WHILE: children[0]=condition compound_list, children[1]=body.
+   The `while` token is already consumed by the time we get here (the keyword
+   classifier promoted it and the dispatcher popped it). */
 t_ast_node	parse_while_command(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens)
 {
@@ -60,10 +64,10 @@ t_ast_node	parse_while_command(t_shell *state, t_parser *parser,
 	return (ret);
 }
 
-/*
-** until compound_list do compound_list done
-** AST_UNTIL children: [0]=condition, [1]=body
-*/
+/* Parse: until compound_list do compound_list done
+   Identical structure to while but the executor inverts the loop condition
+   (loop while the compound-list returns non-zero). AST_UNTIL is a distinct
+   node type so the executor does not need to inspect the keyword. */
 t_ast_node	parse_until_command(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens)
 {

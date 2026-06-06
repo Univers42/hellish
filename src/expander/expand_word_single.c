@@ -42,6 +42,12 @@ static char	*free_args_ambiguous(t_vec *args)
 	return (xfree(args->ctx), NULL);
 }
 
+/* Expand a word that must produce exactly one string (redirect targets,
+   case labels, etc.).  After the full pipeline runs:
+     - one field   → return it
+     - zero fields → word_to_string fallback (empty quoted word "")
+     - two+ fields → ambiguous: free all and return NULL
+   The ambiguous case is what bash reports as "ambiguous redirect". */
 char	*expand_word_single(t_shell *state, t_ast_node *curr)
 {
 	t_vec	args;

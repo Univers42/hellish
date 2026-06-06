@@ -12,6 +12,10 @@
 
 #include "parser_private.h"
 
+/* Parse the `WORD in` header of a case command: consume the subject word,
+   skip newlines, then require the literal word "in". Both TT_END positions
+   trigger RES_GETMOREINPUT so the REPL can prompt for more. Missing `in`
+   after the word is a hard syntax error. */
 static bool	parse_case_word_in(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -29,7 +33,12 @@ static bool	parse_case_word_in(t_shell *state, t_parser *parser,
 	return (true);
 }
 
-/* case WORD in [pattern) list ;;]... esac */
+/* Parse: case WORD in [pattern) list ;;]... esac
+   AST_CASE: children[0]=subject word, children[1..]=AST_CASE_ITEM nodes.
+   The loop terminates on `esac` or TT_END (which triggers more-input). Each
+   case item is parsed by parse_case_item, which consumes its own `;;`. The
+   final deque_pop discards the `esac` token; vec_pop removes the TT_CASE
+   entry from the parse stack that was pushed at the start. */
 t_ast_node	parse_case_command(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens)
 {

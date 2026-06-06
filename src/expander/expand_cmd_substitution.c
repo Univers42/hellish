@@ -12,8 +12,11 @@
 
 #include "expander_private.h"
 
-/* Expand $((...)) and $(...) inside TT_WORD tokens of a node.
-   Recurses into child nodes. */
+/* Walk the AST node tree and expand $(...) and $((...)) in TT_WORD tokens.
+   Only TT_WORD subtokens can contain raw $(...) text — TT_ENVVAR already
+   has the name extracted and TT_DQWORD / TT_SQWORD are handled by the
+   lexer.  The recursion is needed because command substitutions can appear
+   inside compound nodes (e.g., a redirect target inside a for-loop body). */
 void	expand_cmd_substitutions(t_shell *state, t_ast_node *node)
 {
 	size_t		i;

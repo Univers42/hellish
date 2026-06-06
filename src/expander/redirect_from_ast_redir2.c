@@ -15,7 +15,10 @@
 int	get_default_src_fd(t_tt tt);
 int	try_create_redir(t_shell *state, t_ast_node *curr, t_tt tt, int src_fd);
 
-/* extract the source fd (child index 0), or use default based on operator */
+/* Read the fd number stored in the operator-token's leading digits (child 0
+   of the redirect node).  The lexer packs "2>" as a token whose text starts
+   with the '2'; we parse those digits and return the fd, falling back to the
+   operator's default fd (0 for reads, 1 for writes) if no digits are found. */
 int	get_src_fd(t_ast_node *curr, t_tt tt)
 {
 	t_ast_node	*first;
@@ -41,6 +44,11 @@ int	get_src_fd(t_ast_node *curr, t_tt tt)
 	return (fd);
 }
 
+/* Top-level redirect processor for one AST_REDIRECT node.  Heredocs are
+   handled specially: if the heredoc body is already materialised (has_redirect)
+   we just return its cached index; if not yet materialised, materialize_heredoc
+   is called.  All other redirect types go through try_create_redir which opens
+   the file and registers the fd in state->redirects. */
 int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 {
 	t_token	op_tok;

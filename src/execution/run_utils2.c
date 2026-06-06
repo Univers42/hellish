@@ -14,7 +14,10 @@
 #include "sys.h"
 #include "libft.h"
 
-/* helper: if builtin -> run and exit; return 0 if not builtin */
+/* Called IN THE CHILD after fork.  Functions and builtins that appear as
+   non-last pipeline stages still land here via execute_cmd_bg.  We run
+   them and exit so their output goes through the pipe.  Returning 0 means
+   "not a builtin or function -- continue to execve". */
 int	run_builtin_or_continue(t_shell *state, t_vec *args)
 {
 	int				(*bf)(t_shell *, t_vec);
@@ -31,7 +34,10 @@ int	run_builtin_or_continue(t_shell *state, t_vec *args)
 	return (0);
 }
 
-/* helper: find executable path and map special return codes */
+/* Resolve the command name to an absolute path and translate the internal
+   COMMAND_NOT_FOUND / EXE_PERM_DENIED codes to the POSIX exit codes 127
+   and 126.  Other non-zero values from find_cmd_path are passed through
+   (they are already POSIX-compatible). */
 int	find_exe_path_wrapper(t_shell *state, char *cmd0, char **out_path)
 {
 	int	status;

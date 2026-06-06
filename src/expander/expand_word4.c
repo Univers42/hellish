@@ -12,6 +12,9 @@
 
 #include "expander_private.h"
 
+/* Thin shim: convert the boolean keep_as_one flag into the bitmask expected
+   by expand_word_glob_ctl.  Almost every caller uses this rather than the
+   flag version to keep the call sites readable. */
 void	expand_word(t_shell *state, t_ast_node *node,
 			t_vec *args, bool keep_as_one)
 {
@@ -55,6 +58,13 @@ static t_vec_nd	build_words(t_shell *state, t_ast_node *node,
 	return (words);
 }
 
+/* The core word-expansion driver.  Runs the full pipeline in order:
+     - brace expansion (unless keep_as_one, which implies double-quote ctx)
+     - tilde + cmd-substitution + parameter expansion (inside build_words)
+     - IFS field splitting (or keep-as-one to produce exactly one field)
+     - pathname expansion per field (expand_node_glob / expand_word_glob)
+   `node` is consumed (freed) by this function.  opt_noglob (set -f) forces
+   no_glob regardless of the flag argument. */
 void	expand_word_glob_ctl(t_shell *state, t_ast_node *node,
 			t_vec *args, int flags)
 {

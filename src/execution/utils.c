@@ -13,6 +13,12 @@
 #include "execution_private.h"
 #include "sys.h"
 
+/* Apply one resolved t_redir to the process's fd table.  Three cases:
+   close_fd -- just close the fd (2>&- syntax);
+   is_dup   -- dup2 src_fd to a different target without closing the source
+               (used when the source is a pre-opened read fd like a pipe);
+   normal   -- dup2 then close the original so only the canonical fd number
+               remains live (the typical file-backed redirect). */
 static void	apply_redir_now(t_redir redir)
 {
 	if (redir.close_fd)
@@ -32,6 +38,10 @@ static void	apply_redir_now(t_redir redir)
 	}
 }
 
+/* Look up the t_redir at index `idx` in state->redirects and apply it.
+   Out-of-range access is an internal bug (the parser or heredoc collector
+   produced a bad index) so we print an error and exit rather than silently
+   reading garbage memory. */
 void	apply_redir(t_shell *state, int idx)
 {
 	if (idx < 0 || !state->redirects.ctx
@@ -46,6 +56,9 @@ void	apply_redir(t_shell *state, int idx)
 	apply_redir_now(((t_redir *)state->redirects.ctx)[(size_t)idx]);
 }
 
+/* Apply all redirects whose indices are stored in exe->redirs (the
+   pre-collected path, used when we already resolved them in the parent
+   before forking -- avoids resolving the same file twice). */
 void	apply_redirs_from_vec(t_shell *state, t_executable_node *exe)
 {
 	size_t	i;
@@ -59,6 +72,10 @@ void	apply_redirs_from_vec(t_shell *state, t_executable_node *exe)
 	}
 }
 
+/* Apply redirects directly from the AST (the lazy path, used in child
+   processes where the parent did not pre-resolve).  We walk the node's
+   children looking for AST_REDIRECT siblings.  An ambiguous redirect
+   (variable expanded to multiple words) causes an error exit. */
 void	apply_redirs_from_ast(t_shell *state, t_executable_node *exe)
 {
 	size_t		i;

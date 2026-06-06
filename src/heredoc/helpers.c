@@ -21,6 +21,11 @@ static int	special_param_len(char c)
 	return (0);
 }
 
+/* Expand a $ that was not followed by '(' (command substitution already
+   handled by the caller).  Braced form ${...} -> expand_braced; plain
+   name or special param -> env_expand_n; lone $ (no valid name follows)
+   -> emit the $ character literally.  *i is advanced past whatever was
+   consumed. */
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
@@ -47,6 +52,10 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 	*i += len;
 }
 
+/* Handle one character following a backslash inside a non-quoted heredoc
+   body.  POSIX: inside a heredoc only `\$`, `\`` and `\\` are special --
+   other `\x` pairs keep the backslash.  A `\<newline>` (line continuation)
+   is simply dropped (the backslash and the newline disappear). */
 void	expand_bs(int *i, t_string *full_file, char *line)
 {
 	char	tmp;
@@ -63,6 +72,10 @@ void	expand_bs(int *i, t_string *full_file, char *line)
 	(*i)++;
 }
 
+/* Dispatch a '$' character: first try expand_dollar_sub for command/
+   arithmetic substitution ($(...) and $((...)) ); if that returns 0
+   consumed bytes, fall through to the simpler expand_dolar for plain
+   parameter expansion. */
 static bool	expand_dollar_char(t_shell *state, t_string *ff,
 				char *line, int *i)
 {
@@ -79,6 +92,12 @@ static bool	expand_dollar_char(t_shell *state, t_string *ff,
 	return (true);
 }
 
+/* Expand one heredoc body line into full_file.  A backslash arms a
+   one-character escape (bs=true), which is then handled by expand_bs on
+   the next iteration.  A '$' kicks off parameter/command substitution.
+   Any other character is appended verbatim.  The result is accumulated in
+   full_file (a t_string / vec of bytes) rather than printed immediately so
+   write_heredoc can write the whole body in one shot. */
 void	expand_line(t_shell *state, t_string *full_file, char *line)
 {
 	int		i;

@@ -12,6 +12,11 @@
 
 #include "parser_private.h"
 
+/* Consume `| command` pairs until no pipe remains. After each `|` we skip
+   any newlines (POSIX allows line continuation inside a pipeline) and check
+   for TT_END -- a trailing `|` at end-of-input means the user wants to type
+   more, so we signal RES_GETMOREINPUT instead of an error. Returns 0 when
+   the loop finishes cleanly, 1 on incomplete input, 2 on parse error. */
 static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -35,6 +40,13 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 	return (0);
 }
 
+/* Parse a pipeline: [!] command [| command]...
+   The leading `!` negates the pipeline's exit status; multiple `!` toggle
+   the flag, so `!! cmd` has exit status == cmd's. The parse_stack entry for
+   TT_PIPE lets the error reporter tell the user which construct is open.
+   AST: AST_COMMAND_PIPELINE with ret.negate and one AST_COMMAND child per
+   stage. A single-command pipeline with no `!` is still a pipeline node; the
+   executor normalises it. */
 t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens)

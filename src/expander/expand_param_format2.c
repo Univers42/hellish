@@ -15,6 +15,15 @@
 
 void	exit_clean(t_shell *state, int code);
 
+/* Handle the error/assign family:
+     ${p?w}  → error-exit if p is UNSET          (write `w` to stderr)
+     ${p:?w} → error-exit if p is UNSET OR EMPTY
+     ${p=w}  → assign `w` to p if p is UNSET,     return p's (new) value
+     ${p:=w} → assign `w` to p if p is UNSET OR EMPTY
+   The ? form exits the shell in non-interactive mode (metinp != INP_RL);
+   in interactive use it just prints the error and returns empty so the
+   user can keep typing.  The = form calls env_set to actually store the
+   word, so subsequent uses of $p see the assigned value. */
 char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 {
 	bool	act;
@@ -43,6 +52,9 @@ char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 	return (val);
 }
 
+/* Dispatch the four modifying operators (- = ? +) after parsing has filled
+   `o`.  Splits into two families: default/alt (- and +) versus error/assign
+   (? and =) since they have different behaviours on an empty but set var. */
 char	*expand_param_op(t_shell *state, t_pe_op o)
 {
 	char	*val;
@@ -53,7 +65,11 @@ char	*expand_param_op(t_shell *state, t_pe_op o)
 	return (err_or_assign(state, val, o));
 }
 
-/* Detect a ${name[:]op word} form (op in -=?+); fill `o`, return true. */
+/* Parse the contents of a ${...} for the operator forms (- = ? +).  The
+   name can be a digit-only positional or an alphanumeric identifier; after
+   it an optional ':' (colon flag) and then one of -=?+ must follow.  On
+   success `o` is filled and true is returned so the caller can skip the
+   trim/substitution checks. */
 bool	find_param_op(const char *s, int slen, t_pe_op *o)
 {
 	int	i;
@@ -82,6 +98,11 @@ bool	find_param_op(const char *s, int slen, t_pe_op *o)
 	return (true);
 }
 
+/* Minimal shell-pattern matcher used by prefix/suffix trimming and ${/} subst.
+   Handles * (any sequence) and ? (any single character) only — not [ranges].
+   Recursive descent: consume one pattern unit and recurse on the rest.
+   The * branch advances `s` one character at a time to find the shortest
+   position where the remainder of the pattern still matches. */
 bool	pat_match_pub(const char *p, const char *s)
 {
 	if (*p == '\0')
@@ -107,6 +128,10 @@ bool	pat_match_pub(const char *p, const char *s)
 	return (false);
 }
 
+/* ${val%pattern} — remove the SHORTEST suffix of `val` that matches
+   `pattern`.  We scan from the end of val backwards until we find the
+   rightmost position where pat_match_pub(pattern, val+i) succeeds.
+   Shortest means we try from the end first and stop at the first match. */
 char	*trim_suffix_shortest(const char *val, const char *pattern)
 {
 	int	vlen;

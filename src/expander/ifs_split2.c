@@ -42,6 +42,11 @@ static void	split_loop(t_vec *out, const char *s,
 		push_f(out, s, start, n);
 }
 
+/* POSIX IFS split: split `s` on IFS characters following the rules in
+   XBD Field Splitting.  The result is a NULL-terminated char** that the
+   caller owns.  Leading/trailing IFS whitespace is stripped (not turned
+   into empty fields); non-whitespace IFS chars each produce one delimiter
+   even if adjacent (yielding empty fields between them). */
 char	**ifs_split_posix(const char *s, const char *ifs)
 {
 	t_vec	out;

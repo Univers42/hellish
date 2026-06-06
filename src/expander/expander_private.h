@@ -10,6 +10,23 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Private header for the expansion engine: everything the expander .c files
+   share with each other but should not leak into the rest of the shell.
+   Contexts, helpers, and the inline init are all here so each .c stays small.
+
+   Quick map of the expansion pipeline (left to right, order matters):
+     1. Brace expansion   – {a,b,c}  {1..5}  (try_brace_expand)
+     2. Tilde             – ~ ~+ ~-  (expand_tilde_word)
+     3. Parameter / $     – $x ${x:-y} ${#x} ${x%p} ${x/p/r}
+                            (expand_token -> expand_param_format)
+     4. Command subst.    – $(...) `...`  (process_cmd_sub / try_backtick_ctx)
+     5. Arithmetic        – $((...))      (process_arith_sub)
+     6. Field splitting   – IFS split on unquoted expansions (split_words)
+     7. Pathname (glob)   – * ? [...]     (expand_node_glob -> expand_word_glob)
+
+   Quoting ('' "" \) is tracked by the token type (TT_SQWORD, TT_DQWORD …)
+   so quoted pieces never reach field-splitting or globbing.              */
+
 #ifndef EXPANDER_PRIVATE_H
 # define EXPANDER_PRIVATE_H
 
@@ -32,6 +49,9 @@
 # include <sys/wait.h>
 # include <signal.h>
 
+/* Carry-along for $((expr)) expansion: the shell state, the expression text,
+   its length, a write cursor, and the output buffer. Kept in a struct so all
+   the arith helper functions share a single pointer rather than five args. */
 typedef struct s_arith_expand_ctx
 {
 	t_shell		*state;
@@ -41,6 +61,9 @@ typedef struct s_arith_expand_ctx
 	t_string	*out;
 }	t_arith_expand_ctx;
 
+/* Brace-sequence descriptor: {1..5}, {a..z}, {01..10..2} etc.
+   `alpha` is true for single-character ranges; `width` is the zero-pad
+   target computed from leading zeros in the endpoints. */
 typedef struct s_seq
 {
 	long	a;
@@ -50,6 +73,10 @@ typedef struct s_seq
 	bool	alpha;
 }	t_seq;
 
+/* Bundled arguments for the per-word glob pass so glob_loop() does not need
+   a six-argument signature.  `keep_as_one` suppresses IFS splitting
+   (double-quoted context); `no_glob` suppresses pathname expansion (set -f
+   or an assignment value). */
 typedef struct s_expand_glob_ctx
 {
 	t_shell		*state;
@@ -59,6 +86,9 @@ typedef struct s_expand_glob_ctx
 	bool		no_glob;
 }	t_expand_glob_ctx;
 
+/* Context for ${name#pat}, ${name%pat}, ${name/pat/rep}: both the variable
+   name slice and the full raw spec inside the braces, so helpers can
+   re-expand the pattern without re-parsing. */
 typedef struct s_trim_ctx
 {
 	const char	*name;
@@ -67,6 +97,10 @@ typedef struct s_trim_ctx
 	int			slen;
 }	t_trim_ctx;
 
+/* Parsed ${name[:]opc word} operator (the four modifying forms: - = ? +).
+   `colon` means the colon-variant was used (triggers on null as well as
+   unset); `opc` is the operator character; `word` and `wlen` point into the
+   raw braced text and are re-expanded lazily when actually needed. */
 typedef struct s_pe_op
 {
 	const char	*name;
@@ -77,6 +111,9 @@ typedef struct s_pe_op
 	int			wlen;
 }	t_pe_op;
 
+/* Slice of the raw token text fed to process_cmd_sub / process_arith_sub.
+   `consumed` is written back to report how many bytes were eaten so the
+   caller can advance its scan position. */
 typedef struct s_expand_ctx
 {
 	const char	*s;
@@ -85,6 +122,10 @@ typedef struct s_expand_ctx
 	int			*consumed;
 }	t_expand_ctx;
 
+/* Mutable scan state shared by the try_*_ctx helpers while a single TT_WORD
+   token is walked for $(...) / $((...)) / `...` expansions.  `changed` is
+   set when at least one substitution occurred so the final update knows to
+   build a new allocated string. */
 typedef struct s_word_token_ctx
 {
 	t_shell		*state;
@@ -95,6 +136,9 @@ typedef struct s_word_token_ctx
 	bool		changed;
 }	t_word_token_ctx;
 
+/* Position cookie passed to process_env_token so it can peek at the sibling
+   token: a lone $ followed by '' or "" should produce "$" literally, not "".
+   split_ctx mirrors expand_env_vars's arg so the "$@" special case works. */
 typedef struct s_env_tok_pos
 {
 	size_t	idx;
@@ -221,6 +265,8 @@ void		handle_double_open_paren(int *depth, int *j);
 bool		is_double_close_paren_v1(int slen, const char *s, int j);
 bool		is_double_open_paren_v1(int slen, const char *s, int j);
 
+/* Convenience inline: zero-initialise a t_expand_ctx from its four fields.
+   Inlined so there is zero overhead when called from tight scan loops. */
 static inline t_expand_ctx	init_expand(const char *s, int slen,
 								t_string *outbuf, int *consumed)
 {

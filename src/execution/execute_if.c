@@ -12,6 +12,10 @@
 
 #include "execution_private.h"
 
+/* Run one branch of an if/elif/else chain with the default fds (stdin=0,
+   stdout=1) and modify_parent_ctx=true so builtins inside the branch
+   affect the parent shell.  The child is an AST_COMPOUND_LIST or similar
+   that execute_tree_node knows how to handle. */
 static t_execution_state	run_child(t_shell *state, t_ast_node *child)
 {
 	t_executable_node	child_exe;
@@ -32,13 +36,13 @@ static t_execution_state	run_condition(t_shell *state, t_ast_node *child)
 	return (s);
 }
 
-/*
-** AST_IF children: pairs of (condition, body)
-** If total children is odd and > 1, last child is else-body.
-** Execute conditions in pairs: if condition[i] succeeds (exit 0),
-** execute body[i+1] and return. Otherwise try next pair (elif).
-** If all conditions fail and else exists, execute it.
-*/
+/* if/elif/else executor.  The AST packs branches as flat children:
+   [cond0, body0, cond1, body1, ..., else_body?].  An odd child count
+   means an else clause is present.  We walk pairs: run the condition
+   with errexit suppressed (POSIX says -e must not fire on the condition
+   of if/elif/while/until), and on exit 0 run the matching body and
+   return.  If we exhaust all conditions and there is a trailing else
+   child, run that.  If nothing matched, return status 0 (POSIX). */
 t_execution_state	execute_if(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;

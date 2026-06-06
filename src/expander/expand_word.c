@@ -17,11 +17,11 @@
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
 
-/* A word participates in brace expansion when an *unquoted* part (a TT_WORD
-   subtoken) contains a '{': bash brace-expands the unquoted `/{a,b}` in
-   "$LFS"/{a,b} while quoted/var subtokens are carried along as literal text.
-   Braces that live only inside quotes ("{a,b}") have no TT_WORD subtoken and
-   so are correctly left untouched. */
+/* A word participates in brace expansion only when an *unquoted* subtoken
+   (TT_WORD) contains a '{'.  In "$LFS"/{a,b} the literal /{a,b} piece IS a
+   TT_WORD, so it brace-expands; the "$LFS" piece is TT_ENVVAR and is carried
+   along verbatim.  Braces inside quotes ("{a,b}") have no TT_WORD child at
+   all, so the loop naturally skips them -- no explicit quoting check needed. */
 static bool	word_has_unquoted_brace(t_ast_node *node)
 {
 	size_t		i;
@@ -64,8 +64,12 @@ static void	expand_brace_result(t_shell *state, t_vec *results, t_vec *args)
 	}
 }
 
-/* Brace-expand `node` into multiple words, re-lexing each result and running
-   it through the full expansion pipeline. Returns true if it handled `node`. */
+/* Brace-expand `node` into multiple words and push each through the full
+   pipeline (tilde → param → cmdsub → split → glob).  The flat source is
+   stringified via word_to_brace_src (which preserves $var and quotes so
+   re-lexing sees the right token types), brace-expanded into N strings,
+   then each is re-parsed and passed to expand_word.  Returns true when it
+   consumed the node so the caller knows NOT to run the normal pipeline. */
 bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 {
 	t_string	flat;
@@ -98,8 +102,12 @@ static bool	has_plain_literal_meta(char c, int *lbr, int i)
 	return (false);
 }
 
-/* A single literal TT_WORD subtoken with no metacharacter, quote or blank
-   expands to itself as exactly one field. */
+/* A word that is a single, unquoted TT_WORD token with zero shell
+   metacharacters expands to itself — no IFS split, no glob, no allocation.
+   This is the most common case for command names like "ls" or "-la";
+   detecting it here avoids calling the full pipeline at all.
+   Note: '[' is only a metachar when matched by a later ']' (glob bracket),
+   so `lbr` tracks the position of an unmatched '['. */
 bool	word_is_plain_literal(t_ast_node *node)
 {
 	t_token	*t;

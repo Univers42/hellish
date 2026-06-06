@@ -13,6 +13,10 @@
 #include "execution_private.h"
 #include "sys.h"
 
+/* Update the `_` (ULTIMATE_ARG) environment variable to the last word of
+   the command.  POSIX says $_ is the last argument of the previous command;
+   we set it before forking so both parent and child see the right value
+   immediately after the command. */
 void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
 {
 	char	*last;
@@ -26,6 +30,8 @@ void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
 	}
 }
 
+/* Thin wrapper kept so callers have a single named function to call;
+   makes it easy to add pre/post logic around `_` updates in one place. */
 void	update_underscore_var(t_shell *state, t_executable_cmd *cmd)
 {
 	set_last_underscore_var(state, cmd);
@@ -59,6 +65,13 @@ int	prep_redir(t_shell *state, t_executable_node *exe, int *bak, int persist)
 	return (need);
 }
 
+/* Wire up all I/O for one command.  Order matters: pipe fds go first
+   (next_infd is closed -- the parent already has it; outfd/infd are
+   dup2'd to stdout/stdin), then explicit redirections from the redirs
+   vec or the AST.  If we have a non-empty redirs vec we use the
+   pre-resolved path (apply_redirs_from_vec); if the vec is empty but
+   the AST node has children, we resolve lazily (apply_redirs_from_ast).
+   Both paths ultimately call apply_redir_now. */
 void	set_up_redirection(t_shell *state, t_executable_node *exe)
 {
 	if (exe->next_infd != -1)

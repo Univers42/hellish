@@ -42,6 +42,11 @@ static bool	match_bracket(char c, const char **pp)
 	return (hit != neg);
 }
 
+/* Try to match exactly one character of *s against the non-'*' pattern
+   at *p (?, [...], '\x', or a literal char).  Returns true and advances
+   both pointers if it matched, false (leaving both unchanged) if not.
+   The '\' case handles quoted metacharacters: `\*` in the pattern (placed
+   there by append_pat_tok) must match a literal asterisk in the string. */
 static bool	advance_one(const char **s, const char **p)
 {
 	if (**p == '?' && **s)

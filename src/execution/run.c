@@ -13,6 +13,10 @@
 #include "execution_private.h"
 #include "sys.h"
 
+/* Print the EACCES diagnostic and clean up after an execve failure.  We
+   save and restore errno around the cleanup calls because free functions
+   (xfree, free_tab) can internally call libc routines that clobber errno
+   before map_errno_to_exit gets a chance to read it. */
 static void	preserve_errno_exec_failed(t_shell *state, char **path_of_exe,
 									t_vec *args, char **envp)
 {
@@ -26,7 +30,13 @@ static void	preserve_errno_exec_failed(t_shell *state, char **path_of_exe,
 	errno = saved_errno;
 }
 
-/* returns status */
+/* The child side of executing an external command.  We check builtins and
+   functions first (run_builtin_or_continue calls exit()), then resolve the
+   path (find_exe_path_wrapper), publish it as ULTIMATE_ARG ("_"), build
+   the envp array, and finally execve.  execve only returns on failure, so
+   everything after try_exec_with_fallback is cleanup + status mapping.
+   This function runs in a forked child -- it must never return to the
+   parent's call stack. */
 int	actually_run(t_shell *state, t_vec *args)
 {
 	char	*path_of_exe;

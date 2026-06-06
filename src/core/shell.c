@@ -31,8 +31,11 @@ void		flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
 
-/* Slurp a whole file into a freshly-allocated NUL-terminated string.
-   Returns NULL on error. */
+/* Read a whole file into one freshly-allocated, NUL-terminated string. We grow
+   a t_string in 4 KB gulps instead of stat()-ing the size up front -- simpler,
+   and it also works on pipes/things that have no real size. That trailing '\0'
+   is what lets the rest of the shell treat the result like any C string. NULL
+   if the file will not even open. */
 static char	*read_file(const char *path)
 {
 	char		buf[4096];
@@ -56,10 +59,12 @@ static char	*read_file(const char *path)
 	return ((char *)content.ctx);
 }
 
-/* On interactive startup, run the user's ~/.hellishrc (aliases, exports,
-   functions, set options, prompt tweaks) in the current shell -- our own
-   rc-file convention, the .bashrc analogue. Silently skipped if absent or
-   non-interactive (-c / scripts / piped input do not source it). */
+/* Interactive startup only: source the user's ~/.hellishrc (aliases, exports,
+   functions, set-options, prompt tweaks) right in this shell -- our .bashrc
+   analogue. The `metinp != INP_RL` guard is the part that matters: -c, scripts
+   and piped input must NOT read it, or every test run would silently inherit
+   your dotfile and you'd chase ghosts for an afternoon. Absent file or no
+   $HOME? Just shrug and carry on. */
 static void	source_hellishrc(t_shell *state)
 {
 	char	*home;
@@ -82,9 +87,11 @@ static void	source_hellishrc(t_shell *state)
 	xfree(content);
 }
 
-/**
- * no return needed as we forward with the exit status
- */
+/* Entry point. A login shell is started with argv[0] beginning with '-' (the
+   old getty convention -- "-bash", "-hellish"); we strip that dash so $0 looks
+   normal everywhere else. Notice there is no explicit return: off() already
+   forwards the last command's status as our exit code, so just falling off the
+   end of main() with that set is exactly the behaviour we want. */
 int	main(int argc, char **argv, char **envp)
 {
 	t_shell	state;
@@ -103,6 +110,12 @@ int	main(int argc, char **argv, char **envp)
 	off(&state);
 }
 
+/* The read-eval-print loop -- the beating heart of the shell. Each turn hands
+   out a fresh input buffer, clears the "Ctrl-C just unwound us" flag, reports
+   any background jobs that finished, then parses and runs exactly one command.
+   The pile of frees at the bottom is the whole trick to staying leak-flat: the
+   AST, redirects, input and heredoc scratch are per-command, so we drop them
+   each turn. A script can run for an hour and memory just stays flat. */
 static void	repl_shell(t_shell *state)
 {
 	int	buf_fd;
@@ -130,6 +143,10 @@ static void	repl_shell(t_shell *state)
 	flush_output_buffer(buf_fd, stdout_bak);
 }
 
+/* On the way out: fire the EXIT trap first (bash runs it last, right before
+   the shell dies), then free the environment and everything else we own, and
+   finally exit carrying the last command's status. Order matters -- the trap
+   may still want to read variables, so we free the env *after* it runs. */
 static void	off(t_shell *state)
 {
 	run_exit_trap(state);

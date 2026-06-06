@@ -12,8 +12,12 @@
 
 #include "expander_private.h"
 
-/* Longest prefix of s the whole pattern matches; -1 if none. Literal patterns
-   take a direct O(m) compare; only real globs pay the longest-match scan. */
+/* Find how many characters of s[0..] are consumed by a match of pat.
+   Returns the match length (may be 0 for a pattern that matches empty), or
+   -1 if the pattern does not match at this position.  Literal patterns
+   (no * or ? wildcards) take an O(m) ft_strncmp fast path; wildcard patterns
+   try decreasing lengths until pat_match_pub succeeds (longest-match scan
+   needed because * can expand to varying amounts). */
 static int	patsub_match_len(const char *pat, const char *s)
 {
 	int		k;
@@ -38,7 +42,11 @@ static int	patsub_match_len(const char *pat, const char *s)
 	return (-1);
 }
 
-/* Walk val, replacing matches of pat by rep (all if global, else the first). */
+/* Build the substituted string by walking `val` one character at a time.
+   When global=0 only the first match is replaced (`done` gate); when
+   global=1 every non-overlapping match is replaced.  Unmatched characters
+   and zero-length match results are copied literally to avoid infinite loops.
+   The output is grown on demand in `out` via vec_push. */
 static char	*patsub_build(const char *val, const char *pat,
 				const char *rep, int global)
 {
@@ -64,7 +72,10 @@ static char	*patsub_build(const char *val, const char *pat,
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }
 
-/* Pattern is from after the '/'(s) up to the next '/' (or end of the spec). */
+/* Extract and expand the pattern portion of a ${v/pat/rep} spec.  The
+   pattern starts after the first '/' (plus a second '/' for global mode)
+   and extends to the next '/' or end of spec.  We call expand_param_word
+   so nested ${} and `...` inside the pattern are processed. */
 static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
 {
 	int	start;
@@ -77,8 +88,9 @@ static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
 	return (expand_param_word(state, ctx.name + start, i - start));
 }
 
-/* Replacement is everything after the pattern's terminating '/'; empty if the
-   form is ${var/pat} (a deletion). */
+/* Extract and expand the replacement part of ${v/pat/rep}.  If there is no
+   second '/' the form is ${v/pat} which is a pure deletion (empty rep).
+   expand_param_word handles nested expansions in the replacement too. */
 static char	*subst_get_rep(t_shell *state, t_trim_ctx ctx, int g)
 {
 	int	i;

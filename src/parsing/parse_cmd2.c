@@ -12,6 +12,9 @@
 
 #include "parser_private.h"
 
+/* Parse a function definition and push it as a child of ret. Only reached
+   after is_function_def has confirmed the WORD ( ) pattern, so the first
+   three tokens are always well-formed here. */
 static bool	handle_func_def(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -24,6 +27,12 @@ static bool	handle_func_def(t_shell *state, t_parser *parser,
 	return (true);
 }
 
+/* Decide what kind of command starts at the current token position and call
+   the appropriate handler. Priority: subshell `(` > compound keyword > func
+   definition > simple command. Function-def check must come before simple
+   command because `name()` starts with TT_WORD, which is also a valid simple
+   command opener; is_function_def looks ahead two tokens to resolve the
+   ambiguity without consuming them. */
 static bool	dispatch_cmd(t_shell *state, t_parser *parser,
 						t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -39,6 +48,12 @@ static bool	dispatch_cmd(t_shell *state, t_parser *parser,
 	return (handle_simple_command_case(state, parser, tokens, ret));
 }
 
+/* Parse one command (simple, compound, subshell, or function definition).
+   TT_ARITH_START at this level is always a syntax error -- `((` can only
+   appear in arithmetic evaluation, not as a standalone command without the
+   full `((...))` enclosure that the lexer would have classified correctly.
+   On success dispatch_cmd fills ret.children; on failure parser->res is set
+   accordingly and ret is returned incomplete for the caller to propagate. */
 t_ast_node	parse_command(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens)
 {

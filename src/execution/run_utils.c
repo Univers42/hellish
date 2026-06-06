@@ -14,6 +14,10 @@
 #include "sys.h"
 #include "libft.h"
 
+/* Pick an interpreter for a file that failed execve with ENOEXEC.  We
+   recognise our own script extensions (.sh, .hell, .hellish) and run them
+   under the hellish binary; everything else falls back to /bin/sh (FB_SH).
+   This mirrors what bash does for the "#!" shebang-less case. */
 static char	*select_fallback_shell(char *path)
 {
 	size_t	len;
@@ -51,6 +55,12 @@ static void	exec_fallback_shell(char *path, t_vec *args, char **envp)
 	xfree(nv);
 }
 
+/* Attempt execve; on ENOEXEC (file is executable but not in a format the
+   kernel can load -- e.g. a shell script without a shebang), retry with
+   a shell interpreter prepended.  The NULL sentinel is pushed onto args
+   so that the execve call receives a proper argv terminator.  On any
+   other execve failure this function returns and actually_run maps the
+   errno to an exit code. */
 void	try_exec_with_fallback(char *path_of_exe,
 							t_vec *args,
 							char **envp)
