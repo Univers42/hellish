@@ -11,10 +11,11 @@ parser → word reparser → heredoc → expander → executor, each a small, re
 module. It ships with **two allocators you can swap at compile time** (libc
 `malloc` or our own `ft_malloc`) so you can A/B their behaviour and speed.
 
-- **Latest:** v2.3.1 — heredocs nested in compound commands, `type`/`hash`
-  parity with bash, a reliable `wait`, a multi-distro Docker test harness, a
-  full PR CI pipeline, and a norm-clean tree. (v2.3.0: compile-time `SAFE`
-  allocator, `${var/pat/rep}` substitution, a leak-clean run across the corpus)
+- **Latest:** v2.3.2 (stable) — the full PR CI pipeline is green end-to-end
+  (build matrix, submodules, the ~2481 suite, script corpus, leaks, norm) and
+  the four-distro Docker build verifies on every push. Builds on v2.3.1:
+  heredocs nested in compound commands, `type`/`hash` parity with bash, a
+  reliable `wait`, the multi-distro Docker harness, and a norm-clean tree.
 
 ---
 
