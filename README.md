@@ -83,12 +83,17 @@ to the npm registry (the release workflow publishes it when the maintainer's
 npm install -g hellish-shell      # or: pnpm add -g hellish-shell
 ```
 
-**Docker (recommended for trying it out):** the surest way to run hellish is in
-a clean container that already has every dependency — no chasing
-`readline/readline.h: No such file` on your host. The repo ships a
-`docker-compose.yml` that **builds hellish from source** on four distros
-(Alpine/musl, Debian, Ubuntu, Arch), so you can verify it works in a
-reproducible environment regardless of your machine:
+**Docker (the easiest way to try it):** a prebuilt image is published to Docker
+Hub — no toolchain, no `readline/readline.h: No such file`, nothing to compile:
+
+```sh
+docker run --rm -it dlesieur/hellish-shell        # latest
+docker run --rm -it dlesieur/hellish-shell:2.3.2  # a pinned version
+```
+
+Prefer to **build from source in a clean container** (and verify it compiles on
+your distro of choice)? The repo ships a `docker-compose.yml` that builds
+hellish on four distros (Alpine/musl, Debian, Ubuntu, Arch):
 
 ```sh
 docker compose run --rm alpine     # interactive hellish on Alpine (or: debian, ubuntu, arch)
