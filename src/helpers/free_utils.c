@@ -109,6 +109,7 @@ void	free_all_state(t_shell *state)
 	pos_free(&state->pos);
 	free_argv_pool(state);
 	free_traps(state);
+	free_dirstack(state);
 	env_index_free();
 	word_slab_teardown();
 	alloc_live_report();
