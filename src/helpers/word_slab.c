@@ -12,15 +12,17 @@
 
 #include "slab.h"
 #include "ft_string.h"
+#include "ft_memory.h"
 #include <stdlib.h>
 
 /* Process-wide slab for short-lived simple-command argv word strings: most are
-   tiny and die together at command end, so size-class freelists beat libc
-   malloc/free. word_free() routes any non-slab pointer back to libc free, so a
-   command's argv (a mix of slab literals + malloc'd expansions) frees safely
-   through it. The g_on flag is force-set per expansion context (argv on,
-   assignment/for off) so values that escape into env stay plain malloc; since
-   word_free handles both, a wrong flag can only cost speed, never corrupt. */
+   tiny and die together at command end, so size-class freelists beat the
+   general heap. word_free() routes any non-slab pointer to slab_free(), which
+   forwards it to fn_free() (the active backend) — so a command's argv (a mix
+   of slab literals + xmalloc'd expansions) frees safely through it. The g_on
+   flag is force-set per expansion context (argv on, assignment/for off) so
+   values escaping into env stay on the fn_* heap; since word_free handles both,
+   a wrong flag can only cost speed, never corrupt. */
 static t_slab_allocator	g_wslab;
 static int				g_wslab_up;
 static int				g_on;
@@ -51,7 +53,7 @@ char	*word_strndup(const char *s, size_t n)
 
 	if (!g_on)
 	{
-		p = malloc(n + 1);
+		p = xmalloc(n + 1);
 		if (!p)
 			return (NULL);
 		return (ft_memcpy(p, s, n), p[n] = '\0', p);
@@ -69,6 +71,16 @@ void	word_free(void *p)
 	if (p == NULL)
 		return ;
 	if (!g_wslab_up)
-		return ((void)free(p));
+		return ((void)xfree(p));
 	slab_free(&g_wslab, p);
+}
+
+/* Release the process-wide slab at shutdown (main process only). The chunks are
+   a lifetime cache reachable via g_wslab, so they are not a logical leak, but
+   tearing them down keeps the ft_malloc live-bytes oracle at zero on exit. */
+void	word_slab_teardown(void)
+{
+	if (g_wslab_up)
+		slab_destroy(&g_wslab);
+	g_wslab_up = 0;
 }

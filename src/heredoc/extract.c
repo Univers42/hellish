@@ -30,7 +30,7 @@ char	*hd_delim(t_token *t)
 	int		i;
 	int		k;
 
-	d = malloc(t->len + 1);
+	d = xmalloc(t->len + 1);
 	if (!d)
 		return (NULL);
 	i = 0;

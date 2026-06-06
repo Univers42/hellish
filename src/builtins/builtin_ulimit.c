@@ -53,7 +53,7 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label)
 			ft_printf("%s\n", s);
 		else
 			ft_printf("0\n");
-		free(s);
+		xfree(s);
 	}
 }
 

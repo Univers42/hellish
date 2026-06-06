@@ -21,9 +21,9 @@ int	alias_remove(t_hash *aliases, const char *name)
 	e = (t_alias_entry *)hash_del(aliases, name);
 	if (!e)
 		return (1);
-	free(e->name);
-	free(e->value);
-	free(e);
+	xfree(e->name);
+	xfree(e->value);
+	xfree(e);
 	return (0);
 }
 

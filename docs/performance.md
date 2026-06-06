@@ -55,6 +55,11 @@ every full-featured shell belongs to.
   init, the welcome banner, and lazy-init history/completion. Most of the ~1.6× dash startup gap is
   init that a non-interactive run never needs. Target: meaningfully narrow it; numbers recorded
   before/after.
+- **Custom allocator (`SAFE=0`)**: the whole shell allocates through one compile-time-switchable
+  macro family (`xmalloc`/`xcalloc`/`xfree`), so it can run on either libc `malloc` or our own
+  `ft_malloc` slab/arena heap with **zero source changes**. `make OPT=1` (the benchmarked build)
+  defaults to `SAFE=0` (`ft_malloc`); `make OPT=1 SAFE=1` re-runs the same workloads on libc, so the
+  allocator's contribution is measurable in isolation. Both backends are conformance- and ASan-clean.
 - **Never regress speed**: the benchmark geomean is a release gate (must stay **≥ 1.0**).
 
 ---
@@ -81,10 +86,11 @@ verified by a fuzz-style malformed-input sweep under ASan.)
 ## Reproduce it yourself
 
 ```sh
-make -C vendor/42sh OPT=1 all     # the optimized binary that's benchmarked
-make -C vendor/42sh bench         # vs bash --posix (geomean + wall + per-task)
-make -C vendor/42sh test          # the full suite
-make -C vendor/42sh norm          # norminette
+make -C vendor/42sh OPT=1 all          # the optimized binary that's benchmarked (SAFE=0, ft_malloc)
+make -C vendor/42sh OPT=1 SAFE=1 all   # same, on libc malloc — A/B the allocator
+make -C vendor/42sh bench              # vs bash --posix (geomean + wall + per-task)
+make -C vendor/42sh test               # the full suite
+make -C vendor/42sh norm               # norminette
 ```
 
 See also: **[Interactive Experience](interactive.md)** · **[Bash Compatibility & Scripting](scripting.md)** · **[What hellish is + Install](product.md)**

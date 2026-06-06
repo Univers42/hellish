@@ -83,7 +83,7 @@ int	proc_sub_handle_eof(t_parser *parser,
 	{
 		parser->res = RES_GETMOREINPUT;
 		tokens->looking_for = ')';
-		free(cmd_str->ctx);
+		xfree(cmd_str->ctx);
 		return (1);
 	}
 	return (0);

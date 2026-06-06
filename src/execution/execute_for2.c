@@ -19,7 +19,7 @@ void	set_for_var(t_shell *state, char *name, char *val)
 	old = env_get(&state->env, name);
 	if (old)
 	{
-		free(old->value);
+		xfree(old->value);
 		old->value = ft_strdup(val);
 		return ;
 	}

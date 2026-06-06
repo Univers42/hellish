@@ -45,8 +45,8 @@ void	read_file_to_buffer(int fd, t_shell *state)
 /* Helper for updating ctx after file read */
 void	update_ctx_from_file(t_shell *state, char **argv)
 {
-	free(state->dft_ctx);
-	free(state->ctx);
+	xfree(state->dft_ctx);
+	xfree(state->ctx);
 	state->dft_ctx = ft_strdup(argv[1]);
 	state->ctx = ft_strdup(argv[1]);
 	state->metinp = INP_FILE;

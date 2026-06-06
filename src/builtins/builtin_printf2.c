@@ -60,6 +60,6 @@ int	builtin_printf(t_shell *state, t_vec argv)
 	if (out.len && write(STDOUT_FILENO, out.ctx, out.len))
 	{
 	}
-	free(out.ctx);
+	xfree(out.ctx);
 	return (0);
 }

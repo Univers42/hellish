@@ -60,6 +60,6 @@ void	forward_exit_status(t_execution_state res)
 void	set_cmd_status(t_shell *state, t_execution_state res)
 {
 	state->last_cmd_st_exe = res;
-	free(state->last_cmd_st);
+	xfree(state->last_cmd_st);
 	state->last_cmd_st = ft_itoa(res.status);
 }

@@ -56,7 +56,7 @@ void	job_table_free(t_job_table *jt)
 	while (i < JOB_MAX)
 	{
 		if (jt->jobs[i].pgid)
-			free(jt->jobs[i].cmd);
+			xfree(jt->jobs[i].cmd);
 		i++;
 	}
 	ft_memset(jt, 0, sizeof(t_job_table));

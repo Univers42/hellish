@@ -37,7 +37,7 @@ static void	cursor_up(int n)
 	fputs("\033[", rl_outstream);
 	fputs(s, rl_outstream);
 	fputs("A", rl_outstream);
-	free(s);
+	xfree(s);
 }
 
 /* Emit one prompt byte: drop the \001/\002 width markers, and turn newlines

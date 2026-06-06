@@ -22,7 +22,7 @@ void	restore_temp_assigns(t_shell *state, t_vec *saves)
 	i = saves->len;
 	while (i > 0)
 		restore_one(state, (t_scope_save *)vec_idx(saves, --i));
-	free(saves->ctx);
+	xfree(saves->ctx);
 }
 
 static void	local_set_var(t_shell *state, char *key, char *eq)

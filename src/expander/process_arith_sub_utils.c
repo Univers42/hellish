@@ -23,7 +23,7 @@ static void	push_braced_val(t_arith_expand_ctx *ctx, int start, int j)
 	if (v)
 	{
 		vec_push_str(ctx->out, v);
-		free(v);
+		xfree(v);
 		return ;
 	}
 	v = env_expand_n(ctx->state, (char *)ctx->s + start, j - start);

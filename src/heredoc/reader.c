@@ -101,7 +101,7 @@ void	process_line(t_shell *state, t_hdoc *req)
 	if (req->remove_tabs)
 		strip_leading_tabs(&alloc_line);
 	if (is_sep(req, &alloc_line))
-		return (free(alloc_line.ctx), (void)(req->finished = true));
+		return (xfree(alloc_line.ctx), (void)(req->finished = true));
 	line = (char *)alloc_line.ctx;
 	if (!req->full_file.ctx)
 	{
@@ -112,5 +112,5 @@ void	process_line(t_shell *state, t_hdoc *req)
 		expand_line(state, &req->full_file, line);
 	else if (line)
 		vec_push_str(&req->full_file, line);
-	free(alloc_line.ctx);
+	xfree(alloc_line.ctx);
 }

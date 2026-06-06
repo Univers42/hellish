@@ -21,7 +21,7 @@ char	*expand_leading_bracket_special(const char *start, int *out_len)
 {
 	char	*buf;
 
-	buf = malloc(2);
+	buf = xmalloc(2);
 	if (!buf)
 		return (NULL);
 	buf[0] = start[1];

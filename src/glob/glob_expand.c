@@ -87,7 +87,7 @@ char	*glob_expand_bracket(const char *start, int len, int *out_len)
 		return (expand_leading_bracket_special(start, out_len));
 	ctx.start = start;
 	ctx.len = len;
-	ctx.buf = malloc(1024);
+	ctx.buf = xmalloc(1024);
 	if (!ctx.buf)
 		return (NULL);
 	ctx.buf_pos = 0;

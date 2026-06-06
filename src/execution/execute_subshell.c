@@ -22,6 +22,7 @@ t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 	if (pid == 0)
 	{
 		set_unwind_sig();
+		xfree(state->traps[0]);
 		state->traps[0] = NULL;
 		set_up_redirection(state, exe);
 		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];

@@ -86,12 +86,12 @@ int	try_create_redir(t_shell *state, t_ast_node *curr,
 	{
 		ft_eprintf("%s: %s: cannot overwrite existing file\n",
 			state->ctx, fname);
-		return (free(fname), -1);
+		return (xfree(fname), -1);
 	}
 	if (!create_redir_4(tt, fname, &new_redir, src_fd))
 	{
 		print_redir_err(state, full_token, fname);
-		return (free(fname), -1);
+		return (xfree(fname), -1);
 	}
 	curr->redir_idx = state->redirects.len;
 	curr->has_redirect = true;

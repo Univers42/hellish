@@ -27,7 +27,7 @@ static void	append_hist_entry(t_shell *state, char *hist_entry)
 		close(state->hist.append_fd);
 		state->hist.append_fd = -1;
 	}
-	free(enc);
+	xfree(enc);
 }
 
 void	manage_history(t_shell *state)
@@ -77,7 +77,7 @@ void	free_hist(t_shell *state)
 
 	i = -1;
 	while (++i < state->hist.hist_cmds.len)
-		free(((char **)state->hist.hist_cmds.ctx)[i]);
-	free(state->hist.hist_cmds.ctx);
+		xfree(((char **)state->hist.hist_cmds.ctx)[i]);
+	xfree(state->hist.hist_cmds.ctx);
 	vec_init(&state->hist.hist_cmds);
 }

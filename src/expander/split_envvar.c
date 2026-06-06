@@ -57,7 +57,7 @@ void	emit_positional_at(t_shell *state, t_ast_node *curr_node, t_vec_nd *ret)
 	{
 		k = ft_itoa(i);
 		v = env_expand(state, k);
-		free(k);
+		xfree(k);
 		if (i > 1)
 			push_and_reinit_curr_node(ret, curr_node);
 		if (v)

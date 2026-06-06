@@ -17,7 +17,7 @@ char	*expand_history(t_shell *state, const char *input);
 
 static void	apply_expansion(t_shell *state, char *expanded)
 {
-	free(state->input.ctx);
+	xfree(state->input.ctx);
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	vec_push_str(&state->input, expanded);
@@ -36,8 +36,8 @@ static void	expand_hist_in_input(t_shell *state)
 	if (expanded && ft_strcmp(expanded, raw) != 0 && expanded[0] != '\0')
 		apply_expansion(state, expanded);
 	if (expanded)
-		free(expanded);
-	free(raw);
+		xfree(expanded);
+	xfree(raw);
 }
 
 static void	init_rl_bufs(t_shell *state)
@@ -60,7 +60,7 @@ int	readline_cmd(t_shell *state, char **prompt)
 
 	init_rl_bufs(state);
 	stat = buff_readline(state, &state->input, *prompt);
-	free(*prompt);
+	xfree(*prompt);
 	*prompt = 0;
 	if (stat == 0)
 		return (1);

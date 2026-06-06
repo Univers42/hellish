@@ -40,7 +40,7 @@ static char	*line_build(t_string *buf, int eof_flag)
 	char	nul;
 
 	if (eof_flag && buf->len == 0)
-		return (free(buf->ctx), NULL);
+		return (xfree(buf->ctx), NULL);
 	nul = '\0';
 	vec_push(buf, &nul);
 	return ((char *)buf->ctx);

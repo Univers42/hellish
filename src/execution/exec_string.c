@@ -52,7 +52,7 @@ static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 		status = 2;
 	}
 	free_ast(&ast);
-	free(parser.parse_stack.ctx);
+	xfree(parser.parse_stack.ctx);
 	*stop = (parser.res != RES_OK || must_stop(state));
 	if (!*stop)
 		skip_delimiters(tt);
@@ -75,7 +75,7 @@ static int	exec_string_inner(t_shell *state, char *str)
 	while (!stop && ((t_token *)deque_peek(&tt.deqtok))->tt != TT_END)
 		status = run_one_stmt(state, &tt, &stop);
 	state->func_return = 0;
-	free(tt.deqtok.buff);
+	xfree(tt.deqtok.buff);
 	return (status);
 }
 
@@ -100,11 +100,11 @@ int	exec_string(t_shell *state, char *str)
 		state->hd_src = bodies;
 		state->hd_pos = 0;
 		status = exec_string_inner(state, stripped);
-		free(stripped);
+		xfree(stripped);
 	}
 	else
 		status = exec_string_inner(state, str);
-	free(bodies);
+	xfree(bodies);
 	state->hd_src = prev_src;
 	state->hd_pos = prev_pos;
 	return (status);

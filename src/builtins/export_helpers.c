@@ -56,7 +56,7 @@ char	strip_surrounding_quotes(char **val)
 		if ((f == '"' || f == '\'') && (*val)[vlen - 1] == f)
 		{
 			clean = ft_strndup(*val + 1, vlen - 2);
-			free(*val);
+			xfree(*val);
 			*val = clean;
 			return (f);
 		}

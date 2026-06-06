@@ -22,7 +22,7 @@ static void	push_glob_no_split(t_vec *args, t_vec *glob_words)
 	while (j < glob_words->len)
 	{
 		vec_push_str(&temp, ((char **)glob_words->ctx)[j]);
-		free(((char **)glob_words->ctx)[j]);
+		xfree(((char **)glob_words->ctx)[j]);
 		if (j++ + 1 < glob_words->len)
 			vec_push_char(&temp, ' ');
 	}
@@ -52,9 +52,9 @@ void	expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
 		return ;
 	if (keep_as_one)
 		return (push_glob_no_split(args, &glob_words),
-			free(glob_words.ctx), free_ast(node));
+			xfree(glob_words.ctx), free_ast(node));
 	j = 0;
 	while (j < glob_words.len)
 		vec_push(args, &((char **)glob_words.ctx)[j++]);
-	(free(glob_words.ctx), free_ast(node));
+	(xfree(glob_words.ctx), free_ast(node));
 }

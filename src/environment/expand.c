@@ -109,6 +109,6 @@ void	env_extend(t_vec_env *dest, t_vec_env *src, bool export)
 		curr.exported = export;
 		env_set(dest, curr);
 	}
-	free(src->ctx);
+	xfree(src->ctx);
 	vec_init(src);
 }

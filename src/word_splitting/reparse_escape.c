@@ -24,7 +24,7 @@ static void	set_full_word_for_children(void *ctx, size_t len,
 	i = 0;
 	while (i < len)
 	{
-		p = malloc(sizeof(t_token_old));
+		p = xmalloc(sizeof(t_token_old));
 		if (p)
 			*p = full_word;
 		((t_ast_node *)ctx)[i++].token.full_word = p;

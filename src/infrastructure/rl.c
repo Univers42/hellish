@@ -73,6 +73,8 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 	ret = readline(split_prompt(prompt));
 	if (!ret)
 		(close(outfd), exit (1));
+	/* readline() returns libc-malloc'd memory: free it with libc free, not
+	   xfree, so SAFE=0 (the ft_malloc heap) cannot be corrupted. */
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
 }
 

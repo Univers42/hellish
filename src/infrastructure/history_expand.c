@@ -63,8 +63,8 @@ char	*hist_search_contains(t_shell *state, const char *needle, int len)
 	{
 		cmd = ((char **)state->hist.hist_cmds.ctx)[i];
 		if (ft_strnstr(cmd, nd, ft_strlen(cmd)))
-			return (free(nd), cmd);
+			return (xfree(nd), cmd);
 		i--;
 	}
-	return (free(nd), NULL);
+	return (xfree(nd), NULL);
 }

@@ -42,12 +42,12 @@ static char	*join_from(t_vec argv, size_t from)
 	while (from < argv.len)
 	{
 		tmp = ft_strjoin(acc, av[from]);
-		free(acc);
+		xfree(acc);
 		acc = tmp;
 		if (++from < argv.len)
 		{
 			tmp = ft_strjoin(acc, " ");
-			free(acc);
+			xfree(acc);
 			acc = tmp;
 		}
 	}
@@ -79,7 +79,7 @@ static int	command_v(t_shell *state, char *name)
 	path = exe_path(dirs, name, &perm);
 	free_tab(dirs);
 	if (path)
-		return (ft_printf("%s\n", path), free(path), 0);
+		return (ft_printf("%s\n", path), xfree(path), 0);
 	return (1);
 }
 
@@ -97,11 +97,11 @@ static int	command_run(t_shell *state, t_vec argv, size_t start)
 	while (i < argv.len)
 		vec_push(&sub, &av[i++]);
 	if (builtin_func(av[start]))
-		return (i = builtin_func(av[start])(state, sub), free(sub.ctx), i);
-	free(sub.ctx);
+		return (i = builtin_func(av[start])(state, sub), xfree(sub.ctx), i);
+	xfree(sub.ctx);
 	cur = join_from(argv, start);
 	i = exec_string(state, cur);
-	return (free(cur), i);
+	return (xfree(cur), i);
 }
 
 /* command [-p] [-v|-V] cmd [args]: run cmd bypassing functions. */

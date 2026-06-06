@@ -60,7 +60,7 @@ static void	expand_brace_result(t_shell *state, t_vec *results, t_vec *args)
 		tmp.tt = TT_WORD;
 		w = reparse_word(tmp);
 		expand_word(state, &w, args, false);
-		free(fs);
+		xfree(fs);
 	}
 }
 
@@ -76,13 +76,13 @@ bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 		return (false);
 	flat = word_to_brace_src(*node);
 	fs = ft_strndup((char *)flat.ctx, flat.len);
-	free(flat.ctx);
+	xfree(flat.ctx);
 	if (brace_find_expandable(fs, &(int){0}) < 0)
-		return (free(fs), false);
+		return (xfree(fs), false);
 	results = brace_expand_str(fs);
-	free(fs);
+	xfree(fs);
 	expand_brace_result(state, &results, args);
-	return (free(results.ctx), free_ast(node), true);
+	return (xfree(results.ctx), free_ast(node), true);
 }
 
 static bool	has_plain_literal_meta(char c, int *lbr, int i)

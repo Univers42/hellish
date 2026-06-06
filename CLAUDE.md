@@ -11,8 +11,8 @@ The produced binary is **`build/bin/hellish`** (the Makefile's `BAPTIZE_SHELL`).
 ## Build & run
 
 ```sh
-make                 # default: debug + AddressSanitizer + LeakSanitizer, -O0 -g3, single-job
-make OPT=1           # optimized: -O3 -flto -ffast-math, parallel (-j nproc), NDEBUG — use for benchmarks/daily use
+make                 # default: debug + AddressSanitizer + LeakSanitizer, -O0 -g3, single-job (SAFE=1)
+make OPT=1           # optimized: -O3 -flto -ffast-math, parallel (-j nproc), NDEBUG (SAFE=0) — benchmarks/daily use
 make re              # fclean + build
 make clean / fclean  # remove objects / objects+binary+libft+build
 ./build/bin/hellish  # run it
@@ -21,6 +21,7 @@ make clean / fclean  # remove objects / objects+binary+libft+build
 Key build facts:
 - **Default build runs under ASan+LeakSanitizer.** Leaks and UB surface at runtime; several test runners count any `LeakSanitizer` report as a failure. Build `OPT=1` for a clean, fast binary.
 - **Debug and OPT use separate object trees** (`build/obj` vs `build/obj-opt`) but share the binary path. Make won't relink on a flag-only change, so `make test`/`make bench` force-remove the binary first to guarantee the right build is timed/tested.
+- **`SAFE` selects the allocator backend.** The whole shell allocates via `xmalloc`/`xcalloc`/`xfree` (libft macros → `xfn_*` wrappers → `fn_*`), which switch at compile time: `SAFE=1` → libc `malloc`/`free` (ASan-friendly); `SAFE=0` → libft's custom `ft_malloc` heap (faster, less battle-tested). Default tracks the mode — debug is `SAFE=1`, `OPT=1` is `SAFE=0`; an explicit `SAFE=…` on the CLI always wins, and the build prints which is active. libft is built into a per-`SAFE` tree (`vendor/libft/build-libc` vs `build-ft`) so the backends never share objects. Both backends pass the full suite. Note: `ft_malloc` is a **separate heap from libc** (no symbol interposition), so libc-sourced pointers (`readline()` result in `rl.c`, `getcwd(NULL,0)` — wrapped by `x_getcwd()` in [src/helpers/x_getcwd.c](src/helpers/x_getcwd.c)) stay on libc `free`; everything else is `xfree`. The word slab (`src/helpers/word_slab.c`) and libft arenas are self-contained and freed only through their own API. `make my_shell` installs an `OPT=1 SAFE=1` build.
 - `-Werror`, `-D_XOPEN_SOURCE=700`. Links against `-lreadline`.
 - **libft is a git submodule** (`vendor/libft`, plus `vendor/scripts`). The root build compiles it first. If it appears empty/wiped, run `git submodule update --init --recursive` (helper scripts exist under `vendor/scripts/fix-libft-submodule*.sh`).
 

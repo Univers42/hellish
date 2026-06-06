@@ -82,18 +82,26 @@ teaching lab:
 The project comes with a `Makefile` at the root. The usual targets are:
 
 ```sh
-make          # Build the default (debug/normal) shell binary
-make debug    # Build with extra debug flags (if provided in the Makefile)
+make          # default debug build (AddressSanitizer + LeakSanitizer), SAFE=1
+make OPT=1    # optimized build (-O3 -flto), SAFE=0 — the custom ft_malloc heap
 make clean    # Remove object files
 make fclean   # Remove objects + binaries
 make re       # Full rebuild
 ```
 
-The resulting binary is typically named something like `sh42` (or as defined
-in the `Makefile`). After `make`, you can run:
+**Allocator toggle (`SAFE`).** Every allocation in the shell goes through a
+single macro family (`xmalloc` / `xcalloc` / `xfree`) that is switched **at
+compile time** between libc `malloc`/`free` and our own `ft_malloc`. `SAFE=1`
+(the debug default) uses libc so AddressSanitizer stays meaningful; `SAFE=0`
+(the `OPT=1` default) uses `ft_malloc` — faster, less battle-tested. Override
+either way (e.g. `make OPT=1 SAFE=1` for an optimized libc build); the build
+banner tells you which heap is active. `make my_shell` installs an
+`OPT=1 SAFE=1` binary. Both backends pass the full test suite.
+
+After `make`, the binary is `./build/bin/hellish`:
 
 ```sh
-./build/bin/minishell
+./build/bin/hellish
 ```
 
 and you’ll be dropped into the shell prompt.

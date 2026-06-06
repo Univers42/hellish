@@ -26,9 +26,9 @@ static void	free_cmd_entry(void *ptr)
 	e = (t_cmd_hash_entry *)ptr;
 	if (e)
 	{
-		free(e->name);
-		free(e->path);
-		free(e);
+		xfree(e->name);
+		xfree(e->path);
+		xfree(e);
 	}
 }
 
@@ -58,12 +58,12 @@ void	cmd_hash_insert(t_hash *ht, const char *name, const char *path)
 	old = (t_cmd_hash_entry *)hash_get(ht, name);
 	if (old)
 	{
-		free(old->path);
+		xfree(old->path);
 		old->path = ft_strdup(path);
 		old->hits = 0;
 		return ;
 	}
-	entry = malloc(sizeof(t_cmd_hash_entry));
+	entry = xmalloc(sizeof(t_cmd_hash_entry));
 	if (!entry)
 		return ;
 	entry->name = ft_strdup(name);

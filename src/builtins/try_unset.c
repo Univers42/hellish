@@ -26,8 +26,8 @@ void	try_unset(t_shell *state, char *key)
 		return ;
 	arr = (t_env *)state->env.ctx;
 	idx = (size_t)(e - arr);
-	free(arr[idx].key);
-	free(arr[idx].value);
+	xfree(arr[idx].key);
+	xfree(arr[idx].value);
 	i = idx;
 	while (i + 1 < state->env.len)
 	{

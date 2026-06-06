@@ -26,7 +26,7 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	{
 		p = prompt_normal(state);
 		*prompt = ft_strdup(p.ctx);
-		free(p.ctx);
+		xfree(p.ctx);
 	}
 	else
 		*prompt = ft_strdup("");
@@ -49,12 +49,12 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 		set_cmd_status(state, create_exec_state(CANCELED, true));
 	manage_history(state);
 	if (parser->parse_stack.ctx)
-		free(parser->parse_stack.ctx);
+		xfree(parser->parse_stack.ctx);
 	parser->parse_stack = (t_vec_int){};
 	if (prompt)
-		free(prompt);
+		xfree(prompt);
 	if (tt->deqtok.buff)
-		free(tt->deqtok.buff);
+		xfree(tt->deqtok.buff);
 	state->should_exit |= (get_g_sig()->should_unwind
 			&& state->metinp != INP_RL)
 		|| state->rl.has_finished;

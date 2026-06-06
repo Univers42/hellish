@@ -53,7 +53,7 @@ int	brace_find_expandable(const char *s, int *close)
 			{
 				body = ft_substr(s, i + 1, c - i - 1);
 				seq = brace_gen_sequence(body, NULL);
-				free(body);
+				xfree(body);
 				if (seq || has_top_comma(s, i, c))
 					return (*close = c, i);
 			}
@@ -73,11 +73,11 @@ static void	push_piece(const char *s, int start, int len, t_vec *out)
 
 	piece = ft_substr(s, start, len);
 	sub = brace_expand_str(piece);
-	free(piece);
+	xfree(piece);
 	j = 0;
 	while (j < sub.len)
 		vec_push(out, &((char **)sub.ctx)[j++]);
-	free(sub.ctx);
+	xfree(sub.ctx);
 }
 
 static void	split_commas(const char *s, int open, int close, t_vec *out)
@@ -113,8 +113,8 @@ t_vec	brace_alternatives(const char *s, int open, int close)
 	out.elem_size = sizeof(char *);
 	body = ft_substr(s, open + 1, close - open - 1);
 	if (brace_gen_sequence(body, &out))
-		return (free(body), out);
-	free(body);
+		return (xfree(body), out);
+	xfree(body);
 	split_commas(s, open, close, &out);
 	return (out);
 }

@@ -29,13 +29,13 @@ static void	handle_glob_match_result(t_dir_matcher matcher,
 			((char *)next_path->ctx)[next_path->len] = '\0';
 		match_dir(matcher.args, matcher.glob,
 			(char *)next_path->ctx, res + 1);
-		free(next_path->ctx);
+		xfree(next_path->ctx);
 	}
 	else
 	{
 		vec_push(matcher.args, &(char *)
 		{ft_strdup((char *)next_path->ctx)});
-		free(next_path->ctx);
+		xfree(next_path->ctx);
 	}
 }
 
@@ -64,7 +64,7 @@ int	process_dir(t_dir_matcher matcher)
 		handle_glob_match_result(matcher, &next_path, diren, res);
 		return (1);
 	}
-	return (free(next_path.ctx), 1);
+	return (xfree(next_path.ctx), 1);
 }
 
 /*

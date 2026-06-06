@@ -46,7 +46,7 @@ void	unset_function(t_shell *state, const char *name)
 	{
 		if (ft_strcmp(arr[i].name, name) == 0)
 		{
-			free(arr[i].name);
+			xfree(arr[i].name);
 			free_ast(&arr[i].body);
 			while (i + 1 < state->functions.len)
 			{
@@ -93,7 +93,7 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 	name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	body = vec_idx(&exe->node->children, 0);
 	store_function(state, name, body);
-	free(name);
+	xfree(name);
 	return (res_status(0));
 }
 

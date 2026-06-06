@@ -57,11 +57,11 @@ void	ensure_essential_env_vars(t_shell *state)
 	e = env_get(&state->env, PWD);
 	if (!e || !e->value || !e->value[0])
 	{
-		cwd = getcwd(NULL, 0);
+		cwd = x_getcwd();
 		if (!cwd)
 			cwd = ft_strdup(TMP_DIR);
 		env_set(&state->env, env_create(ft_strdup(PWD),
 				ft_strdup(cwd), true));
-		free(cwd);
+		xfree(cwd);
 	}
 }

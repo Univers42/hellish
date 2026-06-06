@@ -42,7 +42,7 @@ void	run_exit_trap(t_shell *state)
 		return ;
 	state->traps[0] = NULL;
 	exec_string(state, cmd);
-	free(cmd);
+	xfree(cmd);
 }
 
 /* trap -p [condition ...] : print the trap commands for the named conditions
@@ -71,7 +71,7 @@ int	set_one_trap(t_shell *state, const char *action, int num)
 {
 	if (num < 0 || num >= 32)
 		return (1);
-	free(state->traps[num]);
+	xfree(state->traps[num]);
 	state->traps[num] = NULL;
 	if (action[0] == '-')
 	{

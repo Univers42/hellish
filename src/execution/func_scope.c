@@ -49,8 +49,8 @@ void	restore_one(t_shell *state, t_scope_save *s)
 	else
 	{
 		try_unset(state, s->key);
-		free(s->key);
-		free(s->value);
+		xfree(s->key);
+		xfree(s->value);
 	}
 }
 

@@ -61,7 +61,7 @@ static int	specs_on_line(const char *ls, size_t len, size_t line, t_vec *v)
 			(push_spec(v, &tt, i, line), found++);
 		i++;
 	}
-	return (free(tt.deqtok.buff), free(copy), found);
+	return (xfree(tt.deqtok.buff), xfree(copy), found);
 }
 
 /* Walk the source line by line, collecting heredoc specs and skipping each

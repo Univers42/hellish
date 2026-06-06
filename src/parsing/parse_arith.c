@@ -103,7 +103,7 @@ int	handle_arith_error(t_shell *state,
 	last_word = (t_token){0};
 	handle_arith_error_collect(tokens, &expr_buf, &has_inner_paren, &last_word);
 	handle_arith_error_print(state, has_inner_paren, last_word);
-	free(expr_buf.ctx);
+	xfree(expr_buf.ctx);
 	parser->res = RES_ERR;
 	set_cmd_status(state, res_status(1));
 	(void)ret;

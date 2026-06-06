@@ -39,7 +39,7 @@ char	*expand_param_word(t_shell *state, const char *word, int wlen)
 		ret = ft_strdup("");
 	else
 		ret = ft_strndup((char *)s.ctx, s.len);
-	free(s.ctx);
+	xfree(s.ctx);
 	free_ast(&w);
 	return (ret);
 }

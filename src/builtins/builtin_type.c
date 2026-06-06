@@ -69,7 +69,7 @@ int	type_one_path(t_shell *state, const char *name)
 	else if (type_find_in_path(state, name, &path))
 	{
 		ft_printf("%s is %s\n", name, path);
-		free(path);
+		xfree(path);
 		return (0);
 	}
 	ft_eprintf("%s: type: %s: not found\n", state->ctx, name);

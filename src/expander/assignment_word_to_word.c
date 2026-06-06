@@ -20,14 +20,14 @@ static void	append_eq_to_token(t_token *t)
 {
 	char	*ke;
 
-	ke = malloc(t->len + 2);
+	ke = xmalloc(t->len + 2);
 	if (!ke)
 		return ;
 	ft_memcpy(ke, t->start, t->len);
 	ke[t->len] = '=';
 	ke[t->len + 1] = '\0';
 	if (t->allocated)
-		free(t->start);
+		xfree(t->start);
 	t->start = ke;
 	t->len++;
 	t->allocated = true;
@@ -54,10 +54,10 @@ void	assignment_word_to_word(t_ast_node *node)
 		i = -1;
 		while (++i < right.children.len)
 			vec_push(&ret.children, vec_idx(&right.children, i));
-		free(right.children.ctx);
+		xfree(right.children.ctx);
 	}
 	else
 		vec_push(&ret.children, &right);
-	free(node->children.ctx);
+	xfree(node->children.ctx);
 	*node = ret;
 }

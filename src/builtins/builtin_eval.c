@@ -28,12 +28,12 @@ static char	*join_args(t_vec argv, size_t from)
 	while (i < argv.len)
 	{
 		tmp = ft_strjoin(acc, av[i]);
-		free(acc);
+		xfree(acc);
 		acc = tmp;
 		if (++i < argv.len)
 		{
 			tmp = ft_strjoin(acc, " ");
-			free(acc);
+			xfree(acc);
 			acc = tmp;
 		}
 	}
@@ -50,7 +50,7 @@ int	builtin_eval(t_shell *state, t_vec argv)
 		return (0);
 	joined = join_args(argv, 1);
 	status = exec_string(state, joined);
-	free(joined);
+	xfree(joined);
 	return (status);
 }
 
@@ -76,8 +76,8 @@ int	builtin_source(t_shell *state, t_vec argv)
 	vec_append_fd(fd, &buf);
 	close(fd);
 	content = ft_strndup((char *)buf.ctx, buf.len);
-	free(buf.ctx);
+	xfree(buf.ctx);
 	status = exec_string(state, content);
-	free(content);
+	xfree(content);
 	return (status);
 }

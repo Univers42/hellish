@@ -17,8 +17,8 @@ void	arith_cache_free(t_arith_cache *c)
 {
 	if (!c)
 		return ;
-	free(c->toks);
-	free(c);
+	xfree(c->toks);
+	xfree(c);
 }
 
 /* Advance the lexer while it replays a cached token array. `pos` is the index
