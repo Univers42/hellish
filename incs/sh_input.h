@@ -34,9 +34,9 @@ typedef struct s_deque_tok	t_deque_tok;
    and whether we call readline() vs read() vs use a string buffer. */
 typedef enum e_metinp
 {
-	INP_RL,    /* interactive readline (default: tty connected) */
-	INP_FILE,  /* script file (-f / heredoc) */
-	INP_ARG,   /* -c 'command string' */
+	INP_RL, /* interactive readline (default: tty connected) */
+	INP_FILE, /* script file (-f / heredoc) */
+	INP_ARG, /* -c 'command string' */
 	INP_NOTTY, /* stdin is not a tty (piped input) */
 }	t_metinp;
 # endif

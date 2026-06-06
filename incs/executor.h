@@ -31,9 +31,9 @@ typedef struct s_ast_node	t_ast_node;
 typedef struct executable_cmd_s
 {
 	t_vec_env	pre_assigns; /* NAME=VALUE pairs before the command */
-	t_vec		argv;        /* NULL-terminated argv word list */
-	char		*fname;      /* resolved path (heap) or NULL for builtins */
-	bool		pooled;      /* true if argv was borrowed from argv_pool */
+	t_vec		argv; /* NULL-terminated argv word list */
+	char		*fname; /* resolved path (heap) or NULL for builtins */
+	bool		pooled; /* true if argv was borrowed from argv_pool */
 }	t_executable_cmd;
 
 /* argv backing pool (free_utils2.c): borrow on expand, return on teardown. */
@@ -46,11 +46,11 @@ void				free_argv_pool(t_shell *state);
    process (builtins, function calls) and is allowed to modify state. */
 typedef struct executable_node_s
 {
-	int			infd;             /* read end of pipe from previous stage */
-	int			outfd;            /* write end of pipe to next stage */
-	int			next_infd;        /* saved next read end (pipeline setup) */
-	t_ast_node	*node;            /* the AST node being executed */
-	t_vec_int	redirs;           /* indices into state->redirects */
+	int			infd; /* read end of pipe from previous stage */
+	int			outfd; /* write end of pipe to next stage */
+	int			next_infd; /* saved next read end (pipeline setup) */
+	t_ast_node	*node; /* the AST node being executed */
+	t_vec_int	redirs; /* indices into state->redirects */
 	bool		modify_parent_ctx; /* true for builtins that modify state */
 }	t_executable_node;
 

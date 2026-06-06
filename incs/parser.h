@@ -28,7 +28,7 @@
    parse-time error or RES_GETMOREINPUT (incomplete input, need more). */
 typedef struct s_parser
 {
-	t_result_type	res;        /* parse result / error code */
+	t_result_type	res; /* parse result / error code */
 	t_vec			parse_stack; /* heredoc ordering stack */
 }	t_parser;
 

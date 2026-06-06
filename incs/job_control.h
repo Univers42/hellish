@@ -27,28 +27,28 @@
    session; going higher just wastes stack space (the table is embedded). */
 # define JOB_MAX 256
 
-/* Lifecycle states for a background job.  Transitions:
-   RUNNING -> STOPPED  (SIGSTOP / ^Z)
-   RUNNING -> DONE     (normal exit)
-   RUNNING -> KILLED   (signal termination, e.g. SIGKILL) */
+/* Lifecycle states for a background job. RUNNING -> STOPPED (SIGSTOP / ^Z);
+   RUNNING -> DONE (normal exit); RUNNING -> KILLED (signal death, kept distinct
+   from DONE for display). Keep comments OFF the enumerator lines below --
+   norminette mis-parses an inline comment on an enum value. */
 typedef enum e_job_status
 {
-	JOB_RUNNING, /* job is still alive and running */
-	JOB_STOPPED, /* job received SIGSTOP / SIGTSTP (can be resumed) */
-	JOB_DONE,    /* job exited normally or via signal */
-	JOB_KILLED   /* job was killed by a signal (separate for display) */
+	JOB_RUNNING,
+	JOB_STOPPED,
+	JOB_DONE,
+	JOB_KILLED
 }	t_job_status;
 
 /* Metadata for one background job (one pipeline). */
 typedef struct s_job
 {
-	int				id;        /* shell-level job number ([N] in `jobs`) */
-	pid_t			pgid;      /* process group; 0 = slot is free */
-	t_job_status	status;    /* current lifecycle state */
+	int				id; /* shell-level job number ([N] in `jobs`) */
+	pid_t			pgid; /* process group; 0 = slot is free */
+	t_job_status	status; /* current lifecycle state */
 	int				exit_code; /* last recorded exit code (0 before exit) */
-	char			*cmd;      /* command text for display (owned, heap) */
-	bool			notified;  /* true once the "Done" line was printed */
-	bool			bg;        /* true if started with & (not fg'd yet) */
+	char			*cmd; /* command text for display (owned, heap) */
+	bool			notified; /* true once the "Done" line was printed */
+	bool			bg; /* true if started with & (not fg'd yet) */
 }	t_job;
 
 /* The job table embedded in t_shell.  current/previous are job IDs
@@ -56,10 +56,10 @@ typedef struct s_job
 typedef struct s_job_table
 {
 	t_job	jobs[JOB_MAX]; /* flat array of job slots */
-	int		count;         /* number of occupied slots */
-	int		next_id;       /* next job ID to assign (monotonic) */
-	int		current;       /* ID of the most-recently-backgrounded job */
-	int		previous;      /* ID of the job before current */
+	int		count; /* number of occupied slots */
+	int		next_id; /* next job ID to assign (monotonic) */
+	int		current; /* ID of the most-recently-backgrounded job */
+	int		previous; /* ID of the job before current */
 }	t_job_table;
 
 struct	s_shell;
