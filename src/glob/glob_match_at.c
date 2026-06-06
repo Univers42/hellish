@@ -12,6 +12,10 @@
 
 #include "glob_private.h"
 
+/* Match a G_LITERAL token and, on success, recurse for the remaining tokens.
+   is_first tracks whether we're at the start of a path component (just after
+   a slash, or at position 0). A G_SLASH token in the previous slot resets
+   is_first to true for the next component. */
 static bool	match_literal_token(t_glob_match_ctx ctx, t_glob *g)
 {
 	int	consumed;
@@ -26,6 +30,10 @@ static bool	match_literal_token(t_glob_match_ctx ctx, t_glob *g)
 	return (glob_match_at(ctx.name, ctx.pattern, ctx.offset));
 }
 
+/* Match a G_QUESTION token: consume one character if allowed, then recurse.
+   is_first is updated the same way as in match_literal_token. The (void)g
+   suppresses a warning because g is unused here (the match_question function
+   only needs the name pointer and the is_first flag). */
 static bool	match_question_token(t_glob_match_ctx ctx, t_glob *g)
 {
 	int	consumed;
@@ -41,6 +49,9 @@ static bool	match_question_token(t_glob_match_ctx ctx, t_glob *g)
 	(void)g;
 }
 
+/* Match a G_BRACKET token against the current character using the pre-built
+   char_set, then recurse for the rest of the pattern. Same is_first bookkeeping
+   as the other token matchers. */
 static bool	match_bracket_token(t_glob_match_ctx ctx, t_glob *g)
 {
 	int	consumed;
@@ -55,12 +66,20 @@ static bool	match_bracket_token(t_glob_match_ctx ctx, t_glob *g)
 	return (glob_match_at(ctx.name, ctx.pattern, ctx.offset));
 }
 
+/* Delegate the backtracking asterisk match to match_asterisk_recursive. No
+   is_first update here -- the recursive call handles the leading-dot guard. */
 static bool	match_asterisk_token(t_glob_match_ctx ctx)
 {
 	return (match_asterisk_recursive(ctx.name,
 			ctx.pattern, ctx.offset, ctx.is_first));
 }
 
+/* Core recursive matcher: does name match pattern starting at token `offset`?
+   offset >= pattern->len means we've consumed all tokens -- success only if
+   the name is also exhausted. A G_SLASH token at this position is a boundary
+   between path components; it cannot match any character in name (the walker
+   ensures names passed here are single components), so it returns false.
+   All other token types dispatch to the per-type match helpers above. */
 bool	glob_match_at(const char *name, t_vec_glob *pattern, size_t offset)
 {
 	t_glob				*g;

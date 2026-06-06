@@ -12,7 +12,9 @@
 
 #include "glob_private.h"
 
-// Helper: handle a slash token
+/* Emit a G_SLASH token for the '/' at the current position. Slashes are path
+   separators; the directory walker (match_dir) uses them to decide when to
+   recurse into a subdirectory. */
 void	handle_slash_token(t_tokenizer_ctx ctx)
 {
 	t_glob	g;
@@ -22,7 +24,9 @@ void	handle_slash_token(t_tokenizer_ctx ctx)
 	(*ctx.i)++;
 }
 
-// Helper: handle asterisk token
+/* Consume one or more consecutive '*' characters and emit a single G_ASTERISK
+   token. Multiple stars collapse into one -- '***' is identical to '*' in
+   POSIX glob semantics (no recursive globbing unlike zsh '**'). */
 void	handle_asterisk_token(t_tokenizer_ctx ctx)
 {
 	t_glob	g;
@@ -33,7 +37,8 @@ void	handle_asterisk_token(t_tokenizer_ctx ctx)
 	vec_push(ctx.ret, &g);
 }
 
-// Helper: handle question mark token
+/* Emit a G_QUESTION token for a single '?'. Each '?' matches exactly one
+   character (excluding a leading dot), so "??" needs two separate tokens. */
 void	handle_question_token(t_tokenizer_ctx ctx)
 {
 	t_glob	g;
@@ -43,7 +48,10 @@ void	handle_question_token(t_tokenizer_ctx ctx)
 	(*ctx.i)++;
 }
 
-// Helper: handle bracket token
+/* Try to tokenize a '[...]' bracket expression. parse_bracket determines
+   whether '[' starts a valid class or is just a literal. If parse_bracket
+   returns 0 (invalid bracket, e.g. unclosed '[' or empty '[]'), the '[' is
+   emitted as a literal character via tokenize_literal_n with force_n=1. */
 void	handle_bracket_token(t_tokenizer_ctx ctx)
 {
 	t_glob	g;
@@ -59,7 +67,9 @@ void	handle_bracket_token(t_tokenizer_ctx ctx)
 		tokenize_literal_n(ctx, !ctx.quoted, 1);
 }
 
-// Helper: handle literal token
+/* Emit a G_LITERAL token for any character that isn't a wildcard or slash.
+   Delegates to tokenize_literal, which runs until it hits a special char,
+   so a run of plain letters becomes one token, not N single-char ones. */
 void	handle_literal_token(t_tokenizer_ctx ctx)
 {
 	tokenize_literal(ctx);

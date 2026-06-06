@@ -16,7 +16,10 @@
 #include <errno.h>
 #include <string.h>
 
-/* t_signame is declared in ft_builtins.h (shared with builtin_trap.c). */
+/* The kill builtin has its own signal table (separate from trap's) because
+   it needs a much wider set of signal names — KILL, STOP, CHLD, CONT, etc.
+   that are not meaningful as trap conditions. t_signame is declared in
+   ft_builtins.h and shared with builtin_trap.c. */
 static const t_signame	*sig_table(void)
 {
 	static const t_signame	t[] = {
@@ -50,6 +53,7 @@ int	kill_sig_from_name(const char *name)
 	return (-1);
 }
 
+/* kill -l: list every known signal in `N) SIGNAME` format, matching bash. */
 int	kill_list_sigs(void)
 {
 	const t_signame	*t;

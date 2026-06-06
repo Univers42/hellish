@@ -13,8 +13,10 @@
 #include "builtins_private.h"
 #include "executor.h"
 
-/* return [n]: stop the current function or sourced script with status n
-   (default: status of the last command). */
+/* return [n]: unwind the current function or sourced-file execution and
+   report status n. We set state->func_return = 1 so the executor's call
+   stack knows to stop running the function body without exiting the shell.
+   The `& 0xFF` mask keeps the exit status in 0-255 — same as bash. */
 int	builtin_return(t_shell *state, t_vec argv)
 {
 	char	*cur;
@@ -31,6 +33,9 @@ int	builtin_return(t_shell *state, t_vec argv)
 	return (n & 0xFF);
 }
 
+/* Join argv[from..] into a space-separated string to feed to exec_string.
+   Used by command_run when we need to fall back to re-parsing an external
+   command invocation (the builtin path takes a different route). */
 static char	*join_from(t_vec argv, size_t from)
 {
 	char	**av;
@@ -83,6 +88,9 @@ static int	command_v(t_shell *state, char *name)
 	return (1);
 }
 
+/* Run the command at argv[start..], bypassing function lookup. If it is a
+   builtin, invoke it directly. Otherwise re-join the words and hand them to
+   exec_string so the full pipeline/redirect machinery runs. */
 static int	command_run(t_shell *state, t_vec argv, size_t start)
 {
 	char	**av;

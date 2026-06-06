@@ -10,10 +10,18 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Core env CRUD: create, set (upsert), get, serialise to string, and
+   build the envp[] array for execve.  Ownership rule: t_env OWNS its key
+   and value strings.  env_set either frees the old value (update path)
+   or hands both strings to the vector (insert path). Never double-free. */
+
 #include "env.h"
 #include "libft.h"
 #include "sys.h"
 
+/* Wrap three fields into a t_env struct.  Caller owns key and value
+   (must be heap-allocated, not stack); env_set will eventually free them
+   or the caller must free them if env_set is never called. */
 t_env	env_create(char *key, char *value, bool exported)
 {
 	t_env	e;
@@ -24,6 +32,10 @@ t_env	env_create(char *key, char *value, bool exported)
 	return (e);
 }
 
+/* Upsert: if key already exists, replace value (freeing old) and update
+   exported flag; consume el.key (freeing the duplicate).  If new, push
+   the whole entry and tell the index about the new slot.  Returns 0 on
+   success, 1 if vec_push failed (OOM). */
 int	env_set(t_vec_env *env, t_env el)
 {
 	t_env	*old;
@@ -57,6 +69,8 @@ t_env	*env_get(t_vec_env *env, char *key)
 	return (&((t_env *)env->ctx)[idx]);
 }
 
+/* Serialise one env entry back to "KEY=VALUE".  Used by get_envp to
+   build execve's envp[].  Caller owns the returned string. */
 char	*env_to_str(t_env *e)
 {
 	t_string	s;
@@ -71,6 +85,10 @@ char	*env_to_str(t_env *e)
 	return ((char *)s.ctx);
 }
 
+/* Build the NULL-terminated envp[] for execve, including only entries
+   where exported==true.  Shell-local variables (exported=false) are
+   intentionally hidden from child processes. Caller owns the array and
+   each element. */
 char	**get_envp(t_shell *state, char *exe_path)
 {
 	char	**ret;

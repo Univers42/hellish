@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Word expansion public API: variable expansion, command substitution,
+   arithmetic, field splitting, glob, tilde, and parameter format
+   (${v:-default} etc.).  expand_word is the main entry; the others are
+   variants with different field-splitting / glob control. */
+
 #ifndef EXPANDER_H
 # define EXPANDER_H
 
@@ -17,14 +22,16 @@
 # include "helpers.h"
 # include "env.h"
 
-/* Expander types */
+/* Loop state threaded through expand_simple_command.  i is the current
+   child index; found_first tracks whether we have seen the command word
+   (pre-command NAME=VALUE words come before it). */
 typedef struct s_expander_simple_cmd
 {
-	size_t		i;
-	t_ast_node	*curr;
-	bool		found_first;
-	bool		export;
-	int			exit_stat;
+	size_t		i;           /* current child node index */
+	t_ast_node	*curr;       /* shorthand for children[i] */
+	bool		found_first; /* true once the command word is seen */
+	bool		export;      /* true when expanding an `export` command */
+	int			exit_stat;   /* running exit status for the command */
 }	t_expander_simple_cmd;
 
 /* expand_word_glob_ctl `flags` bits: keep the word as one field (no field

@@ -16,8 +16,10 @@
 void	exit_clean(t_shell *state, int code);
 
 /* Run the parser over an already-initialized lexer (scanning OR cached
-   token-array mode). *error is set on any parse/lex error. Shared by the plain
-   and cached eval entry points. */
+   token-array mode). Shared by both arith_eval and arith_eval_cached so the
+   parse logic lives in exactly one place. An empty expression (first token
+   already EOF) returns 0 like bash. Any leftover tokens after arith_parse_expr
+   returns are also an error -- e.g. "1 2" has no operator between the two. */
 long long	arith_run(t_shell *state, t_arith_lexer *lexer, bool *error)
 {
 	t_arith_parser	parser;
@@ -42,10 +44,10 @@ long long	arith_run(t_shell *state, t_arith_lexer *lexer, bool *error)
 	return (result);
 }
 
-/*
- * Evaluate an arithmetic expression and return the result.
- * Sets *error to true if there was a parsing error.
- */
+/* Evaluate an arithmetic expression and return the numeric result.
+   Sets *error to true on any lexer or parse error. The caller decides
+   what to do with the error; arith_expand wraps this and calls arith_fail
+   to print a message and possibly exit. */
 long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 {
 	t_arith_lexer	lexer;
@@ -54,8 +56,11 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	return (arith_run(state, &lexer, error));
 }
 
-/* long long -> malloc'd string. Operates on the magnitude as unsigned so that
-   LLONG_MIN (whose signed negation overflows) is formatted correctly. */
+/* Convert a long long to a fresh malloc'd decimal string. The trick is casting
+   to unsigned long long before negating so that LLONG_MIN's magnitude doesn't
+   overflow (-LLONG_MIN overflows in signed arithmetic). We fill a local 32-byte
+   buffer right-to-left then strdup the relevant slice -- no divide-and-recurse
+   recursion, no sprintf dependency. */
 char	*arith_lltoa(long long value)
 {
 	char				buf[32];
@@ -81,8 +86,11 @@ char	*arith_lltoa(long long value)
 	return (ft_strdup(buf + i));
 }
 
-/* Report an arithmetic error (and exit non-interactively); returns NULL so
-   callers can `return (arith_fail(...))`. */
+/* Report an arithmetic error on stderr, set last_cmd_st_exe to 127, and exit
+   if we're not in interactive readline mode (scripts, -c, piped input). For
+   interactive use we keep going -- the error is already reported and the
+   prompt will reappear. Returns NULL so callers can write
+   `return (arith_fail(...))`. */
 char	*arith_fail(t_shell *state, const char *expr, int len)
 {
 	ft_eprintf("%s: %.*s: arithmetic error\n", state->ctx, len, expr);
@@ -92,10 +100,10 @@ char	*arith_fail(t_shell *state, const char *expr, int len)
 	return (NULL);
 }
 
-/*
- * Expand an arithmetic expression and return the result as a string.
- * Returns NULL on error.
- */
+/* Evaluate expr and return the result as a fresh string suitable for word
+   expansion. Calls arith_fail (which may exit) on error and returns NULL,
+   so the caller must handle NULL. This is the non-cached path used for
+   one-shot $((...)) expansions; hot paths use arith_expand_cached. */
 char	*arith_expand(t_shell *state, const char *expr, int len)
 {
 	long long	result;

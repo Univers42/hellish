@@ -10,11 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Non-blocking status poll (WNOHANG) and table teardown.
+   job_update_status is called at the top of each prompt cycle (in
+   job_notify) to catch background jobs that finished while we were
+   reading the previous command.  Signal-killed exit codes follow the
+   128+signal convention used by bash. */
+
 #include "job_control.h"
 #include "libft.h"
 #include <stdlib.h>
 #include <sys/wait.h>
 
+/* Decode a raw waitpid() status word and update the job's status/code.
+   Stopped (^Z) transitions to JOB_STOPPED; exited or killed = JOB_DONE
+   with the appropriate exit code. */
 static void	job_update_entry(t_job *job, int status)
 {
 	if (WIFSTOPPED(status))
@@ -29,6 +38,10 @@ static void	job_update_entry(t_job *job, int status)
 	}
 }
 
+/* Poll every running job with waitpid(WNOHANG|WUNTRACED).  We poll by
+   process GROUP (-pgid) so that every process in the pipeline is reaped,
+   not just the leader.  Called before printing the prompt so the user
+   sees "Done" at the next prompt rather than one cycle late. */
 void	job_update_status(t_job_table *jt)
 {
 	int		i;
@@ -48,6 +61,8 @@ void	job_update_status(t_job_table *jt)
 	}
 }
 
+/* Shell exit cleanup: free every cmd string still alive and zero the
+   table.  Calling this avoids false ASan leaks on clean exit. */
 void	job_table_free(t_job_table *jt)
 {
 	int	i;

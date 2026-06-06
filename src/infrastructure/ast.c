@@ -12,7 +12,10 @@
 
 #include "ast_private.h"
 
-/* Helper: Print formatted tree to console */
+/* Pretty-print the AST as a box-tree to stdout (--debug-parser mode).
+   The display uses the box-drawing characters ├─ / └─ / │ familiar from
+   `tree(1)` to show the parent-child relationships. A fixed 256-slot
+   depth_stack tracks which columns still have siblings pending below. */
 void	print_ast_tree(t_ast_node node)
 {
 	int	depth_stack[256];
@@ -26,7 +29,10 @@ void	print_ast_tree(t_ast_node node)
 	ft_printf("\n\033[1;35m=========================\033[0m\n\n");
 }
 
-/* Helper: Print tree branch characters */
+/* Emit the indentation + connector for one tree node. depth_stack[i] is 1
+   when level i is the last child (print "    " instead of "│   "), giving the
+   right "L-shaped" junction at that level. The is_last flag selects "└── "
+   vs "├── " for the connector of the current node. */
 void	print_tree_prefix(int *depth_stack, int depth, int is_last)
 {
 	int	i;
@@ -49,7 +55,9 @@ void	print_tree_prefix(int *depth_stack, int depth, int is_last)
 	}
 }
 
-/* Helper: Print a single node header line (used by tree printer) */
+/* Emit the coloured node type name, and for AST_TOKEN nodes, also the token
+   type string and the raw text span. The child count is appended in grey as
+   a quick sanity check during debugging. */
 void	print_node_line(t_ast_node node)
 {
 	ft_printf("\033[1;36m%s\033[0m", node_name(node.node_type));
@@ -61,7 +69,9 @@ void	print_node_line(t_ast_node node)
 	ft_printf(" \033[90m[%d children]\033[0m\n", (int)node.children.len);
 }
 
-/* Helper: Print binary operator intro line (used for sequence tree) */
+/* Emit the operator node line (e.g. "OP &&") for a binary list/pipeline.
+   These are rendered inline at the junction, not as a child, so the tree
+   reads left → op → right naturally. */
 void	print_op_line(t_ast_node op_node)
 {
 	ft_printf("\033[1;33mOP %s\033[0m", tt_to_str(op_node.token.tt));

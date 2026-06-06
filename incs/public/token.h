@@ -10,12 +10,21 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Token types and token struct -- the currency between the lexer and parser.
+   Tokens are NOT copied from the input string; t_token holds a (start, len)
+   slice.  The `allocated` flag marks the rare cases where the lexer had to
+   allocate a new string (e.g. after backslash processing) so free_node
+   knows which ones to free and which to leave alone. */
+
 #ifndef TOKEN_H
 # define TOKEN_H
 
 # include "libft.h"
 
-/* token types used by lexer/parser */
+/* Exhaustive list of terminal token types the lexer can produce.
+   TT_WORD is the catch-all for unquoted words; TT_SQWORD/TT_DQWORD for
+   single/double-quoted strings; TT_ENVVAR/$TT_DQENVVAR for $VAR expansions
+   still needing expansion at parse time. */
 typedef enum e_tt
 {
 	TT_END,
@@ -62,13 +71,15 @@ typedef enum e_tt
 	TT_DSEMI
 }	t_tt;
 
-/* compact representation of original full token for AST bookkeeping */
+/* Compact back-reference to the original full word before the lexer split
+   it into sub-tokens.  Used by the expander to reconstruct the original
+   text for ${v} word forms that span multiple sub-tokens. */
 typedef struct s_token_old
 {
-	bool	present;
-	bool	allocated;
-	char	*start;
-	int		len;
+	bool	present;   /* true if this back-reference is valid */
+	bool	allocated; /* true if start is heap (must be freed) */
+	char	*start;    /* pointer to start of original word in input */
+	int		len;       /* byte length of the original word */
 }	t_token_old;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
@@ -76,16 +87,19 @@ typedef struct s_token_old
    token, freed in free_node, never shared across clones. */
 typedef struct s_arith_cache	t_arith_cache;
 
-/* token struct used in AST and lexer */
+/* The live token struct used in the AST and passed between lexer/parser.
+   start+len is a (non-owning) slice into the input unless allocated=true.
+   split_eligible means field splitting is allowed on this token (cleared
+   for quoted words and assignment values). */
 typedef struct s_token
 {
-	t_tt			tt;
-	char			*start;
-	int				len;
-	bool			allocated;
-	bool			split_eligible;
-	t_token_old		*full_word;
-	t_arith_cache	*arith_cache;
+	t_tt			tt;           /* token type */
+	char			*start;       /* points into the input string */
+	int				len;          /* byte length of the token text */
+	bool			allocated;    /* true if start is heap-allocated */
+	bool			split_eligible; /* false for quoted / assigned values */
+	t_token_old		*full_word;   /* back-ref to original word (optional) */
+	t_arith_cache	*arith_cache; /* memoised arith parse (owned, or NULL) */
 }	t_token;
 
 static inline t_token	create_token(char *start, int len, t_tt token_type)

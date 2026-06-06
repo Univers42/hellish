@@ -12,7 +12,8 @@
 
 #include "builtins_private.h"
 
-/* consume pending skip marker if set */
+/* If skip_next is set, clear it and return true (skip this word — it is the
+   target of a redirection operator from the previous word). */
 static bool	consume_pending_skip(bool *skip_next)
 {
 	if (*skip_next)
@@ -23,8 +24,9 @@ static bool	consume_pending_skip(bool *skip_next)
 	return (false);
 }
 
-/* handle redirection token, set skip_next if
-the token requires a following arg */
+/* If `arg` is a redirection operator, set skip_next when the operator needs
+   a target word (e.g. ">" alone vs ">file" with the path attached). Returns
+   true so the caller knows to skip this word in the real-arg count. */
 static bool	handle_redir_token(char *arg, bool *skip_next)
 {
 	if (!is_redir_operator(arg))
@@ -34,6 +36,9 @@ static bool	handle_redir_token(char *arg, bool *skip_next)
 	return (true);
 }
 
+/* Count the arguments in argv that are actual command operands — skipping
+   -L/-P options and redirection tokens (plus their targets). Used by
+   check_args() to decide if `cd` has been given too many real arguments. */
 int	count_real_args(t_vec argv)
 {
 	size_t	i;

@@ -14,6 +14,8 @@
 #include "sh_alias.h"
 #include "cmd_hash.h"
 
+/* Check via the dispatch hash table — no need to maintain a separate list.
+   The dispatch table IS the authoritative set of builtins. */
 static int	type_is_builtin(const char *name)
 {
 	return (builtin_func((char *)name) != NULL);
@@ -34,6 +36,10 @@ static int	type_is_keyword(const char *name)
 	return (0);
 }
 
+/* Search $PATH for `name`. Returns 1 and sets *out to an allocated path on
+   success; returns 0 on failure. Caller must xfree *out. We deliberately
+   skip the command cache here so `type` always does a fresh search (the
+   cache might be stale after a PATH change). */
 static int	type_find_in_path(t_shell *state, const char *name, char **out)
 {
 	char	*path;
@@ -52,6 +58,9 @@ static int	type_find_in_path(t_shell *state, const char *name, char **out)
 	return (*out != NULL);
 }
 
+/* PATH resolution for type. Check the command cache first (the "hashed"
+   form). Then, if the name contains a slash, stat it directly. Otherwise
+   do a full PATH search. Reports "not found" on stderr and returns 1. */
 int	type_one_path(t_shell *state, const char *name)
 {
 	char	*path;
@@ -76,6 +85,9 @@ int	type_one_path(t_shell *state, const char *name)
 	return (1);
 }
 
+/* Classify one name: alias > keyword > function > builtin > external.
+   The priority matches bash exactly — an alias shadows everything, a
+   function shadows a builtin, etc. Each path prints one line and returns. */
 int	type_one(t_shell *state, const char *name)
 {
 	char	*alias_val;

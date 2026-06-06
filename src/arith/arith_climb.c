@@ -12,6 +12,9 @@
 
 #include "arith_private.h"
 
+/* Apply one of the three bitwise binary operators. No UB cases here --
+   bitwise ops on long long are well-defined for any bit pattern, so this
+   is just three straight C operators grouped to keep apply_binop compact. */
 static long long	apply_bitwise(t_arith_tok type, long long l, long long r)
 {
 	if (type == ATOK_BOR)
@@ -21,6 +24,10 @@ static long long	apply_bitwise(t_arith_tok type, long long l, long long r)
 	return (l & r);
 }
 
+/* Apply a comparison operator; all six return 0 or 1 like in C. Signed
+   comparison on long long is fine for POSIX shell integers. The final
+   return (l >= r) is ATOK_GE -- reached only when all others have been
+   ruled out by the chain of ifs above. */
 static long long	apply_cmp(t_arith_tok type, long long l, long long r)
 {
 	if (type == ATOK_EQ)
@@ -36,6 +43,10 @@ static long long	apply_cmp(t_arith_tok type, long long l, long long r)
 	return (l >= r);
 }
 
+/* Shifts and addition/subtraction in one helper. Shifts on a signed long long
+   are implementation-defined in C for negative values, but all targets this
+   shell runs on (x86-64, arm64) use arithmetic shifts, which is what bash
+   does too -- so we take the same shortcut. */
 static long long	apply_shift_add(t_arith_tok type, long long l, long long r)
 {
 	if (type == ATOK_LSHIFT)
@@ -47,8 +58,10 @@ static long long	apply_shift_add(t_arith_tok type, long long l, long long r)
 	return (l - r);
 }
 
-/* Mul/div/mod, replicating helpers5.c exactly: /0 errors unless no_side_effects
-   (then yields 0), and LLONG_MIN OP -1 is guarded against UB. */
+/* Mul/div/mod for the precedence-climbing path, mirroring the old helpers5.c
+   logic exactly. Multiplication never overflows in a defined way so we skip
+   the check; for div and mod we guard /0 (error unless in a dead branch) and
+   the LLONG_MIN / -1 signed-overflow corner case. */
 static long long	apply_muldiv(t_arith_parser *p, t_arith_tok type,
 				long long l, long long r)
 {
@@ -71,6 +84,9 @@ static long long	apply_muldiv(t_arith_parser *p, t_arith_tok type,
 	return (l % r);
 }
 
+/* Dispatch a binary operator to the right helper group. This is the sole
+   apply function used by arith_parse_binop; splitting into sub-helpers keeps
+   each sub-function within the 42 line-count norm. */
 long long	apply_binop(t_arith_parser *p, t_arith_tok type,
 			long long l, long long r)
 {

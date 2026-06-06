@@ -17,6 +17,9 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 
+/* Fork the editor on `tmpf`, wait for it, then if it exited successfully
+   read the (possibly modified) file back into state->input so the REPL
+   re-executes it on the next iteration. Always unlinks the temp file. */
 int	fc_run_editor(t_shell *state, const char *editor, char *tmpf)
 {
 	pid_t	pid;
@@ -51,6 +54,8 @@ int	fc_edit_run(t_shell *state, const char *editor, int first, int last)
 	return (fc_run_editor(state, editor, tmpf));
 }
 
+/* Resolve the editor: $FCEDIT first (fc-specific), then $EDITOR (general),
+   then fall back to /bin/ed (POSIX mandates a default editor for fc). */
 static const char	*get_fc_editor(t_shell *state)
 {
 	char	*ed;
@@ -64,6 +69,9 @@ static const char	*get_fc_editor(t_shell *state)
 	return ("/bin/ed");
 }
 
+/* fc [-e editor] [first [last]]: write entries to a temp file, open the
+   editor, then queue the result for re-execution. `-e -` (a dash) would
+   suppress the editor in bash; we do not implement that form yet. */
 static int	fc_run(t_shell *state, char **av, int ac)
 {
 	int			first;
@@ -85,6 +93,10 @@ static int	fc_run(t_shell *state, char **av, int ac)
 	return (fc_edit_run(state, editor, first, last));
 }
 
+/* fc [-l [-r] [-n] [first [last]] | [-e editor] [first [last]]]: fix
+   command. `-l` lists history without editing. Without `-l`, writes the
+   selected commands to a temp file, opens an editor, and re-executes the
+   result. Bails out early (status 1) when history is empty or inactive. */
 int	builtin_fc(t_shell *state, t_vec argv)
 {
 	char	**av;

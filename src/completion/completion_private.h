@@ -10,6 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Shared state and helpers for the command-completion generator.
+   The generator is stateful (readline calls it repeatedly), so the
+   globals below persist across calls within one TAB press.  They are
+   reset by cmd_gen_init at the start of each new completion sequence. */
+
 #ifndef COMPLETION_PRIVATE_H
 # define COMPLETION_PRIVATE_H
 
@@ -17,8 +22,11 @@
 # include <stddef.h>
 # include <dirent.h>
 
+/* NULL-terminated list of built-in names, checked before the PATH scan */
 extern char		*g_builtins[];
+/* current position in g_builtins[] across repeated generator calls */
 extern int		g_cmd_idx;
+/* ft_strdup of PATH at completion start; split into path_dirs */
 extern char		*g_path_dirs_cache;
 
 void	free_split(char **arr);

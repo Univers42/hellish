@@ -14,7 +14,11 @@
 #include "executor.h"
 #include <fcntl.h>
 
-/* Join argv[1..] with single spaces into one allocated string. */
+/* Join argv[from..] with single spaces — the result is what gets fed to the
+   parser. We build it piece by piece with ft_strjoin rather than computing
+   the total length upfront because the argv strings can come from wildcard
+   expansion and we do not know their lengths cheaply. Slightly slower but
+   avoids a two-pass loop. */
 static char	*join_args(t_vec argv, size_t from)
 {
 	char	**av;
@@ -40,7 +44,10 @@ static char	*join_args(t_vec argv, size_t from)
 	return (acc);
 }
 
-/* eval: concatenate the arguments and execute the result as shell input. */
+/* eval: concatenate the arguments (space-separated), then parse and execute
+   the resulting string in the current shell context. Must be a builtin for
+   the same reason as source: assignments, function definitions, and option
+   changes made inside eval must be visible to the caller. */
 int	builtin_eval(t_shell *state, t_vec argv)
 {
 	char	*joined;
@@ -54,7 +61,11 @@ int	builtin_eval(t_shell *state, t_vec argv)
 	return (status);
 }
 
-/* . file (a.k.a. source): read `file` and execute in this shell. */
+/* . file (a.k.a. source): read the whole file into memory, then execute it
+   in this shell's context. Reading upfront (rather than line-by-line) means
+   a sourced file that redefines itself mid-execution still runs its original
+   text — same behaviour as bash. No PATH search is done; the argument is
+   used as-is (use `source` for the bash-style PATH-aware form if needed). */
 int	builtin_source(t_shell *state, t_vec argv)
 {
 	char		**av;

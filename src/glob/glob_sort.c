@@ -12,10 +12,13 @@
 
 #include "glob_private.h"
 
-/* POSIX pathname expansion sorts per the current collation; in the C/POSIX
-   locale (and C.UTF-8, the usual environment) that is byte order, matching
-   bash --posix. ft_strcmp gives exactly that — the old ft_strcoll case-folded
-   and skipped punctuation, diverging from bash's glob order. */
+/* In-place quicksort on an array of char* using ft_strcmp (byte order).
+   POSIX requires that glob results be sorted by the current collation; in the
+   C/POSIX locale (and C.UTF-8) that is straight byte order, which is what
+   ft_strcmp gives. The old ft_strcoll did a case-insensitive, non-alnum-
+   skipping sort that diverged from bash's output -- it was replaced here.
+   Pivot is the middle element (median of three would be safer but the inputs
+   are typically short and mostly pre-sorted, so centre pivot is fine). */
 void	glob_sort_inner(char **arr, int low, int high)
 {
 	int		i;
@@ -39,6 +42,10 @@ void	glob_sort_inner(char **arr, int low, int high)
 	(glob_sort_inner(arr, low, j), glob_sort_inner(arr, i, high));
 }
 
+/* Sort the matched pathname strings in args. A single result needs no sorting;
+   two or more go through glob_sort_inner. Called from expand_word_glob after
+   the directory walk, but only when should_unwind is false -- no point sorting
+   a result set we're about to discard because of a signal. */
 void	glob_sort(t_vec *args)
 {
 	if (args->len > 1)

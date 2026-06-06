@@ -10,7 +10,11 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// The header name cannot be change due to conflict name with libft
+/* Input reading and the REPL loop entry point.  The header is named
+   sh_input.h (not input.h) to avoid a name collision with libft/input.h.
+   The metinp (meta-input-mode) enum controls how the shell reads commands:
+   readline for interactive, file for script, arg for -c, notty for pipes. */
+/* The header name cannot be changed due to conflict name with libft */
 #ifndef SH_INPUT_H
 # define SH_INPUT_H
 
@@ -26,12 +30,14 @@ typedef struct s_deque_tok	t_deque_tok;
 # ifndef INCS_INPUT_ENUM_DEFINED
 #  define INCS_INPUT_ENUM_DEFINED
 
+/* How the shell reads its input.  Affects prompt display, EOF handling,
+   and whether we call readline() vs read() vs use a string buffer. */
 typedef enum e_metinp
 {
-	INP_RL,
-	INP_FILE,
-	INP_ARG,
-	INP_NOTTY,
+	INP_RL,    /* interactive readline (default: tty connected) */
+	INP_FILE,  /* script file (-f / heredoc) */
+	INP_ARG,   /* -c 'command string' */
+	INP_NOTTY, /* stdin is not a tty (piped input) */
 }	t_metinp;
 # endif
 

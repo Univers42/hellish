@@ -12,6 +12,10 @@
 
 #include "rl_private.h"
 
+/* Drain everything left in the buffer into ret and declare the buffer empty.
+   Returns 1 (EOF-like) if there was nothing, 4 (data) if bytes were moved.
+   The 1/4 distinction lets the caller tell "empty line" from "no data at all".
+*/
 int	return_last_line(t_shell *state, t_string *ret)
 {
 	int	len;
@@ -27,6 +31,10 @@ int	return_last_line(t_shell *state, t_string *ret)
 	return (4);
 }
 
+/* Deliver one logical line (up to and including '\n') from the buffer into
+   ret, advancing the cursor past it. If there is no '\n' the whole remainder
+   is handed off via return_last_line. Also increments the line counter (for
+   "script: line N:" error messages) and refreshes the context string. */
 int	return_new_line(t_shell *state, t_string *ret)
 {
 	char	*temp;
@@ -51,6 +59,13 @@ int	return_new_line(t_shell *state, t_string *ret)
 	return (4);
 }
 
+/* The central dispatcher: pull one logical line into ret, fetching more raw
+   input first if the internal buffer is exhausted. Return codes:
+     0 = EOF / hard exit (caller should set has_finished)
+     2 = interrupted by SIGINT (propagate cancel)
+     4 = a line was delivered
+   INP_ARG / INP_FILE sources are already fully loaded, so we never go back
+   for more — we just drain the buffer to EOF. */
 int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 {
 	int	code;

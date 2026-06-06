@@ -12,6 +12,11 @@
 
 #include "builtins_private.h"
 
+/* unset [-f|-v] name ...: remove variables (-v, the default) or functions
+   (-f). Like export and cd, must run in the parent shell; a forked child
+   unsetting a variable would have zero visible effect. The -f/-v flag is
+   optional and only detected when it is a standalone single-char word —
+   `-fv` is not parsed to keep the logic simple (bash behaves the same). */
 int	builtin_unset(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -36,6 +41,11 @@ int	builtin_unset(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* pwd: print the shell's cached current working directory. We use the cached
+   value rather than calling getcwd() every time — that avoids a syscall and
+   means `pwd` still works when the directory has been deleted (the kernel
+   would return ENOENT from getcwd). The cache is kept up to date by cd and
+   pushd/popd. */
 int	builtin_pwd(t_shell *state, t_vec argv)
 {
 	(void)argv;
@@ -46,6 +56,10 @@ int	builtin_pwd(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* `cd` with no argument: go to $HOME. We call env_expand rather than
+   getenv so the lookup goes through the shell's own environment table. If
+   HOME is not set, POSIX mandates an error rather than silently staying put
+   or guessing from /etc/passwd. */
 int	cd_home(int *e, t_shell *state)
 {
 	char	*home;
@@ -57,6 +71,15 @@ int	cd_home(int *e, t_shell *state)
 	return (0);
 }
 
+/* cd [-L|-P] [dir]: change the working directory. Must run in the parent
+   process — that is the whole reason cd is a builtin at all; a forked copy
+   would chdir into oblivion and the parent shell would never notice.
+
+   `cd -` switches to $OLDPWD (prints the new path, bash-style). After a
+   successful chdir we call x_getcwd() to get the canonical path and refresh
+   both state->cwd and the environment variables PWD/OLDPWD so `$PWD`
+   expansions stay correct. On ENOENT we emit the strerror message rather
+   than a hardcoded string so internationalised kernels stay readable. */
 int	builtin_cd(t_shell *state, t_vec argv)
 {
 	char	*cwd;

@@ -16,6 +16,9 @@
 #include <signal.h>
 #include <termios.h>
 
+/* After waiting for the foreground job: if it stopped (Ctrl-Z), update its
+   status and return 148 (128 + SIGTSTP) so $? reflects that it was stopped.
+   If it finished, remove it from the table and return its real exit code. */
 static int	fg_wait_result(t_shell *state, t_job *job, int status)
 {
 	if (WIFSTOPPED(status))
@@ -32,6 +35,10 @@ static int	fg_wait_result(t_shell *state, t_job *job, int status)
 	return (128 + WTERMSIG(status));
 }
 
+/* fg [%job]: bring a stopped or background job to the foreground.
+   The steps are: SIGCONT the process group, hand the terminal to that group
+   (tcsetpgrp), wait for it, then take the terminal back. The WUNTRACED flag
+   in waitpid lets us detect a new Ctrl-Z stop without missing it. */
 int	builtin_fg(t_shell *state, t_vec argv)
 {
 	t_job	*job;

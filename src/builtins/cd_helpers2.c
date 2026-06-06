@@ -12,6 +12,9 @@
 
 #include "builtins_private.h"
 
+/* Measure how many characters of `arg` look like a redirection prefix:
+   optional digits followed by '<' or '>', plus an optional second '<'/'>'
+   for <<, >>, <>, etc. Used to tell apart `cd 2>foo` from `cd 2foo`. */
 static int	redir_parsed_len(const char *arg)
 {
 	int	j;
@@ -28,6 +31,8 @@ static int	redir_parsed_len(const char *arg)
 	return (j);
 }
 
+/* True when the redirection operator has no attached target (e.g. ">" or
+   "2>" alone — the target comes from the next argv element). */
 static bool	redir_requires_next(const char *arg)
 {
 	int	j;
@@ -56,6 +61,11 @@ static bool	cd_skip_arg(char *arg, bool *skip_next)
 	return (!ft_strcmp(arg, "-L") || !ft_strcmp(arg, "-P"));
 }
 
+/* Walk argv[1..], skipping -L/-P and any redirection operators (plus their
+   target words when the operator has no inline target). Returns the first
+   argument that looks like an actual directory path, or NULL if none. This
+   is needed because the executor may leave redirection words in the argv
+   vector that cd receives — we must not mistake them for the destination. */
 char	*get_first_real_arg(t_vec argv)
 {
 	size_t	i;

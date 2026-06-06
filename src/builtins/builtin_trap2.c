@@ -14,8 +14,16 @@
 #include "executor.h"
 #include <signal.h>
 
+/* g_trap_pending holds the signal number of the most recently received
+   trapped signal. It is declared volatile sig_atomic_t so the C standard
+   permits the write inside the async signal handler — reading from it in
+   run_pending_traps (called from the REPL) is safe. We only keep one pending
+   slot, which is fine for the common "catch Ctrl-C, clean up" pattern. */
 static volatile sig_atomic_t	g_trap_pending = 0;
 
+/* The actual OS signal handler. Only does the minimum safe work: record the
+   signal number and return. Executing shell code here would re-enter the
+   malloc/printf machinery and cause undefined behaviour. */
 static void	trap_sighandler(int sig)
 {
 	g_trap_pending = sig;
@@ -67,6 +75,11 @@ int	print_traps_for(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* Register or remove one trap. action "-" restores the default signal
+   disposition; action "" ignores the signal (SIG_IGN); anything else stores
+   the string and registers trap_sighandler. EXIT (num == 0) is not an OS
+   signal, so we never call signal() for it — it is triggered manually by
+   exit_clean(). Frees any previous action string first to avoid leaks. */
 int	set_one_trap(t_shell *state, const char *action, int num)
 {
 	if (num < 0 || num >= 32)

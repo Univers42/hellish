@@ -10,11 +10,20 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Called once during shell init to fill in any missing POSIX-mandatory
+   env vars.  The pattern for each variable is identical: check if already
+   set with a non-empty value; if not, synthesise a sensible default.
+   We never override what the user's parent shell gave us -- only patch
+   the gaps. */
+
 #include "shell.h"
 #include "env.h"
 #include "libft.h"
 #include "sys.h"
 
+/* If PATH is missing, seed it with DFT_PATH (a macro with the usual
+   /usr/local/bin:/usr/bin:/bin colon-list).  A stripped env can otherwise
+   make even `ls` fail with command-not-found. */
 void	set_path(t_shell *state)
 {
 	t_env	*e;
@@ -27,6 +36,9 @@ void	set_path(t_shell *state)
 	}
 }
 
+/* Seed $_ (the last argument of the previous command, or the shell name
+   on startup).  POSIX leaves the initial value implementation-defined;
+   bash sets it to the shell path, so we do too. */
 void	set_underscore(t_shell *state)
 {
 	t_env	*e;
@@ -42,6 +54,9 @@ void	set_underscore(t_shell *state)
 	}
 }
 
+/* Top-level init: call all the individual setters in order, then add
+   PPID (read-only by convention but not enforced) and PWD if absent.
+   Call this AFTER env_to_vec_env so the env vector already exists. */
 void	ensure_essential_env_vars(t_shell *state)
 {
 	char	*cwd;

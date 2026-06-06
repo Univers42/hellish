@@ -12,7 +12,9 @@
 
 #include "builtins_private.h"
 
-/* collect exported entries into a vector of strings */
+/* Walk the env table and format each exported entry as `export KEY="value"`.
+   Variables without a value (exported but never assigned) use an empty
+   string. All strings are heap-allocated — print_and_free_list owns them. */
 static void	collect_exported_list(t_shell *st, t_vec *list)
 {
 	size_t	j;
@@ -38,14 +40,17 @@ static void	collect_exported_list(t_shell *st, t_vec *list)
 	}
 }
 
-/* sort the list if needed */
+/* Sort the export list alphabetically (only when there is more than one
+   entry). bash sorts `export -p` output; we match that so diff-based tests
+   that check `export -p` output are not order-sensitive. */
 static void	sort_export_list(t_vec *list)
 {
 	if (list->len > 1)
 		ft_quicksort(list);
 }
 
-/* print and free the list of strings */
+/* Print each formatted string, then free it and the backing array. We free
+   inside the loop so there is never a large amount of memory live at once. */
 static void	print_and_free_list(t_vec *list)
 {
 	size_t	j;
@@ -62,7 +67,8 @@ static void	print_and_free_list(t_vec *list)
 	xfree(list->ctx);
 }
 
-/* public entry: collect, sort and print exported variables */
+/* Public entry called by `export` with no arguments (or `export -p`): collect
+   all exported variables, sort them, print them, and free the scratch list. */
 void	collect_and_print_exported(t_shell *st)
 {
 	t_vec	list;

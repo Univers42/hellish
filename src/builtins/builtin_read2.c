@@ -13,7 +13,10 @@
 #include "builtins_private.h"
 #include <unistd.h>
 
-/* Copy one field, stopping at the first IFS byte. */
+/* Consume characters up to (but not including) the next IFS byte, honouring
+   backslash escapes unless `raw` is set. Advances *pp past the consumed
+   characters but NOT past the delimiter itself — skip_delim does that. The
+   returned string is owned by the caller. */
 char	*next_field(char **pp, const char *ifs, bool raw)
 {
 	t_string	f;
@@ -73,11 +76,17 @@ char	*last_field(char *p, const char *ifs, bool raw)
 	return ((char *)f.ctx);
 }
 
+/* Write a variable into the environment. `value_owned` is transferred —
+   do not free it after calling this; env_create takes ownership. */
 void	rd_set_var(t_shell *state, char *name, char *value_owned)
 {
 	env_set(&state->env, env_create(ft_strdup(name), value_owned, false));
 }
 
+/* Split `line` across the variable names in argv[o->first..end-1]. All but
+   the last variable get one next_field() result; the last one gets
+   last_field() which includes the rest of the line minus trailing IFS
+   whitespace. This matches the POSIX `read` field-splitting algorithm. */
 void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o)
 {
 	size_t	i;

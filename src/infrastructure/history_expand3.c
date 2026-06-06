@@ -43,6 +43,10 @@ char	*quick_sub(t_shell *state, const char *input)
 	return (ft_printf("%s\n", res), res);
 }
 
+/* Process one '!' designator at position i in input, appending the resolved
+   entry to result and advancing *pi past the designator. Returns NULL on
+   success, or an empty-string error if the event was not found (matches bash's
+   "event not found" error which also suppresses execution). */
 static char	*expand_bang_loop(t_shell *state, t_string *result,
 					const char *input, size_t *pi)
 {
@@ -65,6 +69,9 @@ static char	*expand_bang_loop(t_shell *state, t_string *result,
 	return (NULL);
 }
 
+/* True when input[i] starts an expandable '!' designator: a '!' followed by
+   a non-whitespace, non-'=' character and not inside single quotes. The '='
+   guard avoids expanding BASH_ENV=!foo style assignments. */
 static int	is_bang_expand(const char *input, size_t i)
 {
 	return (input[i] == '!' && input[i + 1] && input[i + 1] != ' '
@@ -72,6 +79,9 @@ static int	is_bang_expand(const char *input, size_t i)
 		&& input[i + 1] != '=' && !in_sq(input, i));
 }
 
+/* NUL-terminate and return the expansion result. If it differs from the
+   original input, echo it to stdout (bash does the same to let the user see
+   what was expanded before running it). */
 static char	*finish_expand(t_string *result, const char *input)
 {
 	vec_ensure_space_n(result, 1);
@@ -81,6 +91,11 @@ static char	*finish_expand(t_string *result, const char *input)
 	return ((char *)result->ctx);
 }
 
+/* Top-level history expansion entry point: handles ^old^new at the start of
+   the line (quick substitution), then walks the rest scanning for '!' events.
+   Returns a heap-allocated expanded string (caller must xfree), or NULL when
+   history is inactive or input is NULL. If expansion is a no-op the returned
+   pointer is a copy of input (not the same pointer). */
 char	*expand_history(t_shell *state, const char *input)
 {
 	t_string	result;

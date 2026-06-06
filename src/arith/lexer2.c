@@ -12,9 +12,11 @@
 
 #include "arith_private.h"
 
-/* Digit for bash base#n (base 2..64).
-   For base <= 36 upper and lower are interchangeable;
-   above 36 a-z=10..35, A-Z=36..61, @=62 _=63. */
+/* Digit value for bash's base#N notation (bases 2..64). The encoding mirrors
+   bash exactly: 0-9 → 0..9, a-z → 10..35. For base ≤ 36 A-Z is an alias
+   for a-z (case-insensitive). For base > 36 A-Z → 36..61, @ → 62, _ → 63.
+   Returns -1 if the character is invalid for this base, which stops the
+   digit-consuming loop in parse_base_n. */
 static int	get_digit_ext(char c, int base)
 {
 	int	d;
@@ -37,9 +39,10 @@ static int	get_digit_ext(char c, int base)
 	return (d);
 }
 
-/* Parse `base#digits` (decimal base already parsed).
-   Sets lex->error on a base outside 2..64,
-   otherwise reads the base-N digits into *out. */
+/* Parse the `base#digits` form after the decimal base has already been read
+   by lex_number. The '#' itself is consumed here (++pos). Bases outside 2..64
+   trigger lex->error and return 0 immediately -- bash does the same. The rest
+   is a straightforward digit accumulation using get_digit_ext. */
 long long	parse_base_n(t_arith_lexer *lex, int *pos, long long base)
 {
 	long long	val;

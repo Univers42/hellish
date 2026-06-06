@@ -12,6 +12,9 @@
 
 #include "input_private.h"
 
+/* Convenience wrapper: dump the accumulated token list and reset for the next
+   command. Used by both the debug-lexer and the debug-parser loops after each
+   input round. */
 void	print_and_cleanup_tokens(t_shell *state,
 									t_deque_tok *tt,
 									char **prompt)
@@ -20,8 +23,10 @@ void	print_and_cleanup_tokens(t_shell *state,
 	debug_lexer_cleanup(state, tt, prompt);
 }
 
-// Fetch input and handle interrupts/EOF, 
-// returns 1 for break, 2 for continue, 0 for proceed
+/* Fetch more tokens and handle EOF/interrupt with one retry. Returns 1 (break
+   the outer loop), 2 (continue — the interrupt was handled, try again) or 0
+   (tokens are ready to parse). The second attempt after an interrupt lets the
+   debug-parser loop survive a stray ^C without losing the whole session. */
 static int	fetch_and_handle_input(t_shell *state,
 									t_parser *parser,
 									char **prompt,
@@ -44,7 +49,10 @@ static int	fetch_and_handle_input(t_shell *state,
 	return (0);
 }
 
-// Parse tokens, print AST, cleanup, and reset parser state
+/* Parse the current token list, emit the AST as a Graphviz DOT file, clean up,
+   and reset the parser to RES_INIT so the debug-parser loop can accept the
+   next command without restarting. reclassify_keywords re-evaluates ambiguous
+   tokens (e.g. "do" that the lexer emitted as a word) before the full parse. */
 static void	parse_print_and_cleanup(t_shell *state,
 									t_parser *parser,
 									t_deque_tok *tt,
@@ -60,6 +68,9 @@ static void	parse_print_and_cleanup(t_shell *state,
 	parser->res = RES_INIT;
 }
 
+/* Debug-parser REPL: like default_parser_loop but instead of executing the
+   tree we write out.dot and continue. Lets you visually inspect the AST for
+   each command while the shell stays alive. Activated by --debug-parser. */
 void	debug_parser_loop(t_shell *state, t_parser *parser,
 							char **prompt, t_deque_tok *tt)
 {

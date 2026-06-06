@@ -12,6 +12,12 @@
 
 #include "prompt_private.h"
 
+/* Prompt repainting support used by the readline idle hook (mascot_hook).
+   The prompt is two rows: the top info bar and the bottom arrow. When the hook
+   fires during typing we need to repaint the top row in place without moving
+   the cursor away from the typed text. The trick is VT100 cursor save/restore
+   (\0337 / \0338): save position, jump up and repaint, restore. */
+
 /* Lines above the input arrow (one per newline in the rendered prompt). */
 static int	count_nl(const char *s)
 {

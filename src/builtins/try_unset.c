@@ -12,6 +12,13 @@
 
 #include "builtins_private.h"
 
+/* Remove the variable `key` from the env table in-place. We find its slot
+   via pointer arithmetic (e - arr), free the strings, then compact the array
+   by shifting everything after it one position left. This keeps the table a
+   flat contiguous array — no holes — at the cost of O(n) per unset. For the
+   typical number of variables that is fine and much simpler than a linked
+   list. env_index_mark_dirty() invalidates any cached pointer-by-name index
+   so the next lookup does a fresh linear scan. */
 void	try_unset(t_shell *state, char *key)
 {
 	t_env	*e;

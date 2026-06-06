@@ -22,12 +22,17 @@
 # include <string.h>
 # include "sys.h"
 
-/* Bracket flags - ensure these are defined */
+/* Bracket flags -- defined here as a fallback; the canonical definition is
+   in ft_glob.h (t_bracket_flags). These guard are here in case a .c file
+   includes glob_private.h without ft_glob.h having been processed yet. */
 # ifndef BRACKET_NEGATED
 #  define BRACKET_NEGATED 0x01
 # endif
 
-/* struct describing POSIX classes */
+/* Descriptor for a POSIX bracket class like [:alpha:].
+   `pattern` is the "[: ... :]" string, `plen` its byte length (so comparison
+   is one ft_strncmp away), and `chars` is the pre-built set of matching
+   ASCII characters that glob_expand_bracket copies into the char_set buffer. */
 struct s_classes
 {
 	const char	*pattern;
@@ -52,7 +57,8 @@ typedef struct s_glob_match_ctx
 	bool		is_first;
 }	t_glob_match_ctx;
 
-// Helper: ctx for tokenizer state
+/* Tokenizer context bundled into a struct so each handler receives everything
+   it needs by value (except `i` which is a shared pointer for advancing). */
 typedef struct s_tokenizer_ctx
 {
 	t_vec_glob	*ret;
@@ -73,7 +79,10 @@ typedef struct s_bracket_parse_ctx
 
 typedef struct s_bracket_ctx	t_bracket_ctx;
 
-// Add prototype for the singleton accessor
+/* Return the static table of known POSIX bracket classes. Defined inline so
+   every translation unit that includes glob_private.h gets its own copy of
+   the table in the data segment -- no extern linkage needed, no header/source
+   split for a handful of small structs. */
 static inline const struct s_classes	*get_classes_singleton(void)
 {
 	static const struct s_classes	classes[] = {
@@ -94,8 +103,8 @@ static inline const struct s_classes	*get_classes_singleton(void)
 	return (classes);
 }
 
-/* single-definition: actual array provided in glob_classes.c */
-// extern const struct s_classes classes[];
+/* The extern array below was removed when classes were moved into the inline
+   singleton above; kept as a comment for historical reference. */
 char		*glob_expand_bracket(const char *start, int len, int *out_len);
 int			expand_range(char start, char end, char *buf, int buf_pos);
 int			check_posix_class(const char *s, int len, char *buf, int *buf_pos);

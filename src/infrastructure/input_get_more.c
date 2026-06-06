@@ -12,6 +12,11 @@
 
 #include "input_private.h"
 
+/* Fetch one round of tokens, with one Ctrl-C retry. The retry matters: when
+   a user hits ^C mid-compound-command (e.g. inside a for loop being typed),
+   we want to try once more before giving up, in case the first interrupt
+   flushed a partial token that left the deque non-empty (return 3 = print
+   those orphaned tokens and continue, so debug-lexer mode stays useful). */
 static int	fetch_lexer_input(t_shell *state, t_parser *parser,
 						char **prompt, t_deque_tok *tt)
 {
@@ -35,6 +40,11 @@ static int	fetch_lexer_input(t_shell *state, t_parser *parser,
 	return (0);
 }
 
+/* One iteration of the debug-lexer loop: fetch tokens, check for exit/signal
+   conditions, and either print the accumulated token list or reset for the next
+   command. "Debug lexer" mode is active with --debug-lexer and prints each
+   token set instead of parsing and executing -- handy when chasing lexer bugs.
+*/
 static int	debug_lexer_loop_body(t_shell *state,
 								t_parser *parser,
 								char **prompt,
@@ -67,6 +77,9 @@ static int	debug_lexer_loop_body(t_shell *state,
 	return (0);
 }
 
+/* Drive the debug-lexer REPL: like the normal parser loop but we never parse,
+   we just dump the raw token stream. Useful to verify the lexer in isolation
+   without parser noise. Activated by the --debug-lexer flag at startup. */
 void	debug_lexer_loop(t_shell *state,
 							t_parser *parser,
 							char **prompt,
@@ -84,6 +97,10 @@ void	debug_lexer_loop(t_shell *state,
 	}
 }
 
+/* The normal production parse loop: keep feeding tokens to the parser until it
+   either accepts (RES_OK) or gives a hard error. RES_GETMOREINPUT means the
+   parser saw an incomplete construct (e.g. "if" without "fi") and needs more
+   lines; we loop back, show the continuation prompt, and append. */
 void	default_parser_loop(t_shell *state, t_parser *parser,
 								char **prompt, t_deque_tok *tt)
 {
@@ -108,6 +125,10 @@ void	default_parser_loop(t_shell *state, t_parser *parser,
 	}
 }
 
+/* Route to the right parse loop based on which debug flags are set. In normal
+   operation, only default_parser_loop runs. The debug variants exist so you
+   can step back and watch the lexer or parser in isolation during development
+   without recompiling. */
 void	get_more_input_parser(t_shell *state,
 							t_parser *parser,
 							char **prompt,

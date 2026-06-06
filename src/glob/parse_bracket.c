@@ -12,7 +12,9 @@
 
 #include "glob_private.h"
 
-// Helper: check for negation and update index and flags
+/* Check for a leading '!' or '^' (both negate the class in bash; POSIX only
+   requires '!' but bash also accepts '^' for historical/ksh compatibility).
+   If found, set BRACKET_NEGATED in ctx->flags and advance past it. */
 static void	parse_bracket_negation(t_bracket_parse_ctx *ctx)
 {
 	if (ctx->i < ctx->max_len && (ctx->s[ctx->i] == '!'
@@ -23,7 +25,9 @@ static void	parse_bracket_negation(t_bracket_parse_ctx *ctx)
 	}
 }
 
-// Helper: skip POSIX class like [:name:]
+/* Skip over a POSIX class like [:alpha:] without expanding it. Used during
+   the closing-bracket search so that a ':' or ']' inside a class name isn't
+   mistaken for the class terminator or the closing bracket. */
 static void	skip_posix_class(const char *s, int max_len, int *i)
 {
 	if (s[*i] == '[' && *i + 1 < max_len && s[*i + 1] == ':')
@@ -36,7 +40,10 @@ static void	skip_posix_class(const char *s, int max_len, int *i)
 	}
 }
 
-// Helper: find closing bracket, handling POSIX classes
+/* Scan forward from position `i` to find the closing ']'. POSIX classes
+   ([::]) are skipped transparently to prevent a ':' or ']' inside them from
+   being mistaken for the terminator. Returns the index of ']' in `s`, or
+   max_len if none was found (unclosed bracket → parse_bracket returns 0). */
 static int	find_closing_bracket(const char *s, int max_len, int i)
 {
 	while (i < max_len)
@@ -50,7 +57,12 @@ static int	find_closing_bracket(const char *s, int max_len, int i)
 	return (i);
 }
 
-// Helper: fill t_glob for bracket and expand char_set
+/* Fill the t_glob struct for a bracket token and expand its char_set. The
+   start/len pointers cover the raw content between '[' and ']' (excluding
+   the brackets themselves). glob_expand_bracket builds the flat char_set
+   string used by glob_char_in_class at match time. If the expansion yields
+   an empty set (no valid chars after range expansion etc.), treat the bracket
+   as a failed parse and return 0 so the tokenizer falls back to literal. */
 static int	fill_bracket_glob(const t_bracket_parse_ctx *ctx, t_glob *g)
 {
 	g->ty = G_BRACKET;
@@ -68,11 +80,12 @@ static int	fill_bracket_glob(const t_bracket_parse_ctx *ctx, t_glob *g)
 	return (ctx->i + 1);
 }
 
-/*
-** Parse a bracket expression [...]
-** For [[::]], the content includes the inner [::]
-** Returns the length consumed (including brackets), or 0 on error
-*/
+/* Parse a bracket expression starting at s[0] == '[' and fill *g. Returns the
+   number of bytes consumed (including the two brackets) on success, or 0 if
+   the bracket is invalid (unclosed, empty, or expansion failed). The tricky
+   POSIX edge cases: a ']' immediately after '[' (or '[!') is treated as a
+   literal char IN the class, not the closing bracket -- hence the content_start
+   check and the `s[ctx.i] == ']' → ctx.i++` before find_closing_bracket. */
 int	parse_bracket(const char *s, int max_len, t_glob *g)
 {
 	t_bracket_parse_ctx	ctx;

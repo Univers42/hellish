@@ -12,6 +12,10 @@
 
 #include "arith_private.h"
 
+/* Tell whether `op` is one of the binary operators that can appear on the
+   left side of a compound assignment like "+=" or ">>=" -- i.e. every
+   arithmetic/bitwise op except the logical ones (&&, ||) and comparisons.
+   Called by try_compound_assign to gate the two-token lookahead. */
 bool	is_compound_op(t_arith_tok op)
 {
 	return (op == ATOK_PLUS || op == ATOK_MINUS
@@ -20,6 +24,11 @@ bool	is_compound_op(t_arith_tok op)
 		|| op == ATOK_BAND || op == ATOK_BXOR || op == ATOK_BOR);
 }
 
+/* Division and modulo share two UB guards that C doesn't give for free.
+   First, divide-by-zero: set p->error (unless we're in the dead branch of a
+   ternary, flagged by no_side_effects). Second, LLONG_MIN / -1 overflows in
+   signed arithmetic; bash returns LLONG_MIN for / and 0 for % in that case,
+   so we mirror that. */
 static long long	apply_divmod(long long l, long long r,
 	t_arith_tok op, t_arith_parser *p)
 {
@@ -40,6 +49,11 @@ static long long	apply_divmod(long long l, long long r,
 	return (l % r);
 }
 
+/* Apply a binary operator to two already-evaluated operands. All the pure
+   arithmetic lives here (the only tricky delegation is to apply_divmod for
+   the UB-prone cases). Bitwise ops just use C operators directly on
+   long long -- POSIX allows it, and on the LP64 targets this shell runs on
+   that is exactly the right width. */
 long long	apply_op(long long l, long long r, t_arith_tok op,
 	t_arith_parser *p)
 {
@@ -62,7 +76,11 @@ long long	apply_op(long long l, long long r, t_arith_tok op,
 	return (l | r);
 }
 
-/* Handle post-increment, post-decrement, assign, compound-assign for VAR */
+/* Handle every operator that immediately follows a variable name: post-++/--
+   (return old value, update), plain =, and compound-assign (delegated to
+   try_compound_assign). If none of those match the variable is just read.
+   Note that the token has already been consumed by arith_parse_primary before
+   we get here, so `tok` is a snapshot -- we only peek past it. */
 static long long	primary_var(t_arith_parser *p, t_arith_token tok)
 {
 	t_arith_token	next;
@@ -92,7 +110,12 @@ static long long	primary_var(t_arith_parser *p, t_arith_token tok)
 	return (try_compound_assign(p, &tok, val));
 }
 
-/* Primary: number | variable | '(' expr ')' */
+/* Primary -- the bottom rung of the precedence hierarchy. Three cases: a
+   numeric literal (just return its value), a variable name (delegate to
+   primary_var which handles all the assignment/increment variants), or a
+   parenthesized sub-expression that recursively calls arith_parse_expr.
+   Anything else is a syntax error: we set p->error and return 0, which
+   propagates up without crashing. */
 long long	arith_parse_primary(t_arith_parser *p)
 {
 	t_arith_token	tok;

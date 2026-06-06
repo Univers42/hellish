@@ -12,6 +12,9 @@
 
 #include "builtins_private.h"
 
+/* Advance the character position within the current word (for multi-option
+   words like -abc). When we exhaust the word, move to the next word and
+   reset the char position to the first option character (1, past the '-'). */
 static void	gopt_advance(t_shell *state, t_getopts *g, char *cur, int pos)
 {
 	if (!cur[pos + 1])
@@ -23,6 +26,9 @@ static void	gopt_advance(t_shell *state, t_getopts *g, char *cur, int pos)
 		state->getopts_pos = pos + 1;
 }
 
+/* Handle an option letter that is not in optstring. In silent mode, stuff
+   the bad letter into OPTARG; otherwise print the standard error message.
+   Either way, set the name variable to '?' and advance past the letter. */
 static int	one_option_bad(t_shell *state, t_getopts *g, char *cur, int pos)
 {
 	if (g->silent)
@@ -34,6 +40,11 @@ static int	one_option_bad(t_shell *state, t_getopts *g, char *cur, int pos)
 	return (gopt_commit_optind(state, g->optind), 0);
 }
 
+/* Process one recognised option letter from `cur[pos]`. If the option takes
+   an argument (next char in optstring is ':'), consume it (attached or from
+   the next word) via gopt_want_arg. Then set the name variable and commit
+   OPTIND. Returns 0 when more options remain, non-zero when the outer loop
+   should stop. */
 int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 {
 	int		pos;
@@ -54,6 +65,10 @@ int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 	return (gopt_commit_optind(state, g->optind), 0);
 }
 
+/* Initialise the getopts working state from the call's arguments and the
+   current value of $OPTIND. The option count is the number of extra args
+   passed on the command line, or $# if none were given. Clamp OPTIND to
+   at least 1 to guard against a script that accidentally sets it to 0. */
 void	gopt_init(t_shell *state, t_vec argv, t_getopts *g)
 {
 	char	*oi;

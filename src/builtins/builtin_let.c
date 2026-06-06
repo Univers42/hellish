@@ -13,8 +13,11 @@
 #include "builtins_private.h"
 #include "arith.h"
 
-/* let expr [expr ...] : evaluate each arithmetic expression. Exit 0 if the
-   LAST expression is non-zero, else 1. */
+/* let expr [expr ...]: evaluate each arithmetic expression in order. The
+   exit status is determined only by the value of the LAST expression:
+   non-zero -> 0 (true), zero -> 1 (false). This matches bash and is the
+   exact inverse of what most C programmers expect. Arithmetic errors (e.g.
+   invalid tokens) set err and return 1 immediately rather than continuing. */
 int	builtin_let(t_shell *state, t_vec argv)
 {
 	char		**av;

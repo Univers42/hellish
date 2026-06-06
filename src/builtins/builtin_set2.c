@@ -12,6 +12,10 @@
 
 #include "builtins_private.h"
 
+/* Print all environment entries in `name=value` form (or just `name` when a
+   variable has no value). This is the output of bare `set` — it differs from
+   `env` in that it includes all variables, not just the exported ones, and
+   it does not quote the values. */
 static void	set_print_env(t_shell *state)
 {
 	size_t	i;
@@ -32,6 +36,10 @@ static void	set_print_env(t_shell *state)
 	}
 }
 
+/* set: multi-purpose. With no args, dump the environment. With -o/+o toggle
+   named options (vi/emacs/errexit/…). With -e, -u, -x, etc., toggle the
+   short flag letters (can be combined: `set -eux`). With `--` (or no dash),
+   replace the positional parameters. */
 int	builtin_set(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -53,6 +61,10 @@ int	builtin_set(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* Build a fresh array of the positionals from index `from` to `count`.
+   Used by shift to construct the post-shift list without re-reading from the
+   live positional array (which would change underneath us if the loop is not
+   careful). */
 static char	**collect_tail_positionals(t_shell *state, int from, int count)
 {
 	char	**vals;
@@ -98,6 +110,10 @@ void	pos_borrow(t_pos *pos, char **args, size_t n)
 	pos_set_cnt(pos);
 }
 
+/* shift [n]: discard the first n positional parameters (default 1). We
+   collect the remaining tail as a new owned array, then replace the current
+   set. Shifting by more than $# is an error (status 1) per POSIX — we do
+   NOT exit; the caller can check $? and decide. */
 int	builtin_shift(t_shell *state, t_vec argv)
 {
 	char	**vals;

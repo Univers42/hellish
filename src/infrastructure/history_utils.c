@@ -12,6 +12,10 @@
 
 #include "history_private.h"
 
+/* Push a new entry both into readline's in-memory list and into our own
+   hist_cmds vector, then append the encoded form to the history file via the
+   long-lived append_fd. The fd approach is O(1) per command; we never rewrite
+   the whole file mid-session (cap_history handles that at startup only). */
 static void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
@@ -30,6 +34,11 @@ static void	append_hist_entry(t_shell *state, char *hist_entry)
 	xfree(enc);
 }
 
+/* Called after each command: if the command is worth saving, extract the raw
+   text from the ring buffer (or from the history-expanded form if expansion
+   ran), and append it. The expanded form is saved so "!! ; echo done" records
+   the real command, not "!!" — less confusing to navigate later.
+   Clears input_expanded and compacts the ring buffer unconditionally. */
 void	manage_history(t_shell *state)
 {
 	char	*hist_entry;
@@ -50,6 +59,10 @@ void	manage_history(t_shell *state)
 	buff_readline_reset(&state->rl);
 }
 
+/* True when the command should be saved: at least one byte was typed, history
+   is active, and the new entry differs from the most recent one (dedup, like
+   HISTCONTROL=ignoredups). A cursor of <= 1 means nothing was typed (the ring
+   buffer only ever has the trailing '\n' that readline appends). */
 bool	worthy_of_being_remembered(t_shell *state)
 {
 	if (state->rl.cursor > 1 && state->hist.hist_active
@@ -65,12 +78,16 @@ bool	worthy_of_being_remembered(t_shell *state)
 	return (false);
 }
 
+/* First-time history setup: zero the struct, open the file, load and cap the
+   entries, and leave append_fd open for incremental writes. */
 void	init_history(t_shell *state)
 {
 	state->hist = (t_history){.append_fd = -1, .hist_active = true};
 	parse_history_file(state);
 }
 
+/* Release the heap strings in hist_cmds and their backing vector. The
+   append_fd is not closed here; that is the caller's job at shell exit. */
 void	free_hist(t_shell *state)
 {
 	size_t	i;

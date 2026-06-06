@@ -10,14 +10,24 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Variable ($VAR) completion.  We scan the raw `environ` array directly
+   because the completion callback has no t_shell* pointer.  This means
+   shell-local (non-exported) variables are invisible here -- a known
+   limitation.  The generator strips the leading '$' for prefix matching,
+   then var_gen_dollar prepends it back so readline shows "$HOME" etc. */
+
 #include "libft.h"
 #include <readline/readline.h>
 #include <stdlib.h>
 
 extern char	**environ;
 
+/* File-scope index into environ[]; reset to 0 on each new TAB press. */
 static int	g_var_idx;
 
+/* Scan environ[] for the next entry whose name starts with `prefix`
+   (text with optional leading '$' stripped).  Returns the name (without
+   '=value') on a match, NULL when exhausted.  Caller owns the string. */
 static char	*var_generator(const char *text, int state_gen)
 {
 	const char	*prefix;
@@ -45,6 +55,8 @@ static char	*var_generator(const char *text, int state_gen)
 	return (NULL);
 }
 
+/* Wrapper that prepends '$' to the match so readline inserts "$HOME"
+   not just "HOME".  Frees the intermediate name string. */
 static char	*var_gen_dollar(const char *text, int state_gen)
 {
 	char	*name;

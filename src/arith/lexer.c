@@ -12,6 +12,10 @@
 
 #include "arith_private.h"
 
+/* Detect a numeric prefix (0x/0X → hex, leading 0+digit → octal, else
+   decimal). Sets *new_pos to the first digit after the prefix and returns
+   the base. Called only AFTER an initial decimal scan found no '#', so the
+   two-pass design keeps the common decimal case cheap. */
 static int	get_base(const char *input, int pos, int len, int *new_pos)
 {
 	if (input[pos] == '0' && pos + 1 < len)
@@ -31,6 +35,9 @@ static int	get_base(const char *input, int pos, int len, int *new_pos)
 	return (10);
 }
 
+/* Convert one character to its numeric value in the given base, returning -1
+   if the character is out of range. Only hex (base 16) understands a-f/A-F;
+   bases 2..10 accept digits only. Tight on purpose — no locale overhead. */
 static int	get_digit(char c, int base)
 {
 	if (c >= '0' && c <= '9')
@@ -42,6 +49,9 @@ static int	get_digit(char c, int base)
 	return (-1);
 }
 
+/* Consume a run of digits in `base` starting at *pos and return their value.
+   Advances *pos past the last accepted digit. Used for both the C-style
+   0x/0-prefix path and the bash base#digits path. */
 long long	parse_digits(const char *input, int *pos, int len, int base)
 {
 	long long	val;
@@ -59,6 +69,12 @@ long long	parse_digits(const char *input, int *pos, int len, int base)
 	return (val);
 }
 
+/* Lex an integer literal into lex->current. The tricky bit is that we must
+   peek ahead to decide the base: "0x…" is hex, a bare "0" followed by more
+   digits is octal, "N#…" is bash's arbitrary-base notation, and everything
+   else is plain decimal. We parse the leading decimal digits first (needed
+   to read the base for N#), then branch. The start/len in the token cover
+   the whole literal including prefix and base spec. */
 void	lex_number(t_arith_lexer *lex)
 {
 	int			start;
@@ -83,6 +99,11 @@ void	lex_number(t_arith_lexer *lex)
 	lex->pos = pos;
 }
 
+/* Advance the lexer by one token, storing the new current token in
+   lex->current. When a cached token array is present the advance delegates
+   to arith_advance_toks (replay mode); otherwise it scans the input string.
+   The dispatch is transparent to every caller, so the parser doesn't know
+   whether it's reading fresh characters or replaying a pre-lexed array. */
 void	arith_lexer_advance(t_arith_lexer *lex)
 {
 	char	c;

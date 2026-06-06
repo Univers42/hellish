@@ -12,6 +12,10 @@
 
 #include "prompt_private.h"
 
+/* Wrap an ANSI escape sequence in the \001...\002 bracket pair that readline
+   requires around all zero-width sequences in the prompt string. Without these
+   markers readline miscounts the visible width and the cursor drifts when you
+   navigate history or use tab completion on a coloured prompt. */
 void	vec_push_ansi(t_string *v, const char *seq)
 {
 	vec_push_char(v, '\001');
@@ -19,6 +23,9 @@ void	vec_push_ansi(t_string *v, const char *seq)
 	vec_push_char(v, '\002');
 }
 
+/* Terminal width for right-padding the prompt box to the edge. We check
+   $COLUMNS first (set by the terminal or manually) so scripts can override the
+   detected value; then TIOCGWINSZ; finally a safe default of 80. */
 int	get_cols(void)
 {
 	char			*env;
@@ -37,6 +44,10 @@ int	get_cols(void)
 	return (80);
 }
 
+/* Walk `p` decoding each multibyte character and accumulating display columns.
+   Same reset-on-error trick as visible_width_cstr: a bad byte is counted as
+   width 1 and the mbstate is cleared so subsequent characters can still decode.
+*/
 static void	process_measurement(const char *p, mbstate_t *state, int *total)
 {
 	int		w;
@@ -63,6 +74,9 @@ static void	process_measurement(const char *p, mbstate_t *state, int *total)
 	}
 }
 
+/* Terminal display width of a plain string (no \001/\002 markers, unlike
+   visible_width_cstr). Used to measure prompt segments that are already
+   stripped of escape brackets, e.g. the branch name or cwd component. */
 int	measure_width(const char *str)
 {
 	mbstate_t	state;
@@ -75,6 +89,10 @@ int	measure_width(const char *str)
 	return (total);
 }
 
+/* Shorten a long path to fit in `maxlen` bytes by replacing a long leading
+   prefix with ".../" while keeping as many trailing path components as fit.
+   We walk backwards from the end to find a slash boundary rather than cutting
+   mid-component, so the result is always a valid path fragment. */
 char	*shorten_path(const char *path, int maxlen)
 {
 	size_t			plen;

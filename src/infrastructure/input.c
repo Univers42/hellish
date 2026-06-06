@@ -13,6 +13,10 @@
 #include "input_private.h"
 #include "helpers.h"
 
+/* Report EOF or truncated input with the right error to match bash's wording.
+   If the tokenizer was waiting for a closing `, do:  or fi when EOF arrived,
+   it says "looking for `X'"; otherwise "unexpected end of file". The "exit"
+   echoed for interactive mode mirrors what bash prints when you hit ^D. */
 static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 {
 	if (tt->looking_for && state->input.len)
@@ -29,6 +33,10 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 	state->should_exit = true;
 }
 
+/* After each successful readline, tokenize what we have so far and check
+   whether the tokenizer needs more input (prompt != NULL means "keep going").
+   extend_bs strips trailing backslash-newlines first so line continuation
+   is resolved before the tokenizer ever sees the buffer. */
 static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 {
 	*prompt = (extend_bs(state), tokenizer((char *)state->input.ctx, tt));
@@ -36,6 +44,10 @@ static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 		*prompt = ft_strdup(*prompt);
 }
 
+/* Keep reading lines until the tokenizer stops asking for more (prompt becomes
+   NULL). Handles EOF and interrupt in the loop: EOF always breaks and returns
+   the error code; interrupt passes straight up to the caller who knows how to
+   clear the in-progress command and repaint the prompt. */
 int	get_more_tokens(t_shell *state, char **prompt, t_deque_tok *tt)
 {
 	int	stat;

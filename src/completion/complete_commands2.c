@@ -10,6 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* The readline generator and public entry point for command completion.
+   readline calls cmd_generator in a loop: state_gen==0 on first call,
+   then 1, 2... until we return NULL.  The static path_dirs persists
+   across calls within one TAB press, which is why cmd_gen_init resets
+   everything on state_gen==0. */
+
 #include "completion_private.h"
 #include "libft.h"
 #include <readline/readline.h>
@@ -17,6 +23,8 @@
 #include <dirent.h>
 #include <unistd.h>
 
+/* readline generator: yields one matching command name per call.
+   First exhausts the built-ins list, then scans each PATH directory. */
 static char	*cmd_generator(const char *text, int state_gen)
 {
 	static char	**path_dirs;

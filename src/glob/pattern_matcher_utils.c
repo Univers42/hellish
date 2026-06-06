@@ -12,9 +12,12 @@
 
 #include "glob_private.h"
 
-/*
-** Match asterisk - zero or more characters
-*/
+/* Match '*': zero or more characters within a single path component. The
+   leading-dot guard prevents "*.c" from matching ".hidden.c". The loop walks
+   name forward and at each position tries to match the NEXT token (offset+1)
+   against the remaining name -- classic backtracking. The finished_pattern
+   check handles the case where '*' is the last token: if there's nothing more
+   to match, any suffix works and we return offset+1 immediately at EOL. */
 size_t	match_g_asterisk(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
@@ -37,9 +40,10 @@ size_t	match_g_asterisk(char *name, t_vec_glob patt, size_t offset,
 	return (0);
 }
 
-/*
-** Match question mark - exactly one character
-*/
+/* Match '?': exactly one non-NUL character (not a leading dot). If this is
+   the last token in the segment (finished_pattern), the character after the
+   matched one must be NUL. Otherwise recurse on offset+1 with the rest of
+   the name. */
 size_t	match_g_question(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
@@ -56,9 +60,10 @@ size_t	match_g_question(char *name, t_vec_glob patt, size_t offset,
 	return (matches_pattern(name + 1, patt, offset + 1, false));
 }
 
-/*
-** Match bracket expression - character class
-*/
+/* Match a bracket expression: the current character must satisfy the class
+   (honoring BRACKET_NEGATED). Leading-dot and NUL guards come first.
+   On success, if the bracket is the last token in the segment the next char
+   must be NUL; otherwise recurse to match the rest. */
 size_t	match_g_bracket(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {

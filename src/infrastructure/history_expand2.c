@@ -16,6 +16,8 @@
 #include "libft.h"
 #include <stdlib.h>
 
+/* !-N : the Nth most recent command (e.g. !-2 = two back). The minus is the
+   first char of `s`; we start parsing digits at s[1]. */
 static char	*resolve_bang_neg(t_shell *state, const char *s, size_t *adv)
 {
 	int	neg;
@@ -29,6 +31,8 @@ static char	*resolve_bang_neg(t_shell *state, const char *s, size_t *adv)
 	return (hist_entry_at(state, -num));
 }
 
+/* !N : entry at 1-based absolute index N (the history list counts from 1 in
+   bash; internally we store 0-based, so we subtract 1). */
 static char	*resolve_bang_pos(t_shell *state, const char *s, size_t *adv)
 {
 	int	pos;
@@ -42,6 +46,11 @@ static char	*resolve_bang_pos(t_shell *state, const char *s, size_t *adv)
 	return (hist_entry_at(state, num - 1));
 }
 
+/* Dispatch a ! designator to the right resolver. `s` points to the character
+   immediately after the '!' (the designator). *adv is set to the number of
+   characters of `s` consumed by the designator (so the caller can skip past).
+   Forms handled: !! (last), !N (absolute), !-N (relative), !?str[?] (search
+   contains), !prefix (search prefix). */
 char	*resolve_bang(t_shell *state, const char *s, size_t *adv)
 {
 	size_t	wlen;
@@ -67,6 +76,9 @@ char	*resolve_bang(t_shell *state, const char *s, size_t *adv)
 	return (hist_search_prefix(state, s, wlen));
 }
 
+/* True when position `pos` in `s` is inside single quotes. History expansion
+   is suppressed inside single quotes, just like bash: '!!' should be literal.
+   We track parity of single-quote characters seen before `pos`. */
 int	in_sq(const char *s, size_t pos)
 {
 	size_t	i;

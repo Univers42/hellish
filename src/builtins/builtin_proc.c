@@ -21,7 +21,10 @@
 
 void	procsub_detach_all(t_shell *state);
 
-/* Build a NULL-terminated argv array from argv[1..] for execve. */
+/* Build a NULL-terminated argv array for execve from argv[1..] (skipping
+   argv[0] which is the "exec" word itself). We calloc so the sentinel NULL
+   is already in place without an explicit assignment. The strings are NOT
+   duplicated — execve does not need them to outlive the process image. */
 static char	**dup_exec_argv(t_vec argv)
 {
 	char	**out;

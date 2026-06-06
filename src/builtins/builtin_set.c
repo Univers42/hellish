@@ -12,6 +12,11 @@
 
 #include "builtins_private.h"
 
+/* Handle `set -o [name]` and `set +o [name]`. Without a name, list all
+   shell options (set -o) or emit shell-reproducible assignments (set +o).
+   vi/emacs are special: they touch both state->edit_mode and the readline
+   layer (state->rl.edit_mode). Everything else goes through set_long_option
+   which maps the long name to the right opt_ field. */
 int	handle_set_o(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -83,6 +88,9 @@ void	pos_free(t_pos *pos)
 	pos->args_owned = false;
 }
 
+/* Replace the shell's positional parameters with a fresh owned copy of args.
+   The old set is freed by pos_free() first, then pos_build() makes deep-dup
+   strings so the caller can free the original array safely. */
 int	set_positional_args(t_shell *state, char **args, size_t n)
 {
 	pos_free(&state->pos);

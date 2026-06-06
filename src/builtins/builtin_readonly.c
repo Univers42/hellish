@@ -12,6 +12,10 @@
 
 #include "builtins_private.h"
 
+/* Check whether `key` is in the readonly list. Linear scan is fine because
+   the list is short (usually < 20 entries even in a complex script). This is
+   called from env_set to block assignments; if it returns true, the caller
+   should print an error and skip the write. */
 bool	is_readonly_var(t_shell *state, const char *key)
 {
 	size_t	i;
@@ -28,6 +32,9 @@ bool	is_readonly_var(t_shell *state, const char *key)
 	return (false);
 }
 
+/* Add `name` to the readonly list. We strdup it so the original string (from
+   the argument vector) can be freed. The vec is lazy-initialised on first use
+   so the common case (no readonly variables) pays nothing. */
 static void	mark_readonly(t_shell *state, char *name)
 {
 	char	*dup;
@@ -43,6 +50,9 @@ static void	mark_readonly(t_shell *state, char *name)
 	vec_push(&state->readonly_vars, &dup);
 }
 
+/* Print all readonly variables in `readonly name=value` form, matching the
+   bash output that can be saved and replayed. Variables without a current
+   value (declared but not set) are printed without the `=value` part. */
 static int	list_readonly(t_shell *state)
 {
 	size_t	i;

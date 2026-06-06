@@ -15,8 +15,9 @@
 
 void	exit_clean(t_shell *state, int code);
 
-/* set -x : trace the command to stderr before it runs, prefixed by $PS4
-   (default "+ "), the words separated by single spaces. */
+/* Print the xtrace line (set -x behaviour). The $PS4 prefix defaults to
+   "+ " (bash uses the actual string "+ "); we use that default verbatim so
+   automated tests that grep for `^+ ` work without configuration. */
 void	xtrace_print(t_shell *state, t_vec *argv)
 {
 	char	*ps4;
@@ -36,7 +37,10 @@ void	xtrace_print(t_shell *state, t_vec *argv)
 	ft_eprintf("\n");
 }
 
-/* set -u : a reference to an unset parameter is an error. */
+/* Called when -u (nounset) is set and an unset variable is expanded. In
+   script mode we exit immediately (POSIX requires this). In interactive mode
+   we report the error but keep the session alive — crashing the REPL every
+   time you mistype a variable name would be unbearable. */
 void	nounset_abort(t_shell *state, const char *name, int len)
 {
 	ft_eprintf("%s: %.*s: parameter not set\n", state->ctx, len, name);
@@ -45,6 +49,8 @@ void	nounset_abort(t_shell *state, const char *name, int len)
 	state->last_cmd_st_exe = (t_execution_state){.status = 1};
 }
 
+/* Switch the line-editor mode. Only "vi" and "emacs" are recognised; +vi
+   or +emacs with `on=false` is ignored (no "neither mode" concept here). */
 static void	set_opt_edit_mode(t_shell *state, const char *name, bool on)
 {
 	if (!ft_strcmp(name, "vi") && on)

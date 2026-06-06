@@ -12,6 +12,10 @@
 
 #include "arith_private.h"
 
+/* '>' can start three different tokens: '>=' (ATOK_GE), '>>' (ATOK_RSHIFT),
+   or plain '>' (ATOK_GT). This is the symmetric counterpart to
+   handle_angle_left in helpers2.c; it lives in a separate file because the
+   norm caps file length and helpers2.c was already full. */
 void	handle_angle_right(t_arith_lexer *lex)
 {
 	if (lex->pos + 1 < lex->len && lex->input[lex->pos + 1] == '=')

@@ -12,7 +12,9 @@
 
 #include "arith_private.h"
 
-/* Free a token-array cache (safe on NULL). */
+/* Free a token-array cache, including the token array it owns. Safe to call
+   on NULL so callers don't have to guard. The t_arith_cache itself is also
+   freed (it was malloc'd by cache_build). */
 void	arith_cache_free(t_arith_cache *c)
 {
 	if (!c)
@@ -21,9 +23,11 @@ void	arith_cache_free(t_arith_cache *c)
 	xfree(c);
 }
 
-/* Advance the lexer while it replays a cached token array. `pos` is the index
-   of the NEXT token, mirroring the scanning lexer's "pos = end of current" so
-   the parser's save/restore of pos+current backtracks one token correctly. */
+/* Step the lexer forward one token in cached-replay mode. We keep `pos` as
+   the index of the NEXT token to load -- mirroring the scanning lexer where
+   pos is the byte offset *after* the current token. That way try_compound_
+   assign's save/restore of (pos, current) backtracks by exactly one token in
+   both modes without needing separate logic. */
 void	arith_advance_toks(t_arith_lexer *lex)
 {
 	if (lex->pos < lex->ntoks)
@@ -38,7 +42,12 @@ void	arith_advance_toks(t_arith_lexer *lex)
 	}
 }
 
-/* Initialise a lexer to replay `toks` instead of scanning a string. */
+/* Initialize the lexer in cached-replay mode: point it at a pre-built token
+   array instead of a raw string. The first call to arith_advance_toks (via
+   the final line here) loads token[0] into lex->current so the parser sees
+   it immediately via arith_lexer_peek -- same invariant as the scanning init.
+   lex->input is left NULL to crash loudly if scanning code accidentally runs
+   on a replay lexer. */
 void	arith_lexer_init_toks(t_arith_lexer *lex, const t_arith_token *toks,
 			int ntoks)
 {

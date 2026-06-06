@@ -13,6 +13,9 @@
 #include "ast_private.h"
 #include "arith.h"
 
+/* Post-order (children before parent) traversal: apply `f` to every node.
+   Post-order is exactly what free_node needs -- free children first, then the
+   parent -- but is also used by any pass that needs bottom-up processing. */
 void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 {
 	size_t	i;
@@ -26,6 +29,10 @@ void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 	f(node);
 }
 
+/* Free all heap allocations belonging to a single node. The arith cache is
+   freed via its own function (it may be shared). The start buffer is freed only
+   when token.allocated is true (borrowed tokens share the lexer's buffer).
+   full_word is an optional extra copy used by some expansion paths. */
 void	free_node(t_ast_node *node)
 {
 	arith_cache_free(node->token.arith_cache);
@@ -42,12 +49,17 @@ void	free_node(t_ast_node *node)
 	*node = (t_ast_node){};
 }
 
+/* Recursively free an entire subtree by running free_node in post-order.
+   The root pointer is also zeroed (via *node = {}), so a double-free is safe
+   if free_ast is called again on the same variable. */
 void	free_ast(t_ast_node *node)
 {
 	ast_postorder_traversal(node, free_node);
 }
 
-/* Helper: Get color for node type in DOT format */
+/* Pastel fill colour for a node in the Graphviz DOT graph. The palette is
+   chosen so each semantic category (pipeline, redirect, word, compound ...) has
+   its own hue, making the graph visually scannable at a glance. */
 char	*get_node_color(t_ast_type tn)
 {
 	if (tn == AST_COMMAND_PIPELINE)
@@ -69,7 +81,9 @@ char	*get_node_color(t_ast_type tn)
 	return ("#FFFFFF");
 }
 
-/* Helper: Get shape for node type in DOT format */
+/* Graphviz shape for a node. Leaves (TOKEN/WORD) get ellipses; structural
+   nodes (COMMAND, SIMPLE_COMMAND) get boxes; SUBSHELL gets an octagon to stand
+   out; REDIRECT gets a diamond. All others default to box. */
 char	*get_node_shape(t_ast_type tn)
 {
 	if (tn == AST_TOKEN || tn == AST_WORD)

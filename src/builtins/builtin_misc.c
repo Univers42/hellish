@@ -13,6 +13,8 @@
 #include "builtins_private.h"
 #include <sys/stat.h>
 
+/* true: always succeeds. Registered in the dispatch table so it runs as a
+   builtin instead of forking /bin/true — saves a fork/exec in loops. */
 int	builtin_true(t_shell *state, t_vec argv)
 {
 	(void)state;
@@ -20,6 +22,7 @@ int	builtin_true(t_shell *state, t_vec argv)
 	return (0);
 }
 
+/* false: always fails (returns 1). Same deal as true — avoids a fork. */
 int	builtin_false(t_shell *state, t_vec argv)
 {
 	(void)state;
@@ -27,6 +30,9 @@ int	builtin_false(t_shell *state, t_vec argv)
 	return (1);
 }
 
+/* Validate and parse a bare octal string (no 0 prefix required). Returns -1
+   on the first non-octal character so we can give a clean error message
+   instead of silently truncating. */
 static int	parse_octal(const char *s, mode_t *out)
 {
 	mode_t	m;

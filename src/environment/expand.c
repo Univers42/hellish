@@ -10,6 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+/* Variable expansion entry points: both special shell variables ($?, $$,
+   $!, $-, $#, $LINENO, positional params $1..$N) and ordinary env vars.
+   env_expand_n is the hot path -- called thousands of times per script.
+   It intentionally returns interior pointers into state or the env vector,
+   NOT copies, so callers must NOT free the result. */
+
 #include "env.h"
 #include "shell.h"
 #include "helpers.h"
@@ -20,8 +26,9 @@ void	exit_clean(t_shell *state, int code);
 char	*build_flagstr(t_shell *state);
 char	*lineno_str(t_shell *state);
 
-/* If key[0..len) is all-digit > 0, return it; else -1.
-** "0" falls through (so $0 stays an ordinary env entry). */
+/* Detect a positional parameter index: key must be all digits and > 0.
+   $0 is NOT a positional parameter -- POSIX says $0 is the shell name,
+   stored as a plain env var so it falls through to the normal lookup. */
 static int	pos_index(const char *key, int len)
 {
 	int	n;
@@ -43,6 +50,9 @@ static int	pos_index(const char *key, int len)
 	return (n);
 }
 
+/* Map the one-character special variables to their runtime values.
+   Returns NULL (not "not found") to distinguish "keep looking in env"
+   from "found, value is empty string" -- both "" and NULL are valid. */
 static char	*expand_special(t_shell *state, char *key, int len)
 {
 	if (ft_strncmp(key, "?", len) == 0 && len == 1)
@@ -70,6 +80,10 @@ static char	*expand_special(t_shell *state, char *key, int len)
 	return (NULL);
 }
 
+/* Expand $key (len bytes): specials first, then positionals, then env.
+   Returns a borrowed pointer -- callers must not free it.  Returns NULL
+   if unset (as opposed to "" for set-but-empty; distinction matters for
+   ${v:?} and opt_nounset). */
 char	*env_expand_n(t_shell *state, char *key, int len)
 {
 	t_env	*curr;
@@ -97,6 +111,9 @@ char	*env_expand(t_shell *state, char *key)
 	return (env_expand_n(state, key, ft_strlen(key)));
 }
 
+/* Drain `src` into `dest`, overriding each entry's exported flag.
+   Used when a subshell or function merges its local assignments back.
+   src is emptied and freed; dest owns everything afterwards. */
 void	env_extend(t_vec_env *dest, t_vec_env *src, bool export)
 {
 	t_env	curr;
