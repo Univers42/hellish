@@ -11,8 +11,10 @@ parser → word reparser → heredoc → expander → executor, each a small, re
 module. It ships with **two allocators you can swap at compile time** (libc
 `malloc` or our own `ft_malloc`) so you can A/B their behaviour and speed.
 
-- **Latest:** v2.3.0 — compile-time `SAFE` allocator, `${var/pat/rep}`
-  substitution, a leak-clean run across the whole test corpus
+- **Latest:** v2.3.1 — heredocs nested in compound commands, `type`/`hash`
+  parity with bash, a reliable `wait`, a multi-distro Docker test harness, a
+  full PR CI pipeline, and a norm-clean tree. (v2.3.0: compile-time `SAFE`
+  allocator, `${var/pat/rep}` substitution, a leak-clean run across the corpus)
 
 ---
 
@@ -80,11 +82,22 @@ to the npm registry (the release workflow publishes it when the maintainer's
 npm install -g hellish-shell      # or: pnpm add -g hellish-shell
 ```
 
-**Docker:** build the image locally from the repo's [`Dockerfile`](Dockerfile):
+**Docker (recommended for trying it out):** the surest way to run hellish is in
+a clean container that already has every dependency — no chasing
+`readline/readline.h: No such file` on your host. The repo ships a
+`docker-compose.yml` that **builds hellish from source** on four distros
+(Alpine/musl, Debian, Ubuntu, Arch), so you can verify it works in a
+reproducible environment regardless of your machine:
 
 ```sh
-docker build -t hellish . && docker run --rm -it hellish
+docker compose run --rm alpine     # interactive hellish on Alpine (or: debian, ubuntu, arch)
+make docker-test                   # build + smoke-test hellish on ALL four distros
+make docker-build                  # just build the four images
+make docker-clean                  # remove them
 ```
+
+(The root [`Dockerfile`](Dockerfile) is the lean binary-only release image;
+[`docker/`](docker/) holds the build-from-source, multi-distro setup.)
 
 Once installed, `hellish` checks for newer releases in the background (once a
 day, never blocking the prompt) and flags one in the welcome banner. Run
