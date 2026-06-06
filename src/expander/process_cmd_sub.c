@@ -39,7 +39,7 @@ static char	*extract_cmd_inner(const char *s, int inlen)
 {
 	char	*inner;
 
-	inner = malloc(inlen + 1);
+	inner = xmalloc(inlen + 1);
 	if (!inner)
 		return (NULL);
 	ft_memcpy(inner, s + 2, inlen);
@@ -54,7 +54,7 @@ static void	push_cmd_sub_result(t_string *outbuf, char *subout)
 		subout = ft_strdup("");
 	if (*subout)
 		vec_push_nstr(outbuf, subout, ft_strlen(subout));
-	free(subout);
+	xfree(subout);
 }
 
 // Helper: encapsulate the main logic for command substitution
@@ -69,7 +69,7 @@ static bool	do_cmd_sub(t_shell *state, t_expand_ctx *ctx, int j)
 	if (!inner)
 		return (false);
 	subout = capture_subshell_output(state, inner);
-	free(inner);
+	xfree(inner);
 	push_cmd_sub_result(ctx->outbuf, subout);
 	*ctx->consumed = j;
 	return (true);

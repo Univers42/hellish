@@ -94,5 +94,5 @@ void	tokenize_ast_token(t_vec_glob *ret, t_token t)
 		vec_push(ret, &((t_glob *)sub.ctx)[j]);
 		j++;
 	}
-	free(sub.ctx);
+	xfree(sub.ctx);
 }

@@ -17,7 +17,7 @@ static char	*handle_single_arg(t_vec *args)
 	char	*temp;
 
 	temp = ((char **)args->ctx)[0];
-	free(args->ctx);
+	xfree(args->ctx);
 	return (temp);
 }
 
@@ -27,7 +27,7 @@ static char	*build_string_from_node(t_ast_node *curr)
 
 	s = word_to_string(*curr);
 	if (!vec_ensure_space_n(&s, 1))
-		return (free(s.ctx), NULL);
+		return (xfree(s.ctx), NULL);
 	((char *)s.ctx)[s.len] = '\0';
 	return ((char *)s.ctx);
 }
@@ -38,8 +38,8 @@ static char	*free_args_ambiguous(t_vec *args)
 
 	i = 0;
 	while (i < args->len)
-		free(((char **)args->ctx)[i++]);
-	return (free(args->ctx), NULL);
+		xfree(((char **)args->ctx)[i++]);
+	return (xfree(args->ctx), NULL);
 }
 
 char	*expand_word_single(t_shell *state, t_ast_node *curr)

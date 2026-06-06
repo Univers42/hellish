@@ -73,11 +73,11 @@ void	render_prompt(t_string *ret, size_t frame, int status)
 	prompt_branch(ret, &p);
 	prompt_venv(ret, &p);
 	prompt_time_and_pad(ret, &p);
-	free(p.short_cwd);
+	xfree(p.short_cwd);
 	if (p.branch)
-		free(p.branch);
+		xfree(p.branch);
 	if (p.venv)
-		free(p.venv);
+		xfree(p.venv);
 }
 
 t_string	prompt_normal(t_shell *state)

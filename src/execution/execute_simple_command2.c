@@ -42,7 +42,7 @@ static void	free_old_argv(t_executable_cmd *cmd)
 	i = 0;
 	while (i < (int)cmd->argv.len)
 		word_free(((char **)cmd->argv.ctx)[i++]);
-	free(cmd->argv.ctx);
+	xfree(cmd->argv.ctx);
 }
 
 void	apply_alias(t_shell *state, t_executable_cmd *cmd)

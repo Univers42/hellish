@@ -61,7 +61,7 @@ static int	fill_bracket_glob(const t_bracket_parse_ctx *ctx, t_glob *g)
 	if (!g->char_set || g->char_set_len == 0)
 	{
 		if (g->char_set)
-			free(g->char_set);
+			xfree(g->char_set);
 		g->char_set = NULL;
 		return (0);
 	}

@@ -69,10 +69,10 @@ void	cleanup_proc_subs(t_shell *state)
 			waitpid(entry->pid, &status, 0);
 			entry->pid = -1;
 		}
-		free(entry->path);
+		xfree(entry->path);
 		i++;
 	}
-	free(state->proc_subs.ctx);
+	xfree(state->proc_subs.ctx);
 	vec_init(&state->proc_subs);
 	state->proc_subs.elem_size = sizeof(t_procsub_entry);
 }

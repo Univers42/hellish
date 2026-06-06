@@ -28,15 +28,15 @@ char	*lineno_str(t_shell *state)
 	if (!s)
 		return (ft_strlcpy(state->linebuf, "0", 2), state->linebuf);
 	ft_strlcpy(state->linebuf, s, sizeof(state->linebuf));
-	free(s);
+	xfree(s);
 	return (state->linebuf);
 }
 
 static void	handle_readonly_assign(t_shell *state, t_env *el)
 {
 	ft_eprintf("%s: %s: readonly variable\n", state->ctx, el->key);
-	free(el->key);
-	free(el->value);
+	xfree(el->key);
+	xfree(el->value);
 	el->key = NULL;
 	el->value = NULL;
 	if (state->metinp != INP_RL)

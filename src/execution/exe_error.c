@@ -42,7 +42,7 @@ int	no_such_file_or_dir(t_shell *state,
 	errno = ENOENT;
 	err_1_errno(state, cmd_name);
 	free_all_state(state);
-	free(path_of_exe);
+	xfree(path_of_exe);
 	return (COMMAND_NOT_FOUND);
 }
 
@@ -53,7 +53,7 @@ static int	errex_code(t_shell *state,
 {
 	errno = ENOENT;
 	err_1_errno(state, cmd_name);
-	free(*path_of_exe);
+	xfree(*path_of_exe);
 	*path_of_exe = NULL;
 	return (ex);
 }

@@ -19,7 +19,7 @@ static void	reset_string(t_string *temp, const char *dir, const char *exe_name)
 	joined = ft_strnjoin(dir, "/", exe_name, NULL);
 	vec_clear(temp);
 	vec_push_str(temp, joined);
-	free(joined);
+	xfree(joined);
 }
 
 char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied)
@@ -48,5 +48,5 @@ char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied)
 			return ((char *)temp.ctx);
 		*perm_denied = 1;
 	}
-	return (free(temp.ctx), NULL);
+	return (xfree(temp.ctx), NULL);
 }

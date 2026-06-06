@@ -50,7 +50,7 @@ void	update_ctx(t_shell *state)
 {
 	if (!state->rl.should_update_ctx)
 		return ;
-	free(state->ctx);
+	xfree(state->ctx);
 	state->ctx = (char *)ft_asprintf("%s: line %i",
 			state->dft_ctx, state->rl.line);
 }

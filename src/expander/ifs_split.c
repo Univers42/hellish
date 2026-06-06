@@ -39,7 +39,7 @@ void	push_f(t_vec *out, const char *s, size_t start, size_t end)
 	size_t	len;
 
 	len = end - start;
-	f = malloc(len + 1);
+	f = xmalloc(len + 1);
 	if (!f)
 		return ;
 	ft_memcpy(f, s + start, len);

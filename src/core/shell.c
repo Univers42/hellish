@@ -75,11 +75,11 @@ static void	source_hellishrc(t_shell *state)
 	if (!path)
 		return ;
 	content = read_file(path);
-	free(path);
+	xfree(path);
 	if (!content)
 		return ;
 	exec_string(state, content);
-	free(content);
+	xfree(content);
 }
 
 /**
@@ -119,12 +119,12 @@ static void	repl_shell(t_shell *state)
 		run_pending_traps(state);
 		free_redirects(&state->redirects);
 		free_ast(&state->tree);
-		free(state->input.ctx);
+		xfree(state->input.ctx);
 		state->input = (t_string){0};
-		free(state->hd_src);
+		xfree(state->hd_src);
 		state->hd_src = NULL;
 		state->hd_pos = 0;
-		free(state->hd_stripped);
+		xfree(state->hd_stripped);
 		state->hd_stripped = NULL;
 	}
 	flush_output_buffer(buf_fd, stdout_bak);

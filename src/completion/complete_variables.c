@@ -54,7 +54,7 @@ static char	*var_gen_dollar(const char *text, int state_gen)
 	if (!name)
 		return (NULL);
 	result = ft_strjoin("$", name);
-	free(name);
+	xfree(name);
 	return (result);
 }
 

@@ -72,7 +72,7 @@ static char	**collect_tail_positionals(t_shell *state, int from, int count)
 			vals[i] = ft_strdup(v);
 		else
 			vals[i] = ft_strdup("");
-		free(k);
+		xfree(k);
 		i++;
 	}
 	return (vals);
@@ -121,6 +121,6 @@ int	builtin_shift(t_shell *state, t_vec argv)
 	set_positional_args(state, vals, (size_t)(count - n));
 	n = -1;
 	while (vals[++n])
-		free(vals[n]);
-	return (free(vals), 0);
+		xfree(vals[n]);
+	return (xfree(vals), 0);
 }

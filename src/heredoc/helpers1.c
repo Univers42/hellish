@@ -48,13 +48,13 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 		vec_push_char(&sep, '$');
 	}
 	if (!vec_ensure_space_n(&sep, 1))
-		return (close(wr), free(sep.ctx), -1);
+		return (close(wr), xfree(sep.ctx), -1);
 	((char *)sep.ctx)[sep.len] = '\0';
 	req = create_heredoc((char *)sep.ctx,
 			!contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
 			ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start,
 				"<<-", 3) == 0, is_pipeline);
-	return (write_heredoc(state, wr, &req), free(sep.ctx), curr->redir_idx);
+	return (write_heredoc(state, wr, &req), xfree(sep.ctx), curr->redir_idx);
 }
 
 void	process_redirect_group(t_shell *state, t_ast_node *parent,

@@ -47,13 +47,13 @@ int	builtin_read(t_shell *state, t_vec argv)
 	o.ifs = dup_ifs(state);
 	line = read_one_line(o.raw, &eof);
 	if (!line)
-		return (free(o.ifs), 1);
+		return (xfree(o.ifs), 1);
 	if (o.first >= argv.len)
 		rd_set_var(state, "REPLY", line);
 	else
 	{
 		assign_words(state, line, argv, &o);
-		free(line);
+		xfree(line);
 	}
-	return (free(o.ifs), eof != 0);
+	return (xfree(o.ifs), eof != 0);
 }

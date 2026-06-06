@@ -30,7 +30,7 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	temp = ft_itoa(state->heredoc_idx++);
 	vec_push_str(&fname, temp);
 	ret.fname = (char *)fname.ctx;
-	free(temp);
+	xfree(temp);
 	wr_fd = open(ret.fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	if (wr_fd < 0)
 		critical_error_errno_ctx(ret.fname);
@@ -106,7 +106,7 @@ bool	capture_heredoc_to_node(t_shell *state, t_ast_node *node)
 	vec_push_nstr(&body, state->hd_src + state->hd_pos,
 		end - state->hd_src - state->hd_pos);
 	state->hd_pos = end - state->hd_src;
-	free(sep.ctx);
+	xfree(sep.ctx);
 	node->heredoc_body = (char *)body.ctx;
 	return (true);
 }

@@ -86,12 +86,12 @@ void	add_history_line(const char *cmd)
 {
 	char	*buf;
 
-	buf = malloc(ft_strlen(cmd) + 1);
+	buf = xmalloc(ft_strlen(cmd) + 1);
 	if (!buf)
 		return (add_history(cmd));
 	fill_hist_buf(cmd, buf);
 	add_history(buf);
-	free(buf);
+	xfree(buf);
 }
 
 t_vec	parse_hist_file(t_string hist)

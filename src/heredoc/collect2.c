@@ -74,7 +74,7 @@ int	materialize_heredoc(t_shell *state, t_ast_node *node, int *redir_idx)
 	sep = word_to_hrdoc_string(((t_ast_node *)node->children.ctx)[1]);
 	req = build_hdoc_req(node, false, &sep);
 	write_heredoc(state, wr_fd, &req);
-	free(sep.ctx);
+	xfree(sep.ctx);
 	state->hd_src = saved_src;
 	state->hd_pos = saved_pos;
 	*redir_idx = node->redir_idx;
@@ -97,5 +97,5 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 	ft_assert(sep.ctx != 0);
 	req = build_hdoc_req(node, is_pipe, &sep);
 	write_heredoc(state, wr_fd, &req);
-	free(sep.ctx);
+	xfree(sep.ctx);
 }

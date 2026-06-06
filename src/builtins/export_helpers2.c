@@ -69,7 +69,7 @@ int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
 			e = env_get(&st->env, id);
 			if (e)
 				e->exported = true;
-			free(id);
+			xfree(id);
 		}
 		else
 			env_set(&st->env, (t_env){true, id, val});
@@ -79,6 +79,6 @@ int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
 	{
 		ft_eprintf("%s: %s: `%s' not valid identifier\n", st->ctx,
 			argv0, id);
-		return (free(id), free(val), 1);
+		return (xfree(id), xfree(val), 1);
 	}
 }

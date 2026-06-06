@@ -40,7 +40,7 @@ void	free_children(void *p)
 		return ;
 	n = (t_ast_node *)p;
 	if (n->children.ctx)
-		free(n->children.ctx);
+		xfree(n->children.ctx);
 }
 
 /* Release a consumed subtoken's own allocations.
@@ -49,13 +49,13 @@ void	free_children(void *p)
 void	free_token_res(t_token *t)
 {
 	if (t->allocated)
-		free((char *)t->start);
+		xfree((char *)t->start);
 	t->allocated = false;
 	if (t->full_word)
 	{
 		if (t->full_word->allocated)
-			free(t->full_word->start);
-		free(t->full_word);
+			xfree(t->full_word->start);
+		xfree(t->full_word);
 		t->full_word = NULL;
 	}
 }

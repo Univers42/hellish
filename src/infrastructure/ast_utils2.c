@@ -30,15 +30,15 @@ void	free_node(t_ast_node *node)
 {
 	arith_cache_free(node->token.arith_cache);
 	if (node->token.allocated)
-		free(node->token.start);
+		xfree(node->token.start);
 	if (node->token.full_word)
 	{
 		if (node->token.full_word->allocated)
-			free(node->token.full_word->start);
-		free(node->token.full_word);
+			xfree(node->token.full_word->start);
+		xfree(node->token.full_word);
 	}
-	free(node->heredoc_body);
-	free(node->children.ctx);
+	xfree(node->heredoc_body);
+	xfree(node->children.ctx);
 	*node = (t_ast_node){};
 }
 

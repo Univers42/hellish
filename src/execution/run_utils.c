@@ -38,7 +38,7 @@ static void	exec_fallback_shell(char *path, t_vec *args, char **envp)
 
 	orig = args->len - 1;
 	ne = orig + 1;
-	nv = malloc(sizeof(char *) * (ne + 1));
+	nv = xmalloc(sizeof(char *) * (ne + 1));
 	if (!nv)
 		return ;
 	nv[0] = select_fallback_shell(path);
@@ -48,7 +48,7 @@ static void	exec_fallback_shell(char *path, t_vec *args, char **envp)
 		nv[i + 1] = ((char **)(args->ctx))[i];
 	nv[ne] = NULL;
 	execve(nv[0], nv, envp);
-	free(nv);
+	xfree(nv);
 }
 
 void	try_exec_with_fallback(char *path_of_exe,

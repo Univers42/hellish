@@ -44,7 +44,7 @@ void	pos_set_cnt(t_pos *pos)
 		ft_strlcpy(pos->cnt_str, s, sizeof(pos->cnt_str));
 	else
 		ft_strlcpy(pos->cnt_str, "0", sizeof(pos->cnt_str));
-	free(s);
+	xfree(s);
 }
 
 /* Fill `pos` with fresh dups of args[0..n-1]. */
@@ -75,8 +75,8 @@ void	pos_free(t_pos *pos)
 		i = 0;
 		if (pos->args_owned)
 			while (pos->args[i])
-				free(pos->args[i++]);
-		free(pos->args);
+				xfree(pos->args[i++]);
+		xfree(pos->args);
 	}
 	pos->args = NULL;
 	pos->count = 0;

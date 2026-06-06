@@ -71,7 +71,7 @@ static char	*unescape_backtick(const char *s, int len)
 	int		i;
 	int		j;
 
-	out = malloc(len + 1);
+	out = xmalloc(len + 1);
 	if (!out)
 		return (NULL);
 	i = 0;
@@ -106,10 +106,10 @@ bool	try_backtick_ctx(t_word_token_ctx *ctx)
 		vec_push_nstr(ctx->outbuf, ctx->tok->start, (size_t)ctx->pos);
 	inner = unescape_backtick(s + 1, j - 1);
 	out = capture_subshell_output(ctx->state, inner);
-	free(inner);
+	xfree(inner);
 	if (out && *out)
 		vec_push_nstr(ctx->outbuf, out, ft_strlen(out));
-	free(out);
+	xfree(out);
 	ctx->pos += j + 1;
 	ctx->changed = true;
 	return (true);

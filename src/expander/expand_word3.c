@@ -57,10 +57,10 @@ char	*try_simple_concat(t_shell *state, t_ast_node *node)
 	while (++i < (int)node->children.len)
 	{
 		if (((t_ast_node *)node->children.ctx)[i].node_type != AST_TOKEN)
-			return (free(out.ctx), NULL);
+			return (xfree(out.ctx), NULL);
 		t = &((t_ast_node *)node->children.ctx)[i].token;
 		if (!concat_one_token(state, &out, t))
-			return (free(out.ctx), NULL);
+			return (xfree(out.ctx), NULL);
 	}
 	if (!out.ctx)
 		return (ft_strdup(""));

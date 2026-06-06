@@ -35,17 +35,17 @@ void	free_split(char **arr)
 	i = 0;
 	while (arr[i])
 	{
-		free(arr[i]);
+		xfree(arr[i]);
 		i++;
 	}
-	free(arr);
+	xfree(arr);
 }
 
 void	cmd_gen_cleanup(char ***path_dirs)
 {
 	free_split(*path_dirs);
 	*path_dirs = NULL;
-	free(g_path_dirs_cache);
+	xfree(g_path_dirs_cache);
 	g_path_dirs_cache = NULL;
 }
 

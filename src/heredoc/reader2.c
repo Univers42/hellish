@@ -24,7 +24,7 @@ void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
 		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
 	}
 	close(wr_fd);
-	free(req->full_file.ctx);
+	xfree(req->full_file.ctx);
 }
 
 bool	contains_quotes(t_ast_node node)

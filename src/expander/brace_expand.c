@@ -49,11 +49,11 @@ static void	combine(t_vec *out, const char *pre, t_vec *mids, t_vec *posts)
 		{
 			tmp = ft_strjoin(pre, ((char **)mids->ctx)[a]);
 			res = ft_strjoin(tmp, ((char **)posts->ctx)[b]);
-			free(tmp);
+			xfree(tmp);
 			if (res[0])
 				vec_push(out, &res);
 			else
-				free(res);
+				xfree(res);
 			b++;
 		}
 		a++;
@@ -75,7 +75,7 @@ static t_vec	expand_at(const char *s, int open, int close)
 	vec_init(&out);
 	out.elem_size = sizeof(char *);
 	combine(&out, pre, &mids, &posts);
-	free(pre);
+	xfree(pre);
 	vec_destroy(&mids, free_str_elem);
 	vec_destroy(&posts, free_str_elem);
 	return (out);

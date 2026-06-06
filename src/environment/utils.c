@@ -32,8 +32,8 @@ int	env_set(t_vec_env *env, t_env el)
 	old = env_get(env, el.key);
 	if (old)
 	{
-		free(old->value);
-		free(el.key);
+		xfree(old->value);
+		xfree(el.key);
 		old->value = el.value;
 		old->exported = el.exported;
 	}

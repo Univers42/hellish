@@ -23,8 +23,8 @@ static void	free_specs(t_hd *sp, int n)
 
 	i = 0;
 	while (i < n)
-		free(sp[i++].delim);
-	free(sp);
+		xfree(sp[i++].delim);
+	xfree(sp);
 }
 
 /* Is the delimiter line reachable from p without consuming it? */
@@ -98,7 +98,7 @@ bool	split_heredocs(const char *str, char **stripped, char **bodies)
 
 	n = collect_specs(str, &sp);
 	if (n == 0)
-		return (free(sp), false);
+		return (xfree(sp), false);
 	vec_init(&out[0]);
 	vec_init(&out[1]);
 	out[0].elem_size = 1;
@@ -106,7 +106,7 @@ bool	split_heredocs(const char *str, char **stripped, char **bodies)
 	got = walk_and_strip(str, sp, n, out);
 	free_specs(sp, n);
 	if (got == 0)
-		return (free(out[0].ctx), free(out[1].ctx), false);
+		return (xfree(out[0].ctx), xfree(out[1].ctx), false);
 	*stripped = (char *)out[0].ctx;
 	*bodies = (char *)out[1].ctx;
 	return (true);

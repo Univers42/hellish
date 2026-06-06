@@ -18,12 +18,12 @@ void	reset_status_and_prompt(t_shell *state, char **prompt)
 
 	set_cmd_status(state, res_status(0));
 	if (*prompt)
-		free(*prompt);
+		xfree(*prompt);
 	if (state->metinp == INP_RL)
 	{
 		p = prompt_normal(state);
 		*prompt = ft_strdup(p.ctx);
-		free(p.ctx);
+		xfree(p.ctx);
 	}
 	else
 		*prompt = ft_strdup("");

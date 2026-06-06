@@ -26,7 +26,7 @@ static t_arith_token	*lex_all(const char *expr, int len, int *ntoks)
 	while (1)
 	{
 		if (!vec_push(&v, &lex.current))
-			return (free(v.ctx), NULL);
+			return (xfree(v.ctx), NULL);
 		if (lex.current.type == ATOK_EOF || lex.current.type == ATOK_ERROR)
 			break ;
 		arith_lexer_advance(&lex);
@@ -49,10 +49,10 @@ static void	cache_build(t_arith_cache **cachep, const char *expr, int len)
 	toks = lex_all(expr, len, &ntoks);
 	if (!toks)
 		return ;
-	c = malloc(sizeof(t_arith_cache));
+	c = xmalloc(sizeof(t_arith_cache));
 	if (!c)
 	{
-		free(toks);
+		xfree(toks);
 		return ;
 	}
 	c->toks = toks;

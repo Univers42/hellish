@@ -46,7 +46,7 @@ void	argv_pool_release(t_shell *state, t_executable_cmd *cmd)
 
 	if (!cmd->pooled)
 	{
-		free(cmd->argv.ctx);
+		xfree(cmd->argv.ctx);
 		return ;
 	}
 	state->argv_pool_depth--;
@@ -65,7 +65,7 @@ void	free_argv_pool(t_shell *state)
 	i = 0;
 	while (i < ARGV_POOL_DEPTH)
 	{
-		free(state->argv_pool[i].ctx);
+		xfree(state->argv_pool[i].ctx);
 		state->argv_pool[i] = (t_vec){0};
 		i++;
 	}

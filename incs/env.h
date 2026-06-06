@@ -79,11 +79,11 @@ static inline void	free_env(t_vec_env *env)
 	while (i < env->len)
 	{
 		curr = &((t_env *)env->ctx)[i];
-		free(curr->key);
-		free(curr->value);
+		xfree(curr->key);
+		xfree(curr->value);
 		i++;
 	}
-	free(env->ctx);
+	xfree(env->ctx);
 	env->ctx = NULL;
 	env->len = 0;
 	env->cap = 0;

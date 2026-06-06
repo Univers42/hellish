@@ -30,7 +30,7 @@ static void	expand_tilde_user(t_token *t)
 	if (!user)
 		return ;
 	pw = getpwnam(user);
-	free(user);
+	xfree(user);
 	if (!pw)
 		return ;
 	vec_init(&s);

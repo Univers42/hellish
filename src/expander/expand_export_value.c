@@ -62,7 +62,7 @@ char	*expand_export_value(t_shell *st, char *val, bool allow_expand)
 	vec_init(&out);
 	out.elem_size = 1;
 	expand_vars_to_buffer(st, &out, val);
-	free(val);
+	xfree(val);
 	if (!vec_ensure_space_n(&out, 1))
 		return (NULL);
 	((char *)out.ctx)[out.len] = '\0';

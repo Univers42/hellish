@@ -44,7 +44,10 @@ int	find_exe_path_wrapper(t_shell *state, char *cmd0, char **out_path)
 	return (status);
 }
 
-/* cleanup after execve failure (child only) */
+/* cleanup after execve failure (child only). argv elements are simple-command
+   words, which may be slab-allocated (word_strndup), so they must be released
+   through word_free()/slab_free() — never xfree() — exactly as the parent does
+   in free_executable_cmd(). The vec backing (args->ctx) is plain fn_* heap. */
 void	cleanup_after_exec_failure(t_vec *args,
 			char *path_of_exe,
 			char **envp)
@@ -59,12 +62,12 @@ void	cleanup_after_exec_failure(t_vec *args,
 		while (i < args->len)
 		{
 			if (arr[i])
-				free(arr[i]);
+				word_free(arr[i]);
 			i++;
 		}
-		free(args->ctx);
+		xfree(args->ctx);
 	}
-	free(path_of_exe);
+	xfree(path_of_exe);
 	free_tab(envp);
 }
 
