@@ -76,10 +76,10 @@ typedef enum e_tt
    text for ${v} word forms that span multiple sub-tokens. */
 typedef struct s_token_old
 {
-	bool	present;   /* true if this back-reference is valid */
+	bool	present; /* true if this back-reference is valid */
 	bool	allocated; /* true if start is heap (must be freed) */
-	char	*start;    /* pointer to start of original word in input */
-	int		len;       /* byte length of the original word */
+	char	*start; /* pointer to start of original word in input */
+	int		len; /* byte length of the original word */
 }	t_token_old;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
@@ -93,12 +93,12 @@ typedef struct s_arith_cache	t_arith_cache;
    for quoted words and assignment values). */
 typedef struct s_token
 {
-	t_tt			tt;           /* token type */
-	char			*start;       /* points into the input string */
-	int				len;          /* byte length of the token text */
-	bool			allocated;    /* true if start is heap-allocated */
+	t_tt			tt; /* token type */
+	char			*start; /* points into the input string */
+	int				len; /* byte length of the token text */
+	bool			allocated; /* true if start is heap-allocated */
 	bool			split_eligible; /* false for quoted / assigned values */
-	t_token_old		*full_word;   /* back-ref to original word (optional) */
+	t_token_old		*full_word; /* back-ref to original word (optional) */
 	t_arith_cache	*arith_cache; /* memoised arith parse (owned, or NULL) */
 }	t_token;
 

@@ -1,33 +1,131 @@
 name: CI
 
+# Runs on every pull request and on pushes to the long-lived branches.
+# Each job below is a separate, required status check on the PR, so a
+# contributor sees at a glance what passes and what needs work.
 on:
-  push:
-    branches:
-      - feat/config_project
   pull_request:
-    branches:
-      - feat/config_project
+  push:
+    branches: [main, develop]
+
+# A newer push to the same PR/branch cancels the in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HELLISH_NO_BANNER: "1"
+  HELLISH_NO_UPDATE_CHECK: "1"
 
 jobs:
-  build:
+  # ── Submodules & repo hygiene ────────────────────────────────────────────
+  # vendor/libft (the stdlib + ft_malloc) and vendor/scripts are git
+  # submodules; the shell cannot build without them. This job also guards
+  # against unresolved merge-conflict markers and unparseable shell scripts.
+  submodules:
+    name: Submodules & hygiene
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Initialise submodules
+        run: |
+          if ! git submodule update --init --recursive 2>sub.err; then
+            echo "::error::Could not fetch submodules. Are the pinned commits of"
+            echo "::error::vendor/libft and vendor/scripts pushed to their remotes?"
+            cat sub.err; exit 1
+          fi
+      - name: Submodules are populated
+        run: |
+          test -d vendor/libft/srcs || { echo "::error::vendor/libft is empty (its pin points at the mass-deletion main). Pin a full-tree commit."; exit 1; }
+          test -e vendor/scripts    || { echo "::error::vendor/scripts is missing"; exit 1; }
+          echo "libft @ $(git -C vendor/libft rev-parse --short HEAD) | scripts @ $(git -C vendor/scripts rev-parse --short HEAD)"
+      - name: No unresolved merge-conflict markers (main repo)
+        run: |
+          # Submodules are separate repos with their own CI; we only police our
+          # own tracked sources here (src, incs, tests, root).
+          hits=$(grep -rlE '^(<<<<<<<|>>>>>>>)' --include='*.c' --include='*.h' --include='*.sh' --include='Makefile' --exclude-dir=vendor --exclude-dir=.git . 2>/dev/null || true)
+          if [ -n "$hits" ]; then echo "::error::Unresolved conflict markers in:"; echo "$hits"; exit 1; fi
+          echo "clean"
+      - name: Shell scripts parse (bash -n, main repo any depth)
+        run: |
+          bad=0
+          for f in $(find . -name '*.sh' -not -path '*/vendor/*' -not -path '*/.git/*' -not -path '*/.claude/*' 2>/dev/null); do
+            head -1 "$f" | grep -q python && continue
+            grep -qE '^[[:space:]]*(import |def |class )' "$f" && continue
+            bash -n "$f" 2>/dev/null || { echo "::error::parse error: $f"; bad=1; }
+          done
+          [ "$bad" = 0 ] && echo "all .sh parse clean"
+
+  # ── Compilation ──────────────────────────────────────────────────────────
+  # Build every supported configuration with -Werror. SAFE selects the
+  # allocator (1 = libc, 0 = the custom ft_malloc heap); OPT toggles -O3/LTO.
+  build:
+    name: Build · ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: "debug SAFE=1 (ASan)",     flags: "" }
+          - { label: "opt SAFE=0 (ft_malloc)",  flags: "OPT=1" }
+          - { label: "opt SAFE=1 (libc)",       flags: "OPT=1 SAFE=1" }
+    steps:
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-
-      - name: Install dependencies
+      - name: Install build deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev
+      - name: Compile
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libreadline-dev
+          if ! make re ${{ matrix.flags }} > build.log 2>&1; then
+            echo "::error::Build failed for ${{ matrix.label }}"
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1bc//g; s/\r/\n/g' build.log | tail -120
+            exit 1
+          fi
+          test -x build/bin/hellish && echo "✓ built ${{ matrix.label }}"
 
-      - name: Build project
+  # ── 42 Norm ──────────────────────────────────────────────────────────────
+  norm:
+    name: 42 Norm (norminette)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install norminette
+        run: pip install --quiet norminette==3.3.59
+      - name: norminette src incs
         run: |
-          make re
+          if ! norminette src incs; then
+            echo "::error::Norm violations — run 'make norm' locally. See CONTRIBUTING.md."
+            exit 1
+          fi
 
-      - name: Run tests (if any)
+  # ── Tests ────────────────────────────────────────────────────────────────
+  # The debug build (SAFE=1) is used so AddressSanitizer / LeakSanitizer are
+  # meaningful. Two layers: the ~2481-case unit suite (diffed against
+  # `bash --posix`), and the self-contained script corpus + leak check.
+  tests:
+    name: Tests · suite + scripts + leaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev
+      - name: Build debug (SAFE=1, ASan)
         run: |
-          # Add test commands here if you have them, e.g., make test
-          echo "No tests defined yet"
+          if ! make re > build.log 2>&1; then
+            echo "::error::Build failed"
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\r/\n/g' build.log | tail -120
+            exit 1
+          fi
+      - name: Unit suite vs bash --posix
+        run: |
+          cd tests
+          ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../suite.log | grep -E 'PASSED|FAIL' | tail -3
+          grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log || { echo "::error::Unit suite has failures"; exit 1; }
+      - name: Script corpus vs bash --posix + leak check
+        run: tests/run_scripts.sh

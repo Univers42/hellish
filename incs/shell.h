@@ -80,8 +80,8 @@ typedef enum e_option
    the parent command exits, cleanup_proc_subs() collects these. */
 typedef struct s_procsub_entry
 {
-	pid_t	pid;  /* child PID running the substitution body */
-	int		fd;   /* the open fd on the shell side */
+	pid_t	pid; /* child PID running the substitution body */
+	int		fd; /* the open fd on the shell side */
 	char	*path; /* /proc/self/fd/<fd> string given to the command */
 }	t_procsub_entry;
 
@@ -128,88 +128,73 @@ typedef struct s_pos
 typedef struct s_shell
 {
 	/* --- I/O and readline state --- */
-	t_string			input;       /* current input line buffer */
-	t_vec_env			env;         /* the shell's variable store */
-	t_string			cwd;         /* current working directory string */
-	t_ast_node			tree;        /* parsed AST for current input */
-	int					metinp;      /* input method: INP_RL / FILE / ARG */
-	char				*dft_ctx;    /* default shell name for error msgs */
-	char				*ctx;        /* active error context (argv[0]) */
-
+	t_string			input; /* current input line buffer */
+	t_vec_env			env; /* the shell's variable store */
+	t_string			cwd; /* current working directory string */
+	t_ast_node			tree; /* parsed AST for current input */
+	int					metinp; /* input method: INP_RL / FILE / ARG */
+	char				*dft_ctx; /* default shell name for error msgs */
+	char				*ctx; /* active error context (argv[0]) */
 	/* --- special variables (borrowed ptrs or small buffers, not freed) --- */
-	char				*pid;        /* $$ as a string (set once at init) */
+	char				*pid; /* $$ as a string (set once at init) */
 	char				*last_bg_pid; /* $! last background PID string */
 	char				*last_cmd_st; /* $? as a string (updated per cmd) */
 	t_execution_state	last_cmd_st_exe; /* structured copy of last status */
-
 	/* --- history and session --- */
-	t_history			hist;        /* readline history state */
+	t_history			hist; /* readline history state */
 	bool				should_exit; /* set by `exit` builtin */
-
 	/* --- loop/function control flow --- */
-	int					loop_break;    /* pending break depth (>0 = active) */
+	int					loop_break; /* pending break depth (>0 = active) */
 	int					loop_continue; /* pending continue depth */
-	int					loop_depth;    /* current nesting depth of loops */
-	int					func_return;   /* pending return value from `return` */
-	int					func_depth;    /* current function call depth */
-
+	int					loop_depth; /* current nesting depth of loops */
+	int					func_return; /* pending return value from `return` */
+	int					func_depth; /* current function call depth */
 	/* --- positional parameters and local variable saves --- */
-	t_pos				pos;         /* $1..$N, $#, $* for current scope */
+	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */
 	int					getopts_pos; /* OPTIND state for `getopts` builtin */
-
 	/* --- expansion state --- */
-	bool				input_expanded;    /* alias expansion already done */
+	bool				input_expanded; /* alias expansion already done */
 	int					last_cmdsub_status; /* $? inside $(...) body */
-
 	/* --- set -o options (each maps to one POSIX flag) --- */
-	bool				opt_errexit;   /* -e: exit on first error */
-	bool				opt_nounset;   /* -u: error on unset variable use */
-	bool				opt_xtrace;    /* -x: print commands before running */
-	bool				opt_noglob;    /* -f: disable pathname expansion */
+	bool				opt_errexit; /* -e: exit on first error */
+	bool				opt_nounset; /* -u: error on unset variable use */
+	bool				opt_xtrace; /* -x: print commands before running */
+	bool				opt_noglob; /* -f: disable pathname expansion */
 	bool				opt_noclobber; /* -C: refuse to overwrite via > */
 	bool				opt_allexport; /* -a: export every variable on set */
-	bool				opt_noexec;    /* -n: parse but don't execute */
-	bool				opt_verbose;   /* -v: print input lines as read */
-	bool				opt_pipefail;  /* pipefail: status = last failure */
-
+	bool				opt_noexec; /* -n: parse but don't execute */
+	bool				opt_verbose; /* -v: print input lines as read */
+	bool				opt_pipefail; /* pipefail: status = last failure */
 	/* small scratch buffers -- avoids allocs for $- and $LINENO */
-	char				flagbuf[16];  /* scratch for build_flagstr ($-) */
-	char				linebuf[16];  /* scratch for lineno_str ($LINENO) */
-
+	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
+	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
-
 	/* --- traps and readonly vars --- */
-	char				*traps[32];  /* trap strings, indexed by signal num */
+	char				*traps[32]; /* trap strings, indexed by signal num */
 	t_vec				readonly_vars; /* names that cannot be reassigned */
-
 	/* --- heredoc runtime state --- */
-	t_vec_redir			redirects;   /* active redirections for current cmd */
+	t_vec_redir			redirects; /* active redirections for current cmd */
 	int					heredoc_idx; /* next slot in the redirect vector */
-	char				*hd_src;     /* raw heredoc body string (pre-expand) */
-	size_t				hd_pos;      /* read position within hd_src */
+	char				*hd_src; /* raw heredoc body string (pre-expand) */
+	size_t				hd_pos; /* read position within hd_src */
 	char				*hd_stripped; /* tab-stripped heredoc body */
 	bool				gather_in_func; /* true while gathering heredocs */
 	bool				gathering_compound; /* mid incomplete compound cmd */
-
 	/* --- readline and PRNG --- */
-	t_rl				rl;          /* readline line/column tracking */
-	t_prng				prng;        /* cheap PRNG for $RANDOM */
+	t_rl				rl; /* readline line/column tracking */
+	t_prng				prng; /* cheap PRNG for $RANDOM */
 	uint32_t			option_flags; /* bitmask of e_opt_flag values */
-
 	/* --- job control and async --- */
 	int					bg_job_count; /* running background job count */
-	t_vec_procsub		proc_subs;   /* open process substitutions */
-	t_vec				functions;   /* t_shell_func list (user-defined fns) */
-	t_job_table			job_table;   /* background job list */
-	t_vec				dirstack;    /* pushd/popd dir stack */
-
+	t_vec_procsub		proc_subs; /* open process substitutions */
+	t_vec				functions; /* t_shell_func list (user-defined fns) */
+	t_job_table			job_table; /* background job list */
+	t_vec				dirstack; /* pushd/popd dir stack */
 	/* --- alias and command cache --- */
-	t_hash				aliases;     /* alias name -> t_alias_entry */
-	t_hash				cmd_cache;   /* command name -> resolved path cache */
-
-	int					edit_mode;   /* 0=vi, 1=emacs (rl_editing_mode) */
-
+	t_hash				aliases; /* alias name -> t_alias_entry */
+	t_hash				cmd_cache; /* command name -> resolved path cache */
+	int					edit_mode; /* 0=vi, 1=emacs (rl_editing_mode) */
 	/* --- argv slab pool (zero-malloc fast path for simple commands) --- */
 	t_vec				argv_pool[ARGV_POOL_DEPTH];
 	int					argv_pool_depth; /* current borrow depth */

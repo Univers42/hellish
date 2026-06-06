@@ -12,6 +12,8 @@
 
 #include "shell.h"
 #include "executor.h"
+#include "env.h"
+#include "expander.h"
 
 /* Borrow this command's argv backing from the depth-indexed pool: reuse the
    slot's array (just reset its length) so a simple command does no per-command
@@ -69,4 +71,37 @@ void	free_argv_pool(t_shell *state)
 		state->argv_pool[i] = (t_vec){0};
 		i++;
 	}
+}
+
+/* Release one expanded command. pre_assigns are KEY=value pairs pushed before
+   the command (e.g. `FOO=bar cmd`); each needs both key and value freed. argv
+   is a vec of word-slab pointers, so we go through word_free() rather than
+   xfree() -- both paths (slab and heap) route correctly. The argv backing
+   array returns to the pool via argv_pool_release. */
+void	free_executable_cmd(t_shell *state, t_executable_cmd cmd)
+{
+	size_t	i;
+	t_env	*e;
+
+	i = -1;
+	while (++i < cmd.pre_assigns.len)
+	{
+		e = &((t_env *)cmd.pre_assigns.ctx)[i];
+		xfree(e->value);
+		xfree(e->key);
+	}
+	i = -1;
+	while (++i < cmd.argv.len)
+		word_free(((char **)cmd.argv.ctx)[i]);
+	xfree(cmd.pre_assigns.ctx);
+	argv_pool_release(state, &cmd);
+}
+
+/* Release the redirect list embedded in an executable AST node. The node itself
+   is stack-allocated by the executor, so only its heap-allocated children
+   (redirs.ctx) need freeing. vec_init resets it to a safe empty state. */
+void	free_executable_node(t_executable_node *node)
+{
+	xfree(node->redirs.ctx);
+	vec_init(&node->redirs);
 }

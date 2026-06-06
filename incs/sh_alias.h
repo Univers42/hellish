@@ -30,7 +30,7 @@
    by this entry (freed in alias_remove / alias_table_free). */
 typedef struct s_alias_entry
 {
-	char	*name;  /* the alias name (e.g. "ll") */
+	char	*name; /* the alias name (e.g. "ll") */
 	char	*value; /* the replacement text (e.g. "ls -la") */
 }	t_alias_entry;
 

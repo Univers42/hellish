@@ -28,8 +28,8 @@
 typedef struct s_env
 {
 	bool	exported; /* true => visible to child processes via execve */
-	char	*key;     /* heap-allocated variable name (owned) */
-	char	*value;   /* heap-allocated value string (owned) */
+	char	*key; /* heap-allocated variable name (owned) */
+	char	*value; /* heap-allocated value string (owned) */
 }	t_env;
 
 t_env		env_create(char *key, char *value, bool exported);

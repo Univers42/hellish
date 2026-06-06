@@ -56,12 +56,12 @@ typedef enum e_ast_type
    t_ast_node (value, not pointer -- nodes are embedded). */
 typedef struct s_ast_node
 {
-	t_ast_type		node_type;    /* what this node is */
-	t_token			token;        /* the primary token (word text, op, etc.) */
-	t_vec			children;     /* child nodes (t_ast_node[], owned) */
+	t_ast_type		node_type; /* what this node is */
+	t_token			token; /* the primary token (word text, op, etc.) */
+	t_vec			children; /* child nodes (t_ast_node[], owned) */
 	bool			has_redirect; /* true if any child is a redirection */
-	int				redir_idx;    /* index into state->redirects */
-	bool			negate;       /* true for `! cmd` (pipeline negation) */
+	int				redir_idx; /* index into state->redirects */
+	bool			negate; /* true for `! cmd` (pipeline negation) */
 	char			*heredoc_body; /* raw body string for a HERE-doc node */
 }	t_ast_node;
 

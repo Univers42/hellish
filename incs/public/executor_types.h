@@ -24,10 +24,10 @@
    `fi` yet) and the REPL should display PS2 and read another line. */
 typedef enum s_res_t
 {
-	RES_OK,           /* execution succeeded */
-	RES_ERR,          /* execution failed (hard error) */
+	RES_OK, /* execution succeeded */
+	RES_ERR, /* execution failed (hard error) */
 	RES_GETMOREINPUT, /* input is syntactically incomplete, need more */
-	RES_INIT,         /* initial / uninitialised state */
+	RES_INIT, /* initial / uninitialised state */
 }	t_result_type;
 
 /* Return value from every execute_* function.  All three fields flow up
@@ -35,9 +35,9 @@ typedef enum s_res_t
    correctly after a Ctrl-C even inside a subshell. */
 typedef struct s_execution_state
 {
-	int		status;  /* exit status (what becomes $?) */
-	int		pid;     /* child PID for background jobs (what becomes $!) */
-	bool	ctrl_c;  /* true if SIGINT was received during this command */
+	int		status; /* exit status (what becomes $?) */
+	int		pid; /* child PID for background jobs (what becomes $!) */
+	bool	ctrl_c; /* true if SIGINT was received during this command */
 }	t_execution_state;
 
 static inline t_execution_state	create_exec_state(int status,

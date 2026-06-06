@@ -26,16 +26,16 @@
    the key strcmp) and the index into the env vector. idx==-1 means empty. */
 typedef struct s_eix
 {
-	unsigned long	h;   /* cached hash of the key */
+	unsigned long	h; /* cached hash of the key */
 	int				idx; /* position in the t_vec_env; -1 = free slot */
 }	t_eix;
 
 /* Globals owned by env_index.c.  All mutable state for the index lives
    here; env_index_reset allocates/resizes g_tab as needed. */
-extern t_eix	*g_tab;   /* heap-allocated hash table of t_eix slots */
-extern size_t	g_cap;    /* current capacity (always a power of two) */
-extern size_t	g_count;  /* number of occupied slots */
-extern int		g_dirty;  /* 1 = index is stale, rebuild before next use */
+extern t_eix	*g_tab; /* heap-allocated hash table of t_eix slots */
+extern size_t	g_cap; /* current capacity (always a power of two) */
+extern size_t	g_count; /* number of occupied slots */
+extern int		g_dirty; /* 1 = index is stale, rebuild before next use */
 
 unsigned long	eix_hash(const char *s, int len);
 void			eix_put(unsigned long h, int idx);
