@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # ============================================================================
 # Build + run hellish FROM SOURCE in a clean, dependency-complete container.
 # The base image is parameterised so one recipe covers Alpine (musl), Debian,

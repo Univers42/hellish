@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # ============================================================================
 # Multi-stage RELEASE image for Docker Hub: compile hellish in a builder stage,
 # then ship only the binary + the readline runtime on a slim base. Small,
