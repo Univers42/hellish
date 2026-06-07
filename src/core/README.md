@@ -241,6 +241,7 @@ Design goal: have one abstraction for "a stream of lines" regardless of whether 
 - **Bits:**
   - `OPT_FLAG_HELP`
   - `OPT_FLAG_VERBOSE`
+  - `OPT_FLAG_POSIX`
   - `OPT_FLAG_DEBUG_LEXER`
   - `OPT_FLAG_DEBUG_PARSER`
   - `OPT_FLAG_DEBUG_AST`
@@ -248,10 +249,12 @@ Design goal: have one abstraction for "a stream of lines" regardless of whether 
   - Command‑line parsing is simple and linear; for each argument we update the bitmask:
     - `--help` / `-h` → `OPT_FLAG_HELP`
     - `--verbose` or `-c` → `OPT_FLAG_VERBOSE` (note: currently `-c` also enables verbose)
+    - `--posix` → `OPT_FLAG_POSIX` (start in POSIX mode; sets `state->opt_posix`, also toggleable at runtime with `set -o posix` / `set +o posix`). Disables non-POSIX extensions such as the zsh-style two-argument `cd old new`.
     - `--debug=lexer` → `OPT_FLAG_DEBUG_LEXER`
     - `--debug=parser` → `OPT_FLAG_DEBUG_PARSER`
     - `--debug=ast` → `OPT_FLAG_DEBUG_AST`
   - Options are **composable**: `--debug=parser --debug=lexer` simply sets multiple bits.
+  - Leading option flags (e.g. `--posix`) are skipped by `leading_opt_count()` in `on.c` before input selection, so `hellish --posix -c '...'` and `hellish --posix script.sh` work like `bash --posix ...`.
 
 This short‑circuit approach avoids complex parsing: each option is independent, and combining them is trivial bitwise OR.
 

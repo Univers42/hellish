@@ -28,6 +28,8 @@ static void	process_opt_flag(const char *arg, uint32_t *flags)
 		*flags |= OPT_FLAG_HELP;
 	else if (ft_strcmp(arg, "--verbose") == 0)
 		*flags |= OPT_FLAG_VERBOSE;
+	else if (ft_strcmp(arg, "--posix") == 0)
+		*flags |= OPT_FLAG_POSIX;
 	else if (ft_strncmp(arg, "--debug=", 8) == 0)
 	{
 		v = arg + 8;
@@ -38,6 +40,22 @@ static void	process_opt_flag(const char *arg, uint32_t *flags)
 		else if (ft_strcmp(v, "ast") == 0)
 			*flags |= OPT_FLAG_DEBUG_AST;
 	}
+}
+
+/* Count leading global option flags (e.g. --posix, --verbose) so the caller
+   can shift past them before input selection. The input machinery is
+   positional (-c / script live at argv[1]); without this, `hellish --posix -c
+   ...` would mistake --posix for the first operand and drop to interactive
+   mode. We stop at -c, at -- (end of options), and at the first non-flag. */
+int	leading_opt_count(char **argv)
+{
+	int	i;
+
+	i = 1;
+	while (argv[i] && argv[i][0] == '-'
+		&& ft_strcmp(argv[i], "-c") != 0 && ft_strcmp(argv[i], "--") != 0)
+		i++;
+	return (i - 1);
 }
 
 /* Walk argv[1..] and collect all recognised flags into a bitmask. We start

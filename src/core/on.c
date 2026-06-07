@@ -93,6 +93,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	set_unwind_sig();
 	*state = shell_init();
 	state->option_flags = select_mode_from_argv(argv);
+	if (state->option_flags & OPT_FLAG_POSIX)
+		state->opt_posix = true;
 	if (state->option_flags & OPT_FLAG_HELP)
 		print_opts(argv, state);
 	buff_readline_init(&state->rl);
@@ -109,7 +111,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	ensure_essential_env_vars(state);
 	init_tables(state);
 	state->edit_mode = 1;
-	mode_input(argv, state);
+	mode_input(argv + leading_opt_count(argv), state);
 	prng_initialize_state(&state->prng, 19650218UL);
 	state->bg_job_count = 0;
 }
