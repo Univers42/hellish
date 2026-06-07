@@ -29,6 +29,7 @@ static void	print_opts(char **argv, t_shell *state)
 	ft_printf("  --help           Show this help\n");
 	ft_printf("  -c <script>      Execute script string\n");
 	ft_printf("  --verbose        Verbose mode\n");
+	ft_printf("  --posix          POSIX mode (disable non-POSIX extensions)\n");
 	ft_printf("  --debug=lexer    Debug lexer only\n");
 	ft_printf("  --debug=parser   Debug parser only\n");
 	ft_printf("  --debug=ast      Debug AST only\n");
