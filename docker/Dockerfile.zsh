@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 # ============================================================================
 # Build hellish from source AND install zsh, so the zsh-style two-argument
 # `cd old new` extension can be diffed against the shell it imitates. The host
