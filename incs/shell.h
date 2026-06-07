@@ -46,6 +46,7 @@ enum e_opt_flag
 {
 	OPT_FLAG_HELP = 1u << 0,
 	OPT_FLAG_VERBOSE = 1u << 1,
+	OPT_FLAG_POSIX = 1u << 2,
 	OPT_FLAG_DEBUG_LEXER = 1u << 8,
 	OPT_FLAG_DEBUG_PARSER = 1u << 9,
 	OPT_FLAG_DEBUG_AST = 1u << 10
@@ -181,6 +182,7 @@ typedef struct s_shell
 	bool				opt_noexec; /* -n: parse but don't execute */
 	bool				opt_verbose; /* -v: print input lines as read */
 	bool				opt_pipefail; /* pipefail: status = last failure */
+	bool				opt_posix; /* --posix / set -o posix: no extensions */
 	/* small scratch buffers -- avoids allocs for $- and $LINENO */
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
 	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */

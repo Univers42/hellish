@@ -37,7 +37,9 @@ static char	*cd_substitute(char *pwd, char *old, char *neww, char *pos)
    is not part of $PWD it is an error, mirroring zsh's "string not in pwd".
    zsh does not echo the destination for this form in a non-interactive shell,
    so neither do we. Three or more operands never reach here -- the caller
-   treats those as the bash "too many arguments" error. */
+   treats those as the bash "too many arguments" error. Likewise, in POSIX
+   mode (--posix / set -o posix) the caller errors on two operands before we
+   are called, so this extension only runs in the default (non-POSIX) mode. */
 int	cd_two_arg(t_shell *state, t_cdopt *o, char *old, char *neww)
 {
 	char	*pwd;

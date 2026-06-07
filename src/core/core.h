@@ -30,6 +30,7 @@
 # include <unistd.h>
 
 uint32_t	select_mode_from_argv(char **argv);
+int			leading_opt_count(char **argv);
 void		init_arg(t_shell *state, char **argv);
 void		init_file(t_shell *state, char **argv);
 void		init_stdin_notty(t_shell *state);
