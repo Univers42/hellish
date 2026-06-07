@@ -63,7 +63,6 @@ void	ensure_essential_env_vars(t_shell *state)
 	t_env	*e;
 
 	cwd = NULL;
-	set_home(state);
 	set_path(state);
 	set_shlvl(state);
 	set_underscore(state);

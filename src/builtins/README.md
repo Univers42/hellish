@@ -29,10 +29,13 @@ builtins/
 ├── export_helpers.c           # Export argument parsing and validation
 ├── export_helpers2.c          # Export identifier handling and expansion
 ├── collect_and_print_exported.c  # Export variable display functionality
-├── cd_helpers1.c              # CD command core logic
-├── cd_helpers2.c              # CD redirection-aware argument parsing
+├── cd_helpers1.c              # CD option parsing (-L/-P/-e/-@, --, invalid)
+├── cd_helpers2.c              # CD operand collection + HOME/OLDPWD targets
+├── cd_helpers3.c              # CD logical-path canonicalisation (-L)
+├── cd_helpers4.c              # CD chdir (logical/physical) + $PWD refresh
+├── cd_helpers5.c              # CD CDPATH search + echo
+├── cd_helpers6.c              # CD zsh-style two-argument substitution
 ├── try_unset.c                # Environment variable removal
-├── utils.c                    # Argument counting with redirection awareness
 └── utils2.c                   # Redirection parsing utilities
 ```
 
@@ -104,33 +107,42 @@ The echo builtin is implemented across two files with sophisticated flag and esc
 
 ## CD Implementation
 
-### Redirection-Aware Argument Parsing
+`builtin_cd` (in `core_builtins2.c`) is a thin orchestrator over six helper
+files. It is a near-complete `cd`: options, the `--` terminator, logical vs
+physical resolution, CDPATH, plus a zsh-style two-argument extension. Behaviour
+is diffed against `bash --posix` (`tests/cd_posix`) and, for the extension,
+against real zsh in Docker (`tests/cd_zsh_compare.sh`, `make cd-zsh-test`).
 
-The CD builtin features sophisticated argument parsing that correctly handles shell redirections:
+### Pipeline
 
-```bash
-cd >output.txt /new/directory    # Correctly identifies /new/directory as target
-cd 2>/dev/null /path             # Handles stderr redirection
+```
+cd_parse_opts → cd_collect_ops → { cd_one | cd_two_arg } → cd_apply
 ```
 
-**Algorithm (`cd_helpers2.c`):**
-1. **Redirection Detection**: Uses `is_redir_operator()` to identify redirect tokens
-2. **Skip Logic**: Tracks whether next token should be skipped (redirect target)
-3. **Real Argument Extraction**: Returns first non-redirection argument
+1. **Options (`cd_helpers1.c`)** — `cd_parse_opts` consumes leading `-X` words
+   (bundled, e.g. `-LP`; last of `-L`/`-P` wins), accepts `-e`/`-@`, stops at
+   `--` or the first operand, and on an unknown letter prints `invalid option`
+   + a usage line and returns exit status **2** (bash parity).
+2. **Operands (`cd_helpers2.c`)** — `cd_collect_ops` counts operand words (still
+   defensively skipping any stray redirection tokens) and records the first two.
+   0 → `$HOME` (`cd_target_home`, errors if unset), `-` → `$OLDPWD`
+   (`cd_target_dash`, echoes the destination), `""` → POSIX no-op success.
+3. **Resolution** — a plain name is looked up through **CDPATH**
+   (`cd_helpers5.c`); a hit via a non-empty component echoes the destination.
+4. **Move (`cd_helpers4.c`)** — `cd_apply` performs the chdir:
+   - **logical (`-L`, default)**: `cd_logical_path`/`cd_canonicalize`
+     (`cd_helpers3.c`) anchor the operand to `$PWD` and collapse `.`/`..`
+     *textually*, so `cd link; cd ..` returns to where you started rather than
+     to the symlink's physical parent; `$PWD` keeps the path as typed.
+   - **physical (`-P`)**: chdir straight to the operand, then `getcwd()`.
+   Then `$PWD`/`$OLDPWD` are rotated via `update_pwd_vars`.
 
-### Directory Change Logic
+### Two-argument extension (`cd_helpers6.c`)
 
-**Core Algorithm (`cd_helpers1.c`):**
-1. **Special Cases**: 
-   - No argument → HOME directory
-   - `-` argument → OLDPWD with confirmation output
-2. **Error Handling**: Comprehensive errno-based error reporting
-3. **State Updates**: PWD/OLDPWD environment variable management
-
-**Error Recovery:**
-- Graceful handling of missing HOME/OLDPWD
-- Detailed error messages with ctx
-- Fallback directory tracking when getcwd() fails
+`cd old new` (a zsh feature, **not** POSIX/bash) replaces the first occurrence
+of `old` with `new` in `$PWD` and cds there; `old` absent from `$PWD` is an
+error (`string not in pwd`). Three or more operands remain the bash
+`too many arguments` error (exit 1). Verified against zsh, not bash.
 
 ## Export Implementation
 
@@ -223,12 +235,9 @@ The exit builtin implements bash-compatible argument processing:
 - `2>file`, `1>>file` (file descriptor redirections)
 - `2>&1`, `1>&2` (descriptor duplication)
 
-### Argument Counting
-
-**Real Argument Detection (`utils.c`):**
-- Skips redirection operators and their targets
-- Provides accurate argument counts for validation
-- Used by CD for "too many arguments" detection
+These helpers (`is_redir_operator`, `redir_needs_next`, `parse_redir_len`) are
+used by CD's operand scan (`cd_collect_ops`) to ignore any redirection tokens
+that might leak into a builtin's argv.
 
 ## Optimization Strategies
 

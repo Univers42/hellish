@@ -49,8 +49,8 @@ bool	redir_needs_next(const char *arg)
 }
 
 /* True if `s` starts with a redirection operator: an optional fd number
-   followed by '<' or '>'. Used by cd and count_real_args to skip redirection
-   tokens that the executor may leave in the argv of builtins. */
+   followed by '<' or '>'. Used by cd's operand scan (cd_collect_ops) to skip
+   any redirection tokens that might leak into the argv of a builtin. */
 bool	is_redir_operator(char *s)
 {
 	int	i;
@@ -65,16 +65,4 @@ bool	is_redir_operator(char *s)
 	if (s[i] == '<' || s[i] == '>')
 		return (true);
 	return (false);
-}
-
-/* Return 1 if the argv contains two or more real (non-redirect, non-option)
-   arguments — used by builtin_cd to detect the "too many arguments" error. */
-int	check_args(t_vec argv)
-{
-	int	real_args;
-
-	real_args = count_real_args(argv);
-	if (real_args >= 2)
-		return (1);
-	return (0);
 }
