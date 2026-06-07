@@ -272,6 +272,12 @@ docker-arch:
 docker-clean:
 	docker compose down --rmi local 2>/dev/null || true
 
+# Build hellish + zsh in one image and diff the zsh-style two-argument
+# `cd old new` extension against real zsh (the bash suite can't cover it).
+cd-zsh-test:
+	docker build -f docker/Dockerfile.zsh -t hellish:zsh .
+	docker run --rm hellish:zsh
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean
+	docker-arch docker-clean cd-zsh-test

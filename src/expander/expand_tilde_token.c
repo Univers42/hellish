@@ -13,6 +13,24 @@
 #include "expander_private.h"
 #include "sys.h"
 #include <pwd.h>
+#include <unistd.h>
+
+/* The home directory for a bare ~ (or ~/): $HOME when set, else the password
+   database entry for the real uid -- bash's fallback when HOME is unset. NULL
+   only if even that lookup fails, leaving the ~ literal (POSIX). */
+static char	*tilde_home_dir(t_shell *state)
+{
+	char			*home;
+	struct passwd	*pw;
+
+	home = env_expand(state, HOME);
+	if (home)
+		return (home);
+	pw = getpwuid(getuid());
+	if (pw)
+		return (pw->pw_dir);
+	return (NULL);
+}
 
 /* ~name[/...] : splice in `name`'s home dir (getpwnam). Unknown user -> the
    word is left unchanged (POSIX leaves an unknown ~login literal). */
@@ -43,8 +61,9 @@ static void	expand_tilde_user(t_token *t)
 
 /* Replace the leading tilde prefix of token `t` with the appropriate path.
    Dispatch: ~+ → $PWD, ~- → $OLDPWD, ~name → getpwnam(name)->pw_dir,
-   ~ alone → $HOME.  If the required env var or passwd entry is absent the
-   token is left unchanged (POSIX: unresolvable tilde stays literal). */
+   ~ alone → $HOME (or the passwd home when HOME is unset, see tilde_home_dir).
+   If the required value is absent the token is left unchanged (POSIX:
+   unresolvable tilde stays literal). */
 void	expand_tilde_token(t_shell *state, t_token *t)
 {
 	int			template_len;
@@ -60,7 +79,7 @@ void	expand_tilde_token(t_shell *state, t_token *t)
 		return (expand_tilde_user(t));
 	else
 	{
-		env_val = env_expand(state, HOME);
+		env_val = tilde_home_dir(state);
 		template_len = 1;
 	}
 	if (!env_val)

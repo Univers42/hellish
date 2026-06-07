@@ -70,7 +70,6 @@ int		handle_identifier(t_shell *st, char *id, char *val, const char *argv0);
 int		process_arg(t_shell *st, t_vec av, int *ip);
 void	collect_and_print_exported(t_shell *st);
 int		builtin_export(t_shell *st, t_vec av);
-int		cd_home(int *e, t_shell *state);
 int		builtin_pwd(t_shell *state, t_vec argv);
 int		builtin_read(t_shell *state, t_vec argv);
 
@@ -88,13 +87,29 @@ int		eval_bracketed(t_shell *st, char **av, int ac, int dbr);
 
 void	update_pwd_vars(t_shell *state);
 bool	is_redir_operator(char *s);
-int		count_real_args(t_vec argv);
 int		umask_symbolic(void);
-char	*get_first_real_arg(t_vec argv);
-int		check_args(t_vec argv);
-int		cd_do_chdir(t_shell *state, t_vec argv, int *e);
-void	cd_refresh_cwd(t_shell *state, t_vec argv, char *cwd);
 int		handle_too_many_args(t_shell *state, t_vec argv, size_t i);
+
+/* cd: options (-L logical default / -P physical, -e, -@), parsed before the
+   operand. echo => print the destination (CDPATH hit, `cd -`, or `cd a b`). */
+typedef struct s_cdopt
+{
+	bool	physical;
+	bool	eflag;
+	bool	atflag;
+	bool	echo;
+}	t_cdopt;
+
+int		cd_invalid_opt(t_shell *state, const char *arg);
+int		cd_parse_opts(t_shell *state, t_vec argv, t_cdopt *o, size_t *first);
+int		cd_collect_ops(t_vec argv, size_t first, char **op0, char **op1);
+int		cd_target_home(t_shell *state, char **out);
+int		cd_target_dash(t_shell *state, char **out, t_cdopt *o);
+char	*cd_canonicalize(const char *path);
+char	*cd_logical_path(t_shell *state, const char *target);
+int		cd_apply(t_shell *state, t_cdopt *o, char *target);
+char	*cd_cdpath(t_shell *state, char *op, bool *echo);
+int		cd_two_arg(t_shell *state, t_cdopt *o, char *old, char *neww);
 
 int		parse_redir_len(const char *arg);
 bool	redir_needs_next(const char *arg);

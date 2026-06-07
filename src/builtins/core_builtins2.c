@@ -56,55 +56,74 @@ int	builtin_pwd(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* `cd` with no argument: go to $HOME. We call env_expand rather than
-   getenv so the lookup goes through the shell's own environment table. If
-   HOME is not set, POSIX mandates an error rather than silently staying put
-   or guessing from /etc/passwd. */
-int	cd_home(int *e, t_shell *state)
+/* Resolve a single operand to a heap path to hand chdir. A plain name is
+   first looked up through CDPATH (which, on a hit via a non-empty component,
+   sets o->echo so the destination is printed bash-style); otherwise it is
+   used as-is. Returns a freshly-allocated string the caller must xfree. */
+static char	*cd_resolve(t_shell *state, char *op, t_cdopt *o)
 {
-	char	*home;
+	char	*found;
 
-	home = env_expand(state, "HOME");
-	if (home == NULL)
-		return (ft_eprintf("%s: cd: HOME not set\n", state->ctx), 1);
-	*e = chdir(home);
-	return (0);
+	found = cd_cdpath(state, op, &o->echo);
+	if (found)
+		return (found);
+	return (ft_strdup(op));
 }
 
-/* cd [-L|-P] [dir]: change the working directory. Must run in the parent
-   process — that is the whole reason cd is a builtin at all; a forked copy
-   would chdir into oblivion and the parent shell would never notice.
+/* The 0-or-1-operand cases. No operand -> $HOME. Empty operand -> POSIX
+   no-op success (bash stays put and returns 0). "-" -> $OLDPWD. Everything
+   else is resolved (CDPATH) then handed to cd_apply, which does the
+   logical/physical chdir and refreshes $PWD/$OLDPWD. */
+static int	cd_one(t_shell *state, t_cdopt *o, char *op)
+{
+	char	*target;
+	int		ret;
 
-   `cd -` switches to $OLDPWD (prints the new path, bash-style). After a
-   successful chdir we call x_getcwd() to get the canonical path and refresh
-   both state->cwd and the environment variables PWD/OLDPWD so `$PWD`
-   expansions stay correct. On ENOENT we emit the strerror message rather
-   than a hardcoded string so internationalised kernels stay readable. */
+	target = NULL;
+	if (!op)
+	{
+		if (cd_target_home(state, &target))
+			return (1);
+	}
+	else if (!op[0])
+		return (0);
+	else if (!ft_strcmp(op, "-"))
+	{
+		if (cd_target_dash(state, &target, o))
+			return (1);
+	}
+	else
+		target = cd_resolve(state, op, o);
+	if (!target)
+		return (1);
+	ret = cd_apply(state, o, target);
+	return (xfree(target), ret);
+}
+
+/* cd [-L|-P] [-e] [-@] [dir] (plus the zsh-style `cd old new`). Must run in
+   the parent process -- the whole reason cd is a builtin: a forked copy
+   would chdir into oblivion and the parent shell would never notice.
+   Options are parsed first (invalid option -> usage + exit 2), then operands
+   are counted: 0/1 go through cd_one, exactly 2 trigger the substitution
+   extension, 3+ are the bash "too many arguments" error. */
 int	builtin_cd(t_shell *state, t_vec argv)
 {
-	char	*cwd;
-	int		e;
-	char	*arg;
+	t_cdopt	o;
+	size_t	first;
+	char	*op0;
+	char	*op1;
+	int		n;
 
-	e = 0;
-	if (check_args(argv))
-	{
-		ft_eprintf("%s: %s: too many arguments\n", state->ctx,
-			((char **)argv.ctx)[0]);
-		return (1);
-	}
-	if (cd_do_chdir(state, argv, &e))
-		return (1);
-	arg = get_first_real_arg(argv);
-	if (!arg)
-		arg = "";
-	if (e == -1)
-	{
-		ft_eprintf("%s: %s: %s: %s\n", state->ctx,
-			((char **)argv.ctx)[0], arg, strerror(errno));
-		return (1);
-	}
-	cwd = x_getcwd();
-	return (cd_refresh_cwd(state, argv, cwd), xfree(cwd),
-		update_pwd_vars(state), 0);
+	o = (t_cdopt){0};
+	n = cd_parse_opts(state, argv, &o, &first);
+	if (n)
+		return (n);
+	n = cd_collect_ops(argv, first, &op0, &op1);
+	if (n >= 3)
+		return (ft_eprintf("%s: cd: too many arguments\n", state->ctx), 1);
+	if (n == 2)
+		return (cd_two_arg(state, &o, op0, op1));
+	if (n == 1)
+		return (cd_one(state, &o, op0));
+	return (cd_one(state, &o, NULL));
 }

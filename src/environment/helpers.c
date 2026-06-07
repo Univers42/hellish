@@ -37,26 +37,6 @@ void	init_cwd(t_shell *state)
 	xfree(cwd);
 }
 
-/* Ensure HOME is set.  If the inherited env lacks it (rare but possible
-   with stripped environments), fall back to the current working dir, and
-   if even that fails, to /tmp. Worst case the user can still `cd`. */
-void	set_home(t_shell *state)
-{
-	t_env	*e;
-	char	*cwd;
-
-	e = env_get(&state->env, HOME);
-	if (!e || !e->value || !e->value[0])
-	{
-		cwd = x_getcwd();
-		if (!cwd)
-			cwd = ft_strdup(TMP_DIR);
-		env_set(&state->env, env_create(ft_strdup(HOME),
-				ft_strdup(cwd), true));
-		xfree(cwd);
-	}
-}
-
 /* Initialise the cwd vec and immediately push the actual path into it.
    The double-push (init_cwd already pushes once) looks redundant but
    init_cwd is called separately by subshell init paths that don't call
