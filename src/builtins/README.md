@@ -144,6 +144,13 @@ of `old` with `new` in `$PWD` and cds there; `old` absent from `$PWD` is an
 error (`string not in pwd`). Three or more operands remain the bash
 `too many arguments` error (exit 1). Verified against zsh, not bash.
 
+In **POSIX mode** (`hellish --posix`, or `set -o posix` at runtime) this
+extension is disabled: two operands produce the bash `too many arguments`
+error (exit 1) like every other shell. Normal mode is unchanged. The gate is
+`state->opt_posix`, checked in `builtin_cd` (`core_builtins2.c`); POSIX-mode
+behaviour is diffed against `bash --posix` via `tests/cd_posix` (the
+`set -o posix; ...` lines) and `make cd-posix-test`.
+
 ## Export Implementation
 
 ### Multi-stage Processing Pipeline

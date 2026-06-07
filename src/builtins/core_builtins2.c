@@ -105,7 +105,8 @@ static int	cd_one(t_shell *state, t_cdopt *o, char *op)
    would chdir into oblivion and the parent shell would never notice.
    Options are parsed first (invalid option -> usage + exit 2), then operands
    are counted: 0/1 go through cd_one, exactly 2 trigger the substitution
-   extension, 3+ are the bash "too many arguments" error. */
+   extension, 3+ are the bash "too many arguments" error. In POSIX mode
+   (--posix / set -o posix) the extension is off, so 2 operands error too. */
 int	builtin_cd(t_shell *state, t_vec argv)
 {
 	t_cdopt	o;
@@ -119,7 +120,7 @@ int	builtin_cd(t_shell *state, t_vec argv)
 	if (n)
 		return (n);
 	n = cd_collect_ops(argv, first, &op0, &op1);
-	if (n >= 3)
+	if (n >= 3 || (n == 2 && state->opt_posix))
 		return (ft_eprintf("%s: cd: too many arguments\n", state->ctx), 1);
 	if (n == 2)
 		return (cd_two_arg(state, &o, op0, op1));

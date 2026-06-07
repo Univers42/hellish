@@ -278,6 +278,13 @@ cd-zsh-test:
 	docker build -f docker/Dockerfile.zsh -t hellish:zsh .
 	docker run --rm hellish:zsh
 
+# Host-side check (no docker): `hellish --posix` must match `bash --posix` on
+# the cd cases the zsh extension would otherwise change, while normal mode keeps
+# the extension. Builds first so the binary is current.
+cd-posix-test: all
+	@chmod +x $(TEST_DIR)/cd_posix_compare.sh
+	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cd_posix_compare.sh
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean cd-zsh-test
+	docker-arch docker-clean cd-zsh-test cd-posix-test

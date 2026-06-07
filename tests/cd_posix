@@ -25,3 +25,10 @@ cd /nonexistent_xyz 2>/dev/null; echo rc=$?
 unset HOME; cd 2>/dev/null; echo rc=$?
 unset HOME; echo ~
 unset HOME; cd ~ && echo cwd-ok
+# POSIX mode: the zsh-style two-argument `cd old new` extension is OFF, so two
+# (or more) operands are the bash "too many arguments" error. Prefixed with
+# `set -o posix` so hellish enters POSIX mode and matches `bash --posix`.
+set -o posix; cd a b 2>/dev/null; echo rc=$?
+set -o posix; cd a b 2>/dev/null && echo moved; echo rc=$?
+set -o posix; cd a b c 2>/dev/null; echo rc=$?
+set -o posix; cd /tmp && pwd
