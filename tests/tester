@@ -16,7 +16,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "globbing" "crazy1" "arith" "edge_cases" "dylan_exec"
         "builtins" "compound" "crazy2" "var" "pipe" "sq" "dq" "redir"
         "pipes" "redirects" "extras" "echo_edge_cases" "advanced_edge_cases"
-        "regress_hellish" "regress_combos"
+        "regress_hellish" "regress_combos" "cd_posix"
     )
 fi
 

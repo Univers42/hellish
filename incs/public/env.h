@@ -26,7 +26,6 @@ char	*env_expand(t_shell *state, char *key);
 char	**env_to_vec_env(t_shell *state, char **envp);
 void	free_tab(char **tab);
 void	init_cwd(t_shell *state);
-void	set_home(t_shell *state);
 void	set_cwd(t_shell *state);
 void	set_shlvl(t_shell *state);
 void	set_path(t_shell *state);

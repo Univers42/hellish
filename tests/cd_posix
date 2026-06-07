@@ -1,0 +1,27 @@
+# cd: POSIX/bash-parity cases added by the cd audit (diffed vs bash --posix).
+# Covers: -- terminator, -L/-P and combined/last-wins options, invalid option
+# (exit 2), empty operand (no-op success), logical vs physical symlink walking,
+# textual ./.. collapsing, CDPATH search + echo. Each symlink/CDPATH case is
+# self-cleaning so hellish and bash see identical state in the shared workdir.
+cd -- /tmp && pwd
+cd -L -- /tmp && pwd
+cd -P /tmp && pwd
+cd -LP /tmp && pwd
+cd -PL /tmp && pwd
+cd /tmp && cd -- && pwd
+cd ""; echo rc=$?
+cd "" && echo stayed=$?
+cd -x 2>/dev/null; echo rc=$?
+cd -Q 2>/dev/null; echo rc=$?
+cd /tmp/.///. && pwd
+cd /tmp/../tmp && pwd
+rm -rf sd LNK; mkdir -p sd/inner && ln -sf sd/inner LNK && cd LNK && pwd
+rm -rf sd LNK; mkdir -p sd/inner && ln -sf sd/inner LNK && cd LNK && cd .. && pwd
+rm -rf sd LNK; mkdir -p sd/inner && ln -sf sd/inner LNK && cd -L LNK && cd .. && pwd
+rm -rf sd LNK; mkdir -p sd/inner && ln -sf sd/inner LNK && cd -P LNK && pwd
+rm -rf cdp; mkdir -p cdp/target && CDPATH=cdp cd target && pwd
+rm -rf cdp; mkdir -p cdp/target; CDPATH=cdp cd target >/dev/null && pwd
+cd /nonexistent_xyz 2>/dev/null; echo rc=$?
+unset HOME; cd 2>/dev/null; echo rc=$?
+unset HOME; echo ~
+unset HOME; cd ~ && echo cwd-ok

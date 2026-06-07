@@ -19,7 +19,6 @@
 
 typedef int	(*t_builtin_fn)(t_shell *state, t_vec argv);
 
-int				cd_home(int *e, t_shell *state);
 void			parse_numeric_escape(char **str);
 int				e_parser(char *str);
 int				parse_flags(t_vec argv, int *n, int *e);

@@ -418,8 +418,9 @@ void init_cwd(t_shell *state)
 
 `init_dft_env.c` and `helpers.c` ensure that essential vars exist and have sane values:
 
-- `set_home(state)`:
-  - If `HOME` is missing or empty, set it to `getcwd()` or a fallback like `TMP_DIR`.
+- `HOME` is **not** synthesised. Like bash, it comes only from the inherited
+  environment, so `cd` with `HOME` unset errors (`cd: HOME not set`) and a bare
+  `~` falls back to the passwd home dir (`tilde_home_dir` in the expander).
 - `set_path(state)`:
   - If `PATH` is missing or empty, set it to `DFT_PATH`.
 - `set_shlvl(state)`:
@@ -436,7 +437,6 @@ void ensure_essential_env_vars(t_shell *state)
     t_env *e;
 
     cwd = NULL;
-    set_home(state);
     set_path(state);
     set_shlvl(state);
     set_underscore(state);

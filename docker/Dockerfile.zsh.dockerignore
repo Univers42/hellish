@@ -1,0 +1,16 @@
+# Build context for docker/Dockerfile.zsh (build-from-source + zsh): ship the
+# sources, the checked-out submodules and the test scripts, but never host
+# build artifacts or git internals. BuildKit prefers this file over the
+# repo-root .dockerignore for this specific Dockerfile.
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+*.log
