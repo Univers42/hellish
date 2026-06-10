@@ -13,43 +13,22 @@
 #include "heredoc_private.h"
 #include "sys.h"
 
-/* Create the temp file for a heredoc.  The name is composed from a stable
-   prefix (TMP_HC_DIR), the shell PID (so concurrent shell instances do not
-   collide), and the ULTIMATE_ARG sentinel plus a per-command integer index
-   (heredoc_idx++) so multiple heredocs in one command each get unique
-   files.  ONE O_RDWR fd serves as both the write fd (returned to the
-   caller; write_heredoc rewinds it with lseek instead of closing it) and
-   the read fd stored in the t_redir.  The path is unlinked immediately
-   after the open — anonymous-file semantics: no fname to keep, no
-   should_delete bookkeeping, no teardown unlink, and one open(2) less per
-   heredoc, which adds up when a loop body re-materializes its heredoc on
-   every iteration. */
+/* Register the redirect slot for a heredoc and return its index.  No file
+   or pipe is created here: the backing fd is attached by write_heredoc /
+   hdoc_attach_backing AFTER the body has been expanded, because only then
+   is the body size known (small bodies get a pipe, large ones an unlinked
+   temp file).  Until then the entry carries fd = -1, which every consumer
+   (apply, teardown) already treats as "nothing to do". */
 int	ft_mktemp(t_shell *state, t_ast_node *node)
 {
-	t_redir		ret;
-	char		*temp;
-	int			wr_fd;
-	t_string	fname;
+	t_redir	ret;
 
 	ret = create_redir(true, 0, false);
-	vec_init(&fname);
-	vec_push_str(&fname, TMP_HC_DIR);
-	if (state->pid)
-		vec_push_str(&fname, state->pid);
-	vec_push_str(&fname, ULTIMATE_ARG);
-	temp = ft_itoa(state->heredoc_idx++);
-	vec_push_str(&fname, temp);
-	xfree(temp);
-	wr_fd = open((char *)fname.ctx, O_RDWR | O_CREAT | O_TRUNC, 0600);
-	if (wr_fd < 0)
-		critical_error_errno_ctx((char *)fname.ctx);
-	unlink((char *)fname.ctx);
-	xfree(fname.ctx);
-	ret.fd = wr_fd;
+	ret.fd = -1;
 	vec_push(&state->redirects, &ret);
 	node->redir_idx = state->redirects.len - 1;
 	node->has_redirect = true;
-	return (wr_fd);
+	return (node->redir_idx);
 }
 
 /* Skip leading TABs from a heredoc line (<<- stripping).  POSIX says only
