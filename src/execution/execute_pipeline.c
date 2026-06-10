@@ -127,6 +127,8 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 	t_vec_exe_res		results;
 	t_execution_state	res;
 
+	if (exe->node->children.len == 1 && !exe->node->negate)
+		return (execute_pipeline_one(state, exe));
 	results = (t_vec_exe_res){0};
 	vec_init(&results);
 	results.elem_size = sizeof(t_execution_state);
