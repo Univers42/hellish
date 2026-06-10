@@ -111,6 +111,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 int					find_cmd_path(t_shell *state, char *cmd_name,
 						char **path_of_exe);
 void				prehash_external(t_shell *state, char *argv0);
+void				path_cache_sync(t_shell *state);
 t_execution_state	res_status(int status);
 t_execution_state	res_pid(int pid);
 void				exe_res_set_status(t_execution_state *res);

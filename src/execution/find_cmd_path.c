@@ -60,29 +60,22 @@ static int	handle_direct_path(t_shell *state,
 	return (0);
 }
 
-/* Walk PATH directories looking for cmd_name.  We split $PATH on ':' each
-   call (no caching of the split) because PATH can change between commands.
-   The perm_denied flag from exe_path distinguishes exit code 126 (found
-   but not executable) from 127 (not found). */
+/* Walk the cached PATH directories looking for cmd_name.  The split lives
+   in t_shell and was synced by the caller (path_cache_sync) right before
+   the hash lookup, so by the time a miss lands here the dirs are current.
+   perm_denied distinguishes exit code 126 (found but not executable) from
+   127 (not found). */
 static int	search_path_dirs(t_shell *state, char *cmd_name,
 				char **path_of_exe)
 {
-	char	**path_dirs;
-	int		perm_denied;
+	int	perm_denied;
 
-	path_dirs = NULL;
-	if (env_expand(state, "PATH"))
-		path_dirs = ft_split(env_expand(state, "PATH"), ':');
 	perm_denied = 0;
-	*path_of_exe = exe_path(path_dirs, cmd_name, &perm_denied);
-	if (path_dirs)
-		free_tab(path_dirs);
+	*path_of_exe = exe_path(state->path_dirs, cmd_name, &perm_denied);
+	if (!*path_of_exe && perm_denied)
+		return (handle_perm_denied(state, cmd_name));
 	if (!*path_of_exe)
-	{
-		if (perm_denied)
-			return (handle_perm_denied(state, cmd_name));
 		return (cmd_not_found(state, cmd_name));
-	}
 	return (0);
 }
 
@@ -91,7 +84,9 @@ static int	search_path_dirs(t_shell *state, char *cmd_name,
    miss, search PATH, insert the result, then validate the found path.  The
    access(X_OK) guard on the cached entry evicts stale entries (the binary
    was deleted or its permissions changed) so `hash` never causes a
-   persistent "command not found" for commands that should exist. */
+   persistent "command not found" for commands that should exist.
+   path_cache_sync runs first: a changed $PATH flushes the whole hash
+   (POSIX "forget remembered locations") and refreshes the split dirs. */
 static int	handle_path_lookup(t_shell *state,
 				char *cmd_name,
 				char **path_of_exe)
@@ -99,6 +94,7 @@ static int	handle_path_lookup(t_shell *state,
 	char	*cached;
 	int		ret;
 
+	path_cache_sync(state);
 	cached = cmd_hash_lookup(&state->cmd_cache, cmd_name);
 	if (cached && access(cached, X_OK) == 0)
 	{
