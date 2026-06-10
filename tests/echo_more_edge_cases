@@ -22,3 +22,10 @@ echo "$(echo '')"
 
 echo "$(echo \"\")"
 
+echo -e 'cap\x41dZ'
+echo -e 'cap\0101eZ'
+echo -e 'lit\xgZ'
+echo -e 'lit\xZ' end
+echo -e 'nul\08Z' | od -An -c
+echo -e 'wrap\0777Z' | od -An -c
+echo -e 'pair\x41\x42-\0101\0102'

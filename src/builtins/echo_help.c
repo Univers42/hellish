@@ -12,32 +12,66 @@
 
 #include "builtins_private.h"
 
-/* Parse an octal (\0NNN) or hex (\xNN) numeric escape in echo -e. The `str`
-   pointer is advanced past the digits that were consumed so the caller's
-   loop lands on the next character to process. Only the first 2 hex or 3
-   octal digits are taken; the rest are printed literally. The decoded byte
-   is appended to `out` (echo gathers everything into one buffer and does a
-   single write at the end). */
+/* Value of a hex digit, or -1 when `c` is not one. */
+static int	xdigit_value(char c)
+{
+	if (c >= '0' && c <= '9')
+		return (c - '0');
+	if (c >= 'a' && c <= 'f')
+		return (c - 'a' + 10);
+	if (c >= 'A' && c <= 'F')
+		return (c - 'A' + 10);
+	return (-1);
+}
+
+/* \0NNN / \xHH numeric escapes for echo -e, with bash's digit caps: \0
+   consumes AT MOST three octal digits (zero digits still emits a NUL
+   byte: `\0z` -> NUL 'z'); \x consumes one or two hex digits, and with
+   no digit at all bash keeps the \x as literal text (`\xg` -> \ x g).
+   Values above 0xFF wrap to a byte (\0777 -> 0xFF), like bash.  The old
+   code fed ft_strto_int with no digit limit, so `\x41d` parsed as 0x41d
+   and `\0101e` swallowed nothing it should.  *str arrives on the
+   '0'/'x' marker and leaves on the first unconsumed character. */
+static void	push_octal(t_vec *out, char **str)
+{
+	int	val;
+	int	n;
+
+	val = 0;
+	n = 0;
+	while (n < 3 && **str >= '0' && **str <= '7')
+	{
+		val = val * 8 + (*(*str)++ - '0');
+		n++;
+	}
+	vec_push_char(out, (char)val);
+}
+
 void	parse_numeric_escape(t_vec *out, char **str)
 {
-	int				base;
-	unsigned char	c;
-	char			*end;
-	int				val;
+	int	val;
+	int	n;
 
-	base = 10;
 	if (**str == '0')
-		base = 8;
-	else if (**str == 'x')
-		base = 16;
-	else
+	{
+		(*str)++;
+		push_octal(out, str);
 		return ;
+	}
 	(*str)++;
-	val = ft_strto_int(*str, &end, base);
-	if (end && end != *str)
-		*str = end;
-	c = (unsigned char)val;
-	vec_push_char(out, (char)c);
+	val = 0;
+	n = 0;
+	while (n < 2 && xdigit_value(**str) >= 0)
+	{
+		val = val * 16 + xdigit_value(*(*str)++);
+		n++;
+	}
+	if (n == 0)
+	{
+		vec_push_str(out, "\\x");
+		return ;
+	}
+	vec_push_char(out, (char)val);
 }
 
 /* Append the character that corresponds to a single-letter escape (\n, \t …)
