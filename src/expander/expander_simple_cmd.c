@@ -75,11 +75,15 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 	if (node->children.elem_size == 0)
 		node->children.elem_size = sizeof(t_ast_node);
 	exp = (t_expander_simple_cmd){0};
+	exp.in_db = db_head_detect(node);
 	init_executable_cmd(state, ret);
 	while (exp.i < node->children.len)
 	{
 		exp.curr = (t_ast_node *)vec_idx(&node->children, exp.i);
-		exp.exit_stat = process_simple_child(state, &exp, ret, redirects);
+		if (exp.in_db && exp.curr->node_type == AST_WORD)
+			exp.exit_stat = process_db_child(state, &exp, ret);
+		else
+			exp.exit_stat = process_simple_child(state, &exp, ret, redirects);
 		if (exp.exit_stat)
 			return (exp.exit_stat);
 		exp.i++;
