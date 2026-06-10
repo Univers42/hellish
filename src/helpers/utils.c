@@ -62,13 +62,45 @@ void	forward_exit_status(t_execution_state res)
 	exit(res.status);
 }
 
+/* Decimal-format `n` into `buf` (no allocation). Negative statuses cannot
+   normally happen, but the formatter stays int-safe anyway (long arithmetic
+   dodges the -INT_MIN overflow). Digits are built in reverse in tmp then
+   flipped into buf. */
+static void	fmt_status(char *buf, long n)
+{
+	char	tmp[12];
+	int		i;
+	int		j;
+
+	i = 0;
+	j = 0;
+	if (n < 0)
+	{
+		buf[j++] = '-';
+		n = -n;
+	}
+	if (n == 0)
+		tmp[i++] = '0';
+	while (n > 0)
+	{
+		tmp[i++] = (char)('0' + (n % 10));
+		n /= 10;
+	}
+	while (i > 0)
+		buf[j++] = tmp[--i];
+	buf[j] = '\0';
+}
+
 /* Record the result of the last command in both forms the shell needs: the
    numeric t_execution_state for logic (pipefail, ctrl_c detection) and the
-   pre-formatted string for $? expansion. xfree first: if we call this in a
-   tight loop (pipeline stages), we want zero leaks from the string version. */
+   pre-formatted string for $? expansion.  The string is formatted into the
+   statbuf scratch inside t_shell (same pattern as flagbuf/linebuf): $? is
+   re-set after every command, so the previous ft_itoa + xfree pair was one
+   malloc/free per command for a string of at most 4 bytes. last_cmd_st
+   points into the struct and is never freed. */
 void	set_cmd_status(t_shell *state, t_execution_state res)
 {
 	state->last_cmd_st_exe = res;
-	xfree(state->last_cmd_st);
-	state->last_cmd_st = ft_itoa(res.status);
+	fmt_status(state->statbuf, res.status);
+	state->last_cmd_st = state->statbuf;
 }
