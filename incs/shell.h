@@ -154,7 +154,7 @@ typedef struct s_shell
 	/* --- special variables (borrowed ptrs or small buffers, not freed) --- */
 	char				*pid; /* $$ as a string (set once at init) */
 	char				*last_bg_pid; /* $! last background PID string */
-	char				*last_cmd_st; /* $? as a string (updated per cmd) */
+	char				*last_cmd_st; /* $? string -> statbuf, never freed */
 	t_execution_state	last_cmd_st_exe; /* structured copy of last status */
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
@@ -183,9 +183,10 @@ typedef struct s_shell
 	bool				opt_verbose; /* -v: print input lines as read */
 	bool				opt_pipefail; /* pipefail: status = last failure */
 	bool				opt_posix; /* --posix / set -o posix: no extensions */
-	/* small scratch buffers -- avoids allocs for $- and $LINENO */
+	/* small scratch buffers -- avoids allocs for $-, $LINENO and $? */
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
 	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */
+	char				statbuf[16]; /* scratch for set_cmd_status ($?) */
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
 	/* --- traps and readonly vars --- */
 	char				*traps[32]; /* trap strings, indexed by signal num */

@@ -93,7 +93,6 @@ void	free_all_state(t_shell *state)
 	free_functions(&state->functions);
 	xfree(state->input.ctx);
 	state->input = (t_string){};
-	xfree(state->last_cmd_st);
 	xfree(state->pid);
 	xfree(state->last_bg_pid);
 	xfree(state->ctx);
