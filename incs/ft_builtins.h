@@ -19,10 +19,10 @@
 
 typedef int	(*t_builtin_fn)(t_shell *state, t_vec argv);
 
-void			parse_numeric_escape(char **str);
-int				e_parser(char *str);
+void			parse_numeric_escape(t_vec *out, char **str);
+int				e_parser(t_vec *out, char *str);
 int				parse_flags(t_vec argv, int *n, int *e);
-int				print_args(int e, t_vec argv, size_t i);
+int				print_args(t_vec *out, int e, t_vec argv, size_t i);
 void			try_unset(t_shell *state, char *key);
 int				builtin_echo(t_shell *state, t_vec argv);
 int				builtin_pwd(t_shell *state, t_vec argv);

@@ -82,23 +82,25 @@ int	parse_flags(t_vec argv, int *n, int *e)
 	return (i);
 }
 
-/* Print argv[i..end] with a space between each pair. If `e` is set, each
-   argument goes through e_parser which handles \n, \t, \c etc. — a \c
-   inside any argument causes e_parser to return 1, which stops printing and
-   signals the caller to suppress the newline too. */
-int	print_args(int e, t_vec argv, size_t i)
+/* Append argv[i..end] to `out` with a space between each pair. If `e` is
+   set, each argument goes through e_parser which handles \n, \t, \c etc. —
+   a \c inside any argument causes e_parser to return 1, which stops the
+   gathering and signals the caller to suppress the newline too. Building
+   into one buffer lets builtin_echo emit a single write(2) instead of one
+   per argument/separator (a syscall storm in echo-heavy loops). */
+int	print_args(t_vec *out, int e, t_vec argv, size_t i)
 {
 	while (i < argv.len)
 	{
 		if (e)
 		{
-			if (e_parser(((char **)argv.ctx)[i]))
+			if (e_parser(out, ((char **)argv.ctx)[i]))
 				return (1);
 		}
 		else
-			ft_printf("%s", ((char **)argv.ctx)[i]);
+			vec_push_str(out, ((char **)argv.ctx)[i]);
 		if (++i < argv.len)
-			ft_printf(" ");
+			vec_push_char(out, ' ');
 	}
 	return (0);
 }
