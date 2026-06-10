@@ -42,29 +42,31 @@ static t_execution_state	run_compound(t_shell *state,
 /* Run a compound command IN THE PARENT process (needed when it can modify
    parent state -- e.g. `{ cd /; }` must change the parent's cwd).  We
    save stdin/stdout/stderr with dup, redirect per the node, run, then
-   restore.  The three-slot bak[] is the classic fd-save idiom: dup gives
-   us a copy at the lowest free fd, dup2 puts it back, close drops the
-   copy.  Forgetting the close would leak an fd per loop iteration. */
+   restore via restore_fds.  The whole save/redirect/restore dance is
+   skipped when fd_setup_needed says there is no fd work (no redirects,
+   std fds) -- an `if` or `case` in a hot loop would otherwise pay 9 fd
+   syscalls per execution for nothing. */
 static t_execution_state	compound_in_parent(t_shell *state,
 								t_executable_node *exe)
 {
 	t_execution_state	res;
 	int					bak[3];
+	int					need;
 
-	bak[0] = dup(STDIN_FILENO);
-	bak[1] = dup(STDOUT_FILENO);
-	bak[2] = dup(STDERR_FILENO);
-	set_up_redirection(state, exe);
+	need = fd_setup_needed(exe);
+	if (need)
+	{
+		bak[0] = dup(STDIN_FILENO);
+		bak[1] = dup(STDOUT_FILENO);
+		bak[2] = dup(STDERR_FILENO);
+		set_up_redirection(state, exe);
+	}
 	exe->infd = -1;
 	exe->outfd = -1;
 	exe->next_infd = -1;
 	res = run_compound(state, exe);
-	dup2(bak[0], STDIN_FILENO);
-	dup2(bak[1], STDOUT_FILENO);
-	dup2(bak[2], STDERR_FILENO);
-	close(bak[0]);
-	close(bak[1]);
-	close(bak[2]);
+	if (need)
+		restore_fds(bak);
 	return (res);
 }
 

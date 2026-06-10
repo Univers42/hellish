@@ -123,6 +123,7 @@ void				set_up_redirection(t_shell *state,
 int					fd_setup_needed(t_executable_node *exe);
 void				take_backup_fds(int *bak, int persist);
 void				restore_backup_fds(int *bak, int persist);
+void				restore_fds(int *bak);
 int					prep_redir(t_shell *state, t_executable_node *exe,
 						int *bak, int persist);
 void				apply_redirs_from_vec(t_shell *state,
