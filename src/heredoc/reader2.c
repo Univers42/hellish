@@ -14,10 +14,11 @@
 
 /* Consume the heredoc body line by line (via process_line) until the
    delimiter is seen or EOF is hit.  When done, NUL-terminate the buffer
-   and write it all to wr_fd in one shot (write_to_file).  Then close the
-   write fd and free the buffer: the read fd (already stored in the t_redir)
-   stays open for the child to consume.  Writing the whole body first then
-   closing the write end is what lets `cat <<EOF | wc` see a proper EOF. */
+   and write it all to wr_fd in one shot (write_to_file).  wr_fd is the
+   SAME fd the t_redir holds for reading (ft_mktemp opens one O_RDWR fd),
+   so instead of closing it we rewind to offset 0 — the consumer then
+   reads the body from the start, and the redirect teardown closes the fd
+   exactly once at command end. */
 void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
 {
 	while (!req->finished)
@@ -29,7 +30,7 @@ void	write_heredoc(t_shell *state, int wr_fd, t_hdoc *req)
 		((char *)req->full_file.ctx)[req->full_file.len] = '\0';
 		ft_assert(write_to_file((char *)req->full_file.ctx, wr_fd) == 0);
 	}
-	close(wr_fd);
+	lseek(wr_fd, 0, SEEK_SET);
 	xfree(req->full_file.ctx);
 }
 
