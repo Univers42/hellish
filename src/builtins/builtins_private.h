@@ -55,6 +55,18 @@ typedef struct s_ulim
 	const char	*label;
 }	t_ulim;
 
+/* Block-buffered byte source for the read builtin (builtin_read4.c): on a
+   seekable fd 0 bytes are taken from buf and the fd is lseek'd back over
+   the unconsumed tail when the line ends; on pipes/ttys it degrades to the
+   POSIX-required one-byte reads. */
+typedef struct s_rdbuf
+{
+	char	buf[128];
+	ssize_t	len;
+	ssize_t	pos;
+	bool	seekable;
+}	t_rdbuf;
+
 void	try_unset(t_shell *state, char *key);
 int		builtin_unset(t_shell *state, t_vec argv);
 int		parse_flags(t_vec argv, int *n, int *e);
