@@ -31,6 +31,8 @@ typedef struct s_expander_simple_cmd
 	t_ast_node	*curr; /* shorthand for children[i] */
 	bool		found_first; /* true once the command word is seen */
 	bool		export; /* true when expanding an `export` command */
+	bool		in_db; /* true inside [[ ]]: no split/glob, case rules */
+	bool		pat_next; /* [[ only: next word sits after ==/=/!= */
 	int			exit_stat; /* running exit status for the command */
 }	t_expander_simple_cmd;
 
@@ -91,5 +93,12 @@ char		*word_strndup(const char *s, size_t n);
 void		word_free(void *p);
 int			word_slab_push(int on);
 void		word_slab_teardown(void);
+
+/* case-rules expansion (execute_case.c) shared with [[ ]] operands. */
+char		*expand_case_word(t_shell *state, t_ast_node *node);
+char		*expand_case_pattern(t_shell *state, t_ast_node *node);
+bool		db_head_detect(t_ast_node *node);
+int			process_db_child(t_shell *state, t_expander_simple_cmd *exp,
+				t_executable_cmd *ret);
 
 #endif

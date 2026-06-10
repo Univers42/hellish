@@ -54,7 +54,7 @@ static int	db_primary(char **av, int ac, int *i)
 		(*i)++;
 	if (*i == start)
 		return (2);
-	return (eval_test(av + start, *i - start));
+	return (db_eval_flat(av + start, *i - start));
 }
 
 /* Unary `!` (right-associative), then a primary. 0=true 1=false 2=error. */
