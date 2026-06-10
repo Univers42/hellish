@@ -83,19 +83,28 @@ int	builtin_colon(t_shell *state, t_vec argv)
    '-' and contains only the letters n/e/E is treated as a flag word (so
    `-ne` works, but `-z` stops flag scanning and is printed literally). -n
    suppresses the trailing newline; -e enables backslash escape processing
-   handled by e_parser(); -E explicitly disables it. */
+   handled by e_parser(); -E explicitly disables it. The whole line is built
+   in one buffer and emitted with a single write(2) — the previous per-arg
+   ft_printf cost one syscall per argument, separator and newline. */
 int	builtin_echo(t_shell *state, t_vec argv)
 {
 	int		n;
 	int		e;
 	size_t	first_arg_print;
+	t_vec	out;
 
 	n = 0;
 	e = 0;
 	(void)state;
+	vec_init(&out);
+	out.elem_size = 1;
 	first_arg_print = parse_flags(argv, &n, &e);
-	if (!print_args(e, argv, first_arg_print) && !n)
-		ft_printf("\n");
+	if (!print_args(&out, e, argv, first_arg_print) && !n)
+		vec_push_char(&out, '\n');
+	if (out.len > 0 && write(STDOUT_FILENO, out.ctx, out.len) < 0)
+	{
+	}
+	xfree(out.ctx);
 	return (0);
 }
 
