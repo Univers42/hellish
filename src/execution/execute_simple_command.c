@@ -15,7 +15,6 @@
 
 void	apply_alias(t_shell *state, t_executable_cmd *cmd);
 void	replace_null_argv_with_empty(t_executable_cmd *cmd);
-void	restore_fds(int *bak);
 
 /* Run a shell function in the parent process.  Pre-assignment NAME=val
    words are applied temporarily around the call (POSIX: they must be
