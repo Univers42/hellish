@@ -70,19 +70,29 @@ t_env	*env_get(t_vec_env *env, char *key)
 }
 
 /* Serialise one env entry back to "KEY=VALUE".  Used by get_envp to
-   build execve's envp[].  Caller owns the returned string. */
+   build execve's envp[].  Caller owns the returned string.  One sized
+   malloc + two memcpy instead of vector growth: this runs once per
+   exported variable for every external command, so the previous
+   vec_push_str path paid ~3 reallocs per variable per exec. */
 char	*env_to_str(t_env *e)
 {
-	t_string	s;
-	char		ch;
+	size_t	klen;
+	size_t	vlen;
+	char	*s;
 
-	vec_init(&s);
-	s.elem_size = 1;
-	vec_push_str(&s, e->key);
-	ch = EQ;
-	vec_push(&s, &ch);
-	vec_push_str(&s, e->value);
-	return ((char *)s.ctx);
+	klen = ft_strlen(e->key);
+	vlen = 0;
+	if (e->value)
+		vlen = ft_strlen(e->value);
+	s = xmalloc(klen + vlen + 2);
+	if (!s)
+		return (NULL);
+	ft_memcpy(s, e->key, klen);
+	s[klen] = EQ;
+	if (e->value)
+		ft_memcpy(s + klen + 1, e->value, vlen);
+	s[klen + 1 + vlen] = '\0';
+	return (s);
 }
 
 /* Build the NULL-terminated envp[] for execve, including only entries
