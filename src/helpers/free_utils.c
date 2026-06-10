@@ -81,6 +81,18 @@ static void	free_traps(t_shell *state)
 	}
 }
 
+/* Drop the split-$PATH cache (see path_cache_sync). free_tab is not
+   NULL-safe, hence the guard; the pointers are NULLed so a stray re-entry
+   cannot double-free. */
+static void	free_path_cache(t_shell *state)
+{
+	if (state->path_dirs)
+		free_tab(state->path_dirs);
+	state->path_dirs = NULL;
+	xfree(state->path_dirs_src);
+	state->path_dirs_src = NULL;
+}
+
 /* The single canonical shutdown path. Order is deliberate: functions first
    (they may reference variables), then per-command scratch (input, AST,
    redirects, proc subs), then session data (history, cwd, positional args,
@@ -100,6 +112,7 @@ void	free_all_state(t_shell *state)
 	state->ctx = 0;
 	state->dft_ctx = 0;
 	xfree(state->rl.buff.ctx);
+	free_path_cache(state);
 	free_redirects(&state->redirects);
 	cleanup_proc_subs(state);
 	free_ast(&state->tree);
