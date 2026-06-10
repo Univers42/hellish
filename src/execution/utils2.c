@@ -16,18 +16,36 @@
 /* Update the `_` (ULTIMATE_ARG) environment variable to the last word of
    the command.  POSIX says $_ is the last argument of the previous command;
    we set it before forking so both parent and child see the right value
-   immediately after the command. */
+   immediately after the command.  This runs for EVERY foreground builtin,
+   and in a hot loop the last word is almost always the same string, so:
+   unchanged value -> return without touching the env (zero alloc); known
+   key -> swap the value in place (one strdup, no key dup, no hash churn);
+   only the first-ever set pays the full env_set upsert. */
 void	set_last_underscore_var(t_shell *state, t_executable_cmd *cmd)
 {
 	char	*last;
+	t_env	*e;
 
-	if (cmd->argv.len > 0)
+	if (cmd->argv.len == 0)
+		return ;
+	last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
+	if (!last)
+		return ;
+	e = env_get(&state->env, ULTIMATE_ARG);
+	if (e && e->value && ft_strcmp(e->value, last) == 0)
 	{
-		last = ((char **)cmd->argv.ctx)[cmd->argv.len - 1];
-		if (last)
-			env_set(&state->env,
-				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
+		e->exported = true;
+		return ;
 	}
+	if (e)
+	{
+		xfree(e->value);
+		e->value = ft_strdup(last);
+		e->exported = true;
+		return ;
+	}
+	env_set(&state->env,
+		env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
 }
 
 /* Thin wrapper kept so callers have a single named function to call;
