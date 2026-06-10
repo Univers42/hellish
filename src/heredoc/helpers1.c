@@ -29,11 +29,12 @@ static bool	try_defer_heredoc(t_shell *state, t_ast_node *curr,
 }
 
 /* Attempt to defer a heredoc (capture body to node) or, failing that,
-   create the temp file eagerly.  The sep.ctx guard handles the edge case
-   where the delimiter was a pure variable ($X) that expanded to empty:
-   we fall back to a literal '$' so write_heredoc does not loop forever
-   looking for an empty delimiter line.  Returns -1 if deferred or on
-   error; the redir_idx from ft_mktemp otherwise. */
+   materialize it eagerly (write_heredoc expands the body and attaches a
+   pipe or temp-file backing to the redirect slot).  The sep.ctx guard
+   handles the edge case where the delimiter was a pure variable ($X)
+   that expanded to empty: we fall back to a literal '$' so write_heredoc
+   does not loop forever looking for an empty delimiter line.  Returns -1
+   if deferred or on error; the redir_idx from ft_mktemp otherwise. */
 static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 				bool is_pipeline)
 {
@@ -54,7 +55,7 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 		vec_push_char(&sep, '$');
 	}
 	if (!vec_ensure_space_n(&sep, 1))
-		return (close(wr), xfree(sep.ctx), -1);
+		return (xfree(sep.ctx), -1);
 	((char *)sep.ctx)[sep.len] = '\0';
 	req = create_heredoc((char *)sep.ctx,
 			!contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
