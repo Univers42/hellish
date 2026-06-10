@@ -114,6 +114,7 @@ run_micro() {
 	race micro "builtin-dispatch 30k" cmd 'i=0; while [ $i -lt 30000 ]; do : a b c; i=$((i+1)); done; echo $i'
 	race micro "param-expand 20k"  cmd 'p=/a/b/c/file.txt; i=0; while [ $i -lt 20000 ]; do b=${p##*/}; d=${p%/*}; i=$((i+1)); done; echo "$b $d"'
 	race micro "glob-noop 10k"     cmd 'i=0; while [ $i -lt 10000 ]; do x=nowild_$i; i=$((i+1)); done; echo "$x"'
+	race micro "dbracket 20k"     cmd 'a=hello; i=0; n=0; while [ $i -lt 20000 ]; do if [[ $a == h* ]]; then n=$((n+1)); fi; i=$((i+1)); done; echo $n'
 	race micro "case-loop 20k"     cmd 'i=0; while [ $i -lt 20000 ]; do case $i in *0) :;; *[13579]) :;; *) :;; esac; i=$((i+1)); done; echo $i'
 	race micro "default-expand 20k" cmd 'u=; i=0; while [ $i -lt 20000 ]; do x=${u:-fallback}; y=${u:+alt}; i=$((i+1)); done; echo "$x-$y"'
 	race micro "strlen-expand 20k" cmd 's=abcdefghijklmnop; i=0; n=0; while [ $i -lt 20000 ]; do n=$((n+${#s})); i=$((i+1)); done; echo $n'

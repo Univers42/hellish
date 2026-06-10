@@ -17,8 +17,9 @@ bool	case_match(const char *s, const char *p);
 
 /* Expand a case word (subject or pattern) to a single string: parameter,
    command and arithmetic substitution and tilde, but NO field splitting and
-   NO pathname (glob) expansion - a case pattern *is* the glob. */
-static char	*expand_case_word(t_shell *state, t_ast_node *node)
+   NO pathname (glob) expansion - a case pattern *is* the glob.  Exported:
+   [[ ]] operands follow exactly these rules (expand_dbracket.c). */
+char	*expand_case_word(t_shell *state, t_ast_node *node)
 {
 	t_ast_node	copy;
 	t_string	s;
@@ -39,8 +40,9 @@ bool	is_quoted_tok(t_tt tt);
 void	append_pat_tok(t_string *s, t_token t);
 
 /* Like expand_case_word but for a PATTERN: quoted glob metacharacters are
-   escaped so they match literally, unquoted ones stay active. */
-static char	*expand_case_pattern(t_shell *state, t_ast_node *node)
+   escaped so they match literally, unquoted ones stay active.  Exported:
+   the word after ==/=/!= inside [[ ]] is a pattern with the same rules. */
+char	*expand_case_pattern(t_shell *state, t_ast_node *node)
 {
 	t_ast_node	copy;
 	t_string	s;
