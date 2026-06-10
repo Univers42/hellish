@@ -55,3 +55,5 @@ if [[ 1 -lt 2 ]];then echo lt;fi
 [[ a ]]||echo no; echo after
 x=$( [[ a == a ]] && echo Y ); echo $x
 f(){ if [[ a == a ]]; then echo m; fi; }; f; echo done
+exec 3> outfiles/fd3persist.txt; echo one >&3; echo two >&3; exec 3>&-; cat outfiles/fd3persist.txt
+echo data47 > outfiles/fd4in.txt; exec 4< outfiles/fd4in.txt; read x <&4; echo "got=$x"; exec 4<&-

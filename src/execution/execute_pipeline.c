@@ -16,9 +16,12 @@
    fresh pipe: write end goes to curr_exe->outfd (child will dup2 it to
    stdout), read end lands in curr_exe->next_infd (the PARENT saves it as
    prev_infd so the NEXT child picks it up as its stdin).  The last element
-   just inherits the pipeline's own outfd (typically stdout=1).  After this
-   call the pipe ends are in the exe struct -- the parent closes them in
-   finalize_child_parent to avoid exhausting the fd table. */
+   inherits the pipeline's own outfd: stdout (fd 1) passes through AS IS --
+   nothing downstream ever closes fd 1, and handing the stage a dup would
+   make fd_setup_needed() true for every plain command, forcing the full
+   backup/redirect/restore dance (15 fd syscalls per command in a hot loop).
+   Only a non-standard outfd (nested/redirected pipeline) is dup'd so this
+   stage owns a closable copy. */
 void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 									t_executable_node *curr_exe, int (*pp)[2])
 {
@@ -32,7 +35,9 @@ void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 	else
 	{
 		curr_exe->next_infd = -1;
-		curr_exe->outfd = dup(exe->outfd);
+		curr_exe->outfd = exe->outfd;
+		if (exe->outfd != STDOUT_FILENO)
+			curr_exe->outfd = dup(exe->outfd);
 	}
 }
 
@@ -92,17 +97,13 @@ void	execute_pipeline_children(t_shell *state,
 	t_exec_child_ctx	ctx;
 	t_execution_state	res;
 
-	ctx.prev_infd = dup(exe->infd);
-	ctx.state = state;
-	ctx.exe = exe;
-	ctx.curr_exe = &curr_exe;
-	ctx.pp = &pp;
-	if (exe->node->children.len == 0)
-		ctx.last_index = 0;
-	else
+	ctx = (t_exec_child_ctx){.state = state, .exe = exe,
+		.curr_exe = &curr_exe, .pp = &pp, .results = results,
+		.prev_infd = exe->infd, .idx = 0, .last_index = 0};
+	if (exe->infd != STDIN_FILENO)
+		ctx.prev_infd = dup(exe->infd);
+	if (exe->node->children.len > 0)
 		ctx.last_index = exe->node->children.len - 1;
-	ctx.results = results;
-	ctx.idx = 0;
 	while (ctx.idx < exe->node->children.len)
 	{
 		prepare_child_exec(&ctx);

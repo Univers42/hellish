@@ -33,6 +33,12 @@ static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	return (true);
 }
 
+/* open(2) hands back the lowest free fd, which can be the very fd this
+   redirect targets (e.g. `exec 3> f` while 3 is the lowest hole).  The
+   apply step would then be a no-op and the per-command teardown's
+   close(redir.fd) would tear down the fd it just installed.  Move the
+   scratch fd up to >= 10 (clear of the user-addressable low range, the
+   same trick bash uses) so it is always distinct from src_fd. */
 static bool	open_file_redir(t_tt tt, t_redir *ret)
 {
 	if (tt == TT_REDIRECT_LEFT)
@@ -47,6 +53,13 @@ static bool	open_file_redir(t_tt tt, t_redir *ret)
 		ret->fd = -1;
 	if (ret->fd < 0)
 		return (false);
+	if (ret->fd == ret->src_fd)
+	{
+		ret->fd = fcntl(ret->src_fd, F_DUPFD, 10);
+		close(ret->src_fd);
+		if (ret->fd < 0)
+			return (false);
+	}
 	ret->should_delete = false;
 	return (true);
 }
@@ -59,6 +72,11 @@ static bool	handle_devfd_redir(char *fname, t_redir *ret)
 	if (orig_fd < 0)
 		return (false);
 	ret->fd = dup(orig_fd);
+	if (ret->fd == ret->src_fd)
+	{
+		ret->fd = fcntl(ret->src_fd, F_DUPFD, 10);
+		close(ret->src_fd);
+	}
 	ret->should_delete = false;
 	return (ret->fd >= 0);
 }
