@@ -187,6 +187,9 @@ typedef struct s_shell
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
 	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */
 	char				statbuf[16]; /* scratch for set_cmd_status ($?) */
+	/* split-$PATH cache, validated on use against the exact PATH string */
+	char				**path_dirs; /* cached ft_split of $PATH on ':' */
+	char				*path_dirs_src; /* PATH string the split came from */
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
 	/* --- traps and readonly vars --- */
 	char				*traps[32]; /* trap strings, indexed by signal num */

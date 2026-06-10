@@ -57,3 +57,5 @@ x=$( [[ a == a ]] && echo Y ); echo $x
 f(){ if [[ a == a ]]; then echo m; fi; }; f; echo done
 exec 3> outfiles/fd3persist.txt; echo one >&3; echo two >&3; exec 3>&-; cat outfiles/fd3persist.txt
 echo data47 > outfiles/fd4in.txt; exec 4< outfiles/fd4in.txt; read x <&4; echo "got=$x"; exec 4<&-
+mkdir -p outfiles/d1 outfiles/d2; printf "#!/bin/sh\necho A\n" > outfiles/d1/t; printf "#!/bin/sh\necho B\n" > outfiles/d2/t; chmod +x outfiles/d1/t outfiles/d2/t; PATH=$PWD/outfiles/d1; t; PATH=$PWD/outfiles/d2; t
+mkdir -p outfiles/p1 outfiles/p2; printf "#!/bin/sh\necho A\n" > outfiles/p1/t; printf "#!/bin/sh\necho B\n" > outfiles/p2/t; chmod +x outfiles/p1/t outfiles/p2/t; f() { local PATH=$PWD/outfiles/p2; t; }; PATH=$PWD/outfiles/p1; f; t
