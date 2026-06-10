@@ -16,10 +16,14 @@ From the in-repo benchmark harness (`make bench`, ROUNDS=7 best-of), hellish (OP
 
 | Suite | geomean (per-task) | wall (throughput) | W/T/L |
 |---|---|---|---|
-| **Overall** (81 tasks) | **1.343×** | **1.359× faster** | 53 / 15 / 13 |
-| micro (tight loops) | **2.025×** | 1.344× | **28 / 0 / 0** |
-| corpus (real scripts) | 1.055× | 1.166× | 16 / 11 / 10 |
-| hard (math/text heavy) | 1.143× | 1.439× | 9 / 4 / 3 |
+| **Overall** (81 tasks) | **1.346×** | **1.35–1.37× faster** | 50-53 / 11-14 / 17 |
+| micro (tight loops) | **2.07–2.10×** | 1.33–1.37× | **28 / 0 / 0** |
+| corpus (real scripts) | 1.02–1.06× | 1.13× | ~14 / ~9 / ~14 |
+| hard (math/text heavy) | 1.16–1.19× | 1.44–1.45× | 9-11 / 4 / 1-3 |
+
+(Ranges are from two consecutive ROUNDS=7 runs of the same binary — the overall geomean
+reproduced **exactly** (1.346×) while individual 2-3 ms corpus scripts wobble ±15%, which is why
+per-task W/T/L varies run to run but the verdict does not.)
 
 - **geomean = equal weight per task; wall = total time to run everything.**
 - The micro class — once the weak spot at 0.877× — is now a **clean sweep**: every tight-loop
@@ -65,6 +69,9 @@ impact:
 - **fd passthrough** — stdin/stdout pass through the pipeline driver untouched; the per-command
   backup/redirect/restore dance only runs when there is actual fd work. (15 → 0 fd syscalls per
   plain command.) Unmasked and fixed a latent `exec 3>f` bug (scratch fd moved to ≥10, bash-style).
+- **Single-stage pipeline direct path** — every plain command is a pipeline of one; it now skips
+  the multi-stage scaffolding (results vector, stage copy, finalize pass) entirely. 8.6% fewer
+  instructions on the tight-loop microbench.
 - **Buffered `echo`** — one `write(2)` per call instead of one per argument (and per *character*
   under `-e`).
 - **Zero-malloc bookkeeping** — `$?` formats into a scratch buffer in `t_shell`; `$_` skips its
