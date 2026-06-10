@@ -16,10 +16,10 @@ From the in-repo benchmark harness (`make bench`, ROUNDS=7 best-of), hellish (OP
 
 | Suite | geomean (per-task) | wall (throughput) | W/T/L |
 |---|---|---|---|
-| **Overall** (81 tasks) | **1.346×** | **1.35–1.37× faster** | 50-53 / 11-14 / 17 |
-| micro (tight loops) | **2.07–2.10×** | 1.33–1.37× | **28 / 0 / 0** |
-| corpus (real scripts) | 1.02–1.06× | 1.13× | ~14 / ~9 / ~14 |
-| hard (math/text heavy) | 1.16–1.19× | 1.44–1.45× | 9-11 / 4 / 1-3 |
+| **Overall** (82 tasks) | **1.371×** | **1.383× faster** | 56 / 13 / 13 |
+| micro (tight loops) | **2.087×** | 1.371× | **29 / 0 / 0** |
+| corpus (real scripts) | 1.052× | 1.152× | 16 / 10 / 11 |
+| hard (math/text heavy) | 1.180× | 1.464× | 11 / 3 / 2 |
 
 (Ranges are from two consecutive ROUNDS=7 runs of the same binary — the overall geomean
 reproduced **exactly** (1.346×) while individual 2-3 ms corpus scripts wobble ±15%, which is why
@@ -98,7 +98,7 @@ impact:
 
 Speed means nothing if it crashes. hellish is held to a strict, automated bar:
 
-- **2519+ tests** (`make test`) — a self-built suite that grows with every fix; all green.
+- **2527+ tests** (`make test`) — a self-built suite that grows with every fix; all green.
 - **Conformance gate** — every shell construct diffed against `bash --posix`, **0 divergences**.
 - **Per-fix regression cases** — each bug fix lands with a permanent test *and* a conformance case,
   so it can never silently come back.
