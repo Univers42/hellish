@@ -16,17 +16,18 @@ From the in-repo benchmark harness (`make bench`, ROUNDS=7 best-of), hellish (OP
 
 | Suite | geomean (per-task) | wall (throughput) | W/T/L |
 |---|---|---|---|
-| **Overall** (81 tasks) | **1.333×** | **1.342× faster** | 51 / 18 / 12 |
-| micro (tight loops) | **2.010×** | 1.325× | **28 / 0 / 0** |
-| corpus (real scripts) | 1.031× | 1.059× | 12 / 15 / 10 |
-| hard (math/text heavy) | 1.178× | 1.450× | 11 / 3 / 2 |
+| **Overall** (81 tasks) | **1.343×** | **1.359× faster** | 53 / 15 / 13 |
+| micro (tight loops) | **2.025×** | 1.344× | **28 / 0 / 0** |
+| corpus (real scripts) | 1.055× | 1.166× | 16 / 11 / 10 |
+| hard (math/text heavy) | 1.143× | 1.439× | 9 / 4 / 3 |
 
 - **geomean = equal weight per task; wall = total time to run everything.**
 - The micro class — once the weak spot at 0.877× — is now a **clean sweep**: every tight-loop
   task beats bash, 2× on average. Real work (corpus/hard) wins too; standouts: pure-shell
   insertion sort **4.2×**, `${}` string toolkit **2.0×**, log analyzer/math suite ~1.2×.
-- Coverage: faster on **69%** of tasks, parity on 9%, slower on 22% — and where it is slower the
-  average gap is **−9%**, concentrated in a handful of small fork/signal-bound scripts.
+- Coverage: faster on **73%** of tasks, parity on 5%, slower on 22% — and where it is slower the
+  average gap is **−10%**, concentrated in 2-3 ms scripts whose ratios are run-to-run noise
+  (several of them win head-to-head on an idle machine) plus a couple of fork/signal-bound ones.
 
 > The old "micro ceiling" was diagnosed and removed in the `perf/micro-hotpath` campaign: the
 > pipeline driver dup'd stdin/stdout around **every** command, defeating the redirect fast path —
@@ -72,8 +73,10 @@ impact:
   unconsumed tail (bash's trick); pipes/ttys keep POSIX byte-at-a-time.
 - **Split-`$PATH` cache** — validated on use by comparing the exact PATH string; also fixed a
   conformance bug (the command hash now flushes when PATH changes, as POSIX requires).
-- **Single-fd heredocs** — one `O_RDWR` fd, unlinked eagerly (no `/tmp` litter possible, mode
-  0600), rewound with `lseek` instead of re-opened.
+- **Pipe-backed heredocs** — bodies ≤ 4 KB get a pipe (exactly like bash ≥ 5.1): zero filesystem
+  traffic per materialization; larger bodies use an eagerly-unlinked `O_RDWR` temp file (no
+  `/tmp` litter possible, mode 0600). Flipped the heredoc-in-loop benchmark from 0.68× to
+  **1.43× faster than bash**.
 - **Custom allocator (`SAFE=0`)**: the whole shell allocates through one compile-time-switchable
   macro family (`xmalloc`/`xcalloc`/`xfree`), so it can run on either libc `malloc` or our own
   `ft_malloc` slab/arena heap with **zero source changes**. `make OPT=1` (the benchmarked build)
