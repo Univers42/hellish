@@ -272,6 +272,17 @@ docker-arch:
 docker-clean:
 	docker compose down --rmi local 2>/dev/null || true
 
+# Cross-shell speed matrix. Build hellish + a zoo of other shells (bash, dash,
+# zsh, mksh, ksh, yash, busybox ash, fish) in ONE self-contained image, then
+# race them all on a portable POSIX workload set and print who is fastest and
+# where hellish lands. The host needs none of those shells installed -- that is
+# the whole point of doing it in docker. See tests/agnostic_bench.sh.
+# Override rounds/timeout:  make agnostic-bench ROUNDS=7 TIMEOUT_S=60
+agnostic-bench:
+	docker build -f docker/Dockerfile.agnostic -t hellish:agnostic .
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRacing hellish against every shell we could install\033[0m\n\n" >&2
+	docker run --rm -e ROUNDS=$(ROUNDS) -e TIMEOUT_S=$(TIMEOUT_S) hellish:agnostic
+
 # Build hellish + zsh in one image and diff the zsh-style two-argument
 # `cd old new` extension against real zsh (the bash suite can't cover it).
 cd-zsh-test:
@@ -287,4 +298,4 @@ cd-posix-test: all
 
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean cd-zsh-test cd-posix-test
+	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench
