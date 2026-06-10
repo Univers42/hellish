@@ -89,6 +89,7 @@ getcwd() failed: No such file or directory\n"
 						<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]\
 						^_`abcdefghijklmnopqrstuvwxyz{|}~"
 # define TMP_HC_DIR "/tmp/heredoc_"
+# define HDOC_PIPE_MAX 4096
 # define STRIP_HEREDOC "<<-"
 # define PIPE_HEREDOC_PROMPT "pipe_hereodoc> "
 # define HEREDOC_PROMPT "heredoc> "

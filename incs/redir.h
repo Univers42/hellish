@@ -54,7 +54,7 @@ bool		capture_heredoc_from_buff(t_shell *state, t_ast_node *node);
 int			materialize_heredoc(t_shell *state, t_ast_node *node,
 				int *redir_idx);
 bool		contains_quotes(t_ast_node node);
-void		write_heredoc(t_shell *state, int wr_fd, t_hdoc *req);
+void		write_heredoc(t_shell *state, int redir_idx, t_hdoc *req);
 int			ft_mktemp(t_shell *state, t_ast_node *node);
 char		*first_non_tab(char *line);
 void		expand_line(t_shell *state, t_string *full_file, char *line);
