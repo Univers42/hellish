@@ -1,0 +1,37 @@
+# ============================================================================
+# Build hellish from source AND install a whole zoo of other shells, so the
+# cross-shell speed matrix (tests/agnostic_bench.sh) can race them all on one
+# clean, reproducible machine. The host has none of these installed; this image
+# is self-contained on purpose.
+#
+#   docker build -f docker/Dockerfile.agnostic -t hellish:agnostic .
+#   docker run --rm hellish:agnostic               # prints the matrix
+#   docker run --rm -e ROUNDS=7 hellish:agnostic   # more rounds = steadier
+# or simply:  make agnostic-bench
+# ============================================================================
+FROM ubuntu:24.04
+
+# Toolchain + readline (to build hellish) and every competitor shell we can
+# install from the Ubuntu repos: bash, dash, zsh, mksh, ksh (ksh93), yash,
+# busybox (its `ash` applet) and fish. coreutils gives us seq/date/timeout/
+# mktemp that the benchmark harness leans on.
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		build-essential libreadline-dev git ca-certificates coreutils \
+		bash dash zsh mksh ksh yash busybox fish; \
+	rm -rf /var/lib/apt/lists/*
+
+WORKDIR /hellish
+COPY . .
+
+# Optimised, libc-allocator binary -- the same combination `make bench` times,
+# so the numbers here are the real hellish, not the ASan/debug build.
+RUN make fclean >/dev/null 2>&1 || true; \
+	make OPT=1 SAFE=1; \
+	./build/bin/hellish -c 'echo "hellish built OK for the agnostic matrix"'
+
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1
+# Default: print the cross-shell matrix. Override rounds/timeout with -e, e.g.
+#   docker run --rm -e ROUNDS=7 -e TIMEOUT_S=60 hellish:agnostic
+CMD ["bash", "tests/agnostic_bench.sh"]

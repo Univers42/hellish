@@ -264,8 +264,18 @@ make test                       # the whole suite, hellish vs bash --posix
 cd tests && ./tester redir pipe # run specific category files
 cd tests && ./verify_alloc.sh   # build BOTH allocators, prove parity + no leaks
 make bench                      # speed vs bash --posix (geomean verdict)
+make agnostic-bench             # cross-shell speed MATRIX in docker (see below)
 make norm                       # 42 norminette
 ```
+
+`make agnostic-bench` answers the broader question — not "faster than bash?" but
+"faster than *which* shells?". It builds one self-contained docker image with
+hellish plus a zoo of competitors (**bash, dash, zsh, mksh, ksh, yash, busybox
+ash, fish**) and races them all on a portable POSIX workload set, then prints a
+per-workload matrix and a fastest→slowest ranking that places hellish. Each
+shell runs in its own natural mode; bash is the oracle, and any shell whose
+output differs for a workload is excluded from that row (only same-answer runs
+are ranked). Override with `make agnostic-bench ROUNDS=7 TIMEOUT_S=60`.
 
 The test model is a **golden diff against `bash --posix`**: ~2500 cases compare
 stdout, exit status, and any files written, on both allocator backends. The
