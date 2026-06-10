@@ -39,7 +39,7 @@ static char	*fast_path_expand(t_shell *state, t_ast_node *src,
 	v = try_simple_envvar(state, src);
 	if (v)
 	{
-		v = ft_strdup(v);
+		v = word_strndup(v, ft_strlen(v));
 		return (vec_push(args, &v), v);
 	}
 	if (keep_as_one)
