@@ -17,10 +17,13 @@
    prefix (TMP_HC_DIR), the shell PID (so concurrent shell instances do not
    collide), and the ULTIMATE_ARG sentinel plus a per-command integer index
    (heredoc_idx++) so multiple heredocs in one command each get unique
-   files.  The open() call gets both a write-fd (returned to the caller for
-   writing the expanded body) and a read-fd (stored in the t_redir so the
-   child can use it as stdin).  Both fds refer to the same file; unlinking
-   is not done here -- the temp file persists for the life of the command. */
+   files.  ONE O_RDWR fd serves as both the write fd (returned to the
+   caller; write_heredoc rewinds it with lseek instead of closing it) and
+   the read fd stored in the t_redir.  The path is unlinked immediately
+   after the open — anonymous-file semantics: no fname to keep, no
+   should_delete bookkeeping, no teardown unlink, and one open(2) less per
+   heredoc, which adds up when a loop body re-materializes its heredoc on
+   every iteration. */
 int	ft_mktemp(t_shell *state, t_ast_node *node)
 {
 	t_redir		ret;
@@ -28,7 +31,7 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	int			wr_fd;
 	t_string	fname;
 
-	ret = create_redir(true, 0, true);
+	ret = create_redir(true, 0, false);
 	vec_init(&fname);
 	vec_push_str(&fname, TMP_HC_DIR);
 	if (state->pid)
@@ -36,14 +39,13 @@ int	ft_mktemp(t_shell *state, t_ast_node *node)
 	vec_push_str(&fname, ULTIMATE_ARG);
 	temp = ft_itoa(state->heredoc_idx++);
 	vec_push_str(&fname, temp);
-	ret.fname = (char *)fname.ctx;
 	xfree(temp);
-	wr_fd = open(ret.fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	wr_fd = open((char *)fname.ctx, O_RDWR | O_CREAT | O_TRUNC, 0600);
 	if (wr_fd < 0)
-		critical_error_errno_ctx(ret.fname);
-	ret.fd = open(ret.fname, O_RDONLY);
-	if (ret.fd < 0)
-		critical_error_errno_ctx(ret.fname);
+		critical_error_errno_ctx((char *)fname.ctx);
+	unlink((char *)fname.ctx);
+	xfree(fname.ctx);
+	ret.fd = wr_fd;
 	vec_push(&state->redirects, &ret);
 	node->redir_idx = state->redirects.len - 1;
 	node->has_redirect = true;
