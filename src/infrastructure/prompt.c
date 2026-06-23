@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "prompt_private.h"
+#include "ai.h"
 
 /* Map the last open compound token to a short human label for the continuation
    prompt. The parser pushes these token types onto parse_stack as it enters
@@ -88,6 +89,23 @@ void	render_prompt(t_string *ret, size_t frame, int status)
 		xfree(p.venv);
 }
 
+/* Print the cached AI pro-tip as a dim line above the prompt box (once per
+   prompt, interactive + opt_ai only). Reads a local cache -- never the network
+   -- so it stays off the hot path. ponytail: placed above the box, not spliced
+   between box and arrow, to leave the prompt's cursor math untouched. */
+static void	print_ai_tip(t_shell *state)
+{
+	char	*tip;
+
+	if (!state->opt_ai)
+		return ;
+	tip = ai_tip_read();
+	if (!tip)
+		return ;
+	ft_eprintf("  \033[38;5;245mtip: %s\033[0m\n", tip);
+	xfree(tip);
+}
+
 /* Build the primary prompt for an interactive read. The frame counter is
    advanced here so each readline call shows the next blink frame, giving the
    mascot a heartbeat feel even when the user types slowly. The status is
@@ -104,6 +122,8 @@ t_string	prompt_normal(t_shell *state)
 	status = state->last_cmd_st_exe.status;
 	(*anim_frame())++;
 	*anim_status() = status;
+	state->rl.ai = state->opt_ai;
+	print_ai_tip(state);
 	render_prompt(&ret, *anim_frame(), status);
 	return (ret);
 }

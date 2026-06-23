@@ -38,6 +38,8 @@ int	handle_set_o(t_shell *state, t_vec argv)
 	}
 	if (ft_strcmp(av[2], "posix") == 0)
 		return (state->opt_posix = (av[1][0] == '-'), 0);
+	if (ft_strcmp(av[2], "ai") == 0)
+		return (state->opt_ai = (av[1][0] == '-'), 0);
 	return (set_long_option(state, av[1][0], av[2]));
 }
 

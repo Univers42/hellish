@@ -111,6 +111,8 @@ void	free_all_state(t_shell *state)
 	xfree(state->dft_ctx);
 	state->ctx = 0;
 	state->dft_ctx = 0;
+	xfree(state->ai_model);
+	state->ai_model = NULL;
 	xfree(state->rl.buff.ctx);
 	free_path_cache(state);
 	free_redirects(&state->redirects);

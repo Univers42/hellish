@@ -226,6 +226,30 @@ Debug views (compose them freely):
 
 ---
 
+## AI (optional, built in)
+
+Every build includes an optional AI layer, **on by default in interactive
+sessions** (off for scripts / `-c` / pipes). It gives history ghost-text
+(type, press **→** to accept), inline AI completion (**Ctrl-X Ctrl-A**), an
+`ai ask`/`ai do` command, a background pro-tip line, and a model picker.
+Toggle with `set -o ai` / `set +o ai`.
+
+It needs a backend — local or cloud, with automatic fallback:
+
+```sh
+# local, private (llama.cpp in Docker):
+make ai-pull MODEL=<gguf-url> && make ai-up      # CPU; or COMPUTE=hybrid / COMPUTE=gpu
+
+# cloud, fastest + smartest (writes ~/.hellishrc, prompts for your key):
+ai setup groq                                    # free key: console.groq.com
+```
+
+With no backend reachable it degrades silently (only ghost-text stays live).
+Full guide: **[docs/AI.md](docs/AI.md)** · compute trade-offs:
+**[docs/AI-COMPUTE.md](docs/AI-COMPUTE.md)**.
+
+---
+
 ## Make it your login shell
 
 > ⚠️ Only do this if you understand the risk — a broken `$SHELL` makes life

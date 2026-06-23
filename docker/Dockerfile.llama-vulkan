@@ -1,0 +1,71 @@
+# ============================================================================
+# Vulkan variant of the llama.cpp backend for hellish. Same server, same
+# entrypoint, compiled with -DGGML_VULKAN=ON. Vulkan is the VENDOR-AGNOSTIC
+# "any GPU" path: it runs on AMD, Intel and NVIDIA alike via the system's
+# Vulkan driver. The GPU is reached through /dev/dri (Mesa) -- no vendor
+# toolkit (CUDA / ROCm) needed. NVIDIA users wanting max perf can still use
+# Dockerfile.llama-gpu (CUDA).
+#
+# How much of the model lands on the GPU is a RUNTIME choice: the entrypoint
+# forwards "$@", so `--n-gpu-layers N` from the compose `command:` decides
+# GPU (all layers) vs hybrid (some layers) -- the image is the same.
+#
+#   docker compose -f docker-compose.ai.yml --profile gpu build
+#   make ai-up COMPUTE=gpu          # all layers on GPU
+#   make ai-up COMPUTE=hybrid NGL=24
+# ============================================================================
+
+# ---- builder ---------------------------------------------------------------
+# ponytail: Ubuntu 24.04, not Alpine or Debian-bookworm. Bookworm's Vulkan
+# headers (1.3.239) are too old for current llama.cpp (needs >=1.3.272 for
+# VK_EXT_layer_settings); Ubuntu 24.04 ships 1.3.275 with the same package
+# names. Runtime stays Ubuntu 24.04 too for driver parity.
+FROM ubuntu:24.04 AS builder
+
+# glslc (Debian's own package) is the GLSL->SPIR-V compiler ggml-vulkan needs at
+# build time -- find_package(Vulkan) fails with "missing: glslc" without it.
+# libvulkan-dev is the loader headers/lib. (glslang-tools alone is NOT enough --
+# it ships glslangValidator, not glslc.)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential cmake git curl ca-certificates pkg-config \
+        libvulkan-dev glslc glslang-tools spirv-headers spirv-tools \
+        vulkan-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp .
+
+# GGML_VULKAN=ON offloads to any Vulkan-capable GPU. LLAMA_CURL=OFF: models come
+# via make ai-pull. GGML_NATIVE=OFF: portable CPU fallback path (hybrid keeps
+# some layers on the CPU).
+RUN cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DGGML_VULKAN=ON \
+        -DLLAMA_CURL=OFF \
+        -DGGML_NATIVE=OFF \
+        -DBUILD_SHARED_LIBS=OFF \
+    && cmake --build build --target llama-server -j "$(nproc)"
+
+# ---- runtime ---------------------------------------------------------------
+FROM ubuntu:24.04
+
+# libvulkan1 = the Vulkan loader; mesa-vulkan-drivers = AMD/Intel ICDs so the
+# loader can actually find a GPU through /dev/dri. NVIDIA exposes its own ICD
+# via the host driver passthrough. libgomp1 for the CPU layers; curl for the
+# healthcheck. ponytail: Mesa drivers are unverified until a real GPU run --
+# package present is necessary but not sufficient (driver must match the kernel
+# GPU on /dev/dri).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        curl libgomp1 libvulkan1 mesa-vulkan-drivers \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /src/build/bin/llama-server /usr/local/bin/llama-server
+COPY docker/llama-entrypoint.sh /usr/local/bin/llama-entrypoint.sh
+RUN chmod +x /usr/local/bin/llama-entrypoint.sh
+
+VOLUME ["/models"]
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/llama-entrypoint.sh"]

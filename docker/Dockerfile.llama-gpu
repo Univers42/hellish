@@ -1,0 +1,45 @@
+# ============================================================================
+# GPU (CUDA) variant of the llama.cpp backend for hellish. Same server, same
+# entrypoint, but compiled with -DGGML_CUDA=ON and run on NVIDIA's CUDA images.
+# CUDA cannot ride on Alpine/musl -- the CUDA toolkit is glibc-only -- so this
+# one is Ubuntu-based and necessarily larger than Dockerfile.llama. Expected.
+#
+#   make ai-up GPU=1                # requires nvidia-container-toolkit on host
+# ============================================================================
+
+# ---- builder ---------------------------------------------------------------
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04 AS builder
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        build-essential cmake git curl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp .
+
+# GGML_CUDA=ON offloads to the GPU. LLAMA_CURL=OFF: models come via make ai-pull.
+# ponytail: builds for CUDA's default arch list, which is broad but slow to
+# compile. To shrink build time / image, pin your card: -DCMAKE_CUDA_ARCHITECTURES=86
+# (Ampere) etc.
+RUN cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DGGML_CUDA=ON \
+        -DLLAMA_CURL=OFF \
+    && cmake --build build --target llama-server -j "$(nproc)"
+
+# ---- runtime ---------------------------------------------------------------
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /src/build/bin/llama-server /usr/local/bin/llama-server
+COPY docker/llama-entrypoint.sh /usr/local/bin/llama-entrypoint.sh
+RUN chmod +x /usr/local/bin/llama-entrypoint.sh
+
+VOLUME ["/models"]
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/llama-entrypoint.sh"]

@@ -1,0 +1,25 @@
+# ~/.hellishrc — sourced by interactive hellish sessions (the .bashrc analogue).
+#
+# AI is ON by default in interactive mode. Turn it off any time with:
+#     set +o ai
+#
+# ── AI backend ───────────────────────────────────────────────────────────────
+# Out of the box hellish talks to a LOCAL llama.cpp server at 127.0.0.1:8080.
+# Start one (a model lives in a docker volume; pulled once):
+#     make ai-pull MODEL=<https url to a .gguf>
+#     make ai-up                 # CPU (universal). Or: COMPUTE=hybrid / COMPUTE=gpu
+# See docs/AI-COMPUTE.md for the CPU / hybrid / GPU trade-offs.
+#
+# For crazy-fast + high-intelligence answers, point it at a cloud API instead.
+# Easiest — run once and it writes the block below for you:
+#     ai setup groq            # free key from console.groq.com (prompted, hidden)
+#     ai setup openrouter      # Claude / many models via OpenRouter
+#     ai setup openai          # gpt-4o-mini, etc.
+#
+# …or configure by hand (any OpenAI-compatible API). A cloud primary falls back
+# to the local server automatically on error / rate-limit:
+#     export HELLISH_AI_URL=https://api.groq.com/openai/v1/chat/completions
+#     export HELLISH_AI_KEY=gsk_your_key_here
+#     export HELLISH_AI_MODEL=llama-3.3-70b-versatile
+#
+# Full reference: docs/AI.md   (commands, keybindings, env vars, privacy).

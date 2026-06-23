@@ -1,0 +1,48 @@
+# ============================================================================
+# Optional LLM backend for hellish: llama.cpp's OpenAI-compatible llama-server,
+# built from source, CPU-only, on Alpine/musl to keep the image small.
+# Multi-stage: a fat builder (toolchain + sources) and a lean runtime that
+# carries only the binary + the two shared libs it needs.
+#
+#   docker compose -f docker-compose.ai.yml --profile cpu build
+#   make ai-up                      # then talk to it at 127.0.0.1:8080
+# ============================================================================
+
+# ---- builder ---------------------------------------------------------------
+FROM alpine:3.20 AS builder
+
+RUN apk add --no-cache build-base cmake git curl linux-headers
+
+WORKDIR /src
+RUN git clone --depth 1 https://github.com/ggml-org/llama.cpp .
+
+# CPU-only build. LLAMA_CURL=OFF: we download models out-of-band (make ai-pull),
+# so the server needs no libcurl. GGML_NATIVE=OFF: don't bake in -march=native,
+# the build host's CPU may have features the run host lacks (portable image).
+# ponytail: musl static-stdlib + no-native is the safe default. If you run on a
+# uniform fleet and want the last few %, add -DGGML_NATIVE=ON (rebuild per CPU);
+# musl-specific flags here are untested until the first real build -- if cmake
+# trips on a missing intrinsic, drop -DGGML_NATIVE=OFF reasoning and pin -mavx2.
+RUN cmake -B build \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DLLAMA_CURL=OFF \
+        -DGGML_NATIVE=OFF \
+        -DBUILD_SHARED_LIBS=OFF \
+    && cmake --build build --target llama-server -j "$(nproc)"
+
+# ---- runtime ---------------------------------------------------------------
+FROM alpine:3.20
+
+# llama-server links libgomp (OpenMP) and libstdc++ at runtime; musl libc is
+# already in the base. That is the whole runtime footprint.
+RUN apk add --no-cache libgomp libstdc++ curl
+
+COPY --from=builder /src/build/bin/llama-server /usr/local/bin/llama-server
+COPY docker/llama-entrypoint.sh /usr/local/bin/llama-entrypoint.sh
+RUN chmod +x /usr/local/bin/llama-entrypoint.sh
+
+# Models live on a mounted volume; populate with `make ai-pull MODEL=<url>`.
+VOLUME ["/models"]
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/llama-entrypoint.sh"]

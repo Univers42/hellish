@@ -16,6 +16,7 @@
 #include "sh_input.h"
 #include "job_control.h"
 #include "update.h"
+#include "ai.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <locale.h>
@@ -104,6 +105,7 @@ int	main(int argc, char **argv, char **envp)
 	setlocale(LC_ALL, "");
 	on(&state, argv, envp);
 	source_hellishrc(&state);
+	ai_sync_env(&state);
 	show_welcome(&state);
 	maybe_spawn_update_check(&state);
 	repl_shell(&state);
@@ -128,6 +130,7 @@ static void	repl_shell(t_shell *state)
 		state->input.elem_size = 1;
 		get_g_sig()->should_unwind = 0;
 		job_notify(state);
+		ai_prompt_prep(state);
 		parse_and_execute_input(state);
 		run_pending_traps(state);
 		free_redirects(&state->redirects);

@@ -51,6 +51,8 @@ static void	mode_input(char **argv, t_shell *state)
 		init_stdin_notty(state);
 	else
 		init_history(state);
+	if (state->metinp == INP_RL && !state->opt_posix)
+		state->opt_ai = true;
 }
 
 /* Zero-initialise every table that survives across commands: redirect list,

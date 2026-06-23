@@ -250,8 +250,19 @@ my_shell:
 	sudo install -m 755 build/bin/hellish /usr/bin/hellish
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
+	@if [ ! -f $$HOME/.hellishrc ]; then \
+		cp docs/hellishrc.example $$HOME/.hellishrc && \
+		echo "Wrote a starter ~/.hellishrc (AI on by default; see docs/AI.md)."; \
+	else \
+		echo "Kept your existing ~/.hellishrc (see docs/hellishrc.example for AI tips)."; \
+	fi
+	@echo ""
+	@echo "AI is built in and ON in interactive mode. To use it, give it a backend:"
+	@echo "  • local model:  make ai-pull MODEL=<gguf-url> && make ai-up   (CPU; or COMPUTE=gpu)"
+	@echo "  • cloud (fast): run 'ai setup groq'  (free key at console.groq.com)"
+	@echo "  Turn AI off with 'set +o ai'. Full guide: docs/AI.md"
 	@echo "Done. Log out and log back in to use hellish as your default shell."
-	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
+	@echo "if impatient, you can use 'exec /usr/bin/hellish -l'"
 
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
@@ -299,3 +310,74 @@ cd-posix-test: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench
+
+# Optional LLM backend (llama.cpp's OpenAI-compatible server). Lives in its own
+# compose file (docker-compose.ai.yml) so the plain docker workflow is untouched.
+# The shell talks to it at 127.0.0.1:8080. CPU build is Alpine/musl (small);
+# GPU build is CUDA/Ubuntu. See docker/Dockerfile.llama*. `make ai-pull` first.
+AI_COMPOSE := docker compose -f docker-compose.ai.yml
+
+ai-build:
+	$(AI_COMPOSE) --profile cpu build
+
+# Bring up the right backend. COMPUTE picks how the LOCAL model runs:
+#   cpu    (default) -> profile cpu,    service llama         (no GPU; universal)
+#   hybrid           -> profile hybrid, service llama-vulkan  (NGL layers on GPU)
+#   gpu              -> profile gpu,     service llama-vulkan  (all layers, NGL=999)
+#   nvidia           -> profile gpu,     service llama-gpu     (CUDA; NVIDIA only)
+# NGL= overrides the offload layer count (hybrid defaults to 20, gpu to 999).
+# Vulkan covers AMD/Intel/NVIDIA via /dev/dri; see docker/AI-COMPUTE.md.
+ai-up:
+	@mf="$(MODEL)"; \
+	case "$(COMPUTE)" in \
+	  hybrid) ngl="$${NGL:-$(NGL)}"; ngl="$${ngl:-20}"; \
+	    vg=$$(getent group video | cut -d: -f3); rg=$$(getent group render | cut -d: -f3); \
+	    echo "ai-up: hybrid (NGL=$$ngl, video=$$vg render=$$rg) model=$${mf:-<first .gguf>} -- some layers on GPU, rest on CPU"; \
+	    MODEL_FILE="$$mf" NGL="$$ngl" VIDEO_GID="$$vg" RENDER_GID="$$rg" $(AI_COMPOSE) --profile hybrid up -d llama-vulkan; ;; \
+	  gpu) ngl="$${NGL:-$(NGL)}"; ngl="$${ngl:-999}"; \
+	    vg=$$(getent group video | cut -d: -f3); rg=$$(getent group render | cut -d: -f3); \
+	    echo "ai-up: gpu (NGL=$$ngl, video=$$vg render=$$rg) model=$${mf:-<first .gguf>} -- all layers on GPU"; \
+	    MODEL_FILE="$$mf" NGL="$$ngl" VIDEO_GID="$$vg" RENDER_GID="$$rg" $(AI_COMPOSE) --profile gpu up -d llama-vulkan; ;; \
+	  nvidia) echo "ai-up: nvidia/CUDA model=$${mf:-<first .gguf>}"; \
+	    MODEL_FILE="$$mf" $(AI_COMPOSE) --profile gpu up -d llama-gpu; ;; \
+	  cpu|"") echo "ai-up: cpu model=$${mf:-<first .gguf>} -- universal, no drivers"; \
+	    MODEL_FILE="$$mf" $(AI_COMPOSE) --profile cpu up -d llama; ;; \
+	  *) echo "ai-up: unknown COMPUTE=$(COMPUTE) (use cpu|hybrid|gpu|nvidia)"; exit 2; ;; \
+	esac
+
+# Tear down every profile so no backend lingers regardless of COMPUTE.
+ai-down:
+	$(AI_COMPOSE) --profile cpu --profile hybrid --profile gpu down
+
+# Download a .gguf into the model volume, KEEPING its real filename so many
+# models coexist on disk. NAME= overrides the saved name (use it for URLs with
+# query strings). Then pick one with `make ai-up MODEL=<file>`; see the list
+# with `make ai-models`; delete one with `make ai-rm NAME=<file>`. The volume
+# lives under Docker's data root (/mnt/storage/docker on this machine -> the
+# 1 TB SSD), so models never touch the small disk.
+ai-pull:
+	@if [ -z "$(MODEL)" ]; then \
+		echo "usage: make ai-pull MODEL=<https url to a .gguf> [NAME=file.gguf]"; exit 2; \
+	fi
+	docker run --rm -v hellish-ai_llama-models:/models alpine:3.20 \
+		sh -c 'apk add --no-cache curl && curl -fL -o "/models/$(if $(NAME),$(NAME),$(notdir $(MODEL)))" "$(MODEL)"'
+	@echo "pulled: $(if $(NAME),$(NAME),$(notdir $(MODEL)))  ->  serve with:  make ai-up MODEL=$(if $(NAME),$(NAME),$(notdir $(MODEL)))"
+
+# List / remove the downloaded models (all on the 1 TB volume).
+ai-models:
+	@docker run --rm -v hellish-ai_llama-models:/models alpine:3.20 \
+		sh -c 'ls -lh /models/*.gguf 2>/dev/null || echo "(no models yet -- make ai-pull MODEL=<url>)"'
+
+ai-rm:
+	@if [ -z "$(NAME)" ]; then echo "usage: make ai-rm NAME=<file.gguf>"; exit 2; fi
+	docker run --rm -v hellish-ai_llama-models:/models alpine:3.20 rm -f "/models/$(NAME)"
+
+ai-logs:
+	$(AI_COMPOSE) logs -f
+
+# Drop into a hellish session inside hellish-net, pointed at the llama service
+# (http://llama:8080). Bring the backend up first with `make ai-up`.
+ai-shell:
+	$(AI_COMPOSE) --profile shell run --rm shell
+
+.PHONY: ai-build ai-up ai-down ai-pull ai-models ai-rm ai-logs ai-shell

@@ -35,6 +35,7 @@ int	list_set_options(t_shell *state)
 	print_set_opt("xtrace", state->opt_xtrace);
 	print_set_opt("pipefail", state->opt_pipefail);
 	print_set_opt("posix", state->opt_posix);
+	print_set_opt("ai", state->opt_ai);
 	print_set_opt("emacs", state->edit_mode == 1);
 	print_set_opt("vi", state->edit_mode == 0);
 	return (0);

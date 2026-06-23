@@ -31,6 +31,7 @@ typedef struct s_rl
 	size_t		cursor;
 	int			edit_mode;
 	bool		no_compact;
+	int			ai;
 }	t_rl;
 
 // Forward declaration to avoid circular dependency
@@ -43,7 +44,7 @@ int			get_more_input_readline(t_rl *l, char *prompt);
 void		update_ctx(t_shell *state);
 int			get_more_input_notty(t_shell *state);
 
-void		bg_readline(int outfd, char *prompt, int edit_mode);
+void		bg_readline(int outfd, char *prompt, int edit_mode, int ai);
 int			attach_input_readline(t_rl *l, int pp[2], int pid);
 t_string	prompt_normal(t_shell *state);
 t_string	prompt_more_input(struct s_parser *parser);

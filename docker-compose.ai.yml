@@ -1,0 +1,126 @@
+# Optional LLM backend for hellish: llama.cpp's OpenAI-compatible server.
+# Kept in a SEPARATE compose file so the plain `docker compose ...` workflow
+# (docker-compose.yml) stays untouched. Two interchangeable backends behind
+# profiles -- pick one:
+#
+#   docker compose -f docker-compose.ai.yml --profile cpu build
+#   make ai-up                  # auto-detects GPU, else CPU
+#   make ai-pull MODEL=<url>    # put a .gguf in the volume first
+#
+# The shell reaches it at 127.0.0.1:8080 on the host, or http://llama:8080
+# from inside hellish-net (see the `shell` service / `make ai-shell`).
+name: hellish-ai
+
+services:
+  # CPU backend (Alpine/musl, small). profile: cpu
+  llama:
+    profiles: ["cpu"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama
+    image: hellish:llama
+    environment:
+      MODEL_FILE: "${MODEL_FILE:-}"
+    volumes:
+      - llama-models:/models
+    networks:
+      - hellish-net
+    ports:
+      # Local-only: do NOT expose the model server to the LAN.
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # GPU backend (CUDA/Ubuntu, large). profile: gpu
+  llama-gpu:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-gpu
+    image: hellish:llama-gpu
+    environment:
+      MODEL_FILE: "${MODEL_FILE:-}"
+    volumes:
+      - llama-models:/models
+    networks:
+      - hellish-net
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # Vulkan backend (Debian, vendor-agnostic GPU via /dev/dri). profiles: gpu, hybrid.
+  # Same image for both modes: `command:` sets --n-gpu-layers (entrypoint
+  # forwards "$@"). NGL=999 -> all layers on GPU (gpu); a smaller NGL -> hybrid
+  # (rest on CPU). ponytail: device passthrough/offload only verifiable on a host
+  # with a real GPU; without /dev/dri it silently falls back to CPU.
+  llama-vulkan:
+    profiles: ["gpu", "hybrid"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.llama-vulkan
+    image: hellish:llama-vulkan
+    command: ["--n-gpu-layers", "${NGL:-999}"]
+    environment:
+      MODEL_FILE: "${MODEL_FILE:-}"
+    devices:
+      - "/dev/dri:/dev/dri"
+    # Numeric GIDs of the host's video/render groups that own /dev/dri/* -- the
+    # container's /etc/group has no such names, so names fail; `make ai-up`
+    # fills these from the host (getent). Defaults match a typical Ubuntu box.
+    group_add:
+      - "${VIDEO_GID:-44}"
+      - "${RENDER_GID:-993}"
+    volumes:
+      - llama-models:/models
+    networks:
+      - hellish-net
+    ports:
+      - "127.0.0.1:8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Minimal hellish container that joins the AI network so it can reach the
+  # llama service by name (http://llama:8080). Used by `make ai-shell`.
+  # ponytail: reuses the existing build-from-source Dockerfile (BASE alpine);
+  # no dedicated image -- the AI host is just env vars pointing at `llama`.
+  shell:
+    profiles: ["shell"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "alpine:3.20"
+    image: hellish:alpine
+    environment:
+      HELLISH_AI_HOST: "llama"
+      HELLISH_AI_PORT: "8080"
+    networks:
+      - hellish-net
+    tty: true
+    stdin_open: true
+
+volumes:
+  llama-models:
+
+networks:
+  hellish-net:
