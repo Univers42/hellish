@@ -76,6 +76,15 @@ Ubuntu/Arch), `make agnostic-bench` (race hellish vs bash/dash/zsh/ksh/… in on
 image; `ROUNDS=` / `TIMEOUT_S=` overrides), `make cd-zsh-test` / `make cd-posix-test`
 (the zsh-style two-arg `cd` extension, which the bash suite can't cover).
 
+Interactive (real-pty) regressions the golden-diff suite can't reach:
+`make hist-test` (multi-line history recall) and `make ai-test` (AI provider
+shape + tuned completion bodies via a fake LLM server, REPL latency on a
+blackholed backend, prompt-arrow duplication + live header reflow on resize,
+ghost safety against multi-line history entries, and the empty-prompt
+next-command prediction incl. the common-idiom fallback). `ai-test` needs only
+the stdlib; the display/prediction checks additionally use `pyte` and are
+skipped with a notice if it is absent.
+
 ## Architecture
 
 One staged pipeline, one god struct. Each stage is a module under `src/` (most
@@ -133,6 +142,7 @@ before operand detection, so `hellish --posix -c '…'` works.
 | `builtins/` | ~45 builtins behind an O(1) hash dispatch (`builtin_func`). |
 | `environment/` | Canonical variable store (`t_vec_env` + name→index hash), `$`-expansion, `envp[]` for execve. Replaces raw `environ`. |
 | `alias/`, `completion/`, `editing/`, `job_control/`, `helpers/` | Cross-cutting: alias table, readline TAB-completion, vi/emacs mode shim, background-job table, low-level toolbox (teardown paths, word-slab allocator). |
+| `ai/` | Optional LLM assist (interactive-only, `opt_ai`). `ai_request` pairs a task-tuned system prompt + decoding params (`ai_provider.c`/`ai_body.c`: completions get max_tokens 64, temp 0, stop `\n`, lite context) with shell context incl. `$HELLISH_LAST_STATUS` (`ai_context.c`), dispatching by provider (`ai_provider()`): OpenAI-compatible (Bearer) or Anthropic Messages (`x-api-key`, top-level `system`, `"text"` reply). Switch with `ai setup local\|openai\|anthropic\|groq\|openrouter`. **All network stays off the REPL parent** — the pro-tip worker double-forks and never probes; ghost suggestions fork too. **Prediction is local-first**: the empty prompt ghosts the most frequent historical successor of the last command (`rl_predict.c`, zero latency); the LLM ghost stays opt-in (`HELLISH_AI_SUGGEST`). |
 
 ### Expander order (load-bearing, `src/expander/`)
 
@@ -230,3 +240,21 @@ git/cp on the fixture misbehaves.
 - `arith` errors are **destructive in non-interactive mode**: `arith_fail` calls
   `exit_clean(127)` unless `metinp == INP_RL`. `glob/` has two match engines but
   only the directory-walker (`matches_pattern`) is live.
+- **AI must never block the REPL**: `SO_*TIMEO` does *not* bound `connect()`
+  (`ai_net.c` uses a non-blocking connect + `poll`), and `ai_tip_spawn` never
+  probes the network in the parent — it just double-forks a throttled worker.
+  Reintroducing a synchronous `ai_reachable()` on the prompt path brings back the
+  intermittent multi-second `clear` stall. Guarded by `make ai-test`.
+- **NEVER install a custom `rl_redisplay_function`**: it silently degrades
+  readline's multi-row rendering — recalled multi-line history displays as `^J`
+  soup and resize redraws stack the arrow line. The ghost text instead uses a
+  `rl_getc_function` wrapper (erase before every key) + the idle event hook
+  (paint on settle), keeping the DEFAULT redisplay (`rl_ai.c`/`rl_ghost.c`).
+- **AI mode owns SIGWINCH** (`rl_resize.c` + `rl_header.c`): the prompt header's
+  dash-fill is an `\x1e` marker resolved by the readline child at the live
+  width, and re-rendered on zoom from the idle hook (with the event hook active
+  readline waits in `select()`, so `rl_signal_event_hook` alone never fires).
+  Background AI work must never fight the user: the tip worker defers when
+  loadavg is high (`ai_guard.c`), caps its request at 8s, and the llama compose
+  services run at low `cpu_shares`. Re-check `make ai-test` after touching any
+  of this.
