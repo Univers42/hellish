@@ -16,30 +16,22 @@
 void	setup_completion(void);
 void	setup_vi_mode(void);
 void	setup_emacs_mode(void);
-int		rl_ai_complete(int count, int key);
 void	setup_ai_input(void);
 
-/* Print every line of `prompt` except the last to rl_outstream, stripping the
-   \001/\002 width markers (they must not reach the terminal). Returns the final
-   line. readline only ever sees a single-line prompt, which avoids the cursor
-   drift and heavy full-line redraws that a multi-line prompt (embedded \n)
-   causes during ↑/↓ history navigation. */
+/* Hand every line of `prompt` except the last to the header renderer (which
+   substitutes the elastic fill for the current width and keeps a copy for
+   live reflow on resize). Returns the final line. readline only ever sees a
+   single-line prompt, which avoids the cursor drift and heavy full-line
+   redraws that a multi-line prompt (embedded \n) causes during ↑/↓ history
+   navigation. */
 static char	*split_prompt(char *prompt)
 {
 	char	*nl;
-	size_t	i;
 
 	nl = ft_strrchr(prompt, '\n');
 	if (!nl)
 		return (prompt);
-	i = 0;
-	while (prompt + i <= nl)
-	{
-		if (prompt[i] != '\001' && prompt[i] != '\002')
-			fputc((unsigned char)prompt[i], rl_outstream);
-		i++;
-	}
-	fflush(rl_outstream);
+	rl_header_print(prompt, (size_t)(nl - prompt) + 1);
 	return (nl + 1);
 }
 
@@ -76,7 +68,6 @@ void	bg_readline(int outfd, char *prompt, int edit_mode, int ai)
 	rl_instream = stdin;
 	rl_outstream = stderr;
 	setup_completion();
-	rl_bind_keyseq("\\C-x\\C-a", rl_ai_complete);
 	if (edit_mode == 0)
 		setup_vi_mode();
 	else

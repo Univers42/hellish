@@ -30,6 +30,8 @@
 # include "helpers.h"
 # include "prompt_private.h"
 
+void	rl_header_print(const char *prompt, size_t len);
+int		rl_header_reflow(void);
 int		return_last_line(t_shell *state, t_string *ret);
 int		return_new_line(t_shell *state, t_string *ret);
 int		buff_readline(t_shell *state, t_string *ret, char *prompt);

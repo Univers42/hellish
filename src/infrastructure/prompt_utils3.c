@@ -26,34 +26,28 @@
 #define C_ERR  "\033[1m\033[38;5;203m"
 #define C_RST  "\033[0m"
 
-/* Push `count` horizontal rule characters (the box-drawing ─) as a spacer in
-   the frame colour, with a leading and trailing plain space. Used to fill the
-   gap between the left segment (user/cwd/branch) and the right clock. */
-static void	push_fill(t_string *ret, int count)
+/* Push the elastic spacer between the left segment (user/cwd/branch) and the
+   right clock: a single \x1e marker in the frame colour. The readline child
+   substitutes the actual box-drawing ─ run for the CURRENT terminal width when
+   it prints the header (rl_header.c) -- and re-substitutes on every resize, so
+   the header reflows live on zoom instead of wrapping or falling short. */
+static void	push_fill(t_string *ret)
 {
 	vec_push_str(ret, " ");
 	vec_push_ansi(ret, C_BOX);
-	while (count-- > 0)
-		vec_push_str(ret, G_H);
+	vec_push_str(ret, "\x1e");
 	vec_push_ansi(ret, C_RST);
 	vec_push_str(ret, " ");
 }
 
 /* Close the top row with the clock and then emit the second row (the arrow).
-   The fill width is computed as: terminal columns − visible content already
-   accumulated − clock width − 2 border chars. A minimum of 3 is enforced so
-   the box never collapses to zero on very narrow terminals. The arrow colour
-   is green (C_OK) on exit 0, red (C_ERR) otherwise. */
+   The fill between content and clock is an elastic marker (see push_fill), so
+   its width is decided by the readline child at print/resize time, not here.
+   The arrow colour is green (C_OK) on exit 0, red (C_ERR) otherwise. */
 void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 {
-	int	right_w;
-
 	get_timebuf(p->time_buf, sizeof(p->time_buf));
-	right_w = (int)ft_strlen(p->time_buf) + 3;
-	p->pad = p->cols - p->vis_w - right_w - 2;
-	if (p->pad < 3)
-		p->pad = 3;
-	push_fill(ret, p->pad - 2);
+	push_fill(ret);
 	vec_push_ansi(ret, C_TIME);
 	vec_push_str(ret, p->time_buf);
 	vec_push_ansi(ret, C_RST);
