@@ -56,11 +56,15 @@ static int	in_path(const char *word)
 }
 
 /* 1 if the first word of `s` is a runnable command (a builtin or in $PATH), so
-   we never ghost a typo like `cleasr` back at the user. */
+   we never ghost a typo like `cleasr` back at the user. Runs per candidate per
+   redisplay, and consecutive candidates usually share a first word, so the
+   last verdict is memoized -- one $PATH access() walk instead of dozens. */
 int	cmd_resolvable(const char *s)
 {
-	char	word[256];
-	int		i;
+	static char	memo[256];
+	static int	verdict;
+	char		word[256];
+	int			i;
 
 	i = 0;
 	while (s[i] && s[i] != ' ' && i < 255)
@@ -71,7 +75,11 @@ int	cmd_resolvable(const char *s)
 	word[i] = '\0';
 	if (!word[0])
 		return (0);
-	return (builtin_func(word) != NULL || in_path(word));
+	if (memo[0] && !ft_strcmp(word, memo))
+		return (verdict);
+	ft_strlcpy(memo, word, sizeof(memo));
+	verdict = (builtin_func(word) != NULL || in_path(word));
+	return (verdict);
 }
 
 /* The AI suggestion's suffix, if one has landed and still extends `line`
@@ -90,17 +98,23 @@ const char	*ai_ghost_get(const char *line)
 	return (NULL);
 }
 
-/* readline idle hook: drive the async AI suggestion without ever blocking. On
-   a line change, cancel + remember it; while a worker runs, poll and repaint
-   when it lands; once the line settles (and history has nothing), fire one
-   worker. History ghost-text takes priority, so AI only fills the gaps. The
-   live AI fetch is OPT-IN ($HELLISH_AI_SUGGEST) because on a CPU backend it is
-   slow and its inference bursts fight your real commands; enable it once the
-   model runs on a GPU (or a fast cloud), where suggestions are near-instant. */
+/* readline idle hook (~100ms): service resizes, paint the dim ghost once the
+   line settles, and drive the async AI suggestion without ever blocking. On a
+   line change, cancel + remember it (the getc wrapper already wiped the old
+   paint); while a worker runs, poll and repaint when it lands; once the line
+   settles (and history has nothing), fire one worker. History ghost-text takes
+   priority, so AI only fills the gaps. The live AI fetch is OPT-IN
+   ($HELLISH_AI_SUGGEST): on a CPU backend its inference bursts fight your real
+   commands; enable it on a GPU or fast cloud, where it is near-instant. */
 int	rl_ai_event(void)
 {
 	t_aig	*a;
 
+	if (rl_resize_fixup())
+	{
+		ghost_erase_pending();
+		rl_forced_update_display();
+	}
 	a = aig();
 	if (ft_strncmp(a->line, rl_line_buffer, sizeof(a->line)) != 0)
 	{
@@ -112,11 +126,10 @@ int	rl_ai_event(void)
 	{
 		aig_poll(a);
 		if (a->sug[0])
-			ghost_redisplay();
-		return (0);
+			ghost_erase_pending();
 	}
-	if (getenv("HELLISH_AI_SUGGEST") && !a->fired && rl_line_buffer[0]
+	else if (getenv("HELLISH_AI_SUGGEST") && !a->fired && rl_line_buffer[0]
 		&& ft_strlen(rl_line_buffer) >= 2 && !ai_history_has(rl_line_buffer))
 		aig_fire(a, rl_line_buffer);
-	return (0);
+	return (ghost_draw(), 0);
 }

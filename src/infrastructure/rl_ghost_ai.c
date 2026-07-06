@@ -79,12 +79,14 @@ void	aig_fire(t_aig *a, const char *line)
 	a->fired = 1;
 }
 
-/* Non-blocking check for the worker's result; store it (newline-trimmed) when
-   it lands. EAGAIN (-1) just means "not ready yet". */
+/* Non-blocking check for the worker's result; store it when it lands, cut at
+   the FIRST newline -- a ghost is one command line, and printing a raw \n as a
+   suffix desyncs the cursor and stacks copies. EAGAIN (-1) = not ready yet. */
 void	aig_poll(t_aig *a)
 {
 	char	buf[1024];
 	ssize_t	r;
+	char	*nl;
 
 	if (a->fd < 0)
 		return ;
@@ -95,9 +97,13 @@ void	aig_poll(t_aig *a)
 	a->fd = -1;
 	waitpid(a->pid, NULL, 0);
 	a->pid = 0;
-	while (r > 0 && (buf[r - 1] == '\n' || buf[r - 1] == ' '))
-		r--;
 	buf[r] = '\0';
+	nl = ft_strchr(buf, '\n');
+	if (nl)
+		*nl = '\0';
+	r = (ssize_t)ft_strlen(buf);
+	while (r > 0 && buf[r - 1] == ' ')
+		buf[--r] = '\0';
 	if (r > 0)
 		ft_strlcpy(a->sug, buf, sizeof(a->sug));
 }

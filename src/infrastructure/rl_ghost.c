@@ -14,6 +14,16 @@
 #include "rl_ghost_ai.h"
 #include <readline/history.h>
 
+/* 1 if `s` is safe to ghost inline: extends the prefix (longer), short enough,
+   SINGLE-LINE (a multi-line entry printed as a suffix emits raw newlines that
+   desync the cursor and stack copies of the line -- the paste-corruption bug),
+   and resolves to a real command so we never ghost a typo back. */
+static int	ghostable(const char *s, size_t len)
+{
+	return (ft_strlen(s) > len && ft_strlen(s) <= 256
+		&& !ft_strchr(s, '\n') && cmd_resolvable(s));
+}
+
 /* 1 if some history entry begins with `line` AND is a real, runnable command
    -- so a settled line with only a typo in history still triggers the smart AI
    suggestion instead of ghosting the typo back. */
@@ -31,26 +41,35 @@ int	ai_history_has(const char *line)
 	while (i >= 0)
 	{
 		if (h[i] && !ft_strncmp(h[i]->line, line, len)
-			&& ft_strlen(h[i]->line) > len && ft_strlen(h[i]->line) <= 256
-			&& cmd_resolvable(h[i]->line))
+			&& ghostable(h[i]->line, len))
 			return (1);
 		i--;
 	}
 	return (0);
 }
 
-/* The dim suggestion's suffix. A ready AI suggestion (smart) wins; else the
-   most recent matching history entry whose command resolves -- never a typo
-   like `cleasr`. Borrowed; do not free. NULL at non-end-of-line. */
-static const char	*ghost_suffix(void)
+/* Whether ghost bytes are currently painted after the cursor. Set by
+   ghost_draw, cleared by ghost_erase_pending (from the getc wrapper, so the
+   screen is clean BEFORE readline processes any key and repaints). */
+static int	g_ghost_on;
+
+/* The dim suggestion's suffix. On an empty line, the next-command prediction
+   (what usually follows the command that just ran). Otherwise a ready AI
+   suggestion (smart) wins; else the most recent matching history entry whose
+   command resolves -- never a typo like `cleasr`. Borrowed; do not free.
+   NULL at non-end-of-line. ponytail: prefix ghost stays most-recent-match
+   (fish/zsh behavior); add frequency weighting only if it ever feels wrong. */
+const char	*ghost_suffix(void)
 {
 	HIST_ENTRY	**h;
 	const char	*ai;
 	int			i;
 	size_t		len;
 
-	if (rl_point != rl_end || !rl_line_buffer || !*rl_line_buffer)
+	if (rl_point != rl_end || !rl_line_buffer)
 		return (NULL);
+	if (!*rl_line_buffer)
+		return (ghost_predict_empty());
 	ai = ai_ghost_get(rl_line_buffer);
 	if (ai)
 		return (ai);
@@ -60,52 +79,58 @@ static const char	*ghost_suffix(void)
 	while (h && i >= 0)
 	{
 		if (h[i] && !ft_strncmp(h[i]->line, rl_line_buffer, len)
-			&& ft_strlen(h[i]->line) > len && ft_strlen(h[i]->line) <= 256
-			&& cmd_resolvable(h[i]->line))
+			&& ghostable(h[i]->line, len))
 			return (h[i]->line + len);
 		i--;
 	}
 	return (NULL);
 }
 
-/* Custom redisplay: draw the real line, erase any stale suggestion to end of
-   line, then draw the current dim suffix and step the cursor back. The erase
-   (\033[K) every frame is what stops old suggestions from piling up as you
-   type. Only acts at end-of-line, so it never eats typed text; truncates the
-   suffix to what fits on the row so a long history entry can't wrap and break
-   the cursor math. ponytail: ASCII columns (rl_point past the 4-col prompt). */
-void	ghost_redisplay(void)
+/* Paint the dim suggestion after the cursor and step back, leaving readline's
+   cursor untouched. Runs from the idle hook (never from a redisplay override:
+   replacing rl_redisplay_function makes readline drop its multi-row rendering,
+   so recalled multi-line history shows as `^J` soup). Truncated to the row and
+   to the first newline so the cursor math can never break. Idempotent while
+   already painted. 1 if a ghost is on screen. */
+int	ghost_draw(void)
 {
 	const char	*g;
-	int			rows;
+	const char	*nl;
 	int			cols;
 	int			n;
 
-	rl_redisplay();
+	if (g_ghost_on)
+		return (1);
 	if (rl_point != rl_end)
-		return ;
-	fprintf(rl_outstream, "\033[K");
+		return (0);
 	g = ghost_suffix();
-	if (g && *g)
-	{
-		rl_get_screen_size(&rows, &cols);
-		n = (int)ft_strlen(g);
-		if (n > cols - rl_point - 5)
-			n = cols - rl_point - 5;
-		if (n > 0)
-			fprintf(rl_outstream, "\033[90m%.*s\033[0m\033[%dD", n, g, n);
-	}
+	if (!g || !*g)
+		return (0);
+	rl_get_screen_size(&n, &cols);
+	n = (int)ft_strlen(g);
+	nl = ft_strchr(g, '\n');
+	if (nl)
+		n = (int)(nl - g);
+	if (n > cols - rl_point - 5)
+		n = cols - rl_point - 5;
+	if (n <= 0)
+		return (0);
+	fprintf(rl_outstream, "\033[90m%.*s\033[0m\033[%dD", n, g, n);
 	fflush(rl_outstream);
+	g_ghost_on = 1;
+	return (1);
 }
 
-/* Right-arrow: accept the whole suggestion when one is showing, otherwise the
-   normal forward-char. */
-int	rl_ghost_accept(int count, int key)
+/* Erase a painted ghost (cursor-to-EOL wipes exactly the ghost bytes, since
+   they sit after end-of-line). Called from the getc wrapper on every key, so
+   readline always repaints over a clean row -- and an abandoned suggestion
+   never survives into scrollback on Enter. 1 if something was erased. */
+int	ghost_erase_pending(void)
 {
-	const char	*g;
-
-	g = ghost_suffix();
-	if (g && *g)
-		return (rl_insert_text((char *)g), 0);
-	return (rl_forward_char(count, key));
+	if (!g_ghost_on)
+		return (0);
+	g_ghost_on = 0;
+	fputs("\033[K", rl_outstream);
+	fflush(rl_outstream);
+	return (1);
 }

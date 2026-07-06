@@ -35,9 +35,15 @@ void		aig_poll(t_aig *a);
 const char	*ai_ghost_get(const char *line);
 int			rl_ai_event(void);
 int			ai_history_has(const char *line);
-void		ghost_redisplay(void);
+const char	*ghost_suffix(void);
+int			ghost_draw(void);
+int			ghost_erase_pending(void);
 int			rl_ghost_accept(int count, int key);
 void		setup_ai_input(void);
 int			cmd_resolvable(const char *s);
+void		rl_resize_setup(void);
+int			rl_resize_fixup(void);
+const char	*ghost_predict_empty(void);
+int			rl_ai_complete(int count, int key);
 
 #endif
