@@ -296,6 +296,14 @@ cd-posix-test: all
 	@chmod +x $(TEST_DIR)/cd_posix_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cd_posix_compare.sh
 
+# Interactive multi-line history regression test (real pty): entries keep
+# their multi-line text in `history` and the file, and up-arrow recall of
+# loops/here-docs re-executes with bash-cmdhist semantics instead of the
+# broken space-joined flattening. See tests/hist_multiline_test.py.
+hist-test: all
+	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench
+	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
+	hist-test
