@@ -133,6 +133,7 @@ void		tokenize_literal(t_tokenizer_ctx ctx);
 void		tokenize_ast_token(t_vec_glob *ret, t_token t);
 int			process_dir(t_dir_matcher matcher);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
+bool		handle_dot_segment(t_vec *a, t_vec_glob g, char *p, size_t off);
 void		free_str_elem(void *el);
 char		*get_curr_path(char *path);
 bool		finished_pattern(t_vec_glob patt, size_t offset);
