@@ -50,42 +50,64 @@ BOLD="\e[1m"; GREEN="\e[0;32m"; RED="\e[0;31m"; YEL="\e[0;33m"; GREY="\e[38;5;24
 declare -A C_LOGSUM C_N C_WIN C_TIE C_LOSS C_HMS C_BMS
 ALL_RATIOS=()
 
-# best_us <out_file> <shell-cmd...> : run ROUNDS times, echo the MIN elapsed
-# MICROSECONDS (min = least OS-contended run; µs avoids the ±1ms quantization
-# that makes 1-3ms scripts swing wildly between runs).
-best_us() {
-	local out="$1"; shift
-	local best=999999999 r s e us
-	for ((r=0; r<ROUNDS; r++)); do
-		s=$(date +%s%N)
-		timeout "$TIMEOUT_S" "$@" >"$out" 2>/dev/null
-		e=$(date +%s%N)
-		us=$(( (e - s) / 1000 ))
-		(( us < best )) && best=$us
-	done
-	echo "$best"
+# Pin both shells to one core so they compete against the same clock and
+# scheduler state (frequency scaling and core migration otherwise add
+# 5-15% noise between the two measurement phases). NOPIN=1 disables.
+PIN=()
+if [[ -z "${NOPIN:-}" ]] && command -v taskset >/dev/null 2>&1; then
+	PIN=(taskset -c 0)
+fi
+
+# Artifact: every timed number lands here so a verdict is reproducible and
+# quotable ("measured, not claimed").
+ARTIFACT="${ARTIFACT:-$HERE/bench_results.txt}"
+{
+	echo "# hellish benchmark  $(uname -srm)"
+	echo "# bin=$HELLISH rounds=$ROUNDS pin=${PIN[*]:-none}"
+	echo "# columns: class name hellish_us bash_us ratio"
+} > "$ARTIFACT"
+
+# one_us <out> <cmd...> : one timed run, echo elapsed MICROSECONDS
+# (µs avoids the ±1ms quantization that makes 1-3ms scripts swing wildly).
+one_us() {
+	local out="$1" s e; shift
+	s=$(date +%s%N)
+	timeout "$TIMEOUT_S" "${PIN[@]}" "$@" >"$out" 2>/dev/null
+	e=$(date +%s%N)
+	echo $(( (e - s) / 1000 ))
 }
 
 # race <class> <name> <kind:file|cmd> <payload>
+# Rounds are INTERLEAVED h,b,h,b (not all-h-then-all-b) so slow drift in
+# machine load hits both shells equally; each side keeps its own MIN (the
+# least OS-contended run). An untimed warmup absorbs cold-cache effects.
 race() {
 	local class="$1" name="$2" kind="$3" payload="$4"
-	local ho bo hms bms ratio verdict col
+	local ho bo hus bus us r ratio verdict col
+	local -a hcmd bcmd
 	ho=$(mktemp); bo=$(mktemp)
 	if [[ "$kind" == file ]]; then
-		hus=$(best_us "$ho" "$HELLISH" "$payload")
-		bus=$(best_us "$bo" bash --posix "$payload")
+		hcmd=("$HELLISH" "$payload"); bcmd=(bash --posix "$payload")
 	else
-		hus=$(best_us "$ho" "$HELLISH" -c "$payload")
-		bus=$(best_us "$bo" bash --posix -c "$payload")
+		hcmd=("$HELLISH" -c "$payload"); bcmd=(bash --posix -c "$payload")
 	fi
+	timeout "$TIMEOUT_S" "${hcmd[@]}" >"$ho" 2>/dev/null
+	timeout "$TIMEOUT_S" "${bcmd[@]}" >"$bo" 2>/dev/null
 	# equality gate: only race workloads that produce identical output
 	if ! diff -q "$ho" "$bo" >/dev/null 2>&1; then
 		printf "  ${YEL}%-26s  MISMATCH (excluded)${END}\n" "$name"
 		rm -f "$ho" "$bo"; return
 	fi
+	hus=999999999; bus=999999999
+	for ((r=0; r<ROUNDS; r++)); do
+		us=$(one_us "$ho" "${hcmd[@]}"); (( us < hus )) && hus=$us
+		us=$(one_us "$bo" "${bcmd[@]}"); (( us < bus )) && bus=$us
+	done
 	rm -f "$ho" "$bo"
 	(( hus < 1 )) && hus=1; (( bus < 1 )) && bus=1
 	ratio=$(awk -v b="$bus" -v h="$hus" 'BEGIN{printf "%.3f", b/h}')
+	printf '%s %s %d %d %s\n' "$class" "${name// /_}" "$hus" "$bus" \
+		"$ratio" >> "$ARTIFACT"
 	if   awk -v x="$ratio" 'BEGIN{exit !(x>1.05)}'; then verdict="FASTER"; col="$GREEN"
 	elif awk -v x="$ratio" 'BEGIN{exit !(x<0.95)}'; then verdict="slower"; col="$RED"
 	else verdict="~tie";   col="$GREY"; fi
@@ -190,6 +212,7 @@ printf '%s\n' "${ALL_RATIOS[@]}" | awk -v n="$g_n" '
 			wf, int((wf-1)*100+0.5), lf, int((1-lf)*100+0.5)
 	}'
 echo -e "  ${GREY}geomean = equal weight per task;  wall = total time to run everything (throughput)${END}"
+echo -e "  ${GREY}raw per-task timings: $ARTIFACT${END}"
 # Three-way verdict with a parity band (per-task geomean is noisy near 1.0).
 if awk -v x="$GEO" 'BEGIN{exit !(x>1.02)}'; then
 	echo -e "  ${GREEN}${BOLD}VERDICT: hellish is FASTER than bash --posix on average (geomean ${GEO}x).${END}"

@@ -253,7 +253,11 @@ if [[ -n "${hrank:-}" ]]; then
 		echo -e "  ${GREEN}${BOLD}VERDICT: hellish is the FASTEST shell in this matrix.${END}"
 	elif [[ -z "$faster_than" ]]; then
 		echo -e "  ${RED}${BOLD}VERDICT: hellish is the slowest shell in this matrix.${END}"
-	else
+	elif (( hrank * 3 <= total )); then
+		echo -e "  ${GREEN}${BOLD}VERDICT: hellish is near the top (#${hrank}/${total}), behind only:${END} ${slower_than}"
+	elif (( hrank * 3 <= total * 2 )); then
 		echo -e "  ${YEL}${BOLD}VERDICT: hellish sits mid-pack (#${hrank}/${total}).${END}"
+	else
+		echo -e "  ${RED}${BOLD}VERDICT: hellish is near the bottom (#${hrank}/${total}).${END}"
 	fi
 fi

@@ -27,14 +27,18 @@ static void	gopt_advance(t_shell *state, t_getopts *g, char *cur, int pos)
 }
 
 /* Handle an option letter that is not in optstring. In silent mode, stuff
-   the bad letter into OPTARG; otherwise print the standard error message.
-   Either way, set the name variable to '?' and advance past the letter. */
+   the bad letter into OPTARG; otherwise print the standard error message
+   and unset OPTARG (POSIX). Either way, set the name variable to '?' and
+   advance past the letter. */
 static int	one_option_bad(t_shell *state, t_getopts *g, char *cur, int pos)
 {
 	if (g->silent)
 		gopt_set_char(state, "OPTARG", cur[pos]);
 	else
+	{
 		ft_eprintf("%s: illegal option -- %c\n", state->dft_ctx, cur[pos]);
+		try_unset(state, "OPTARG");
+	}
 	gopt_set_char(state, g->name, '?');
 	gopt_advance(state, g, cur, pos);
 	return (gopt_commit_optind(state, g->optind), 0);
@@ -60,6 +64,7 @@ int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 		gopt_set_char(state, g->name, cur[pos]);
 		return (gopt_commit_optind(state, g->optind), 0);
 	}
+	try_unset(state, "OPTARG");
 	gopt_set_char(state, g->name, cur[pos]);
 	gopt_advance(state, g, cur, pos);
 	return (gopt_commit_optind(state, g->optind), 0);

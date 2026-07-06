@@ -33,6 +33,38 @@
 # include "helpers.h"
 # include "env.h"
 
+/* Scanner state for hist_join_line (history_join*.c): input cursor, the
+   joined output, quote/substitution context, and the queue of pending
+   here-doc tags (each stored with a leading '-' for <<- or '+' for <<). */
+typedef struct s_hjoin
+{
+	const char	*s;
+	size_t		i;
+	t_string	out;
+	t_vec		tags;
+	bool		sq;
+	bool		dq;
+	bool		btick;
+	bool		body;
+	bool		cpat;
+	int			csub;
+	int			arith;
+	int			pdepth;
+	int			dpar;
+}	t_hjoin;
+
+char		*hist_join_line(const char *cmd);
+void		hj_init(t_hjoin *h, const char *cmd);
+bool		hj_at_heredoc(t_hjoin *h);
+bool		hj_dollar(t_hjoin *h);
+void		hj_pop_tag(t_hjoin *h);
+void		hj_heredoc_tag(t_hjoin *h);
+void		hj_heredoc_body(t_hjoin *h);
+void		hj_copy_escaped(t_hjoin *h);
+void		hj_depth_step(t_hjoin *h, int d);
+bool		hj_last_word_kw(const char *s, size_t n);
+char		*hj_finish(t_hjoin *h);
+
 t_string	parse_single_cmd(t_string hist, size_t *cur);
 t_vec		parse_hist_file(t_string hist);
 void		add_history_line(const char *cmd);

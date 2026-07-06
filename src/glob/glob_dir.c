@@ -91,25 +91,20 @@ void	match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset)
 	char			*s;
 
 	dir = opendir(get_curr_path(path));
-	if (glob.len <= offset && dir)
+	if (!dir)
+		return ;
+	if (glob.len <= offset)
 	{
 		s = ft_strdup(path);
 		vec_push(args, &s);
-		closedir(dir);
-		return ;
 	}
-	if (!dir)
-		return ;
-	matcher = (t_dir_matcher)
+	else if (!handle_dot_segment(args, glob, path, offset))
 	{
-		.path = path,
-		.dir = dir,
-		.glob = glob,
-		.offset = offset,
-		.args = args
-	};
-	while (!get_g_sig()->should_unwind && process_dir(matcher))
-		;
+		matcher = (t_dir_matcher){.path = path, .dir = dir,
+			.glob = glob, .offset = offset, .args = args};
+		while (!get_g_sig()->should_unwind && process_dir(matcher))
+			;
+	}
 	closedir(dir);
 }
 

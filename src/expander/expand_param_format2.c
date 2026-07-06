@@ -38,10 +38,10 @@ char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 			return (ft_strdup(val));
 		ft_eprintf("%s: %.*s: %.*s\n", state->ctx, o.name_len, o.name,
 			o.wlen, o.word);
-		state->last_cmd_st_exe = create_exec_state(1, false);
+		state->last_cmd_st_exe = create_exec_state(127, false);
 		set_cmd_status(state, state->last_cmd_st_exe);
 		if (state->metinp != INP_RL)
-			exit_clean(state, 1);
+			exit_clean(state, 127);
 		return (ft_strdup(""));
 	}
 	if (!act)

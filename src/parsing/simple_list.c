@@ -95,8 +95,6 @@ t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
 
 	init_ast_node_children(&ret, AST_SIMPLE_LIST);
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
-	if (next == TT_ARITH_START)
-		return (handle_arith_error(state, parser, tokens, &ret), ret);
 	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT
 		&& !is_compound_start(next))
 		return (handle_unexpected_token(state, parser, ret, tokens), ret);

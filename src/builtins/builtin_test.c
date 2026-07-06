@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/16 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/03/16 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/07/06 12:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,87 +21,65 @@ int		test_int_op(const char *op, const char *s1, const char *s2);
    2 = error. This is the *inverse* of C's boolean, which trips everyone up
    at least once. Keep it in mind when reading the returns below. */
 
-/* Evaluate a unary test: -z/-n (string length) or any single-letter -X
-   flag (file tests). Returns 1 (false) when the operator is unrecognised or
-   the operand is missing rather than crashing. */
-static int	test_unary(char **av, int ac, int *i)
+/* Leaf evaluator for `-X operand`: -z/-n (string length), any other
+   single-letter -X flag is a file test. An unknown operator is an error
+   (2), matching bash's "unary operator expected". */
+int	tx_test_unary(char **a)
 {
-	if (*i + 1 >= ac)
-		return (1);
-	if (ft_strcmp(av[*i], "-z") == 0)
-		return (ft_strlen(av[*i + 1]) != 0);
-	if (ft_strcmp(av[*i], "-n") == 0)
-		return (ft_strlen(av[*i + 1]) == 0);
-	if (av[*i][0] == '-' && av[*i][1] && !av[*i][2])
-		return (test_file_op(av[*i], av[*i + 1]));
-	return (1);
+	if (ft_strcmp(a[0], "-z") == 0)
+		return (ft_strlen(a[1]) != 0);
+	if (ft_strcmp(a[0], "-n") == 0)
+		return (ft_strlen(a[1]) == 0);
+	if (a[0][0] == '-' && a[0][1] && !a[0][2])
+		return (test_file_op(a[0], a[1]));
+	return (ft_eprintf("test: %s: unary operator expected\n", a[0]), 2);
 }
 
-/* Evaluate a binary test: `a op b`. String ops are = == != and integer
-   comparison ops are -eq -ne -gt -ge -lt -le. Unrecognised ops return 1. */
-static int	test_binary(char **av, int ac, int *i)
+/* Leaf evaluator for `a op b`; only called when op is a known binary
+   operator (tx_is_binop), so the routing is exhaustive: string ops first,
+   everything else is one of the -eq family. */
+int	tx_test_binary(char **a)
 {
-	if (*i + 2 >= ac)
-		return (1);
-	if (ft_strcmp(av[*i + 1], "=") == 0
-		|| ft_strcmp(av[*i + 1], "==") == 0
-		|| ft_strcmp(av[*i + 1], "!=") == 0)
-		return (test_str_op(av[*i + 1], av[*i], av[*i + 2]));
-	if (ft_strncmp(av[*i + 1], "-", 1) == 0)
-		return (test_int_op(av[*i + 1], av[*i], av[*i + 2]));
-	return (1);
+	if (ft_strcmp(a[1], "=") == 0
+		|| ft_strcmp(a[1], "==") == 0
+		|| ft_strcmp(a[1], "!=") == 0)
+		return (test_str_op(a[1], a[0], a[2]));
+	return (test_int_op(a[1], a[0], a[2]));
 }
 
-/* Route to the right evaluator based on token count: 1 = non-empty string,
-   2 = unary op + operand, 3 = binary a op b. Anything else is an error (2).
-   Note: `i` is the start index and `ac` is the count — so the effective
-   range is av[i..i+ac-1]. */
-static int	eval_test_result(char **av, int ac, int i)
+/* POSIX two-argument rule: `! s` negates the non-empty-string test,
+   otherwise the first word must be a unary operator. */
+static int	eval_two(char **av)
 {
-	int	result;
-
-	if (ac == 1)
-	{
-		if (ft_strlen(av[i]) > 0)
-			result = 0;
-		else
-			result = 1;
-	}
-	else if (ac == 2)
-		result = test_unary(av, i + ac, &i);
-	else if (ac == 3)
-		result = test_binary(av, i + ac, &i);
-	else
-		return (ft_eprintf("test: too many arguments\n"), 2);
-	return (result);
+	if (ft_strcmp(av[0], "!") == 0)
+		return (ft_strlen(av[1]) != 0);
+	return (tx_test_unary(av));
 }
 
-/* Entry point for the flat POSIX test evaluator: handles leading '!' and
-   delegates to eval_test_result. Used by both the [ ] and [[ ]] evaluators;
-   the [[ ]] one (db_or / db_and / …) calls this for each leaf primary it
-   finds, after stripping the surrounding brackets. */
+/* Entry point for the test evaluator, following bash's posixtest() layout:
+   fixed rules for 0-2 arguments, the binary fast path for exactly `a op b`,
+   and the full -a/-o/!/( ) expression grammar (builtin_test_expr.c) for
+   everything else. A parse that errors or leaves tokens behind exits 2. */
 int	eval_test(char **av, int ac)
 {
-	int	i;
-	int	negate;
-	int	result;
+	t_tx	t;
+	int		r;
 
-	i = 0;
-	negate = 0;
 	if (ac == 0)
 		return (1);
-	if (ft_strcmp(av[i], "!") == 0)
-	{
-		negate = 1;
-		i++;
-		ac--;
-	}
-	result = eval_test_result(av, ac, i);
-	if (result == 2)
+	if (ac == 1)
+		return (ft_strlen(av[0]) == 0);
+	if (ac == 2)
+		return (eval_two(av));
+	if (ac == 3 && tx_is_binop(av[1]))
+		return (tx_test_binary(av));
+	t = (t_tx){av, ac, 0, 0};
+	r = tx_or(&t);
+	if (r == 2 || t.err)
 		return (2);
-	if (negate)
-		return (result == 0);
-	return (result);
+	if (t.i != ac)
+		return (ft_eprintf("test: syntax error\n"), 2);
+	return (r);
 }
 
 /* `[`, `[[`, and `test`. `[[` runs the logical evaluator (`&&`/`||`/`!`/`( )`);
