@@ -88,14 +88,13 @@ static void	tip_write(const char *path, const char *tip)
 	rename(tmp, path);
 }
 
-/* If AI is on, interactive, and the cached tip is stale (>5 min) or missing,
-   fork a fully detached worker to refresh it. Non-blocking: the parent reaps
-   the short-lived middle child; the orphaned grandchild does the slow LLM call,
-   writes the cache, and exits. ponytail: the worker is silent (no writes to
-   std fds), so no /dev/null redirect is needed. */
 /* Fully detached worker: the orphaned grandchild does the slow LLM call and
    writes the cache; the parent reaps the short-lived middle child and returns.
-   ponytail: silent (no writes to std fds), so no /dev/null redirect needed. */
+   The grandchild skips the refresh when the machine is already loaded (an
+   inference burst on a busy box is what makes commands lag) and caps its own
+   request budget at 8s -- llama-server aborts generation when the client
+   disconnects, so the timeout bounds the CPU burst too. ponytail: silent (no
+   writes to std fds), so no /dev/null redirect needed. */
 static void	tip_worker(t_shell *state, const char *path)
 {
 	pid_t	pid;
@@ -109,28 +108,41 @@ static void	tip_worker(t_shell *state, const char *path)
 	if (fork() > 0)
 		_exit(0);
 	setsid();
-	tip = ai_chat(state, "From the shell context above, give ONE short tip "
+	if (ai_load_high())
+		_exit(0);
+	ai_sync_env(state);
+	setenv("HELLISH_AI_TIMEOUT_MS", "8000", 1);
+	tip = ai_request("From the shell context above, give ONE short tip "
 			"(<=120 chars) relevant to what the user is doing now. "
-			"Output only the tip.");
+			"Output only the tip.", 0);
 	if (tip)
 		tip_write(path, tip);
 	_exit(0);
 }
 
-/* If AI is on, interactive, the cached tip is stale (>5 min) or missing, and a
-   backend is actually reachable, refresh it in the background. Non-blocking. */
+/* If AI is on, interactive, and the cached tip is stale (>10 min) or missing,
+   refresh it in a detached worker. NEVER probes the network in the parent: the
+   old ai_reachable() connect stalled the prompt for seconds when the local
+   server was up but busy (SO_*TIMEO does not bound connect()). The worker's
+   ai_request handles an absent backend, and a 30s re-spawn throttle keeps a
+   slow or down backend from piling up overlapping workers. The long cache
+   window also keeps CPU-inference bursts rare. Non-blocking. */
 void	ai_tip_spawn(t_shell *state)
 {
-	char		path[512];
-	struct stat	st;
+	static time_t	last;
+	char			path[512];
+	struct stat		st;
+	time_t			now;
 
 	if (!state->opt_ai || state->metinp != INP_RL)
 		return ;
 	if (!tip_path(path, sizeof(path)))
 		return ;
-	if (stat(path, &st) == 0 && time(NULL) - st.st_mtime <= 240)
+	now = time(NULL);
+	if (stat(path, &st) == 0 && now - st.st_mtime <= 600)
 		return ;
-	if (!getenv("HELLISH_AI_URL") && ai_reachable() != 0)
+	if (now - last < 30)
 		return ;
+	last = now;
 	tip_worker(state, path);
 }

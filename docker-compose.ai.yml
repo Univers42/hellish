@@ -19,6 +19,10 @@ services:
       context: .
       dockerfile: docker/Dockerfile.llama
     image: hellish:llama
+    # Low CPU weight (default 1024): inference runs full speed on an idle
+    # machine but YIELDS to the user's real commands under contention -- a
+    # background tip refresh must never make `cat` or the terminal lag.
+    cpu_shares: 256
     environment:
       MODEL_FILE: "${MODEL_FILE:-}"
     volumes:
@@ -75,6 +79,9 @@ services:
       context: .
       dockerfile: docker/Dockerfile.llama-vulkan
     image: hellish:llama-vulkan
+    # Hybrid mode keeps CPU-resident layers: same low weight as the cpu
+    # backend so inference yields to interactive work under contention.
+    cpu_shares: 256
     command: ["--n-gpu-layers", "${NGL:-999}"]
     environment:
       MODEL_FILE: "${MODEL_FILE:-}"
