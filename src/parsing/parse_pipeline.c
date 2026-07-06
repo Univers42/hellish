@@ -42,11 +42,28 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 
 /* Parse a pipeline: [!] command [| command]...
    The leading `!` negates the pipeline's exit status; multiple `!` toggle
-   the flag, so `!! cmd` has exit status == cmd's. The parse_stack entry for
-   TT_PIPE lets the error reporter tell the user which construct is open.
-   AST: AST_COMMAND_PIPELINE with ret.negate and one AST_COMMAND child per
-   stage. A single-command pipeline with no `!` is still a pipeline node; the
-   executor normalises it. */
+   the flag, so `!! cmd` has exit status == cmd's. A bare `!` at the end of
+   input is a valid zero-command pipeline in bash (status 1, the negation
+   of an empty pipeline's 0) — the executor already computes that, so we
+   just return the childless node instead of demanding a command. The
+   parse_stack entry for TT_PIPE lets the error reporter tell the user
+   which construct is open. AST: AST_COMMAND_PIPELINE with ret.negate and
+   one AST_COMMAND child per stage. A single-command pipeline with no `!`
+   is still a pipeline node; the executor normalises it. */
+static bool	eat_bangs(t_deque_tok *tokens, t_ast_node *ret)
+{
+	bool	saw;
+
+	saw = false;
+	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BANG)
+	{
+		(void)deque_pop_start(&tokens->deqtok);
+		ret->negate = !ret->negate;
+		saw = true;
+	}
+	return (saw);
+}
+
 t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens)
@@ -57,11 +74,10 @@ t_ast_node	parse_pipeline(t_shell *state,
 	ret = create_node_type(AST_COMMAND_PIPELINE);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BANG)
-	{
-		(void)deque_pop_start(&tokens->deqtok);
-		ret.negate = !ret.negate;
-	}
+	if (eat_bangs(tokens, &ret)
+		&& ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END
+			|| (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE))
+		return (ret);
 	push_cmd_parsed(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);

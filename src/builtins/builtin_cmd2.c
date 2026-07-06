@@ -13,15 +13,28 @@
 #include "builtins_private.h"
 #include "executor.h"
 
+void	exit_clean(t_shell *state, int code);
+
 /* return [n]: unwind the current function or sourced-file execution and
    report status n. We set state->func_return = 1 so the executor's call
    stack knows to stop running the function body without exiting the shell.
-   The `& 0xFF` mask keeps the exit status in 0-255 — same as bash. */
+   The `& 0xFF` mask keeps the exit status in 0-255 — same as bash.
+   Outside any function or sourced script, POSIX makes return an error: a
+   non-interactive shell exits with status 2 (bash --posix parity), an
+   interactive one just reports it and keeps going. */
 int	builtin_return(t_shell *state, t_vec argv)
 {
 	char	*cur;
 	int		n;
 
+	if (state->func_depth == 0 && state->source_depth == 0)
+	{
+		ft_eprintf("%s: return: can only `return' from a function "
+			"or sourced script\n", state->ctx);
+		if (state->metinp != INP_RL)
+			exit_clean(state, 2);
+		return (2);
+	}
 	cur = env_expand(state, "?");
 	if (cur)
 		n = ft_atoi(cur);

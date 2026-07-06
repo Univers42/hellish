@@ -25,6 +25,19 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
    at the bottom is the "exhausted all known node types" guard: if the
    parser ever emits a type we forgot to handle, we crash loudly instead
    of silently returning 0 and hiding the bug. */
+/* Dispatch extension for node types added after the if-chain below filled
+   its norm line budget: the arithmetic command and the C-style for. */
+t_execution_state	execute_tree_node_ext(t_shell *state,
+						t_executable_node *exe, t_ast_type t)
+{
+	if (t == AST_ARITH_CMD)
+		return (execute_arith_cmd(state, exe));
+	if (t == AST_FOR_ARITH)
+		return (execute_for_arith(state, exe));
+	ft_assert(0);
+	return (res_status(0));
+}
+
 t_execution_state	execute_tree_node(t_shell *state,
 						t_executable_node *exe)
 {
@@ -48,7 +61,7 @@ t_execution_state	execute_tree_node(t_shell *state,
 	else if (t == AST_FUNCTION_DEF)
 		status = execute_func_def(state, exe);
 	else
-		ft_assert(0);
+		status = execute_tree_node_ext(state, exe, t);
 	set_cmd_status(state, status);
 	return (status);
 }

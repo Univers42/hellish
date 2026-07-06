@@ -52,7 +52,8 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 /* Parse a compound-list: a sequence of pipelines separated by `; & && ||
    \n`. Used as the body of if/while/for/case/function and for subshells.
    Leading newlines are consumed first (POSIX allows `if\n\ncmd\nthen`).
-   TT_ARITH_START here is always an error -- `(( ))` cannot open a list.
+   TT_ARITH_START opens an arithmetic command `(( expr ))` like any other
+   pipeline start — `if ((x))` and `while ((n<3))` depend on it.
    The loop runs until parse_compound_list_s signals "done". */
 t_ast_node	parse_compound_list(t_shell *state,
 								t_parser *parser, t_deque_tok *tokens)
@@ -67,12 +68,6 @@ t_ast_node	parse_compound_list(t_shell *state,
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_END)
 		return (parser->res = RES_GETMOREINPUT, ret);
-	if (next == TT_ARITH_START)
-	{
-		parser->res = RES_ERR;
-		state->last_cmd_st_exe = res_status(1);
-		return (ret);
-	}
 	push_parsed_pipeline_child(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);

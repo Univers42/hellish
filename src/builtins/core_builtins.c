@@ -95,7 +95,6 @@ int	builtin_echo(t_shell *state, t_vec argv)
 
 	n = 0;
 	e = 0;
-	(void)state;
 	vec_init(&out);
 	out.elem_size = 1;
 	first_arg_print = parse_flags(argv, &n, &e);
@@ -103,6 +102,9 @@ int	builtin_echo(t_shell *state, t_vec argv)
 		vec_push_char(&out, '\n');
 	if (out.len > 0 && write(STDOUT_FILENO, out.ctx, out.len) < 0)
 	{
+		ft_eprintf("%s: echo: write error\n", state->dft_ctx);
+		xfree(out.ctx);
+		return (1);
 	}
 	xfree(out.ctx);
 	return (0);

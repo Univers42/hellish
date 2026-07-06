@@ -165,6 +165,7 @@ typedef struct s_shell
 	int					loop_depth; /* current nesting depth of loops */
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
+	int					source_depth; /* nesting depth of `.`/`source` runs */
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */

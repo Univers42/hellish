@@ -53,6 +53,8 @@ static t_ast_node	dispatch_compound(t_shell *state, t_parser *parser,
 		return (parse_case_command(state, parser, tokens));
 	if (next == TT_LBRACE)
 		return (parse_brace_group(state, parser, tokens));
+	if (next == TT_ARITH_START)
+		return (parse_arith_command(state, parser, tokens));
 	return (parse_for_command(state, parser, tokens));
 }
 
