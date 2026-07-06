@@ -31,6 +31,10 @@ static t_execution_state	run_compound(t_shell *state,
 		return (execute_while(state, exe));
 	if (t == AST_FOR)
 		return (execute_for(state, exe));
+	if (t == AST_FOR_ARITH)
+		return (execute_for_arith(state, exe));
+	if (t == AST_ARITH_CMD)
+		return (execute_arith_cmd(state, exe));
 	if (t == AST_CASE)
 		return (execute_case(state, exe));
 	if (t == AST_BRACE_GROUP)

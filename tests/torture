@@ -1,0 +1,89 @@
+echo $(echo $(echo $(echo $(echo deep))))
+echo "$(echo "$(echo "$(echo nested)")")"
+echo `echo back`
+( ( ( ( echo sp ) ) ) )
+{ { { echo brace; }; }; }
+if if true; then true; fi; then echo ifif; fi
+while false; do :; done; echo w$?
+for i in; do echo never; done; echo f$?
+case x in (x) echo px;; esac
+case  in  ) echo empty;; esac
+! ! true; echo $?
+! ! ! false; echo $?
+!
+! !
+echo a | | cat
+echo (
+{ echo x
+echo {a,b}{1,2}
+echo {10..1..3}
+echo {a,
+echo a{}b
+echo $(( (1+2)*3 ))
+echo $((2**10))
+echo $((1<<4|3))
+echo $((-7/2))
+echo $((-7%2))
+echo $((1/0)) ; echo rc=$?
+echo $((9223372036854775807+1))
+echo $((x=7, x*2)); echo $x
+echo $((z++ + ++z)); echo $z
+echo $((0 ? 2 : 3))
+echo $((0x1f))
+echo $((010))
+v='1+2'; echo $((v))
+echo ${}
+echo ${ }
+unset v; echo ${v?err} 2>/dev/null; echo rc=$?
+unset v; echo ${v:?err} 2>/dev/null; echo rc=$?
+v=abcabc; echo ${v/%c/Z}
+v=abcabc; echo ${v/#a/Y}
+v=abcabc; echo ${v/#/P} ${v/%/S}
+v=abcabc; echo ${v/%*c/W}
+v=hello; echo "[${v:2}][${v:1:2}][${v: -3}][${v:1:-1}][${v:10}][${v::2}]"
+v=hello; echo ${v:1:-10} 2>/dev/null; echo rc=$?
+IFS=': '; v='a: b:c '; set -- $v; echo $#
+IFS=': '; v='a : : b'; set -- $v; echo $#
+IFS=:; v=a::b; set -- $v; echo $#
+x=5 y=$x; echo y=$y
+a=1 b=$a c=$b; echo $c
+unset OPTARG; echo arg=$OPTARG
+v=; echo x=$v
+echo bad >&99 2>/dev/null; echo rc=$?
+echo nofd >&- 2>/dev/null; echo rc=$?
+hash 2>/dev/null; echo rc=$?
+[ 5 -gt abc ] 2>/dev/null; echo rc=$?
+test 1 -eq 1 -a 2 -eq 2 && echo and_ok
+test 1 -eq 1 -o 2 -eq 3 && echo or_ok
+[ \( 1 -eq 1 \) ] && echo paren_ok
+test ! 1 -eq 1 -a 0 -eq 1; echo $?
+test x -a y && echo xy_ok
+test x -o '' && echo xo_ok
+[ -n x -a -z '' ] && echo nz_ok
+return 2>/dev/null; echo rc=$?
+f() { return 5; }; f; echo $?
+echo "return 7" > srcret; . ./srcret; echo src=$?
+((x=5)); echo x=$x rc=$?
+((0)); echo rc=$?
+(( 1+1 )); echo rc=$?
+(( )); echo rc=$?
+y=3; (($y>2)); echo dol=$?
+((x=2)) && ((x*=3)) && echo x=$x
+if ((2>1)); then echo cmp_ok; fi
+while ((n<3)); do n=$((n+1)); done; echo n=$n
+for ((i=0;i<3;i++)); do echo c$i; done; echo rc=$?
+for ((i=0; i<5; i++)) do if [ $i -eq 2 ]; then continue; fi; if [ $i -eq 4 ]; then break; fi; echo i=$i; done
+j=0; for ((;j<2;)); do j=$((j+1)); echo j=$j; done
+n=0; for ((i=0;i<50;i++)); do n=$((n+i)); done; echo n=$n
+f() { ((x=$1*2)); echo $x; }; f 21
+while getopts ab: o -a -b val; do echo o=$o arg=$OPTARG; done
+OPTARG=zz; getopts ab: o -a; echo "[$OPTARG]"
+getopts a o -z 2>/dev/null; echo "o=$o rc=$?"
+echo /*/.. > dots1; grep -c '/\.\.' dots1
+echo src 2>/dev/null >/dev/null; echo /e*/
+echo ${undef_xyz51:-fallback}
+echo pre$(echo mid)post
+w=$(echo a b   c); echo $w
+echo "quoted $(echo sub) end"
+v=$(false); echo rc=$?
+echo [$( )]

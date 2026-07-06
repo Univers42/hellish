@@ -17,8 +17,9 @@
    -1 if the pattern does not match at this position.  Literal patterns
    (no * or ? wildcards) take an O(m) ft_strncmp fast path; wildcard patterns
    try decreasing lengths until pat_match_pub succeeds (longest-match scan
-   needed because * can expand to varying amounts). */
-static int	patsub_match_len(const char *pat, const char *s)
+   needed because * can expand to varying amounts).  Shared with the
+   anchored #/% forms in expand_param_subst2.c. */
+int	patsub_match_len(const char *pat, const char *s)
 {
 	int		k;
 	char	*sub;
@@ -73,9 +74,10 @@ static char	*patsub_build(const char *val, const char *pat,
 }
 
 /* Extract and expand the pattern portion of a ${v/pat/rep} spec.  The
-   pattern starts after the first '/' (plus a second '/' for global mode)
-   and extends to the next '/' or end of spec.  We call expand_param_word
-   so nested ${} and `...` inside the pattern are processed. */
+   pattern starts after the first '/' plus `g` extra prefix characters (a
+   second '/' for global mode and/or a '#'/'%' anchor) and extends to the
+   next '/' or end of spec.  We call expand_param_word so nested ${} and
+   `...` inside the pattern are processed. */
 static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
 {
 	int	start;
@@ -103,21 +105,30 @@ static char	*subst_get_rep(t_shell *state, t_trim_ctx ctx, int g)
 	return (ft_strdup(""));
 }
 
-/* ${name/pat/rep} (first match) and ${name//pat/rep} (every match); a missing
-   /rep deletes the match. val is borrowed from the env, so it is not freed. */
+/* ${name/pat/rep} (first match), ${name//pat/rep} (every match),
+   ${name/#pat/rep} (anchored at the start) and ${name/%pat/rep} (anchored
+   at the end); a missing /rep deletes the match. val is borrowed from the
+   env, so it is not freed. */
 char	*expand_subst(t_shell *state, t_trim_ctx ctx)
 {
 	char	*val;
 	char	*pat;
 	char	*rep;
 	int		g;
+	int		a;
 
 	val = pf_get_var_value(state, ctx.name, ctx.name_len);
 	if (!val)
 		return (ft_strdup(""));
 	g = (ctx.name_len + 1 < ctx.slen && ctx.name[ctx.name_len + 1] == '/');
-	pat = subst_get_pat(state, ctx, g);
-	rep = subst_get_rep(state, ctx, g);
-	val = patsub_build(val, pat, rep, g);
+	a = subst_anchor(ctx, g);
+	pat = subst_get_pat(state, ctx, g + (a != 0));
+	rep = subst_get_rep(state, ctx, g + (a != 0));
+	if (a == 2)
+		val = patsub_prefix(val, pat, rep);
+	else if (a == 3)
+		val = patsub_suffix(val, pat, rep);
+	else
+		val = patsub_build(val, pat, rep, g);
 	return (xfree(pat), xfree(rep), val);
 }

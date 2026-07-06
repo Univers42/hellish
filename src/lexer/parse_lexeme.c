@@ -61,9 +61,17 @@ static int	handle_special(t_deque_tok *tokens, char **str, char **out)
 		return (1);
 	}
 	if (**str == '`')
-		return (advance_backtick(str), 1);
+	{
+		if (advance_backtick(str))
+			return (tokens->looking_for = '`', *out = "bquote> ", -1);
+		return (1);
+	}
 	if (**str == '$' && (*str)[1] == '{')
-		return (advance_brace_param(str), 1);
+	{
+		if (advance_brace_param(str))
+			return (tokens->looking_for = '}', *out = "param> ", -1);
+		return (1);
+	}
 	return (0);
 }
 

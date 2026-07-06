@@ -38,7 +38,8 @@ void	cmd_hash_clear(t_hash *ht)
 }
 
 /* Print the full cache table in bash `hash` format: hits + path, with the
-   "hits\tcommand" header. We walk the raw bucket array rather than using an
+   "hits\tcommand" header — but, like bash, print nothing at all when the
+   table is empty. We walk the raw bucket array rather than using an
    iterator callback to keep the code simple and avoid an extra indirection. */
 void	cmd_hash_print_all(t_hash *ht)
 {
@@ -47,6 +48,8 @@ void	cmd_hash_print_all(t_hash *ht)
 	t_cmd_hash_entry	*ce;
 
 	entries = (t_hash_entry *)ht->ctx;
+	if (ht->len == 0)
+		return ;
 	ft_printf("hits\tcommand\n");
 	i = 0;
 	while (i < ht->cap)
