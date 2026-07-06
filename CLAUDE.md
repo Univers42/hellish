@@ -21,8 +21,10 @@ make                  # debug build  -> build/bin/hellish (SAFE=1 libc + ASan/LS
 make OPT=1            # optimized     (SAFE=0 ft_malloc, -O3 -flto, no sanitizers)
 make re               # fclean + rebuild (sequential sub-makes; NOT -j prerequisites)
 make test             # full golden-diff suite vs `bash --posix` (relinks debug first)
-make bench            # geomean speed vs `bash --posix` (builds OPT=1)
+make bench            # geomean speed vs `bash --posix` (builds OPT=1; raw
+                      #   per-task timings land in tests/bench_results.txt)
 make norm             # 42 norminette over src/ incs/ tests/
+make hist-test        # interactive multi-line history regression (real pty)
 make my_shell         # install as login shell (forces OPT=1 SAFE=1 first)
 
 ./build/bin/hellish                 # interactive
@@ -64,8 +66,9 @@ cd tests && ./verify_alloc.sh            # build BOTH allocators, prove parity +
 ```
 
 `tester` args are **category/test-list filenames** under `tests/` (line-delimited
-`-c` cases). With no args it runs the default set (globbing, arith, builtins,
-redir, var, pipe, compound, …). Cases run 16-way parallel; a failing run leaves
+`-c` cases). With no args it runs the default set (globbing, arith, builtins, redir,
+var, pipe, compound, torture, … — 2616 cases; `torture` is the adversarial
+category from the break-it sweep). Cases run 16-way parallel; a failing run leaves
 its temp dir (`/tmp/sh42_tester_*`) for inspection.
 
 Docker / cross-shell targets: `make docker-test` (build+smoke on Alpine/Debian/

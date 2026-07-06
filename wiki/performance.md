@@ -11,27 +11,39 @@ kings. This page shows the numbers (real, measured) and the engineering discipli
 
 ## vs. bash — faster, across the board ✅
 
-From the in-repo benchmark harness (`make bench`, ROUNDS=7 best-of), hellish (OPT, `-O3 -flto`,
+From the in-repo benchmark harness (`make bench`, best-of-N with h/b rounds interleaved and
+both shells pinned to one core — see the fairness note below), hellish (OPT, `-O3 -flto`,
 `ft_malloc`) vs. `bash --posix`:
 
 | Suite | geomean (per-task) | wall (throughput) | W/T/L |
 |---|---|---|---|
-| **Overall** (82 tasks) | **1.371×** | **1.383× faster** | 56 / 13 / 13 |
-| micro (tight loops) | **2.087×** | 1.371× | **29 / 0 / 0** |
-| corpus (real scripts) | 1.052× | 1.152× | 16 / 10 / 11 |
-| hard (math/text heavy) | 1.180× | 1.464× | 11 / 3 / 2 |
+| **Overall** (82 tasks) | **1.453×** | **1.762× faster** | 54 / 22 / 6 |
+| micro (tight loops) | **2.408×** | 1.898× | **29 / 0 / 0** |
+| corpus (real scripts) | 1.068× | 1.165× | 14 / 19 / 4 |
+| hard (math/text heavy) | 1.183× | 1.599× | 11 / 3 / 2 |
 
-(Ranges are from two consecutive ROUNDS=7 runs of the same binary — the overall geomean
-reproduced **exactly** (1.346×) while individual 2-3 ms corpus scripts wobble ±15%, which is why
-per-task W/T/L varies run to run but the verdict does not.)
+Every timed number behind a verdict is appended to `tests/bench_results.txt` — measured, not
+claimed. (Individual 2-3 ms corpus scripts still wobble ±15% run to run, which moves per-task
+W/T/L; the verdict does not.)
 
 - **geomean = equal weight per task; wall = total time to run everything.**
-- The micro class — once the weak spot at 0.877× — is now a **clean sweep**: every tight-loop
-  task beats bash, 2× on average. Real work (corpus/hard) wins too; standouts: pure-shell
-  insertion sort **4.2×**, `${}` string toolkit **2.0×**, log analyzer/math suite ~1.2×.
-- Coverage: faster on **73%** of tasks, parity on 5%, slower on 22% — and where it is slower the
-  average gap is **−10%**, concentrated in 2-3 ms scripts whose ratios are run-to-run noise
-  (several of them win head-to-head on an idle machine) plus a couple of fork/signal-bound ones.
+- The micro class — once the weak spot at 0.877× — is a **clean sweep**: every tight-loop
+  task beats bash, 2.4× on average. Real work (corpus/hard) wins too; standouts: pure-shell
+  insertion sort **4.4×**, `$(echo …)` substitutions **11.4×**, string toolkit ~1.9×.
+- Coverage: faster on **78%** of tasks, parity on 9%, slower on 13% — and where it is slower
+  the average gap is **−7%**, concentrated in 2-3 ms scripts whose ratios are run-to-run noise
+  plus a couple of fork/signal-bound ones.
+- The jump from the previous 1.371× baseline is the **forkless command substitution** fast
+  path (`perf/forkless-cmdsub`): a `$( )` whose body is a single side-effect-free builtin
+  (`echo`, `printf`, `pwd`, `true`, `:` — no redirects or control operators, no
+  `${v=…}`/`$((…))` assignment forms, not under `set -e/-u`) runs in-process with stdout
+  parked on an unlinked temp file instead of fork+pipe+waitpid — ksh93's famous trick applied
+  to the provably safe subset. `cmdsub 3k` went from 1.25× to **11.4×** vs bash (35 ms vs
+  402 ms); ineligible bodies fork exactly as before, and the full suite plus both-allocator
+  parity stay green.
+- **Harness fairness** (`tests/benchmark`): rounds interleave h,b,h,b so machine-load drift
+  hits both shells equally; both are pinned to the same core (`taskset -c 0`, `NOPIN=1`
+  opts out); each task gets an untimed warmup; every timing lands in the artifact.
 
 > The old "micro ceiling" was diagnosed and removed in the `perf/micro-hotpath` campaign: the
 > pipeline driver dup'd stdin/stdout around **every** command, defeating the redirect fast path —
@@ -57,6 +69,30 @@ hellish *does dash's job* (it ran an entire LFS build's `./configure` scripts) �
 hot-path campaign it beats dash on tight POSIX loops while carrying readline, job control,
 `[[ ]]`, process substitution and the rest. (Numbers above re-measured on the same host, best of
 5-7 runs.)
+
+## vs. the whole zoo — #2 of 9 ✅
+
+`make agnostic-bench` races hellish against every shell it can install in one docker image
+(bash, dash, zsh, mksh, ksh93, yash, busybox ash, fish) on a portable POSIX workload set,
+output-checked against bash and ranked by per-workload geomean. After the forkless-cmdsub
+campaign:
+
+| # | shell | geomean | vs hellish |
+|---|---|---|---|
+| 1 | ksh93 | 16.5 ms | 0.67× |
+| **2** | **hellish** | **24.8 ms** | **1.00×** |
+| 3 | dash | 24.8 ms | 1.00× |
+| 4 | busybox ash | 34.4 ms | 1.39× |
+| 5 | zsh | 51.3 ms | 2.07× |
+| 6 | bash | 60.2 ms | 2.43× |
+| 7 | mksh | 66.7 ms | 2.69× |
+| 8 | yash | 83.8 ms | 3.38× |
+| 9 | fish | 234.6 ms | 9.46× |
+
+hellish moved up from #3 (behind dash) to **#2**, edging dash on geomean and beating it ~7× on
+substitution-heavy workloads. Only ksh93 stays ahead — it runs functions and *all* command
+substitutions in-process (its `$(fib 18)` is ~94× faster than anyone's fork), a whole-shell
+architecture rather than a fast path.
 
 ---
 

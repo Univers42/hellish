@@ -30,16 +30,45 @@ static int	test_int_cmp(const char *op, long a, long b)
 	return (2);
 }
 
-/* Parse both operands as integers, then dispatch to -eq/-ne or test_int_cmp.
-   ft_atoi silently returns 0 for non-numeric strings — that is intentional:
-   bash does the same so `[ "foo" -eq 0 ]` succeeds rather than erroring. */
+/* Strict integer parse for test operands: optional blanks, optional sign,
+   at least one digit, optional trailing blanks, nothing else. bash rejects
+   anything looser with "integer expression expected" and exits 2. */
+static bool	test_num(const char *s, long *out)
+{
+	int	i;
+	int	start;
+
+	i = 0;
+	while (s[i] == ' ' || s[i] == '\t')
+		i++;
+	if (s[i] == '+' || s[i] == '-')
+		i++;
+	start = i;
+	while (s[i] >= '0' && s[i] <= '9')
+		i++;
+	if (i == start)
+		return (false);
+	while (s[i] == ' ' || s[i] == '\t')
+		i++;
+	if (s[i])
+		return (false);
+	*out = ft_atol(s);
+	return (true);
+}
+
+/* Parse both operands as integers (erroring like bash when either is not a
+   number), then dispatch to -eq/-ne or test_int_cmp. */
 int	test_int_op(const char *op, const char *s1, const char *s2)
 {
 	long	a;
 	long	b;
 
-	a = ft_atoi(s1);
-	b = ft_atoi(s2);
+	if (!test_num(s1, &a))
+		return (ft_eprintf(
+				"test: %s: integer expression expected\n", s1), 2);
+	if (!test_num(s2, &b))
+		return (ft_eprintf(
+				"test: %s: integer expression expected\n", s2), 2);
 	if (ft_strcmp(op, "-eq") == 0)
 		return (a != b);
 	if (ft_strcmp(op, "-ne") == 0)

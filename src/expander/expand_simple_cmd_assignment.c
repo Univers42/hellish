@@ -13,6 +13,7 @@
 #include "expander_private.h"
 #include "lexer.h"
 #include "sys.h"
+#include "ft_builtins.h"
 
 /* Grab the original (pre-expansion) full token for an assignment word so it
    can be restored into argv after expansion.  This is needed because `export
@@ -66,7 +67,11 @@ static void	replace_argv_entries_with_full_token(t_vec *argv,
 
 /* Perform assignment -> word conversion, expand into argv and apply fixup.
    Operates on a private clone so the caller's node stays intact (loops reuse
-   it). Returns 1 on unwind request, 0 otherwise. */
+   it). Returns 1 on unwind request, 0 otherwise.
+   The full-token restore only applies in export/declaration context: for a
+   plain argv word like `echo arg=$UNSET`, "arg=" IS the correct expansion
+   (bash prints it), and restoring the raw text would resurrect the unset
+   `$UNSET` reference the expansion just (correctly) emptied out. */
 static int	expand_assignment_word_and_fixup(t_shell *state,
 					t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
@@ -83,23 +88,31 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 	expand_word_glob_ctl(state, &scratch, &ret->argv, flags);
 	if (get_g_sig()->should_unwind)
 		return (1);
-	replace_argv_entries_with_full_token(&ret->argv, full);
+	if (exp->export)
+		replace_argv_entries_with_full_token(&ret->argv, full);
 	return (0);
 }
 
 /* Expand one AST_ASSIGNMENT_WORD child of a simple command.  Before the
    first real command word (exp->found_first == false), the assignment is
    staged in pre_assigns — it may become a temporary env var for the command.
+   POSIX wants the assignments applied left to right, each RHS seeing the
+   earlier ones (`x=5 y=$x` gives y=5), so the already-staged ones are
+   temporarily applied around the RHS expansion and rolled back — argv
+   words expanded later must still see the original environment.
    After the command name is known, the assignment becomes an argv word
    (e.g. `export VAR=val`) and is expanded with no glob (EW_NO_GLOB). */
 int	expand_simple_cmd_assignment(t_shell *state,
 		t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
 	t_env		tmp;
+	t_vec		saves;
 
 	if (!exp->found_first)
 	{
+		saves = apply_temp_assigns(state, &ret->pre_assigns);
 		tmp = assignment_to_env(state, exp->curr);
+		restore_temp_assigns(state, &saves);
 		vec_push(&ret->pre_assigns, &tmp);
 		return (0);
 	}

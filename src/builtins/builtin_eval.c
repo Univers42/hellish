@@ -88,7 +88,9 @@ int	builtin_source(t_shell *state, t_vec argv)
 	close(fd);
 	content = ft_strndup((char *)buf.ctx, buf.len);
 	xfree(buf.ctx);
+	state->source_depth++;
 	status = exec_string(state, content);
+	state->source_depth--;
 	xfree(content);
 	return (status);
 }

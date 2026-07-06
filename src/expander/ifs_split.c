@@ -58,16 +58,21 @@ void	push_f(t_vec *out, const char *s, size_t start, size_t end)
 	vec_push(out, &f);
 }
 
-/* After hitting a non-whitespace IFS delimiter, skip any following IFS
-   whitespace chars (POSIX: "IFS whitespace adjacent to an IFS non-whitespace
-   is treated as a single delimiter").  This handles IFS=": " splitting of
-   "a : b" into "a", "b" rather than "a", "", "b". */
+/* Consume one full delimiter starting at IFS whitespace: the whitespace
+   run, at most one non-whitespace IFS char, and any whitespace adjacent to
+   THAT too (POSIX: "an IFS non-whitespace character, with any adjacent IFS
+   white space, delimits a field").  This makes IFS=": " split "a : b" and
+   "a :  b" into "a", "b" rather than leaving an empty field behind. */
 size_t	skip_ws_delimiter(const char *s, size_t n,
 			const char *ifs, size_t i)
 {
 	while (i < n && is_ws_ifs(s[i], ifs))
 		i++;
 	if (i < n && is_nw_ifs(s[i], ifs))
+	{
 		i++;
+		while (i < n && is_ws_ifs(s[i], ifs))
+			i++;
+	}
 	return (i);
 }
