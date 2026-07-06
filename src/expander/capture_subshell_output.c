@@ -81,15 +81,21 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
    trailing-newline strip mandated by POSIX is done by walking nlen back
    from the end of the buffer.  The exit status is saved in
    state->last_cmdsub_status so callers like $? pick it up correctly.
+   Side-effect-free single-builtin bodies skip the fork entirely via
+   cmdsub_fast (NULL means "not eligible, fork as usual").
    If the pipe() or fork() fails we return an empty string rather than
    crashing — worst case the command appears to produce no output. */
 char	*capture_subshell_output(t_shell *state, const char *cmd)
 {
 	int		pipefd[2];
 	pid_t	pid;
+	char	*fast;
 
 	if (is_empty_command(cmd))
 		return (ft_strdup(""));
+	fast = cmdsub_fast(state, cmd);
+	if (fast)
+		return (fast);
 	if (pipe(pipefd) == -1)
 		return (ft_strdup(""));
 	pid = fork_and_run_inproc(state, pipefd, cmd);
