@@ -60,51 +60,20 @@ t_string	parse_single_cmd(t_string hist, size_t *cur)
 	return (cmd);
 }
 
-/* readline edits each history entry as one logical line, so an entry with an
-   embedded newline (a \-continuation or quoted-newline command) desyncs its
-   cursor model and corrupts the display on ↑/↓ (you get stuck, needing ^C).
-   Feed readline a single-line form: drop a \ that escapes a newline (join the
-   continuation) and turn any other newline into a space. */
-static void	fill_hist_buf(const char *cmd, char *buf)
-{
-	size_t	i;
-	size_t	j;
-
-	i = 0;
-	j = 0;
-	while (cmd[i])
-	{
-		if (cmd[i] == '\\' && cmd[i + 1] == '\n')
-		{
-			i += 2;
-			buf[j++] = ' ';
-		}
-		else if (cmd[i] == '\n')
-		{
-			i++;
-			buf[j++] = ' ';
-		}
-		else
-			buf[j++] = cmd[i++];
-	}
-	buf[j] = '\0';
-}
-
-/* Feed a command string to readline's history, pre-processing it into a single
-   logical line: a \<newline> pair (line continuation) becomes a space, and a
-   bare \n (embedded newline in a multi-line command) also becomes a space.
-   Without this, readline's history movement gets confused by embedded newlines
-   and can lock up or display garbled lines on ↑. */
+/* Feed a command to readline's history in its bash-style single-line form:
+   hist_join_line rewrites command-boundary newlines as "; " (or a space
+   where a ";" would be illegal) and keeps quoted / here-doc newlines
+   literal, so a recalled entry re-executes with the same meaning as the
+   multi-line original. hist_cmds and the history file keep the raw text. */
 void	add_history_line(const char *cmd)
 {
-	char	*buf;
+	char	*joined;
 
-	buf = xmalloc(ft_strlen(cmd) + 1);
-	if (!buf)
+	joined = hist_join_line(cmd);
+	if (!joined)
 		return (add_history(cmd));
-	fill_hist_buf(cmd, buf);
-	add_history(buf);
-	xfree(buf);
+	add_history(joined);
+	xfree(joined);
 }
 
 /* Decode the entire history file buffer into a vector of heap-allocated C
