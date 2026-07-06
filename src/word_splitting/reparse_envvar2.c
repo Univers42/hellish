@@ -42,7 +42,11 @@ static void	scan_brace_depth(t_reparser *rp, int *depth)
    matching '}' (depth-tracked, quote-aware), then push the interior as a
    subtoken. Returns false immediately if the character after $ is not '{',
    letting the caller fall through to the ident/special path. The final
-   rp->i++ skips the closing '}' so the main loop continues past it. */
+   rp->i++ skips the closing '}' so the main loop continues past it.
+   An empty ${} is pushed WITH its braces ("{}"): a zero-length subtoken
+   would be indistinguishable from a bare '$' downstream and get emitted as
+   a literal, while bash treats ${} as a fatal bad substitution — the brace
+   payload fails pf_valid_plain and routes there. */
 static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 {
 	int	start;
@@ -56,8 +60,12 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 	depth = 1;
 	while (rp->i < rp->current_token.len && depth > 0)
 		scan_brace_depth(rp, &depth);
-	push_subtoken_node(&rp->current_node, rp->current_token,
-		create_interval(start, rp->i), tt);
+	if (rp->i == start && rp->i < rp->current_token.len)
+		push_subtoken_node(&rp->current_node, rp->current_token,
+			create_interval(start - 1, rp->i + 1), tt);
+	else
+		push_subtoken_node(&rp->current_node, rp->current_token,
+			create_interval(start, rp->i), tt);
 	if (rp->i < rp->current_token.len)
 		rp->i++;
 	return (true);
