@@ -12,6 +12,10 @@
 
 #include "expander_private.h"
 
+/* `n>&m` / `n<&m`: the source fd m must actually be open — bash fails the
+   whole redirection ("m: Bad file descriptor", status 1, command not run)
+   rather than letting dup2 fail silently at apply time, so we probe it
+   with fcntl here where a false return already means "redirect failed". */
 static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
 	int	target_fd;
@@ -26,7 +30,7 @@ static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	if (fname[0] == '-' && fname[1] == '\0')
 		return (ret->fd = -1, ret->close_fd = true, true);
 	target_fd = ft_atoi(fname);
-	if (target_fd < 0)
+	if (target_fd < 0 || fcntl(target_fd, F_GETFD) < 0)
 		return (false);
 	ret->fd = target_fd;
 	ret->close_fd = false;
