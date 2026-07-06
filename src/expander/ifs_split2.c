@@ -12,6 +12,18 @@
 
 #include "expander_private.h"
 
+/* Consume a delimiter that starts with a non-whitespace IFS char: the char
+   itself plus any IFS whitespace glued to its right (POSIX: adjacent IFS
+   white space belongs to the same delimiter, never makes an empty field). */
+static size_t	skip_nw_delimiter(const char *s, size_t n,
+					const char *ifs, size_t i)
+{
+	i++;
+	while (i < n && is_ws_ifs(s[i], ifs))
+		i++;
+	return (i);
+}
+
 static void	split_loop(t_vec *out, const char *s,
 				size_t n, const char *ifs)
 {
@@ -24,15 +36,13 @@ static void	split_loop(t_vec *out, const char *s,
 	start = i;
 	while (i < n)
 	{
-		if (is_nw_ifs(s[i], ifs))
-		{
-			push_f(out, s, start, i++);
-			start = i;
-		}
-		else if (is_ws_ifs(s[i], ifs))
+		if (is_nw_ifs(s[i], ifs) || is_ws_ifs(s[i], ifs))
 		{
 			push_f(out, s, start, i);
-			i = skip_ws_delimiter(s, n, ifs, i);
+			if (is_nw_ifs(s[i], ifs))
+				i = skip_nw_delimiter(s, n, ifs, i);
+			else
+				i = skip_ws_delimiter(s, n, ifs, i);
 			start = i;
 		}
 		else
