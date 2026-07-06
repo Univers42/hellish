@@ -33,6 +33,10 @@ char	*node_name_compound(t_ast_type tn)
 		return ("AST_BRACE_GROUP");
 	if (tn == AST_FUNCTION_DEF)
 		return ("AST_FUNCTION_DEF");
+	if (tn == AST_ARITH_CMD)
+		return ("AST_ARITH_CMD");
+	if (tn == AST_FOR_ARITH)
+		return ("AST_FOR_ARITH");
 	ft_assert(0);
 	return (0);
 }
