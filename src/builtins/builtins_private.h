@@ -55,6 +55,17 @@ typedef struct s_ulim
 	const char	*label;
 }	t_ulim;
 
+/* Cursor for the recursive-descent test-expression parser
+   (builtin_test_expr.c): the argv slice being parsed, the read position,
+   and an error flag that poisons the whole evaluation (exit 2). */
+typedef struct s_tx
+{
+	char	**av;
+	int		ac;
+	int		i;
+	int		err;
+}	t_tx;
+
 /* Block-buffered byte source for the read builtin (builtin_read4.c): on a
    seekable fd 0 bytes are taken from buf and the fd is lseek'd back over
    the unconsumed tail when the line ends; on pipes/ttys it degrades to the
@@ -95,6 +106,10 @@ bool	ft_is_valid_ident(char *id);
 /* [[ ]] conditional: eval_test = flat single test (also [ and test);
    eval_bracketed = dispatcher (validate/strip close, route [[ to db_or). */
 int		eval_test(char **av, int ac);
+int		tx_or(t_tx *t);
+bool	tx_is_binop(const char *s);
+int		tx_test_unary(char **a);
+int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);
 int		eval_bracketed(t_shell *st, char **av, int ac, int dbr);
 
