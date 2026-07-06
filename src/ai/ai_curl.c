@@ -44,27 +44,32 @@ static size_t	read_out(int fd, char *out, size_t cap)
 	return (len);
 }
 
-/* curl -fs --max-time S -X POST URL -H ct [-H auth] -d @-  (body on stdin).
-   -f fails (exit 22) on HTTP >=400 so we fall back; -s keeps it quiet. */
-static void	build_argv(char **a, const char *url, const char *auth,
-		const char *secs)
+/* curl -fs --max-time S --connect-timeout 3 -X POST URL -H ct [-H h]... -d @-
+   (body on stdin). -f fails (exit 22) on HTTP >=400 so we fall back; -s keeps
+   it quiet; --connect-timeout bounds a slow/hung TLS handshake separately from
+   the overall budget. hdrs is a NULL-terminated list of extra headers. */
+static void	build_argv(char **a, const char *url, char **hdrs, const char *secs)
 {
 	int	i;
+	int	j;
 
 	i = 0;
 	a[i++] = "curl";
 	a[i++] = "-fs";
 	a[i++] = "--max-time";
 	a[i++] = (char *)secs;
+	a[i++] = "--connect-timeout";
+	a[i++] = "3";
 	a[i++] = "-X";
 	a[i++] = "POST";
 	a[i++] = (char *)url;
 	a[i++] = "-H";
 	a[i++] = "Content-Type: application/json";
-	if (auth[0])
+	j = 0;
+	while (hdrs[j])
 	{
 		a[i++] = "-H";
-		a[i++] = (char *)auth;
+		a[i++] = hdrs[j++];
 	}
 	a[i++] = "-d";
 	a[i++] = "@-";
@@ -106,25 +111,18 @@ static int	run_curl(char **argv, const char *body, char *out, size_t cap)
 char	*ai_curl(const char *url, const char *key, const char *body, int tmo)
 {
 	char	*out;
-	char	*argv[16];
-	char	auth[512];
-	char	secs[16];
-	char	*n;
+	char	*argv[24];
+	char	*hdrs[3];
+	char	auth[AI_AUTH_CAP];
+	char	*secs;
 
-	auth[0] = '\0';
-	if (key && *key)
-	{
-		ft_strlcpy(auth, "Authorization: Bearer ", sizeof(auth));
-		ft_strlcat(auth, key, sizeof(auth));
-	}
+	ai_auth_headers(url, key, auth, hdrs);
 	if (tmo < 1000)
 		tmo = 1000;
-	n = ft_itoa(tmo / 1000);
-	ft_strlcpy(secs, n, sizeof(secs));
-	xfree(n);
-	build_argv(argv, url, auth, secs);
+	secs = ft_itoa(tmo / 1000);
+	build_argv(argv, url, hdrs, secs);
 	out = xmalloc(AI_MAX_REPLY + 1);
 	if (run_curl(argv, body, out, AI_MAX_REPLY + 1) != 0 || !out[0])
-		return (xfree(out), NULL);
-	return (out);
+		return (xfree(secs), xfree(out), NULL);
+	return (xfree(secs), out);
 }

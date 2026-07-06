@@ -14,86 +14,66 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-/* The JSON tail after the user message: inject the model when one is given,
-   else let llama-server use whatever it loaded. */
-static char	*chat_tail(const char *model)
+/* The configured model, but only for the cloud stage -- the local fallback
+   passes none so llama-server uses whatever it loaded. */
+static const char	*cloud_model(int cloud)
 {
-	char	*a;
-	char	*b;
-
-	if (!model || !*model)
-		return (ft_strdup("\"}],\"max_tokens\":256,\"stream\":false}"));
-	a = ft_strjoin("\"}],\"model\":\"", model);
-	b = ft_strjoin(a, "\",\"max_tokens\":256,\"stream\":false}");
-	xfree(a);
-	return (b);
+	if (!cloud)
+		return (NULL);
+	return (getenv("HELLISH_AI_MODEL"));
 }
 
-/* Build the chat request body for llama.cpp's OpenAI-compatible endpoint. */
-static char	*chat_body(const char *model, const char *msg)
+/* Try one stage of the provider chain. cloud=1 reads the configured endpoint
+   ($HELLISH_AI_URL/KEY/MODEL) and goes via curl (TLS + auth); cloud=0 is the
+   native local POST with no model. The body shape, system prompt, decoding
+   params, and reply key follow the detected provider and task (as_cmd). Reply
+   xfree'd; NULL on any failure so the caller can fall back. */
+static char	*try_provider(const char *user, int as_cmd, int cloud)
 {
-	char	*esc;
-	char	*head;
-	char	*tail;
-	char	*body;
-
-	esc = ai_json_escape(msg);
-	head = ft_strjoin("{\"messages\":[{\"role\":\"user\",\"content\":\"", esc);
-	xfree(esc);
-	tail = chat_tail(model);
-	body = ft_strjoin(head, tail);
-	xfree(head);
-	xfree(tail);
-	return (body);
-}
-
-/* Try one provider: build the body and send it -- a configured cloud endpoint
-   (url set) goes via curl for TLS + Bearer auth; otherwise the native local
-   POST. Returns the assistant text (xfree it) or NULL on any failure. */
-static char	*try_provider(const char *url, const char *key,
-		const char *model, const char *msg)
-{
+	char	*url;
 	char	*body;
 	char	*resp;
 	char	*out;
+	int		prov;
 
-	body = chat_body(model, msg);
+	url = NULL;
+	if (cloud)
+		url = getenv("HELLISH_AI_URL");
+	prov = ai_provider(url);
+	body = ai_body(prov, cloud_model(cloud), as_cmd, user);
 	if (url && *url)
-		resp = ai_curl(url, key, body, ai_timeout_ms());
+		resp = ai_curl(url, getenv("HELLISH_AI_KEY"), body, ai_timeout_ms());
 	else
 		resp = ai_post("/v1/chat/completions", body, ai_timeout_ms());
 	xfree(body);
 	if (!resp)
 		return (NULL);
-	out = ai_json_get_str(resp, "content");
+	out = ai_json_get_str(resp, ai_resp_key(prov));
 	return (xfree(resp), out);
 }
 
-/* The brain: prepend rich shell context to the instruction, then walk the
-   provider chain -- a configured cloud primary ($HELLISH_AI_URL, e.g. Groq)
-   first, then the local server -- so cloud answers when it can and we fall back
-   to local on any error / rate-limit (429). The local stage passes no model so
-   llama-server uses whatever it loaded. Strips a markdown fence when as_cmd. */
+/* The brain: prepend shell context (a lite cut for completions, rich for chat)
+   to the instruction, then walk the provider chain -- a configured cloud
+   primary ($HELLISH_AI_URL) first, then the local server -- so cloud answers
+   when it can and we fall back to local on any error / rate-limit (429). Strips
+   a markdown fence when as_cmd. */
 char	*ai_request(const char *instruction, int as_cmd)
 {
 	char	*ctx;
-	char	*msg;
+	char	*user;
 	char	*out;
-	char	*url;
 
-	out = ai_context();
+	out = ai_context_for(as_cmd);
 	ctx = ft_strjoin(out, "\nUser request: ");
 	xfree(out);
-	msg = ft_strjoin(ctx, instruction);
+	user = ft_strjoin(ctx, instruction);
 	xfree(ctx);
 	out = NULL;
-	url = getenv("HELLISH_AI_URL");
-	if (url && *url)
-		out = try_provider(url, getenv("HELLISH_AI_KEY"),
-				getenv("HELLISH_AI_MODEL"), msg);
+	if (getenv("HELLISH_AI_URL"))
+		out = try_provider(user, as_cmd, 1);
 	if (!out)
-		out = try_provider(NULL, NULL, NULL, msg);
-	xfree(msg);
+		out = try_provider(user, as_cmd, 0);
+	xfree(user);
 	if (out && as_cmd)
 		ai_strip_fence(out);
 	return (out);

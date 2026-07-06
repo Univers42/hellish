@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/22 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/22 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/07/06 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,38 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <stdlib.h>
+
+/* os (full context only), cwd, and the last command's exit status -- the
+   single most predictive signal for what the user does next. The status is
+   exported per interactive turn by ai_prompt_prep, so it reaches the forked
+   readline child through environ too. */
+static void	ctx_head(char *buf, size_t cap, int lite)
+{
+	struct utsname	u;
+	char			cwd[1024];
+	char			*st;
+
+	if (!lite && uname(&u) == 0)
+	{
+		ft_strlcat(buf, "os: ", cap);
+		ft_strlcat(buf, u.sysname, cap);
+		ft_strlcat(buf, "\n", cap);
+	}
+	if (getcwd(cwd, sizeof(cwd)))
+	{
+		ft_strlcat(buf, "cwd: ", cap);
+		ft_strlcat(buf, cwd, cap);
+		ft_strlcat(buf, "\n", cap);
+	}
+	st = getenv("HELLISH_LAST_STATUS");
+	if (st && *st)
+	{
+		ft_strlcat(buf, "last exit status: ", cap);
+		ft_strlcat(buf, st, cap);
+		ft_strlcat(buf, "\n", cap);
+	}
+}
 
 /* Append "git branch: <name>\n" by reading .git/HEAD directly (no fork). */
 static void	ctx_git(char *buf, size_t cap)
@@ -40,8 +72,8 @@ static void	ctx_git(char *buf, size_t cap)
 	ft_strlcat(buf, ref + 11, cap);
 }
 
-/* Append the last ~15 shell commands (oldest first) from readline history. */
-static void	ctx_hist(char *buf, size_t cap)
+/* Append the last `n` shell commands (oldest first) from readline history. */
+static void	ctx_hist(char *buf, size_t cap, int n)
 {
 	HIST_ENTRY	**h;
 	int			i;
@@ -50,7 +82,7 @@ static void	ctx_hist(char *buf, size_t cap)
 	if (!h || history_length == 0)
 		return ;
 	ft_strlcat(buf, "recent commands:\n", cap);
-	i = history_length - 15;
+	i = history_length - n;
 	if (i < 0)
 		i = 0;
 	while (i < history_length)
@@ -65,8 +97,8 @@ static void	ctx_hist(char *buf, size_t cap)
 	}
 }
 
-/* Append up to 60 non-hidden entries of the current directory. */
-static void	ctx_dir(char *buf, size_t cap)
+/* Append up to `max` non-hidden entries of the current directory. */
+static void	ctx_dir(char *buf, size_t cap, int max)
 {
 	DIR				*d;
 	struct dirent	*e;
@@ -78,7 +110,7 @@ static void	ctx_dir(char *buf, size_t cap)
 	ft_strlcat(buf, "files here: ", cap);
 	n = 0;
 	e = readdir(d);
-	while (e && n < 60)
+	while (e && n < max)
 	{
 		if (e->d_name[0] != '.')
 		{
@@ -92,34 +124,29 @@ static void	ctx_dir(char *buf, size_t cap)
 	ft_strlcat(buf, "\n", cap);
 }
 
-/* Build a shell-context preamble so the model can infer intent: OS, cwd, git
-   branch, recent commands, current directory. State-free, so it works in the
-   readline child too. xfree the result. ponytail: bounded 8 KB buffer; context
-   is truncated, never grown -- cheap and predictable. */
-char	*ai_context(void)
+/* Build the shell-context preamble so the model can infer intent. as_cmd
+   (inline completion) gets a lite, focused cut -- fewer prompt tokens is
+   directly faster on a CPU backend and less noise for a small model; chat
+   keeps the rich version. State-free, so it works in the readline child too.
+   xfree the result. ponytail: bounded 8 KB buffer, truncated, never grown. */
+char	*ai_context_for(int as_cmd)
 {
-	char			*buf;
-	char			cwd[1024];
-	struct utsname	u;
-	size_t			cap;
+	char	*buf;
+	int		cmds;
+	int		files;
 
-	cap = 8192;
-	buf = xmalloc(cap);
-	ft_strlcpy(buf, "[shell context]\n", cap);
-	if (uname(&u) == 0)
+	buf = xmalloc(8192);
+	ft_strlcpy(buf, "[shell context]\n", 8192);
+	cmds = 15;
+	files = 60;
+	if (as_cmd)
 	{
-		ft_strlcat(buf, "os: ", cap);
-		ft_strlcat(buf, u.sysname, cap);
-		ft_strlcat(buf, "\n", cap);
+		cmds = 5;
+		files = 20;
 	}
-	if (getcwd(cwd, sizeof(cwd)))
-	{
-		ft_strlcat(buf, "cwd: ", cap);
-		ft_strlcat(buf, cwd, cap);
-		ft_strlcat(buf, "\n", cap);
-	}
-	ctx_git(buf, cap);
-	ctx_hist(buf, cap);
-	ctx_dir(buf, cap);
+	ctx_head(buf, 8192, as_cmd);
+	ctx_git(buf, 8192);
+	ctx_hist(buf, 8192, cmds);
+	ctx_dir(buf, 8192, files);
 	return (buf);
 }

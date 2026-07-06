@@ -19,6 +19,36 @@
 /* 256 KB cap on a reply (max_tokens keeps responses far smaller). */
 # define AI_MAX_REPLY 262144
 
+/* Backing size for a single auth-header string (scheme + API key). */
+# define AI_AUTH_CAP 600
+
+/* Backend wire protocols. LOCAL/OPENAI share the OpenAI chat-completions shape;
+   ANTHROPIC is the Messages API (top-level system, x-api-key, "text" replies).
+   Chosen by ai_provider() from HELLISH_AI_PROVIDER or the endpoint URL. */
+enum e_ai_provider
+{
+	AI_LOCAL = 0,
+	AI_OPENAI,
+	AI_ANTHROPIC
+};
+
+/* Which backend a URL targets, the JSON reply key it uses, and the task-tuned
+   system prompt (as_cmd=1 -> bare-command completion, else assistant). */
+int		ai_provider(const char *url);
+char	*ai_resp_key(int provider);
+char	*ai_sys_prompt(int as_cmd);
+
+/* Build the request body for a provider: system prompt, decoding params, and
+   token budget picked by task (as_cmd = inline completion), model injected. */
+char	*ai_body(int provider, const char *model, int as_cmd,
+			const char *user);
+
+/* Fill hdrs[] (NULL-terminated, room for 2 + NULL) with the auth headers the
+   endpoint needs -- Bearer for OpenAI-compatible, x-api-key + version for
+   Anthropic. `auth` (>= AI_AUTH_CAP) backs the key header string. */
+void	ai_auth_headers(const char *url, const char *key, char *auth,
+			char **hdrs);
+
 /* Config, read from the environment on demand (no struct kept on t_shell):
    HELLISH_AI_HOST (default 127.0.0.1), HELLISH_AI_PORT (8080),
    HELLISH_AI_TIMEOUT_MS (20000). Returned host pointer is borrowed. */
@@ -58,8 +88,9 @@ int		ai_reachable(void);
    fence when as_cmd. Returns the reply (xfree it) or NULL. */
 char	*ai_request(const char *instruction, int as_cmd);
 
-/* Shell-context preamble (os, cwd, git, recent commands, dir). xfree it. */
-char	*ai_context(void);
+/* Shell-context preamble (os, cwd, last status, git, recent commands, dir).
+   as_cmd gets a lite cut -- fewer prompt tokens, faster inference. xfree it. */
+char	*ai_context_for(int as_cmd);
 
 /* POST a JSON body to a cloud endpoint via curl (TLS + optional Bearer key).
    Returns the response body (xfree it) or NULL. */
@@ -86,5 +117,9 @@ int		ai_select(char **names, int n, const char *title);
    it) or NULL. The prompt only ever reads -- it never calls the network. */
 char	*ai_tip_read(void);
 void	ai_tip_spawn(t_shell *state);
+
+/* 1 when the machine is already busy (loadavg vs cores): background AI work
+   defers so an inference burst never fights the user's real commands. */
+int		ai_load_high(void);
 
 #endif

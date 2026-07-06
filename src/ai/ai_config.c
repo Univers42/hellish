@@ -46,12 +46,21 @@ void	ai_sync_env(t_shell *state)
 }
 
 /* Per interactive REPL turn: mirror the AI env vars into environ (so the forked
-   readline child sees HELLISH_AI_*), then refresh the background pro-tip. Kept
-   out of the hot non-interactive path. */
+   readline child sees HELLISH_AI_*), export the last exit status for the AI
+   context (failure is the strongest predictor of the next command), then
+   refresh the background pro-tip. Kept out of the hot non-interactive path. */
 void	ai_prompt_prep(t_shell *state)
 {
+	char	*st;
+
 	if (state->metinp == INP_RL)
+	{
 		ai_sync_env(state);
+		st = ft_itoa(state->last_cmd_st_exe.status);
+		if (st)
+			setenv("HELLISH_LAST_STATUS", st, 1);
+		xfree(st);
+	}
 	ai_tip_spawn(state);
 }
 

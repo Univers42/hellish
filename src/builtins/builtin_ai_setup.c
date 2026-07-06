@@ -33,6 +33,9 @@ static int	preset(const char *name, char **url, char **model)
 	if (!ft_strcmp(name, "openai"))
 		return (*url = "https://api.openai.com/v1/chat/completions",
 			*model = "gpt-4o-mini", 1);
+	if (!ft_strcmp(name, "anthropic") || !ft_strcmp(name, "claude"))
+		return (*url = "https://api.anthropic.com/v1/messages",
+			*model = "claude-3-5-sonnet-latest", 1);
 	return (0);
 }
 
@@ -113,8 +116,8 @@ int	cmd_ai_setup(t_shell *state, char **av, size_t n)
 	url = NULL;
 	model = NULL;
 	if (n == 0 || (ft_strcmp(av[0], "local") && !preset(av[0], &url, &model)))
-		return (ft_eprintf("usage: ai setup groq|openrouter|openai|local "
-				"[apikey]\n"), 2);
+		return (ft_eprintf("usage: ai setup "
+				"groq|openrouter|openai|anthropic|local [apikey]\n"), 2);
 	key[0] = '\0';
 	if (n >= 2)
 		ft_strlcpy(key, av[1], sizeof(key));
