@@ -314,10 +314,17 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# AI subsystem regression tests: provider abstraction + system prompt (via a
+# fake LLM server, stdlib only), REPL latency on a blackholed backend (pty), and
+# prompt-arrow duplication on resize/history navigation (needs pyte; skipped if
+# absent). No real model or GPU required. See tests/ai_test.py.
+ai-test: all
+	@python3 $(TEST_DIR)/ai_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test
+	hist-test ai-test
 
 # Optional LLM backend (llama.cpp's OpenAI-compatible server). Lives in its own
 # compose file (docker-compose.ai.yml) so the plain docker workflow is untouched.

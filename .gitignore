@@ -14,3 +14,6 @@ tests/bench_results.txt
 .env
 .env.*
 !.env.example
+
+# hellish AI test scratch
+tests/.ai_test_home/
