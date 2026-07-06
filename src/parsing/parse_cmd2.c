@@ -49,27 +49,18 @@ static bool	dispatch_cmd(t_shell *state, t_parser *parser,
 }
 
 /* Parse one command (simple, compound, subshell, or function definition).
-   TT_ARITH_START at this level is always a syntax error -- `((` can only
-   appear in arithmetic evaluation, not as a standalone command without the
-   full `((...))` enclosure that the lexer would have classified correctly.
+   TT_ARITH_START routes through the compound path (is_compound_start) to
+   parse_arith_command — the `(( expr ))` arithmetic command.
    On success dispatch_cmd fills ret.children; on failure parser->res is set
    accordingly and ret is returned incomplete for the caller to propagate. */
 t_ast_node	parse_command(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens)
 {
 	t_ast_node	ret;
-	t_tt		next;
 
 	ret = (t_ast_node){.node_type = AST_COMMAND};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
-	if (next == TT_ARITH_START)
-	{
-		parser->res = RES_ERR;
-		state->last_cmd_st_exe = res_status(1);
-		return (ret);
-	}
 	if (!dispatch_cmd(state, parser, tokens, &ret))
 		return (ret);
 	return (ret);

@@ -15,12 +15,13 @@
 /* True when tt can open a compound command: one of the structural keywords
    or `!` (pipeline negation). TT_BANG is included here because `! pipeline`
    is grammatically a command and needs to be routed through the compound path
-   rather than falling through to simple-command. TT_LBRACE is for `{ }`. */
+   rather than falling through to simple-command. TT_LBRACE is for `{ }`;
+   TT_ARITH_START is the `((` of an arithmetic command. */
 bool	is_compound_start(t_tt tt)
 {
 	return (tt == TT_IF || tt == TT_WHILE || tt == TT_UNTIL
 		|| tt == TT_FOR || tt == TT_CASE || tt == TT_LBRACE
-		|| tt == TT_BANG);
+		|| tt == TT_BANG || tt == TT_ARITH_START);
 }
 
 /* True when tt is a keyword that closes a compound construct. The parser

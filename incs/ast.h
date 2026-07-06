@@ -48,7 +48,9 @@ typedef enum e_ast_type
 	AST_CASE,
 	AST_CASE_ITEM,
 	AST_BRACE_GROUP,
-	AST_FUNCTION_DEF
+	AST_FUNCTION_DEF,
+	AST_ARITH_CMD,
+	AST_FOR_ARITH
 }	t_ast_type;
 
 /* The universal AST node.  Used for EVERY grammar construct (commands,

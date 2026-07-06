@@ -106,9 +106,11 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 	t_tt		next;
 
 	init_ast_node_children(&ret, AST_FOR);
-	vec_push_int(&parser->parse_stack, TT_FOR);
 	(void)deque_pop_start(&tokens->deqtok);
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	if (next == TT_ARITH_START)
+		return (free_ast(&ret), parse_for_arith(state, parser, tokens));
+	vec_push_int(&parser->parse_stack, TT_FOR);
 	if (next == TT_END)
 		return (parser->res = RES_GETMOREINPUT, ret);
 	if (!is_word_token(next))
