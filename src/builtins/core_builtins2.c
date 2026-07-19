@@ -70,9 +70,10 @@ static char	*cd_resolve(t_shell *state, char *op, t_cdopt *o)
 	return (ft_strdup(op));
 }
 
-/* The 0-or-1-operand cases. No operand -> $HOME. Empty operand -> POSIX
-   no-op success (bash stays put and returns 0). "-" -> $OLDPWD. Everything
-   else is resolved (CDPATH) then handed to cd_apply, which does the
+/* The 0-or-1-operand cases. No operand -> $HOME. Empty operand -> the bash
+   "null directory" error, status 1, without moving (dash silently succeeds,
+   but bash is the suite's oracle). "-" -> $OLDPWD. Everything else is
+   resolved (CDPATH) then handed to cd_apply, which does the
    logical/physical chdir and refreshes $PWD/$OLDPWD. */
 static int	cd_one(t_shell *state, t_cdopt *o, char *op)
 {
@@ -86,7 +87,7 @@ static int	cd_one(t_shell *state, t_cdopt *o, char *op)
 			return (1);
 	}
 	else if (!op[0])
-		return (0);
+		return (ft_eprintf("%s: cd: null directory\n", state->ctx), 1);
 	else if (!ft_strcmp(op, "-"))
 	{
 		if (cd_target_dash(state, &target, o))
@@ -106,7 +107,10 @@ static int	cd_one(t_shell *state, t_cdopt *o, char *op)
    Options are parsed first (invalid option -> usage + exit 2), then operands
    are counted: 0/1 go through cd_one, exactly 2 trigger the substitution
    extension, 3+ are the bash "too many arguments" error. In POSIX mode
-   (--posix / set -o posix) the extension is off, so 2 operands error too. */
+   (--posix / set -o posix, read live so a mid-session toggle takes effect)
+   the extension is off, so 2 operands error too. The error status follows
+   the mode's oracle: bash >= 5.3 exits 2 on too many operands, zsh exits 1,
+   so POSIX mode returns 2 and the default (zsh-flavoured) mode returns 1. */
 int	builtin_cd(t_shell *state, t_vec argv)
 {
 	t_cdopt	o;
@@ -121,7 +125,12 @@ int	builtin_cd(t_shell *state, t_vec argv)
 		return (n);
 	n = cd_collect_ops(argv, first, &op0, &op1);
 	if (n >= 3 || (n == 2 && state->opt_posix))
-		return (ft_eprintf("%s: cd: too many arguments\n", state->ctx), 1);
+	{
+		ft_eprintf("%s: cd: too many arguments\n", state->ctx);
+		if (state->opt_posix)
+			return (2);
+		return (1);
+	}
 	if (n == 2)
 		return (cd_two_arg(state, &o, op0, op1));
 	if (n == 1)
