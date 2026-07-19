@@ -20,8 +20,11 @@ void	exit_clean(t_shell *state, int code);
    goes through a full tilde/command-subst/parameter pass but NOT field
    splitting or globbing (POSIX says the word is expanded in double-quote
    context).  This is what makes ${VAR:-~/bin} expand the ~ correctly while
-   ${VAR:-*.c} does NOT produce a glob list. */
-char	*expand_param_word(t_shell *state, const char *word, int wlen)
+   ${VAR:-*.c} does NOT produce a glob list.  `dq` marks a ${...} that sits
+   inside double quotes: the word then keeps the dq backslash rules ("\z"
+   stays "\z") via the wrap in expand_param_word_dq instead of the unquoted
+   reparse below which strips the escape. */
+char	*expand_param_word(t_shell *state, const char *word, int wlen, bool dq)
 {
 	t_ast_node	w;
 	t_token		t;
@@ -30,6 +33,8 @@ char	*expand_param_word(t_shell *state, const char *word, int wlen)
 
 	if (wlen <= 0)
 		return (ft_strdup(""));
+	if (dq)
+		return (expand_param_word_dq(state, word, wlen));
 	t.start = (char *)word;
 	t.len = wlen;
 	t.tt = TT_WORD;
@@ -93,10 +98,10 @@ char	*default_or_alt(t_shell *state, char *val, t_pe_op o)
 	if (o.opc == '-')
 	{
 		if (act)
-			return (expand_param_word(state, o.word, o.wlen));
+			return (expand_param_word(state, o.word, o.wlen, o.dq));
 		return (ft_strdup(val));
 	}
 	if (act)
 		return (ft_strdup(""));
-	return (expand_param_word(state, o.word, o.wlen));
+	return (expand_param_word(state, o.word, o.wlen, o.dq));
 }

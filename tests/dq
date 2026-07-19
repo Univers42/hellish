@@ -101,3 +101,17 @@ echo "no space redir">nospace
 cat nospace
 
 echo "end"
+echo "${undef-\$}"
+echo "${undef-\(}"
+echo "${undef-\z}"
+echo "${undef-\"}"
+echo "${undef-\`}"
+echo "${undef-\\}"
+echo "${undef-\e}"
+echo ${undef-"\z"}
+u=set; echo "${u-\z}" "${u:+\y}"
+echo "${undef-'a b'}"
+v=hi; echo "${undef-$v!}"
+echo ${undef-\z} ${undef-\$}
+echo x${undef-\}}x
+echo "${e1=\z}" "$e1"
