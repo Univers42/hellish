@@ -57,6 +57,8 @@ int	builtin_alias(t_shell *state, t_vec argv)
 	}
 	ret = 0;
 	i = 1;
+	if (i < argv.len && !ft_strcmp(((char **)argv.ctx)[i], "--"))
+		i++;
 	while (i < argv.len)
 	{
 		if (set_alias_arg(state, ((char **)argv.ctx)[i]))

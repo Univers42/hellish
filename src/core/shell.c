@@ -134,6 +134,8 @@ static void	repl_shell(t_shell *state)
 		free_ast(&state->tree);
 		xfree(state->input.ctx);
 		state->input = (t_string){0};
+		xfree(state->alias_exp.ctx);
+		state->alias_exp = (t_string){0};
 		xfree(state->hd_src);
 		state->hd_src = NULL;
 		state->hd_pos = 0;
@@ -146,11 +148,19 @@ static void	repl_shell(t_shell *state)
 /* On the way out: fire the EXIT trap first (bash runs it last, right before
    the shell dies), then free the environment and everything else we own, and
    finally exit carrying the last command's status. Order matters -- the trap
-   may still want to read variables, so we free the env *after* it runs. */
+   may still want to read variables, so we free the env *after* it runs.
+   The status is snapshotted *before* the trap runs: POSIX says the shell
+   exits with the status it had on reaching the trap, not with the status of
+   the trap body (`trap 'echo bye' EXIT; false` exits 1, and a script dying
+   on a parse error still exits 2 after its trap).  Only an explicit `exit N`
+   inside the body overrides that, by never returning here at all. */
 static void	off(t_shell *state)
 {
+	t_execution_state	final;
+
+	final = state->last_cmd_st_exe;
 	run_exit_trap(state);
 	free_env(&state->env);
 	free_all_state(state);
-	forward_exit_status(state->last_cmd_st_exe);
+	forward_exit_status(final);
 }

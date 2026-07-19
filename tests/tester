@@ -17,6 +17,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "builtins" "compound" "crazy2" "var" "pipe" "sq" "dq" "redir"
         "pipes" "redirects" "extras" "echo_edge_cases" "advanced_edge_cases"
         "regress_hellish" "regress_combos" "cd_posix" "torture"
+        "alias_posix" "builtins_posix"
     )
 fi
 

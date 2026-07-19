@@ -100,6 +100,8 @@ bool	csf_eligible(t_shell *state, const char *s)
 
 	if (state->opt_errexit || state->opt_nounset || state->opt_noexec)
 		return (false);
+	if (!alias_table_empty(&state->aliases))
+		return (false);
 	i = 0;
 	while (s[i] == ' ' || s[i] == '\t')
 		i++;

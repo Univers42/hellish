@@ -135,6 +135,12 @@ typedef struct s_pos
    recovers it -- matching bash, which remembers a finished job until waited. */
 # define BG_DONE_MAX 128
 
+/* Trap table size: slot 0 is the EXIT pseudo-signal, slots 1..64 are real
+   signal numbers. bash accepts numeric trap conditions up to 64 (the Linux
+   realtime maximum) and rejects 65+, so the table must reach that far even
+   though only 1..31 have names in the lookup table. */
+# define SH_NSIG 65
+
 typedef struct s_bg_done
 {
 	pid_t	pid;
@@ -145,6 +151,7 @@ typedef struct s_shell
 {
 	/* --- I/O and readline state --- */
 	t_string			input; /* current input line buffer */
+	t_string			alias_exp; /* alias-expanded copy fed to the lexer */
 	t_vec_env			env; /* the shell's variable store */
 	t_string			cwd; /* current working directory string */
 	t_ast_node			tree; /* parsed AST for current input */
@@ -169,7 +176,12 @@ typedef struct s_shell
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */
-	int					getopts_pos; /* OPTIND state for `getopts` builtin */
+	int					getopts_pos; /* getopts char pos inside current word */
+	char				*getopts_ref; /* OPTIND value getopts last wrote; */
+	/* compared by ADDRESS only (never dereferenced) to detect that the
+	   user assigned OPTIND since the previous getopts call -- any outside
+	   assignment stores a fresh string, so a pointer mismatch means the
+	   intra-word scan position must be reset (mirrors bash's sv_optind). */
 	/* --- expansion state --- */
 	bool				input_expanded; /* alias expansion already done */
 	int					last_cmdsub_status; /* $? inside $(...) body */
@@ -193,7 +205,7 @@ typedef struct s_shell
 	char				*path_dirs_src; /* PATH string the split came from */
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
 	/* --- traps and readonly vars --- */
-	char				*traps[32]; /* trap strings, indexed by signal num */
+	char				*traps[SH_NSIG]; /* trap strings, by signal num */
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */

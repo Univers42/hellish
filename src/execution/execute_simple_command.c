@@ -13,7 +13,6 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
-void	apply_alias(t_shell *state, t_executable_cmd *cmd);
 void	replace_null_argv_with_empty(t_executable_cmd *cmd);
 
 /* Run a shell function in the parent process.  Pre-assignment NAME=val
@@ -110,8 +109,9 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 
 /* The full lifecycle of a simple command: expand its AST word nodes into
    a concrete argv + pre-assign list (expand_simple_command), sanitise any
-   NULL pointers that can appear after glob/IFS expansion, apply aliases,
-   optionally print the trace (set -x), then dispatch.  An expansion error
+   NULL pointers that can appear after glob/IFS expansion, optionally
+   print the trace (set -x), then dispatch (aliases were already spliced
+   by the input scanner before the lexer ran).  An expansion error
    (ambiguous redirect, signal unwind) short-circuits before dispatch.
    The cmd struct is always freed on all paths to stay leak-flat. */
 t_execution_state	execute_simple_command(t_shell *state,
@@ -133,7 +133,6 @@ t_execution_state	execute_simple_command(t_shell *state,
 	if (!cmd.argv.ctx)
 		cmd.argv.len = 0;
 	replace_null_argv_with_empty(&cmd);
-	apply_alias(state, &cmd);
 	if (state->opt_xtrace && cmd.argv.len > 0)
 		xtrace_print(state, &cmd.argv);
 	return (dispatch_cmd(state, &cmd, exe));

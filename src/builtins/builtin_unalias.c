@@ -33,6 +33,8 @@ static int	unalias_names(t_shell *state, t_vec argv)
 	av = (char **)argv.ctx;
 	ret = 0;
 	i = 1;
+	if (i < argv.len && !ft_strcmp(av[i], "--"))
+		i++;
 	while (i < argv.len)
 	{
 		if (alias_remove(&state->aliases, av[i]))
