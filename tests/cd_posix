@@ -1,8 +1,9 @@
 # cd: POSIX/bash-parity cases added by the cd audit (diffed vs bash --posix).
 # Covers: -- terminator, -L/-P and combined/last-wins options, invalid option
-# (exit 2), empty operand (no-op success), logical vs physical symlink walking,
-# textual ./.. collapsing, CDPATH search + echo. Each symlink/CDPATH case is
-# self-cleaning so hellish and bash see identical state in the shared workdir.
+# (exit 2), empty operand (bash >= 5.3 "null directory" error, exit 1),
+# logical vs physical symlink walking, textual ./.. collapsing, CDPATH search
+# + echo. Each symlink/CDPATH case is self-cleaning so hellish and bash see
+# identical state in the shared workdir.
 cd -- /tmp && pwd
 cd -L -- /tmp && pwd
 cd -P /tmp && pwd
@@ -11,6 +12,9 @@ cd -PL /tmp && pwd
 cd /tmp && cd -- && pwd
 cd ""; echo rc=$?
 cd "" && echo stayed=$?
+cd -- ""; echo rc=$?
+cd "" 2>/dev/null; pwd
+set -o posix; cd "" 2>/dev/null; echo rc=$?
 cd -x 2>/dev/null; echo rc=$?
 cd -Q 2>/dev/null; echo rc=$?
 cd /tmp/.///. && pwd
@@ -26,9 +30,20 @@ unset HOME; cd 2>/dev/null; echo rc=$?
 unset HOME; echo ~
 unset HOME; cd ~ && echo cwd-ok
 # POSIX mode: the zsh-style two-argument `cd old new` extension is OFF, so two
-# (or more) operands are the bash "too many arguments" error. Prefixed with
-# `set -o posix` so hellish enters POSIX mode and matches `bash --posix`.
+# (or more) operands are the bash "too many arguments" error (exit 2 since
+# bash 5.3). Prefixed with `set -o posix` so hellish enters POSIX mode and
+# matches `bash --posix`.
 set -o posix; cd a b 2>/dev/null; echo rc=$?
 set -o posix; cd a b 2>/dev/null && echo moved; echo rc=$?
 set -o posix; cd a b c 2>/dev/null; echo rc=$?
+set -o posix; cd /tmp /tmp 2>/dev/null; echo rc=$?
 set -o posix; cd /tmp && pwd
+# Default mode, two operands where the zsh substitution finds `old` in $PWD
+# but the substituted path does not exist: hellish exits 2, matching what
+# bash sees (a two-operand cd, its "too many arguments", status 2).
+cd $PWD nosuchsubdir_zz 2>/dev/null; echo rc=$?
+cd "$PWD" nosuchsubdir_zz 2>/dev/null && echo moved; echo rc=$?
+# Neighbours pinned while auditing: `cd -` without OLDPWD and an unexpandable
+# tilde operand are both plain failures (exit 1) with no stdout.
+unset OLDPWD; cd - 2>/dev/null; echo rc=$?
+cd ~nosuchuser_xyz 2>/dev/null; echo rc=$?

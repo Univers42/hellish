@@ -3,7 +3,8 @@
 # cd_posix_compare.sh -- verify hellish's POSIX mode (`--posix`) against the
 # shell it must match there: bash --posix. In POSIX mode the zsh-style
 # two-argument `cd old new` extension is disabled, so two (or more) operands
-# become the bash "too many arguments" error (exit 1) -- exactly like bash.
+# become the bash "too many arguments" error (exit 2 since bash 5.3) --
+# exactly like bash.
 #
 # This complements `make cd-zsh-test` (which checks the *extension* in the
 # default, non-POSIX mode against real zsh): here we check the *absence* of the
@@ -67,12 +68,15 @@ else
   fail=$((fail+1)); printf '  \033[31mFAIL\033[0m cd aaa bbb -> [%s] (want %s)\n' "$got" "$SB/bbb"
 fi
 
-# Guard: `set -o posix` at runtime gates the extension the same way --posix does.
+# Guard: `set -o posix` at runtime gates the extension the same way --posix
+# does. The expected status comes from live bash --posix (1 before bash 5.3,
+# 2 from 5.3 on) so the guard tracks the same oracle as the golden suite.
 got=$(cd "$SB/aaa"; "$HELLISH" -c 'set -o posix; cd aaa bbb 2>/dev/null; echo rc=$?' | strip_h)
-if [ "$got" = "rc=1" ]; then
-  pass=$((pass+1)); printf '  \033[32mOK\033[0m   set -o posix; cd aaa bbb -> rc=1\n'
+want=$(cd "$SB/aaa"; bash --posix -c 'cd aaa bbb 2>/dev/null; echo rc=$?')
+if [ "$got" = "$want" ]; then
+  pass=$((pass+1)); printf '  \033[32mOK\033[0m   set -o posix; cd aaa bbb -> %s\n' "$got"
 else
-  fail=$((fail+1)); printf '  \033[31mFAIL\033[0m set -o posix; cd aaa bbb -> [%s] (want rc=1)\n' "$got"
+  fail=$((fail+1)); printf '  \033[31mFAIL\033[0m set -o posix; cd aaa bbb -> [%s] (want %s)\n' "$got" "$want"
 fi
 
 printf '\n\033[1m== %d pass, %d fail (bash %s) ==\033[0m\n' \
