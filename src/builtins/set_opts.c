@@ -38,12 +38,17 @@ void	xtrace_print(t_shell *state, t_vec *argv)
 }
 
 /* Called when -u (nounset) is set and an unset variable is expanded. In
-   script mode we exit immediately (POSIX requires this). In interactive mode
+   script mode we exit immediately (POSIX requires this): bash --posix exits
+   127 here, except when errexit is also active — then bash's errexit
+   machinery reaches the exit first with status 1.  We replicate both codes
+   exactly since test harnesses diff $? against bash.  In interactive mode
    we report the error but keep the session alive — crashing the REPL every
    time you mistype a variable name would be unbearable. */
 void	nounset_abort(t_shell *state, const char *name, int len)
 {
 	ft_eprintf("%s: %.*s: parameter not set\n", state->ctx, len, name);
+	if (state->metinp != INP_RL && state->opt_errexit)
+		exit_clean(state, 1);
 	if (state->metinp != INP_RL)
 		exit_clean(state, 127);
 	state->last_cmd_st_exe = (t_execution_state){.status = 1};

@@ -31,13 +31,17 @@ void	restore_temp_assigns(t_shell *state, t_vec *saves)
 
 /* Write the initial value for a `local` variable.  If no '=' was given
    the variable is set to "" (not unset) so `${local_var:-default}` does
-   not fall through to the default.  The key string is owned by the env
-   entry after env_create; do not xfree it here. */
+   not fall through to the default.  Under `set -a` (allexport) a valued
+   `local NAME=v` is exported, exactly like bash and dash; a valueless
+   `local NAME` stays unexported because bash leaves it unset — exporting
+   our "" placeholder would put NAME= in the environment where bash shows
+   nothing.  The key string is owned by the env entry after env_create;
+   do not xfree it here. */
 static void	local_set_var(t_shell *state, char *key, char *eq)
 {
 	if (eq)
 		env_set(&state->env,
-			env_create(key, ft_strdup(eq + 1), false));
+			env_create(key, ft_strdup(eq + 1), state->opt_allexport));
 	else
 		env_set(&state->env, env_create(key, ft_strdup(""), false));
 }

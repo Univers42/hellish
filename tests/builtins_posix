@@ -19,4 +19,46 @@ g() { for i in 1 2 3; do if [ $i = 2 ]; then return 0; fi; echo $i; done; }; g; 
 set -- -a -b -c; while getopts abc o; do echo opt=$o; done
 set -- -n 5 rest; getopts n: o; echo "$o=$OPTARG"
 set -- -x -y; getopts xy o; echo $o; getopts xy o; echo $o
+echo $OPTIND
+set -- -c foo -h; getopts 'hc:' opt-; echo "status=$? opt=$opt OPTARG=$OPTARG OPTIND=$OPTIND"
+getopts a bad-name; echo status=$?
+set -- -h -c; while getopts "hc:" opt; do case $opt in h) ;; c) ;; '?') echo ERROR $OPTIND; exit 2;; esac; done; echo status=$?
+set -- -a; getopts 'a:' opt; echo "status=$? opt=$opt OPTARG=${OPTARG-UNSET}"
+set -- -a; getopts ':a:' opt; echo "status=$? opt=$opt OPTARG=$OPTARG OPTIND=$OPTIND"
+while getopts "hc:" opt; do echo '-'; done; echo OPTIND=$OPTIND; set -- -h -c foo x y z; while getopts "hc:" opt; do echo '-'; done; echo OPTIND=$OPTIND; set --; while getopts "hc:" opt; do echo '-'; done; echo OPTIND=$OPTIND
+set -- -a -b -c -d; while getopts abcd o; do :; done; echo $OPTIND; set -- -x -y; getopts xy o; echo "$? $o $OPTIND"
+set -- -ab; getopts ab o; echo "$o $OPTIND"; OPTIND=1; set -- -cd; getopts cd o; echo "$o $OPTIND"
+set -- -ab; getopts ab o; set -- -cd; getopts cd o; echo "$o $OPTIND"
+set -- -a -b -c; OPTIND=2; getopts abc o; echo "$o $OPTIND"
+OPTIND=0; getopts a: foo; echo "$? $OPTIND"
+set -- x- y; getopts a o; echo "$? $o $OPTIND"
+getopts "c:" opt -c10; echo "$opt=$OPTARG"; getopts "c:" opt -c10; echo "opt=$opt OPTARG=${OPTARG-UNSET}"
+getopts ab name -a; echo "name=$name OPTARG=${OPTARG-UNSET}"
+set -u; getopts ab name -a; echo name=$name; echo OPTARG=$OPTARG
+set -- -a foo bar; getopts a: o; getopts a: o; echo "end $o OPTARG=${OPTARG-UNSET} $OPTIND"
+set -- -a -- -c operand; while getopts a name; do echo $name; done; shift $((OPTIND - 1)); echo "$#" "$@"
 : ${UNSET:=def}; echo $UNSET
+set -u a b c; echo "$@"
+set a b c; set -u --; echo "$@"
+set a b c; set -u -- x y z; echo "$@"
+set -o errexit a b c; echo "$@"
+set -eu; echo "[$unset]"; echo status=$?
+set -u; echo "[$unset]"; echo after
+set - a b; echo "$@"
+set - -; echo "$@"
+set -- --; echo "$@"
+set a b; set -; echo "$@"
+set -x -v; set - a b c; echo "$@"; case $- in *x*) echo xon;; esac; case $- in *v*) echo von;; esac
+set x - y z; echo "$@"
+set -x - -v; echo argv "$@"; case $- in *x*) echo xon;; esac
+set +; echo plus "$@"
+set -x + -v x y; echo plus "$@"; case $- in *v*) echo von;; esac
+set - +; echo "$@"; set + -; echo "$@"
+set -a; f() { local Z9=zz; env | grep "^Z9="; }; f
+set -a; f() { local n; env | grep -c "^n="; }; f
+set -u; x=$y; echo after
+set -eu; x=$y; echo after
+set -u; f2() { x=$blarg; }; f() { eval "f2"; }; echo before; eval f; echo after
+set -eu -o pipefail; echo ok
+set -u +u; echo "[$unset]"
+set -eu; echo ok; false; echo done

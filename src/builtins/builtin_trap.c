@@ -17,41 +17,60 @@
 /* The signal name table is stored in a static local so it is initialised
    exactly once and shared between every call (no heap allocation needed).
    The sentinel `{NULL, -1}` lets callers iterate without knowing the count.
-   Numeric signal names (e.g. "15") fall through to ft_atoi — that way
-   `trap '' 15` and `trap '' TERM` both work. */
+   Every nameable Linux signal 1..31 is present: bash/dash accept a trap on
+   any of them -- even KILL and STOP, where the trap is stored but the kernel
+   simply never delivers (the smoosh-suite regression).  Short names, because
+   that is what `bash --posix` prints in trap listings. */
 static t_signame	*trap_sig_table(void)
 {
 	static t_signame	t[] = {{"EXIT", 0}, {"HUP", SIGHUP},
-	{"INT", SIGINT}, {"QUIT", SIGQUIT}, {"TERM", SIGTERM}, {"USR1", SIGUSR1},
-	{"USR2", SIGUSR2}, {"ALRM", SIGALRM}, {"PIPE", SIGPIPE},
-	{"TSTP", SIGTSTP}, {NULL, -1}};
+	{"INT", SIGINT}, {"QUIT", SIGQUIT}, {"ILL", SIGILL}, {"TRAP", SIGTRAP},
+	{"ABRT", SIGABRT}, {"BUS", SIGBUS}, {"FPE", SIGFPE}, {"KILL", SIGKILL},
+	{"USR1", SIGUSR1}, {"SEGV", SIGSEGV}, {"USR2", SIGUSR2},
+	{"PIPE", SIGPIPE}, {"ALRM", SIGALRM}, {"TERM", SIGTERM},
+	{"STKFLT", SIGSTKFLT}, {"CHLD", SIGCHLD}, {"CONT", SIGCONT},
+	{"STOP", SIGSTOP}, {"TSTP", SIGTSTP}, {"TTIN", SIGTTIN},
+	{"TTOU", SIGTTOU}, {"URG", SIGURG}, {"XCPU", SIGXCPU},
+	{"XFSZ", SIGXFSZ}, {"VTALRM", SIGVTALRM}, {"PROF", SIGPROF},
+	{"WINCH", SIGWINCH}, {"IO", SIGIO}, {"PWR", SIGPWR},
+	{"SYS", SIGSYS}, {NULL, -1}};
 
 	return (t);
 }
 
-/* Translate "HUP", "SIGHUP", or "1" into the signal number. The "SIG"
-   prefix is silently stripped so both forms are accepted. Returns -1 when
-   the name is not recognised — callers treat that as a usage error. */
+/* Translate "HUP", "SIGHUP", "hup" or "1" into the signal number.  Both
+   bash and dash match signal names case-insensitively (`trap - int` works),
+   so we do too, and the "SIG" prefix is stripped the same way.  A numeric
+   spec must be all digits and in range 0..64 -- bash rejects "100" and
+   "9x" as conditions, so no sloppy atoi here.  Returns -1 when the spec is
+   not recognised; callers report it and keep processing (bash resets the
+   valid conditions in the list even when one is bad). */
 int	trap_sig_from_name(const char *s)
 {
 	t_signame	*t;
 	int			i;
 
-	if (!ft_strncmp(s, "SIG", 3))
+	if (ft_isdigit((unsigned char)s[0]))
+	{
+		if (trap_arg_is_reset(s))
+			return (ft_atoi(s));
+		return (-1);
+	}
+	if (ft_tolower((unsigned char)s[0]) == 's'
+		&& ft_tolower((unsigned char)s[1]) == 'i'
+		&& ft_tolower((unsigned char)s[2]) == 'g' && s[3])
 		s += 3;
 	t = trap_sig_table();
 	i = -1;
 	while (t[++i].name)
-		if (!ft_strcmp(s, t[i].name))
+		if (!ft_strcasecmp(s, t[i].name))
 			return (t[i].num);
-	if (s[0] >= '0' && s[0] <= '9')
-		return (ft_atoi(s));
 	return (-1);
 }
 
-/* Signal number to short name (e.g. 2 -> "INT") for `trap -p` output and
-   `trap --` re-readable format. Returns "?" for anything not in the table
-   so the caller can still print something meaningful. */
+/* Signal number to short name (e.g. 2 -> "INT") for trap listings, which is
+   the form `bash --posix` prints.  NULL for a signal with no name (the
+   realtime range 32..64); print_one_trap falls back to the raw number. */
 char	*sig_to_name(int num)
 {
 	t_signame	*t;
@@ -62,7 +81,7 @@ char	*sig_to_name(int num)
 	while (t[++i].name)
 		if (t[i].num == num)
 			return ((char *)t[i].name);
-	return ("?");
+	return (NULL);
 }
 
 /* Print all active traps in `trap -- 'cmd' SIG` re-readable form, which
@@ -73,39 +92,46 @@ int	list_traps(t_shell *state)
 	int	i;
 
 	i = -1;
-	while (++i < 32)
+	while (++i < SH_NSIG)
 		if (state->traps[i])
-			ft_printf("trap -- '%s' %s\n", state->traps[i], sig_to_name(i));
+			print_one_trap(state, i);
 	return (0);
 }
 
-/* trap [action condition ...]: set signal handlers or print them.
-   `trap` alone lists all set traps. `trap -p [sig ...]` prints named ones.
-   `trap action sig ...` registers `action` for each signal: an empty string
-   ignores the signal (SIG_IGN), a literal "-" restores the default, and any
-   other string registers trap_sighandler to queue it for async execution
-   between commands (checked by run_pending_traps in the REPL). */
+/* trap [--] [action condition ...]: set signal handlers or print them.
+   `trap` (or `trap --`) alone lists all set traps; `trap -p [sig ...]`
+   prints named ones.  A first operand that is an unsigned integer naming a
+   valid signal switches to the POSIX obsolescent reset form: every operand
+   is a condition to restore to its default (`trap 0 2` resets EXIT and
+   SIGINT).  Otherwise the first operand is the action -- "-" resets, ""
+   ignores, anything else registers the string -- applied to each following
+   condition.  A leading "-word" (bad option, e.g. `trap -1`) or an action
+   with no conditions is a usage error: status 2, and because trap is a
+   special builtin, POSIX makes that fatal to a non-interactive shell --
+   both bash --posix and dash stop the script there, with the EXIT trap
+   still firing.  should_exit reproduces that abort. */
 int	builtin_trap(t_shell *state, t_vec argv)
 {
 	char	**av;
 	size_t	i;
-	int		num;
 
 	av = (char **)argv.ctx;
-	if (argv.len == 1)
-		return (list_traps(state));
-	if (!ft_strcmp(av[1], "-p"))
+	if (argv.len > 1 && !ft_strcmp(av[1], "-p"))
 		return (print_traps_for(state, argv));
-	if (argv.len < 3)
-		return (1);
 	i = 1;
-	while (++i < argv.len)
+	if (i < argv.len && !ft_strcmp(av[i], "--"))
+		i++;
+	if (i >= argv.len)
+		return (list_traps(state));
+	if (trap_arg_is_reset(av[i]))
+		return (trap_reset_all(state, argv, i));
+	if ((av[i][0] == '-' && av[i][1]) || i + 1 >= argv.len)
 	{
-		num = trap_sig_from_name(av[i]);
-		if (num < 0)
-			return (ft_eprintf("%s: trap: %s: invalid signal\n",
-					state->ctx, av[i]), 1);
-		set_one_trap(state, av[1], num);
+		ft_eprintf("%s: trap: usage: trap [-p] [[action]"
+			" condition ...]\n", state->ctx);
+		if (state->metinp != INP_RL)
+			state->should_exit = true;
+		return (2);
 	}
-	return (0);
+	return (trap_set_all(state, argv, i));
 }

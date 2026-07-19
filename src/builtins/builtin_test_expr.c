@@ -24,8 +24,8 @@
 
 bool	tx_is_binop(const char *s)
 {
-	static const char	*ops[] = {"=", "==", "!=", "-eq", "-ne", "-gt",
-		"-ge", "-lt", "-le", NULL};
+	static const char	*ops[] = {"=", "==", "!=", "<", ">", "-eq", "-ne",
+		"-gt", "-ge", "-lt", "-le", "-nt", "-ot", "-ef", NULL};
 	size_t				i;
 
 	i = 0;

@@ -52,7 +52,10 @@ static char	pf_read_hex(const char *s, int *i)
 }
 
 /* Resolve a backslash escape at s[*i] ('\' already seen); advance *i past it.
-   Sets *stop on \c (abort all further output). */
+   Sets *stop on \c (abort all further output) — but only when the caller
+   provides a stop channel: bash honours \c inside %b arguments only, so the
+   format-string pass hands us NULL and \c falls through to the literal
+   backslash path (the 'c' is then emitted as a plain character). */
 char	pf_escape(const char *s, int *i, bool *stop)
 {
 	(*i)++;
@@ -72,7 +75,7 @@ char	pf_escape(const char *s, int *i, bool *stop)
 		return ((*i)++, '\f');
 	if (s[*i] == 'v')
 		return ((*i)++, '\v');
-	if (s[*i] == 'c')
+	if (s[*i] == 'c' && stop)
 		return (*stop = true, '\0');
 	if (s[*i] == 'x')
 		return (pf_read_hex(s, i));
@@ -81,14 +84,28 @@ char	pf_escape(const char *s, int *i, bool *stop)
 	return ('\\');
 }
 
-/* Numeric arg value: 0x/0 prefixes (C rules) plus leading-quote char form. */
-long long	pf_to_num(const char *arg)
+/* Convert a printf integer argument with bash's strict rules: leading
+   blanks, an optional sign and a C-style base prefix (0x.., 0..) are fine,
+   but anything trailing — including spaces and 64#a base literals — is an
+   error, as are empty strings and out-of-range values. bash still uses the
+   converted prefix (clamped on overflow) and only exits 1 at the end, so we
+   report through pf_err_num and return the value regardless. A leading
+   single or double quote yields the next character's code point; a missing
+   (NULL) argument is silently zero. */
+long long	pf_num(t_pf *pf, const char *arg)
 {
-	if (!arg || !*arg)
+	char		*end;
+	long long	v;
+
+	if (!arg)
 		return (0);
 	if (arg[0] == '\'' || arg[0] == '"')
 		return ((unsigned char)arg[1]);
-	return (strtoll(arg, NULL, 0));
+	errno = 0;
+	v = strtoll(arg, &end, 0);
+	if (end == arg || *end != '\0' || errno == ERANGE)
+		pf_err_num(pf, arg);
+	return (v);
 }
 
 /* %b : emit arg interpreting backslash escapes (\c aborts the whole printf). */

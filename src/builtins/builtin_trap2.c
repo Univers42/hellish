@@ -29,18 +29,33 @@ static void	trap_sighandler(int sig)
 	g_trap_pending = sig;
 }
 
-/* Run a queued signal trap (called from the REPL between commands). */
+/* Run a queued signal trap (called from the REPL between commands).  $? is
+   saved across the handler: POSIX says a trap action must not disturb the
+   status the surrounding script observes (`( exit 42 )` inside a USR1 trap
+   leaves the next `$?` untouched -- bash and dash both isolate it). */
 void	run_pending_traps(t_shell *state)
 {
-	int	sig;
+	t_execution_state	saved;
+	int					sig;
 
 	sig = (int)g_trap_pending;
 	g_trap_pending = 0;
-	if (sig > 0 && sig < 32 && state->traps[sig])
-		exec_string(state, state->traps[sig]);
+	if (sig <= 0 || sig >= SH_NSIG || !state->traps[sig])
+		return ;
+	saved = state->last_cmd_st_exe;
+	exec_string(state, state->traps[sig]);
+	set_cmd_status(state, saved);
 }
 
-/* Run the EXIT trap (called once when the shell terminates). */
+/* Run the EXIT trap (called once when the shell terminates).  Popping the
+   action first is the recursion guard: an `exit` inside the trap body calls
+   exit_clean -> run_exit_trap again and finds the slot empty.  should_exit
+   is cleared for the duration because it is already true on every path that
+   gets here, and the executor's list/loop walkers treat it as "stop after
+   the current command" -- without the reset a multi-command trap body like
+   'echo bye; exit 42' would silently drop everything after its first
+   command.  A nested `exit` still terminates instantly via exit_clean's
+   direct exit(), so clearing the flag cannot resurrect the session. */
 void	run_exit_trap(t_shell *state)
 {
 	char	*cmd;
@@ -49,7 +64,9 @@ void	run_exit_trap(t_shell *state)
 	if (!cmd)
 		return ;
 	state->traps[0] = NULL;
+	state->should_exit = false;
 	exec_string(state, cmd);
+	state->should_exit = true;
 	xfree(cmd);
 }
 
@@ -69,8 +86,7 @@ int	print_traps_for(t_shell *state, t_vec argv)
 	{
 		num = trap_sig_from_name(av[i]);
 		if (num >= 0 && state->traps[num])
-			ft_printf("trap -- '%s' %s\n", state->traps[num],
-				sig_to_name(num));
+			print_one_trap(state, num);
 	}
 	return (0);
 }
@@ -82,7 +98,7 @@ int	print_traps_for(t_shell *state, t_vec argv)
    exit_clean(). Frees any previous action string first to avoid leaks. */
 int	set_one_trap(t_shell *state, const char *action, int num)
 {
-	if (num < 0 || num >= 32)
+	if (num < 0 || num >= SH_NSIG)
 		return (1);
 	xfree(state->traps[num]);
 	state->traps[num] = NULL;

@@ -11,13 +11,18 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "ft_builtins.h"
 
 /* Child body for a background command group (& operator).  We move into
    our own process group (setpgid) so job-control signals from the terminal
    don't reach us.  stdin is redirected from /dev/null (POSIX: background
    commands that try to read stdin get EOF, not a blocking read from the
-   tty).  SIGINT/SIGQUIT/SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the
-   user can keep typing without accidentally killing the background job. */
+   tty).  POSIX also resets the parent's traps to default on entry to an
+   async child (reset_traps_child) -- a signal aimed at this child must not
+   run the parent's handler string, and the parent's EXIT trap is not ours
+   to fire.  The reset comes first so the explicit SIG_IGNs below still win:
+   SIGINT/SIGQUIT/SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the user can
+   keep typing without accidentally killing the background job. */
 static void	bg_child_body(t_shell *state, t_executable_node *exe,
 				size_t start, size_t end)
 {
@@ -31,6 +36,7 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 		dup2(null_fd, STDIN_FILENO);
 		close(null_fd);
 	}
+	reset_traps_child(state);
 	signal(SIGINT, SIG_IGN);
 	signal(SIGQUIT, SIG_IGN);
 	signal(SIGTSTP, SIG_IGN);
