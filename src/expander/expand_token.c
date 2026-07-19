@@ -19,6 +19,9 @@ void	nounset_abort(t_shell *state, const char *name, int len);
    character of IFS (space by default).  This is the $* / unquoted $@
    expansion: POSIX says "$@" in a split context should produce one field per
    positional — that case is handled separately in emit_positional_at.
+   env_get_ifs never returns NULL (unset falls back to " \t\n"), so the
+   separator test must look at the first CHARACTER: with IFS='' there is no
+   separator at all and "$*" concatenates ("ab", not "a<NUL>b").
    Note: getting $# as a string to do ft_atoi on it is slightly clunky but
    avoids adding a separate counter field to t_shell. */
 char	*join_positionals(t_shell *state)
@@ -38,7 +41,7 @@ char	*join_positionals(t_shell *state)
 		k = ft_itoa(i);
 		v = env_expand(state, k);
 		xfree(k);
-		if (i > 1 && env_get_ifs(&state->env))
+		if (i > 1 && env_get_ifs(&state->env)[0])
 			vec_push(&out, &env_get_ifs(&state->env)[0]);
 		if (v)
 			vec_push_str(&out, v);
@@ -100,8 +103,10 @@ static bool	expand_positional(t_shell *state, t_token *curr_tt, bool split_ctx)
 /* Expand a single $-token (TT_ENVVAR or TT_DQENVVAR) in place.  Priority:
      1. $@ / $* in a split context (emit_positional_at or join_positionals)
      2. Empty-token edge cases (bare $ or $'')
-     3. ${...} format operators (expand_param_format handles -, =, ?, +, #, %)
-     4. Plain $name lookup (expand_simple_var, honours set -u / nounset)
+     3. ${p-w} operator family (expand_op_token — token-level so it can
+        thread the double-quote context and the @ and * aggregate names)
+     4. Other ${...} formats (expand_param_format handles #, %, /, :off)
+     5. Plain $name lookup (expand_simple_var, honours set -u / nounset)
    The result is written back into curr_tt->start in-place; allocated flag
    tracks ownership so free_token_res can release it safely. */
 void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
@@ -111,6 +116,8 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 	if (expand_positional(state, curr_tt, split_ctx))
 		return ;
 	if (handle_empty_token(curr_tt))
+		return ;
+	if (expand_op_token(state, curr_tt, split_ctx))
 		return ;
 	fmt = expand_param_format(state, curr_tt->start, curr_tt->len);
 	if (fmt)

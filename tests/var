@@ -58,3 +58,23 @@ echo '"$USER $HOME"'
 
 echo "'abc$USERdef'"
 echo '"abc$USERdef"'
+
+set -- ""; echo argv=${@-minus}; echo argv=${@+plus}; echo argv=${@:-minus}; echo argv=${@:+plus}
+set -- "" ""; echo argv=${@-minus}; echo argv=${@+plus}; echo argv=${@:-minus}; echo argv=${@:+plus}
+set -- "" ""; IFS=; echo argv=${*-minus}; echo argv=${*+plus}; echo argv=${*:-minus}; echo argv=${*:+plus}
+set -- "" ""; IFS=; echo "argv=${*-minus}"; echo "argv=${*+plus}"; echo "argv=${*:-minus}"; echo "argv=${*:+plus}"
+echo argv=${@-minus}; echo argv=${@+plus}; echo argv=${@:-minus}; echo argv=${@:+plus}
+set -- a b; printf "[%s]" "${@-M}"; echo; printf "[%s]" "${@+P}"; echo
+set --; printf "[%s]" "${@-M}"; echo
+set -- ""; printf "[%s]" "${@:-M}"; echo
+set -- "" ""; printf "[%s]" "${@:-M}"; echo
+n(){ echo $#; }; set --; n "${@+P}"; n "${*+P}"; set -- ""; n "${@:+P}"; set -- "" ""; n "${@-M}"
+empty=; echo ${empty:?msg}; echo should not get here
+echo ${unset?is empty}; echo should not get here
+v=foo; echo ${v+v is not unset} ${unset:+is not unset}
+set -- a; echo ${@?m}; echo ${@=x}; echo after
+set --; echo ${@=x}; echo after
+set -- ""; echo ${@:=x}; echo after
+set -- "" ""; echo x${*?m}x; echo after
+set -- a b; echo ${*:-M}; echo "${*:-M}"; IFS=; echo "${*:-M}"
+set -- a b; IFS=; printf "[%s]" "${@-M}"; echo
