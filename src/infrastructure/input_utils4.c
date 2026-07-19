@@ -47,8 +47,8 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
 	state->hd_pos = 0;
 	xfree(state->hd_stripped);
 	state->hd_stripped = NULL;
-	in = (char *)state->input.ctx;
-	if (!in || !ft_strnstr(in, "<<", state->input.len))
+	in = (char *)state->alias_exp.ctx;
+	if (!in || !ft_strnstr(in, "<<", state->alias_exp.len))
 		return ;
 	if (!split_heredocs(in, &stripped, &bodies))
 		return ;

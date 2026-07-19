@@ -74,7 +74,7 @@ static void	free_traps(t_shell *state)
 	int	i;
 
 	i = -1;
-	while (++i < 32)
+	while (++i < SH_NSIG)
 	{
 		xfree(state->traps[i]);
 		state->traps[i] = NULL;
@@ -105,6 +105,8 @@ void	free_all_state(t_shell *state)
 	free_functions(&state->functions);
 	xfree(state->input.ctx);
 	state->input = (t_string){};
+	xfree(state->alias_exp.ctx);
+	state->alias_exp = (t_string){};
 	xfree(state->pid);
 	xfree(state->last_bg_pid);
 	xfree(state->ctx);

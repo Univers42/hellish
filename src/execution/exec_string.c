@@ -108,6 +108,7 @@ int	exec_string(t_shell *state, char *str)
 	prev_pos = state->hd_pos;
 	stripped = NULL;
 	bodies = NULL;
+	str = alias_scan_line(&state->aliases, str);
 	if (ft_strnstr(str, "<<", ft_strlen(str))
 		&& split_heredocs(str, &stripped, &bodies))
 	{
@@ -118,6 +119,7 @@ int	exec_string(t_shell *state, char *str)
 	}
 	else
 		status = exec_string_inner(state, str);
+	xfree(str);
 	xfree(bodies);
 	state->hd_src = prev_src;
 	state->hd_pos = prev_pos;

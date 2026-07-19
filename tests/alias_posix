@@ -1,0 +1,20 @@
+alias e=echo; e hi
+alias e=echo; eval 'e hi'
+alias e='echo x'; eval "e; 'e'"
+alias a='echo A '; alias b='B tail'; eval 'a b'
+alias r='r x'; eval r
+alias loop='while true; do echo once; break; done'; eval loop
+alias p='echo x | tr x y'; eval p
+alias e='echo $v'; v=world; eval 'e hi'
+alias brace='{ echo grouped; }'; eval brace
+alias e=echo; unalias -- e; eval 'e hi'
+alias -- d=pwd; alias d
+alias f='echo out'; eval 'for i in 1; do f; done'
+alias e=echo; eval 'HOME=/tmp e ok'
+alias c='case x in x) echo matched;; esac'; eval c
+alias two='echo first; echo second'; eval two
+alias e=echo; eval 'if true; then e fromif; fi'
+alias sub='(echo insub)'; eval sub
+alias e=echo; f() { e infunc; }; eval 'alias e=printf; f'
+unalias nosuch
+alias e=echo; eval 'e "quoted arg" plain'
