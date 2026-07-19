@@ -20,33 +20,22 @@ void	exit_clean(t_shell *state, int code);
      ${p:?w} → error-exit if p is UNSET OR EMPTY
      ${p=w}  → assign `w` to p if p is UNSET,     return p's (new) value
      ${p:=w} → assign `w` to p if p is UNSET OR EMPTY
-   The ? form exits the shell in non-interactive mode (metinp != INP_RL);
-   in interactive use it just prints the error and returns empty so the
-   user can keep typing.  The = form calls env_set to actually store the
+   The ? form is delegated to pf_err_word, which owns the bash-parity
+   status/exit dance.  The = form calls env_set to actually store the
    word, so subsequent uses of $p see the assigned value. */
 char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 {
 	bool	act;
 
+	if (o.opc == '?')
+		return (pf_err_word(state, val, o));
 	if (o.colon)
 		act = (val == NULL || *val == '\0');
 	else
 		act = (val == NULL);
-	if (o.opc == '?')
-	{
-		if (!act)
-			return (ft_strdup(val));
-		ft_eprintf("%s: %.*s: %.*s\n", state->ctx, o.name_len, o.name,
-			o.wlen, o.word);
-		state->last_cmd_st_exe = create_exec_state(127, false);
-		set_cmd_status(state, state->last_cmd_st_exe);
-		if (state->metinp != INP_RL)
-			exit_clean(state, 127);
-		return (ft_strdup(""));
-	}
 	if (!act)
 		return (ft_strdup(val));
-	val = expand_param_word(state, o.word, o.wlen);
+	val = expand_param_word(state, o.word, o.wlen, o.dq);
 	env_set(&state->env, env_create(ft_strndup(o.name, o.name_len),
 			ft_strdup(val), false));
 	return (val);
@@ -54,37 +43,43 @@ char	*err_or_assign(t_shell *state, char *val, t_pe_op o)
 
 /* Dispatch the four modifying operators (- = ? +) after parsing has filled
    `o`.  Splits into two families: default/alt (- and +) versus error/assign
-   (? and =) since they have different behaviours on an empty but set var. */
+   (? and =) since they have different behaviours on an empty but set var.
+   The @ and * names only land here from the arith and heredoc contexts
+   (token context routes them through expand_positional_op instead); for
+   those the joined positionals stand in for the value, NULL when $# is 0. */
 char	*expand_param_op(t_shell *state, t_pe_op o)
 {
 	char	*val;
+	char	*ret;
+	bool	at;
 
-	val = pf_get_var_value(state, o.name, o.name_len);
+	at = (o.name_len == 1 && (o.name[0] == '@' || o.name[0] == '*'));
+	if (at && state->pos.count > 0)
+		val = join_positionals(state);
+	else if (at)
+		val = NULL;
+	else
+		val = pf_get_var_value(state, o.name, o.name_len);
 	if (o.opc == '-' || o.opc == '+')
-		return (default_or_alt(state, val, o));
-	return (err_or_assign(state, val, o));
+		ret = default_or_alt(state, val, o);
+	else
+		ret = err_or_assign(state, val, o);
+	if (at && val)
+		xfree(val);
+	return (ret);
 }
 
 /* Parse the contents of a ${...} for the operator forms (- = ? +).  The
-   name can be a digit-only positional or an alphanumeric identifier; after
-   it an optional ':' (colon flag) and then one of -=?+ must follow.  On
-   success `o` is filled and true is returned so the caller can skip the
-   trim/substitution checks. */
+   name can be a digit-only positional, an alphanumeric identifier, or the
+   special positional aggregates @ and *; after it an optional ':' (colon
+   flag) and then one of -=?+ must follow.  On success `o` is filled and
+   true is returned so the caller can skip the trim/substitution checks. */
 bool	find_param_op(const char *s, int slen, t_pe_op *o)
 {
 	int	i;
 
-	i = 0;
-	if (i < slen && ft_isdigit((unsigned char)s[i]))
-		while (i < slen && ft_isdigit((unsigned char)s[i]))
-			i++;
-	else if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
-	{
-		i++;
-		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
-			i++;
-	}
-	else
+	i = pf_scan_name(s, slen);
+	if (i <= 0)
 		return (false);
 	o->name = s;
 	o->name_len = i;
@@ -95,6 +90,7 @@ bool	find_param_op(const char *s, int slen, t_pe_op *o)
 	o->opc = s[i];
 	o->word = s + i + 1;
 	o->wlen = slen - i - 1;
+	o->dq = false;
 	return (true);
 }
 

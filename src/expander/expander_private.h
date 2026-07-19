@@ -100,7 +100,11 @@ typedef struct s_trim_ctx
 /* Parsed ${name[:]opc word} operator (the four modifying forms: - = ? +).
    `colon` means the colon-variant was used (triggers on null as well as
    unset); `opc` is the operator character; `word` and `wlen` point into the
-   raw braced text and are re-expanded lazily when actually needed. */
+   raw braced text and are re-expanded lazily when actually needed.  `dq` is
+   true when the whole ${...} sits inside double quotes: the word then keeps
+   double-quote backslash semantics ("${u-\z}" prints \z, not z).  Only
+   expand_op_token knows the enclosing token type, so find_param_op defaults
+   it to false and expand_op_token overrides. */
 typedef struct s_pe_op
 {
 	const char	*name;
@@ -109,6 +113,7 @@ typedef struct s_pe_op
 	bool		colon;
 	const char	*word;
 	int			wlen;
+	bool		dq;
 }	t_pe_op;
 
 /* Slice of the raw token text fed to process_cmd_sub / process_arith_sub.
@@ -161,13 +166,21 @@ bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 int			parse_src_fd(t_tt tt, t_token op_tok);
 int			try_create_redir(t_shell *state, t_ast_node *curr,
 				t_tt tt, int src_fd);
-char		*expand_param_word(t_shell *state, const char *word, int wlen);
+char		*expand_param_word(t_shell *state, const char *word, int wlen,
+				bool dq);
+char		*expand_param_word_dq(t_shell *state, const char *word, int wlen);
 char		*pf_get_var_value(t_shell *state, const char *name, int len);
 char		*expand_strlen(t_shell *state, const char *s, int slen);
 char		*default_or_alt(t_shell *state, char *val, t_pe_op o);
 char		*err_or_assign(t_shell *state, char *val, t_pe_op o);
 char		*expand_param_op(t_shell *state, t_pe_op o);
+char		*pf_err_word(t_shell *state, char *val, t_pe_op o);
+char		*pf_assign_err(t_shell *state, t_pe_op o);
+bool		expand_op_token(t_shell *state, t_token *tt, bool split_ctx);
+void		expand_positional_op(t_shell *state, t_token *tt, t_pe_op o,
+				bool split_ctx);
 bool		find_param_op(const char *s, int slen, t_pe_op *o);
+int			pf_scan_name(const char *s, int slen);
 bool		pat_match_pub(const char *p, const char *s);
 char		*trim_suffix_shortest(const char *val, const char *pattern);
 char		*trim_suffix_longest(const char *val, const char *pattern);

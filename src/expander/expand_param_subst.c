@@ -87,7 +87,7 @@ static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
 	i = start;
 	while (i < ctx.slen && ctx.name[i] != '/')
 		i++;
-	return (expand_param_word(state, ctx.name + start, i - start));
+	return (expand_param_word(state, ctx.name + start, i - start, false));
 }
 
 /* Extract and expand the replacement part of ${v/pat/rep}.  If there is no
@@ -101,7 +101,8 @@ static char	*subst_get_rep(t_shell *state, t_trim_ctx ctx, int g)
 	while (i < ctx.slen && ctx.name[i] != '/')
 		i++;
 	if (i < ctx.slen)
-		return (expand_param_word(state, ctx.name + i + 1, ctx.slen - i - 1));
+		return (expand_param_word(state, ctx.name + i + 1,
+				ctx.slen - i - 1, false));
 	return (ft_strdup(""));
 }
 

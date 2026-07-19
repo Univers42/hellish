@@ -14,15 +14,20 @@
 
 /* Advance rp->i by one "logical unit" inside a ${...} while tracking the
    nesting depth. Quotes swallow their content so inner braces don't count
-   (e.g. ${"}" is the variable named "}"). An opening brace bumps depth; a
-   closing brace that hits depth==0 stops the scan (caller's loop exits on
-   the next iteration). Everything else is consumed one character at a time. */
+   (e.g. ${"}" is the variable named "}"). A backslash escapes the next
+   character, so ${u-\"} does not open a quoted section and ${u-\}} does
+   not close the brace early — bash treats both as escaped literals. An
+   opening brace bumps depth; a closing brace that hits depth==0 stops the
+   scan (caller's loop exits on the next iteration). Everything else is
+   consumed one character at a time. */
 static void	scan_brace_depth(t_reparser *rp, int *depth)
 {
 	char	c;
 
 	c = rp->current_token.start[rp->i];
-	if (c == '\'' || c == '"')
+	if (c == '\\' && rp->i + 1 < rp->current_token.len)
+		rp->i += 2;
+	else if (c == '\'' || c == '"')
 	{
 		skip_quoted_in_brace(rp, c);
 		rp->i++;
