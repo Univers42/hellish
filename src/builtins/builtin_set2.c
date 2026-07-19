@@ -36,29 +36,15 @@ static void	set_print_env(t_shell *state)
 	}
 }
 
-/* set: multi-purpose. With no args, dump the environment. With -o/+o toggle
-   named options (vi/emacs/errexit/…). With -e, -u, -x, etc., toggle the
-   short flag letters (can be combined: `set -eux`). With `--` (or no dash),
-   replace the positional parameters. */
+/* set: multi-purpose.  With no args, dump the environment.  Everything else
+   — short flag clusters (`set -eux`), -o/+o named options, `--`, the lone
+   -/+ oddities and positional replacement — is one left-to-right scan in
+   apply_set_flags, mirroring how bash and dash consume set's arguments. */
 int	builtin_set(t_shell *state, t_vec argv)
 {
-	char	**av;
-
-	av = (char **)argv.ctx;
-	if (argv.len >= 2 && ft_strcmp(av[1], "-o") == 0)
-		return (handle_set_o(state, argv));
-	if (argv.len >= 2 && ft_strcmp(av[1], "+o") == 0)
-		return (handle_set_o(state, argv));
-	if (argv.len >= 2 && ft_strcmp(av[1], "--") == 0)
-		return (set_positional_args(state, av + 2, argv.len - 2));
-	if (argv.len >= 2 && (av[1][0] == '-' || av[1][0] == '+') && av[1][1])
-		return (apply_set_flags(state, argv));
-	if (argv.len >= 2 && av[1][0] != '-' && av[1][0] != '+')
-		return (set_positional_args(state, av + 1, argv.len - 1));
-	if (argv.len >= 2)
-		return (0);
-	set_print_env(state);
-	return (0);
+	if (argv.len < 2)
+		return (set_print_env(state), 0);
+	return (apply_set_flags(state, argv));
 }
 
 /* Build a fresh array of the positionals from index `from` to `count`.

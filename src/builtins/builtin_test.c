@@ -16,6 +16,7 @@
 int		test_file_op(const char *op, const char *path);
 int		test_str_op(const char *op, const char *s1, const char *s2);
 int		test_int_op(const char *op, const char *s1, const char *s2);
+int		test_filecomp(const char *op, const char *f1, const char *f2);
 
 /* All test functions follow the POSIX convention: 0 = true, 1 = false,
    2 = error. This is the *inverse* of C's boolean, which trips everyone up
@@ -37,29 +38,29 @@ int	tx_test_unary(char **a)
 
 /* Leaf evaluator for `a op b`; only called when op is a known binary
    operator (tx_is_binop), so the routing is exhaustive: string ops first,
-   everything else is one of the -eq family. */
+   then the file-time/identity comparisons, everything else is one of the
+   -eq family. */
 int	tx_test_binary(char **a)
 {
 	if (ft_strcmp(a[1], "=") == 0
 		|| ft_strcmp(a[1], "==") == 0
-		|| ft_strcmp(a[1], "!=") == 0)
+		|| ft_strcmp(a[1], "!=") == 0
+		|| ft_strcmp(a[1], "<") == 0
+		|| ft_strcmp(a[1], ">") == 0)
 		return (test_str_op(a[1], a[0], a[2]));
+	if (ft_strcmp(a[1], "-nt") == 0
+		|| ft_strcmp(a[1], "-ot") == 0
+		|| ft_strcmp(a[1], "-ef") == 0)
+		return (test_filecomp(a[1], a[0], a[2]));
 	return (test_int_op(a[1], a[0], a[2]));
 }
 
-/* POSIX two-argument rule: `! s` negates the non-empty-string test,
-   otherwise the first word must be a unary operator. */
-static int	eval_two(char **av)
-{
-	if (ft_strcmp(av[0], "!") == 0)
-		return (ft_strlen(av[1]) != 0);
-	return (tx_test_unary(av));
-}
-
 /* Entry point for the test evaluator, following bash's posixtest() layout:
-   fixed rules for 0-2 arguments, the binary fast path for exactly `a op b`,
-   and the full -a/-o/!/( ) expression grammar (builtin_test_expr.c) for
-   everything else. A parse that errors or leaves tokens behind exits 2. */
+   the POSIX argument-count disambiguation rules for 0-4 arguments
+   (builtin_test_posix.c), then the full -a/-o/!/( ) expression grammar
+   (builtin_test_expr.c) for everything else. eval_four returns -1 when
+   neither 4-argument special form applies, falling through to the grammar
+   exactly like bash. A parse that errors or leaves tokens behind exits 2. */
 int	eval_test(char **av, int ac)
 {
 	t_tx	t;
@@ -71,8 +72,14 @@ int	eval_test(char **av, int ac)
 		return (ft_strlen(av[0]) == 0);
 	if (ac == 2)
 		return (eval_two(av));
-	if (ac == 3 && tx_is_binop(av[1]))
-		return (tx_test_binary(av));
+	if (ac == 3)
+		return (eval_three(av));
+	if (ac == 4)
+	{
+		r = eval_four(av);
+		if (r != -1)
+			return (r);
+	}
 	t = (t_tx){av, ac, 0, 0};
 	r = tx_or(&t);
 	if (r == 2 || t.err)

@@ -20,7 +20,10 @@ char	*arith_expand_cached(t_shell *state, const char *expr, int len,
    TT_WORD / TT_DQWORD text is appended directly; TT_ENVVAR / TT_DQENVVAR
    with a simple name is looked up and appended.  Returns 1 on success, 0
    when the token is something we cannot handle here (complex ${}, $@, etc.)
-   and the caller must fall through to the full slow path. */
+   and the caller must fall through to the full slow path.  An unset var
+   under `set -u` also bails to the slow path: expand_token owns the
+   nounset_abort diagnostics, and skipping it here silently is how
+   `x=$unset` used to dodge nounset entirely. */
 static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 {
 	char	*v;
@@ -35,6 +38,8 @@ static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 		&& name_is_plain(t->start, t->len))
 	{
 		v = env_expand_n(state, t->start, t->len);
+		if (!v && state->opt_nounset)
+			return (0);
 		if (v)
 			vec_push_str(out, v);
 	}

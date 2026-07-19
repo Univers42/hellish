@@ -46,34 +46,45 @@ char	*gopt_arg(t_shell *state, t_vec argv, int idx)
 
 /* Persist OPTIND back to the environment so the next call picks up where
    this one left off. getopts is designed to be called in a loop, so the
-   state between calls lives in $OPTIND rather than in the shell struct. */
+   word index between calls lives in $OPTIND; only the intra-word char
+   position stays in the shell struct. We also remember the exact value
+   pointer we stored: env_set keeps it verbatim, so a later pointer
+   mismatch proves the user assigned OPTIND (even to the same number)
+   and the char position must be reset -- bash does this via sv_optind. */
 void	gopt_commit_optind(t_shell *state, int optind)
 {
-	env_set(&state->env, env_create(ft_strdup("OPTIND"), ft_itoa(optind),
-			false));
+	char	*val;
+
+	val = ft_itoa(optind);
+	env_set(&state->env, env_create(ft_strdup("OPTIND"), val, false));
+	state->getopts_ref = val;
 }
 
 /* An option required an argument but none was available. In silent mode
    (optstring starts with ':'), set the name var to ':' and OPTARG to the
    bad option letter — the script handles the error itself. Otherwise print
-   the error message and set the name var to '?'. Both paths return 0 (no
-   more options) so the loop can continue with the next word. */
+   the error message, set the name var to '?' and unset OPTARG (POSIX).
+   Both paths return 0 so getopts itself succeeds and the caller's loop
+   body runs once with the error marker in the name variable. */
 static int	gopt_want_error(t_shell *state, t_getopts *g, char *cur, int pos)
 {
 	state->getopts_pos = 0;
 	g->optind++;
 	if (g->silent)
 	{
-		gopt_set_char(state, g->name, ':');
+		gopt_set_name(state, g, ':');
 		gopt_set_char(state, "OPTARG", cur[pos]);
 		return (0);
 	}
 	ft_eprintf("%s: option requires an argument -- %c\n",
 		state->dft_ctx, cur[pos]);
-	return (gopt_set_char(state, g->name, '?'), 0);
+	try_unset(state, "OPTARG");
+	return (gopt_set_name(state, g, '?'), 0);
 }
 
-/* Option needs an argument: take it attached or from the next word. */
+/* Option needs an argument: take it attached or from the next word.
+   Returns 1 when an argument was consumed, 0 when it was missing (the
+   error branch already set the name var, so the caller must not). */
 int	gopt_want_arg(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 {
 	int	pos;

@@ -42,17 +42,20 @@ static bool	create_dup_redir(t_tt tt, char *fname, t_redir *ret, int src_fd)
    apply step would then be a no-op and the per-command teardown's
    close(redir.fd) would tear down the fd it just installed.  Move the
    scratch fd up to >= 10 (clear of the user-addressable low range, the
-   same trick bash uses) so it is always distinct from src_fd. */
+   same trick bash uses) so it is always distinct from src_fd.
+   Files are created with mode 0666 like every POSIX shell: the umask,
+   not a hardcoded 0644, decides the final permissions -- otherwise
+   `umask 0002; echo x > f` cannot yield the 0664 bash produces. */
 static bool	open_file_redir(t_tt tt, t_redir *ret)
 {
 	if (tt == TT_REDIRECT_LEFT)
 		ret->fd = open(ret->fname, O_RDONLY);
 	else if (tt == TT_REDIRECT_RIGHT || tt == TT_CLOBBER)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
 	else if (tt == TT_APPEND)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0644);
+		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0666);
 	else if (tt == TT_READWRITE)
-		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0644);
+		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0666);
 	else
 		ret->fd = -1;
 	if (ret->fd < 0)

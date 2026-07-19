@@ -16,3 +16,32 @@ eval exit 0; echo never2
 . /dev/null; echo sourced-null
 readonly RO=hi; export RO; echo $RO
 trap 'echo a' EXIT; trap 'echo b' EXIT; echo last-wins
+trap -- "echo hi" EXIT; echo ok
+trap "echo int" INT; trap "echo e" EXIT; trap - int 0 3; echo removed=$?
+trap - int 0 -99; echo st=$?
+trap "echo E" EXIT; trap "echo I" INT; trap 0 2; echo done
+trap "echo I" INT; trap "echo E" EXIT; trap 2 EXIT; echo done2
+trap "echo hi" 9; echo a=$?; trap "echo hi" KILL; echo b=$?; trap "echo hi" STOP; echo c=$?; trap "echo hi" TERM; echo d=$?
+trap "echo hi" KILL; trap -p KILL
+cleanup() { echo "cleanup [$@]"; exit 42; }; trap "cleanup x y z" EXIT
+trap "echo t; exit 9" EXIT; echo body
+trap "echo bye" EXIT; false
+trap "echo FAILED" EXIT; eval "for"
+trap "echo noprint" EXIT; trap 0 EXIT; echo ok0
+trap "echo noprint" EXIT; trap " 42 " EXIT; echo ok42
+trap "echo noprint" EXIT; trap 07 EXIT; echo ok07
+trap "echo t" EXIT; trap -1 EXIT; echo bad
+trap xyz
+trap "echo x" 5; trap 5; echo empty=$?
+trap "echo u" URG; trap -p URG
+trap "echo SIGURG" URG; kill -URG $$; { echo begin; sleep 0.2; echo end; } & kill -URG $!; wait; echo ws=$?
+trap "echo x" NOSUCH; echo st=$?
+trap "echo x" 100; echo st=$?
+trap "" INT; trap -p INT; echo ign-listed
+trap "echo test" TERM 2 EXIT; trap -p EXIT INT TERM
+trap "echo got" USR1; trap 0 10; kill -USR1 $$; echo after
+trap "eval \"echo hi\"" 0
+trap "echo E" EXIT; ( echo subshell ); echo pipeline | cat
+trap "echo i" INT; trap -p INT
+trap "echo x" sigint; echo set=$?
+trap "echo USR1 trap status=\$?; ( exit 42 )" USR1; echo before=$?; sh -c "kill -USR1 $$"; echo after=$?

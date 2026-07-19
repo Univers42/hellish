@@ -238,3 +238,123 @@ pwd
 (export A=foo; (exit abc); echo "$?")
 (export A=foo; (exit 1 2); echo "$?")
 (export A=foo; (exit --); echo "$?")
+[ -a / ]; echo $?
+[ -a /nonexistent_hellish ]; echo $?
+[ -a ]; echo $?; [ ! -a ]; echo $?
+[ -z '>' ] || echo false
+[ -z '>' -- ] && echo true
+[ -z -a ] ]; echo $?
+[ -z -a -a ]; echo $?
+[ -z = -z ]; echo $?
+[ ! -z -a ]; echo $?
+[ x -a y ]; echo $?; [ x -a '' ]; echo $?; [ '' -o y ]; echo $?; [ '' -o '' ]; echo $?
+[ '(' foo ')' ]; echo $?; [ '(' '' ')' ]; echo $?; [ ! '(' x ')' ]; echo $?
+[ ! x = x ]; echo $?; [ ! x = y ]; echo $?; [ ! -z x junk ]; echo $?
+[ a '<' b ]; echo $?; [ b '<' a ]; echo $?; [ b '>' a ]; echo $?; [ a '>' b ]; echo $?
+mkdir tstk_dir; chmod 1755 tstk_dir; test -k tstk_dir; echo $?; chmod 755 tstk_dir; test -k tstk_dir; echo $?; rmdir tstk_dir
+touch -d 2017/12/31 tnt_x; touch -d 2018/01/01 tnt_y; test tnt_x -ot tnt_y; echo $?; test tnt_x -nt tnt_y; echo $?; test tnt_x -nt tnt_x; echo $?; test tnt_y -nt tnt_x; echo $?; rm -f tnt_x tnt_y
+touch tnt_f; test tnt_f -nt tnt_missing; echo $?; test tnt_missing -ot tnt_f; echo $?; test tnt_missing -nt tnt_f; echo $?; test tnt_f -ot tnt_missing; echo $?; rm -f tnt_f
+test tnt_absent1 -nt tnt_absent2; echo $?; test tnt_absent1 -ot tnt_absent2; echo $?
+mkdir tgo_dir; test -O tgo_dir; echo $?; test -G tgo_dir; echo $?; test -O tgo_missing; echo $?; test -G tgo_missing; echo $?; rmdir tgo_dir
+touch tef_a; ln -f tef_a tef_b; touch tef_c; test tef_a -ef tef_a; echo $?; test tef_a -ef tef_b; echo $?; test tef_a -ef tef_c; echo $?; test tef_missing -ef tef_a; echo $?; rm -f tef_a tef_b tef_c
+[ 99999999999999999999 -eq 1 ]; echo $?
+[ 1 -ne 99999999999999999999 ]; echo $?
+[ -99999999999999999999 -lt 0 ]; echo $?
+[ 9223372036854775807 -eq 9223372036854775807 ]; echo $?
+[ -t xx ]; echo $?
+test -t 12345678910; echo $?
+printf '[%*s]\n' 9 hello
+printf '[%.*s]\n' 3 hello
+printf '[%*.3s]\n' 9 hello
+printf '[%9.*s]\n' 3 hello
+printf '[%*.*s]\n' 9 3 hello
+printf '%*s|\n' -5 hi
+printf '%*d\n' 08 7; echo status=$?
+printf '%.*d\n' -3 5
+printf '%*s|\n' '' hi; echo status=$?
+printf '%z' 42; echo status=$?
+printf '%-z' 42; echo status=$?
+printf 'A%zB' 42; echo status=$?
+printf '%'; echo status=$?
+printf '%5'; echo status=$?
+printf '[%d] ' -42; echo status=$?
+printf '[%i] ' -42; echo status=$?
+printf '%d\n' ' -42'; echo status=$?
+printf '%d\n' ' -42 '; echo status=$?
+printf '%d\n' ' -42z'; echo status=$?
+printf '%d\n' 3abc; echo status=$?
+printf '%d\n' xyz; echo status=$?
+printf '%d\n' ''; echo status=$?
+printf '%d %d\n' 1 x 3 4; echo status=$?
+printf '%d\n' ' +077'; echo status=$?
+printf '%d\n' ' +0xff'; echo status=$?
+printf '%X\n' ' +0xff'; echo status=$?
+printf '%x\n' ' +0xff'; echo status=$?
+printf '%d\n' '64#a'; echo status=$?
+printf '%d\n' 99999999999999999999; echo status=$?
+printf '%d\n' -99999999999999999999; echo status=$?
+printf '%X\n' \'a; echo status=$?
+printf '%X\n' \'ab; echo status=$?
+printf -v 'a[' %s foo; echo status=$?
+printf -v 1bad %s foo; echo status=$?
+printf -v x; echo status=$?
+printf -1; echo status=$?
+printf -; echo; echo status=$?
+printf '-%d\n' 5; echo status=$?
+printf -- '-x%s\n' ok
+printf '%f\n' x; echo status=$?
+printf '%f\n' 3.5z; echo status=$?
+printf 'abc\cdef'; echo "|$?"
+printf '%b' 'ab\cde' X Y; echo "|$?"
+printf '%5c|' X; echo
+printf '%-5c|' X; echo
+printf '%*c|' 3 x; echo
+umask 0002; umask
+umask 002; umask
+umask 7777; echo st=$?; umask
+umask 1234567; echo st=$?; umask
+umask 089; echo st=$?; umask
+umask 013 077; umask
+umask 0002; rm -f outfiles/umask_f1; echo x > outfiles/umask_f1; stat -c %a outfiles/umask_f1
+umask 0027; rm -f outfiles/umask_f2; echo x >> outfiles/umask_f2; stat -c %a outfiles/umask_f2
+umask 0022; umask g-w,o-w; echo st=$?; umask
+umask 0000; umask u-rw; echo st=$?; umask
+umask 0700; umask u=r; umask
+umask 0000; umask u=r,g=w,o=x; umask
+umask 0777; umask u+r,g+w,o+x; umask
+umask 0000; umask u-r,g-w,o-x; umask
+umask 0137; umask u=,g+,o-; umask
+umask 0111; umask u=rwx,u=rw,u=r,u=,g=rwx; umask
+umask 0124; umask u-ww; umask
+umask 0732; umask a=rwx; umask
+umask 0124; umask a+r; umask
+umask 0124; umask a-r; umask
+umask 0124; umask =; umask
+umask 0124; umask =rx; echo st=$?; umask
+umask 0124; umask +; umask
+umask 0124; umask -; umask
+umask 0124; umask u-r,u-r; echo st=$?; umask
+umask 0124; umask u+r,,u-r; echo st=$?; umask
+umask 0124; umask b=rwx; echo st=$?; umask
+umask 0124; umask ' '; echo st=$?; umask
+umask 0124; umask ''; echo st=$?; umask
+umask 0124; umask ug-w,o=rx; umask
+umask 0124; umask u+r+w+x; umask
+umask 0124; umask a+x+wr-r; umask
+umask 0124; umask =+=; umask
+umask 0124; umask +=; umask
+umask 0124; umask a=u; umask
+umask 0365; umask a=g; umask
+umask 0124; umask a=o; umask
+umask 0124; umask a=,a=u; umask
+umask 0124; umask a+s; umask
+umask 0124; umask a=t; umask
+umask 0022; umask -p
+umask 0022; umask -p -S
+umask 0022; umask -pS
+umask 0022; umask -S; echo st=$?
+umask 0124; umask -S u-r; echo st=$?; umask
+umask 0124; umask -- u-r; umask
+umask 0124; umask -rwx; echo st=$?; umask
+umask 0111; umask u=w u=r; umask
+umask 0111; umask u=, g+, o-; echo st=$?; umask

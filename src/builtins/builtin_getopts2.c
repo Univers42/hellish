@@ -39,16 +39,17 @@ static int	one_option_bad(t_shell *state, t_getopts *g, char *cur, int pos)
 		ft_eprintf("%s: illegal option -- %c\n", state->dft_ctx, cur[pos]);
 		try_unset(state, "OPTARG");
 	}
-	gopt_set_char(state, g->name, '?');
+	gopt_set_name(state, g, '?');
 	gopt_advance(state, g, cur, pos);
 	return (gopt_commit_optind(state, g->optind), 0);
 }
 
 /* Process one recognised option letter from `cur[pos]`. If the option takes
    an argument (next char in optstring is ':'), consume it (attached or from
-   the next word) via gopt_want_arg. Then set the name variable and commit
-   OPTIND. Returns 0 when more options remain, non-zero when the outer loop
-   should stop. */
+   the next word) via gopt_want_arg — when that fails the error path already
+   stored ':' or '?' in the name variable, so it must NOT be overwritten
+   with the option letter here. Then commit OPTIND. Returns 0 when more
+   options remain, non-zero when the outer loop should stop. */
 int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 {
 	int		pos;
@@ -60,35 +61,57 @@ int	one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur)
 		return (one_option_bad(state, g, cur, pos));
 	if (spec[1] == ':')
 	{
-		gopt_want_arg(state, argv, g, cur);
-		gopt_set_char(state, g->name, cur[pos]);
+		if (gopt_want_arg(state, argv, g, cur))
+			gopt_set_name(state, g, cur[pos]);
 		return (gopt_commit_optind(state, g->optind), 0);
 	}
 	try_unset(state, "OPTARG");
-	gopt_set_char(state, g->name, cur[pos]);
+	gopt_set_name(state, g, cur[pos]);
 	gopt_advance(state, g, cur, pos);
 	return (gopt_commit_optind(state, g->optind), 0);
 }
 
-/* Initialise the getopts working state from the call's arguments and the
-   current value of $OPTIND. The option count is the number of extra args
-   passed on the command line, or $# if none were given. Clamp OPTIND to
-   at least 1 to guard against a script that accidentally sets it to 0. */
+/* Read $OPTIND and reconcile it with the private scan state, mirroring
+   bash. If the stored value is not the exact string gopt_commit_optind
+   last wrote (pointer identity, see shell.h), the user assigned OPTIND
+   and the intra-word position restarts. Clamp to at least 1 (a script
+   may set it to 0 or below) and to at most count+1: when the argument
+   list shrank under a stale index, bash lands one past the last word so
+   the next scan reports end-of-options there (spec: OPTIND=1 after a
+   loop over `set --`, not the stale 4). */
+static void	gopt_read_optind(t_shell *state, t_getopts *g)
+{
+	t_env	*e;
+
+	g->optind = 1;
+	e = env_get(&state->env, "OPTIND");
+	if (!e || !e->value || e->value != state->getopts_ref)
+		state->getopts_pos = 0;
+	if (e && e->value)
+		g->optind = ft_atoi(e->value);
+	if (g->optind < 1)
+		g->optind = 1;
+	if (g->optind > g->count + 1)
+	{
+		g->optind = g->count + 1;
+		state->getopts_pos = 0;
+	}
+}
+
+/* Initialise the getopts working state from the call's arguments. The
+   option count is the number of extra args passed on the command line,
+   or $# if none were given; it must be known before gopt_read_optind
+   can clamp a stale index. An invalid name variable does not abort
+   parsing: bash still consumes the option and updates OPTARG/OPTIND,
+   only the name assignment is suppressed and the call reports failure. */
 void	gopt_init(t_shell *state, t_vec argv, t_getopts *g)
 {
-	char	*oi;
 	char	*cnt;
 
 	g->optstring = ((char **)argv.ctx)[1];
 	g->name = ((char **)argv.ctx)[2];
 	g->silent = (g->optstring[0] == ':');
-	oi = env_expand(state, "OPTIND");
-	if (oi)
-		g->optind = ft_atoi(oi);
-	else
-		g->optind = 1;
-	if (g->optind < 1)
-		g->optind = 1;
+	g->bad_name = !ft_is_valid_ident(g->name);
 	if (argv.len > 3)
 		g->count = (int)argv.len - 3;
 	else
@@ -99,4 +122,5 @@ void	gopt_init(t_shell *state, t_vec argv, t_getopts *g)
 		else
 			g->count = 0;
 	}
+	gopt_read_optind(state, g);
 }

@@ -28,7 +28,7 @@ static const t_signame	*sig_table(void)
 	{"KILL", SIGKILL}, {"USR1", SIGUSR1}, {"SEGV", SIGSEGV}, {"USR2", SIGUSR2},
 	{"PIPE", SIGPIPE}, {"ALRM", SIGALRM}, {"TERM", SIGTERM}, {"CHLD", SIGCHLD},
 	{"CONT", SIGCONT}, {"STOP", SIGSTOP}, {"TSTP", SIGTSTP}, {"TTIN", SIGTTIN},
-	{"TTOU", SIGTTOU}, {"WINCH", SIGWINCH}, {NULL, 0}
+	{"TTOU", SIGTTOU}, {"URG", SIGURG}, {"WINCH", SIGWINCH}, {NULL, 0}
 	};
 
 	return (t);

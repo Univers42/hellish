@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins_private.h"
+#include <limits.h>
 
 /* Integer comparison operators. The names are mnemonic for the POSIX names
    (gt = greater than, ge = ≥, lt = less than, le = ≤) but the operands are
@@ -30,30 +31,68 @@ static int	test_int_cmp(const char *op, long a, long b)
 	return (2);
 }
 
+/* Accumulate decimal digits into *n NEGATIVELY (so LONG_MIN itself parses
+   without overflowing), refusing any step that would underflow. Advances
+   *i past the digits; false = overflow, or no digit at all. */
+static bool	test_num_digits(const char *s, int *i, long *n)
+{
+	if (!ft_isdigit(s[*i]))
+		return (false);
+	*n = 0;
+	while (ft_isdigit(s[*i]))
+	{
+		if (*n < (LONG_MIN + (s[*i] - '0')) / 10)
+			return (false);
+		*n = *n * 10 - (s[*i] - '0');
+		(*i)++;
+	}
+	return (true);
+}
+
 /* Strict integer parse for test operands: optional blanks, optional sign,
-   at least one digit, optional trailing blanks, nothing else. bash rejects
-   anything looser with "integer expression expected" and exits 2. */
+   at least one digit, optional trailing blanks, nothing else — and the
+   value must fit in a long. bash rejects anything looser, including
+   overflow (strtoimax + ERANGE), with "integer expression expected" and
+   exit status 2, so `[ 99999999999999999999 -eq 1 ]` must error out
+   instead of silently wrapping. */
 static bool	test_num(const char *s, long *out)
 {
-	int	i;
-	int	start;
+	int		i;
+	int		neg;
+	long	n;
 
 	i = 0;
 	while (s[i] == ' ' || s[i] == '\t')
 		i++;
+	neg = (s[i] == '-');
 	if (s[i] == '+' || s[i] == '-')
 		i++;
-	start = i;
-	while (s[i] >= '0' && s[i] <= '9')
-		i++;
-	if (i == start)
+	if (!test_num_digits(s, &i, &n))
 		return (false);
 	while (s[i] == ' ' || s[i] == '\t')
 		i++;
-	if (s[i])
+	if (s[i] || (!neg && n == LONG_MIN))
 		return (false);
-	*out = ft_atol(s);
+	*out = n;
+	if (!neg)
+		*out = -n;
 	return (true);
+}
+
+/* -t: true when the operand is a file descriptor number naming a tty.
+   bash errors out like an integer comparison on a non-numeric (or
+   overflowing) operand, but quietly returns false when the value simply
+   does not fit in an int — `test -t 12345678910` is 1, not 2. */
+int	test_tty_op(const char *arg)
+{
+	long	n;
+
+	if (!test_num(arg, &n))
+		return (ft_eprintf(
+				"test: %s: integer expression expected\n", arg), 2);
+	if (n != (int)n)
+		return (1);
+	return (isatty((int)n) == 0);
 }
 
 /* Parse both operands as integers (erroring like bash when either is not a

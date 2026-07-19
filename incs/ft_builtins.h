@@ -76,6 +76,7 @@ int				builtin_trap(t_shell *state, t_vec argv);
 int				builtin_readonly(t_shell *state, t_vec argv);
 void			run_pending_traps(t_shell *state);
 void			run_exit_trap(t_shell *state);
+void			reset_traps_child(t_shell *state);
 bool			is_readonly_var(t_shell *state, const char *key);
 
 typedef struct s_signame
