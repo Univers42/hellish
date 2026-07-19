@@ -37,11 +37,15 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 
 /* After each successful readline, tokenize what we have so far and check
    whether the tokenizer needs more input (prompt != NULL means "keep going").
-   extend_bs strips trailing backslash-newlines first so line continuation
-   is resolved before the tokenizer ever sees the buffer. */
+   extend_bs strips trailing backslash-newlines first, then the alias
+   scanner derives the expanded copy the lexer actually parses — aliases
+   must be spliced before tokens exist for keywords in alias bodies to
+   work (state->input keeps the original bytes for history/errors). */
 static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 {
-	*prompt = (extend_bs(state), tokenizer((char *)state->input.ctx, tt));
+	extend_bs(state);
+	alias_scan_update(state);
+	*prompt = tokenizer((char *)state->alias_exp.ctx, tt);
 	if (*prompt)
 		*prompt = ft_strdup(*prompt);
 	else if (state->gathering_compound && state->input.ctx

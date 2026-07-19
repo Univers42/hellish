@@ -35,7 +35,9 @@ int	alias_remove(t_hash *aliases, const char *name)
 }
 
 /* Print every defined alias, one per line.  We walk the raw bucket array
-   because there is no iterator API; empty slots have key==NULL. */
+   because there is no iterator API; empty slots have key==NULL.  No
+   "alias " prefix: the shell diffs byte-for-byte against bash --posix,
+   which (like dash) prints the bare name='value' form. */
 void	alias_print_all(t_hash *aliases)
 {
 	size_t			i;
@@ -47,7 +49,7 @@ void	alias_print_all(t_hash *aliases)
 	{
 		if (entries[i].key && entries[i].value)
 		{
-			ft_printf("alias %s='%s'\n",
+			ft_printf("%s='%s'\n",
 				((t_alias_entry *)entries[i].value)->name,
 				((t_alias_entry *)entries[i].value)->value);
 		}
@@ -62,6 +64,28 @@ int	alias_print_one(t_hash *aliases, const char *name)
 	val = alias_get(aliases, name);
 	if (!val)
 		return (1);
-	ft_printf("alias %s='%s'\n", name, val);
+	ft_printf("%s='%s'\n", name, val);
 	return (0);
+}
+
+/* True when no alias is defined at all.  The hash's len field is not
+   maintained by hash_set, so walk the bucket array (cap is small).  Used
+   by the forkless cmdsub fast path: any alias may rebind a whitelisted
+   builtin name, so eligibility must fall back to the fork. */
+bool	alias_table_empty(t_hash *aliases)
+{
+	size_t			i;
+	t_hash_entry	*entries;
+
+	if (!aliases || !aliases->ctx)
+		return (true);
+	entries = (t_hash_entry *)aliases->ctx;
+	i = 0;
+	while (i < aliases->cap)
+	{
+		if (entries[i].key && entries[i].value)
+			return (false);
+		i++;
+	}
+	return (true);
 }
