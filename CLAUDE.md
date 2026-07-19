@@ -39,6 +39,7 @@ make norm           # 42 norminette over src/ incs/ tests/
 make docker-test    # build + smoke-test from source on Alpine/Debian/Ubuntu/Arch
 make cd-zsh-test    # docker diff of the zsh-style `cd old new` extension vs real zsh
 make cd-posix-test  # host-side check that --posix gates that extension off
+make hist-test      # pty-driven check of cmdhist multiline history joining
 ```
 
 Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY). Debug views compose: `--debug=lexer --debug=parser --debug=ast`.
@@ -47,6 +48,7 @@ Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY)
 
 - A test category is a plain file in `tests/`, one command per line. The harness runs each line through `hellish -c` AND `bash --posix` and diffs **stdout + exit status + any files written**. stderr text is NOT diffed — error wording is free, exit codes are not.
 - Adding a test = append a line to the right category file (or a new file), then `cd tests && ./tester <file>`. Larger programs go in `tests/scripts/*.sh` and `tests/hard/*.sh`, run as whole scripts vs bash.
+- Gotcha: `make test` runs the default category list **hardcoded in `tests/tester`** — a brand-new category file must be added to that array or it silently never runs in the full suite.
 - Every fix ships with a test — non-negotiable (CONTRIBUTING.md). Cover the neighbouring cases too.
 - Leak checking: ASan/LSan is only meaningful on `SAFE=1`. On `SAFE=0` use the allocator's own oracle: `HELLISH_ALLOC_STATS=1 ./build/bin/hellish script.sh` (prints live bytes at exit).
 - Gotcha: the tester `chmod 000`s `tests/test_files/invalid_permission` at startup and leaves it that way. Run `chmod 755 tests/test_files/invalid_permission` before git operations or they fail on the unreadable file.
@@ -68,7 +70,9 @@ Conceptual pipeline: `input → lexer → parser (AST) → word reparser → her
 
 **Load-bearing subtlety:** the pipeline is conceptual, not literal. Lexer+parser build the AST once per input line and heredocs are gathered once, but the **expander runs lazily, per simple command, during the executor's tree walk** (`src/execution/execute_simple_command.c`). The AST deliberately carries raw tokens (`incs/ast.h`) so the same subtree re-expands on every loop/function iteration without re-parsing. Every `execute_*` returns a `t_execution_state` (status + ctrl_c) so `$?` and Ctrl-C propagate up the walk.
 
-Other modules: `builtins` (47 builtins, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained `$((…))` lexer/parser/eval), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history, AST debug printers, centralized `error.c` messages).
+**Command substitution has two paths.** `capture_subshell_output.c` first tries the forkless fast path `cmdsub_fast()` (`src/expander/cmdsub_fast.c`), which runs the body in-process when it is provably side-effect-free: a single whitelisted builtin (`echo`/`printf`/`pwd`/`true`/`:`), no redirects or control operators, no `${v=…}`, no `$((…))`. NULL means "not eligible" and the caller falls back to the normal fork. A cmdsub bug can live in either path; the eligibility scan (`cmdsub_fast2.c`) deliberately errs toward forking.
+
+Other modules: `builtins` (47 builtins, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
 
 ### Allocator discipline
 
