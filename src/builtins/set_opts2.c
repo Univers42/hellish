@@ -40,7 +40,26 @@ int	list_set_options(t_shell *state)
 	return (0);
 }
 
-/* set -e/-u/-x [...] : consume leading flag words. */
+/* A leading lone `-` ends option processing and — a historic Bourne quirk
+   both bash and dash keep — turns OFF xtrace and verbose.  Words after it
+   become the new positional parameters, but unlike `--` a trailing lone `-`
+   leaves the current positionals untouched (`set + -` keeps $@ as-is). */
+static int	set_lone_dash(t_shell *state, t_vec argv, size_t from)
+{
+	state->opt_xtrace = false;
+	state->opt_verbose = false;
+	if (from < argv.len)
+		return (set_positional_args(state,
+				(char **)argv.ctx + from, argv.len - from));
+	return (0);
+}
+
+/* POSIX `set` argument scan: flag words are consumed left to right until
+   `--`, a lone `-`, or the first non-option word.  `--` always replaces the
+   positional parameters — clearing them when nothing follows; a lone `+` is
+   an ignored flag, not an argument and not a terminator; `-o name`/`+o
+   name` consume two words.  Everything after a terminator becomes $1..
+   verbatim, even words that look like options. */
 int	apply_set_flags(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -48,16 +67,25 @@ int	apply_set_flags(t_shell *state, t_vec argv)
 
 	av = (char **)argv.ctx;
 	i = 1;
-	while (i < argv.len && (av[i][0] == '-' || av[i][0] == '+')
-		&& av[i][1] && ft_strcmp(av[i], "--") != 0)
+	while (i < argv.len)
 	{
-		apply_flag_word(state, av[i]);
-		i++;
+		if (ft_strcmp(av[i], "--") == 0)
+			return (set_positional_args(state, av + i + 1,
+					argv.len - i - 1));
+		if (ft_strcmp(av[i], "-") == 0)
+			return (set_lone_dash(state, argv, i + 1));
+		if (!ft_strcmp(av[i], "-o") || !ft_strcmp(av[i], "+o"))
+			i += set_o_word(state, av[i][0], av + i, argv.len - i);
+		else if ((av[i][0] == '-' || av[i][0] == '+') && av[i][1])
+		{
+			apply_flag_word(state, av[i]);
+			i++;
+		}
+		else if (av[i][0] == '+')
+			i++;
+		else
+			return (set_positional_args(state, av + i, argv.len - i));
 	}
-	if (i < argv.len && ft_strcmp(av[i], "--") == 0)
-		i++;
-	if (i < argv.len)
-		set_positional_args(state, av + i, argv.len - i);
 	return (0);
 }
 

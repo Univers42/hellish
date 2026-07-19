@@ -12,33 +12,34 @@
 
 #include "builtins_private.h"
 
-/* Handle `set -o [name]` and `set +o [name]`. Without a name, list all
-   shell options (set -o) or emit shell-reproducible assignments (set +o).
-   vi/emacs are special: they touch both state->edit_mode and the readline
-   layer (state->rl.edit_mode). Everything else goes through set_long_option
-   which maps the long name to the right opt_ field. */
-int	handle_set_o(t_shell *state, t_vec argv)
+/* Handle one `-o [name]` / `+o [name]` pair inside the set argument scan.
+   `w` points at the -o/+o word itself and `remaining` counts the words left
+   including it; the return value is how many words were consumed (2 when a
+   name followed, 1 when -o/+o was last — then we list the options, like
+   bash).  Consuming the name here is what lets `set -o errexit a b c` go on
+   to make a/b/c the positional parameters.  vi/emacs are special: they
+   touch both state->edit_mode and the readline layer (state->rl.edit_mode).
+   Everything else goes through set_long_option which maps the long name to
+   the right opt_ field. */
+int	set_o_word(t_shell *state, char sign, char **w, size_t remaining)
 {
-	char	**av;
-
-	av = (char **)argv.ctx;
-	if (argv.len < 3)
-		return (list_set_options(state));
-	if (ft_strcmp(av[2], "vi") == 0)
+	if (remaining < 2)
+		return (list_set_options(state), 1);
+	if (ft_strcmp(w[1], "vi") == 0)
 	{
 		state->edit_mode = 0;
 		state->rl.edit_mode = 0;
-		return (0);
+		return (2);
 	}
-	if (ft_strcmp(av[2], "emacs") == 0)
+	if (ft_strcmp(w[1], "emacs") == 0)
 	{
 		state->edit_mode = 1;
 		state->rl.edit_mode = 1;
-		return (0);
+		return (2);
 	}
-	if (ft_strcmp(av[2], "posix") == 0)
-		return (state->opt_posix = (av[1][0] == '-'), 0);
-	return (set_long_option(state, av[1][0], av[2]));
+	if (ft_strcmp(w[1], "posix") == 0)
+		return (state->opt_posix = (sign == '-'), 2);
+	return (set_long_option(state, sign, w[1]), 2);
 }
 
 /* Cache the decimal of $# in the fixed buffer so env_expand can return it. */

@@ -54,6 +54,24 @@ void	set_underscore(t_shell *state)
 	}
 }
 
+/* getopts state starts fresh in every shell: bash initialises OPTIND
+   to 1 on startup, overriding whatever the parent exported (an inherited
+   `OPTIND=7` still shows up as 1) while keeping the exported flag so
+   children continue to see the variable. A bare `echo $OPTIND` in a
+   fresh shell must print 1. */
+static void	set_optind(t_shell *state)
+{
+	t_env	*e;
+
+	e = env_get(&state->env, "OPTIND");
+	if (e)
+		env_set(&state->env, env_create(ft_strdup("OPTIND"),
+				ft_strdup("1"), e->exported));
+	else
+		env_set(&state->env, env_create(ft_strdup("OPTIND"),
+				ft_strdup("1"), false));
+}
+
 /* Top-level init: call all the individual setters in order, then add
    PPID (read-only by convention but not enforced) and PWD if absent.
    Call this AFTER env_to_vec_env so the env vector already exists. */
@@ -66,6 +84,7 @@ void	ensure_essential_env_vars(t_shell *state)
 	set_path(state);
 	set_shlvl(state);
 	set_underscore(state);
+	set_optind(state);
 	env_set(&state->env, env_create(ft_strdup("PPID"),
 			ft_itoa((int)getppid()), false));
 	e = env_get(&state->env, PWD);

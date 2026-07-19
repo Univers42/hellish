@@ -45,6 +45,7 @@ typedef struct s_getopts
 	int		optind;
 	int		count;
 	bool	silent;
+	bool	bad_name;
 }	t_getopts;
 
 typedef struct s_ulim
@@ -104,8 +105,13 @@ char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 
 /* [[ ]] conditional: eval_test = flat single test (also [ and test);
-   eval_bracketed = dispatcher (validate/strip close, route [[ to db_or). */
+   eval_bracketed = dispatcher (validate/strip close, route [[ to db_or).
+   eval_two/three/four are the POSIX argument-count disambiguation rules
+   (builtin_test_posix.c); eval_four returns -1 to mean "use the grammar". */
 int		eval_test(char **av, int ac);
+int		eval_two(char **av);
+int		eval_three(char **av);
+int		eval_four(char **av);
 int		tx_or(t_tx *t);
 bool	tx_is_binop(const char *s);
 int		tx_test_unary(char **a);
@@ -115,7 +121,10 @@ int		eval_bracketed(t_shell *st, char **av, int ac, int dbr);
 
 void	update_pwd_vars(t_shell *state);
 bool	is_redir_operator(char *s);
-int		umask_symbolic(void);
+int		umask_symbolic(int flags);
+int		umask_opts(char **av, size_t len, int *idx);
+int		umask_report(mode_t m, int flags);
+int		umask_sym_parse(const char *s, int initial);
 int		handle_too_many_args(t_shell *state, t_vec argv, size_t i);
 
 /* cd: options (-L logical default / -P physical, -e, -@), parsed before the
@@ -148,6 +157,10 @@ int		set_one_trap(t_shell *state, const char *action, int num);
 int		trap_sig_from_name(const char *s);
 int		print_traps_for(t_shell *state, t_vec argv);
 char	*sig_to_name(int num);
+int		trap_arg_is_reset(const char *s);
+int		trap_reset_all(t_shell *state, t_vec argv, size_t i);
+int		trap_set_all(t_shell *state, t_vec argv, size_t i);
+void	print_one_trap(t_shell *state, int num);
 int		hash_add_from_path(t_shell *state, const char *name);
 int		handle_hash_flags(t_shell *state, char **av, int ac);
 
@@ -166,11 +179,12 @@ int		fc_list(t_shell *state, char **av, int ac, bool reverse);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);
 int		fc_run_editor(t_shell *state, const char *editor, char *tmpf);
 int		fc_edit_run(t_shell *state, const char *editor, int first, int last);
-int		handle_set_o(t_shell *state, t_vec argv);
+int		set_o_word(t_shell *state, char sign, char **w, size_t remaining);
 int		kill_sig_from_name(const char *name);
 int		kill_list_sigs(void);
 int		kill_one_target(t_shell *state, const char *target, int sig);
 void	gopt_set_char(t_shell *state, const char *name, char c);
+void	gopt_set_name(t_shell *state, t_getopts *g, char c);
 char	*gopt_arg(t_shell *state, t_vec argv, int idx);
 void	gopt_commit_optind(t_shell *state, int optind);
 int		gopt_want_arg(t_shell *state, t_vec argv, t_getopts *g, char *cur);
