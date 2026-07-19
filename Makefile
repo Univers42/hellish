@@ -303,7 +303,20 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Third-party conformance sweep: Oils spec tests + mksh check.t, run against
+# hellish, bash --posix and dash; report in bench/conformance.md; the gate
+# fails if hellish's pass count drops vs bench/baseline/. Suites are fetched
+# once by bench/conformance.sh's helpers (see bench/README.md).
+conformance:
+	@/bin/bash bench/conformance.sh
+
+# Dimension-split speed benchmark (startup / parse / loops / forks /
+# configure) vs bash --posix and dash, via pinned hyperfine runs.
+# Reports land in bench/results.md; methodology in bench/METHODOLOGY.md.
+perf:
+	@/bin/bash bench/run.sh
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test
+	hist-test conformance perf
