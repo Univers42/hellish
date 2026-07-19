@@ -14,3 +14,9 @@ tests/bench_results.txt
 .env
 .env.*
 !.env.example
+
+# bench harness: vendored suites + generated artifacts (reports ARE tracked)
+bench/suites/
+bench/.artifacts/
+bench/.bin/
+bench/workloads/
