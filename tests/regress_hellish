@@ -80,3 +80,7 @@ set -- a "b c"; printf "[%s]" $@ "$@" "$*"; echo
 set -- "" a ""; printf "[%s]" $@; echo
 IFS=x; set -- axb c; printf "[%s]" $@; echo
 set -- a b; IFS=; printf "[%s]" "${@-M}"; echo
+[ -n "$RANDOM" ] && [ "$RANDOM" -le 32767 ] && echo random-ok
+case $SECONDS in [0-9]*) echo seconds-num ;; esac; case $EPOCHSECONDS in [0-9]*) echo epoch-num ;; esac
+[ -n "$UID" ] && echo uid-ok; [ -n "$HOSTNAME" ] && echo host-ok
+printf 'echo "s1=$1 s2=$2 n=$#"\n' > /tmp/rh_src.$$; set -- X; . /tmp/rh_src.$$ a b; echo "after=$1 n=$#"; rm -f /tmp/rh_src.$$

@@ -105,11 +105,14 @@ int	builtin_wait(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* times: print accumulated user/system CPU time for the shell and children. */
+/* times: print accumulated user/system CPU time for the shell and children.
+   Formatted with libc snprintf: ft_printf lacks the %0Nld zero-padded
+   variant and used to emit the raw format string here. */
 int	builtin_times(t_shell *state, t_vec argv)
 {
 	struct tms	t;
 	long		hz;
+	char		line[256];
 
 	(void)state;
 	(void)argv;
@@ -117,15 +120,19 @@ int	builtin_times(t_shell *state, t_vec argv)
 	if (hz <= 0)
 		hz = 100;
 	times(&t);
-	ft_printf("%ldm%ld.%03lds %ldm%ld.%03lds\n",
+	snprintf(line, sizeof(line), "%ldm%ld.%03lds %ldm%ld.%03lds\n",
 		(t.tms_utime / hz) / 60, (t.tms_utime / hz) % 60,
 		(t.tms_utime % hz) * 1000 / hz,
 		(t.tms_stime / hz) / 60, (t.tms_stime / hz) % 60,
 		(t.tms_stime % hz) * 1000 / hz);
-	ft_printf("%ldm%ld.%03lds %ldm%ld.%03lds\n",
+	if (write(1, line, ft_strlen(line)) < 0)
+		return (1);
+	snprintf(line, sizeof(line), "%ldm%ld.%03lds %ldm%ld.%03lds\n",
 		(t.tms_cutime / hz) / 60, (t.tms_cutime / hz) % 60,
 		(t.tms_cutime % hz) * 1000 / hz,
 		(t.tms_cstime / hz) / 60, (t.tms_cstime / hz) % 60,
 		(t.tms_cstime % hz) * 1000 / hz);
+	if (write(1, line, ft_strlen(line)) < 0)
+		return (1);
 	return (0);
 }
