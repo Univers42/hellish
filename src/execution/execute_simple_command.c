@@ -121,6 +121,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 
 	cmd = (t_executable_cmd){0};
 	state->last_cmdsub_status = 0;
+	note_cmd_lineno(state, exe->node);
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
 		procsub_close_fds_parent(state);

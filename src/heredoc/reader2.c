@@ -20,8 +20,10 @@
    command end. */
 void	write_heredoc(t_shell *state, int redir_idx, t_hdoc *req)
 {
+	state->rl.line_exact = true;
 	while (!req->finished)
 		process_line(state, req);
+	state->rl.line_exact = false;
 	if (req->full_file.len)
 	{
 		if (!vec_ensure_space_n(&req->full_file, 1))

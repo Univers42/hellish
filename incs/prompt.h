@@ -31,12 +31,24 @@ typedef struct s_rl
 	size_t		cursor;
 	int			edit_mode;
 	bool		no_compact;
+	int			cycle_line0; /* line number of the cycle's first line */
+	bool		line_exact; /* consumer needs one line per call (heredoc) */
+	bool		batched; /* this cycle got a multi-line batch delivery */
+	size_t		exact_until; /* serve single lines below this cursor pos */
+	bool		tok_line; /* non-tty cycle: $LINENO from token offset */
+	const char	*ln_tok; /* first token of the executing command */
+	const char	*ln_ptr; /* memoised lineno lookup key (token ptr) */
+	int			ln_val; /* memoised line number for ln_ptr */
 }	t_rl;
 
 // Forward declaration to avoid circular dependency
 struct					s_parser;
 
 int			buff_readline(t_shell *state, t_string *ret, char *prompt);
+int			return_batch(t_shell *state, t_string *ret);
+bool		try_replay_exact(t_shell *state);
+void		begin_cycle(t_shell *state, t_string *ret);
+int			nl_count(const char *s, size_t n);
 void		buff_readline_update(t_rl *l);
 void		buff_readline_reset(t_rl *l);
 int			get_more_input_readline(t_rl *l, char *prompt);
