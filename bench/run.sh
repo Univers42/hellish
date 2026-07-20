@@ -25,16 +25,21 @@ DASH_BIN=/usr/bin/dash
 HELLISH="$BENCH/.bin/hellish"
 
 # ---- environment gate -----------------------------------------------------
+# Governor policy: warn-and-continue by default so `make perf` works on a
+# machine without sudo (the report flags every result's reliability via CV
+# and a prominent banner).  Set BENCH_STRICT=1 to demand the performance
+# governor and refuse otherwise -- use that when you DO have sudo and want
+# publication-grade numbers.
 GOV="$(cat /sys/devices/system/cpu/cpu"$CPU"/cpufreq/scaling_governor 2>/dev/null || echo unknown)"
 if [ "$GOV" != performance ]; then
     echo "!! CPU $CPU governor is '$GOV', not 'performance'." >&2
-    echo "!! Fix:  sudo cpupower frequency-set -g performance" >&2
-    if [ "${BENCH_LAX:-0}" != 1 ]; then
-        echo "!! Refusing to produce numbers on a throttling CPU." >&2
-        echo "!! (export BENCH_LAX=1 to run anyway; the report will flag it)" >&2
+    echo "!! For publication-grade numbers: sudo cpupower frequency-set -g performance" >&2
+    if [ "${BENCH_STRICT:-0}" = 1 ]; then
+        echo "!! BENCH_STRICT=1: refusing to produce numbers on a throttling CPU." >&2
         exit 1
     fi
-    echo "!! BENCH_LAX=1: continuing; results will be flagged." >&2
+    echo "!! Continuing anyway; results.md will be flagged as governor-limited." >&2
+    echo "!! (set BENCH_STRICT=1 to refuse instead.)" >&2
 fi
 
 # ---- setup ----------------------------------------------------------------
