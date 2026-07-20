@@ -48,7 +48,9 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
 	xfree(state->hd_stripped);
 	state->hd_stripped = NULL;
 	in = (char *)state->alias_exp.ctx;
-	if (!in || !ft_strnstr(in, "<<", state->alias_exp.len))
+	state->cycle_has_hd = (in
+			&& ft_strnstr(in, "<<", state->alias_exp.len) != NULL);
+	if (!state->cycle_has_hd)
 		return ;
 	if (!split_heredocs(in, &stripped, &bodies))
 		return ;
@@ -70,8 +72,14 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
    session. $? becomes 2 unconditionally -- bash reports a syntax error as
    2 even when the previous command already failed (`badcmd\n|||` -> 2, not
    the 127 badcmd left behind). */
+/* A batched cycle that fails to parse is rewound and replayed line by
+   line instead of aborting: the batch may have glued healthy commands to
+   the broken construct, and bash would have executed those first. Only a
+   failure on the exact (unbatched) path is a real syntax error. */
 static void	abort_on_syntax_error(t_shell *state)
 {
+	if (try_replay_exact(state))
+		return ;
 	set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 	if (state->metinp != INP_RL)
 		state->should_exit = true;

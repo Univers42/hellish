@@ -59,27 +59,45 @@ int	return_new_line(t_shell *state, t_string *ret)
 	return (4);
 }
 
-/* The central dispatcher: pull one logical line into ret, fetching more raw
-   input first if the internal buffer is exhausted. Return codes:
+/* Refill the ring buffer from the input source. Returns 0 when data is
+   ready, 1 on EOF (INP_ARG/INP_FILE are fully preloaded, so an empty ring
+   IS end-of-input for them), 2 on SIGINT during the read. */
+static int	fetch_more(t_shell *state, char *prompt)
+{
+	int	code;
+
+	if (state->metinp == INP_ARG || state->metinp == INP_FILE)
+		return (1);
+	if (state->metinp == INP_NOTTY)
+		code = get_more_input_notty(state);
+	else
+		code = get_more_input_readline(&state->rl, prompt);
+	if (code == 1 || code == 2)
+		return (code);
+	if (state->metinp == INP_RL)
+		vec_push_char(&state->rl.buff, '\n');
+	state->rl.has_line = true;
+	return (0);
+}
+
+/* The central dispatcher: pull input into ret, fetching more raw bytes
+   first if the internal buffer is exhausted. Return codes:
      0 = EOF / hard exit (caller should set has_finished)
      2 = interrupted by SIGINT (propagate cancel)
-     4 = a line was delivered
-   INP_ARG / INP_FILE sources are already fully loaded, so we never go back
-   for more — we just drain the buffer to EOF. */
+     4 = data was delivered
+   Non-interactive sources hand over every complete hazard-free line in one
+   batch (return_batch); the single-line path remains for the REPL and for
+   input the batch scanner refuses (aliases, heredocs, continuations). */
 int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 {
 	int	code;
 
 	if (state->rl.has_finished)
 		return (0);
+	begin_cycle(state, ret);
 	if (!state->rl.has_line)
 	{
-		if (state->metinp == INP_ARG || state->metinp == INP_FILE)
-			return (state->rl.has_finished = true, 0);
-		if (state->metinp == INP_NOTTY)
-			code = get_more_input_notty(state);
-		else
-			code = get_more_input_readline(&state->rl, prompt);
+		code = fetch_more(state, prompt);
 		if (code == 1)
 			return (state->rl.has_finished = true, 0);
 		if (code == 2)
@@ -88,9 +106,8 @@ int	buff_readline(t_shell *state, t_string *ret, char *prompt)
 			set_cmd_status(state, create_exec_state(CANCELED, true));
 			return (2);
 		}
-		if (state->metinp == INP_RL)
-			vec_push_char(&state->rl.buff, '\n');
-		state->rl.has_line = true;
 	}
+	if (state->metinp != INP_RL && return_batch(state, ret))
+		return (4);
 	return (return_new_line(state, ret));
 }

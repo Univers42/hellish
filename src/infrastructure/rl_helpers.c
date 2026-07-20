@@ -42,6 +42,10 @@ void	buff_readline_reset(t_rl *l)
 			l->buff.len - l->cursor);
 	else if (l->buff.len > 0)
 		ft_memmove((char *)l->buff.ctx, (char *)l->buff.ctx, l->buff.len);
+	if (l->exact_until > l->cursor)
+		l->exact_until -= l->cursor;
+	else
+		l->exact_until = 0;
 	l->buff.len -= l->cursor;
 	if (l->buff.ctx)
 		((char *)l->buff.ctx)[l->buff.len] = 0;

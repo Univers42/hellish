@@ -22,6 +22,8 @@
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 
+int	tok_lineno(t_shell *state);
+
 /* $LINENO: the line number currently being read/executed (input-line
    granularity, like bash for multiple commands on one source line).
    ft_itoa allocates; we copy into a small static buffer so we can return
@@ -30,7 +32,7 @@ char	*lineno_str(t_shell *state)
 {
 	char	*s;
 
-	s = ft_itoa(state->rl.line);
+	s = ft_itoa(tok_lineno(state));
 	if (!s)
 		return (ft_strlcpy(state->linebuf, "0", 2), state->linebuf);
 	ft_strlcpy(state->linebuf, s, sizeof(state->linebuf));
