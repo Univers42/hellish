@@ -71,9 +71,42 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 - [ ] `make perf BENCH_LAX=1` rerun — first run where the configure
       dimension can TIME hellish (completion gate now passes). Commit
-      bench/results.md + KNOWN_ISSUES.md when it lands.
-- [ ] Feature-gap audit agent (bash/zsh/ksh daily-driver capabilities)
-      — fold its Top-10 into this backlog when it reports.
+      bench/results.md when it lands.
+- [ ] Prompt v2 (code-complete, unbuilt): git dirty `*`, red `✘N` exit
+      badge with the number, `took N.Ns` after >2s commands, `⚙N` jobs
+      badge, root-red username. Build+pty-test when perf frees the tree.
+
+## Feature-gap audit results (agent, 2026-07-21) — ranked queue
+
+1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
+   ZERO callers — jobs/fg/bg/kill %1/wait %1 all dead despite complete
+   plumbing (jobspec parser, table, builtins registered). Wire it in the
+   background-launch path (execute_range_background / exe_bg). Also the
+   Oils `background` cluster (3+ cases) depends on this.
+2. Quick potent fixes: `times` prints its literal format string;
+   `$RANDOM` prng exists in t_shell but never wired to expansion;
+   `$SECONDS`/`$EPOCHSECONDS` missing; `$UID`/`$HOSTNAME`/`$OSTYPE`
+   unset at init; `. file args` doesn't bind $1..$N (bash/ksh/zsh do —
+   Oils builtin-eval-source cluster); `$0`/`$-` empty under -c;
+   `read -t` timeout rc=1 (bash >128); `read -p/-n/-d` silently no-op
+   (worse than erroring); `type -a/-t/-P` missing; README claims a
+   `dirs` builtin that does not exist (stale doc).
+3. `$'…'` ANSI-C quoting — silent literal passthrough today; everywhere
+   in real scripts. Lexer+expander feature.
+4. `<<<` herestring (+ `|&`, `;&`, `;;&`, `function` keyword) — parser
+   features, herestring can reuse heredoc backing.
+5. `[[ ]]` is plain test: no `=~`, and `<`/`>` become REDIRECTIONS
+   (silently wrong). At minimum make `<`/`>` compare and error on `=~`.
+6. Arrays (indexed first) — the biggest script-compat wall; also blocks
+   PIPESTATUS/BASH_REMATCH/read -a/mapfile. Large project.
+7. `declare`/`typeset` + `shopt` (globstar/extglob/nullglob/autocd
+   gates) — large.
+8. PS1/PROMPT_COMMAND/HISTCONTROL/HISTIGNORE — personalization; the
+   rich prompt should fall back to PS1 when set.
+9. `set -e; f(){ false; }; f || true` still exits — errexit suppression
+   around function calls (Oils errexit cluster).
+10. Unknown `set` flags silently accepted rc=0 (`-m -b -H -k -E -T`…) —
+    should at least not lie.
 - [ ] NEXT CLUSTER picked: var-sub-quote (10 cases) — diagnosis in task
       list: ${x:-"c d"} flattens op-word quoting; needs segment-aware
       default emission (quoted segments split_eligible=false). After it:
