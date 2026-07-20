@@ -110,7 +110,7 @@ Expectation: at any given time, `tree` either represents the AST for the *curren
 ### 2.5 `metinp` – Input source mode
 
 - **Type:** `int` (values from `sh_input.h`, e.g. `INP_RL`, `INP_FILE`, `INP_ARG`, `INP_NOTTY`)
-- **Set by:** `mode_input()` in `on.c`, via helpers in `init.c`
+- **Set by:** `cli_dispatch()` in `opt.c`, via helpers in `init.c`
 - **Modes:**
   - `INP_RL` – Interactive terminal (history, prompts)
   - `INP_FILE` – Script file execution
@@ -237,7 +237,7 @@ Design goal: have one abstraction for "a stream of lines" regardless of whether 
 ### 2.15 `option_flags` – Global runtime options
 
 - **Type:** `uint32_t` bitmask
-- **Filled by:** `select_mode_from_argv()` in `opt.c`
+- **Filled by:** `cli_parse()` / `cli_scan()` in `opt.c`+`opt2.c`
 - **Bits:**
   - `OPT_FLAG_HELP`
   - `OPT_FLAG_VERBOSE`
@@ -254,7 +254,7 @@ Design goal: have one abstraction for "a stream of lines" regardless of whether 
     - `--debug=parser` → `OPT_FLAG_DEBUG_PARSER`
     - `--debug=ast` → `OPT_FLAG_DEBUG_AST`
   - Options are **composable**: `--debug=parser --debug=lexer` simply sets multiple bits.
-  - Leading option flags (e.g. `--posix`) are skipped by `leading_opt_count()` in `on.c` before input selection, so `hellish --posix -c '...'` and `hellish --posix script.sh` work like `bash --posix ...`.
+  - `cli_scan()` applies every option (short `-eux`/`+o`, long `-o name`, `--posix`, `-c`, `-i`, `--`/`-`) and leaves `cli->i` at the first operand, so `hellish -e -c '...'`, `hellish -o errexit script.sh` and `hellish -c -x 'cmd'` all parse like `bash --posix ...`; an unknown option aborts with status 2.
 
 This short‑circuit approach avoids complex parsing: each option is independent, and combining them is trivial bitwise OR.
 
@@ -296,7 +296,7 @@ This short‑circuit approach avoids complex parsing: each option is independent
 2. **`on()` in `on.c`**
    - Sets signal handling via `set_unwind_sig()`
    - Initializes `state` to zero with `shell_init()` (inline in `shell.h`)
-   - Parses command‑line options with `select_mode_from_argv()`
+   - Parses command‑line options with `cli_parse()` (scan in `cli_scan`, dispatch in `cli_dispatch`)
    - Initializes readline buffer, PID, ctx, cwd, environment and vectors
    - Decides input method (`-c`, file, stdin, TTY) and prepares corresponding buffers
    - Seeds PRNG and sets `bg_job_count = 0`
@@ -346,12 +346,12 @@ The core adheres to POSIX shell expectations:
 
 ---
 
-## 5. Option / Debug Flag Design (`select_mode_from_argv`)
+## 5. Option / Debug Flag Design (`cli_parse` / `cli_scan`)
 
 The option system in `opt.c` is intentionally **simple and composable**:
 
 - Each argument is scanned once.
-- `process_opt_flag()` updates a `uint32_t flags` bitmask.
+- `cli_scan()` walks argv once; `cli_long_word()` sets the `uint32_t option_flags` bitmask (posix/verbose/help/debug), while short flags and `-o name` fold straight into the `set`-builtin option fields via `apply_flag_word()` / `set_long_option()`.
 - Flags are independent; there is no complex state machine.
 
 Example:
@@ -508,7 +508,7 @@ When adding new fields to `t_shell`, keep these invariants and guidelines in min
    - Try to mirror how POSIX shells differ between these modes.
 
 6. **Integrate with `option_flags` when appropriate**
-   - If you add a new debug or verbose feature, add a new bit in `enum e_opt_flag` and set it in `process_opt_flag()`.
+   - If you add a new debug or verbose feature, add a new bit in `enum e_opt_flag` and set it in `cli_long_word()`.
    - Use bit checks (`state->option_flags & NEW_FLAG`) instead of parsing strings at runtime.
 
 7. **Document the field in `core/README.md`**

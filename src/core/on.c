@@ -20,6 +20,8 @@
 #include <errno.h>
 #include <unistd.h>
 
+static char	*shell_basename(char *arg0);
+
 /* --help: dump the flag reference, free everything, and exit cleanly.
    Calling free_all_state first means valgrind/ASan stay quiet even when
    --help is the only thing the user asked for. */
@@ -37,20 +39,15 @@ static void	print_opts(char **argv, t_shell *state)
 	exit(0);
 }
 
-/* Decide how we read commands. Priority: explicit -c string > script file >
-   non-tty stdin (pipe) > interactive readline. The argv[1][0] != '-' check
-   is intentionally broad: any first argument that is not a flag is taken as
-   a file name; unknown flags fall through to interactive mode too. */
-static void	mode_input(char **argv, t_shell *state)
+/* An unrecognised invocation option (e.g. `hellish -z`, `hellish -c -q`):
+   bash and dash both abort startup with usage status 2.  argv[0]'s basename
+   names the shell in the diagnostic; state is still mostly zero here, which
+   free_all_state tolerates. */
+static void	cli_usage_error(t_shell *state, char **argv)
 {
-	if (argv[1] && ft_strcmp(argv[1], "-c") == 0)
-		init_arg(state, argv);
-	else if (argv[1] && argv[1][0] != '-')
-		init_file(state, argv);
-	else if (!isatty(0))
-		init_stdin_notty(state);
-	else
-		init_history(state);
+	ft_eprintf("%s: invalid option\n", shell_basename(argv[0]));
+	free_all_state(state);
+	exit(2);
 }
 
 /* Zero-initialise every table that survives across commands: redirect list,
@@ -91,13 +88,15 @@ static char	*shell_basename(char *arg0)
    counter for the unique job IDs we hand out. */
 void	on(t_shell *state, char **argv, char **envp)
 {
+	t_cli	cli;
+
 	set_unwind_sig();
 	*state = shell_init();
-	state->option_flags = select_mode_from_argv(argv);
-	if (state->option_flags & OPT_FLAG_POSIX)
-		state->opt_posix = true;
+	cli_parse(state, argv, &cli);
 	if (state->option_flags & OPT_FLAG_HELP)
 		print_opts(argv, state);
+	if (cli.err)
+		cli_usage_error(state, argv);
 	buff_readline_init(&state->rl);
 	vec_init(&state->rl.buff);
 	state->rl.buff.elem_size = 1;
@@ -112,7 +111,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	ensure_essential_env_vars(state);
 	init_tables(state);
 	state->edit_mode = 1;
-	mode_input(argv + leading_opt_count(argv), state);
+	cli_dispatch(state, &cli);
 	prng_initialize_state(&state->prng, 19650218UL);
 	state->bg_job_count = 0;
 }

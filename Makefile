@@ -303,6 +303,14 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Command-line option parsing (-e, -o name, +c, flags after -c, --/-,
+# invalid-option status, $-, mode-dependent nounset) vs bash --posix. These
+# exercise how the shell parses its own argv, which the golden -c harness
+# cannot reach. Host-side, no docker. See tests/cli_opts_compare.sh.
+cli-opts-test: all
+	@chmod +x $(TEST_DIR)/cli_opts_compare.sh
+	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cli_opts_compare.sh
+
 # Third-party conformance sweep: Oils spec tests + mksh check.t, run against
 # hellish, bash --posix and dash; report in bench/conformance.md; the gate
 # fails if hellish's pass count drops vs bench/baseline/. Suites are fetched
@@ -319,4 +327,4 @@ perf:
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test conformance perf
+	hist-test conformance perf cli-opts-test

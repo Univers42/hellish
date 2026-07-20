@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# ============================================================================
+# cli_opts_compare.sh -- verify hellish's command-line option parsing against
+# bash --posix.  These cases can't live in the golden category files: the
+# harness wraps every line in `<shell> -c`, so it can't exercise how the
+# shell parses its OWN argv (-e, -o name, +c, flags between -c and the
+# command string, `--`/`-`, invalid-option status, $-).  Here each row is
+# run by invoking the shell binary directly and diffing stdout + exit status.
+#
+# Runs on the host: needs only bash + hellish, no docker.  Stderr wording
+# differs by shell and is not gated on.
+# ============================================================================
+set -u
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+HELLISH="${HELLISH:-$HERE/../build/bin/hellish}"
+HELLISH="$(cd "$(dirname "$HELLISH")" 2>/dev/null && pwd)/$(basename "$HELLISH")"
+export HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1
+
+if [ ! -x "$HELLISH" ]; then echo "error: hellish not found at $HELLISH" >&2; exit 2; fi
+
+strip_h(){ sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$'; }
+
+# Each row is a full argv (after the shell name), passed verbatim to both
+# shells.  We compare stdout + status; $- rows print flags so their stdout
+# carries the interesting part.  bash is invoked with --norc --posix so it
+# matches hellish's --posix posture.
+rows=(
+  "-e -c |false; echo no"
+  "-o errexit -c |false; echo no"
+  "-eu -c |echo hi"
+  "-c -x |echo hi"
+  "-c -- |echo two"
+  "-c - |echo one"
+  "-c -e |false; echo no"
+  "-c |set -u; : \${missing}; echo after"
+  "-l -c |exit 0"
+)
+
+pass=0; fail=0
+printf '\n\033[1m== hellish vs bash --posix: CLI option parsing ==\033[0m\n'
+run_row() {
+  local pre="${1%%|*}" cmd="${1#*|}"
+  # shellcheck disable=SC2086
+  ho=$("$HELLISH" --posix $pre "$cmd" 2>/dev/null); hx=$?
+  ho=$(printf '%s' "$ho" | strip_h)
+  # shellcheck disable=SC2086
+  bo=$(bash --norc --posix $pre "$cmd" 2>/dev/null); bx=$?
+  if [ "$ho" = "$bo" ] && [ "$hx" = "$bx" ]; then
+    pass=$((pass+1)); printf '  \033[32mOK\033[0m   %s%s\n' "$pre" "$cmd"
+  else
+    fail=$((fail+1))
+    printf '  \033[31mFAIL\033[0m %s%s\n' "$pre" "$cmd"
+    printf '       hellish(rc=%s) [%s]\n' "$hx" "$ho"
+    printf '       bash   (rc=%s) [%s]\n' "$bx" "$bo"
+  fi
+}
+for r in "${rows[@]}"; do run_row "$r"; done
+
+# Status-only rows: invalid options must abort with bash's usage status 2.
+printf '\n\033[1m== invalid-option status ==\033[0m\n'
+inval=("-z" "-c -z" "-c ---" "+q")
+for args in "${inval[@]}"; do
+  # shellcheck disable=SC2086
+  "$HELLISH" --posix $args >/dev/null 2>&1 </dev/null; hx=$?
+  # shellcheck disable=SC2086
+  bash --norc --posix $args >/dev/null 2>&1 </dev/null; bx=$?
+  if [ "$hx" = "$bx" ]; then
+    pass=$((pass+1)); printf '  \033[32mOK\033[0m   %-8s rc=%s\n' "$args" "$hx"
+  else
+    fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %-8s hellish rc=%s bash rc=%s\n' "$args" "$hx" "$bx"
+  fi
+done
+
+# Script/stdin nounset exits 1 (bash), where -c mode exits 127; both shells
+# must agree per mode.  A real script file exercises the INP_FILE path.
+printf '\n\033[1m== nounset exit status by mode ==\033[0m\n'
+SCR="$(mktemp)"; printf 'set -u\n: ${missing}\necho after\n' > "$SCR"
+hx=$("$HELLISH" --posix "$SCR" >/dev/null 2>&1; echo $?)
+bx=$(bash --norc --posix "$SCR" >/dev/null 2>&1; echo $?)
+his=$(printf 'set -u\n: ${missing}\necho after\n' | "$HELLISH" --posix >/dev/null 2>&1; echo $?)
+bis=$(printf 'set -u\n: ${missing}\necho after\n' | bash --norc --posix >/dev/null 2>&1; echo $?)
+rm -f "$SCR"
+for pair in "script $hx $bx" "stdin $his $bis"; do
+  set -- $pair
+  if [ "$2" = "$3" ]; then
+    pass=$((pass+1)); printf '  \033[32mOK\033[0m   %-7s nounset rc=%s\n' "$1" "$2"
+  else
+    fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %-7s hellish rc=%s bash rc=%s\n' "$1" "$2" "$3"
+  fi
+done
+
+# $- must carry 'i' when -i is given, and must NOT when it isn't.
+printf '\n\033[1m== $- interactive marker ==\033[0m\n'
+gi=$("$HELLISH" --posix -i -c 'echo $-' 2>/dev/null | grep -c i)
+gn=$("$HELLISH" --posix -c 'echo $-' 2>/dev/null | grep -c i)
+if [ "$gi" = 1 ] && [ "$gn" = 0 ]; then
+  pass=$((pass+1)); printf '  \033[32mOK\033[0m   -i adds i (%s), plain omits it (%s)\n' "$gi" "$gn"
+else
+  fail=$((fail+1)); printf '  \033[31mFAIL\033[0m -i=%s plain=%s (want 1/0)\n' "$gi" "$gn"
+fi
+
+printf '\n\033[1m== %d pass, %d fail (bash %s) ==\033[0m\n' \
+  "$pass" "$fail" "$(bash --version 2>/dev/null | head -1)"
+[ "$fail" -eq 0 ]

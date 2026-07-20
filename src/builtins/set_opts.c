@@ -37,21 +37,27 @@ void	xtrace_print(t_shell *state, t_vec *argv)
 	ft_eprintf("\n");
 }
 
-/* Called when -u (nounset) is set and an unset variable is expanded. In
-   script mode we exit immediately (POSIX requires this): bash --posix exits
-   127 here, except when errexit is also active — then bash's errexit
-   machinery reaches the exit first with status 1.  We replicate both codes
-   exactly since test harnesses diff $? against bash.  In interactive mode
-   we report the error but keep the session alive — crashing the REPL every
-   time you mistype a variable name would be unbearable. */
+/* Called when -u (nounset) is set and an unset variable is expanded.
+   Non-interactively POSIX requires the shell to exit, and the STATUS bash
+   uses depends on the mode, so we mirror it exactly (harnesses diff $?):
+     - errexit active    => 1 (errexit reaches the exit first)
+     - -c string (INP_ARG) => 127
+     - script / piped stdin => 1
+   Interactively we report the error but keep the REPL alive with $?=1 --
+   killing the session on every mistyped variable would be unbearable. */
 void	nounset_abort(t_shell *state, const char *name, int len)
 {
 	ft_eprintf("%s: %.*s: parameter not set\n", state->ctx, len, name);
-	if (state->metinp != INP_RL && state->opt_errexit)
+	if (state->metinp == INP_RL)
+	{
+		state->last_cmd_st_exe = (t_execution_state){.status = 1};
+		return ;
+	}
+	if (state->opt_errexit)
 		exit_clean(state, 1);
-	if (state->metinp != INP_RL)
+	if (state->metinp == INP_ARG)
 		exit_clean(state, 127);
-	state->last_cmd_st_exe = (t_execution_state){.status = 1};
+	exit_clean(state, 1);
 }
 
 /* Switch the line-editor mode. Only "vi" and "emacs" are recognised; +vi
