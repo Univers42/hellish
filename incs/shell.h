@@ -196,6 +196,7 @@ typedef struct s_shell
 	bool				opt_verbose; /* -v: print input lines as read */
 	bool				opt_pipefail; /* pipefail: status = last failure */
 	bool				opt_posix; /* --posix / set -o posix: no extensions */
+	bool				opt_interactive; /* -i: force $- to carry 'i' */
 	/* small scratch buffers -- avoids allocs for $-, $LINENO and $? */
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
 	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */
