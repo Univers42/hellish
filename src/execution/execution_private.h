@@ -129,6 +129,7 @@ void				update_underscore_var(t_shell *state,
 void				set_up_redirection(t_shell *state,
 						t_executable_node *exe);
 int					fd_setup_needed(t_executable_node *exe);
+int					save_fd(int fd);
 void				take_backup_fds(int *bak, int persist);
 void				restore_backup_fds(int *bak, int persist);
 void				restore_fds(int *bak);
