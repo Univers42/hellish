@@ -25,6 +25,7 @@ bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 char	*build_flagstr(t_shell *state);
 char	*lineno_str(t_shell *state);
+char	*expand_special_dyn(t_shell *state, char *key, int len);
 
 /* Detect a positional parameter index: key must be all digits and > 0.
    $0 is NOT a positional parameter -- POSIX says $0 is the shell name,
@@ -67,8 +68,6 @@ static char	*expand_special(t_shell *state, char *key, int len)
 	}
 	if (len == 1 && key[0] == '-')
 		return (build_flagstr(state));
-	if (len == 6 && ft_strncmp(key, "LINENO", 6) == 0)
-		return (lineno_str(state));
 	if (len == 0)
 		return ("");
 	if (len == 1 && key[0] == '#')
@@ -77,7 +76,7 @@ static char	*expand_special(t_shell *state, char *key, int len)
 			return (state->pos.cnt_str);
 		return ("0");
 	}
-	return (NULL);
+	return (expand_special_dyn(state, key, len));
 }
 
 /* Expand $key (len bytes): specials first, then positionals, then env.

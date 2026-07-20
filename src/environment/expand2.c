@@ -18,11 +18,45 @@
 #include "shell.h"
 #include "helpers.h"
 #include "sh_input.h"
+#include "ft_stdlib.h"
+#include <time.h>
 
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
+char	*lineno_str(t_shell *state);
 
 int	tok_lineno(t_shell *state);
+
+/* Dynamic special variables computed at expansion time, second tier of
+   expand_special: $LINENO, plus the bash-isms $RANDOM (0..32767 from the
+   session PRNG), $SECONDS (whole seconds since shell start) and
+   $EPOCHSECONDS. All borrow state->linebuf like lineno_str. A user
+   assignment to these names does NOT shadow them (bash lets SECONDS=N
+   re-base the counter; accepted divergence). NULL = not one of ours. */
+char	*expand_special_dyn(t_shell *state, char *key, int len)
+{
+	if (len == 6 && ft_strncmp(key, "LINENO", 6) == 0)
+		return (lineno_str(state));
+	if (len == 6 && ft_strncmp(key, "RANDOM", 6) == 0)
+	{
+		snprintf(state->linebuf, sizeof(state->linebuf), "%u",
+			random_uint32(&state->prng) & 32767u);
+		return (state->linebuf);
+	}
+	if (len == 7 && ft_strncmp(key, "SECONDS", 7) == 0)
+	{
+		snprintf(state->linebuf, sizeof(state->linebuf), "%lld",
+			(long long)time(NULL) - state->start_sec);
+		return (state->linebuf);
+	}
+	if (len == 12 && ft_strncmp(key, "EPOCHSECONDS", 12) == 0)
+	{
+		snprintf(state->linebuf, sizeof(state->linebuf), "%lld",
+			(long long)time(NULL));
+		return (state->linebuf);
+	}
+	return (NULL);
+}
 
 /* $LINENO: the line number currently being read/executed (input-line
    granularity, like bash for multiple commands on one source line).

@@ -66,6 +66,32 @@ int	builtin_eval(t_shell *state, t_vec argv)
    a sourced file that redefines itself mid-execution still runs its original
    text — same behaviour as bash. No PATH search is done; the argument is
    used as-is (use `source` for the bash-style PATH-aware form if needed). */
+/* Run the sourced text, temporarily binding extra arguments as $1..$N
+   the way bash/ksh/zsh do: `. file a b` gives the file its own
+   positionals and RESTORES the caller's afterwards; with no extra args
+   the file shares the caller's parameters (and `set` inside persists). */
+static int	run_source(t_shell *state, char *content, t_vec argv)
+{
+	t_pos	saved;
+	int		status;
+
+	state->source_depth++;
+	if (argv.len > 2)
+	{
+		saved = state->pos;
+		state->pos = (t_pos){0};
+		pos_build(&state->pos, (char **)argv.ctx + 2, argv.len - 2);
+		status = exec_string(state, content);
+		pos_free(&state->pos);
+		state->pos = saved;
+		pos_set_cnt(&state->pos);
+	}
+	else
+		status = exec_string(state, content);
+	state->source_depth--;
+	return (status);
+}
+
 int	builtin_source(t_shell *state, t_vec argv)
 {
 	char		**av;
@@ -88,9 +114,7 @@ int	builtin_source(t_shell *state, t_vec argv)
 	close(fd);
 	content = ft_strndup((char *)buf.ctx, buf.len);
 	xfree(buf.ctx);
-	state->source_depth++;
-	status = exec_string(state, content);
-	state->source_depth--;
+	status = run_source(state, content, argv);
 	xfree(content);
 	return (status);
 }
