@@ -22,19 +22,44 @@
    argument goes through process_arg(), which handles NAME, NAME=val, and the
    `export NAME value` two-word form. Accumulates errors but keeps going — a
    single bad identifier should not stop the valid ones. */
+/* Consume export's leading option words (-p/-n/-f, combos, and the bare
+   "--" terminator).  Returns the index of the first operand; on an
+   unrecognised option prints the error and sets *err = 2 so the builtin can
+   return bash's usage status without touching the environment. */
+size_t	export_skip_opts(t_shell *st, t_vec av, int *err)
+{
+	size_t	i;
+	char	*a;
+
+	*err = 0;
+	i = 1;
+	while (i < av.len)
+	{
+		a = ((char **)av.ctx)[i];
+		if (a[0] != '-' || a[1] == '\0')
+			break ;
+		if (!ft_strcmp(a, "--"))
+			return (i + 1);
+		if (bad_opt_word(a, "pnf"))
+			return (ft_eprintf("%s: export: %s: invalid option\n",
+					st->ctx, a), *err = 2, i);
+		i++;
+	}
+	return (i);
+}
+
 int	builtin_export(t_shell *st, t_vec av)
 {
 	size_t	i;
 	int		status;
 	int		idx;
 
-	i = 1;
-	status = 0;
-	if (av.len == 1 || (av.len == 2
-			&& !ft_strcmp(((char **)av.ctx)[1], "-p")))
+	i = export_skip_opts(st, av, &status);
+	if (status)
+		return (2);
+	if (i >= av.len)
 		return (collect_and_print_exported(st), 0);
-	if (av.len > 1 && !ft_strcmp(((char **)av.ctx)[1], "-p"))
-		i = 2;
+	status = 0;
 	while (i < av.len)
 	{
 		idx = (int)i;
@@ -48,25 +73,35 @@ int	builtin_export(t_shell *st, t_vec av)
 
 /* exit [n]: terminate the shell with status n (0–255), or with $? when n is
    omitted. In an interactive session the word "exit" is printed to stderr
-   before leaving (bash/ksh compat). The POSIX exit-code rules: numeric
-   check, then mask to 8 bits in exit_clean. Too-many-args exits 1 (bash
-   compat), and a non-numeric argument exits 2 — that specific code matters
-   for scripts that test $? afterwards. */
+   before leaving. A valid long long status is masked to 8 bits (so
+   `exit 9223372036854775807` exits 255). Error handling is mode-dependent,
+   matching bash exactly: under -c (INP_ARG) a bad operand EXITS the shell
+   (too many => 1, non-numeric/overflow => 2); reading a script/pipe/tty it
+   only prints the error and returns 2 so the shell keeps running. */
 int	builtin_exit(t_shell *state, t_vec argv)
 {
-	int		ret;
-	size_t	i;
+	long long	code;
+	size_t		i;
 
 	print_exit_if_readline(state);
 	if (handle_no_args(state, argv))
 		return (0);
-	i = 1;
-	i = handle_double_dash(state, argv, i);
-	if (handle_non_numeric(state, argv, i, &ret))
-		return (0);
-	if (handle_too_many_args(state, argv, i))
-		return (0);
-	return (exit_clean(state, ret), 0);
+	i = handle_double_dash(state, argv, 1);
+	if (handle_non_numeric(state, argv, i, &code))
+	{
+		if (state->metinp == INP_ARG)
+			exit_clean(state, 2);
+		return (2);
+	}
+	if (i + 1 < argv.len)
+	{
+		ft_eprintf("%s: %s: too many arguments\n", state->ctx,
+			((char **)argv.ctx)[0]);
+		if (state->metinp == INP_ARG)
+			exit_clean(state, 1);
+		return (2);
+	}
+	return (exit_clean(state, (int)(code & 0xFF)), 0);
 }
 
 /* The ':' null utility: expand args (already done before we run) and

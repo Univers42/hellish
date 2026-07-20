@@ -64,10 +64,35 @@ int	process_arg(t_shell *st, t_vec av, int *ip)
    without a value (bare `export NAME`), find the existing entry and set its
    exported flag. Invalid identifiers print an error, free both strings, and
    return 1 — but do NOT abort the loop in process_arg. */
+/* `export NAME+=value` (bash append): the parser handed us id="NAME+" and
+   val="value".  Strip the trailing '+' and splice the current value of NAME
+   in front of val, so `export a=1; export a+=2` leaves a="12".  A no-op when
+   id does not end in '+'. */
+static char	*export_apply_append(t_shell *st, char *id, char *val)
+{
+	size_t	n;
+	t_env	*e;
+	char	*old;
+	char	*joined;
+
+	n = ft_strlen(id);
+	if (n == 0 || id[n - 1] != '+' || !val)
+		return (val);
+	id[n - 1] = '\0';
+	e = env_get(&st->env, id);
+	old = "";
+	if (e && e->value)
+		old = e->value;
+	joined = ft_strjoin(old, val);
+	xfree(val);
+	return (joined);
+}
+
 int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
 {
 	t_env	*e;
 
+	val = export_apply_append(st, id, val);
 	if (ft_is_valid_ident(id))
 	{
 		if (!val)
