@@ -78,7 +78,7 @@ void	prompt_user_and_cwd(t_string *ret, t_prompt *p)
 	vec_push_str(ret, G_TL G_H " ");
 	vec_push_ansi(ret, C_RST);
 	p->vis_w += 3;
-	vec_push_ansi(ret, C_USER);
+	vec_push_ansi(ret, user_color());
 	vec_push_str(ret, p->user);
 	vec_push_ansi(ret, C_RST);
 	p->vis_w += (int)ft_strlen(p->user);
@@ -104,6 +104,13 @@ void	prompt_branch(t_string *ret, t_prompt *p)
 	vec_push_str(ret, p->branch);
 	vec_push_ansi(ret, C_RST);
 	p->vis_w += (int)ft_strlen(p->branch);
+	if (p->branch_dirty)
+	{
+		vec_push_ansi(ret, C_VENV);
+		vec_push_str(ret, "*");
+		vec_push_ansi(ret, C_RST);
+		p->vis_w += 1;
+	}
 }
 
 /* Append "(venv-name)" if a Python virtual environment or conda env is active.

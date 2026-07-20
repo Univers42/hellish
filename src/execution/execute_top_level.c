@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include <time.h>
 
 /* Entry point called once per parsed statement by the REPL.  It wraps the
    whole execution lifecycle for one top-level tree: pre-scan heredocs
@@ -20,11 +21,25 @@
    should_exit so the script aborts rather than just printing a newline.
    The verbose(CLAP_PRINT) call at the end is the "execution applause"
    hook -- a hook for debug/test output after each top-level command. */
+/* Monotonic wall clock in milliseconds, for the prompt's "took Ns"
+   segment. CLOCK_MONOTONIC so a system clock change mid-command can't
+   produce a negative or absurd duration. */
+static long long	now_ms(void)
+{
+	struct timespec	ts;
+
+	if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
+		return (0);
+	return ((long long)ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
+}
+
 void	execute_top_level(t_shell *state)
 {
 	t_executable_node	exe;
 	t_execution_state	res;
+	long long			t0;
 
+	t0 = now_ms();
 	exe = create_exe_node(0, 1, &state->tree, true);
 	vec_init(&exe.redirs);
 	exe.redirs.elem_size = sizeof(int);
@@ -48,5 +63,6 @@ void	execute_top_level(t_shell *state)
 			state->should_exit = true;
 	}
 	state->last_cmd_st_exe = res;
+	state->last_cmd_ms = now_ms() - t0;
 	verbose(CLAP_PRINT, "");
 }
