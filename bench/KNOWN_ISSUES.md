@@ -1,54 +1,35 @@
 # Known issues surfaced by the bench harness
 
-## autoconf `configure` does not complete under hellish
+## RESOLVED — autoconf `configure` completes (2026-07-21)
 
-Running GNU hello 2.12.1's `./configure` with `CONFIG_SHELL=hellish`
-aborts with status 77 (dash/bash complete in ~7s). This is the classic
-real-world shell torture test and it exposes **two independent bugs**, one
-fixed and one open.
+GNU hello 2.12.1's `./configure` with `CONFIG_SHELL=hellish` now runs
+end-to-end: exit 0, `config.status` and `Makefile` generated. The saga,
+for archaeology (each stage is pinned by a case in `tests/regress_hellish`):
 
-### 1. FIXED — internal fd saves collided with script fds 5/6/7
+1. **fd saves collided with script fds 5/6/7** — fixed earlier via
+   `save_fd()` (`fcntl(F_DUPFD_CLOEXEC, 10)`).
+2. **Quote-state desync at scale** — the cycle-completeness check
+   tokenized the raw accumulated input where heredoc BODIES still sat
+   inline; apostrophes in embedded C code inverted the tokenizer's quote
+   parity and a giant `gl_mda_defines='…'` assignment was cut mid-string.
+   The check now tokenizes the body-stripped text (`split_heredocs`).
+3. **`config.guess` SEGV** — the `$(…)` boundary scans in the reparser
+   and the expander counted parens inside quotes; sed scripts like
+   `'s/[-(].*//'` derailed the depth. Both now skip quoted spans
+   (`sh_skip_quoted`).
+4. **`config.status` mis-lex** — a backtick substitution inside double
+   quotes was not scanned atomically, so a `""` within it closed the
+   outer quote. `advance_dquoted` now recurses into `advance_backtick`.
+5. **`for` over positionals crashed** — the loop read `$N` lazily while
+   the body's `shift` shrank `$#`. It now iterates a snapshot of `"$@"`
+   taken at loop entry (also the POSIX-required semantics).
 
-hellish's redirect save/restore backed up std fds with plain `dup()`,
-which returns the lowest free descriptor (5, 6, 7…). autoconf keeps
-`config.log` on fd 5 and the original stdout on fd 6 (`exec 5>>config.log`,
-`exec 6>&1`), so every internal save clobbered them and `>&5`/`>&6` failed
-with EBADF. Fixed by routing saves through `save_fd()`
-(`fcntl(F_DUPFD_CLOEXEC, 10)`, `src/execution/utils.c`) — the standard
-shell technique. This moved configure from rc 77 in 0.6s to running the
-full compiler-probe sequence.
+## OPEN — 64-byte `realloc_to` leak in full-ASan configure runs
 
-### 2. OPEN — parser state drifts on autoconf-scale scripts
-
-`hellish --posix -n configure` (parse only, no execution) reports
-`syntax error near unexpected token '('` at several lines (first around
-4756 / 7673 depending on run). Confirmed characteristics:
-
-- **Not reproducible in isolation.** Every suspected construct extracted
-  on its own parses correctly: `cat file - <<EOF >out` (heredoc followed
-  by an output redirect), `case "(($x" in *\"*|*\`*|*\\*)` (autoconf's
-  quote-detection case), `case x in (x)` (leading-paren pattern), escaped
-  backticks inside double quotes, multi-line double-quoted strings with
-  `\`config.log'`. All match bash byte-for-byte.
-- **Only manifests in aggregate**, which — together with the drift between
-  the reported line number and the actual construct — points to a
-  **heredoc line-counting / body-consumption bug**: one heredoc variant
-  (configure uses many: `cat <<X`, `cat >f <<X`, `cat f - <<X >g`) is
-  consumed by the wrong number of lines, so every command after it is
-  parsed against the wrong input offset.
-- Prefix bisection (`head -N | hellish -n`) is unreliable here because the
-  cuts land mid-heredoc / mid-string and inject their own false errors.
-
-### Recommended next step (for a focused session)
-
-Instrument the parser, not the script: dump the token stream / heredoc
-gather decisions (`--debug=lexer --debug=parser`) while running the real
-configure, and diff hellish's heredoc-body line spans against the file.
-The first heredoc whose consumed span differs from its true
-`<<DELIM…DELIM` extent is the culprit. Fix is expected in
-`src/heredoc/` (body extraction / line accounting), after which the
-config.log flow and the downstream `(` errors should both clear, and the
-perf `configure` dimension can time hellish alongside bash/dash.
-
-Until then the perf harness excludes hellish from the configure timing and
-flags it N/A (see `bench/run.sh` completion gate and `results.md`).
+One 64-byte vector leaks somewhere in a child during an ASan-instrumented
+configure run (`CONFIG_SHELL=<debug build> …`; grep the log for
+LeakSanitizer). All test suites and `verify_alloc.sh` are leak-clean, so
+the escape path is configure-specific. Chase with
+`ASAN_OPTIONS=fast_unwind_on_malloc=0:malloc_context_size=20` for full
+frames. Cosmetic (OPT builds carry no ASan), but it makes ASan configure
+runs exit 1.
