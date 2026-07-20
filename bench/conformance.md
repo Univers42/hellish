@@ -9,38 +9,16 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 885 | 0 | 0 | 0 | 737 | 0 | 1622 | 54.56% |
+| **hellish --posix** | 991 | 0 | 0 | 0 | 631 | 0 | 1622 | 61.10% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 270
+### Consensus divergences (hellish fails, bash AND dash pass): 177
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
-- `alias` case 1 [FAIL]: Basic alias
-- `alias` case 2 [FAIL]: define and use alias on a single line
-- `alias` case 4 [FAIL]: defining multiple aliases, then unalias
-- `alias` case 11 [FAIL]: alias with trailing space causes alias expansion on second word
-- `alias` case 12 [FAIL]: Recursive alias expansion of first word
-- `alias` case 13 [FAIL]: Recursive alias expansion of SECOND word
-- `alias` case 14 [FAIL]: Expansion of alias with variable
-- `alias` case 15 [FAIL]: Alias must be an unquoted word, no expansions allowed
-- `alias` case 16 [FAIL]: first and second word are the same alias, but no trailing space
-- `alias` case 17 [FAIL]: first and second word are the same alias, with trailing space
-- `alias` case 21 [FAIL]: Syntax error after expansion
-- `alias` case 22 [FAIL]: Loop split across alias and arg works
-- `alias` case 23 [FAIL]: Loop split across alias in another way
 - `alias` case 24 [FAIL]: Loop split across both iterative and recursive aliases
-- `alias` case 25 [FAIL]: Alias with a quote in the middle is a syntax error
-- `alias` case 26 [FAIL]: Alias with internal newlines
-- `alias` case 27 [FAIL]: Alias trailing newline
-- `alias` case 28 [FAIL]: Two aliases in pipeline
-- `alias` case 30 [FAIL]: Alias can be defined and used on a single line
-- `alias` case 34 [FAIL]: alias with line continuation in the middle
-- `alias` case 35 [FAIL]: alias for left brace
-- `alias` case 36 [FAIL]: alias for left paren
-- `alias` case 41 [FAIL]: Alias that is pipeline
-- `alias` case 42 [FAIL]: Alias that is && || ;
+- `alias` case 31 [FAIL]: Alias is respected inside eval
 - `arith` case 13 [FAIL]: Integer constant validation
 - `arith` case 20 [FAIL]: Increment undefined variables with nounset
 - `arith` case 28 [FAIL]: No floating point
@@ -61,7 +39,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `blog1` case 2 [FAIL]: ${####}
 - `blog1` case 3 [FAIL]: ${##2}
 - `blog1` case 4 [FAIL]: ${###2}
-- `blog2` case 2 [FAIL]: -a -a -a
 - `blog2` case 5 [FAIL]: -a -a -a -a -a -a
 - `bool-parse` case 4 [FAIL]: Not allowed: [[ ) ]] and [[ ( ]]
 - `bugs` case 3 [FAIL]: assign readonly -- one line
@@ -72,13 +49,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `bugs` case 13 [FAIL]: other builtins fail on writing to full disk
 - `bugs` case 18 [FAIL]: autoconf arithmetic - relaxed eval_unsafe_arith (#1450)
 - `bugs` case 24 [FAIL]: autotools as_fn_arith bug in configure
-- `builtin-bracket` case 20 [FAIL]: -z '>' implies two token lookahead
-- `builtin-bracket` case 21 [FAIL]: operator/operand ambiguity with ]
-- `builtin-bracket` case 22 [FAIL]: operator/operand ambiguity with -a
-- `builtin-bracket` case 27 [FAIL]: -k for sticky bit
-- `builtin-bracket` case 31 [FAIL]: -ot and -nt
-- `builtin-bracket` case 36 [FAIL]: -G and -O for effective user ID and group ID
-- `builtin-bracket` case 41 [FAIL]: -ef
 - `builtin-bracket` case 42 [FAIL]: Overflow error
 - `builtin-cd` case 8 [FAIL]: pwd with symlink and -P
 - `builtin-cd` case 14 [FAIL]: pwd in symlinked dir on shell initialization
@@ -90,11 +60,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `builtin-eval-source` case 21 [FAIL]: source doesn't crash when targeting a directory
 - `builtin-eval-source` case 22 [FAIL]: sourcing along PATH should ignore directories
 - `builtin-getopts` case 6 [FAIL]: getopts with invalid variable name
-- `builtin-getopts` case 9 [FAIL]: getopts missing required argument
-- `builtin-getopts` case 12 [FAIL]: OPTIND
-- `builtin-getopts` case 13 [FAIL]: OPTIND after multiple getopts with same spec
-- `builtin-getopts` case 26 [FAIL]: getopts silent error reporting - missing required argument
-- `builtin-getopts` case 28 [FAIL]: getopts normal mode - missing required argument (compare with silent)
 - `builtin-kill` case 10 [FAIL]: kill -l with exit code
 - `builtin-kill` case 11 [FAIL]: kill -l with 128 is invalid
 - `builtin-meta` case 0 [FAIL]: command -v
@@ -103,44 +68,14 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `builtin-meta` case 10 [FAIL]: command -p (override existing program)
 - `builtin-meta` case 11 [FAIL]: command -p (hide tool in custom path)
 - `builtin-meta` case 12 [FAIL]: command -p (find hidden tool in default path)
-- `builtin-printf` case 4 [FAIL]: printf -v syntax error
-- `builtin-printf` case 20 [FAIL]: printf %*.*s (width/precision from args)
-- `builtin-printf` case 39 [FAIL]: printf invalid format
-- `builtin-printf` case 42 [FAIL]: printf negative numbers
-- `builtin-printf` case 45 [FAIL]: Runtime error for invalid integer
-- `builtin-printf` case 61 [FAIL]: leading spaces are accepted in value given to %d %X, but not trailing spaces
 - `builtin-printf` case 62 [FAIL]: Arbitrary base 64#a is rejected (unlike in shell arithmetic)
 - `builtin-process` case 7 [FAIL]: Exit builtin with invalid arg
 - `builtin-process` case 17 [FAIL]: ulimit accepts 'unlimited'
 - `builtin-process` case 18 [FAIL]: ulimit of 2**32, 2**31 (int overflow)
 - `builtin-process` case 19 [FAIL]: ulimit that is 64 bits
-- `builtin-set` case 1 [FAIL]: set with both options and argv
-- `builtin-set` case 3 [FAIL]: set -u -- clears argv
-- `builtin-set` case 7 [FAIL]: set -u error can break out of nested evals
-- `builtin-set` case 10 [FAIL]: set -eu (flag parsing)
-- `builtin-set` case 13 [FAIL]: set - - and so forth
-- `builtin-set` case 14 [FAIL]: set - leading single dash is ignored, turns off xtrace verbose (#2364)
-- `builtin-set` case 15 [FAIL]: set - stops option processing like set --
-- `builtin-set` case 16 [FAIL]: A single + is an ignored flag; not an argument
-- `builtin-set` case 17 [FAIL]: set - + and + -
-- `builtin-set` case 22 [FAIL]: set -a exports local variables
 - `builtin-special` case 1 [FAIL]: Prefix assignments persist after special builtins, like : (set -o posix)
 - `builtin-special` case 6 [FAIL]: Special builtins can't be redefined as shell functions (set -o posix)
-- `builtin-trap` case 1 [FAIL]: trap accepts/ignores --
-- `builtin-trap` case 9 [FAIL]: Remove multiple handlers with trap -
-- `builtin-trap` case 13 [FAIL]: trap 0 2 resets EXIT AND SIGINT
-- `builtin-trap` case 15 [FAIL]: trap 'echo hi' KILL (regression test, caught by smoosh suite)
-- `builtin-trap` case 17 [FAIL]: trap EXIT calling exit
-- `builtin-trap` case 19 [FAIL]: trap EXIT with PARSE error
-- `builtin-trap` case 25 [FAIL]: traps are cleared in subshell (started with &)
-- `builtin-trap` case 29 [FAIL]: Remove trap with an unsigned integer
-- `builtin-umask` case 4 [FAIL]: symbolic syntax error: empty clause u-r,,u-r
-- `builtin-umask` case 10 [FAIL]: 'umask 0002' sets the umask
-- `builtin-umask` case 11 [FAIL]: set umask with symbolic mode: g-w,o-w
-- `builtin-umask` case 12 [FAIL]: set umask with symbolic mode: u-rw  ...  u=,g+,o-  ...
-- `builtin-umask` case 14 [FAIL]: umask allow overwriting and duplicates
-- `builtin-umask` case 15 [FAIL]: umask a is valid who
-- `builtin-umask` case 19 [FAIL]: umask default who
+- `builtin-umask` case 6 [FAIL]: usage: large octal number
 - `builtin-vars` case 5 [FAIL]: Export existing global variables
 - `builtin-vars` case 8 [FAIL]: Export a variable before defining it
 - `builtin-vars` case 9 [FAIL]: Unset exported variable, then define it again.  It's NOT still exported.
@@ -208,29 +143,13 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `redirect-command` case 12 [FAIL]: Redirect in function body AND function call
 - `redirect-command` case 19 [FAIL]: Prefix redirect for loop -- not allowed
 - `sh-func` case 10 [FAIL]: Subshell function
-- `sh-func` case 11 [FAIL]: Scope of global variable when sourced in function (Shell Functions aren't Closures)
-- `sh-options` case 0 [FAIL]: $- with -c
-- `sh-options` case 3 [FAIL]: $- with interactive shell
-- `sh-options` case 4 [FAIL]: pass short options like sh -e
-- `sh-options` case 5 [FAIL]: pass long options like sh -o errexit
-- `sh-options` case 10 [FAIL]: nounset
-- `sh-options` case 11 [FAIL]: -u is nounset
 - `sh-options` case 24 [FAIL]: set without args lists variables
 - `sh-options` case 33 [FAIL]: stubbed out bash options
-- `sh-usage` case 2 [FAIL]: sh +c is accepted
 - `sh-usage` case 4 [FAIL]: sh - and sh -- stop flag processing
-- `sh-usage` case 7 [FAIL]: args that look like flags are passed after script
-- `sh-usage` case 8 [FAIL]: args that look like flags are passed after -c
-- `sh-usage` case 17 [FAIL]: sh -c -- 'echo hi' does not run anything (#2637)
-- `sh-usage` case 21 [FAIL]: weird flag parsing -oo errexit noglob
-- `sh-usage` case 22 [FAIL]: 'sh -c -z' does not try to run -z
-- `sh-usage` case 23 [FAIL]: sh -c -x 'echo hi' - order is reversed
 - `shell-bugs` case 0 [FAIL]: ./configure idiom
 - `subshell` case 1 [FAIL]: Subshell with redirects
-- `tilde` case 6 [FAIL]: ${undef:-~}
 - `tilde` case 8 [FAIL]: x=foo:~ has tilde expansion
 - `tilde` case 13 [FAIL]: temp assignment x=~ env
-- `toysh-posix` case 0 [FAIL]: Fatal error
 - `toysh-posix` case 4 [FAIL]: Evaluation order of redirect and ${undef?error}
 - `toysh-posix` case 7 [FAIL]: no shebang
 - `toysh-posix` case 21 [FAIL]: Command Sub Syntax Error
@@ -243,35 +162,23 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `var-op-strip` case 17 [FAIL]: strip unquoted and quoted ?
 - `var-op-strip` case 18 [FAIL]: strip unquoted and quoted [a]
 - `var-op-strip` case 26 [FAIL]: Strip Right Brace (#702)
-- `var-op-test` case 19 [FAIL]: $@ ("") and - and +
-- `var-op-test` case 20 [FAIL]: $@ ("" "") and - and +
-- `var-op-test` case 22 [FAIL]: "$*" ("" "") and - and + (IFS=)
-- `var-op-test` case 24 [FAIL]: Error when empty
-- `var-op-test` case 25 [FAIL]: Error when unset
-- `var-op-test` case 30 [FAIL]: "\z" as arg
 - `var-sub` case 0 [FAIL]: Bad var sub
-- `var-sub-quote` case 7 [FAIL]: Inner single quotes, outer double quotes
 - `var-sub-quote` case 11 [FAIL]: Multiple words: no outer quotes, inner single quotes
 - `var-sub-quote` case 12 [FAIL]: Multiple words: no outer quotes, inner double quotes
 - `var-sub-quote` case 14 [FAIL]: Multiple words: outer double quotes, inner double quotes
-- `var-sub-quote` case 15 [FAIL]: Multiple words: outer double quotes, inner single quotes
 - `var-sub-quote` case 16 [FAIL]: Mixed inner quotes
 - `var-sub-quote` case 17 [FAIL]: Mixed inner quotes with outer quotes
 - `var-sub-quote` case 18 [FAIL]: part_value tree with multiple words
 - `var-sub-quote` case 22 [FAIL]: Multiple words: no outer quotes, inner double quotes
-- `var-sub-quote` case 25 [FAIL]: Multiple words: outer double quotes, inner single quotes
 - `var-sub-quote` case 26 [FAIL]: No outer quotes, Multiple internal quotes
 - `var-sub-quote` case 27 [FAIL]: Strip a string with single quotes, unquoted
-- `var-sub-quote` case 28 [FAIL]: Strip a string with single quotes, double quoted
 - `var-sub-quote` case 31 [FAIL]: Syntax error for single quote in double quote
-- `var-sub-quote` case 37 [FAIL]: comparison: :- operator with single quoted arg
 - `vars-special` case 8 [FAIL]: $1 .. $9 are scoped, while $0 is not
 - `word-eval` case 5 [FAIL]: Default values -- more cases
 - `word-split` case 9 [FAIL]: $* with empty IFS
 - `word-split` case 21 [FAIL]: default value can yield multiple words
 - `word-split` case 22 [FAIL]: default value can yield multiple words with part joining
 - `word-split` case 23 [FAIL]: default value with unquoted IFS char
-- `word-split` case 30 [FAIL]: Empty IFS (regression for bug)
 - `word-split` case 36 [FAIL]: IFS='' with $@ and $* (bug #627)
 - `word-split` case 37 [FAIL]: IFS='' with $@ and $* and printf (bug #627)
 - `word-split` case 41 [FAIL]: Bug #628 split on : with : in literal word
@@ -292,7 +199,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | spec file | cases | hellish | bash | dash |
 |---|---|---|---|---|
-| alias | 48 | 21 | 44 | 44 |
+| alias | 48 | 43 | 44 | 44 |
 | arg-parse | 3 | 1 | 3 | 1 |
 | arith | 74 | 46 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
@@ -302,25 +209,25 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
 | blog1 | 9 | 3 | 8 | 7 |
-| blog2 | 8 | 6 | 8 | 6 |
+| blog2 | 8 | 7 | 8 | 6 |
 | bool-parse | 8 | 7 | 8 | 5 |
 | bugs | 29 | 13 | 22 | 20 |
-| builtin-bracket | 52 | 39 | 50 | 46 |
+| builtin-bracket | 52 | 48 | 50 | 46 |
 | builtin-cd | 30 | 21 | 24 | 24 |
 | builtin-echo | 27 | 20 | 27 | 5 |
 | builtin-eval-source | 23 | 11 | 14 | 14 |
-| builtin-getopts | 31 | 19 | 27 | 27 |
+| builtin-getopts | 31 | 26 | 27 | 27 |
 | builtin-kill | 20 | 7 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
 | builtin-meta-assign | 11 | 2 | 6 | 1 |
 | builtin-misc | 7 | 3 | 4 | 4 |
-| builtin-printf | 63 | 33 | 51 | 41 |
+| builtin-printf | 63 | 38 | 51 | 41 |
 | builtin-process | 26 | 8 | 17 | 14 |
-| builtin-set | 24 | 11 | 23 | 21 |
+| builtin-set | 24 | 21 | 23 | 21 |
 | builtin-special | 12 | 3 | 5 | 10 |
-| builtin-trap | 33 | 13 | 20 | 26 |
+| builtin-trap | 33 | 20 | 20 | 26 |
 | builtin-type | 6 | 4 | 3 | 3 |
-| builtin-umask | 24 | 6 | 13 | 16 |
+| builtin-umask | 24 | 18 | 13 | 16 |
 | builtin-vars | 41 | 18 | 35 | 28 |
 | case_ | 13 | 8 | 12 | 9 |
 | command-parsing | 5 | 4 | 5 | 5 |
@@ -349,53 +256,48 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | quote | 35 | 28 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
 | redirect-command | 23 | 16 | 22 | 19 |
-| sh-func | 12 | 10 | 11 | 12 |
-| sh-options | 39 | 8 | 38 | 14 |
-| sh-usage | 24 | 11 | 22 | 18 |
+| sh-func | 12 | 11 | 11 | 12 |
+| sh-options | 39 | 15 | 38 | 14 |
+| sh-usage | 24 | 18 | 22 | 18 |
 | shell-bugs | 1 | 0 | 1 | 1 |
 | smoke | 18 | 18 | 18 | 18 |
 | strict-options | 17 | 3 | 6 | 4 |
 | subshell | 2 | 1 | 2 | 2 |
 | temp-binding | 4 | 2 | 1 | 2 |
-| tilde | 14 | 6 | 11 | 9 |
-| toysh-posix | 23 | 14 | 19 | 20 |
+| tilde | 14 | 7 | 11 | 9 |
+| toysh-posix | 23 | 15 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
 | var-op-strip | 29 | 16 | 26 | 20 |
-| var-op-test | 37 | 15 | 35 | 20 |
+| var-op-test | 37 | 24 | 35 | 20 |
 | var-sub | 6 | 5 | 5 | 6 |
-| var-sub-quote | 41 | 20 | 40 | 35 |
+| var-sub-quote | 41 | 26 | 40 | 35 |
 | vars-bash | 1 | 0 | 1 | 0 |
 | vars-special | 42 | 22 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
 | word-eval | 8 | 5 | 8 | 6 |
-| word-split | 55 | 32 | 50 | 47 |
+| word-split | 55 | 33 | 50 | 47 |
 | xtrace | 19 | 5 | 16 | 7 |
 
 ## mksh check.t
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 166 | 417 | 583 | 28.47% |
+| **hellish --posix** | 184 | 399 | 583 | 31.56% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 73
+### Consensus divergences on check.t: 55
 
 - `check.t:IFS-arith-1`
 - `check.t:IFS-null-1`
-- `check.t:IFS-subst-10`
 - `check.t:IFS-subst-3-arr`
 - `check.t:IFS-subst-3-ass`
-- `check.t:IFS-subst-6`
 - `check.t:IFS-subst-7`
-- `check.t:alias-2`
 - `check.t:alias-3`
 - `check.t:alias-4`
 - `check.t:alias-5`
 - `check.t:alias-6`
-- `check.t:alias-7`
-- `check.t:alias-8`
 - `check.t:better-parens-2a`
 - `check.t:better-parens-4a`
 - `check.t:better-parens-5`
@@ -406,8 +308,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:break-5`
 - `check.t:comsub-2`
 - `check.t:continue-5`
-- `check.t:debian-117-1`
-- `check.t:debian-117-2`
+- `check.t:exit-err-10`
 - `check.t:exit-err-4`
 - `check.t:exit-err-5`
 - `check.t:exit-err-8`
@@ -427,20 +328,14 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:heredoc-quoting-subst`
 - `check.t:lineno-unset`
 - `check.t:lineno-unset-use`
-- `check.t:oksh-and-list-error-1`
-- `check.t:oksh-and-list-error-2`
-- `check.t:oksh-or-list-error-1`
+- `check.t:oksh-seterror-1`
+- `check.t:oksh-seterror-2`
 - `check.t:pipeline-1`
-- `check.t:pipeline-4`
 - `check.t:regression-12`
 - `check.t:regression-2`
 - `check.t:regression-27`
-- `check.t:regression-29`
 - `check.t:regression-32`
-- `check.t:regression-47`
-- `check.t:regression-58`
 - `check.t:regression-6`
-- `check.t:regression-62`
 - `check.t:single-quotes-in-brace-pattern`
 - `check.t:single-quotes-in-braces`
 - `check.t:single-quotes-in-braces-nested`
@@ -449,9 +344,3 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:single-quotes-in-nested-brace-pattern`
 - `check.t:single-quotes-in-nested-braces`
 - `check.t:single-quotes-in-nested-braces-nested`
-- `check.t:single-quotes-in-nested-quoted-braces`
-- `check.t:single-quotes-in-quoted-braces`
-- `check.t:test-stlt-1`
-- `check.t:uncatchable-trap`
-- `check.t:xtrace-1`
-- `check.t:xxx-variable-syntax-4`
