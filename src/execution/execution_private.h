@@ -85,6 +85,8 @@ void				execute_pipeline_children(t_shell *state,
 						t_vec_exe_res *results);
 t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe);
 void				note_cmd_lineno(t_shell *state, t_ast_node *node);
+void				snapshot_positionals(t_shell *state, t_vec *out);
+void				free_positional_snapshot(t_vec *w);
 t_execution_state	execute_simple_command(t_shell *state,
 						t_executable_node *exe);
 void				reap_background_children(t_shell *state);

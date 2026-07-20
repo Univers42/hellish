@@ -35,15 +35,32 @@ static void	consume_depth_idx(int *depth, int *i, int delta, int count)
 	*i += count;
 }
 
+/* Skip a quoted region or a backslash escape via the shared helper so its
+   content cannot touch the paren depth — the substitution closes at the
+   real unquoted paren. Returns true when something was consumed. */
+static bool	skip_quoted_span(int *i, t_token t)
+{
+	int	ni;
+
+	ni = sh_skip_quoted(t.start, t.len, *i);
+	if (ni == *i)
+		return (false);
+	*i = ni;
+	return (true);
+}
+
 /* Scan through a $(...)  or $((...)) until depth reaches 0. The $((...))
    case is tricky: at depth 2 we look for (( and )) pairs to handle nested
    arithmetic like $((a * (b + c))). At depth 1 a single ) closes; at depth 2
    only )) closes (single ) just opens a nested level). This correctly handles
-   `echo $((1 + (2 * 3)))` without a separate arithmetic parser here. */
+   `echo $((1 + (2 * 3)))` without a separate arithmetic parser here.
+   Quoted spans are skipped wholesale — their parens do not count. */
 static void	scan_until_matching(int *i, t_token t, int *depth)
 {
 	while (*i < t.len && *depth > 0)
 	{
+		if (skip_quoted_span(i, t))
+			continue ;
 		if (*depth == 2 && is_double_open_paren(t, *i))
 			consume_depth_idx(depth, i, 2, 2);
 		else if (*depth == 2 && is_double_close_paren(t, *i))

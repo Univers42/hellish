@@ -41,8 +41,9 @@ static void	advance_cmdsub(char **str)
 }
 
 /* Advance past a double-quoted span. Double quotes still expand $(...),
-   so we must recurse into advance_cmdsub when we see `$(` to avoid treating
-   the closing `"` inside the substitution as the outer quote's end. The
+   so we must recurse into advance_cmdsub when we see `$(` — and into
+   advance_backtick for `...` — to avoid treating a `"` inside the
+   substitution as the outer quote's end (autoconf: x="`... "" ...`"). The
    prev_bs flag handles `\"` escapes while avoiding a double-count on `\\`. */
 int	advance_dquoted(char **str)
 {
@@ -56,6 +57,11 @@ int	advance_dquoted(char **str)
 		if (!prev_bs && **str == '$' && (*str)[1] == '(')
 		{
 			advance_cmdsub(str);
+			continue ;
+		}
+		if (!prev_bs && **str == '`')
+		{
+			advance_backtick(str);
 			continue ;
 		}
 		prev_bs = **str == '\\' && !prev_bs;

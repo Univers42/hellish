@@ -71,6 +71,11 @@ void	reparse_dquote(t_ast_node *ret, int *i, t_token t)
 	flush_pending_segment_rp(&rp, &pushed_any);
 	if (!pushed_any)
 		push_dqword_subtoken_rp(&rp, rp.i, rp.i);
+	if (getenv("HELLISH_DBG_DQ")
+		&& rp.current_token.start[rp.i] != '"')
+		fprintf(stderr, "[DQ-FAIL i=%d len=%d tok=<<%.*s>>]\n",
+			rp.i, rp.current_token.len,
+			rp.current_token.len, rp.current_token.start);
 	ft_assert(rp.current_token.start[(rp.i)++] == '"');
 	*i = rp.i;
 	*ret = rp.current_node;
