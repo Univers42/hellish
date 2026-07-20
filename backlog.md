@@ -59,11 +59,26 @@ pass counts in `bench/baseline/`). Performance claims come from
       split_value core with uniform lead/trail rules for whitespace and
       non-whitespace IFS. 8 new regress_hellish cases.
 
+## Done (continued 3)
+
+- [x] IFS gate GREEN: **Oils 991 → 1007, mksh 184 → 187**, baseline
+      accepted (`bc4d0c9`). Session total: +16 Oils, +3 mksh, configure
+      complete, parse 3.4× faster.
+- [x] bench/KNOWN_ISSUES.md rewritten — configure saga documented as
+      resolved, 64B ASan-configure leak tracked as the open remainder.
+
 ## In flight
 
-- [ ] Conformance gate for the IFS fixes (running) — expect a large
-      word-split/var-sub-quote/mksh-IFS jump. Accept new counts into
-      bench/baseline/ when green.
+- [ ] `make perf BENCH_LAX=1` rerun — first run where the configure
+      dimension can TIME hellish (completion gate now passes). Commit
+      bench/results.md + KNOWN_ISSUES.md when it lands.
+- [ ] Feature-gap audit agent (bash/zsh/ksh daily-driver capabilities)
+      — fold its Top-10 into this backlog when it reports.
+- [ ] NEXT CLUSTER picked: var-sub-quote (10 cases) — diagnosis in task
+      list: ${x:-"c d"} flattens op-word quoting; needs segment-aware
+      default emission (quoted segments split_eligible=false). After it:
+      builtin-vars export semantics (8), assign/local scoping (7),
+      builtin-meta command -v/-V/-p (6), fatal-errors (5).
 - [ ] KNOWN ISSUE: one 64-byte realloc_to leak, only visible in a fully
       ASan-instrumented configure run (suites all leak-clean). Repro:
       debug build, CONFIG_SHELL=build/bin/hellish on the vendored hello
