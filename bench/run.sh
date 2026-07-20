@@ -75,6 +75,40 @@ T="taskset -c $CPU"
 TG="timeout ${CMD_TIMEOUT:-45}"
 TGC="timeout ${CONF_TIMEOUT:-120}"
 
+# Print a HELLISH-centric one-line verdict for a finished dimension, read from
+# its JSON.  hyperfine's own summary picks whichever shell was fastest as the
+# reference ("dash ran N x faster than hellish"), which reads differently every
+# dimension; here every ratio is other/hellish, so > 1 always means hellish is
+# faster.  We suppress hyperfine's summary (stdout) and show this instead.
+perf_line() {
+	python3 - "$ART/$1.json" "$1" 2>/dev/null <<'PY'
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+m = {r["command"]: r["median"] for r in d["results"]}
+h = m.get("hellish")
+def fmt(t):
+    if not t:
+        return "n/a"
+    return f"{t*1000:.0f}ms" if t < 1 else f"{t:.2f}s"
+def cell(name):
+    o = m.get(name)
+    if o is None or not h:
+        return f"vs {name} n/a"
+    r = o / h
+    tag = "faster" if r >= 1.05 else ("SLOWER" if r <= 0.95 else "~tie")
+    return f"vs {name} {r:.2f}x ({tag})"
+if not h:
+    print(f"  ▶ {sys.argv[2]}: hellish did not run (excluded)")
+    sys.exit(0)
+fastest = min(m, key=m.get)
+tail = " -> hellish fastest" if fastest == "hellish" else f" -> fastest: {fastest}"
+print(f"  ▶ {sys.argv[2]}: hellish {fmt(h)} | {cell('bash')} | {cell('dash')}{tail}")
+PY
+}
+
 # Every measured command is exec'd directly by hyperfine (-N: no shell).
 # Wrappers are taskset (identical for every shell), env (configure dimension
 # only, to set CONFIG_SHELL) and timeout — none of which is a shell.  The
@@ -90,11 +124,14 @@ bench_script() {
     echo "== $name (${runs} runs)" >&2
     # -i tolerates a non-zero exit from one shell; `|| true` keeps `set -e`
     # from killing the run (and the final report) if a dimension errors.
+    # Progress bars stay on stderr; hyperfine's own (fastest-relative) result
+    # blocks go to /dev/null, replaced by the hellish-centric perf_line below.
     "$HYPERFINE" -N -i --warmup "$warm" --min-runs "$runs" \
         --export-json "$ART/$name.json" \
         -n hellish "$TG $T $HELLISH --posix $script" \
         -n bash    "$TG $T $BASH_BIN --norc --posix $script" \
-        -n dash    "$TG $T $DASH_BIN $script" || true
+        -n dash    "$TG $T $DASH_BIN $script" >/dev/null 2>&1 || true
+    perf_line "$name"
 }
 
 # ---- a) startup -----------------------------------------------------------
@@ -103,7 +140,8 @@ echo "== startup" >&2
     --export-json "$ART/startup.json" \
     -n hellish "$TG $T $HELLISH --posix -c true" \
     -n bash    "$TG $T $BASH_BIN --norc --posix -c true" \
-    -n dash    "$TG $T $DASH_BIN -c true" || true
+    -n dash    "$TG $T $DASH_BIN -c true" >/dev/null 2>&1 || true
+perf_line startup
 
 # ---- b) parser throughput -------------------------------------------------
 bench_script parse50k "$GEN/parse50k.sh" 15 3
@@ -152,9 +190,11 @@ if [ "${SKIP_CONFIGURE:-0}" != 1 ]; then
     rm -rf "$BUILD" && mkdir -p "$BUILD" && cd "$BUILD"
     echo "== configure (CONFIG_SHELL, $CONF_RUNS runs/shell — slow)" >&2
     if [ "${#hf[@]}" -gt 0 ]; then
-        "$HYPERFINE" -N --warmup 1 --min-runs "$CONF_RUNS" \
+        "$HYPERFINE" -N -i --warmup 1 --min-runs "$CONF_RUNS" \
             --export-json "$ART/configure.json" \
-            --prepare "find $BUILD -mindepth 1 -delete" "${hf[@]}" || true
+            --prepare "find $BUILD -mindepth 1 -delete" "${hf[@]}" \
+            >/dev/null 2>&1 || true
+        perf_line configure
     fi
     cd "$ROOT"
 fi
