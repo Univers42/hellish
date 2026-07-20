@@ -32,7 +32,9 @@ static void	fill_builtin_hash1(t_hash *h)
 	hash_set(h, "[[", (void *)builtin_test);
 	hash_set(h, "exit", (void *)builtin_exit);
 	hash_set(h, "pwd", (void *)builtin_pwd);
-	hash_set(h, "env", (void *)builtin_env);
+	/* env is NOT a builtin: real env execs its command arg (env cmd, env -i
+	   cmd) and prints the environment with no args -- external /usr/bin/env
+	   does both identically, so registering a builtin only broke `env cmd`. */
 	hash_set(h, "unset", (void *)builtin_unset);
 	hash_set(h, "type", (void *)builtin_type);
 	hash_set(h, "set", (void *)builtin_set);
