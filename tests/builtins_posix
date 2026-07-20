@@ -62,3 +62,14 @@ set -u; f2() { x=$blarg; }; f() { eval "f2"; }; echo before; eval f; echo after
 set -eu -o pipefail; echo ok
 set -u +u; echo "[$unset]"
 set -eu; echo ok; false; echo done
+exit 1 2
+exit 9223372036854775807
+exit 9223372036854775805
+exit -9223372036854775805
+exit abc
+export -TEST=123
+export --BAD=1
+unset -TEST
+X=1; export X+=2; echo $X
+export -- ZZ=9; echo $ZZ
+export A=1; export A+=B; echo $A
