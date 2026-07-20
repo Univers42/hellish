@@ -67,11 +67,12 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
    makes the shell abort the REST of the input and leave with status 2,
    exactly like bash: `printf '>x>\ncmd\n' | sh` never runs cmd, it exits 2.
    Interactively (INP_RL) we keep the REPL alive so a typo doesn't end the
-   session. The status is only stamped when nothing already failed. */
+   session. $? becomes 2 unconditionally -- bash reports a syntax error as
+   2 even when the previous command already failed (`badcmd\n|||` -> 2, not
+   the 127 badcmd left behind). */
 static void	abort_on_syntax_error(t_shell *state)
 {
-	if (state->last_cmd_st_exe.status == 0)
-		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
+	set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 	if (state->metinp != INP_RL)
 		state->should_exit = true;
 }
