@@ -49,10 +49,15 @@ done
 echo "$i"
 EOF
 
+# String concat is O(n^2) in a naive shell (each iteration copies the whole
+# growing value), so 10k iterations already runs ~1s in bash while 100k runs
+# ~85s -- far too slow for 30 timed repetitions.  The cross-shell RATIO is
+# scale-invariant (all shells are quadratic here), so 10k measures the same
+# relative standing at 1/70th the wall time.
 cat > "$GEN/loop_concat.sh" <<'EOF'
 s=
 i=0
-while [ "$i" -lt 100000 ]; do
+while [ "$i" -lt 10000 ]; do
     s="${s}x"
     i=$((i + 1))
 done
@@ -67,7 +72,7 @@ while [ "$i" -lt 100000 ]; do
 done
 EOF
 
-seq -f 'input line %06.0f with some words on it' 100000 > "$GEN/read_input.txt"
+seq -f 'input line %06.0f with some words on it' 50000 > "$GEN/read_input.txt"
 # The input path is baked in so the script needs no environment lookup and
 # hyperfine can exec the shell directly with no wrapper.
 cat > "$GEN/loop_read.sh" <<EOF
@@ -98,9 +103,11 @@ while [ "$i" -lt 1000 ]; do
 done
 EOF
 
+# 300 iterations of a 3-stage pipeline = 900 fork+exec + pipe setups, ~1s per
+# run; 1000 pushed a single run past 3s (30x that is too slow to repeat).
 cat > "$GEN/fork_pipeline.sh" <<'EOF'
 i=0
-while [ "$i" -lt 1000 ]; do
+while [ "$i" -lt 300 ]; do
     printf 'alpha\nbeta\ngamma\n' | cat | wc -l > /dev/null
     i=$((i + 1))
 done
