@@ -73,22 +73,22 @@ static void	at_set_word(t_token *tt, char *s)
 }
 
 /* The operator does not substitute: the token must behave exactly like a
-   plain $@ / $* would.  Mirror of expand_positional in expand_token.c: a
-   quoted "$@" in a split context is left as the len-1 "@" marker so
-   split_one_child re-emits one field per positional later; everything else
-   joins with the first IFS character right here.  This is what makes
-   "${@-x}" with two positionals still produce two fields. */
+   plain $@ / $* would.  Mirror of expand_positional in expand_token.c:
+   deferred tokens point at the pos_mark() sentinel (POINTER identity is
+   what split_one_child recognises) so it re-emits one field per
+   positional later — "$@" verbatim, unquoted $@/$* each IFS-split;
+   everything else joins with the first IFS character right here.  This
+   is what makes "${@-x}" with two positionals still produce two fields. */
 static void	at_pass(t_shell *state, t_token *tt, char name, bool split_ctx)
 {
 	char	*tmp;
 
 	tt->allocated = false;
 	tt->len = 1;
-	if (name == '@')
-		tt->start = "@";
-	else
-		tt->start = "*";
+	tt->start = (char *)pos_mark(name);
 	if (split_ctx && tt->tt == TT_DQENVVAR && name == '@')
+		return ;
+	if (split_ctx && tt->tt == TT_ENVVAR)
 		return ;
 	tmp = join_positionals(state);
 	tt->start = tmp;

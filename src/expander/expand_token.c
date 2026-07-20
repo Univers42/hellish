@@ -82,17 +82,28 @@ static void	expand_simple_var(t_shell *state, t_token *curr_tt)
 	curr_tt->allocated = false;
 }
 
+/* $@ / $* handling at expansion time. In a split context the field
+   structure must survive to the splitter, so the token is DEFERRED:
+   start is pointed at a pos_mark() sentinel the splitter recognises by
+   POINTER identity (an expanded variable whose value happens to be "@"
+   can never alias it):
+     "$@"      -> one field per positional, never re-split
+     $@ and $* -> one field per positional, each IFS-split
+   Only "$*" joins here (single field, IFS[0] separator), and everything
+   joins in a no-split context (assignments, redirect targets). */
 static bool	expand_positional(t_shell *state, t_token *curr_tt, bool split_ctx)
 {
 	char	*temp;
 
-	if (split_ctx && curr_tt->tt == TT_DQENVVAR && curr_tt->len == 1
-		&& curr_tt->start[0] == '@')
-		return (true);
 	if (curr_tt->len != 1)
 		return (false);
 	if (curr_tt->start[0] != '@' && curr_tt->start[0] != '*')
 		return (false);
+	if (split_ctx && curr_tt->tt == TT_DQENVVAR
+		&& curr_tt->start[0] == '@')
+		return (curr_tt->start = (char *)pos_mark('@'), true);
+	if (split_ctx && curr_tt->tt == TT_ENVVAR)
+		return (curr_tt->start = (char *)pos_mark(curr_tt->start[0]), true);
 	temp = join_positionals(state);
 	curr_tt->start = temp;
 	curr_tt->len = (int)ft_strlen(temp);

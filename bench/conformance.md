@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 997 | 0 | 0 | 0 | 625 | 0 | 1622 | 61.47% |
+| **hellish --posix** | 1007 | 0 | 0 | 0 | 615 | 0 | 1622 | 62.08% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 168
+### Consensus divergences (hellish fails, bash AND dash pass): 157
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -85,7 +85,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `command-parsing` case 0 [FAIL]: Prefix env on assignment
 - `command-sub` case 1 [FAIL]: case in subshell
 - `command-sub` case 15 [FAIL]: Double Quotes in Command Sub in Double Quotes
-- `command-sub` case 16 [FAIL]: Escaped quote in [[ ]]
 - `command-sub` case 28 [FAIL]: Syntax errors with double quotes within backticks
 - `command_` case 0 [FAIL]: Command block
 - `command_` case 12 [FAIL]: hash without args prints the cache
@@ -166,19 +165,9 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `var-sub-quote` case 31 [FAIL]: Syntax error for single quote in double quote
 - `vars-special` case 8 [FAIL]: $1 .. $9 are scoped, while $0 is not
 - `word-eval` case 5 [FAIL]: Default values -- more cases
-- `word-split` case 9 [FAIL]: $* with empty IFS
 - `word-split` case 21 [FAIL]: default value can yield multiple words
 - `word-split` case 22 [FAIL]: default value can yield multiple words with part joining
 - `word-split` case 23 [FAIL]: default value with unquoted IFS char
-- `word-split` case 36 [FAIL]: IFS='' with $@ and $* (bug #627)
-- `word-split` case 37 [FAIL]: IFS='' with $@ and $* and printf (bug #627)
-- `word-split` case 41 [FAIL]: Bug #628 split on : with : in literal word
-- `word-split` case 44 [FAIL]: Empty IFS bug #2141 (from pnut)
-- `word-split` case 46 [FAIL]: 4 x 3 table: (default IFS, IFS='', IFS=zx) x ( $* "$*" $@ "$@" )
-- `word-split` case 47 [FAIL]: 4 x 3 table - with for loop
-- `word-split` case 48 [FAIL]: IFS=x and '' and $@ - same bug as spec/toysh-posix case #12
-- `word-split` case 49 [FAIL]: IFS=x and '' and $@ (#2)
-- `word-split` case 50 [FAIL]: IFS=x and '' and $@ (#3)
 - `word-split` case 54 [FAIL]: Regression: "${v:-AxBxC}"x should not be split
 - `xtrace` case 1 [FAIL]: set -o verbose prints unevaluated code
 - `xtrace` case 9 [FAIL]: Assignments and assign builtins
@@ -222,7 +211,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-vars | 41 | 16 | 35 | 28 |
 | case_ | 13 | 8 | 12 | 9 |
 | command-parsing | 5 | 4 | 5 | 5 |
-| command-sub | 30 | 24 | 28 | 27 |
+| command-sub | 30 | 25 | 28 | 27 |
 | command_ | 16 | 12 | 14 | 14 |
 | comments | 2 | 2 | 2 | 2 |
 | divergence | 4 | 3 | 4 | 4 |
@@ -256,7 +245,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | subshell | 2 | 2 | 2 | 2 |
 | temp-binding | 4 | 2 | 1 | 2 |
 | tilde | 14 | 7 | 11 | 9 |
-| toysh-posix | 23 | 15 | 19 | 20 |
+| toysh-posix | 23 | 14 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
 | var-op-strip | 29 | 16 | 26 | 20 |
@@ -267,21 +256,20 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | vars-special | 42 | 22 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
 | word-eval | 8 | 5 | 8 | 6 |
-| word-split | 55 | 33 | 50 | 47 |
+| word-split | 55 | 43 | 50 | 47 |
 | xtrace | 19 | 5 | 16 | 7 |
 
 ## mksh check.t
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 184 | 399 | 583 | 31.56% |
+| **hellish --posix** | 187 | 396 | 583 | 32.08% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 55
+### Consensus divergences on check.t: 52
 
 - `check.t:IFS-arith-1`
-- `check.t:IFS-null-1`
 - `check.t:IFS-subst-3-arr`
 - `check.t:IFS-subst-3-ass`
 - `check.t:IFS-subst-7`
@@ -309,7 +297,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:expand-unglob-dblq`
 - `check.t:expand-unglob-unq`
 - `check.t:expand-weird-1`
-- `check.t:for-without-list`
 - `check.t:glob-bad-1`
 - `check.t:glob-bad-3`
 - `check.t:glob-range-2`
@@ -326,7 +313,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:regression-2`
 - `check.t:regression-27`
 - `check.t:regression-32`
-- `check.t:regression-6`
 - `check.t:single-quotes-in-brace-pattern`
 - `check.t:single-quotes-in-braces`
 - `check.t:single-quotes-in-braces-nested`

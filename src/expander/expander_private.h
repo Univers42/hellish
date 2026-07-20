@@ -228,6 +228,11 @@ char		*join_positionals(t_shell *state);
 t_ast_node	new_env_node(char *new_start);
 void		split_envvar(t_shell *state, t_token *curr_t,
 				t_ast_node *curr_node, t_vec_nd *ret);
+void		split_value(t_shell *state, const char *val,
+				t_ast_node *curr_node, t_vec_nd *ret);
+const char	*pos_mark(char which);
+void		emit_positional_split(t_shell *state, t_ast_node *curr_node,
+				t_vec_nd *ret);
 void		emit_positional_at(t_shell *state, t_ast_node *curr_node,
 				t_vec_nd *ret);
 bool		ifs_has_nonws(const char *ifs);

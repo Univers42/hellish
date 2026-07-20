@@ -44,6 +44,35 @@ bool	is_ifs_char(char c, const char *ifs)
 	return (c != '\0' && ifs != NULL && ft_strchr(ifs, c) != NULL);
 }
 
+/* Expand UNQUOTED $@ / $* in a split context: one field per positional,
+   and each positional's value is itself IFS-split (POSIX field splitting
+   applies to the expansion result). With IFS='' nothing splits, so the
+   positionals come through verbatim as separate fields — never joined.
+   Empty positionals contribute no field (their split yields nothing and
+   push_and_reinit drops empty accumulations). */
+void	emit_positional_split(t_shell *state, t_ast_node *curr_node,
+			t_vec_nd *ret)
+{
+	char	*cnt;
+	char	*k;
+	int		count;
+	int		i;
+
+	cnt = env_expand(state, "#");
+	count = 0;
+	if (cnt)
+		count = ft_atoi(cnt);
+	i = 0;
+	while (++i <= count)
+	{
+		k = ft_itoa(i);
+		if (i > 1)
+			push_and_reinit_curr_node(ret, curr_node);
+		split_value(state, env_expand(state, k), curr_node, ret);
+		xfree(k);
+	}
+}
+
 /* Expand a quoted "$@": one field per positional parameter (NOT IFS-split, so
    params containing spaces stay intact). First/last fields join adjacent
    literal text, mirroring POSIX behaviour for pre"$@"post. */
