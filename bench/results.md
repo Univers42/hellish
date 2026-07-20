@@ -14,49 +14,49 @@ Environment: Linux-7.0.0-27-generic-x86_64-with-glibc2.43.
 
 | benchmark | hellish | vs bash | vs dash | fastest | worst CV |
 |---|---|---|---|---|---|
-| Startup | 103.7 ms | 1.00× ≈ | 1.00× ≈ | dash | 0.3% |
-| Parse 50k lines | 705.4 ms | 0.15× ✗ | 0.15× ✗ | bash | 7.4% ⚠ |
-| Arith loop | 203.7 ms | 1.98× ✓ | 1.00× ≈ | **hellish** | 12.6% ⚠ |
-| String concat | 103.8 ms | 7.75× ✓ | 1.00× ≈ | dash | 5.1% ⚠ |
-| Colon loop | 203.7 ms | 1.98× ✓ | 1.00× ≈ | **hellish** | 20.5% ⚠ |
-| Read loop | 203.6 ms | 1.49× ✓ | 3.46× ✓ | **hellish** | 21.4% ⚠ |
-| Cmdsub `$(true)` | 103.6 ms | 2.93× ✓ | 1.97× ✓ | **hellish** | 0.3% |
-| Cmdsub `$(/bin/true)` | 804.0 ms | 0.75× ✗ | 0.63× ✗ | dash | 7.3% ⚠ |
-| 3-stage pipeline | 1.305 s | 1.08× ✓ | 0.92× ✗ | dash | 5.3% ⚠ |
+| Startup | 103.0 ms | 1.00× ≈ | 1.00× ≈ | dash | 0.4% |
+| Parse 50k lines | 203.1 ms | 0.51× ✗ | 0.51× ✗ | dash | 20.4% ⚠ |
+| Arith loop | 203.1 ms | 1.49× ✓ | 0.51× ✗ | dash | 17.7% ⚠ |
+| String concat | 103.0 ms | 6.83× ✓ | 1.00× ≈ | **hellish** | 0.2% |
+| Colon loop | 203.2 ms | 1.98× ✓ | 1.00× ≈ | **hellish** | 12.5% ⚠ |
+| Read loop | 103.1 ms | 1.97× ✓ | 5.85× ✓ | **hellish** | 20.4% ⚠ |
+| Cmdsub `$(true)` | 103.1 ms | 2.94× ✓ | 1.97× ✓ | **hellish** | 21.3% ⚠ |
+| Cmdsub `$(/bin/true)` | 703.5 ms | 0.86× ✗ | 0.57× ✗ | dash | 7.4% ⚠ |
+| 3-stage pipeline | 1.204 s | 1.00× ≈ | 0.92× ✗ | dash | 5.9% ⚠ |
 
 ## Per-benchmark detail
 
 | benchmark | shell | median | stddev | CV |
 |---|---|---|---|---|
-| Startup | **hellish** | 103.7 ms | 0.3 ms | 0.3% |
-| Startup | bash | 103.7 ms | 0.3 ms | 0.3% |
-| Startup | dash | 103.6 ms | 0.4 ms | 0.3% |
-| Parse 50k lines | **hellish** | 705.4 ms | 51.9 ms | 7.4% ⚠ |
-| Parse 50k lines | bash | 103.7 ms | 0.4 ms | 0.4% |
-| Parse 50k lines | dash | 103.7 ms | 0.4 ms | 0.4% |
-| Arith loop | **hellish** | 203.7 ms | 0.3 ms | 0.1% |
-| Arith loop | bash | 403.4 ms | 50.9 ms | 12.6% ⚠ |
-| Arith loop | dash | 203.8 ms | 0.3 ms | 0.1% |
-| String concat | **hellish** | 103.8 ms | 0.4 ms | 0.4% |
-| String concat | bash | 804.4 ms | 41.2 ms | 5.1% ⚠ |
-| String concat | dash | 103.7 ms | 0.3 ms | 0.3% |
-| Colon loop | **hellish** | 203.7 ms | 0.2 ms | 0.1% |
-| Colon loop | bash | 403.9 ms | 34.6 ms | 8.6% ⚠ |
-| Colon loop | dash | 204.0 ms | 41.8 ms | 20.5% ⚠ |
-| Read loop | **hellish** | 203.6 ms | 43.5 ms | 21.4% ⚠ |
-| Read loop | bash | 303.7 ms | 1.1 ms | 0.4% |
-| Read loop | dash | 703.9 ms | 51.7 ms | 7.3% ⚠ |
-| Cmdsub `$(true)` | **hellish** | 103.6 ms | 0.3 ms | 0.3% |
-| Cmdsub `$(true)` | bash | 303.7 ms | 0.4 ms | 0.1% |
-| Cmdsub `$(true)` | dash | 203.8 ms | 0.4 ms | 0.2% |
-| Cmdsub `$(/bin/true)` | **hellish** | 804.0 ms | 58.7 ms | 7.3% ⚠ |
-| Cmdsub `$(/bin/true)` | bash | 604.1 ms | 41.1 ms | 6.8% ⚠ |
-| Cmdsub `$(/bin/true)` | dash | 504.0 ms | 31.0 ms | 6.1% ⚠ |
-| 3-stage pipeline | **hellish** | 1.305 s | 61.9 ms | 4.7% ⚠ |
-| 3-stage pipeline | bash | 1.405 s | 70.4 ms | 5.0% ⚠ |
-| 3-stage pipeline | dash | 1.205 s | 64.1 ms | 5.3% ⚠ |
-| autoconf configure | bash | 9.712 s | 1.377 s | 14.2% ⚠ |
-| autoconf configure | dash | 9.913 s | 853.2 ms | 8.6% ⚠ |
+| Startup | **hellish** | 103.0 ms | 0.2 ms | 0.2% |
+| Startup | bash | 103.0 ms | 0.2 ms | 0.2% |
+| Startup | dash | 103.0 ms | 0.4 ms | 0.4% |
+| Parse 50k lines | **hellish** | 203.1 ms | 41.5 ms | 20.4% ⚠ |
+| Parse 50k lines | bash | 103.0 ms | 0.3 ms | 0.3% |
+| Parse 50k lines | dash | 103.0 ms | 0.2 ms | 0.2% |
+| Arith loop | **hellish** | 203.1 ms | 0.2 ms | 0.1% |
+| Arith loop | bash | 303.1 ms | 18.3 ms | 6.0% ⚠ |
+| Arith loop | dash | 103.0 ms | 18.3 ms | 17.7% ⚠ |
+| String concat | **hellish** | 103.0 ms | 0.2 ms | 0.2% |
+| String concat | bash | 703.5 ms | 0.3 ms | 0.0% |
+| String concat | dash | 103.0 ms | 0.2 ms | 0.2% |
+| Colon loop | **hellish** | 203.2 ms | 0.2 ms | 0.1% |
+| Colon loop | bash | 403.0 ms | 50.5 ms | 12.5% ⚠ |
+| Colon loop | dash | 203.2 ms | 0.3 ms | 0.1% |
+| Read loop | **hellish** | 103.1 ms | 0.3 ms | 0.2% |
+| Read loop | bash | 203.1 ms | 41.4 ms | 20.4% ⚠ |
+| Read loop | dash | 603.5 ms | 35.3 ms | 5.8% ⚠ |
+| Cmdsub `$(true)` | **hellish** | 103.1 ms | 2.1 ms | 2.1% |
+| Cmdsub `$(true)` | bash | 303.2 ms | 34.6 ms | 11.4% ⚠ |
+| Cmdsub `$(true)` | dash | 203.1 ms | 43.2 ms | 21.3% ⚠ |
+| Cmdsub `$(/bin/true)` | **hellish** | 703.5 ms | 41.2 ms | 5.9% ⚠ |
+| Cmdsub `$(/bin/true)` | bash | 603.3 ms | 44.5 ms | 7.4% ⚠ |
+| Cmdsub `$(/bin/true)` | dash | 403.3 ms | 23.1 ms | 5.7% ⚠ |
+| 3-stage pipeline | **hellish** | 1.204 s | 70.5 ms | 5.9% ⚠ |
+| 3-stage pipeline | bash | 1.204 s | 38.0 ms | 3.2% ⚠ |
+| 3-stage pipeline | dash | 1.104 s | 50.9 ms | 4.6% ⚠ |
+| autoconf configure | bash | 7.010 s | 70.6 ms | 1.0% |
+| autoconf configure | dash | 6.509 s | 113.7 ms | 1.7% |
 
 ## Configure completion note
 
