@@ -84,7 +84,6 @@ int		builtin_unset(t_shell *state, t_vec argv);
 int		parse_flags(t_vec argv, int *n, int *e);
 int		print_args(t_vec *out, int e, t_vec argv, size_t i);
 int		builtin_echo(t_shell *state, t_vec argv);
-int		builtin_env(t_shell *state, t_vec argv);
 void	exit_clean(t_shell *state, int code);
 int		builtin_exit(t_shell *state, t_vec argv);
 void	parse_export_arg(char *str, char **ident, char **val);
