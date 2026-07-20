@@ -92,6 +92,8 @@ char	strip_surrounding_quotes(char **val);
 void	consume_following_value(t_vec av, int *i, char **val);
 int		handle_identifier(t_shell *st, char *id, char *val, const char *argv0);
 int		process_arg(t_shell *st, t_vec av, int *ip);
+bool	bad_opt_word(const char *a, const char *valid);
+size_t	export_skip_opts(t_shell *st, t_vec av, int *err);
 void	collect_and_print_exported(t_shell *st);
 int		builtin_export(t_shell *st, t_vec av);
 int		builtin_pwd(t_shell *state, t_vec argv);
@@ -100,7 +102,8 @@ int		builtin_read(t_shell *state, t_vec argv);
 void	print_exit_if_readline(t_shell *state);
 int		handle_no_args(t_shell *state, t_vec argv);
 size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
-int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, int *ret);
+int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);
+int		exit_parse_ll(const char *s, long long *out);
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 
@@ -125,7 +128,6 @@ int		umask_symbolic(int flags);
 int		umask_opts(char **av, size_t len, int *idx);
 int		umask_report(mode_t m, int flags);
 int		umask_sym_parse(const char *s, int initial);
-int		handle_too_many_args(t_shell *state, t_vec argv, size_t i);
 
 /* cd: options (-L logical default / -P physical, -e, -@), parsed before the
    operand. echo => print the destination (CDPATH hit, `cd -`, or `cd a b`). */

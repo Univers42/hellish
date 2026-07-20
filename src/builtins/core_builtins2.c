@@ -26,10 +26,19 @@ int	builtin_unset(t_shell *state, t_vec argv)
 	av = (char **)argv.ctx;
 	i = 1;
 	fmode = 0;
-	if (i < argv.len && av[i][0] == '-'
-		&& (av[i][1] == 'f' || av[i][1] == 'v')
-		&& !av[i][2])
-		fmode = (av[i++][1] == 'f');
+	while (i < argv.len && av[i][0] == '-' && av[i][1])
+	{
+		if (!ft_strcmp(av[i], "--"))
+		{
+			i++;
+			break ;
+		}
+		if (bad_opt_word(av[i], "vf"))
+			return (ft_eprintf("%s: unset: %s: invalid option\n",
+					state->ctx, av[i]), 2);
+		fmode = (ft_strchr(av[i], 'f') != NULL);
+		i++;
+	}
 	while (i < argv.len)
 	{
 		if (fmode)

@@ -16,6 +16,30 @@
    contains '=', everything before it is the identifier and everything after
    is the value. Without '=', *val is left NULL (mark existing var exported
    without changing its value). Both *ident and *val are heap-allocated. */
+/* True when `a` is an UNRECOGNISED option word for export/unset: it begins
+   with '-' and is longer than a lone '-', and either is a "--xxx" long
+   option (only the bare "--" end-of-options marker is accepted) or clusters
+   an option letter not in `valid`.  A lone '-' and plain NAMEs are operands.
+   bash rejects e.g. `export -TEST=1` / `unset -x` with status 2 -- this is
+   how we detect that. */
+bool	bad_opt_word(const char *a, const char *valid)
+{
+	int	j;
+
+	if (a[0] != '-' || a[1] == '\0')
+		return (false);
+	if (a[1] == '-')
+		return (a[2] != '\0');
+	j = 1;
+	while (a[j])
+	{
+		if (!ft_strchr(valid, a[j]))
+			return (true);
+		j++;
+	}
+	return (false);
+}
+
 void	parse_export_arg(char *str, char **ident, char **val)
 {
 	char	*eq;
