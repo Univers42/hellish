@@ -76,6 +76,8 @@ char	*alias_scan_line(t_hash *aliases, const char *input)
 
 	if (!input)
 		return (NULL);
+	if (alias_table_empty(aliases))
+		return (ft_strdup(input));
 	a = (t_ascan){0};
 	vec_init(&a.out);
 	a.out.elem_size = 1;

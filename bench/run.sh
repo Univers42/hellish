@@ -42,13 +42,31 @@ if [ "$GOV" != performance ]; then
     echo "!! (set BENCH_STRICT=1 to refuse instead.)" >&2
 fi
 
+# ---- concurrency guard ----------------------------------------------------
+# Two perf runs sharing bench/.bin/hellish corrupt each other's timing and
+# collide on the binary copy ("Text file busy").  A dir-based lock keeps
+# make perf single-flight; a stale lock (>1h, or empty) is reclaimed.
+LOCK="$BENCH/.artifacts/perf.lock"
+mkdir -p "$ART"
+if ! mkdir "$LOCK" 2>/dev/null; then
+    echo "!! another 'make perf' looks to be running ($LOCK)." >&2
+    echo "!! if that is stale, remove it:  rm -rf $LOCK" >&2
+    exit 1
+fi
+trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
+
 # ---- setup ----------------------------------------------------------------
 cd "$ROOT"
 /bin/bash bench/lib/fetch_suites.sh
 make --no-print-directory OPT=1 >/dev/null
-mkdir -p bench/.bin && cp build/bin/hellish "$HELLISH"
+# Update the pinned binary ATOMICALLY: cp to a temp then rename.  A plain
+# `cp` over a binary that a previous/concurrent run is still executing fails
+# with "Text file busy"; rename() swaps the directory entry (new inode) and
+# leaves any running copy on its old inode, so it always succeeds.
+mkdir -p bench/.bin
+cp build/bin/hellish "$HELLISH.tmp.$$"
+mv -f "$HELLISH.tmp.$$" "$HELLISH"
 /bin/bash bench/lib/gen_workloads.sh
-mkdir -p "$ART"
 
 HYPERFINE="$(command -v hyperfine || echo "$BENCH/.bin/hyperfine")"
 T="taskset -c $CPU"
@@ -70,20 +88,22 @@ TGC="timeout ${CONF_TIMEOUT:-120}"
 bench_script() {
     name="$1"; script="$2"; runs="${3:-$MIN_RUNS}"; warm="${4:-$WARMUP}"
     echo "== $name (${runs} runs)" >&2
-    "$HYPERFINE" -N --warmup "$warm" --min-runs "$runs" \
+    # -i tolerates a non-zero exit from one shell; `|| true` keeps `set -e`
+    # from killing the run (and the final report) if a dimension errors.
+    "$HYPERFINE" -N -i --warmup "$warm" --min-runs "$runs" \
         --export-json "$ART/$name.json" \
         -n hellish "$TG $T $HELLISH --posix $script" \
         -n bash    "$TG $T $BASH_BIN --norc --posix $script" \
-        -n dash    "$TG $T $DASH_BIN $script"
+        -n dash    "$TG $T $DASH_BIN $script" || true
 }
 
 # ---- a) startup -----------------------------------------------------------
 echo "== startup" >&2
-"$HYPERFINE" -N --warmup "$WARMUP" --min-runs "$MIN_RUNS" \
+"$HYPERFINE" -N -i --warmup "$WARMUP" --min-runs "$MIN_RUNS" \
     --export-json "$ART/startup.json" \
     -n hellish "$TG $T $HELLISH --posix -c true" \
     -n bash    "$TG $T $BASH_BIN --norc --posix -c true" \
-    -n dash    "$TG $T $DASH_BIN -c true"
+    -n dash    "$TG $T $DASH_BIN -c true" || true
 
 # ---- b) parser throughput -------------------------------------------------
 bench_script parse50k "$GEN/parse50k.sh" 15 3
@@ -116,8 +136,10 @@ if [ "${SKIP_CONFIGURE:-0}" != 1 ]; then
     for i in "${!conf_labels[@]}"; do
         lbl="${conf_labels[$i]}"; bin="${conf_bins[$i]}"; fl="${conf_flags[$i]}"
         rm -rf "$BUILD" && mkdir -p "$BUILD" && cd "$BUILD"
+        # `|| true`: a shell that fails configure exits non-zero, which under
+        # `set -e` would kill the whole run before the report is written.
         $TGC env CONFIG_SHELL="$bin" $bin $fl "$HELLO/configure" --quiet \
-            >/dev/null 2>&1
+            >/dev/null 2>&1 || true
         cd "$ROOT"
         if [ -f "$BUILD/config.status" ]; then
             hf+=(-n "$lbl" "$TGC $T env CONFIG_SHELL=$bin $bin $fl $HELLO/configure --quiet")
