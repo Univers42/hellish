@@ -13,6 +13,25 @@
 #include "execution_private.h"
 #include "sys.h"
 
+/* Save a standard fd (0/1/2) for later restore around a redirected builtin
+   or in-process compound.  We MUST land the copy at a HIGH fd (>=10), never
+   plain dup(): dup() returns the lowest free descriptor -- 5, 6, 7 -- which
+   is exactly the range scripts claim with `exec 5>file`.  autoconf's
+   configure holds config.log on fd 5 and the original stdout on fd 6, so a
+   plain-dup backup silently clobbers them and every `>&5`/`>&6` then fails
+   with EBADF (the shell can't build config.log and the compiler probe dies).
+   fcntl(F_DUPFD_CLOEXEC, 10) keeps our book-keeping fds out of the 3..9
+   window and out of child processes.  Falls back to dup() if unsupported. */
+int	save_fd(int fd)
+{
+	int	saved;
+
+	saved = fcntl(fd, F_DUPFD_CLOEXEC, 10);
+	if (saved < 0)
+		saved = dup(fd);
+	return (saved);
+}
+
 /* Apply one resolved t_redir to the process's fd table.  Three cases:
    close_fd -- just close the fd (2>&- syntax);
    is_dup   -- dup2 src_fd to a different target without closing the source

@@ -60,9 +60,9 @@ static t_execution_state	compound_in_parent(t_shell *state,
 	need = fd_setup_needed(exe);
 	if (need)
 	{
-		bak[0] = dup(STDIN_FILENO);
-		bak[1] = dup(STDOUT_FILENO);
-		bak[2] = dup(STDERR_FILENO);
+		bak[0] = save_fd(STDIN_FILENO);
+		bak[1] = save_fd(STDOUT_FILENO);
+		bak[2] = save_fd(STDERR_FILENO);
 		set_up_redirection(state, exe);
 	}
 	exe->infd = -1;

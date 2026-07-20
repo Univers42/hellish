@@ -28,9 +28,9 @@ void	take_backup_fds(int *bak, int persist)
 {
 	if (persist)
 		return ;
-	bak[0] = dup(0);
-	bak[1] = dup(1);
-	bak[2] = dup(2);
+	bak[0] = save_fd(0);
+	bak[1] = save_fd(1);
+	bak[2] = save_fd(2);
 }
 
 void	restore_backup_fds(int *bak, int persist)
