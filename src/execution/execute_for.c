@@ -91,24 +91,27 @@ static t_execution_state	for_positional_loop(t_shell *state,
 		t_ast_node *node, char *var_name)
 {
 	t_execution_state	status;
-	char				*key;
-	int					i;
-	int					n;
+	t_vec				words;
+	t_vec				*prev;
+	size_t				i;
 
 	status = res_status(0);
-	n = ft_atoi(env_expand(state, "#"));
+	snapshot_positionals(state, &words);
+	prev = state->for_snapshot;
+	state->for_snapshot = &words;
 	state->loop_depth++;
 	i = 0;
-	while (++i <= n)
+	while (i < words.len)
 	{
-		key = ft_itoa(i);
-		set_for_var(state, var_name, env_expand(state, key));
-		xfree(key);
+		set_for_var(state, var_name, ((char **)words.ctx)[i]);
+		i++;
 		status = run_body(state, vec_idx(&node->children, 0));
 		if (handle_loop_ctl(state))
 			break ;
 	}
 	state->loop_depth--;
+	state->for_snapshot = prev;
+	free_positional_snapshot(&words);
 	return (status);
 }
 

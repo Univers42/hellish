@@ -26,7 +26,9 @@ static int	find_cmd_sub_end(const char *s, int slen)
 	j = 2;
 	while (j < slen && depth > 0)
 	{
-		if (is_single_open_paren(s, j))
+		if (sh_skip_quoted(s, slen, j) != j)
+			j = sh_skip_quoted(s, slen, j);
+		else if (is_single_open_paren(s, j))
 			handle_single_open_paren(&depth, &j);
 		else if (is_single_close_paren(s, j))
 			handle_single_close_paren(&depth, &j);
