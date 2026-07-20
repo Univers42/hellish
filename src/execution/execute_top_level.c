@@ -29,7 +29,11 @@ void	execute_top_level(t_shell *state)
 	vec_init(&exe.redirs);
 	exe.redirs.elem_size = sizeof(int);
 	state->heredoc_idx = 0;
-	if (!get_g_sig()->should_unwind)
+	state->hd_defer = state->cycle_has_hd
+		&& (state->tree.node_type == AST_SIMPLE_LIST
+			|| state->tree.node_type == AST_COMPOUND_LIST);
+	if (!get_g_sig()->should_unwind && !state->hd_defer
+		&& state->cycle_has_hd)
 		gather_heredocs(state, &state->tree, false);
 	if (!get_g_sig()->should_unwind)
 		res = execute_tree_node(state, &exe);

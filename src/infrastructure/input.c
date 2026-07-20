@@ -65,7 +65,11 @@ int	get_more_tokens(t_shell *state, char **prompt, t_deque_tok *tt)
 	{
 		stat = readline_cmd(state, prompt);
 		if (stat == 1)
+		{
+			if (try_replay_exact(state))
+				return (5);
 			handle_eof_or_error(state, tt);
+		}
 		if (stat)
 			return (stat);
 		update_prompt(state, prompt, tt);

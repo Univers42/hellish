@@ -83,6 +83,26 @@ size_t	find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
 	return (node->children.len);
 }
 
+/* Deferred heredoc gathering for one range of a top-level list: fill the
+   heredoc temp files of children [start, end) right before that range
+   runs. Batched input can put a state-changing command (function def,
+   assignment) and a later heredoc consumer in the same tree; gathering
+   per range instead of per tree keeps bash's ordering — a heredoc body
+   like `$(f)` must expand AFTER the earlier commands have executed. */
+static void	gather_range_heredocs(t_shell *state, t_ast_node *node,
+									size_t start, size_t end)
+{
+	t_ast_node	*kids;
+
+	kids = (t_ast_node *)node->children.ctx;
+	while (start < end)
+	{
+		if (!get_g_sig()->should_unwind)
+			gather_heredocs(state, &kids[start], false);
+		start++;
+	}
+}
+
 /* Run an AST_SIMPLE_LIST or AST_COMPOUND_LIST.  These are sequences of
    pipelines separated by ; & newline && ||.  We scan forward from the
    current index to the next separator, execute the range as a foreground
@@ -90,20 +110,26 @@ size_t	find_next_separator(t_ast_node *node, size_t start, bool *found_amp)
    to fire after each simple command completes).  Background ranges (&)
    fork and return immediately; exit/break/continue/return/signal-unwind
    all break the outer loop so the shell does not run commands after an
-   unconditional exit. */
+   unconditional exit.  hd_defer is consumed exactly once, by the
+   top-level list — nested lists were already gathered with their range. */
 t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;
 	size_t				i;
 	size_t				sep_idx;
 	bool				is_background;
+	bool				defer;
 
+	defer = state->hd_defer;
+	state->hd_defer = false;
 	reap_background_children(state);
 	status = res_status(0);
 	i = 0;
 	while (i < exe->node->children.len)
 	{
 		sep_idx = find_next_separator(exe->node, i, &is_background);
+		if (defer)
+			gather_range_heredocs(state, exe->node, i, sep_idx);
 		if (is_background)
 			status = execute_range_background(state, exe, i, sep_idx);
 		else

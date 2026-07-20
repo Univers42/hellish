@@ -58,16 +58,23 @@ void	extend_bs(t_shell *state)
 	}
 }
 
-/* True when the token deque contains nothing meaningful: either fewer than two
-   entries (the deque always keeps a sentinel), or exactly one token that is a
-   lone newline (an empty line). Saves the parser from wasting a full parse
-   attempt on blank input. */
+/* True when the token deque contains nothing meaningful: nothing but the
+   END sentinel, or only TT_NEWLINE tokens before it. The multi-newline
+   case matters under batched input delivery: a run of comment/blank lines
+   arrives as one batch and lexes to [\n \n ... END] — executing that would
+   both trip the parser and clobber $? (bash keeps $? across blank lines). */
 bool	is_empty_token_list(t_deque_tok *tokens)
 {
+	size_t	i;
+
 	if (tokens->deqtok.len < 2)
 		return (true);
-	if (tokens->deqtok.len == 2
-		&& ((t_token *)deque_idx(&tokens->deqtok, 0))->tt == TT_NEWLINE)
-		return (true);
-	return (false);
+	i = 0;
+	while (i + 1 < tokens->deqtok.len)
+	{
+		if (((t_token *)deque_idx(&tokens->deqtok, i))->tt != TT_NEWLINE)
+			return (false);
+		i++;
+	}
+	return (true);
 }

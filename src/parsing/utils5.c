@@ -36,7 +36,11 @@ void	handle_arith_error_print(t_shell *state,
    token is not a simple-list operator, 2 on error, 0 on success -- the
    operator is pushed as a child of ret and its type is stored in *out_next
    so check_newlines_and_end can decide whether end-of-input is a hard
-   error (after `;` or `&`) or a continuation request. */
+   error (after `;` or `&`) or a continuation request. TT_NEWLINE is
+   accepted here as a sequencing operator (`;` semantics): batched input
+   delivery hands the lexer several lines at once, so the top-level list
+   must keep parsing across newlines instead of stopping at the first one.
+   The executor already runs TT_NEWLINE children as separators. */
 int	push_simple_list_op_token(t_parser *parser,
 									t_deque_tok *tokens,
 									t_ast_node *ret,
@@ -47,7 +51,7 @@ int	push_simple_list_op_token(t_parser *parser,
 
 	tmp = *(t_token *)deque_peek(&tokens->deqtok);
 	next = tmp.tt;
-	if (!is_simple_list_op(next))
+	if (!is_simple_list_op(next) && next != TT_NEWLINE)
 		return (1);
 	vec_push_int(&parser->parse_stack, next);
 	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
@@ -68,7 +72,8 @@ int	check_newlines_and_end(t_parser *parser,
 {
 	while (is_newline_token(tokens))
 		(void)deque_pop_start(&tokens->deqtok);
-	if ((next == TT_SEMICOLON || next == TT_AMPERSAND) && is_end_token(tokens))
+	if ((next == TT_SEMICOLON || next == TT_AMPERSAND
+			|| next == TT_NEWLINE) && is_end_token(tokens))
 		return (2);
 	if (is_end_token(tokens))
 	{
