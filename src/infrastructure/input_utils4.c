@@ -63,6 +63,19 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
    we generate a continuation prompt (e.g. "if > ") so the user knows why we
    are asking for another line. The heredoc extraction runs first to peel off
    any heredoc bodies that were accumulated inline during multi-line input. */
+/* A syntax error while reading non-interactive input (script, pipe, or -c)
+   makes the shell abort the REST of the input and leave with status 2,
+   exactly like bash: `printf '>x>\ncmd\n' | sh` never runs cmd, it exits 2.
+   Interactively (INP_RL) we keep the REPL alive so a typo doesn't end the
+   session. The status is only stamped when nothing already failed. */
+static void	abort_on_syntax_error(t_shell *state)
+{
+	if (state->last_cmd_st_exe.status == 0)
+		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
+	if (state->metinp != INP_RL)
+		state->should_exit = true;
+}
+
 bool	try_parse_tokens(t_shell *state, t_parser *parser,
 							t_deque_tok *tt, char **prompt)
 {
@@ -77,7 +90,6 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	else if (parser->res == RES_GETMOREINPUT)
 		*prompt = (char *)prompt_more_input(parser).ctx;
 	else if (parser->res == RES_ERR)
-		if (state->last_cmd_st_exe.status == 0)
-			set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
+		abort_on_syntax_error(state);
 	return (free_ast(&state->tree), true);
 }
