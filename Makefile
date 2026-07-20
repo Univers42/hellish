@@ -324,7 +324,13 @@ conformance:
 perf:
 	@/bin/bash bench/run.sh
 
+# Run an external, configurable 42 "minishell tester" (geoman-style) against
+# the built binary, as an independent cross-check on top of `make test` and
+# `make conformance`. Override the repo with `make geoman GEOMAN_URL=...`.
+geoman: all
+	@/bin/bash bench/lib/run_geoman.sh
+
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test conformance perf cli-opts-test
+	hist-test conformance perf cli-opts-test geoman

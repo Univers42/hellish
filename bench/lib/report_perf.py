@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """Turn the hyperfine JSON exports in bench/.artifacts/perf/ into
-bench/results.md: one table per dimension with median, stddev, coefficient
-of variation (flagged when > 3%), and speedup relative to dash and bash.
+bench/results.md.
+
+The headline is a single hellish-centric SCOREBOARD: one row per benchmark,
+every ratio expressed relative to hellish (>1 means hellish is faster), a
+consistent winner column, and a reliability flag.  This replaces hyperfine's
+own per-run summaries, which pick whichever shell happens to be fastest as
+the reference and so read differently every dimension.
+
+Detail tables (median/stddev/CV per shell) follow for anyone who wants them.
 """
 import json
 import os
@@ -11,26 +18,25 @@ BENCH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART = os.path.join(BENCH, '.artifacts', 'perf')
 OUT = os.path.join(BENCH, 'results.md')
 
-DIMENSIONS = [
-    ('Startup', 'A shell is born, runs `true`, exits.', ['startup']),
-    ('Parser throughput', '50k lines of realistic code under `set -n` — '
-     'parse everything, execute nothing.', ['parse50k']),
-    ('Loop / builtin throughput', '100k-iteration `while` loops: POSIX '
-     'arithmetic, string concat, the `:` builtin, `read` over a 100k-line '
-     'file.', ['loop_arith', 'loop_concat', 'loop_colon', 'loop_read']),
-    ('Fork workloads', '1k iterations: `$(true)` (hellish takes its '
-     'forkless fast path — the ksh93 trick; bash/dash fork), '
-     '`$(/bin/true)` (everyone forks+execs), and a 3-stage pipeline.',
-     ['fork_cmdsub', 'fork_cmdsub_ext', 'fork_pipeline']),
-    ('Real workload: autoconf', 'GNU hello 2.12.1 `./configure` with '
-     'CONFIG_SHELL pointed at each shell.', ['configure']),
+# (benchmark key, human title, one-line description)
+BENCHMARKS = [
+    ('startup', 'Startup', 'fork+exec a shell, run `true`, exit'),
+    ('parse50k', 'Parse 50k lines', 'lex+parse a 50k-line script under `set -n` (no execution)'),
+    ('loop_arith', 'Arith loop', '100k iterations of `i=$((i+1))`'),
+    ('loop_concat', 'String concat', '10k iterations of `s="${s}x"` (naive O(n^2))'),
+    ('loop_colon', 'Colon loop', "100k iterations of the `:` builtin"),
+    ('loop_read', 'Read loop', '`read` over a 50k-line file'),
+    ('fork_cmdsub', 'Cmdsub `$(true)`', '1k `$(true)` (hellish forkless fast path)'),
+    ('fork_cmdsub_ext', 'Cmdsub `$(/bin/true)`', '1k real fork+exec substitutions'),
+    ('fork_pipeline', '3-stage pipeline', '300 `printf | cat | wc -l`'),
+    ('configure', 'autoconf configure', 'GNU hello `./configure` (CONFIG_SHELL)'),
 ]
 
+SHELLS = ('hellish', 'bash', 'dash')
 CV_LIMIT = 0.03
 
 
 def load(name):
-    """hyperfine -n <label> exports the label as the `command` field."""
     path = os.path.join(ART, name + '.json')
     if not os.path.exists(path):
         return None
@@ -40,70 +46,138 @@ def load(name):
 
 
 def fmt_time(sec):
+    if sec is None:
+        return '—'
     if sec < 1.0:
-        return '%.2f ms' % (sec * 1000)
+        return '%.1f ms' % (sec * 1000)
     return '%.3f s' % sec
+
+
+def ratio_cell(other_med, hel_med):
+    """other/hellish: >1 => hellish faster.  Marked ✓ / ✗ / ≈."""
+    if other_med is None or hel_med is None or hel_med == 0:
+        return '—'
+    r = other_med / hel_med
+    if r >= 1.05:
+        mark = '✓'
+    elif r <= 0.95:
+        mark = '✗'
+    else:
+        mark = '≈'
+    return '%.2f× %s' % (r, mark)
+
+
+def cell_cv(res):
+    if not res or not res['median']:
+        return 0.0
+    return res['stddev'] / res['median']
+
+
+def scoreboard(rows):
+    """rows: list of (key, title, desc, labeled-or-None).  Returns md lines
+    plus (wins, losses, ties, reliable_count)."""
+    out = []
+    a = out.append
+    a('## Scoreboard — every ratio relative to hellish')
+    a('')
+    a('`vs bash` / `vs dash` = that shell\'s median ÷ hellish\'s median, so '
+      '**> 1.0 means hellish is faster** (✓), < 1.0 means hellish is slower '
+      '(✗), ≈ is within 5%.  `worst CV` is the largest coefficient of '
+      'variation among the three runs — a row with worst CV > 3% (⚠) is too '
+      'noisy on this machine to trust the ratio.')
+    a('')
+    a('| benchmark | hellish | vs bash | vs dash | fastest | worst CV |')
+    a('|---|---|---|---|---|---|')
+    wins = losses = ties = reliable = 0
+    for key, title, _desc, labeled in rows:
+        if not labeled or 'hellish' not in labeled:
+            continue
+        med = {s: labeled[s]['median'] for s in SHELLS if s in labeled}
+        hel = med.get('hellish')
+        worst_cv = max((cell_cv(labeled[s]) for s in labeled), default=0.0)
+        cvflag = ' ⚠' if worst_cv > CV_LIMIT else ''
+        fastest = min(med, key=med.get) if med else '—'
+        vb = ratio_cell(med.get('bash'), hel)
+        vd = ratio_cell(med.get('dash'), hel)
+        if worst_cv <= CV_LIMIT:
+            reliable += 1
+            if fastest == 'hellish':
+                wins += 1
+            elif hel and med and med[fastest] < hel * 0.95:
+                losses += 1
+            else:
+                ties += 1
+        a('| %s | %s | %s | %s | %s | %.1f%%%s |' % (
+            title, fmt_time(hel), vb, vd,
+            '**hellish**' if fastest == 'hellish' else fastest,
+            worst_cv * 100, cvflag))
+    a('')
+    return out, (wins, losses, ties, reliable)
+
+
+def detail_tables(rows):
+    out = []
+    a = out.append
+    a('## Per-benchmark detail')
+    a('')
+    a('| benchmark | shell | median | stddev | CV |')
+    a('|---|---|---|---|---|')
+    for _key, title, _desc, labeled in rows:
+        if not labeled:
+            continue
+        for s in SHELLS:
+            if s not in labeled:
+                continue
+            r = labeled[s]
+            cv = cell_cv(r)
+            a('| %s | %s | %s | %s | %.1f%%%s |' % (
+                title, '**hellish**' if s == 'hellish' else s,
+                fmt_time(r['median']), fmt_time(r['stddev']),
+                cv * 100, ' ⚠' if cv > CV_LIMIT else ''))
+    a('')
+    return out
 
 
 def main():
     gov = os.environ.get('GOVERNOR', 'unknown')
+    rows = [(k, t, d, load(k)) for k, t, d in BENCHMARKS]
+    board, (wins, losses, ties, reliable) = scoreboard(rows)
+
     lines = []
     a = lines.append
     a('# Benchmark results: hellish vs bash vs dash')
     a('')
-    a('Generated by `make perf`.  Methodology and every fairness choice: '
+    a('Generated by `make perf`.  Fairness choices: '
       '[METHODOLOGY.md](METHODOLOGY.md).')
     a('')
-    a('Environment: %s, CPU governor `%s`%s.' % (
-        platform.platform(), gov,
-        '' if gov == 'performance' else
-        ' ⚠ **not** `performance` — absolute numbers are pessimistic and '
-        'noisier; the CV column is the reliability signal'))
+    if gov != 'performance':
+        a('> ⚠ **CPU governor is `%s`, not `performance`.** Absolute times '
+          'are inflated and noisy (frequency scaling swings ~5×); trust only '
+          'the rows whose *worst CV* is low. For publication-grade numbers, '
+          'run `sudo cpupower frequency-set -g performance` then '
+          '`make perf`.' % gov)
+        a('')
+    a('Environment: %s.' % platform.platform())
     a('')
-    a('Speedup columns: that shell\'s median divided into the reference '
-      'shell\'s median — `2.0×` means twice as fast as the reference. '
-      'CV = stddev/median; results with CV > 3% are flagged ⚠ unreliable.')
-    a('')
-    for title, blurb, names in DIMENSIONS:
-        rows = [(n, load(n)) for n in names]
-        rows = [(n, r) for n, r in rows if r]
-        if not rows:
-            continue
-        a('## %s' % title)
+    if reliable:
+        a('**On the %d benchmarks that were reliable here (worst CV ≤ 3%%): '
+          'hellish is fastest in %d, tied in %d, slower in %d.**'
+          % (reliable, wins, ties, losses))
         a('')
-        a(blurb)
-        a('')
-        a('| benchmark | shell | median | stddev | CV | vs dash | vs bash |')
-        a('|---|---|---|---|---|---|---|')
-        for name, labeled in rows:
-            med = {l: labeled[l]['median'] for l in labeled}
-            for label in ('hellish', 'bash', 'dash'):
-                if label not in labeled:
-                    continue
-                r = labeled[label]
-                cv = r['stddev'] / r['median'] if r['median'] else 0.0
-                flag = ' ⚠' if cv > CV_LIMIT else ''
-                vs_dash = ('%.2f×' % (med['dash'] / r['median'])
-                           if 'dash' in med else '—')
-                vs_bash = ('%.2f×' % (med['bash'] / r['median'])
-                           if 'bash' in med else '—')
-                a('| %s | %s | %s | %s | %.1f%%%s | %s | %s |' % (
-                    name, '**hellish**' if label == 'hellish' else label,
-                    fmt_time(r['median']), fmt_time(r['stddev']),
-                    cv * 100, flag, vs_dash, vs_bash))
-        a('')
+    lines += board
+    lines += detail_tables(rows)
+
     skipped = os.path.join(ART, 'configure-skipped.txt')
-    if os.path.exists(skipped):
+    if os.path.exists(skipped) and os.path.getsize(skipped):
         a('## Configure completion note')
         a('')
-        a('These shells were **excluded from the configure timing** because '
-          'they do not complete GNU autoconf `configure` (no `config.status` '
-          'produced) -- timing a fast failure against a real run would '
-          'mislead:')
+        a('Excluded from the configure timing (no `config.status` — timing a '
+          'fast failure against a real run would mislead):')
         a('')
         with open(skipped) as f:
             for line in f:
-                a('- %s' % line.strip())
+                if line.strip():
+                    a('- %s' % line.strip())
         a('')
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
