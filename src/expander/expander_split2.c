@@ -12,11 +12,13 @@
 
 #include "expander_private.h"
 
-/* Route one expanded subtoken to its destination field.  TT_DQENVVAR "$@"
-   in a split context is re-emitted as one field per positional parameter.
-   TT_ENVVAR and split-eligible TT_WORD subtokens (those whose value came
-   from a variable, so split_eligible is set) go through split_envvar for
-   IFS field splitting.  All other tokens (literal text, single-quoted, and
+/* Route one expanded subtoken to its destination field.  Deferred
+   positional tokens — still holding their bare @ / * name, recognisable
+   by allocated=false (an EXPANDED token whose value happens to be "@" is
+   always an owned copy) — are re-emitted per positional: quoted "$@"
+   verbatim, unquoted $@/$* with each element IFS-split.  TT_ENVVAR and
+   split-eligible TT_WORD subtokens go through split_envvar for IFS field
+   splitting.  All other tokens (literal text, single-quoted, and
    double-quoted vars) are appended to curr_node verbatim. */
 static void	split_one_child(t_shell *state, t_ast_node *child,
 				t_ast_node *curr_node, t_vec_nd *ret)
@@ -24,9 +26,12 @@ static void	split_one_child(t_shell *state, t_ast_node *child,
 	t_token	*curr_t;
 
 	curr_t = &child->token;
-	if (curr_t->tt == TT_DQENVVAR && curr_t->len == 1
-		&& curr_t->start[0] == '@')
+	if (curr_t->tt == TT_DQENVVAR && curr_t->start == pos_mark('@'))
 		(emit_positional_at(state, curr_node, ret), free_token_res(curr_t));
+	else if (curr_t->tt == TT_ENVVAR
+		&& (curr_t->start == pos_mark('@') || curr_t->start == pos_mark('*')))
+		(emit_positional_split(state, curr_node, ret),
+			free_token_res(curr_t));
 	else if (curr_t->tt == TT_ENVVAR
 		|| (curr_t->tt == TT_WORD && curr_t->split_eligible))
 		(split_envvar(state, curr_t, curr_node, ret), free_token_res(curr_t));

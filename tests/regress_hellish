@@ -72,3 +72,11 @@ ac_cs_config="`printf %s\n "" | sed 's/^ //; s/[\""\`$]/\\&/g'`"; echo "cfg=[$ac
 set -- a b c; for x do echo "x=$x"; shift; done; echo "left=$#"
 x=$(printf %s 'keep(paren'); echo "$x"
 echo "$(echo 'a(b' | tr '(' '-')"
+set -- a "b c"; IFS=""; printf "[%s]" $@; echo; printf "[%s]" $*; echo
+IFS=:; word=a:; printf "[%s]" ${word}:b; echo
+IFS=:; word=:a; printf "[%s]" x${word}; echo
+set -- 1 2; v=@; echo "$v"; echo $v
+set -- a "b c"; printf "[%s]" $@ "$@" "$*"; echo
+set -- "" a ""; printf "[%s]" $@; echo
+IFS=x; set -- axb c; printf "[%s]" $@; echo
+set -- a b; IFS=; printf "[%s]" "${@-M}"; echo
