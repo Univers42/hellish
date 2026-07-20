@@ -33,7 +33,7 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 			return (1);
 		}
 		tmp_node = parse_command(state, parser, tokens);
-		vec_push(&ret->children, &tmp_node);
+		ast_push_child(ret, &tmp_node);
 		if (parser->res != RES_OK)
 			return (2);
 	}

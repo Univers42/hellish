@@ -55,12 +55,12 @@ t_ast_node	parse_redirect(t_shell *state,
 	push_token_child(&ret, t);
 	next = *(t_token *)deque_peek(&tokens->deqtok);
 	if (next.tt == TT_PROC_SUB_IN || next.tt == TT_PROC_SUB_OUT)
-		vec_push(&ret.children, (t_ast_node[])
+		ast_push_child(&ret, (t_ast_node[])
 		{parse_proc_sub(state, parser, tokens)});
 	else if (next.tt == TT_WORD || next.tt == TT_SQWORD
 		|| next.tt == TT_DQWORD || next.tt == TT_ENVVAR
 		|| next.tt == TT_DQENVVAR)
-		vec_push(&ret.children, (t_ast_node[]){parse_word(tokens)});
+		ast_push_child(&ret, (t_ast_node[]){parse_word(tokens)});
 	else
 		return (unexpected(state, parser, ret, tokens));
 	return (ret);

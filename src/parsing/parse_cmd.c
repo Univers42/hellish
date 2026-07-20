@@ -23,13 +23,13 @@ bool	handle_subshell_case(t_shell *state, t_parser *parser,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_subshell(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 	if (parser->res != RES_OK)
 		return (false);
 	while (is_redirect((*(t_token *)deque_peek(&tokens->deqtok)).tt))
 	{
 		tmp_node = parse_redirect(state, parser, tokens);
-		vec_push(&ret->children, &tmp_node);
+		ast_push_child(ret, &tmp_node);
 		if (parser->res != RES_OK)
 			return (false);
 	}
@@ -70,13 +70,13 @@ bool	handle_compound_case(t_shell *state, t_parser *parser,
 
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
 	tmp_node = dispatch_compound(state, parser, tokens, next);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 	if (parser->res != RES_OK)
 		return (false);
 	while (is_redirect((*(t_token *)deque_peek(&tokens->deqtok)).tt))
 	{
 		tmp_node = parse_redirect(state, parser, tokens);
-		vec_push(&ret->children, &tmp_node);
+		ast_push_child(ret, &tmp_node);
 		if (parser->res != RES_OK)
 			return (false);
 	}
@@ -92,7 +92,7 @@ bool	handle_simple_command_case(t_shell *state, t_parser *parser,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_simple_command(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 	if (parser->res != RES_OK)
 		return (false);
 	return (true);

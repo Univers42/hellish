@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 /* Turn the key token "NAME" into "NAME=". The old code did token.len++, which
    only works when the token points into the source buffer (the '=' is the next
@@ -27,7 +28,7 @@ static void	append_eq_to_token(t_token *t)
 	ke[t->len] = '=';
 	ke[t->len + 1] = '\0';
 	if (t->allocated)
-		xfree(t->start);
+		parena_free(t->start);
 	t->start = ke;
 	t->len++;
 	t->allocated = true;
@@ -59,10 +60,10 @@ void	assignment_word_to_word(t_ast_node *node)
 		i = -1;
 		while (++i < right.children.len)
 			vec_push(&ret.children, vec_idx(&right.children, i));
-		xfree(right.children.ctx);
+		parena_free(right.children.ctx);
 	}
 	else
 		vec_push(&ret.children, &right);
-	xfree(node->children.ctx);
+	parena_free(node->children.ctx);
 	*node = ret;
 }

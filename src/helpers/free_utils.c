@@ -14,8 +14,10 @@
 #include <unistd.h>
 #include "env.h"
 #include "expander.h"
+#include "parena.h"
 
 void	pos_free(t_pos *pos);
+void	free_positional_snapshot(t_vec *w);
 
 /* Tear down one command's redirect list. Three cleanup duties in one pass:
    (1) unlink() any here-doc tmpfiles (should_delete marks them), (2) close
@@ -124,7 +126,11 @@ void	free_all_state(t_shell *state)
 	free_argv_pool(state);
 	free_traps(state);
 	free_dirstack(state);
+	if (state->for_snapshot)
+		free_positional_snapshot(state->for_snapshot);
+	state->for_snapshot = NULL;
 	env_index_free();
+	parena_destroy();
 	word_slab_teardown();
 	alloc_live_report();
 }

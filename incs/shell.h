@@ -212,6 +212,7 @@ typedef struct s_shell
 	t_vec_redir			redirects; /* active redirections for current cmd */
 	int					heredoc_idx; /* next slot in the redirect vector */
 	bool				hd_defer; /* gather heredocs per top-level range */
+	t_vec				*for_snapshot; /* live "$@" copy of a running for */
 	bool				cycle_has_hd; /* "<<" seen in this cycle's input */
 	char				*hd_src; /* raw heredoc body string (pre-expand) */
 	size_t				hd_pos; /* read position within hd_src */

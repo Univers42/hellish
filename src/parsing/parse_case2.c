@@ -56,7 +56,7 @@ t_ast_node	parse_case_command(t_shell *state, t_parser *parser,
 		if (pk(tokens)->tt == TT_END)
 			return (parser->res = RES_GETMOREINPUT, ret);
 		item = parse_case_item(state, parser, tokens);
-		vec_push(&ret.children, &item);
+		ast_push_child(&ret, &item);
 		if (parser->res != RES_OK)
 			return (ret);
 		skip_newlines(tokens);

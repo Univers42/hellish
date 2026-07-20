@@ -110,7 +110,7 @@ bool	push_arith_slices(t_ast_node *ret, t_token span)
 		{
 			w = create_node_type(AST_TOKEN);
 			w.token = create_token(span.start + start, i - start, TT_WORD);
-			vec_push(&ret->children, &w);
+			ast_push_child(ret, &w);
 			start = i + 1;
 		}
 		i++;

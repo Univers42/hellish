@@ -23,7 +23,7 @@ static int	parse_and_push_pipeline(t_shell *state,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_pipeline(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 	if (parser->res != RES_OK)
 		return (2);
 	vec_pop(&parser->parse_stack);
