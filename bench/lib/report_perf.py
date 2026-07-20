@@ -92,6 +92,19 @@ def main():
                     fmt_time(r['median']), fmt_time(r['stddev']),
                     cv * 100, flag, vs_dash, vs_bash))
         a('')
+    skipped = os.path.join(ART, 'configure-skipped.txt')
+    if os.path.exists(skipped):
+        a('## Configure completion note')
+        a('')
+        a('These shells were **excluded from the configure timing** because '
+          'they do not complete GNU autoconf `configure` (no `config.status` '
+          'produced) -- timing a fast failure against a real run would '
+          'mislead:')
+        a('')
+        with open(skipped) as f:
+            for line in f:
+                a('- %s' % line.strip())
+        a('')
     with open(OUT, 'w') as f:
         f.write('\n'.join(lines))
     print('wrote %s' % OUT)

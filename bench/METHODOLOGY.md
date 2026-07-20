@@ -88,8 +88,22 @@ e. **configure** — GNU hello 2.12.1 `./configure --quiet` with
 
 ## Known limitations
 
+- **hellish does not yet complete GNU autoconf's `configure`.** The
+  configure dimension times only the shells that produce `config.status`
+  (bash, dash); hellish is excluded and flagged in results.md. The
+  remaining blocker is that configure's `exec 5>>config.log` never opens
+  config.log in hellish's context (confirmed by strace: no openat for
+  config.log, while bash/dash open it), so every `>&5` write fails with
+  EBADF and the compiler probe aborts. A first, real bug in this area was
+  already fixed — internal fd save/restore used plain `dup()` and grabbed
+  fds 5/6/7 out from under the script (see `save_fd()` in
+  `src/execution/utils.c`) — which moved configure from rc 77 in 0.6s to
+  running the full compiler-probe sequence; the config.log open itself is
+  a separate, still-open bug tracked for a focused session.
 - bash's own test suite and the Smoosh corpus are not wired in yet; both
   are natural extensions of `lib/run_*.sh`.
+- Only bash --posix and dash are referees; yash (a useful third POSIX
+  referee) is not installed on the bench host.
 - The Oils runner executes cases sequentially; a full three-shell sweep
   takes several minutes.
 - `bench/suites/` and `bench/workloads/` are gitignored scratch; only the

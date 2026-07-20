@@ -47,54 +47,88 @@ mkdir -p "$ART"
 
 HYPERFINE="$(command -v hyperfine || echo "$BENCH/.bin/hyperfine")"
 T="taskset -c $CPU"
+# Per-command timeout safety net (a real binary, not a shell). Configure runs
+# legitimately take ~10s, so its guard is larger.
+TG="timeout ${CMD_TIMEOUT:-45}"
+TGC="timeout ${CONF_TIMEOUT:-120}"
 
 # Every measured command is exec'd directly by hyperfine (-N: no shell).
-# The only wrappers are taskset (identical for every shell) and, for the
-# configure dimension, env (to set CONFIG_SHELL) — neither is a shell.
+# Wrappers are taskset (identical for every shell), env (configure dimension
+# only, to set CONFIG_SHELL) and timeout — none of which is a shell.  The
+# `timeout` prefix is a safety net: a mis-sized or accidentally-hanging
+# command dies at CMD_TIMEOUT instead of wedging the whole suite.  With the
+# workloads right-sized it never fires.
+#
+# bench_script <name> <script> [runs] [warmup]
+# Heavy dimensions (a single run near/over a second) take fewer repetitions
+# so the whole suite stays a few minutes; light ones keep the full 30.
 bench_script() {
-    name="$1"; script="$2"; shift 2
-    echo "== $name" >&2
-    "$HYPERFINE" -N --warmup "$WARMUP" --min-runs "$MIN_RUNS" \
-        --export-json "$ART/$name.json" "$@" \
-        -n hellish "$T $HELLISH --posix $script" \
-        -n bash    "$T $BASH_BIN --norc --posix $script" \
-        -n dash    "$T $DASH_BIN $script"
+    name="$1"; script="$2"; runs="${3:-$MIN_RUNS}"; warm="${4:-$WARMUP}"
+    echo "== $name (${runs} runs)" >&2
+    "$HYPERFINE" -N --warmup "$warm" --min-runs "$runs" \
+        --export-json "$ART/$name.json" \
+        -n hellish "$TG $T $HELLISH --posix $script" \
+        -n bash    "$TG $T $BASH_BIN --norc --posix $script" \
+        -n dash    "$TG $T $DASH_BIN $script"
 }
 
 # ---- a) startup -----------------------------------------------------------
 echo "== startup" >&2
 "$HYPERFINE" -N --warmup "$WARMUP" --min-runs "$MIN_RUNS" \
     --export-json "$ART/startup.json" \
-    -n hellish "$T $HELLISH --posix -c true" \
-    -n bash    "$T $BASH_BIN --norc --posix -c true" \
-    -n dash    "$T $DASH_BIN -c true"
+    -n hellish "$TG $T $HELLISH --posix -c true" \
+    -n bash    "$TG $T $BASH_BIN --norc --posix -c true" \
+    -n dash    "$TG $T $DASH_BIN -c true"
 
 # ---- b) parser throughput -------------------------------------------------
-bench_script parse50k "$GEN/parse50k.sh"
+bench_script parse50k "$GEN/parse50k.sh" 15 3
 
 # ---- c) loop / builtin throughput ----------------------------------------
 bench_script loop_arith  "$GEN/loop_arith.sh"
-bench_script loop_concat "$GEN/loop_concat.sh"
+bench_script loop_concat "$GEN/loop_concat.sh" 20 5
 bench_script loop_colon  "$GEN/loop_colon.sh"
-bench_script loop_read   "$GEN/loop_read.sh"
+bench_script loop_read   "$GEN/loop_read.sh" 15 3
 
 # ---- d) fork workloads ----------------------------------------------------
 bench_script fork_cmdsub     "$GEN/fork_cmdsub.sh"
-bench_script fork_cmdsub_ext "$GEN/fork_cmdsub_ext.sh"
-bench_script fork_pipeline   "$GEN/fork_pipeline.sh"
+bench_script fork_cmdsub_ext "$GEN/fork_cmdsub_ext.sh" 20 5
+bench_script fork_pipeline   "$GEN/fork_pipeline.sh" 15 3
 
 # ---- e) real workload: autoconf configure --------------------------------
+# Only shells that actually COMPLETE configure (produce config.status) are
+# timed -- benchmarking a fast failure against a real run would be a lie.
+# A non-completing shell is recorded in configure-skipped.txt with its exit
+# status, which report_perf.py surfaces as an honest N/A row.
 if [ "${SKIP_CONFIGURE:-0}" != 1 ]; then
     HELLO="$BENCH/workloads/hello-2.12.1"
     BUILD="$BENCH/.artifacts/configure-build"
+    rm -f "$ART/configure-skipped.txt"
+    # (label, binary, flags) for the three shells.
+    conf_labels=(hellish bash dash)
+    conf_bins=("$HELLISH" "$BASH_BIN" "$DASH_BIN")
+    conf_flags=("--posix" "--norc --posix" "")
+    hf=()
+    for i in "${!conf_labels[@]}"; do
+        lbl="${conf_labels[$i]}"; bin="${conf_bins[$i]}"; fl="${conf_flags[$i]}"
+        rm -rf "$BUILD" && mkdir -p "$BUILD" && cd "$BUILD"
+        $TGC env CONFIG_SHELL="$bin" $bin $fl "$HELLO/configure" --quiet \
+            >/dev/null 2>&1
+        cd "$ROOT"
+        if [ -f "$BUILD/config.status" ]; then
+            hf+=(-n "$lbl" "$TGC $T env CONFIG_SHELL=$bin $bin $fl $HELLO/configure --quiet")
+        else
+            echo "$lbl (does not complete configure: no config.status)" \
+                >> "$ART/configure-skipped.txt"
+            echo "!! $lbl does not complete configure -- excluded from timing" >&2
+        fi
+    done
     rm -rf "$BUILD" && mkdir -p "$BUILD" && cd "$BUILD"
     echo "== configure (CONFIG_SHELL, $CONF_RUNS runs/shell — slow)" >&2
-    "$HYPERFINE" -N --warmup 1 --min-runs "$CONF_RUNS" \
-        --export-json "$ART/configure.json" \
-        --prepare "find $BUILD -mindepth 1 -delete" \
-        -n hellish "$T env CONFIG_SHELL=$HELLISH $HELLISH --posix $HELLO/configure --quiet" \
-        -n bash    "$T env CONFIG_SHELL=$BASH_BIN $BASH_BIN --norc --posix $HELLO/configure --quiet" \
-        -n dash    "$T env CONFIG_SHELL=$DASH_BIN $DASH_BIN $HELLO/configure --quiet"
+    if [ "${#hf[@]}" -gt 0 ]; then
+        "$HYPERFINE" -N --warmup 1 --min-runs "$CONF_RUNS" \
+            --export-json "$ART/configure.json" \
+            --prepare "find $BUILD -mindepth 1 -delete" "${hf[@]}" || true
+    fi
     cd "$ROOT"
 fi
 
