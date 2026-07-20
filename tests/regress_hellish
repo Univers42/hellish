@@ -67,3 +67,8 @@ p="h*"; [[ hello == $p ]] && echo M || echo N
 p="h*"; [[ hello == "$p" ]] && echo M || echo N
 [ h* = hello ] 2>/dev/null && echo M || echo N
 i=3; while [[ $i -gt 0 ]]; do i=$((i-1)); done; echo $i
+echo "${P:-proc}"-unknown-freebsd"$(echo ${R:-13.2-R}|sed -e 's/[-(].*//')"-gnueabi
+ac_cs_config="`printf %s\n "" | sed 's/^ //; s/[\""\`$]/\\&/g'`"; echo "cfg=[$ac_cs_config]"
+set -- a b c; for x do echo "x=$x"; shift; done; echo "left=$#"
+x=$(printf %s 'keep(paren'); echo "$x"
+echo "$(echo 'a(b' | tr '(' '-')"

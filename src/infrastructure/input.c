@@ -12,6 +12,7 @@
 
 #include "input_private.h"
 #include "helpers.h"
+#include "redir.h"
 
 bool	heredoc_incomplete(const char *str);
 
@@ -40,12 +41,34 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
    extend_bs strips trailing backslash-newlines first, then the alias
    scanner derives the expanded copy the lexer actually parses — aliases
    must be spliced before tokens exist for keywords in alias bodies to
-   work (state->input keeps the original bytes for history/errors). */
+   work (state->input keeps the original bytes for history/errors).
+   When heredoc bodies have accumulated inline (multi-line compound or a
+   batched cycle), the completeness check MUST tokenize the body-stripped
+   text: body content is arbitrary (C code full of apostrophes in an
+   autoconf configure) and would invert the tokenizer's quote state,
+   making it declare an unterminated construct "complete" — the bug that
+   broke ./configure at scale. The tokens then point into the transient
+   stripped copy, which is safe: try_parse_tokens re-tokenizes via
+   extract_input_heredocs (into the long-lived hd_stripped) before any
+   token text is read. */
 static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 {
+	char	*stripped;
+	char	*bodies;
+
 	extend_bs(state);
 	alias_scan_update(state);
-	*prompt = tokenizer((char *)state->alias_exp.ctx, tt);
+	stripped = NULL;
+	if (state->alias_exp.ctx && ft_strnstr((char *)state->alias_exp.ctx,
+			"<<", state->alias_exp.len)
+		&& split_heredocs((char *)state->alias_exp.ctx, &stripped, &bodies))
+	{
+		*prompt = tokenizer(stripped, tt);
+		xfree(stripped);
+		xfree(bodies);
+	}
+	else
+		*prompt = tokenizer((char *)state->alias_exp.ctx, tt);
 	if (*prompt)
 		*prompt = ft_strdup(*prompt);
 	else if (state->gathering_compound && state->input.ctx

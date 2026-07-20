@@ -12,6 +12,48 @@
 
 #include "execution_private.h"
 
+/* Snapshot the positional parameters into an owned char* vector. POSIX:
+   `for x do ...` iterates the expansion of "$@" computed ONCE at loop
+   entry — a `shift` or `set` inside the body (autoconf's config.status
+   does both) must not change the iteration list, and reading $N lazily
+   against a stale $# dereferenced NULL. */
+void	snapshot_positionals(t_shell *state, t_vec *out)
+{
+	const char	*raw;
+	char		*key;
+	char		*val;
+	int			n;
+	int			i;
+
+	vec_init(out);
+	out->elem_size = sizeof(char *);
+	n = ft_atoi(env_expand(state, "#"));
+	i = 0;
+	while (++i <= n)
+	{
+		key = ft_itoa(i);
+		raw = env_expand(state, key);
+		xfree(key);
+		if (raw)
+			val = ft_strdup(raw);
+		else
+			val = ft_strdup("");
+		vec_push(out, &val);
+	}
+}
+
+/* Free a snapshot built by snapshot_positionals. */
+void	free_positional_snapshot(t_vec *w)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < w->len)
+		xfree(((char **)w->ctx)[i++]);
+	xfree(w->ctx);
+	*w = (t_vec){0};
+}
+
 /* Assign the loop variable for one for-loop iteration.  If the variable
    already exists we update it in place (swap the value string, reuse the
    env entry) to avoid creating duplicate entries.  If it is new we create
