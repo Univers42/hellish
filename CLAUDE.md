@@ -35,6 +35,13 @@ cd tests && ./tester -v <file>    # verbose: show each case's diff
 cd tests && ./verify_alloc.sh     # build BOTH heaps, prove output parity + no leaks
 make bench          # speed vs bash --posix (always rebuilds OPT=1; ROUNDS=7 BENCH=micro)
 make agnostic-bench # cross-shell speed matrix vs 8 shells, in docker (ROUNDS=… TIMEOUT_S=…)
+make conformance    # third-party suites (Oils spec + mksh check.t) vs bash --posix AND dash
+                    #   → bench/conformance.md; FAILS if pass count drops vs bench/baseline/
+                    #   (UPDATE_BASELINE=1 to accept an improved count)
+make perf           # dimension-split hyperfine bench (startup/parse/loops/forks/configure)
+                    #   → bench/results.md; needs performance CPU governor, or BENCH_LAX=1
+make geoman         # external 42 "minishell tester" as an independent cross-check (GEOMAN_URL=…)
+make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash --posix
 make norm           # 42 norminette over src/ incs/ tests/
 make docker-test    # build + smoke-test from source on Alpine/Debian/Ubuntu/Arch
 make cd-zsh-test    # docker diff of the zsh-style `cd old new` extension vs real zsh
@@ -52,6 +59,7 @@ Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY)
 - Every fix ships with a test — non-negotiable (CONTRIBUTING.md). Cover the neighbouring cases too.
 - Leak checking: ASan/LSan is only meaningful on `SAFE=1`. On `SAFE=0` use the allocator's own oracle: `HELLISH_ALLOC_STATS=1 ./build/bin/hellish script.sh` (prints live bytes at exit).
 - Gotcha: the tester `chmod 000`s `tests/test_files/invalid_permission` at startup and leaves it that way. Run `chmod 755 tests/test_files/invalid_permission` before git operations or they fail on the unreadable file.
+- Conformance (`bench/`): first run fetches ~100MB of third-party suites into gitignored `bench/suites/` (idempotent). In `bench/conformance.md`, the consensus divergences — cases hellish fails while bash AND dash both pass — are the working repair queue. Update `bench/baseline/` only when the pass count improves. Fairness decisions live in `bench/METHODOLOGY.md`.
 
 ## Architecture
 
@@ -72,7 +80,7 @@ Conceptual pipeline: `input → lexer → parser (AST) → word reparser → her
 
 **Command substitution has two paths.** `capture_subshell_output.c` first tries the forkless fast path `cmdsub_fast()` (`src/expander/cmdsub_fast.c`), which runs the body in-process when it is provably side-effect-free: a single whitelisted builtin (`echo`/`printf`/`pwd`/`true`/`:`), no redirects or control operators, no `${v=…}`, no `$((…))`. NULL means "not eligible" and the caller falls back to the normal fork. A cmdsub bug can live in either path; the eligibility scan (`cmdsub_fast2.c`) deliberately errs toward forking.
 
-Other modules: `builtins` (47 builtins, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
+Other modules: `builtins` (46 builtins, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
 
 ### Allocator discipline
 

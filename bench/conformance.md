@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 991 | 0 | 0 | 0 | 631 | 0 | 1622 | 61.10% |
+| **hellish --posix** | 997 | 0 | 0 | 0 | 625 | 0 | 1622 | 61.47% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 177
+### Consensus divergences (hellish fails, bash AND dash pass): 168
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -43,8 +43,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `bool-parse` case 4 [FAIL]: Not allowed: [[ ) ]] and [[ ( ]]
 - `bugs` case 3 [FAIL]: assign readonly -- one line
 - `bugs` case 5 [FAIL]: assign readonly -- multiple lines -- set -o posix
-- `bugs` case 8 [FAIL]: First word like foo$x() and foo$[1+2] (regression)
-- `bugs` case 9 [FAIL]: Function names
 - `bugs` case 12 [FAIL]: 'echo' and printf fail on writing to full disk
 - `bugs` case 13 [FAIL]: other builtins fail on writing to full disk
 - `bugs` case 18 [FAIL]: autoconf arithmetic - relaxed eval_unsafe_arith (#1450)
@@ -53,7 +51,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `builtin-cd` case 8 [FAIL]: pwd with symlink and -P
 - `builtin-cd` case 14 [FAIL]: pwd in symlinked dir on shell initialization
 - `builtin-cd` case 26 [FAIL]: Survey of getcwd() syscall
-- `builtin-echo` case 4 [FAIL]: echo builtin should disallow typed args - variable
 - `builtin-eval-source` case 3 [FAIL]: eval string with 'break continue return error'
 - `builtin-eval-source` case 18 [FAIL]: source looks in PATH for files
 - `builtin-eval-source` case 19 [FAIL]: source finds files in PATH before current dir
@@ -87,14 +84,16 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `case_` case 3 [FAIL]: Case with empty condition
 - `command-parsing` case 0 [FAIL]: Prefix env on assignment
 - `command-sub` case 1 [FAIL]: case in subshell
-- `command-sub` case 7 [FAIL]: Making keyword out of command sub should NOT work
 - `command-sub` case 15 [FAIL]: Double Quotes in Command Sub in Double Quotes
 - `command-sub` case 16 [FAIL]: Escaped quote in [[ ]]
 - `command-sub` case 28 [FAIL]: Syntax errors with double quotes within backticks
 - `command_` case 0 [FAIL]: Command block
 - `command_` case 12 [FAIL]: hash without args prints the cache
 - `divergence` case 3 [FAIL]: builtin cat crashes a subshell (#2530)
+- `empty-bodies` case 0 [FAIL]: Empty do/done
+- `empty-bodies` case 2 [FAIL]: Empty then/fi
 - `errexit` case 11 [FAIL]: errexit and brace group { }
+- `errexit` case 24 [FAIL]: errexit double guard
 - `errexit-osh` case 7 [FAIL]: strict_errexit detects proc in && || !
 - `exit-status` case 2 [FAIL]: subshell OverflowError https://github.com/oilshell/oil/issues/996
 - `exit-status` case 3 [FAIL]: func subshell OverflowError https://github.com/oilshell/oil/issues/996
@@ -110,7 +109,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `glob` case 32 [FAIL]: \ in unquoted substitutions does not match a backslash
 - `glob` case 36 [FAIL]: \ in unquoted substitutions escapes globchars
 - `here-doc` case 5 [FAIL]: Here doc with bad var delimiter
-- `here-doc` case 15 [FAIL]: Here doc with line continuation, then pipe.  Syntax error.
 - `here-doc` case 25 [FAIL]: Function def and execution with here doc
 - `here-doc` case 31 [FAIL]: Nested here docs which are indented
 - `here-doc` case 35 [FAIL]: Here doc escapes
@@ -126,12 +124,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `paren-ambiguity` case 0 [FAIL]: (( closed with ) ) after multiple lines is command - #2337
 - `paren-ambiguity` case 4 [FAIL]: (((grep example - 4+ instances in regtest/aports - #2337
 - `parse-errors` case 3 [FAIL]: Bad braced var sub -- not allowed
-- `parse-errors` case 6 [FAIL]: Incomplete for
-- `parse-errors` case 9 [FAIL]: } is a parse error
-- `parse-errors` case 10 [FAIL]: { is its own word, needs a space
 - `parse-errors` case 15 [FAIL]: bad var name in local
-- `parse-errors` case 23 [FAIL]: array literal inside loop is a parse error
-- `parse-errors` case 24 [FAIL]: array literal in case
 - `pipeline` case 18 [FAIL]: Evaluation of argv[0] in pipeline occurs in child
 - `quote` case 19 [FAIL]: $? split over multiple lines
 - `redirect` case 3 [FAIL]: 2&>1 (is it a redirect or is it like a&>1)
@@ -141,13 +134,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `redirect` case 38 [FAIL]: Parsing of x=1> and related cases
 - `redirect-command` case 10 [FAIL]: Redirect in function body
 - `redirect-command` case 12 [FAIL]: Redirect in function body AND function call
-- `redirect-command` case 19 [FAIL]: Prefix redirect for loop -- not allowed
 - `sh-func` case 10 [FAIL]: Subshell function
 - `sh-options` case 24 [FAIL]: set without args lists variables
 - `sh-options` case 33 [FAIL]: stubbed out bash options
 - `sh-usage` case 4 [FAIL]: sh - and sh -- stop flag processing
 - `shell-bugs` case 0 [FAIL]: ./configure idiom
-- `subshell` case 1 [FAIL]: Subshell with redirects
 - `tilde` case 8 [FAIL]: x=foo:~ has tilde expansion
 - `tilde` case 13 [FAIL]: temp assignment x=~ env
 - `toysh-posix` case 4 [FAIL]: Evaluation order of redirect and ${undef?error}
@@ -201,7 +192,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 |---|---|---|---|---|
 | alias | 48 | 43 | 44 | 44 |
 | arg-parse | 3 | 1 | 3 | 1 |
-| arith | 74 | 46 | 69 | 37 |
+| arith | 74 | 45 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
 | assign | 48 | 22 | 40 | 32 |
 | background | 27 | 15 | 25 | 18 |
@@ -211,10 +202,10 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | blog1 | 9 | 3 | 8 | 7 |
 | blog2 | 8 | 7 | 8 | 6 |
 | bool-parse | 8 | 7 | 8 | 5 |
-| bugs | 29 | 13 | 22 | 20 |
+| bugs | 29 | 14 | 22 | 20 |
 | builtin-bracket | 52 | 48 | 50 | 46 |
 | builtin-cd | 30 | 21 | 24 | 24 |
-| builtin-echo | 27 | 20 | 27 | 5 |
+| builtin-echo | 27 | 21 | 27 | 5 |
 | builtin-eval-source | 23 | 11 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
 | builtin-kill | 20 | 7 | 17 | 7 |
@@ -228,41 +219,41 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-trap | 33 | 20 | 20 | 26 |
 | builtin-type | 6 | 4 | 3 | 3 |
 | builtin-umask | 24 | 18 | 13 | 16 |
-| builtin-vars | 41 | 18 | 35 | 28 |
+| builtin-vars | 41 | 16 | 35 | 28 |
 | case_ | 13 | 8 | 12 | 9 |
 | command-parsing | 5 | 4 | 5 | 5 |
-| command-sub | 30 | 23 | 28 | 27 |
+| command-sub | 30 | 24 | 28 | 27 |
 | command_ | 16 | 12 | 14 | 14 |
 | comments | 2 | 2 | 2 | 2 |
 | divergence | 4 | 3 | 4 | 4 |
-| empty-bodies | 3 | 3 | 3 | 3 |
-| errexit | 35 | 33 | 34 | 30 |
+| empty-bodies | 3 | 1 | 3 | 3 |
+| errexit | 35 | 32 | 34 | 30 |
 | errexit-osh | 35 | 11 | 12 | 13 |
 | exit-status | 11 | 9 | 11 | 11 |
 | explore-parsing | 5 | 5 | 4 | 5 |
 | fatal-errors | 5 | 0 | 5 | 5 |
 | func-parsing | 15 | 11 | 13 | 15 |
 | glob | 39 | 23 | 34 | 26 |
-| here-doc | 36 | 24 | 31 | 29 |
+| here-doc | 36 | 25 | 31 | 29 |
 | if_ | 5 | 5 | 5 | 5 |
 | interactive-parse | 1 | 0 | 0 | 0 |
 | known-differences | 2 | 2 | 2 | 2 |
 | loop | 29 | 17 | 22 | 24 |
 | nul-bytes | 16 | 2 | 16 | 6 |
 | paren-ambiguity | 9 | 5 | 9 | 7 |
-| parse-errors | 27 | 15 | 22 | 23 |
+| parse-errors | 27 | 21 | 22 | 23 |
 | pipeline | 26 | 19 | 26 | 17 |
 | posix | 15 | 15 | 15 | 15 |
 | quote | 35 | 28 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
-| redirect-command | 23 | 16 | 22 | 19 |
+| redirect-command | 23 | 17 | 22 | 19 |
 | sh-func | 12 | 11 | 11 | 12 |
 | sh-options | 39 | 15 | 38 | 14 |
 | sh-usage | 24 | 18 | 22 | 18 |
 | shell-bugs | 1 | 0 | 1 | 1 |
 | smoke | 18 | 18 | 18 | 18 |
 | strict-options | 17 | 3 | 6 | 4 |
-| subshell | 2 | 1 | 2 | 2 |
+| subshell | 2 | 2 | 2 | 2 |
 | temp-binding | 4 | 2 | 1 | 2 |
 | tilde | 14 | 7 | 11 | 9 |
 | toysh-posix | 23 | 15 | 19 | 20 |
