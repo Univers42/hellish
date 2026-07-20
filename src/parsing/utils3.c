@@ -21,7 +21,7 @@ void	push_parsed_word(t_deque_tok *tokens, t_ast_node *ret)
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_word(tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 }
 
 void	push_parsed_redirect(t_shell *state, t_parser *parser,
@@ -30,7 +30,7 @@ void	push_parsed_redirect(t_shell *state, t_parser *parser,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_redirect(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 }
 
 void	push_parsed_proc_sub(t_shell *state, t_parser *parser,
@@ -39,7 +39,7 @@ void	push_parsed_proc_sub(t_shell *state, t_parser *parser,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_proc_sub(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 }
 
 void	push_parsed_compound_list(t_shell *state, t_parser *parser,
@@ -48,7 +48,7 @@ void	push_parsed_compound_list(t_shell *state, t_parser *parser,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_compound_list(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 }
 
 /* One-liner helper used in boolean expressions after a push_parsed_* call

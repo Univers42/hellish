@@ -71,6 +71,7 @@ typedef struct s_ast_node
 typedef t_vec			t_vec_nd;
 
 /* Function prototypes */
+void		ast_push_child(t_ast_node *parent, t_ast_node *child);
 void		free_ast(t_ast_node *node);
 t_ast_node	clone_ast(t_ast_node *src);
 t_ast_node	deep_clone_ast(t_ast_node *src);

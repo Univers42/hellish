@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 /* Initialise an empty AST_WORD node ready to receive child tokens.
    Used when building fresh field nodes during IFS splitting. */
@@ -36,7 +37,9 @@ void	ft_reset(void *ptr, size_t size, void (*cust_act_bef_reset)(void *))
 	ft_memset(ptr, 0, size);
 }
 
-/* free children.ctx pointer of an ast node prior to zeroing the node */
+/* free children.ctx pointer of an ast node prior to zeroing the node.
+   Routed through parena_free: parse-arena buffers (cycle trees) are
+   reclaimed wholesale at cycle end, heap buffers are really freed. */
 void	free_children(void *p)
 {
 	t_ast_node	*n;
@@ -45,22 +48,24 @@ void	free_children(void *p)
 		return ;
 	n = (t_ast_node *)p;
 	if (n->children.ctx)
-		xfree(n->children.ctx);
+		parena_free(n->children.ctx);
 }
 
 /* Release a consumed subtoken's own allocations.
    split_envvar/emit_positional_at build fresh field nodes, so start
-   (clone-owned) and full_word would leak if not freed here. */
+   (clone-owned) and full_word would leak if not freed here. Routed via
+   parena_free because full_word copies live in the parse arena for cycle
+   trees and on the heap for clones. */
 void	free_token_res(t_token *t)
 {
 	if (t->allocated)
-		xfree((char *)t->start);
+		parena_free((char *)t->start);
 	t->allocated = false;
 	if (t->full_word)
 	{
 		if (t->full_word->allocated)
-			xfree(t->full_word->start);
-		xfree(t->full_word);
+			parena_free(t->full_word->start);
+		parena_free(t->full_word);
 		t->full_word = NULL;
 	}
 }

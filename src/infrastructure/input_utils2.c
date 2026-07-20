@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "parena.h"
 
 /* Initialise the parser, token deque, and prompt string for one command cycle.
    For an interactive session (INP_RL) we build the coloured prompt via
@@ -63,6 +64,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 		xfree(prompt);
 	if (tt->deqtok.buff)
 		xfree(tt->deqtok.buff);
+	parena_reset();
 	state->should_exit |= (get_g_sig()->should_unwind
 			&& state->metinp != INP_RL)
 		|| state->rl.has_finished;
@@ -82,5 +84,14 @@ void	parse_and_execute_input(t_shell *state)
 
 	prepare_parser_and_prompt(state, &parser, &tt, &prompt);
 	get_more_input_parser(state, &parser, &prompt, &tt);
+	if (getenv("HELLISH_DBG_SPANS"))
+	{
+		fprintf(stderr, "[C %d-%d res=%d len=%zu]\n", state->rl.cycle_line0,
+			state->rl.line, parser.res, state->input.len);
+		if (state->input.len > 20000)
+			fprintf(stderr, "HEAD<<<%.200s>>>\nTAIL<<<%.300s>>>\n",
+				(char *)state->input.ctx,
+				(char *)state->input.ctx + state->input.len - 300);
+	}
 	finalize_parser_and_cleanup(state, &parser, &tt, prompt);
 }

@@ -21,7 +21,7 @@ static bool	handle_func_def(t_shell *state, t_parser *parser,
 	t_ast_node	func_node;
 
 	func_node = parse_function_def(state, parser, tokens);
-	vec_push(&ret->children, &func_node);
+	ast_push_child(ret, &func_node);
 	if (parser->res != RES_OK)
 		return (false);
 	return (true);

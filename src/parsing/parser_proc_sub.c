@@ -75,7 +75,7 @@ static t_ast_node	create_word_node(char *cmd_copy, int len)
 			create_tok4(cmd_copy, len, TT_WORD, true));
 	vec_init(&tok_node.children);
 	tok_node.children.elem_size = sizeof(t_ast_node);
-	vec_push(&word_node.children, &tok_node);
+	ast_push_child(&word_node, &tok_node);
 	return (word_node);
 }
 
@@ -97,7 +97,7 @@ static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 	if (!cmd_copy)
 		return (parser->res = RES_ERR, 1);
 	word_node = create_word_node(cmd_copy, (int)len);
-	vec_push(&ret->children, &word_node);
+	ast_push_child(ret, &word_node);
 	return (0);
 }
 

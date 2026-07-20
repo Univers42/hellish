@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 /* Non-whitespace IFS splitting (e.g. IFS=, or IFS=:).  Unlike whitespace
    IFS, empty fields are preserved: "a,,b" splits into "a", "", "b".
@@ -22,7 +23,7 @@ static void	split_envvar_nonws(t_token *curr_t, char **things,
 	int	i;
 
 	if (curr_t->allocated)
-		xfree((char *)curr_t->start);
+		parena_free((char *)curr_t->start);
 	curr_t->allocated = false;
 	if (!things[0])
 		return ((void)xfree(things));
@@ -87,7 +88,7 @@ void	split_envvar(t_shell *state, t_token *curr_t,
 				ifs));
 	things = ifs_split_posix(curr_t->start, ifs);
 	if (curr_t->allocated)
-		xfree((char *)curr_t->start);
+		parena_free((char *)curr_t->start);
 	curr_t->allocated = false;
 	if (lead && curr_node->children.len)
 		push_and_reinit_curr_node(ret, curr_node);

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
 {
@@ -25,7 +26,7 @@ static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
 				memcpy(newstr, ctx->outbuf->ctx, ctx->outbuf->len);
 			newstr[ctx->outbuf->len] = '\0';
 			if (ctx->tok->allocated && ctx->tok->start)
-				xfree((char *)ctx->tok->start);
+				parena_free((char *)ctx->tok->start);
 			ctx->tok->start = newstr;
 			ctx->tok->len = ctx->outbuf->len;
 			ctx->tok->allocated = true;

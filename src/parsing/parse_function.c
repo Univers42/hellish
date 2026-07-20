@@ -91,6 +91,6 @@ t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 	ret = create_node_tok(AST_FUNCTION_DEF, name_tok);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	vec_push(&ret.children, &body);
+	ast_push_child(&ret, &body);
 	return (ret);
 }

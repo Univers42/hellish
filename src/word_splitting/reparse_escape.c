@@ -11,12 +11,15 @@
 /* ************************************************************************** */
 
 #include "reparser_private.h"
+#include "parena.h"
 
 /* Stamp every child node with a pointer to the full-word token covering the
-   whole original raw text. Each child gets its own heap copy (xmalloc of the
-   struct value) so free_ast can safely free them independently -- if we just
-   stored the same pointer in all children we'd get a double-free at cleanup.
-   The allocated=true flag on full_word tells the destructor to xfree it. */
+   whole original raw text. Each child gets its own copy of the struct so
+   free_ast can safely free them independently -- if we just stored the same
+   pointer in all children we'd get a double-free at cleanup. The copies come
+   from the parse arena during a normal cycle parse (free_node's parena_free
+   routing no-ops them); with the arena gate closed (eval/source) the
+   allocation falls through to the heap exactly as before. */
 static void	set_full_word_for_children(void *ctx, size_t len,
 				t_token_old full_word)
 {
@@ -26,11 +29,36 @@ static void	set_full_word_for_children(void *ctx, size_t len,
 	i = 0;
 	while (i < len)
 	{
-		p = xmalloc(sizeof(t_token_old));
+		p = parena_alloc(sizeof(t_token_old));
 		if (p)
 			*p = full_word;
 		((t_ast_node *)ctx)[i++].token.full_word = p;
 	}
+}
+
+/* True for a raw TT_WORD containing none of the characters that give the
+   reparser anything to do: no quoting, no expansion, no assignment, no
+   glob, no tilde/brace. Such a word's reparse output would be a single
+   TT_WORD subtoken over the same slice with split_eligible false (only
+   command-substitution output is IFS-split) — identical to the raw child
+   the parser already built, so the fast path keeps it untouched.
+   full_word stays NULL (every consumer NULL-checks it; a plain word
+   never needs the original-text stamp). Roughly two thirds of
+   real-script words take this path. */
+static bool	word_is_plain(const t_token *tok)
+{
+	int	i;
+
+	if (tok->tt != TT_WORD)
+		return (false);
+	i = 0;
+	while (i < tok->len)
+	{
+		if (ft_strchr("'\"\\$`={}~*?[]!", tok->start[i]) != NULL)
+			return (false);
+		i++;
+	}
+	return (true);
 }
 
 /* Recursively walk every child and call reparse_words on it. We skip
@@ -71,6 +99,8 @@ void	reparse_words(t_ast_node *node)
 	{
 		ft_assert(node->children.len == 1);
 		tok = ((t_ast_node *)node->children.ctx)[0].token;
+		if (word_is_plain(&tok))
+			return ;
 		full_word = create_token_old(tok.start, tok.len, true);
 		temp = *node;
 		*node = reparse_word(tok);

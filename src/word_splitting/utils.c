@@ -27,7 +27,7 @@ void	push_subtoken_node(t_ast_node *ret,
 
 	tmp = create_subtoken_node(t, offset.start, offset.end, tt);
 	tmp.children.elem_size = sizeof(t_ast_node);
-	vec_push(&ret->children, &tmp);
+	ast_push_child(ret, &tmp);
 }
 
 /* Return true iff the first `len` bytes of s form a valid POSIX identifier:

@@ -67,7 +67,7 @@ t_ast_node	parse_case_item(t_shell *state, t_parser *parser,
 	if (pk(tokens)->tt == TT_DSEMI || pk(tokens)->tt == TT_ESAC)
 	{
 		init_ast_node_children(&body, AST_COMPOUND_LIST);
-		vec_push(&item.children, &body);
+		ast_push_child(&item, &body);
 		if (pk(tokens)->tt == TT_DSEMI)
 			(void)deque_pop_start(&tokens->deqtok);
 		return (item);
