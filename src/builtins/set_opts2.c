@@ -106,7 +106,7 @@ char	*build_flagstr(t_shell *state)
 		state->flagbuf[k++] = 'e';
 	if (state->opt_noglob)
 		state->flagbuf[k++] = 'f';
-	if (state->metinp == INP_RL)
+	if (state->metinp == INP_RL || state->opt_interactive)
 		state->flagbuf[k++] = 'i';
 	if (state->opt_noexec)
 		state->flagbuf[k++] = 'n';
