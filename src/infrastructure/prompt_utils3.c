@@ -39,15 +39,16 @@ static void	push_fill(t_string *ret, int count)
 	vec_push_str(ret, " ");
 }
 
-/* Close the top row with the clock and then emit the second row (the arrow).
-   The fill width is computed as: terminal columns − visible content already
-   accumulated − clock width − 2 border chars. A minimum of 3 is enforced so
-   the box never collapses to zero on very narrow terminals. The arrow colour
-   is green (C_OK) on exit 0, red (C_ERR) otherwise. */
+/* Close the top row with the clock: jobs/duration extras, the ─ fill,
+   the time, and the top-right corner. The fill width is computed as:
+   terminal columns − visible content already accumulated − clock width −
+   2 border chars. A minimum of 3 is enforced so the box never collapses
+   to zero on very narrow terminals. */
 void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 {
 	int	right_w;
 
+	render_extras(ret, p);
 	get_timebuf(p->time_buf, sizeof(p->time_buf));
 	right_w = (int)ft_strlen(p->time_buf) + 3;
 	p->pad = p->cols - p->vis_w - right_w - 2;
@@ -62,13 +63,30 @@ void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 	vec_push_str(ret, G_H G_TR);
 	vec_push_ansi(ret, C_RST);
 	vec_push_str(ret, "\n");
+	prompt_arrow_row(ret, p);
+}
+
+/* The second row: "╰─❯ " with a green arrow after success, or
+   "╰─ ✘N ❯ " with the failing exit status spelled out in red — the
+   number matters more than the colour when you scroll back through a
+   long session hunting for the command that broke. */
+void	prompt_arrow_row(t_string *ret, t_prompt *p)
+{
+	char	buf[16];
+
 	vec_push_ansi(ret, C_BOX);
 	vec_push_str(ret, G_BL G_H);
 	vec_push_ansi(ret, C_RST);
-	if (p->exit_status == 0)
-		vec_push_ansi(ret, C_OK);
-	else
+	if (p->exit_status != 0)
+	{
+		snprintf(buf, sizeof(buf), " \xe2\x9c\x98%d", p->exit_status);
 		vec_push_ansi(ret, C_ERR);
+		vec_push_str(ret, buf);
+		vec_push_str(ret, " " G_ARR " ");
+		vec_push_ansi(ret, C_RST);
+		return ;
+	}
+	vec_push_ansi(ret, C_OK);
 	vec_push_str(ret, G_ARR " ");
 	vec_push_ansi(ret, C_RST);
 }

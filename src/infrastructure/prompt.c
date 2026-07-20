@@ -104,6 +104,8 @@ t_string	prompt_normal(t_shell *state)
 	status = state->last_cmd_st_exe.status;
 	(*anim_frame())++;
 	*anim_status() = status;
+	*anim_dur_ms() = state->last_cmd_ms;
+	*anim_jobs() = state->job_table.count;
 	render_prompt(&ret, *anim_frame(), status);
 	return (ret);
 }

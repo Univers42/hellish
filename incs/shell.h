@@ -163,6 +163,7 @@ typedef struct s_shell
 	char				*last_bg_pid; /* $! last background PID string */
 	char				*last_cmd_st; /* $? string -> statbuf, never freed */
 	t_execution_state	last_cmd_st_exe; /* structured copy of last status */
+	long long			last_cmd_ms; /* wall-clock ms of last command */
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
 	bool				should_exit; /* set by `exit` builtin */
