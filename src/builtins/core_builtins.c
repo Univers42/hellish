@@ -145,23 +145,3 @@ int	builtin_echo(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* env: list every variable currently marked exported, one KEY=value per line.
-   We intentionally ignore argv (no -i/-u/-0 options yet). Note that env(1)
-   as a standalone utility can run a command with a modified environment, but
-   here we only implement the listing half — enough for scripts that do
-   `env | grep …`. */
-int	builtin_env(t_shell *state, t_vec argv)
-{
-	size_t	i;
-	t_env	*e;
-
-	i = -1;
-	(void)argv;
-	while (++i < state->env.len)
-	{
-		e = &((t_env *)state->env.ctx)[i];
-		if (e->exported)
-			ft_printf("%s=%s\n", e->key, e->value);
-	}
-	return (0);
-}
