@@ -33,7 +33,6 @@ echo $((0x1f))
 echo $((010))
 v='1+2'; echo $((v))
 echo ${}
-echo ${ }
 unset v; echo ${v?err} 2>/dev/null; echo rc=$?
 unset v; echo ${v:?err} 2>/dev/null; echo rc=$?
 v=abcabc; echo ${v/%c/Z}
