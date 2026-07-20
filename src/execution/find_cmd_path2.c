@@ -34,12 +34,17 @@ int	handle_perm_denied(t_shell *state, char *cmd_name)
    (validate-on-use: no env_set hook to forget, staleness impossible by
    construction).  On change: flush cmd_cache, rebuild the split.  The
    first-ever sync skips the flush — nothing was hashed under another
-   PATH yet. */
+   PATH yet.  When PATH is UNSET (not merely empty) we fall back to the
+   system default from confstr(_CS_PATH) — the same "/bin:/usr/bin" bash
+   uses — so `unset PATH; ls` can still find commands. */
 void	path_cache_sync(t_shell *state)
 {
 	char	*cur;
+	char	def[512];
 
 	cur = env_expand(state, "PATH");
+	if (!cur && confstr(_CS_PATH, def, sizeof(def)) > 0)
+		cur = def;
 	if (cur && state->path_dirs_src
 		&& ft_strcmp(cur, state->path_dirs_src) == 0)
 		return ;
