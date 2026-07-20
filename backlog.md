@@ -76,6 +76,15 @@ pass counts in `bench/baseline/`). Performance claims come from
       badge with the number, `took N.Ns` after >2s commands, `⚙N` jobs
       badge, root-red username. Build+pty-test when perf frees the tree.
 
+## Done (continued 4)
+
+- [x] Prompt v2 committed (`af2aade`) + first timed-configure scoreboard
+      (hellish 19.8s vs bash 7.7s / dash 6.8s — completes, 2.6× gap to
+      close, fork-path dominated).
+- [x] Audit quick wins committed (`daf5a99`): $RANDOM (pid^time-seeded
+      PRNG), $SECONDS/$EPOCHSECONDS/$UID/$HOSTNAME/$OSTYPE, times
+      format fix, `. file args` positional binding. Gate pending.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has

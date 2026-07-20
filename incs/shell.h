@@ -200,7 +200,8 @@ typedef struct s_shell
 	bool				opt_interactive; /* -i: force $- to carry 'i' */
 	/* small scratch buffers -- avoids allocs for $-, $LINENO and $? */
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
-	char				linebuf[16]; /* scratch for lineno_str ($LINENO) */
+	char				linebuf[24]; /* scratch for $LINENO/$RANDOM/... */
+	long long			start_sec; /* epoch at startup, for $SECONDS */
 	char				statbuf[16]; /* scratch for set_cmd_status ($?) */
 	/* split-$PATH cache, validated on use against the exact PATH string */
 	char				**path_dirs; /* cached ft_split of $PATH on ':' */

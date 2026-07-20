@@ -72,6 +72,26 @@ static void	set_optind(t_shell *state)
 				ft_strdup("1"), false));
 }
 
+/* Identity variables bash sets as (non-exported) shell vars at startup:
+   $UID, $HOSTNAME, $OSTYPE. Only patched in when the parent left a gap,
+   like every other setter here. OSTYPE matches bash's configure triplet
+   suffix on this platform. */
+static void	set_id_vars(t_shell *state)
+{
+	char	host[256];
+
+	if (!env_get(&state->env, "UID"))
+		env_set(&state->env, env_create(ft_strdup("UID"),
+				ft_itoa((int)getuid()), false));
+	if (!env_get(&state->env, "HOSTNAME")
+		&& gethostname(host, sizeof(host)) == 0)
+		env_set(&state->env, env_create(ft_strdup("HOSTNAME"),
+				ft_strdup(host), false));
+	if (!env_get(&state->env, "OSTYPE"))
+		env_set(&state->env, env_create(ft_strdup("OSTYPE"),
+				ft_strdup("linux-gnu"), false));
+}
+
 /* Top-level init: call all the individual setters in order, then add
    PPID (read-only by convention but not enforced) and PWD if absent.
    Call this AFTER env_to_vec_env so the env vector already exists. */
@@ -85,6 +105,7 @@ void	ensure_essential_env_vars(t_shell *state)
 	set_shlvl(state);
 	set_underscore(state);
 	set_optind(state);
+	set_id_vars(state);
 	env_set(&state->env, env_create(ft_strdup("PPID"),
 			ft_itoa((int)getppid()), false));
 	e = env_get(&state->env, PWD);

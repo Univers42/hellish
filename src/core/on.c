@@ -15,6 +15,7 @@
 #include "helpers.h"
 #include "env.h"
 #include <string.h>
+#include <time.h>
 #include "lexer.h"
 #include <fcntl.h>
 #include <errno.h>
@@ -83,9 +84,10 @@ static char	*shell_basename(char *arg0)
 /* Bootstrap the whole shell. Order matters: signals first (Ctrl-C must be
    safe the moment we start reading), then env (commands may read it during
    init), then tables (used by init_history / mode_input), then the input
-   source. The PRNG seed (Knuth constant) is fixed so $RANDOM is repeatable
-   across machines for test scripts. bg_job_count starts at 0 -- it is the
-   counter for the unique job IDs we hand out. */
+   source. The PRNG is seeded from pid^time like bash seeds $RANDOM: two
+   shells started in the same second must not share a sequence (that also
+   de-collides the PRNG-named heredoc tmp files). bg_job_count starts at
+   0 -- it is the counter for the unique job IDs we hand out. */
 void	on(t_shell *state, char **argv, char **envp)
 {
 	t_cli	cli;
@@ -112,6 +114,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	init_tables(state);
 	state->edit_mode = 1;
 	cli_dispatch(state, &cli);
-	prng_initialize_state(&state->prng, 19650218UL);
+	prng_initialize_state(&state->prng,
+		(uint32_t)(getpid() * 2654435761u ^ time(NULL)));
+	state->start_sec = (long long)time(NULL);
 	state->bg_job_count = 0;
 }
