@@ -68,7 +68,9 @@ static int	csf_stdout_to_tmp(int *save1)
 	if (fd < 0)
 		return (-1);
 	unlink(tmpl);
-	*save1 = dup(STDOUT_FILENO);
+	*save1 = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 10);
+	if (*save1 < 0)
+		*save1 = dup(STDOUT_FILENO);
 	if (*save1 < 0)
 		return (close(fd), -1);
 	dup2(fd, STDOUT_FILENO);
