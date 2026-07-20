@@ -60,7 +60,7 @@ static void	apply_assignment_split(t_ast_node *word,
 		create_interval(0, eq_pos), TT_WORD);
 	first_token->len = first_token->len - (eq_pos)-1;
 	first_token->start = first_token->start + eq_pos + 1;
-	vec_push(&new_root.children, word);
+	ast_push_child(&new_root, word);
 	*word = new_root;
 }
 

@@ -93,7 +93,7 @@ void	add_op_token_child(t_ast_node *ret, t_token op_tok)
 	op_node = create_node_tok(AST_TOKEN, op_tok);
 	vec_init(&op_node.children);
 	op_node.children.elem_size = sizeof(t_ast_node);
-	vec_push(&ret->children, &op_node);
+	ast_push_child(ret, &op_node);
 }
 
 /* If the current token is TT_END while still inside a `<(...)` / `>(...)`,

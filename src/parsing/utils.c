@@ -71,6 +71,6 @@ t_ast_node	parse_word(t_deque_tok *tokens)
 	token_node = create_node_tok(AST_TOKEN, tmp);
 	vec_init(&token_node.children);
 	token_node.children.elem_size = sizeof(t_ast_node);
-	vec_push(&ret.children, &token_node);
+	ast_push_child(&ret, &token_node);
 	return (ret);
 }

@@ -12,6 +12,7 @@
 
 #include "ast_private.h"
 #include "arith.h"
+#include "parena.h"
 
 /* Post-order (children before parent) traversal: apply `f` to every node.
    Post-order is exactly what free_node needs -- free children first, then the
@@ -32,20 +33,23 @@ void	ast_postorder_traversal(t_ast_node *node, void (*f)(t_ast_node *node))
 /* Free all heap allocations belonging to a single node. The arith cache is
    freed via its own function (it may be shared). The start buffer is freed only
    when token.allocated is true (borrowed tokens share the lexer's buffer).
-   full_word is an optional extra copy used by some expansion paths. */
+   full_word is an optional extra copy used by some expansion paths.
+   Frees route through parena_free: parse-arena blocks (cycle trees) no-op
+   and are reclaimed wholesale by parena_reset; heap blocks (clones, eval
+   ASTs, exec-time nodes) are really freed. */
 void	free_node(t_ast_node *node)
 {
 	arith_cache_free(node->token.arith_cache);
 	if (node->token.allocated)
-		xfree(node->token.start);
+		parena_free(node->token.start);
 	if (node->token.full_word)
 	{
 		if (node->token.full_word->allocated)
-			xfree(node->token.full_word->start);
-		xfree(node->token.full_word);
+			parena_free(node->token.full_word->start);
+		parena_free(node->token.full_word);
 	}
-	xfree(node->heredoc_body);
-	xfree(node->children.ctx);
+	parena_free(node->heredoc_body);
+	parena_free(node->children.ctx);
 	*node = (t_ast_node){};
 }
 

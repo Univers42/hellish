@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "parena.h"
 
 /* Old try_parse_tokens before heredoc extraction was added (kept for ref):
 bool	try_parse_tokens(t_shell *state, t_parser *parser,
@@ -80,6 +81,10 @@ static void	abort_on_syntax_error(t_shell *state)
 {
 	if (try_replay_exact(state))
 		return ;
+	if (getenv("HELLISH_DBG_CYCLE"))
+		fprintf(stderr, "[CYCLE line0=%d line=%d]\n<<<%.*s>>>\n",
+			state->rl.cycle_line0, state->rl.line,
+			(int)state->input.len, (char *)state->input.ctx);
 	set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
 	if (state->metinp != INP_RL)
 		state->should_exit = true;
@@ -93,7 +98,9 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	parser->parse_stack.len = 0;
 	extract_input_heredocs(state, tt);
 	reclassify_keywords(tt);
+	parena_on(true);
 	state->tree = parse_tokens(state, parser, tt);
+	parena_on(false);
 	if (parser->res == RES_OK)
 		return (true);
 	else if (parser->res == RES_GETMOREINPUT)

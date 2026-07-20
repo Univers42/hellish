@@ -44,7 +44,7 @@ void	push_token_child(t_ast_node *parent, t_token tok)
 	tmp_node = create_node_tok(AST_TOKEN, tok);
 	vec_init(&tmp_node.children);
 	tmp_node.children.elem_size = sizeof(t_ast_node);
-	vec_push(&parent->children, &tmp_node);
+	ast_push_child(parent, &tmp_node);
 }
 
 /* Parse one command and push it as a child of ret. Used by parse_pipeline to
@@ -58,7 +58,7 @@ void	push_cmd_parsed(t_shell *state,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_command(state, parser, tokens);
-	vec_push(&ret->children, &tmp_node);
+	ast_push_child(ret, &tmp_node);
 }
 
 /* Parse one pipeline and push it as a child of parent. Used by both
@@ -72,5 +72,5 @@ void	push_parsed_pipeline_child(t_shell *state,
 	t_ast_node	tmp_node;
 
 	tmp_node = parse_pipeline(state, parser, tokens);
-	vec_push(&parent->children, &tmp_node);
+	ast_push_child(parent, &tmp_node);
 }
