@@ -132,6 +132,7 @@ int	eval_bracketed(t_shell *st, char **av, int ac, int dbr)
 	ac -= 2;
 	if (!dbr)
 		return (eval_test(av, ac));
+	*db_state_cell() = st;
 	i = 0;
 	r = db_or(av, ac, &i);
 	if (r != 2 && i != ac)
