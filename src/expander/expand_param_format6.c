@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 #include "sh_input.h"
 
 void	exit_clean(t_shell *state, int code);
@@ -105,5 +106,6 @@ bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 	tt->start = fmt;
 	tt->len = (int)ft_strlen(fmt);
 	tt->allocated = true;
+	parena_note_attach();
 	return (true);
 }

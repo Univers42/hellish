@@ -52,7 +52,10 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 	if (parser->res == RES_OK)
 	{
 		execute_top_level(state);
-		free_ast(&state->tree);
+		if (parena()->attached)
+			free_ast(&state->tree);
+		else
+			state->tree = (t_ast_node){0};
 	}
 	if (get_g_sig()->should_unwind)
 		set_cmd_status(state, create_exec_state(CANCELED, true));

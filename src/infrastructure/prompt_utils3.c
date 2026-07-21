@@ -44,7 +44,7 @@ static void	grad_seq(char *buf, size_t n, int k, int count)
    Leading and trailing plain spaces on both variants. */
 static void	push_fill(t_string *ret, int count)
 {
-	char	seq[24];
+	char	seq[48];
 	int		k;
 
 	vec_push_str(ret, " ");

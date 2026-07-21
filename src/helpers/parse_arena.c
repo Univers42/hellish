@@ -83,14 +83,14 @@ void	*parena_alloc(size_t n)
 {
 	void	*p;
 
-	n = (n + 15) & ~(size_t)15;
+	n = PARENA_ROUND(n);
 	if (!g_parena.on)
 		return (xmalloc(n));
 	if (g_parena.n_chunks == 0
 		|| g_parena.off + n > g_parena.size[g_parena.cur])
 	{
 		if (!parena_grow(n))
-			return (xmalloc(n));
+			return (g_parena.attached = true, xmalloc(n));
 	}
 	p = (char *)g_parena.chunk[g_parena.cur] + g_parena.off;
 	g_parena.off += n;

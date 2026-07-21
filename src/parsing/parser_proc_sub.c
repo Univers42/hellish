@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "parser_private.h"
+#include "parena.h"
 
 void	proc_sub_update_depth(t_token curr, int *depth);
 int		handle_end_token(t_parser *parser, t_deque_tok *tokens);
@@ -60,9 +61,10 @@ static int	collect_proc_sub_command(t_parser *parser, t_deque_tok *tokens,
 }
 
 /* Wrap the process-substitution command text in an AST_WORD > AST_TOKEN
-   subtree. The cmd_copy was allocated by ft_strndup; the TT_WORD token's
-   `owned` flag (the `true` in create_tok4) tells the AST destructor to free
-   it, so ownership transfers here and the caller must not free cmd_copy. */
+   subtree. cmd_copy comes from parena_alloc; the TT_WORD token's `owned`
+   flag (the `true` in create_tok4) routes it through parena_free in the
+   destructor — a no-op for arena copies, a real free for the gate-off
+   (eval/source) case where parena_alloc fell through to the heap. */
 static t_ast_node	create_word_node(char *cmd_copy, int len)
 {
 	t_ast_node	word_node;
@@ -80,9 +82,12 @@ static t_ast_node	create_word_node(char *cmd_copy, int len)
 }
 
 /* Validate that we captured a non-empty span, duplicate the text into a
-   heap buffer (the original input may be freed before the executor runs),
-   then build and push the AST_WORD node. Returns 1 on any failure with
-   RES_ERR already set so the caller can return early. */
+   cycle-lifetime buffer (the original input may be freed before the
+   executor runs), then build and push the AST_WORD node. The copy comes
+   from parena_alloc, not the heap: this runs at parse time under the
+   arena gate, and a raw heap pointer here would be the one impurity
+   forcing the whole cycle tree back onto the O(nodes) teardown walk.
+   Returns 1 on any failure with RES_ERR already set. */
 static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 						const char *cmd_end, t_ast_node *ret)
 {
@@ -93,9 +98,11 @@ static int	push_cmd_word_node(t_parser *parser, const char *cmd_start,
 	if (!cmd_start || !cmd_end || cmd_end <= cmd_start)
 		return (parser->res = RES_ERR, 1);
 	len = cmd_end - cmd_start;
-	cmd_copy = ft_strndup(cmd_start, len);
+	cmd_copy = parena_alloc(len + 1);
 	if (!cmd_copy)
 		return (parser->res = RES_ERR, 1);
+	ft_memcpy(cmd_copy, cmd_start, len);
+	cmd_copy[len] = '\0';
 	word_node = create_word_node(cmd_copy, (int)len);
 	ast_push_child(ret, &word_node);
 	return (0);
