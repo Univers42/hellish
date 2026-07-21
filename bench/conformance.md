@@ -9,7 +9,7 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1047 | 0 | 0 | 0 | 575 | 0 | 1622 | 64.55% |
+| **hellish --posix** | 1057 | 0 | 0 | 0 | 565 | 0 | 1622 | 65.17% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
@@ -181,7 +181,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | arith | 74 | 47 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
 | assign | 48 | 24 | 40 | 32 |
-| background | 27 | 19 | 25 | 18 |
+| background | 27 | 21 | 25 | 18 |
 | ble-features | 9 | 1 | 9 | 1 |
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
@@ -205,7 +205,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-trap | 33 | 20 | 20 | 26 |
 | builtin-type | 6 | 4 | 3 | 3 |
 | builtin-umask | 24 | 18 | 13 | 16 |
-| builtin-vars | 41 | 19 | 35 | 28 |
+| builtin-vars | 41 | 21 | 35 | 28 |
 | case_ | 13 | 8 | 12 | 9 |
 | command-parsing | 5 | 4 | 5 | 5 |
 | command-sub | 30 | 25 | 28 | 27 |
@@ -220,7 +220,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | fatal-errors | 5 | 0 | 5 | 5 |
 | func-parsing | 15 | 11 | 13 | 15 |
 | glob | 39 | 25 | 34 | 26 |
-| here-doc | 36 | 25 | 31 | 29 |
+| here-doc | 36 | 27 | 31 | 29 |
 | if_ | 5 | 5 | 5 | 5 |
 | interactive-parse | 1 | 0 | 0 | 0 |
 | known-differences | 2 | 2 | 2 | 2 |
@@ -228,7 +228,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | nul-bytes | 16 | 8 | 16 | 6 |
 | paren-ambiguity | 9 | 5 | 9 | 7 |
 | parse-errors | 27 | 21 | 22 | 23 |
-| pipeline | 26 | 20 | 26 | 17 |
+| pipeline | 26 | 23 | 26 | 17 |
 | posix | 15 | 15 | 15 | 15 |
 | quote | 35 | 31 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
@@ -250,7 +250,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | var-sub | 6 | 5 | 5 | 6 |
 | var-sub-quote | 41 | 26 | 40 | 35 |
 | vars-bash | 1 | 0 | 1 | 0 |
-| vars-special | 42 | 26 | 40 | 12 |
+| vars-special | 42 | 27 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
 | word-eval | 8 | 7 | 8 | 6 |
 | word-split | 55 | 44 | 50 | 47 |
@@ -260,7 +260,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 193 | 390 | 583 | 33.10% |
+| **hellish --posix** | 195 | 388 | 583 | 33.45% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 

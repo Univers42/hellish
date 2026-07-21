@@ -93,6 +93,7 @@ static t_execution_state	dispatch_compound(t_shell *state,
 		{
 			default_signal_handlers();
 			set_up_redirection(state, exe);
+			exe->modify_parent_ctx = true;
 			exit(run_compound(state, exe).status);
 		}
 		return (res_pid(pid));
