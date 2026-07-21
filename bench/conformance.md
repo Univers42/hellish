@@ -9,7 +9,7 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1058 | 0 | 0 | 0 | 564 | 0 | 1622 | 65.23% |
+| **hellish --posix** | 1065 | 0 | 0 | 0 | 557 | 0 | 1622 | 65.66% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
@@ -192,17 +192,17 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | blog1 | 9 | 3 | 8 | 7 |
 | blog2 | 8 | 7 | 8 | 6 |
 | bool-parse | 8 | 7 | 8 | 5 |
-| bugs | 29 | 16 | 22 | 20 |
+| bugs | 29 | 17 | 22 | 20 |
 | builtin-bracket | 52 | 48 | 50 | 46 |
 | builtin-cd | 30 | 21 | 24 | 24 |
 | builtin-echo | 27 | 21 | 27 | 5 |
 | builtin-eval-source | 23 | 12 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
-| builtin-kill | 20 | 9 | 17 | 7 |
+| builtin-kill | 20 | 10 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
 | builtin-meta-assign | 11 | 2 | 6 | 1 |
 | builtin-misc | 7 | 3 | 4 | 4 |
-| builtin-printf | 63 | 40 | 51 | 41 |
+| builtin-printf | 63 | 42 | 51 | 41 |
 | builtin-process | 26 | 8 | 17 | 14 |
 | builtin-set | 24 | 21 | 23 | 21 |
 | builtin-special | 12 | 3 | 5 | 10 |
@@ -249,10 +249,10 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | toysh-posix | 23 | 15 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
-| var-op-strip | 29 | 17 | 26 | 20 |
-| var-op-test | 37 | 23 | 35 | 20 |
+| var-op-strip | 29 | 20 | 26 | 20 |
+| var-op-test | 37 | 22 | 35 | 20 |
 | var-sub | 6 | 5 | 5 | 6 |
-| var-sub-quote | 41 | 27 | 40 | 35 |
+| var-sub-quote | 41 | 28 | 40 | 35 |
 | vars-bash | 1 | 0 | 1 | 0 |
 | vars-special | 42 | 27 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
