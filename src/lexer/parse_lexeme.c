@@ -86,6 +86,13 @@ static int	handle_next_chunk(t_deque_tok *tokens,
 	int		ret;
 	char	*res;
 
+	if ((*str)[0] == '$' && (*str)[1] == '\'')
+	{
+		if (advance_ansic(str))
+			return (tokens->looking_for = '\'',
+				*out_prompt = "quote> ", -1);
+		return (1);
+	}
 	ret = handle_special(tokens, str, out_prompt);
 	if (ret != 0)
 		return (ret);

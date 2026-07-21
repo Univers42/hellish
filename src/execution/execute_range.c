@@ -51,6 +51,36 @@ static void	execute_then(t_executable_node *exe,
 	ft_assert(status->status != -1);
 }
 
+/* Is the very next child an && or || operator token?  If so, the command
+   about to run is a non-final AND-OR operand: POSIX says set -e is
+   ignored for it — INCLUDING everything it runs deeper down (a function
+   body's own ranges see errexit_off and stay alive; `f() { false; };
+   f || true` must reach the `true`). */
+static bool	next_is_andor(t_ast_node *node, size_t i, size_t end)
+{
+	t_ast_node	*c;
+
+	if (i >= end)
+		return (false);
+	c = &((t_ast_node *)node->children.ctx)[i];
+	return (c->node_type == AST_TOKEN
+		&& (c->token.tt == TT_AND || c->token.tt == TT_OR));
+}
+
+/* execute_then with errexit suppressed for the duration — the save/
+   restore keeps nesting correct when and-or lists sit inside conditions
+   that already set errexit_off. */
+static void	execute_lhs(t_executable_node *exe, t_ast_node *child,
+				t_shell *state, t_execution_state *status)
+{
+	bool	saved;
+
+	saved = state->errexit_off;
+	state->errexit_off = true;
+	execute_then(exe, child, state, status);
+	state->errexit_off = saved;
+}
+
 /* Execute the range of AST children [start, end) as a sequential
    AND-OR list.  AST_TOKEN children carry the operator (&&, ||, ;, etc.)
    and shift the `op` variable that should_execute reads.  Non-token
@@ -80,7 +110,9 @@ t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 			continue ;
 		}
 		ran = should_execute(status, op);
-		if (ran)
+		if (ran && next_is_andor(exe->node, i, end))
+			execute_lhs(exe, child, state, &status);
+		else if (ran)
 			execute_then(exe, child, state, &status);
 	}
 	errexit_check(state, status, ran, child);
