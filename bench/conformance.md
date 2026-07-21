@@ -9,7 +9,7 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1013 | 0 | 0 | 0 | 609 | 0 | 1622 | 62.45% |
+| **hellish --posix** | 1014 | 0 | 0 | 0 | 608 | 0 | 1622 | 62.52% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
@@ -196,7 +196,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-echo | 27 | 21 | 27 | 5 |
 | builtin-eval-source | 23 | 11 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
-| builtin-kill | 20 | 7 | 17 | 7 |
+| builtin-kill | 20 | 8 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
 | builtin-meta-assign | 11 | 2 | 6 | 1 |
 | builtin-misc | 7 | 3 | 4 | 4 |
