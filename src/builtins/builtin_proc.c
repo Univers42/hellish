@@ -13,6 +13,7 @@
 #include "builtins_private.h"
 #include "executor.h"
 #include "env.h"
+#include "job_control.h"
 #include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
@@ -66,27 +67,47 @@ int	builtin_exec(t_shell *state, t_vec argv)
 }
 
 /* waitpid() failed (ECHILD): the child was already reaped by
-   reap_background_children's WNOHANG poll between list items. bash remembers a
-   finished job's status until `wait` collects it, so recover the status we
-   stashed at reap time; only a genuinely unknown pid yields 127. */
+   reap_background_children's WNOHANG poll between list items, or by
+   job_update_status's poll when `jobs` listed it. bash remembers a
+   finished job's status until `wait` collects it, so recover it from the
+   bg_done ring first, then from the job table (which job_update_status
+   fills but the ring never saw); only a genuinely unknown pid gives 127. */
 static int	reaped_job_status(t_shell *state, pid_t pid)
 {
-	int	status;
+	int		status;
+	int		code;
+	t_job	*job;
 
+	job = job_find_pgid(&state->job_table, pid);
 	if (bg_done_take(state, pid, &status))
 	{
+		if (job)
+			job_remove(&state->job_table, job->id);
 		if (WIFEXITED(status))
 			return (WEXITSTATUS(status));
 		if (WIFSIGNALED(status))
 			return (128 + WTERMSIG(status));
+		return (127);
+	}
+	if (job && job->status == JOB_DONE)
+	{
+		code = job->exit_code;
+		job_remove(&state->job_table, job->id);
+		return (code);
 	}
 	return (127);
 }
 
-/* wait [pid]: wait for background children (all of them if no pid given). */
+/* wait [pid]: wait for background children (all of them if no pid given).
+   Reaps route through bg_done_record so the job table flips to Done, then
+   job_purge_done retires what was just reported — after `wait`, bash's
+   `jobs` shows nothing, and ours must not either. The bg_done_take right
+   after each record erases the ring's memory of that status: it was just
+   reported, and bash answers a re-wait of the same pid with 127. */
 int	builtin_wait(t_shell *state, t_vec argv)
 {
 	int		status;
+	int		drop;
 	pid_t	pid;
 
 	status = 0;
@@ -95,14 +116,21 @@ int	builtin_wait(t_shell *state, t_vec argv)
 		pid = (pid_t)ft_atoi(((char **)argv.ctx)[1]);
 		if (waitpid(pid, &status, 0) < 0)
 			return (reaped_job_status(state, pid));
+		bg_done_record(state, pid, status);
+		bg_done_take(state, pid, &drop);
+		job_purge_done(&state->job_table);
 		if (WIFEXITED(status))
 			return (WEXITSTATUS(status));
 		return (128 + WTERMSIG(status));
 	}
-	while (waitpid(-1, &status, 0) > 0)
-		;
-	(void)state;
-	return (0);
+	pid = waitpid(-1, &status, 0);
+	while (pid > 0)
+	{
+		bg_done_record(state, pid, status);
+		bg_done_take(state, pid, &drop);
+		pid = waitpid(-1, &status, 0);
+	}
+	return (job_purge_done(&state->job_table), 0);
 }
 
 /* times: print accumulated user/system CPU time for the shell and children.

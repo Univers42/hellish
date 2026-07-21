@@ -84,3 +84,9 @@ set -- a b; IFS=; printf "[%s]" "${@-M}"; echo
 case $SECONDS in [0-9]*) echo seconds-num ;; esac; case $EPOCHSECONDS in [0-9]*) echo epoch-num ;; esac
 [ -n "$UID" ] && echo uid-ok; [ -n "$HOSTNAME" ] && echo host-ok
 printf 'echo "s1=$1 s2=$2 n=$#"\n' > /tmp/rh_src.$$; set -- X; . /tmp/rh_src.$$ a b; echo "after=$1 n=$#"; rm -f /tmp/rh_src.$$
+sleep 0.01 & sleep 0.3; jobs; wait $!; echo rc=$?
+sleep 0.01 & sleep 0.3; jobs; echo --; jobs; echo end
+sleep 0.01 & wait; jobs; echo end
+sleep 0.01 & p=$!; wait $p; echo rc1=$?; wait $p; echo rc2=$?
+(exit 7) & wait $!; echo rc=$?
+sleep 0.05 & sleep 0.05 & wait; echo done=$?
