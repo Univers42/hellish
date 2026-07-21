@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/20 15:18:14 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/02 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/07/21 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,21 +20,51 @@
 #define G_BL  "\xe2\x95\xb0"
 #define G_ARR "\xe2\x9d\xaf"
 
-#define C_BOX  "\033[38;5;240m"
-#define C_TIME "\033[38;5;240m"
-#define C_OK   "\033[1m\033[38;5;76m"
-#define C_ERR  "\033[1m\033[38;5;203m"
-#define C_RST  "\033[0m"
+#define C_RST "\033[0m"
 
-/* Push `count` horizontal rule characters (the box-drawing ─) as a spacer in
-   the frame colour, with a leading and trailing plain space. Used to fill the
-   gap between the left segment (user/cwd/branch) and the right clock. */
+/* One step of the fill gradient: ember (132,62,46) at the left fading into
+   the frame grey (74,79,87) at the clock — the "hellish" signature, kept
+   dark enough to read as a rule line, not a rainbow. */
+static void	grad_seq(char *buf, size_t n, int k, int count)
+{
+	int	r;
+	int	g;
+	int	b;
+
+	if (count < 2)
+		count = 2;
+	r = 132 + (74 - 132) * k / (count - 1);
+	g = 62 + (79 - 62) * k / (count - 1);
+	b = 46 + (87 - 46) * k / (count - 1);
+	snprintf(buf, n, "\033[38;2;%d;%d;%dm", r, g, b);
+}
+
+/* The ─ spacer between the left segments and the right clock: a per-char
+   ember gradient on truecolor terminals, the flat frame grey elsewhere.
+   Leading and trailing plain spaces on both variants. */
 static void	push_fill(t_string *ret, int count)
 {
+	char	seq[24];
+	int		k;
+
 	vec_push_str(ret, " ");
-	vec_push_ansi(ret, C_BOX);
-	while (count-- > 0)
-		vec_push_str(ret, G_H);
+	if (!pal_truecolor())
+	{
+		vec_push_ansi(ret, pal(PAL_BOX));
+		while (count-- > 0)
+			vec_push_str(ret, G_H);
+	}
+	else
+	{
+		k = 0;
+		while (k < count)
+		{
+			grad_seq(seq, sizeof(seq), k, count);
+			vec_push_ansi(ret, seq);
+			vec_push_str(ret, G_H);
+			k++;
+		}
+	}
 	vec_push_ansi(ret, C_RST);
 	vec_push_str(ret, " ");
 }
@@ -55,11 +85,11 @@ void	prompt_time_and_pad(t_string *ret, t_prompt *p)
 	if (p->pad < 3)
 		p->pad = 3;
 	push_fill(ret, p->pad - 2);
-	vec_push_ansi(ret, C_TIME);
+	vec_push_ansi(ret, pal(PAL_TIME));
 	vec_push_str(ret, p->time_buf);
 	vec_push_ansi(ret, C_RST);
 	vec_push_str(ret, " ");
-	vec_push_ansi(ret, C_BOX);
+	vec_push_ansi(ret, pal(PAL_BOX));
 	vec_push_str(ret, G_H G_TR);
 	vec_push_ansi(ret, C_RST);
 	vec_push_str(ret, "\n");
@@ -74,19 +104,19 @@ void	prompt_arrow_row(t_string *ret, t_prompt *p)
 {
 	char	buf[16];
 
-	vec_push_ansi(ret, C_BOX);
+	vec_push_ansi(ret, pal(PAL_BOX));
 	vec_push_str(ret, G_BL G_H);
 	vec_push_ansi(ret, C_RST);
 	if (p->exit_status != 0)
 	{
 		snprintf(buf, sizeof(buf), " \xe2\x9c\x98%d", p->exit_status);
-		vec_push_ansi(ret, C_ERR);
+		vec_push_ansi(ret, pal(PAL_ERR));
 		vec_push_str(ret, buf);
 		vec_push_str(ret, " " G_ARR " ");
 		vec_push_ansi(ret, C_RST);
 		return ;
 	}
-	vec_push_ansi(ret, C_OK);
+	vec_push_ansi(ret, pal(PAL_OK));
 	vec_push_str(ret, G_ARR " ");
 	vec_push_ansi(ret, C_RST);
 }

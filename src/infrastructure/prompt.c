@@ -88,6 +88,37 @@ void	render_prompt(t_string *ret, size_t frame, int status)
 		xfree(p.venv);
 }
 
+/* One-shot micro-benchmark of the render path, enabled by exporting
+   HELLISH_PROMPT_BENCH: one untimed warm-up render (so the TTL-throttled
+   git-status fork lands outside the measurement, as it does in real use),
+   then 1000 timed renders, mean reported on stderr. This is how the
+   "prompt renders in N us" claims in bench/ are produced. */
+static void	maybe_bench(void)
+{
+	static int		done;
+	struct timespec	ts[2];
+	t_string		r;
+	long long		i;
+
+	if (done || !getenv("HELLISH_PROMPT_BENCH"))
+		return ;
+	done = 1;
+	i = -1;
+	while (++i < 1001)
+	{
+		if (i == 1)
+			clock_gettime(CLOCK_MONOTONIC, &ts[0]);
+		vec_init(&r);
+		r.elem_size = 1;
+		render_prompt(&r, (size_t)i, 0);
+		xfree(r.ctx);
+	}
+	clock_gettime(CLOCK_MONOTONIC, &ts[1]);
+	i = (ts[1].tv_sec - ts[0].tv_sec) * 1000000000LL
+		+ (ts[1].tv_nsec - ts[0].tv_nsec);
+	fprintf(stderr, "[prompt-bench] %lld ns/render\n", i / 1000);
+}
+
 /* Build the primary prompt for an interactive read. The frame counter is
    advanced here so each readline call shows the next blink frame, giving the
    mascot a heartbeat feel even when the user types slowly. The status is
@@ -99,6 +130,7 @@ t_string	prompt_normal(t_shell *state)
 	int			status;
 
 	ensure_locale();
+	maybe_bench();
 	vec_init(&ret);
 	ret.elem_size = 1;
 	status = state->last_cmd_st_exe.status;
