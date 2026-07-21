@@ -121,6 +121,8 @@ bool	tx_is_binop(const char *s);
 int		tx_test_unary(char **a);
 int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);
+t_shell	**db_state_cell(void);
+int		db_regex_match(const char *str, const char *pat);
 int		eval_bracketed(t_shell *st, char **av, int ac, int dbr);
 
 void	update_pwd_vars(t_shell *state);

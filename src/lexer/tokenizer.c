@@ -63,11 +63,14 @@ static char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 {
 	char	*prompt;
 
+	if (db_regex_word(str, ret, in_db))
+		return (NULL);
 	if (**str == '[' || (*in_db && **str == ']'))
 		dbracket_toggle(*str, in_db);
 	prompt = try_parse_lexeme(str, ret);
 	if (prompt)
 		return (prompt);
+	db_track_regex(ret, in_db);
 	if (**str == '\n')
 		emit_newline(str, ret);
 	else if (is_space(**str))
