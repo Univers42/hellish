@@ -46,16 +46,42 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 	exit(res.status);
 }
 
-/* Fork a background job, bump the bg counter, record $! (last_bg_pid),
-   and print "[n] pid" if running interactively.  The parent always returns
-   status 0 immediately (background jobs never block the parent).  We count
-   jobs so reap_background_children knows whether to bother calling waitpid
-   at all -- no jobs means no syscall overhead. */
+/* Build a short human label for the jobs table from the range's first
+   simple command: walk down to the first node carrying a source token
+   and take up to 48 bytes from its start — token slices are contiguous
+   source text, so this shows "sleep 5" for `sleep 5 &` without any
+   reconstruction machinery. Falls back to "job" for tokenless trees. */
+static void	bg_job_label(t_ast_node *node, char *buf, size_t n)
+{
+	size_t	len;
+
+	while (node && !node->token.start && node->children.len > 0)
+		node = (t_ast_node *)node->children.ctx;
+	if (!node || !node->token.start)
+		return ((void)ft_strlcpy(buf, "job", n));
+	len = 0;
+	while (node->token.start[len] && node->token.start[len] != '\n'
+		&& node->token.start[len] != '&' && len < n - 1)
+		len++;
+	while (len > 0 && (node->token.start[len - 1] == ' '
+			|| node->token.start[len - 1] == '\t'))
+		len--;
+	ft_memcpy(buf, node->token.start, len);
+	buf[len] = '\0';
+}
+
+/* Fork a background job, register it in the job table (this is what makes
+   jobs/fg/bg/kill %1 see it), record $! (last_bg_pid), and print
+   "[id] pid" if running interactively.  The parent always returns status
+   0 immediately (background jobs never block the parent).  bg_job_count
+   still gates reap_background_children's waitpid call. */
 t_execution_state	execute_range_background(t_shell *state,
 										t_executable_node *exe,
 										size_t start, size_t end)
 {
 	pid_t	pid;
+	t_job	*job;
+	char	label[64];
 
 	pid = fork();
 	if (pid == 0)
@@ -66,7 +92,12 @@ t_execution_state	execute_range_background(t_shell *state,
 	state->bg_job_count++;
 	xfree(state->last_bg_pid);
 	state->last_bg_pid = ft_itoa(pid);
-	if (state->metinp == INP_RL)
+	bg_job_label((t_ast_node *)exe->node->children.ctx + start,
+		label, sizeof(label));
+	job = job_add(&state->job_table, pid, label, true);
+	if (state->metinp == INP_RL && job)
+		ft_printf("[%d] %d\n", job->id, pid);
+	else if (state->metinp == INP_RL)
 		ft_printf("[%d] %d\n", state->bg_job_count, pid);
 	return (res_status(0));
 }

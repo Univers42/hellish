@@ -69,6 +69,7 @@ t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg);
 t_job	*job_find_id(t_job_table *jt, int id);
 t_job	*job_find_pgid(t_job_table *jt, pid_t pgid);
 void	job_remove(t_job_table *jt, int id);
+void	job_purge_done(t_job_table *jt);
 void	job_update_status(t_job_table *jt);
 void	job_notify(struct s_shell *state);
 t_job	*job_by_spec(t_job_table *jt, const char *spec);

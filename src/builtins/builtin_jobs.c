@@ -35,7 +35,11 @@ static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
 /* jobs [-l] [-p]: list background (and stopped) jobs. We update statuses
    first via job_update_status (which reaps any that have finished since the
    last check) so the listing is accurate. -p prints only the process-group
-   ID, useful for `kill $(jobs -p)`. -l adds the PID column. */
+   ID, useful for `kill $(jobs -p)`. -l adds the PID column. Listing a Done
+   job counts as reporting it: the notified flag hides it from the next
+   listing, but — matching bash, verified empirically — the entry itself
+   stays so a later `wait $!` can still recover its exit status. Only wait
+   purges for real. */
 int	builtin_jobs(t_shell *state, t_vec argv)
 {
 	t_job_table	*jt;
@@ -49,13 +53,16 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	i = 0;
 	while (i < JOB_MAX)
 	{
-		if (jt->jobs[i].pgid)
+		if (jt->jobs[i].pgid && !(jt->jobs[i].status == JOB_DONE
+				&& jt->jobs[i].notified))
 		{
 			if (show_pid)
 				ft_printf("%d\n", jt->jobs[i].pgid);
 			else
 				job_print(&jt->jobs[i], jt->current,
 					jt->previous, long_fmt);
+			if (jt->jobs[i].status == JOB_DONE)
+				jt->jobs[i].notified = true;
 		}
 		i++;
 	}
