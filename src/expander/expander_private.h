@@ -279,6 +279,18 @@ void		ft_reset(void *ptr, size_t size,
 void		free_children(void *p);
 void		push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node);
 void		push_new_env_child(t_ast_node *curr_node, char *new_start);
+
+/* indexed arrays (expand_array*.c, split_array.c) */
+bool		expand_array_token(t_shell *state, t_token *tt, bool split_ctx);
+char		*arr_mark_push(t_shell *state, const char *name, int nlen);
+char		*arr_mark_name(t_shell *state, const char *p);
+void		arr_marks_clear(t_shell *state);
+void		emit_array_at(t_shell *state, const char *name,
+			t_ast_node *curr_node, t_vec_nd *ret);
+void		emit_array_split(t_shell *state, const char *name,
+			t_ast_node *curr_node, t_vec_nd *ret);
+int			handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
+			t_executable_cmd *ret);
 bool		is_ifs_char(char c, const char *ifs);
 bool		is_ws_ifs(char c, const char *ifs);
 bool		is_nw_ifs(char c, const char *ifs);

@@ -102,3 +102,15 @@ wait %9 2>/dev/null; echo rc=$?
 sleep 0.05 & sleep 0.05 & wait %1 %2; echo rc=$?
 set -e; f(){ false; }; f || true; echo after
 set -e; false && true; echo ok
+a=(x y z); echo ${a[0]} ${a[2]} ${#a[@]} $a
+a=(one "two three" four); for f in "${a[@]}"; do echo "[$f]"; done
+a=(x y); a+=(z "w v"); echo ${#a[@]} "${a[3]}"
+a[3]=late; a[1]=mid; echo ${#a[@]} ${a[3]} ${a[1]}
+a=("p q" r); echo "${a[*]}"; echo ${a[*]}
+v=scalar; echo ${v[0]} ${#v[@]} "${v[@]}"
+a=(x y z); i=1; echo ${a[i+1]} "${#a[1]}"
+unset n; echo "[${n[@]}]" ${#n[@]}
+a=(1 2 3); s=0; for n in "${a[@]}"; do s=$((s+n)); done; echo $s
+x=hi; x[1]=there; echo ${x[0]} ${x[1]}
+arr=(a b); echo pre"${arr[@]}"post
+a=(x "y z"); set | grep "^a="

@@ -25,6 +25,8 @@ static bool	parse_and_push_simple_cmd_child(t_shell *state,
 	t_tt	next;
 
 	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	if (next == TT_WORD && try_push_array_assign(res, tokens, ret))
+		return (check_res_ok(res));
 	if (next == TT_WORD)
 		return (push_parsed_word(tokens, ret), true);
 	else if (is_redirect(next))

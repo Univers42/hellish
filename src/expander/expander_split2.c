@@ -20,12 +20,32 @@
    split-eligible TT_WORD subtokens go through split_envvar for IFS field
    splitting.  All other tokens (literal text, single-quoted, and
    double-quoted vars) are appended to curr_node verbatim. */
+/* Deferred array tokens: the marker registry proves ownership by
+   pointer, the marker text is the array name. Quoted @ emits verbatim
+   fields, everything else emits split fields. */
+static bool	try_array_child(t_shell *state, t_token *curr_t,
+				t_ast_node *curr_node, t_vec_nd *ret)
+{
+	char	*name;
+
+	name = arr_mark_name(state, curr_t->start);
+	if (!name)
+		return (false);
+	if (curr_t->tt == TT_DQENVVAR)
+		emit_array_at(state, name, curr_node, ret);
+	else
+		emit_array_split(state, name, curr_node, ret);
+	return (true);
+}
+
 static void	split_one_child(t_shell *state, t_ast_node *child,
 				t_ast_node *curr_node, t_vec_nd *ret)
 {
 	t_token	*curr_t;
 
 	curr_t = &child->token;
+	if (try_array_child(state, curr_t, curr_node, ret))
+		return ;
 	if (curr_t->tt == TT_DQENVVAR && curr_t->start == pos_mark('@'))
 		(emit_positional_at(state, curr_node, ret), free_token_res(curr_t));
 	else if (curr_t->tt == TT_ENVVAR

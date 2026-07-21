@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "env.h"
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
 char	*arith_expand_cached(t_shell *state, const char *expr, int len,
@@ -39,6 +40,8 @@ static int	concat_one_token(t_shell *state, t_string *out, t_token *t)
 	{
 		v = env_expand_n(state, t->start, t->len);
 		if (!v && state->opt_nounset)
+			return (0);
+		if (v && arr_is(v))
 			return (0);
 		if (v)
 			vec_push_str(out, v);
