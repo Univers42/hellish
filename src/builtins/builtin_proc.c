@@ -72,7 +72,7 @@ int	builtin_exec(t_shell *state, t_vec argv)
    finished job's status until `wait` collects it, so recover it from the
    bg_done ring first, then from the job table (which job_update_status
    fills but the ring never saw); only a genuinely unknown pid gives 127. */
-static int	reaped_job_status(t_shell *state, pid_t pid)
+int	reaped_job_status(t_shell *state, pid_t pid)
 {
 	int		status;
 	int		code;
@@ -98,30 +98,29 @@ static int	reaped_job_status(t_shell *state, pid_t pid)
 	return (127);
 }
 
-/* wait [pid]: wait for background children (all of them if no pid given).
-   Reaps route through bg_done_record so the job table flips to Done, then
-   job_purge_done retires what was just reported — after `wait`, bash's
-   `jobs` shows nothing, and ours must not either. The bg_done_take right
-   after each record erases the ring's memory of that status: it was just
-   reported, and bash answers a re-wait of the same pid with 127. */
+/* wait [pid|%jobspec ...]: wait for background children (all of them if
+   no argument). Each explicit argument resolves through wait_one — pids
+   and jobspecs both — and, like bash, the return status is the LAST
+   argument's status. Reaps route through bg_done_record so the job table
+   flips to Done, then job_purge_done retires what was just reported —
+   after `wait`, bash's `jobs` shows nothing, and ours must not either.
+   The bg_done_take right after each record erases the ring's memory of
+   that status: it was just reported, and bash answers a re-wait of the
+   same pid with 127. */
 int	builtin_wait(t_shell *state, t_vec argv)
 {
 	int		status;
 	int		drop;
+	size_t	i;
 	pid_t	pid;
 
-	status = 0;
 	if (argv.len >= 2)
 	{
-		pid = (pid_t)ft_atoi(((char **)argv.ctx)[1]);
-		if (waitpid(pid, &status, 0) < 0)
-			return (reaped_job_status(state, pid));
-		bg_done_record(state, pid, status);
-		bg_done_take(state, pid, &drop);
-		job_purge_done(&state->job_table);
-		if (WIFEXITED(status))
-			return (WEXITSTATUS(status));
-		return (128 + WTERMSIG(status));
+		i = 1;
+		status = 0;
+		while (i < argv.len)
+			status = wait_one(state, ((char **)argv.ctx)[i++]);
+		return (status);
 	}
 	pid = waitpid(-1, &status, 0);
 	while (pid > 0)
@@ -133,34 +132,5 @@ int	builtin_wait(t_shell *state, t_vec argv)
 	return (job_purge_done(&state->job_table), 0);
 }
 
-/* times: print accumulated user/system CPU time for the shell and children.
-   Formatted with libc snprintf: ft_printf lacks the %0Nld zero-padded
-   variant and used to emit the raw format string here. */
-int	builtin_times(t_shell *state, t_vec argv)
-{
-	struct tms	t;
-	long		hz;
-	char		line[256];
-
-	(void)state;
-	(void)argv;
-	hz = sysconf(_SC_CLK_TCK);
-	if (hz <= 0)
-		hz = 100;
-	times(&t);
-	snprintf(line, sizeof(line), "%ldm%ld.%03lds %ldm%ld.%03lds\n",
-		(t.tms_utime / hz) / 60, (t.tms_utime / hz) % 60,
-		(t.tms_utime % hz) * 1000 / hz,
-		(t.tms_stime / hz) / 60, (t.tms_stime / hz) % 60,
-		(t.tms_stime % hz) * 1000 / hz);
-	if (write(1, line, ft_strlen(line)) < 0)
-		return (1);
-	snprintf(line, sizeof(line), "%ldm%ld.%03lds %ldm%ld.%03lds\n",
-		(t.tms_cutime / hz) / 60, (t.tms_cutime / hz) % 60,
-		(t.tms_cutime % hz) * 1000 / hz,
-		(t.tms_cstime / hz) / 60, (t.tms_cstime / hz) % 60,
-		(t.tms_cstime % hz) * 1000 / hz);
-	if (write(1, line, ft_strlen(line)) < 0)
-		return (1);
-	return (0);
-}
+/* builtin_times moved to builtin_proc2.c to keep this file within the
+   5-function norm once the wait plumbing grew jobspec support. */

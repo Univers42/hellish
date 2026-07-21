@@ -46,7 +46,11 @@ void	dbracket_toggle(const char *str, int *in_db)
 		*in_db = 0;
 }
 
-/* Inside [[ ]], emit &&/||/(/) as a literal WORD; return 1 if emitted. */
+/* Inside [[ ]], emit &&/||/(/) — and the string-comparison operators
+   < and > — as literal WORDs; return 1 if emitted. Without the < > case
+   they tokenised as REDIRECTS, so `[[ a < b ]]` silently opened file b
+   for stdin instead of comparing (the test evaluator understood the
+   operators all along; they just never reached it). */
 int	emit_dbracket_word(char **str, t_deque_tok *ret)
 {
 	t_token	tmp;
@@ -56,6 +60,8 @@ int	emit_dbracket_word(char **str, t_deque_tok *ret)
 	if (ft_strncmp(*str, "&&", 2) == 0 || ft_strncmp(*str, "||", 2) == 0)
 		len = 2;
 	else if (**str == '(' || **str == ')')
+		len = 1;
+	else if (**str == '<' || **str == '>')
 		len = 1;
 	if (len == 0)
 		return (0);

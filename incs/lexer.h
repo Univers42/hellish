@@ -36,6 +36,7 @@ typedef struct s_deque_tok
 char		*tokenizer(char *str, t_deque_tok *ret);
 int			advance_dquoted(char **str);
 int			advance_squoted(char **str);
+int			advance_ansic(char **str);
 int			advance_backtick(char **str);
 int			advance_brace_param(char **str);
 void		free_all_state(struct s_shell *state);

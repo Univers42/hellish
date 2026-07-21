@@ -90,3 +90,15 @@ sleep 0.01 & wait; jobs; echo end
 sleep 0.01 & p=$!; wait $p; echo rc1=$?; wait $p; echo rc2=$?
 (exit 7) & wait $!; echo rc=$?
 sleep 0.05 & sleep 0.05 & wait; echo done=$?
+echo $'a\nb'
+printf '[%s]' $'tab\there'; echo
+echo $'it\'s' $'\x41\102' $'é'
+x=$'p q'; printf '[%s]' "$x"; echo
+echo "$'literal'"
+[[ a < b ]] && echo lt; [[ b > a ]] && echo gt; [[ b < a ]] || echo nl
+sleep 0.05 & wait %1; echo rc=$?
+wait abc 2>/dev/null; echo rc=$?
+wait %9 2>/dev/null; echo rc=$?
+sleep 0.05 & sleep 0.05 & wait %1 %2; echo rc=$?
+set -e; f(){ false; }; f || true; echo after
+set -e; false && true; echo ok

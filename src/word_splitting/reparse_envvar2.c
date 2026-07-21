@@ -87,6 +87,8 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	t_reparser	rp;
 	int			prev_start;
 
+	if (*i + 1 < t.len && t.start[*i + 1] == '\'' && tt == TT_ENVVAR)
+		return (reparse_ansic(ret, i, t));
 	ft_assert(t.start[(*i)++] == '$');
 	create_reparser(&rp, *ret, t, i);
 	prev_start = rp.i;
