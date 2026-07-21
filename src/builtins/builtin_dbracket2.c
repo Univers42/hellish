@@ -29,5 +29,7 @@ int	db_eval_flat(char **av, int n)
 		return (case_match(av[0], av[2]) == false);
 	if (n == 3 && ft_strcmp(av[1], "!=") == 0)
 		return (case_match(av[0], av[2]) == true);
+	if (n == 3 && ft_strcmp(av[1], "=~") == 0)
+		return (db_regex_match(av[0], av[2]));
 	return (eval_test(av, n));
 }
