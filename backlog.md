@@ -194,11 +194,40 @@ pass counts in `bench/baseline/`). Performance claims come from
     arrays? `[[ =~ ]]` regex? printf %(fmt)T? job specs %+/%-? RANDOM/
     SECONDS? set -o pipefail — check present). File findings here.
 
+## Done (continued 6) — the parse-speed session (2026-07-21)
+
+- [x] **parse50k 221ms → 72ms** (bash 60ms same load — ratio 3.2× → 1.21×),
+      RSS 158MB → 22MB, in four committed rounds:
+      1. `35e4f56` first-char operator dispatch (parse_op rebuilt a
+         21-entry table per call, ~60 libft calls each — libft.a has NO
+         LTO objects, nothing ever inlines), 256-byte char-class table
+         for is_special_char/is_word_boundary (1.4M ft_strchr calls),
+         dbracket_toggle call-site guard (527k → ~0 calls), arena-pure
+         teardown skip via parena attach-tracking (2.17M parena_free
+         routes gone; ASan net caught the one impure site — procsub's
+         parse-time strndup, now arena).
+      2. `0002690` reparse helpers operate in place (was: copy 104-byte
+         node in + out per subtoken), table word_is_plain, shared arena
+         full_word copy, deque presize for >4KB batches.
+      3. **`(streaming)` — the big one**: fully-buffered batches parse ONE
+         newline-range at a time, execute, parena_reset, repeat. Peak
+         memory = one range. Gated: ring drained + preloaded/EOF source,
+         never interactive, no heredoc cycles (conservative). Replay
+         skipped mid-stream (prefix already ran = what replay emulated).
+         Bonus bash-parity: healthy prefix executes before an
+         unexpected-EOF error.
+- [ ] REMAINING to BEAT bash (~13ms): reparse dquote/envvar families
+      still do the t_reparser copy dance; t_token is 40B (750k in the
+      deque ≈ 30MB touched — shrink to 24B?); sys 8.7ms vs bash 2.1.
+      Re-measure on a QUIET machine before claiming anything.
+- [ ] Loosen streaming gates later: heredoc cycles (cursor logic is
+      order-compatible, unproven), INP_NOTTY before EOF.
+
 ## Perf scoreboard memory (OPT, quiet machine, hyperfine)
 
 | dimension | hellish | bash | dash | standing |
 |---|---|---|---|---|
-| parse50k | ~200ms | ~54ms | ~20ms | losing (was 705) |
+| parse50k | 72ms | ~60ms | ~21ms | 1.21× bash, closing (was 705→221) |
 | startup -c true | tied | tied | tied | tied |
 | arith loop | wins 2× vs bash | | tied dash | winning |
 | string concat | wins ~7× vs bash | | tied dash | winning |
