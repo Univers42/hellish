@@ -199,7 +199,11 @@ void	gopt_init(t_shell *state, t_vec argv, t_getopts *g);
 int		one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur);
 int		type_one_path(t_shell *state, const char *name);
 int		type_one(t_shell *state, const char *name);
-void	apply_flag_word(t_shell *state, const char *w);
+int		type_is_builtin(const char *name);
+int		type_is_keyword(const char *name);
+int		type_find_in_path(t_shell *state, const char *name, char **out);
+int		type_dispatch(t_shell *state, const char *name, char mode);
+bool	apply_flag_word(t_shell *state, const char *w);
 t_ulim	*ulim_table(void);
 void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);
@@ -209,4 +213,5 @@ int		list_set_options(t_shell *state);
 /* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
 int		reaped_job_status(t_shell *state, pid_t pid);
 int		wait_one(t_shell *state, const char *arg);
+int		wait_n(t_shell *state);
 #endif

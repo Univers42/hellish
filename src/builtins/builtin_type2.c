@@ -21,14 +21,25 @@ int	builtin_type(t_shell *state, t_vec argv)
 {
 	size_t	i;
 	int		status;
+	char	mode;
 
-	if (argv.len < 2)
-		return (0);
-	status = 0;
+	mode = 0;
 	i = 1;
+	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
+		&& ((char **)argv.ctx)[i][1])
+	{
+		if (ft_strchr(((char **)argv.ctx)[i], 't'))
+			mode = 't';
+		else if (ft_strchr(((char **)argv.ctx)[i], 'P'))
+			mode = 'P';
+		else if (ft_strchr(((char **)argv.ctx)[i], 'p'))
+			mode = 'p';
+		i++;
+	}
+	status = 0;
 	while (i < argv.len)
 	{
-		if (type_one(state, ((char **)argv.ctx)[i]))
+		if (type_dispatch(state, ((char **)argv.ctx)[i], mode))
 			status = 1;
 		i++;
 	}

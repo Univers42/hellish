@@ -71,6 +71,27 @@ int	wait_one(t_shell *state, const char *arg)
 	return (128 + WTERMSIG(status));
 }
 
+/* wait -n: wait for the NEXT single background child to finish and return
+   its status (bash: 127 when there is nothing to wait for). waitpid(-1)
+   reaps exactly one, which is recorded so a later `wait $!` on a
+   different pid still resolves; the just-reaped one is purged. */
+int	wait_n(t_shell *state)
+{
+	int		status;
+	int		drop;
+	pid_t	pid;
+
+	pid = waitpid(-1, &status, 0);
+	if (pid <= 0)
+		return (127);
+	bg_done_record(state, pid, status);
+	bg_done_take(state, pid, &drop);
+	job_purge_done(&state->job_table);
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+	return (128 + WTERMSIG(status));
+}
+
 /* times: print accumulated user/system CPU time for the shell and children.
    Formatted with libc snprintf: ft_printf lacks the %0Nld zero-padded
    variant and used to emit the raw format string here. */

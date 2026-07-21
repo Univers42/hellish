@@ -16,13 +16,13 @@
 
 /* Check via the dispatch hash table — no need to maintain a separate list.
    The dispatch table IS the authoritative set of builtins. */
-static int	type_is_builtin(const char *name)
+int	type_is_builtin(const char *name)
 {
 	return (builtin_func((char *)name) != NULL);
 }
 
 /* POSIX reserved words (plus the common function/{/}). */
-static int	type_is_keyword(const char *name)
+int	type_is_keyword(const char *name)
 {
 	static const char	*kw[] = {"!", "{", "}", "case", "do", "done",
 		"elif", "else", "esac", "fi", "for", "if", "in", "then",
@@ -40,7 +40,7 @@ static int	type_is_keyword(const char *name)
    success; returns 0 on failure. Caller must xfree *out. We deliberately
    skip the command cache here so `type` always does a fresh search (the
    cache might be stale after a PATH change). */
-static int	type_find_in_path(t_shell *state, const char *name, char **out)
+int	type_find_in_path(t_shell *state, const char *name, char **out)
 {
 	char	*path;
 	char	**dirs;

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins_private.h"
+#include "sh_input.h"
 
 /* Print all environment entries in `name=value` form (or just `name` when a
    variable has no value). This is the output of bare `set` — it differs from
@@ -59,9 +60,14 @@ static void	set_print_env(t_shell *state)
    apply_set_flags, mirroring how bash and dash consume set's arguments. */
 int	builtin_set(t_shell *state, t_vec argv)
 {
+	int	rc;
+
 	if (argv.len < 2)
 		return (set_print_env(state), 0);
-	return (apply_set_flags(state, argv));
+	rc = apply_set_flags(state, argv);
+	if (rc == 2 && state->metinp != INP_RL)
+		exit_clean(state, 2);
+	return (rc);
 }
 
 /* Build a fresh array of the positionals from index `from` to `count`.

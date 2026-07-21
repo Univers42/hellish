@@ -30,7 +30,7 @@ void	cli_apply_short(t_shell *state, char sign, char c)
 	word[0] = sign;
 	word[1] = c;
 	word[2] = '\0';
-	apply_flag_word(state, word);
+	(void)apply_flag_word(state, word);
 }
 
 /* `-o name` / `+o name`.  Only the long option names the `set` builtin
