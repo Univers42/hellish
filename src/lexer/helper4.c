@@ -37,6 +37,8 @@ static int	fd_redir_type(char *str, char *p, int fd_len, t_token *out)
 		return (create_token_consume(str, fd_len + 2, TT_CLOBBER, out));
 	if (*p == '>')
 		return (create_token_consume(str, fd_len + 1, TT_REDIRECT_RIGHT, out));
+	if (*p == '<' && *(p + 1) == '<' && *(p + 2) == '<')
+		return (create_token_consume(str, fd_len + 3, TT_HERESTRING, out));
 	if (*p == '<' && *(p + 1) == '<')
 		return (create_token_consume(str, fd_len + 2, TT_HEREDOC, out));
 	if (*p == '<' && *(p + 1) == '>')

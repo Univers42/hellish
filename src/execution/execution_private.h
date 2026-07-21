@@ -124,6 +124,8 @@ t_execution_state	res_status(int status);
 t_execution_state	res_pid(int pid);
 void				exe_res_set_status(t_execution_state *res);
 t_execution_state	pipeline_status(t_shell *state, t_vec_exe_res *results);
+void				set_pipestatus(t_shell *state, t_vec_exe_res *results);
+void				set_pipestatus_one(t_shell *state, int status);
 t_execution_state	execute_pipeline_one(t_shell *state,
 						t_executable_node *exe);
 int					actually_run(t_shell *state, t_vec *args);
