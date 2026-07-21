@@ -216,10 +216,23 @@ pass counts in `bench/baseline/`). Performance claims come from
          skipped mid-stream (prefix already ran = what replay emulated).
          Bonus bash-parity: healthy prefix executes before an
          unexpected-EOF error.
-- [ ] REMAINING to BEAT bash (~13ms): reparse dquote/envvar families
-      still do the t_reparser copy dance; t_token is 40B (750k in the
-      deque ≈ 30MB touched — shrink to 24B?); sys 8.7ms vs bash 2.1.
-      Re-measure on a QUIET machine before claiming anything.
+- [x] **Second wave — parse50k TIES bash** (64.2 vs 63.2ms overlapping
+      sigma; user CPU 55.6 vs 60.7 = hellish computes LESS): libft
+      primitives → compiler builtins (glibc AVX; constant sizes inline),
+      fat-LTO archive for the SAFE=0 tree ONLY (linker plugin disturbs
+      LeakSanitizer on plain links — bisected via alias_posix),
+      ft_strnstr memchr-skipping, t_token 40→32B (type in a byte),
+      t_token_old 24→16B, MADV_HUGEPAGE on 2MB+ ft_malloc zones (inert
+      on this fragmented host, free elsewhere). libft ea7a804a,
+      ft_malloc dbc08f5 — both submodules need pushing.
+- [ ] REMAINING to clearly BEAT bash (~4-5ms, all page-fault sys time):
+      pull-based lexing (feed the parser tokens on demand instead of
+      materialising the whole ~450k-token deque — bash's yylex model;
+      kills most of the 20MB touched). Smaller: move full_word +
+      arith_cache out of t_token into t_ast_node (deque slots 32→16B,
+      wide but mechanical ripple). ft_printf checked: 1 write per echo,
+      same as bash — not a bottleneck (we win output-heavy dims).
+      Measure ratios under identical load only.
 - [ ] Loosen streaming gates later: heredoc cycles (cursor logic is
       order-compatible, unproven), INP_NOTTY before EOF.
 
