@@ -48,6 +48,12 @@ char		*env_expand(t_shell *state, char *key);
 # define ARR_MAGIC '\x1d'
 # define ARR_RS '\x1e'
 # define ARR_US '\x1f'
+/* Associative array (declare -A): same "key<US>value" records joined by
+   RS, but a distinct magic so the shell knows the subscript is a LITERAL
+   string (not an arithmetic index) and records are NOT numerically
+   sorted. The attribute lives in the value — an empty assoc array is
+   just ARR_ASSOC_MAGIC — so no per-variable attribute table is needed. */
+# define ARR_ASSOC_MAGIC '\x1c'
 
 bool		arr_is(const char *val);
 bool		arr_next(const char **cur, long *idx, const char **v, int *vl);
@@ -59,6 +65,19 @@ char		*arr_from_elems(char **elems, int n, const char *base);
 char		*arr_format(const char *val);
 char		*arr_without(const char *old, long idx);
 void		rec_append(t_string *out, long idx, const char *v, int vl);
+
+/* Associative arrays (env_assoc*.c). */
+bool		assoc_is(const char *val);
+bool		assoc_next(const char **cur, const char **k, int *kl,
+				const char **v, int *vl);
+int			assoc_count(const char *val);
+char		*assoc_get(const char *val, const char *key, int klen);
+char		*assoc_with_set(const char *old, const char *key, int klen,
+				const char *nv);
+char		*assoc_without(const char *old, const char *key, int klen);
+char		*assoc_keys(const char *val);
+char		*assoc_values(const char *val, char sep);
+char		*assoc_format(const char *val);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);

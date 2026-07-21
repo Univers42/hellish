@@ -35,7 +35,7 @@ static bool	arr_emit(t_token *tt, char *owned)
 
 /* ${!name[@]} / ${!name[*]}: space-joined index list of the array (or
    "0" for a set scalar, nothing for unset — bash semantics). */
-bool	arr_keys(t_shell *state, t_token *tt)
+bool	arr_keys(t_shell *state, t_token *tt, bool split_ctx)
 {
 	t_string	out;
 	char		*val;
@@ -44,9 +44,17 @@ bool	arr_keys(t_shell *state, t_token *tt)
 	long		idx;
 	int			vl;
 
+	if (split_ctx)
+		return (arr_keys_defer(state, tt));
 	val = env_expand_n(state, tt->start + 1, tt->len - 4);
 	vec_init(&out);
 	out.elem_size = 1;
+	if (assoc_is(val))
+	{
+		vec_push_char(&out, '\0');
+		xfree(out.ctx);
+		return (arr_emit(tt, assoc_keys(val)));
+	}
 	if (val && !arr_is(val))
 		vec_push_str(&out, "0");
 	else if (val)
@@ -85,7 +93,7 @@ bool	arr_slice(t_shell *state, t_token *tt, int nl, int colon)
 
 /* Recognise the two extended [@] forms and dispatch; return false to let
    the normal NAME[...] path handle everything else. */
-bool	expand_array_ext(t_shell *state, t_token *tt)
+bool	expand_array_ext(t_shell *state, t_token *tt, bool split_ctx)
 {
 	int	nl;
 	int	colon;
@@ -96,7 +104,7 @@ bool	expand_array_ext(t_shell *state, t_token *tt)
 		&& tt->start[tt->len - 1] == ']'
 		&& (tt->start[tt->len - 2] == '@' || tt->start[tt->len - 2] == '*')
 		&& tt->start[tt->len - 3] == '[')
-		return (arr_keys(state, tt));
+		return (arr_keys(state, tt, split_ctx));
 	nl = slice_name_len(tt->start, tt->len, &colon);
 	if (nl > 0)
 		return (arr_slice(state, tt, nl, colon));

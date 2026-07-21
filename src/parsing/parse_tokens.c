@@ -32,6 +32,7 @@ t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 		tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
 		tt = tmp.tt;
 		(void)tt;
+		reparse_subscript_assigns(&ret);
 		reparse_words(&ret);
 		reparse_assignment_words(&ret);
 	}
@@ -61,6 +62,7 @@ t_ast_node	parse_tokens_range(t_shell *state, t_parser *parser,
 	{
 		if (!*more)
 			(void)deque_pop_start(&tokens->deqtok);
+		reparse_subscript_assigns(&ret);
 		reparse_words(&ret);
 		reparse_assignment_words(&ret);
 	}

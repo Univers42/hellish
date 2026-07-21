@@ -74,14 +74,37 @@ static bool	arr_at_star(t_shell *state, t_token *tt, char *val, bool split)
 	return (parena_note_attach(), true);
 }
 
-/* Numeric-subscript element read: evaluate the arithmetic body, fetch
-   the element (or the scalar itself for index 0), empty when unset. */
+/* Store an owned element string into the token, or empty when NULL. */
+static void	arr_elem_emit(t_token *tt, char *elem)
+{
+	if (elem)
+	{
+		tt->start = elem;
+		tt->len = (int)ft_strlen(elem);
+		tt->allocated = true;
+		return ((void)parena_note_attach());
+	}
+	tt->start = "";
+	tt->len = 0;
+	tt->allocated = false;
+}
+
+/* Subscript element read. For an associative value the subscript is a
+   LITERAL string key; otherwise it is an arithmetic index (negative
+   wraps from the end). A scalar answers only index 0. */
 static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 {
 	char	*res;
 	char	*elem;
 	long	idx;
 
+	if (assoc_is(val))
+	{
+		res = expand_param_word(state, tt->start + nl + 1,
+				tt->len - nl - 2, false);
+		arr_elem_emit(tt, assoc_get(val, res, (int)ft_strlen(res)));
+		return ((void)xfree(res));
+	}
 	res = arith_expand(state, tt->start + nl + 1, tt->len - nl - 2);
 	idx = 0;
 	if (res)

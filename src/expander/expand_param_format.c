@@ -79,6 +79,8 @@ static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
 			|| s[slen - 2] == '*') && s[slen - 3] == '[')
 	{
 		tok.start = env_expand_n(state, (char *)s, slen - 3);
+		if (assoc_is(tok.start))
+			return (ft_itoa(assoc_count(tok.start)));
 		if (tok.start && !arr_is(tok.start))
 			return (ft_itoa(1));
 		return (ft_itoa(arr_count(tok.start)));
