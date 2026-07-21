@@ -76,16 +76,24 @@ static void	process_measurement(const char *p, mbstate_t *state, int *total)
 
 /* Terminal display width of a plain string (no \001/\002 markers, unlike
    visible_width_cstr). Used to measure prompt segments that are already
-   stripped of escape brackets, e.g. the branch name or cwd component. */
+   stripped of escape brackets, e.g. the branch name or cwd component.
+   Pure-ASCII strings (the overwhelmingly common case for paths and branch
+   names) short-circuit to strlen — one byte, one column — and only a high
+   bit anywhere drops us into the real multibyte decode. */
 int	measure_width(const char *str)
 {
 	mbstate_t	state;
 	int			total;
-	const char	*p = str;
+	size_t		i;
 
+	i = 0;
+	while (str[i] && !((unsigned char)str[i] & 0x80))
+		i++;
+	if (!str[i])
+		return ((int)i);
 	total = 0;
 	ft_memset(&state, 0, sizeof(state));
-	process_measurement(p, &state, &total);
+	process_measurement(str, &state, &total);
 	return (total);
 }
 
