@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "printf_private.h"
+#include "env.h"
 
 /* bash semantics for a broken directive: '%' at the end of the format is
    "missing format character", any unrecognised conversion byte (%z, %-z...)
@@ -69,11 +70,37 @@ static void	run_format(t_pf *pf, const char *fmt)
    it. The spec's expected output for the -v error path (status 2, nothing
    printed) is exactly what this produces. Returns the format's index, or
    -1 on an invalid option. */
-static int	pf_fmt_index(t_vec argv)
+/* A valid printf -v target: a POSIX identifier, optionally with a
+   [subscript] suffix (array element). Rejects digit-initial names and
+   an unterminated bracket, matching bash's "not a valid identifier". */
+static bool	pf_valid_name(const char *n)
+{
+	int	i;
+
+	if (!n[0] || (!ft_isalpha((unsigned char)n[0]) && n[0] != '_'))
+		return (false);
+	i = 1;
+	while (n[i] && n[i] != '[')
+	{
+		if (!ft_isalnum((unsigned char)n[i]) && n[i] != '_')
+			return (false);
+		i++;
+	}
+	if (n[i] == '[')
+		return (n[ft_strlen(n) - 1] == ']');
+	return (true);
+}
+
+static int	pf_fmt_index(t_vec argv, char **vname)
 {
 	char	**av;
 
 	av = (char **)argv.ctx;
+	*vname = NULL;
+	if (argv.len >= 3 && ft_strcmp(av[1], "-v") == 0 && pf_valid_name(av[2]))
+		return (*vname = av[2], 3);
+	if (argv.len >= 3 && ft_strcmp(av[1], "-v") == 0)
+		return (-1);
 	if (argv.len >= 2 && !ft_strncmp(av[1], "--", 3))
 		return (2);
 	if (argv.len >= 2 && av[1][0] == '-' && av[1][1])
@@ -86,6 +113,15 @@ static int	pf_fmt_index(t_vec argv)
    else 0. */
 static int	pf_finish(t_pf *pf)
 {
+	char	*val;
+
+	if (pf->vname)
+	{
+		val = ft_strndup((char *)pf->out->ctx, pf->out->len);
+		env_set(&pf->state->env, env_create(ft_strdup(pf->vname),
+				val, false));
+		return (xfree(pf->out->ctx), pf->err);
+	}
 	if (pf->out->len
 		&& write(STDOUT_FILENO, pf->out->ctx, pf->out->len))
 	{
@@ -103,8 +139,9 @@ int	builtin_printf(t_shell *state, t_vec argv)
 	t_pf		pf;
 	t_string	out;
 	int			fmt_idx;
+	char		*vname;
 
-	fmt_idx = pf_fmt_index(argv);
+	fmt_idx = pf_fmt_index(argv, &vname);
 	if (fmt_idx < 0)
 		return (ft_eprintf("%s: printf: %s: invalid option\n",
 				state->ctx, ((char **)argv.ctx)[1]), 2);
@@ -114,7 +151,8 @@ int	builtin_printf(t_shell *state, t_vec argv)
 	vec_init(&out);
 	out.elem_size = 1;
 	pf = (t_pf){.out = &out, .av = (char **)argv.ctx,
-		.argc = (int)argv.len, .argi = fmt_idx + 1, .ctx = state->ctx};
+		.argc = (int)argv.len, .argi = fmt_idx + 1, .ctx = state->ctx,
+		.vname = vname, .state = state};
 	run_format(&pf, pf.av[fmt_idx]);
 	while (!pf.stop && pf.argi < pf.argc && pf.used)
 	{

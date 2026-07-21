@@ -150,3 +150,8 @@ unset x; printf "[%s]" ${x:-"c d"}; echo
 unset x; printf "[%s]" ${x:-a b}; echo
 shopt -s nullglob; echo no_such_glob_pattern_xyz*; echo end
 shopt -q extglob; echo $?; shopt -s globstar; shopt globstar
+v=hello; echo "${v^^} ${v,,} ${v^} ${v~}"
+v=HeLLo; echo "${v,} ${v~~}"
+printf -v out "%d-%s" 42 hi; echo "$out"; printf -v x "%05d" 7; echo "$x"
+[[ -v HOME ]] && echo set; [[ -v NOPE_XYZ_123 ]] || echo unset
+x=; [[ -v x ]] && echo empty-is-set
