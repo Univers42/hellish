@@ -73,13 +73,15 @@ typedef enum e_tt
 
 /* Compact back-reference to the original full word before the lexer split
    it into sub-tokens.  Used by the expander to reconstruct the original
-   text for ${v} word forms that span multiple sub-tokens. */
+   text for ${v} word forms that span multiple sub-tokens.
+   Field order packs the struct to 16 bytes (pointer, int, two flag bytes)
+   instead of the 24 the old bool-first layout padded out to. */
 typedef struct s_token_old
 {
-	bool	present; /* true if this back-reference is valid */
-	bool	allocated; /* true if start is heap (must be freed) */
 	char	*start; /* pointer to start of original word in input */
 	int		len; /* byte length of the original word */
+	bool	present; /* true if this back-reference is valid */
+	bool	allocated; /* true if start is heap (must be freed) */
 }	t_token_old;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
@@ -90,14 +92,20 @@ typedef struct s_arith_cache	t_arith_cache;
 /* The live token struct used in the AST and passed between lexer/parser.
    start+len is a (non-owning) slice into the input unless allocated=true.
    split_eligible means field splitting is allowed on this token (cleared
-   for quoted words and assignment values). */
+   for quoted words and assignment values).
+   Layout matters: this struct is embedded in every AST node and every
+   deque slot — hundreds of thousands of copies on a big parse. Storing
+   the type in a byte (t_tt values fit comfortably) and packing the flags
+   beside it shrinks the struct 40 -> 32 bytes; nobody takes the address
+   of tt (verified), and enum values round-trip through the byte
+   unchanged everywhere it is read or compared. */
 typedef struct s_token
 {
-	t_tt			tt; /* token type */
-	char			*start; /* points into the input string */
-	int				len; /* byte length of the token text */
+	unsigned char	tt; /* token type (a t_tt value, byte-packed) */
 	bool			allocated; /* true if start is heap-allocated */
 	bool			split_eligible; /* false for quoted / assigned values */
+	int				len; /* byte length of the token text */
+	char			*start; /* points into the input string */
 	t_token_old		*full_word; /* back-ref to original word (optional) */
 	t_arith_cache	*arith_cache; /* memoised arith parse (owned, or NULL) */
 }	t_token;
