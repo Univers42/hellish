@@ -86,6 +86,8 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 		return (pf_bad_subst(state, s, slen));
 	if (s[0] == '#' && slen > 1)
 		return (expand_strlen(state, s + 1, slen - 1));
+	if (s[0] == '!' && slen > 1 && pf_is_indirect(s + 1, slen - 1))
+		return (expand_indirect(state, s + 1, slen - 1));
 	if (find_param_op(s, slen, &o))
 		return (expand_param_op(state, o));
 	op = find_trim_op(s, slen, &name_len);
