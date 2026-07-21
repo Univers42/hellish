@@ -136,3 +136,6 @@ exit 3 | exit 5; echo ${PIPESTATUS[0]} ${PIPESTATUS[1]}
 echo x | read v; echo "[$v]"
 echo a | { read z; echo "got $z"; }
 printf "1\n2\n" | while read n; do s=$((s+n)); done; echo "[$s]"
+set -Q 2>/dev/null; echo rc=$?
+type -t echo; type -t if; type -t nosuchcmd12345; echo done=$?
+sleep 0.02 & sleep 0.08 & wait -n; echo wn=$?
