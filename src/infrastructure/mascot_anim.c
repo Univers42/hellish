@@ -30,24 +30,32 @@ int	*anim_status(void)
 	return (&status);
 }
 
-/* readline idle tick (~90ms, even while typing): advance a frame, re-render
-   the prompt and repaint the mascot line above the cursor. */
+/* readline idle tick (~100ms, while the shell waits at the prompt):
+   advance the frame counter and repaint the rows above the input with
+   the next pre-rendered variant. No allocation, no t_shell access —
+   the variants were fully rendered by the parent before the fork. */
 int	mascot_hook(void)
 {
-	t_string	r;
+	t_panim		*a;
+	t_string	view;
 
+	a = anim_cells();
+	if (a->count <= 0)
+		return (0);
 	(*anim_frame())++;
-	vec_init(&r);
-	r.elem_size = 1;
-	render_prompt(&r, *anim_frame(), *anim_status());
-	vec_push_char(&r, 0);
-	redraw_mascot(&r);
-	xfree(r.ctx);
+	view = (t_string){0};
+	view.ctx = a->buf[*anim_frame() % a->count];
+	redraw_mascot(&view);
 	return (0);
 }
 
-/* The prompt face has been removed, so there is no idle redraw to install. */
+/* Install the idle hook only when frame variants exist (PS1 contains \A
+   and HELLISH_ANIM selects a live style); a static prompt keeps the
+   hook NULL and pays nothing. */
 void	mascot_install(void)
 {
-	rl_event_hook = NULL;
+	if (anim_cells()->count > 0)
+		rl_event_hook = mascot_hook;
+	else
+		rl_event_hook = NULL;
 }

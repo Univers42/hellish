@@ -71,6 +71,22 @@ enum e_pal
 	PAL_N
 };
 
+/* Prompt animation cells, filled by the parent in ps1_animated and read
+   by the forked readline child's idle hook (plain fork inheritance, the
+   same trick the old mascot used): one fully-rendered prompt string per
+   frame, differing only in the \A glyph, plus the visible width of the
+   last prompt row for the repaint wrap math. count == 0 disables the
+   idle hook entirely. */
+# define PANIM_FRAMES 8
+# define PANIM_MAX 2048
+
+typedef struct s_panim
+{
+	char	buf[PANIM_FRAMES][PANIM_MAX];
+	int		count;
+	int		last_w;
+}	t_panim;
+
 /* Cached "which repo (if any) owns the cwd" answer, keyed on the cwd
    string so a cd invalidates it. Turns the per-prompt O(depth) walk of
    parent directories into a single stat once the answer is known. */
@@ -106,6 +122,10 @@ void		ps1_status(t_shell *state, t_string *out);
 void		ps1_duration(t_shell *state, t_string *out);
 void		ps1_jobs(t_shell *state, t_string *out);
 bool		ps1_escape_ext(t_shell *state, t_string *out, char c);
+t_panim		*anim_cells(void);
+void		ps1_anim(t_shell *state, t_string *out);
+t_string	ps1_animated(t_shell *state, char *ps1);
+int			visible_width_cstr(const char *s);
 void		get_git_info(char **branch, int *dirty);
 void		prompt_user_and_cwd(t_string *ret, t_prompt *p);
 void		prompt_branch(t_string *ret, t_prompt *p);

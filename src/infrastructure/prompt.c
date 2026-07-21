@@ -139,9 +139,10 @@ t_string	prompt_normal(t_shell *state)
 
 	ensure_locale();
 	maybe_bench();
+	anim_cells()->count = 0;
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
-		return (ps1_render(state, ps1));
+		return (ps1_animated(state, ps1));
 	vec_init(&ret);
 	ret.elem_size = 1;
 	status = state->last_cmd_st_exe.status;

@@ -15,7 +15,15 @@
 #   \S  " ✘N" after a failing command, empty after success
 #   \p  " took N.Ns" once a command ran 2s or longer
 #   \J  " ⚙N" while background jobs exist
+#   \A  an ANIMATED glyph (see HELLISH_ANIM below) — live while the
+#       shell waits at the prompt, repainted in place ~10x/second.
+#       (Shadows bash's \A 24h-clock escape; use \t for time instead.)
 # Live $VAR / ${VAR} expansion happens at every render.
+
+# Prompt animation style for \A:
+#   spinner  braille spinner in blue        pulse  a ✦ breathing magenta
+#   ember    a ▲ flickering through fire    off    freeze/hide \A
+HELLISH_ANIM=pulse
 
 # Theme: "pure" (default) — a blank line for breathing room, then one
 # calm info line (bold blue path, grey branch, red failure badge, amber
@@ -25,7 +33,7 @@
 #
 #     ~/Documents/hellish feat/rc-theming* ✘1 took 3.2s ⚙1
 #     ❯
-PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\]\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
+PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
 PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
 
 # Theme: "ember" — framed two-liner, user shown, same badges.
