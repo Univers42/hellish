@@ -177,6 +177,35 @@ pass counts in `bench/baseline/`). Performance claims come from
 - [x] Batch-2 gate accepted: **Oils 1047 → 1057, mksh 193 → 195**.
 - Session running total: Oils 1029 → 1057+, mksh 191 → 195+.
 
+## Done (continued 12) — the "replace bash" campaign (autonomous session)
+
+Landed toward flipping hellish as a login shell (all probe-verified vs
+bash, full battery green each step, both heaps leak-free):
+- type -t/-p/-P, wait -n, set rejects unknown flags fatally.
+- Array completion: ${a[@]:off:len} slices, ${!a[@]} keys, ${a[-1]}
+  negative index, ${a[@]/p/r} & ${a[@]#p} element-wise ops, mapfile/
+  readarray -t, declare/typeset -p/-a, local/declare a=(...) arrays.
+- shopt -s/-u/-q (nullglob+dotglob wired into the glob path).
+- ${v^^}/${v,,}/${v~} case conversion, ${v@Q}/@U/@L/@u/@A transforms.
+- printf -v NAME (with bash name validation), [[ -v NAME ]], [[ =~ ]]
+  with BASH_REMATCH.
+- Pipeline containment fixed (true|exit no longer kills the shell;
+  echo x|read v no longer leaks) — the one shell-KILLING bug.
+- $'...', <<< herestrings, PIPESTATUS, unset a[i], read -a/-p, wait
+  %jobspec, [[ a<b ]], errexit and-or suppression, var-sub-quote.
+- BASH_VERSION/BASH_VERSINFO set so scripts take their bash path.
+- CONFORMANCE this session: Oils 1029 -> 1060 (+31), mksh 191 -> 201
+  (+10). PARSE PERF: 53.8ms vs bash 54.3ms (nominally faster, ~13%
+  less CPU), 20MB RSS.
+- Known scope-outs (v1, documented, low-frequency): ${a[@]:-word}
+  (array + default op), mixed-quote op-words a "b c" d, element-level
+  split/glob in arr=(...), slice per-element field structure,
+  ${a[@]^^}, ${!prefix*}, associative arrays, declare -i arithmetic
+  attribute, ${@:0} including $0.
+- REMAINING for full parity (queued, none architectural): associative
+  arrays (declare -A), ${a[@]:-w}, the pull-lexer to decisively beat
+  bash on parse, PROMPT_COMMAND, trap DEBUG/RETURN/ERR, coproc.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
