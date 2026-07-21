@@ -114,6 +114,8 @@ int	builtin_wait(t_shell *state, t_vec argv)
 	size_t	i;
 	pid_t	pid;
 
+	if (argv.len >= 2 && ft_strcmp(((char **)argv.ctx)[1], "-n") == 0)
+		return (wait_n(state));
 	if (argv.len >= 2)
 	{
 		i = 1;

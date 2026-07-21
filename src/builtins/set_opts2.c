@@ -78,7 +78,9 @@ int	apply_set_flags(t_shell *state, t_vec argv)
 			i += set_o_word(state, av[i][0], av + i, argv.len - i);
 		else if ((av[i][0] == '-' || av[i][0] == '+') && av[i][1])
 		{
-			apply_flag_word(state, av[i]);
+			if (!apply_flag_word(state, av[i]))
+				return (ft_eprintf("%s: set: invalid option\n",
+						state->ctx), 2);
 			i++;
 		}
 		else if (av[i][0] == '+')
