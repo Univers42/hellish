@@ -164,3 +164,7 @@ a=(f.txt g.txt); echo "${a[@]%.txt}"; a2=(aa bb); echo "${a2[@]//a/X}"
 v="a b"; echo "${v@Q}"; w="it's"; echo "${w@Q}"
 v=hi; echo "${v@U} ${v@L} ${v@u}"; n=42; echo "${n@A}"
 [ -n "$BASH_VERSION" ] && echo is-bash; echo "${#BASH_VERSINFO[@]}"
+f() { local a=(x y z); echo "${#a[@]} ${a[1]}"; }; f
+declare a=(p q); echo "${a[@]}"
+g() { local -a c=(m n o); echo "${c[@]} ${#c[@]}"; }; g
+declare -a d=(9 8 7); echo "${d[2]} ${d[0]}"
