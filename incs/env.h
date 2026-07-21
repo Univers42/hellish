@@ -37,6 +37,26 @@ t_env		str_to_env(char *str);
 t_vec_env	env_to_vec_env(t_shell *state, char **envp);
 char		*env_expand_n(t_shell *state, char *key, int len);
 char		*env_expand(t_shell *state, char *key);
+
+/* Indexed arrays (env_array*.c). An array VALUE is an ordinary env string
+   with a private encoding: ARR_MAGIC, then "index<ARR_US>value" records
+   joined by ARR_RS, kept sorted by index (sparse indices supported).
+   Nothing in the env lifecycle (set/copy/free/fork) knows or cares — the
+   encoding is invisible outside the array helpers, the expander, and the
+   two listing sites that pretty-print it. Arrays are never exported to
+   execve (get_envp skips them), matching bash. */
+# define ARR_MAGIC '\x1d'
+# define ARR_RS '\x1e'
+# define ARR_US '\x1f'
+
+bool		arr_is(const char *val);
+bool		arr_next(const char **cur, long *idx, const char **v, int *vl);
+int			arr_count(const char *val);
+char		*arr_get_idx(const char *val, long want);
+char		*arr_join(const char *val, char sep);
+char		*arr_with_set(const char *old, long idx, const char *v);
+char		*arr_from_elems(char **elems, int n, const char *base);
+char		*arr_format(const char *val);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);

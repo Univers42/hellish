@@ -12,6 +12,8 @@
 
 #include "expander_private.h"
 #include "sys.h"
+#include "env.h"
+#include "arith.h"
 
 /* Copy the assignment LHS (variable name) out of the first child token of
    an AST_ASSIGNMENT_WORD node.  The first child is always a TT_WORD whose
@@ -41,6 +43,31 @@ static char	*dup_value_from_args(t_vec *args)
 	return (ft_strdup(""));
 }
 
+/* arr[expr]=v: the key still carries its "[expr]" suffix here. Evaluate
+   the subscript arithmetically, rebuild the array value with that
+   element set (scalars promote to a one-element array first), truncate
+   the key to the bare name. A plain key passes through untouched. */
+static void	subscript_assign(t_shell *state, t_env *ret)
+{
+	char	*br;
+	char	*res;
+	char	*nv;
+	long	idx;
+
+	br = ft_strchr(ret->key, '[');
+	if (!br || !ret->value)
+		return ;
+	*br = '\0';
+	res = arith_expand(state, br + 1, (int)ft_strlen(br + 1) - 1);
+	idx = 0;
+	if (res)
+		idx = ft_atoi(res);
+	xfree(res);
+	nv = arr_with_set(env_expand(state, ret->key), idx, ret->value);
+	xfree(ret->value);
+	ret->value = nv;
+}
+
 /* Convert a VAR=value AST node into a t_env ready to be pushed into the
    environment.  The RHS (child [1]) is expanded with assignment semantics
    (keep-as-one, no glob, malloc allocator rather than slab) so the resulting
@@ -67,5 +94,6 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 		else
 			ret.value = ft_strdup("");
 	}
+	subscript_assign(state, &ret);
 	return (xfree(args.ctx), ret);
 }

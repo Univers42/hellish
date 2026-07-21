@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "env.h"
 
 /* True when s[0..len) is a valid bare variable name ([A-Za-z_][A-Za-z0-9_]*).
    Used to gate the fast-path: $? $@ $# $1 and ${...} forms all fail this
@@ -91,7 +92,7 @@ char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	if (ifs && ft_strcmp(ifs, " \t\n") != 0)
 		return (NULL);
 	v = env_expand_n(state, t->start, t->len);
-	if (!v || !*v || needs_split_or_glob(v))
+	if (!v || !*v || arr_is(v) || needs_split_or_glob(v))
 		return (NULL);
 	return (v);
 }

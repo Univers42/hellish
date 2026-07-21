@@ -16,6 +16,18 @@
    variable has no value). This is the output of bare `set` — it differs from
    `env` in that it includes all variables, not just the exported ones, and
    it does not quote the values. */
+/* Arrays list in bash's display form, name=([0]="a" ...), so the
+   private value encoding never reaches the terminal. */
+static void	print_env_array(t_env *e)
+{
+	char	*fmt;
+
+	fmt = arr_format(e->value);
+	if (fmt)
+		ft_printf("%s=%s\n", e->key, fmt);
+	xfree(fmt);
+}
+
 static void	set_print_env(t_shell *state)
 {
 	size_t	i;
@@ -28,7 +40,12 @@ static void	set_print_env(t_shell *state)
 		if (e->key)
 		{
 			if (e->value)
-				ft_printf("%s=%s\n", e->key, e->value);
+			{
+				if (arr_is(e->value))
+					print_env_array(e);
+				else
+					ft_printf("%s=%s\n", e->key, e->value);
+			}
 			else
 				ft_printf("%s\n", e->key);
 		}

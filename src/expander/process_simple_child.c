@@ -38,6 +38,8 @@ int	process_simple_child(t_shell *state, t_expander_simple_cmd *exp,
 		}
 		return (0);
 	}
+	else if (exp->curr->node_type == AST_ARRAY_ASSIGN)
+		return (handle_array_assign(state, exp, ret));
 	else if (exp->curr->node_type == AST_TOKEN)
 		return (0);
 	return (0);
