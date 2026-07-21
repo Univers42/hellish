@@ -203,6 +203,7 @@ int		type_is_builtin(const char *name);
 int		type_is_keyword(const char *name);
 int		type_find_in_path(t_shell *state, const char *name, char **out);
 int		type_dispatch(t_shell *state, const char *name, char mode);
+void	set_print_env(t_shell *state);
 bool	apply_flag_word(t_shell *state, const char *w);
 t_ulim	*ulim_table(void);
 void	ulimit_show(const t_ulim *u, int hard, int with_label);
