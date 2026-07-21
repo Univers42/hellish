@@ -113,7 +113,7 @@ char	**get_envp(t_shell *state, char *exe_path)
 	while (++i < state->env.len)
 	{
 		e = &((t_env *)state->env.ctx)[i];
-		if (e->exported)
+		if (e->exported && !arr_is(e->value))
 			ret[j++] = env_to_str(e);
 	}
 	return (ret);

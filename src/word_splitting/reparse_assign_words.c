@@ -64,11 +64,27 @@ static void	apply_assignment_split(t_ast_node *word,
 	*word = new_root;
 }
 
+/* NAME[subscript] as an assignment left side: a valid identifier, an
+   opening bracket, anything (an arithmetic expression) and the closing
+   bracket exactly at the end — arr[i+1]=v assigns an array element. */
+static bool	is_subscript_key(char *s, int len)
+{
+	int	i;
+
+	i = 0;
+	while (i < len && s[i] != '[')
+		i++;
+	if (i == 0 || i + 1 >= len || s[len - 1] != ']')
+		return (false);
+	return (is_valid_ident(s, i));
+}
+
 /* Attempt to re-classify one AST_WORD as an AST_ASSIGNMENT_WORD if it
-   matches the pattern IDENT=value. Guard order matters: we check tt, then
-   the '=' exists, then the left side is a valid POSIX identifier -- all must
-   pass before we mutate the node. Early returns on any failure leave the node
-   unchanged so normal word expansion picks it up. */
+   matches the pattern IDENT=value (or IDENT[expr]=value for an array
+   element). Guard order matters: we check tt, then the '=' exists, then
+   the left side is valid -- all must pass before we mutate the node.
+   Early returns on any failure leave the node unchanged so normal word
+   expansion picks it up. */
 void	reparse_assignment_word(t_ast_node *word)
 {
 	t_token	*first_token;
@@ -84,7 +100,8 @@ void	reparse_assignment_word(t_ast_node *word)
 	eq_pos = find_eq_pos(first_token);
 	if (eq_pos < 0)
 		return ;
-	if (!is_valid_ident(first_token->start, eq_pos))
+	if (!is_valid_ident(first_token->start, eq_pos)
+		&& !is_subscript_key(first_token->start, eq_pos))
 		return ;
 	apply_assignment_split(word, first_token, eq_pos);
 }

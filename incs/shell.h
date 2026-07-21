@@ -233,6 +233,7 @@ typedef struct s_shell
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
 	t_job_table			job_table; /* background job list */
+	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				dirstack; /* pushd/popd dir stack */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */

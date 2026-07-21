@@ -75,6 +75,15 @@ static void	expand_simple_var(t_shell *state, t_token *curr_tt)
 	temp = env_expand_n(state, curr_tt->start, curr_tt->len);
 	if (!temp && state->opt_nounset)
 		nounset_abort(state, curr_tt->start, curr_tt->len);
+	if (temp && arr_is(temp))
+	{
+		curr_tt->start = arr_get_idx(temp, 0);
+		if (!curr_tt->start)
+			curr_tt->start = ft_strdup("");
+		curr_tt->len = ft_strlen(curr_tt->start);
+		curr_tt->allocated = true;
+		return ((void)parena_note_attach());
+	}
 	curr_tt->start = temp;
 	if (curr_tt->start)
 		curr_tt->len = ft_strlen(temp);
@@ -129,6 +138,8 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 	if (expand_positional(state, curr_tt, split_ctx))
 		return ;
 	if (handle_empty_token(curr_tt))
+		return ;
+	if (expand_array_token(state, curr_tt, split_ctx))
 		return ;
 	if (expand_op_token(state, curr_tt, split_ctx))
 		return ;

@@ -16,6 +16,8 @@
 #include "expander.h"
 #include "parena.h"
 
+void	arr_marks_clear(t_shell *state);
+
 void	pos_free(t_pos *pos);
 void	free_positional_snapshot(t_vec *w);
 
@@ -120,6 +122,7 @@ void	free_all_state(t_shell *state)
 	free_redirects(&state->redirects);
 	cleanup_proc_subs(state);
 	free_ast(&state->tree);
+	arr_marks_clear(state);
 	free_hist(state);
 	xfree(state->cwd.ctx);
 	pos_free(&state->pos);
