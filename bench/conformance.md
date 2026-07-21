@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1014 | 0 | 0 | 0 | 608 | 0 | 1622 | 62.52% |
+| **hellish --posix** | 1029 | 0 | 0 | 0 | 593 | 0 | 1622 | 63.44% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 156
+### Consensus divergences (hellish fails, bash AND dash pass): 154
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -31,8 +31,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `assign` case 31 [FAIL]: assignment using dynamic var names doesn't split
 - `assign` case 35 [FAIL]: readonly a=(1 2) no_value c=(3 4) makes 'no_value' readonly
 - `background` case 5 [FAIL]: wait with invalid arg
-- `background` case 11 [FAIL]: Start background pipeline, wait %job_spec
-- `background` case 16 [FAIL]: Wait on multiple specific IDs returns last status
 - `ble-features` case 2 [FAIL]: [bash_unset] local-unset / dynamic-unset for tempenv
 - `blog1` case 1 [FAIL]: ${###}
 - `blog1` case 2 [FAIL]: ${####}
@@ -183,7 +181,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | arith | 74 | 45 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
 | assign | 48 | 22 | 40 | 32 |
-| background | 27 | 17 | 25 | 18 |
+| background | 27 | 19 | 25 | 18 |
 | ble-features | 9 | 0 | 9 | 1 |
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
@@ -196,11 +194,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-echo | 27 | 21 | 27 | 5 |
 | builtin-eval-source | 23 | 11 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
-| builtin-kill | 20 | 8 | 17 | 7 |
+| builtin-kill | 20 | 10 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
 | builtin-meta-assign | 11 | 2 | 6 | 1 |
 | builtin-misc | 7 | 3 | 4 | 4 |
-| builtin-printf | 63 | 38 | 51 | 41 |
+| builtin-printf | 63 | 39 | 51 | 41 |
 | builtin-process | 26 | 8 | 17 | 14 |
 | builtin-set | 24 | 21 | 23 | 21 |
 | builtin-special | 12 | 3 | 5 | 10 |
@@ -227,12 +225,12 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | interactive-parse | 1 | 0 | 0 | 0 |
 | known-differences | 2 | 2 | 2 | 2 |
 | loop | 29 | 17 | 22 | 24 |
-| nul-bytes | 16 | 2 | 16 | 6 |
+| nul-bytes | 16 | 8 | 16 | 6 |
 | paren-ambiguity | 9 | 5 | 9 | 7 |
 | parse-errors | 27 | 21 | 22 | 23 |
 | pipeline | 26 | 19 | 26 | 17 |
 | posix | 15 | 15 | 15 | 15 |
-| quote | 35 | 28 | 34 | 23 |
+| quote | 35 | 31 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
 | redirect-command | 23 | 17 | 22 | 19 |
 | sh-func | 12 | 11 | 11 | 12 |
@@ -247,7 +245,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | toysh-posix | 23 | 14 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
-| var-op-strip | 29 | 16 | 26 | 20 |
+| var-op-strip | 29 | 17 | 26 | 20 |
 | var-op-test | 37 | 24 | 35 | 20 |
 | var-sub | 6 | 5 | 5 | 6 |
 | var-sub-quote | 41 | 26 | 40 | 35 |
@@ -262,11 +260,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 188 | 395 | 583 | 32.25% |
+| **hellish --posix** | 191 | 392 | 583 | 32.76% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 51
+### Consensus divergences on check.t: 49
 
 - `check.t:IFS-arith-1`
 - `check.t:IFS-subst-3-arr`
@@ -286,10 +284,8 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:break-5`
 - `check.t:comsub-2`
 - `check.t:continue-5`
-- `check.t:exit-err-10`
 - `check.t:exit-err-4`
 - `check.t:exit-err-5`
-- `check.t:exit-err-8`
 - `check.t:exit-stdout-1`
 - `check.t:exit-trap-1`
 - `check.t:exit-trap-3`
