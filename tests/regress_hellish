@@ -139,3 +139,10 @@ printf "1\n2\n" | while read n; do s=$((s+n)); done; echo "[$s]"
 set -Q 2>/dev/null; echo rc=$?
 type -t echo; type -t if; type -t nosuchcmd12345; echo done=$?
 sleep 0.02 & sleep 0.08 & wait -n; echo wn=$?
+a=(x y z w); echo "${a[@]:1:2}" "${a[@]:2}" "${!a[@]}"
+a=(a b c d e); echo "${a[@]:1:3}" "${a[*]:2:2}"
+arr=(alpha beta gamma); echo "${!arr[@]}"
+mapfile -t lines < <(printf "one\ntwo\nthree\n"); echo "${#lines[@]}: ${lines[0]}/${lines[2]}"
+a=(1 2 3); declare -p a
+v=hi; declare -p v
+declare -a arr2; arr2[2]=x; echo "${arr2[2]} ${#arr2[@]}"

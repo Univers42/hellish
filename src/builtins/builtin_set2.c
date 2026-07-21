@@ -29,7 +29,7 @@ static void	print_env_array(t_env *e)
 	xfree(fmt);
 }
 
-static void	set_print_env(t_shell *state)
+void	set_print_env(t_shell *state)
 {
 	size_t	i;
 	t_env	*e;
