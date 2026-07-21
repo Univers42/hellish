@@ -60,17 +60,23 @@ static void	emit_char(char c)
 	fputc((unsigned char)c, rl_outstream);
 }
 
-/* How many rows up the prompt's first row is from the cursor: the prompt rows
-   above the input, plus however far the input itself has wrapped (the bottom
-   "╰─❯ " arrow is 4 columns + rl_point typed characters). */
+/* How many rows up the prompt's first row is from the cursor: the prompt
+   rows above the input, plus however far the input itself has wrapped.
+   The input row starts after the prompt's last-row visible width, which
+   ps1_animated measured into the cells (4 was the old built-in arrow's
+   hardcoded width, kept as the fallback). */
 static int	rows_above(const char *s)
 {
 	int	cols;
+	int	lastw;
 
 	cols = get_cols();
 	if (cols < 2)
 		cols = 80;
-	return (count_nl(s) + (4 + rl_point) / cols);
+	lastw = 4;
+	if (anim_cells()->count > 0)
+		lastw = anim_cells()->last_w;
+	return (count_nl(s) + (lastw + rl_point) / cols);
 }
 
 /* Repaint the mascot line in place without disturbing what is being typed:
