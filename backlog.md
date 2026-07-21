@@ -204,9 +204,9 @@ pass counts in `bench/baseline/`). Performance claims come from
 | string concat | wins ~7× vs bash | | tied dash | winning |
 | read loop | fastest | 1.5× slower | 3.5-5.8× slower | **winning** |
 | cmdsub $(true) | fastest | 2.9× slower | 2× slower | **winning** |
-| cmdsub $(/bin/true) | 0.86× bash | | 0.57× dash | losing |
-| pipeline 3-stage | ~tied bash | | 0.92× dash | close |
-| configure | DNF | 9.7s | 9.9s | **blocked** |
+| cmdsub $(/bin/true) | 0.83× bash | | 0.67× dash | losing |
+| pipeline 3-stage | 1.09× bash | | 0.91× dash | close |
+| configure | 14.1s (was 19.8) | 7.1s | 6.4s | 2× gap, closing |
 
 ## Invariants (do not break)
 
