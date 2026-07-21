@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "glob_private.h"
+#include "ft_glob.h"
 
 int				is_letter(unsigned char c);
 int				is_digit_char(unsigned char c);
@@ -108,6 +109,8 @@ t_vec	expand_word_glob(t_ast_node word)
 		match_dir(&args, glob, "/", 1);
 	else
 		match_dir(&args, glob, "", 0);
+	if (args.len == 0 && glob_nullglob())
+		return (glob_free_tokens(&glob), args);
 	if (args.len == 0)
 		vec_push(&args, &(char *){(char *)word_to_string(word).ctx});
 	glob_free_tokens(&glob);

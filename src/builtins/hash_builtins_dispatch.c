@@ -81,6 +81,7 @@ static void	fill_builtin_hash2(t_hash *h)
 	hash_set(h, "readarray", (void *)builtin_mapfile);
 	hash_set(h, "declare", (void *)builtin_declare);
 	hash_set(h, "typeset", (void *)builtin_declare);
+	hash_set(h, "shopt", (void *)builtin_shopt);
 }
 
 static void	init_builtin_hash(t_hash *h)
