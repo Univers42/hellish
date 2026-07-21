@@ -87,6 +87,8 @@ static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 	if (res)
 		idx = ft_atoi(res);
 	xfree(res);
+	if (idx < 0 && arr_is(val))
+		idx += arr_count(val);
 	elem = NULL;
 	if (arr_is(val))
 		elem = arr_get_idx(val, idx);
