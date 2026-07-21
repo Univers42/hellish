@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "arith_private.h"
+#include "parena.h"
 
 /* Lex the entire expression into a freshly-malloc'd token array and return it.
    The array includes the terminating EOF or ERROR token. var_name and start
@@ -64,6 +65,7 @@ static void	cache_build(t_arith_cache **cachep, const char *expr, int len)
 	c->src = expr;
 	c->srclen = len;
 	*cachep = c;
+	parena_note_attach();
 }
 
 /* Replay a cached token array through arith_run. The lexer is initialized in

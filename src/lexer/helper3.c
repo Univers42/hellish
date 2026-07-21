@@ -6,109 +6,104 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/18 23:00:38 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/18 23:00:38 by marvin           ###   ########.fr       */
+/*   Updated: 2026/07/21 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "lexer.h"
 
-/* Maximal-munch operator match: walk the null-terminated needles table and
-   return the index of the longest entry that is a prefix of haystack. This
-   ensures `>>` beats `>` and `&&` beats `&`, matching POSIX rule 2 of
-   operator recognition. Returns -1 if nothing matched (the caller asserts
-   this never happens for well-formed input). */
-int	longest_matching_str(t_op_map *needles, char *haystack)
-{
-	int	max_idx;
-	int	max;
-	int	i;
+/* Operator recognition used to walk a 21-entry table rebuilt on the stack
+   at every call, with ~60 ft_strlen/ft_strncmp calls per operator token —
+   measurable in the parse profile. It is now a first-character dispatch:
+   the leading byte picks one of three tiny matchers doing direct char
+   compares, longest form first (POSIX maximal munch: <<- beats << beats
+   <, && beats &). Token types and lengths are byte-identical to the old
+   table walk. */
 
-	max_idx = -1;
-	max = -1;
-	i = 0;
-	while (needles[i].str)
-	{
-		if ((int)ft_strlen(needles[i].str) > max
-			&& ft_strncmp(needles[i].str, haystack,
-				ft_strlen(needles[i].str)) == 0)
-		{
-			max_idx = i;
-			max = ft_strlen(needles[i].str);
-		}
-		i++;
-	}
-	return (max_idx);
+/* '<' family: heredocs, process substitution, dup, read-write, redirect. */
+static int	op_left(const char *s, t_tt *t)
+{
+	if (s[1] == '<' && s[2] == '-')
+		return (*t = TT_HEREDOC, 3);
+	if (s[1] == '<')
+		return (*t = TT_HEREDOC, 2);
+	if (s[1] == '(')
+		return (*t = TT_PROC_SUB_IN, 2);
+	if (s[1] == '&')
+		return (*t = TT_DUP_IN, 2);
+	if (s[1] == '>')
+		return (*t = TT_READWRITE, 2);
+	return (*t = TT_REDIRECT_LEFT, 1);
 }
 
-/* Operator table -- group 1: pipe, heredocs, left-redirect, open-paren
-   family. Note that `((` must appear before `(` so the longest-match scan
-   picks TT_ARITH_START over TT_BRACE_LEFT, and `<<-` before `<<` for the
-   same reason. */
-static void	init_ops_group1(t_op_map ops[])
+/* '>' family: append, process substitution, dup, clobber, redirect. */
+static int	op_right(const char *s, t_tt *t)
 {
-	ops[0] = (t_op_map){"|", TT_PIPE};
-	ops[1] = (t_op_map){"<<", TT_HEREDOC};
-	ops[2] = (t_op_map){"<<-", TT_HEREDOC};
-	ops[3] = (t_op_map){"<", TT_REDIRECT_LEFT};
-	ops[4] = (t_op_map){"(", TT_BRACE_LEFT};
-	ops[5] = (t_op_map){"((", TT_ARITH_START};
+	if (s[1] == '>')
+		return (*t = TT_APPEND, 2);
+	if (s[1] == '(')
+		return (*t = TT_PROC_SUB_OUT, 2);
+	if (s[1] == '&')
+		return (*t = TT_DUP_OUT, 2);
+	if (s[1] == '|')
+		return (*t = TT_CLOBBER, 2);
+	return (*t = TT_REDIRECT_RIGHT, 1);
 }
 
-/* Operator table -- group 2: right-paren, process substitution `<(` / `>(`,
-   and append `>>`. Process-sub tokens are longer than `<` / `>` so they win
-   the longest-match race automatically. */
-static void	init_ops_group2(t_op_map ops[])
+/* Everything else: pipe/or, amp/and, semi/dsemi, parens/arith. Returns 0
+   for a character that is no operator at all — the caller asserts, since
+   is_word_boundary should never have routed such a byte here. */
+static int	op_other(const char *s, t_tt *t)
 {
-	ops[6] = (t_op_map){")", TT_BRACE_RIGHT};
-	ops[7] = (t_op_map){"<(", TT_PROC_SUB_IN};
-	ops[8] = (t_op_map){">(", TT_PROC_SUB_OUT};
-	ops[9] = (t_op_map){">>", TT_APPEND};
+	if (s[0] == '|' && s[1] == '|')
+		return (*t = TT_OR, 2);
+	if (s[0] == '|')
+		return (*t = TT_PIPE, 1);
+	if (s[0] == '&' && s[1] == '&')
+		return (*t = TT_AND, 2);
+	if (s[0] == '&')
+		return (*t = TT_AMPERSAND, 1);
+	if (s[0] == ';' && s[1] == ';')
+		return (*t = TT_DSEMI, 2);
+	if (s[0] == ';')
+		return (*t = TT_SEMICOLON, 1);
+	if (s[0] == '(' && s[1] == '(')
+		return (*t = TT_ARITH_START, 2);
+	if (s[0] == '(')
+		return (*t = TT_BRACE_LEFT, 1);
+	if (s[0] == ')')
+		return (*t = TT_BRACE_RIGHT, 1);
+	return (0);
 }
 
-/* Operator table -- group 3: bare redirects, logicals, ;;, and the full
-   redirect family (>&, <&, <>, >|). `;;` must appear before `;` so the
-   double-semicolon in case clauses is not split into two separators. */
-static void	init_ops_group3(t_op_map ops[])
-{
-	ops[10] = (t_op_map){">", TT_REDIRECT_RIGHT};
-	ops[11] = (t_op_map){"&&", TT_AND};
-	ops[12] = (t_op_map){"&", TT_AMPERSAND};
-	ops[13] = (t_op_map){"||", TT_OR};
-	ops[14] = (t_op_map){";;", TT_DSEMI};
-	ops[15] = (t_op_map){";", TT_SEMICOLON};
-	ops[16] = (t_op_map){">&", TT_DUP_OUT};
-	ops[17] = (t_op_map){"<&", TT_DUP_IN};
-	ops[18] = (t_op_map){"<>", TT_READWRITE};
-	ops[19] = (t_op_map){">|", TT_CLOBBER};
-	ops[20] = (t_op_map){NULL, TT_END};
-}
-
-/* Emit the operator token that starts at *str. First try fd-prefixed form
-   (e.g. `2>`); if none, run the full operator table through longest-match.
-   The ft_assert guards against reaching a character that is neither a word
-   nor a recognised operator -- that would be a bug in is_word_boundary. */
+/* Emit the operator token that starts at *str. First try the fd-prefixed
+   form (e.g. `2>`); if none, dispatch on the leading character. The
+   ft_assert guards against reaching a character that is neither a word
+   nor a recognised operator — that would be a bug in is_word_boundary. */
 void	parse_op(t_deque_tok *tokens, char **str)
 {
-	char		*start;
-	int			op_idx;
-	t_op_map	operators[21];
-	t_token		tmp;
-	int			fd_len;
+	char	*start;
+	t_tt	type;
+	int		len;
+	t_token	tmp;
 
-	fd_len = check_fd_redirect(*str, &tmp);
-	if (fd_len > 0)
+	len = check_fd_redirect(*str, &tmp);
+	if (len > 0)
 	{
-		*str += fd_len;
+		*str += len;
 		deque_push_end(&tokens->deqtok, &tmp);
 		return ;
 	}
-	init_ops_group1(operators);
-	init_ops_group2(operators);
-	init_ops_group3(operators);
 	start = *str;
-	op_idx = longest_matching_str(operators, *str);
-	ft_assert(op_idx != -1);
-	*str += ft_strlen(operators[op_idx].str);
-	tmp = create_token(start, (int)(*str - start), operators[op_idx].t);
+	type = TT_END;
+	if (*start == '<')
+		len = op_left(start, &type);
+	else if (*start == '>')
+		len = op_right(start, &type);
+	else
+		len = op_other(start, &type);
+	ft_assert(len > 0);
+	*str += len;
+	tmp = create_token(start, len, type);
 	deque_push_end(&tokens->deqtok, &tmp);
 }

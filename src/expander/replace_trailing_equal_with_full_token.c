@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 /* Wrap a freshly allocated string in a minimal AST_TOKEN / TT_ENVVAR node
    with allocated=true.  Used by split_envvar and emit_positional_at to build
@@ -26,6 +27,7 @@ t_ast_node	new_env_node(char *new_start)
 		.len = ft_strlen(new_start),
 		.start = new_start,
 		.tt = TT_ENVVAR}};
+	parena_note_attach();
 	return (ret);
 }
 

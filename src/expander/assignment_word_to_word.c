@@ -32,6 +32,7 @@ static void	append_eq_to_token(t_token *t)
 	t->start = ke;
 	t->len++;
 	t->allocated = true;
+	parena_note_attach();
 }
 
 /* Convert an AST_ASSIGNMENT_WORD into a plain AST_WORD so that generic word

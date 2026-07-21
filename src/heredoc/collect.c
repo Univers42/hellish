@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "heredoc_private.h"
+#include "parena.h"
 #include "sys.h"
 
 /* Register the redirect slot for a heredoc and return its index.  No file
@@ -109,5 +110,6 @@ bool	capture_heredoc_to_node(t_shell *state, t_ast_node *node)
 	state->hd_pos = end - state->hd_src;
 	xfree(sep.ctx);
 	node->heredoc_body = (char *)body.ctx;
+	parena_note_attach();
 	return (true);
 }

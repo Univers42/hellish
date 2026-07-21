@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 #include "sys.h"
 #include <pwd.h>
 #include <unistd.h>
@@ -57,6 +58,7 @@ static void	expand_tilde_user(t_token *t)
 	t->start = (char *)s.ctx;
 	t->len = s.len;
 	t->allocated = true;
+	parena_note_attach();
 }
 
 /* Replace the leading tilde prefix of token `t` with the appropriate path.
@@ -88,6 +90,7 @@ void	expand_tilde_token(t_shell *state, t_token *t)
 	if (env_val)
 		vec_push_str(&s, env_val);
 	t->allocated = true;
+	parena_note_attach();
 	vec_push_nstr(&s, t->start + template_len, t->len - template_len);
 	t->start = (char *)s.ctx;
 	t->len = s.len;

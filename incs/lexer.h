@@ -33,14 +33,6 @@ typedef struct s_deque_tok
 	char		looking_for; /* '\0' normally; ')' / '}' if incomplete */
 }	t_deque_tok;
 
-/* One entry in the operator string-to-token-type table.  The table is
-   sorted longest-first so the lexer can match greedily (>> before >). */
-typedef struct s_op_map
-{
-	char	*str; /* operator string e.g. ">>" */
-	t_tt	t; /* token type e.g. TT_APPEND */
-}	t_op_map;
-
 char		*tokenizer(char *str, t_deque_tok *ret);
 int			advance_dquoted(char **str);
 int			advance_squoted(char **str);
