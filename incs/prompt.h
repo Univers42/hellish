@@ -58,7 +58,7 @@ int			get_more_input_notty(t_shell *state);
 void		bg_readline(int outfd, char *prompt, int edit_mode);
 int			attach_input_readline(t_rl *l, int pp[2], int pid);
 t_string	prompt_normal(t_shell *state);
-t_string	prompt_more_input(struct s_parser *parser);
+t_string	prompt_more_input(t_shell *state, struct s_parser *parser);
 void		buff_readline_init(t_rl *ret);
 void		update_ctx(t_shell *state);
 
