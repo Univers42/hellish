@@ -216,6 +216,7 @@ typedef struct s_shell
 	bool				hd_defer; /* gather heredocs per top-level range */
 	t_vec				*for_snapshot; /* live "$@" copy of a running for */
 	bool				cycle_has_hd; /* "<<" seen in this cycle's input */
+	bool				cycle_streamed; /* ranges parse+exec'd in-stream */
 	char				*hd_src; /* raw heredoc body string (pre-expand) */
 	size_t				hd_pos; /* read position within hd_src */
 	char				*hd_stripped; /* tab-stripped heredoc body */

@@ -32,7 +32,11 @@ static int	parse_and_push_pipeline(t_shell *state,
 
 /* Handle one iteration of the simple-list loop: consume the operator token,
    skip newlines, detect end-of-input, and parse the next pipeline. Returns
-   1 when the loop should stop (no more operators), 2 on error/incomplete. */
+   1 when the loop should stop (no more operators), 2 on error/incomplete,
+   3 in stream mode when a TT_NEWLINE operator closes a range — the caller
+   executes what it has and re-enters with the deque exactly here. Newlines
+   skipped after && or || never reach this test: only a newline pushed as a
+   sequencing operator (a complete top-level statement) is a boundary. */
 static int	parse_simple_list_op(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
@@ -45,6 +49,8 @@ static int	parse_simple_list_op(t_shell *state, t_parser *parser,
 	r = check_newlines_and_end(parser, tokens, next);
 	if (r != 0)
 		return (r);
+	if (parser->stream && next == TT_NEWLINE)
+		return (parser->stream_more = true, 3);
 	return (parse_and_push_pipeline(state, parser, tokens, ret));
 }
 
@@ -73,10 +79,8 @@ static int	process_all_simple_list_ops(t_shell *state, t_parser *parser,
 	while (1)
 	{
 		status = parse_simple_list_op(state, parser, tokens, ret);
-		if (status == 1)
-			return (1);
-		if (status == 2)
-			return (2);
+		if (status != 0)
+			return (status);
 	}
 }
 
@@ -105,7 +109,7 @@ t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
 	if (parser->res != RES_OK)
 		return (ret);
 	status = process_all_simple_list_ops(state, parser, tokens, &ret);
-	if (status == 2)
+	if (status == 2 || status == 3)
 		return (ret);
 	handle_final_newline_or_end(state, parser, &ret, tokens);
 	return (ret);
