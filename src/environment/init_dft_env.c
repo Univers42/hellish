@@ -90,6 +90,13 @@ static void	set_id_vars(t_shell *state)
 	if (!env_get(&state->env, "OSTYPE"))
 		env_set(&state->env, env_create(ft_strdup("OSTYPE"),
 				ft_strdup("linux-gnu"), false));
+	if (!env_get(&state->env, "BASH_VERSION"))
+		env_set(&state->env, env_create(ft_strdup("BASH_VERSION"),
+				ft_strdup("5.2.0(1)-release"), false));
+	if (!env_get(&state->env, "BASH_VERSINFO"))
+		env_set(&state->env, env_create(ft_strdup("BASH_VERSINFO"),
+				arr_from_elems((char *[]){"5", "2", "0", "1",
+					"release", "x86_64-pc-linux-gnu"}, 6, NULL), false));
 }
 
 /* Top-level init: call all the individual setters in order, then add
