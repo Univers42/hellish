@@ -63,3 +63,27 @@ void	arr_marks_clear(t_shell *state)
 	vec_init(&state->arr_marks);
 	state->arr_marks.elem_size = sizeof(char *);
 }
+
+/* ${!name[@]} in a split context: register a keys-marker ("!" + name) so
+   the splitter emits one field per index (indexed) or key (assoc),
+   instead of joining them — needed for `for k in "${!h[@]}"`. */
+bool	arr_keys_defer(t_shell *state, t_token *tt)
+{
+	char	*mark;
+	int		nlen;
+
+	nlen = tt->len - 4;
+	mark = xmalloc((size_t)nlen + 2);
+	mark[0] = '!';
+	ft_memcpy(mark + 1, tt->start + 1, nlen);
+	mark[nlen + 1] = '\0';
+	if (state->arr_marks.elem_size == 0)
+	{
+		vec_init(&state->arr_marks);
+		state->arr_marks.elem_size = sizeof(char *);
+	}
+	vec_push(&state->arr_marks, &mark);
+	tt->start = mark;
+	tt->allocated = false;
+	return (true);
+}

@@ -31,7 +31,9 @@ static bool	try_array_child(t_shell *state, t_token *curr_t,
 	name = arr_mark_name(state, curr_t->start);
 	if (!name)
 		return (false);
-	if (curr_t->tt == TT_DQENVVAR)
+	if (name[0] == '!')
+		emit_keys_fields(state, name, curr_node, ret);
+	else if (curr_t->tt == TT_DQENVVAR)
 		emit_array_at(state, name, curr_node, ret);
 	else
 		emit_array_split(state, name, curr_node, ret);

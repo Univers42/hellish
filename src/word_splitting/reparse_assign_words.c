@@ -106,6 +106,47 @@ void	reparse_assignment_word(t_ast_node *word)
 	apply_assignment_split(word, first_token, eq_pos);
 }
 
+/* Pre-pass (runs BEFORE reparse_words): a raw word matching NAME[...]=value
+   is classified as an assignment while still a single token, so a '$' in
+   the subscript (a[$i]=x, h[$key]=v) does not split the word out from
+   under the classifier. Only words with a '[' before the '=' are touched;
+   plain NAME=value is left to the normal post-split pass. subscript_assign
+   later expands the raw subscript (arith for indexed, param for assoc). */
+static void	subscript_assign_word(t_ast_node *word)
+{
+	t_token	*ft;
+	int		eq;
+
+	ft = get_first_token_ptr(word);
+	if (!ft || ft->tt != TT_WORD || !ft->start || ft->len <= 0)
+		return ;
+	eq = find_eq_pos(ft);
+	if (eq < 1 || !is_subscript_key(ft->start, eq))
+		return ;
+	if (!ft_strnchr(ft->start, '[', eq))
+		return ;
+	apply_assignment_split(word, ft, eq);
+}
+
+void	reparse_subscript_assigns(t_ast_node *node)
+{
+	size_t	i;
+
+	if (!node->children.ctx)
+		return ;
+	if (node->node_type == AST_PROC_SUB)
+		return ;
+	if (node->node_type != AST_REDIRECT)
+	{
+		i = 0;
+		while (i < node->children.len)
+			reparse_subscript_assigns(
+				&((t_ast_node *)node->children.ctx)[i++]);
+	}
+	if (node->node_type == AST_WORD)
+		subscript_assign_word(node);
+}
+
 /* Recursively walk the AST and promote eligible word nodes to assignment
    words. We skip AST_REDIRECT subtrees (the filename in `>foo=bar` is not an
    assignment) and AST_PROC_SUB bodies (they are their own shell context).

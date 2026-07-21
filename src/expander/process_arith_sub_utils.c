@@ -17,18 +17,15 @@ char	*expand_param_format(t_shell *state, const char *s, int slen);
 
 static void	push_braced_val(t_arith_expand_ctx *ctx, int start, int j)
 {
-	char	*v;
+	t_token	tok;
 
-	v = expand_param_format(ctx->state, ctx->s + start, j - start);
-	if (v)
-	{
-		vec_push_str(ctx->out, v);
-		xfree(v);
-		return ;
-	}
-	v = env_expand_n(ctx->state, (char *)ctx->s + start, j - start);
-	if (v)
-		vec_push_str(ctx->out, v);
+	tok = (t_token){.tt = TT_ENVVAR, .start = (char *)ctx->s + start,
+		.len = j - start, .allocated = false};
+	expand_token(ctx->state, &tok, false);
+	if (tok.start)
+		vec_push_nstr(ctx->out, tok.start, tok.len);
+	if (tok.allocated)
+		free_token_res(&tok);
 }
 
 /* Expand a ${name} or ${name:-word} reference inside arithmetic text.

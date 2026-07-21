@@ -289,10 +289,15 @@ bool		expand_array_token(t_shell *state, t_token *tt, bool split_ctx);
 char		*arr_mark_push(t_shell *state, const char *name, int nlen);
 char		*arr_mark_name(t_shell *state, const char *p);
 void		arr_marks_clear(t_shell *state);
+bool		arr_keys_defer(t_shell *state, t_token *tt);
+void		emit_keys_fields(t_shell *state, const char *name,
+			t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_at(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
+void		emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
+			int want_keys);
 typedef struct s_slice_ctx
 {
 	char	*val;
@@ -301,10 +306,11 @@ typedef struct s_slice_ctx
 	int		lim;
 }	t_slice_ctx;
 
-bool		expand_array_ext(t_shell *state, t_token *tt);
+bool		expand_array_ext(t_shell *state, t_token *tt, bool split_ctx);
 bool		expand_pos_slice(t_shell *state, t_token *tt);
 bool		expand_array_op(t_shell *state, t_token *tt);
-bool		arr_keys(t_shell *state, t_token *tt);
+bool		expand_array_elem_op(t_shell *state, t_token *tt);
+bool		arr_keys(t_shell *state, t_token *tt, bool split_ctx);
 bool		arr_slice(t_shell *state, t_token *tt, int nl, int colon);
 char		*idx_str(long idx);
 int			arith_num(t_shell *state, const char *s, int len);
