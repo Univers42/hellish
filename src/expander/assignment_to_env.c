@@ -93,6 +93,30 @@ static void	subscript_assign(t_shell *state, t_env *ret)
 	ret->value = nv;
 }
 
+/* NAME+=value: the key still carries its trailing '+'. Prepend the
+   variable's current value (string concatenation, bash scalar +=) and
+   drop the '+'. A subscript key (a[i]+=) keeps its brackets for
+   subscript_assign; only the plain-scalar case concatenates here. */
+static void	scalar_append(t_shell *state, t_env *ret)
+{
+	int		klen;
+	char	*old;
+	char	*joined;
+
+	klen = (int)ft_strlen(ret->key);
+	if (klen < 1 || ret->key[klen - 1] != '+' || !ret->value)
+		return ;
+	ret->key[klen - 1] = '\0';
+	if (ft_strchr(ret->key, '['))
+		return ;
+	old = env_expand(state, ret->key);
+	if (!old)
+		old = "";
+	joined = ft_strjoin(old, ret->value);
+	xfree(ret->value);
+	ret->value = joined;
+}
+
 /* Convert a VAR=value AST node into a t_env ready to be pushed into the
    environment.  The RHS (child [1]) is expanded with assignment semantics
    (keep-as-one, no glob, malloc allocator rather than slab) so the resulting
@@ -119,6 +143,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 		else
 			ret.value = ft_strdup("");
 	}
+	scalar_append(state, &ret);
 	subscript_assign(state, &ret);
 	return (xfree(args.ctx), ret);
 }

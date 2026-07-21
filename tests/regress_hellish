@@ -177,3 +177,6 @@ a3=(x y z); echo "${a3[0]:-d} ${a3[9]:-d} ${a3[1]#y}"
 declare -A c; c[x]=5; echo "$(( ${c[x]} * 2 ))"
 nameref=x; x=val; echo "${!nameref}"
 a=hello; b=a; echo "${!b}"; p=NONEXISTENT; echo "[${!p}]"
+n=5; n+=3; echo $n
+s=hello; s+=world; echo $s
+x=; x+=abc; echo $x; unset y; y+=start; echo $y
