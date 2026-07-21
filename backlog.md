@@ -206,6 +206,36 @@ bash, full battery green each step, both heaps leak-free):
   arrays (declare -A), ${a[@]:-w}, the pull-lexer to decisively beat
   bash on parse, PROMPT_COMMAND, trap DEBUG/RETURN/ERR, coproc.
 
+## Done (continued 13) — associative arrays + the long tail
+
+- [x] **Associative arrays (declare -A)**: string keys, h[k]=v, h[$var]=v,
+      ${h[k]}, ${h[$k]}, ${!h[@]} keys, ${h[@]} values, ${#h[@]}, unset
+      h[k], declare -p h, for k in "${!h[@]}". Attribute in the value
+      encoding (distinct magic byte) — no attribute table. Keys deferred
+      as fields via a "!"-marker.
+- [x] **${a[i]OP}/${h[k]OP}** single-element operators (:- := # % / …) via
+      scratch-var reuse — the ${cnt[$w]:-0} counting idiom works.
+- [x] **NAME[$var]=v / NAME[$((e))]=v** assignments (pre-pass classifies
+      the raw word before reparse splits the subscript) — fixed for
+      indexed AND assoc (was pre-existing).
+- [x] **a=() empty array literal** (is_function_def no longer eats a word
+      ending in "=").
+- [x] **${array[x]} inside $((...))** (routed through full expand_token).
+- [x] **${!var} indirection**, **PROMPT_COMMAND**, **scalar += append**
+      (n+=3, s+=world).
+- Scope-outs remaining (v1, low-freq): declare -i integer attribute
+      (use n=$((...))), compound assoc init declare -A c=([k]=v), bare
+      c[x] in arith (use ${c[x]}), a[i]+= element append, ${!prefix*},
+      printf %(fmt)T, coproc, trap DEBUG/RETURN/ERR, nameref (declare -n).
+
+## VERDICT (self-assessment, 2026-07-21)
+hellish is a drop-in bash replacement for interactive use and the vast
+majority of real scripts: arrays (indexed + associative), all common
+parameter expansions, [[ =~ ]], herestrings, PIPESTATUS, job control,
+process subs, config-themed animated prompt — at bash-parity parse
+speed (56ms vs 54ms) with 20MB RSS. Oils 1029 -> 1065+, mksh 191 -> 201+
+this session. The remaining gaps are the documented low-frequency tail.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
