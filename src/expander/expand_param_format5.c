@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "env.h"
 #include "sh_input.h"
 
 void	exit_clean(t_shell *state, int code);
@@ -42,6 +43,36 @@ bool	pf_valid_plain(const char *s, int n)
 	while (i < n && (s[i] == '_' || ft_isalnum(s[i])))
 		i++;
 	return (i == n);
+}
+
+/* ${!name}: is `name` a plain identifier (so this is indirection, not the
+   ${!a[@]} keys form or ${!pre*} prefix form)? */
+bool	pf_is_indirect(const char *s, int n)
+{
+	int	i;
+
+	if (n <= 0 || (s[0] != '_' && !ft_isalpha((unsigned char)s[0])))
+		return (false);
+	i = 1;
+	while (i < n && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
+		i++;
+	return (i == n);
+}
+
+/* ${!name}: expand `name` to get a variable NAME, then expand that. An
+   unset or empty middle name yields the empty string, like bash. */
+char	*expand_indirect(t_shell *state, const char *s, int n)
+{
+	char	*mid;
+	char	*val;
+
+	mid = env_expand_n(state, (char *)s, n);
+	if (!mid || !*mid)
+		return (ft_strdup(""));
+	val = env_expand(state, mid);
+	if (!val)
+		return (ft_strdup(""));
+	return (ft_strdup(val));
 }
 
 /* bash parity for a malformed ${...}: report "bad substitution", set $? to

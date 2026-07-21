@@ -176,6 +176,8 @@ char		*expand_case(t_shell *state, const char *s, int slen, int name_len);
 bool		find_case_op(const char *s, int slen, int *nl);
 char		*expand_xform(t_shell *state, const char *s, int name_len, char op);
 bool		find_xform_op(const char *s, int slen, int *nl, char *op);
+bool		pf_is_indirect(const char *s, int n);
+char		*expand_indirect(t_shell *state, const char *s, int n);
 char		*err_or_assign(t_shell *state, char *val, t_pe_op o);
 char		*expand_param_op(t_shell *state, t_pe_op o);
 char		*pf_err_word(t_shell *state, char *val, t_pe_op o);
