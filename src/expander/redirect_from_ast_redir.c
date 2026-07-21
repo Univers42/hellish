@@ -92,6 +92,8 @@ int	try_create_redir(t_shell *state, t_ast_node *curr,
 	t_token_old	full_token;
 	char		*fname;
 
+	if (tt == TT_HERESTRING)
+		return (herestring_redir(state, curr, src_fd));
 	full_token = get_target_token(curr);
 	fname = expand_redir_fname(state, curr);
 	if (noclobber_blocks(state, tt, fname))

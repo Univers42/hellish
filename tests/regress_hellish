@@ -114,3 +114,15 @@ a=(1 2 3); s=0; for n in "${a[@]}"; do s=$((s+n)); done; echo $s
 x=hi; x[1]=there; echo ${x[0]} ${x[1]}
 arr=(a b); echo pre"${arr[@]}"post
 a=(x "y z"); set | grep "^a="
+cat <<< hello
+x="a b"; cat <<< $x
+tr a-z A-Z <<< mixed; wc -c <<< ""
+read v <<< "from-here"; echo $v
+cat 0<<< fd-explicit
+true | false | true; echo "${PIPESTATUS[@]}"
+false; echo $PIPESTATUS
+true; echo ${#PIPESTATUS[@]}
+a=(x y z); unset a[1]; echo ${#a[@]} "${a[@]}"
+a=(only); unset a[0]; echo "[${a[@]}]" ${#a[@]}
+echo "a b c" | { read -a arr; echo ${#arr[@]} "${arr[1]}"; }
+printf "one two\n" | { read -r -a w; echo "${w[0]}-${w[1]}"; }

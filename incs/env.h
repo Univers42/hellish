@@ -57,6 +57,8 @@ char		*arr_join(const char *val, char sep);
 char		*arr_with_set(const char *old, long idx, const char *v);
 char		*arr_from_elems(char **elems, int n, const char *base);
 char		*arr_format(const char *val);
+char		*arr_without(const char *old, long idx);
+void		rec_append(t_string *out, long idx, const char *v, int vl);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);

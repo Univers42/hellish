@@ -9,7 +9,7 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1029 | 0 | 0 | 0 | 593 | 0 | 1622 | 63.44% |
+| **hellish --posix** | 1047 | 0 | 0 | 0 | 575 | 0 | 1622 | 64.55% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
@@ -178,21 +178,21 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 |---|---|---|---|---|
 | alias | 48 | 43 | 44 | 44 |
 | arg-parse | 3 | 1 | 3 | 1 |
-| arith | 74 | 45 | 69 | 37 |
+| arith | 74 | 47 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
-| assign | 48 | 22 | 40 | 32 |
+| assign | 48 | 24 | 40 | 32 |
 | background | 27 | 19 | 25 | 18 |
-| ble-features | 9 | 0 | 9 | 1 |
+| ble-features | 9 | 1 | 9 | 1 |
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
 | blog1 | 9 | 3 | 8 | 7 |
 | blog2 | 8 | 7 | 8 | 6 |
 | bool-parse | 8 | 7 | 8 | 5 |
-| bugs | 29 | 14 | 22 | 20 |
+| bugs | 29 | 16 | 22 | 20 |
 | builtin-bracket | 52 | 48 | 50 | 46 |
 | builtin-cd | 30 | 21 | 24 | 24 |
 | builtin-echo | 27 | 21 | 27 | 5 |
-| builtin-eval-source | 23 | 11 | 14 | 14 |
+| builtin-eval-source | 23 | 12 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
 | builtin-kill | 20 | 10 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
@@ -205,7 +205,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-trap | 33 | 20 | 20 | 26 |
 | builtin-type | 6 | 4 | 3 | 3 |
 | builtin-umask | 24 | 18 | 13 | 16 |
-| builtin-vars | 41 | 16 | 35 | 28 |
+| builtin-vars | 41 | 19 | 35 | 28 |
 | case_ | 13 | 8 | 12 | 9 |
 | command-parsing | 5 | 4 | 5 | 5 |
 | command-sub | 30 | 25 | 28 | 27 |
@@ -219,7 +219,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | explore-parsing | 5 | 5 | 4 | 5 |
 | fatal-errors | 5 | 0 | 5 | 5 |
 | func-parsing | 15 | 11 | 13 | 15 |
-| glob | 39 | 23 | 34 | 26 |
+| glob | 39 | 25 | 34 | 26 |
 | here-doc | 36 | 25 | 31 | 29 |
 | if_ | 5 | 5 | 5 | 5 |
 | interactive-parse | 1 | 0 | 0 | 0 |
@@ -228,7 +228,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | nul-bytes | 16 | 8 | 16 | 6 |
 | paren-ambiguity | 9 | 5 | 9 | 7 |
 | parse-errors | 27 | 21 | 22 | 23 |
-| pipeline | 26 | 19 | 26 | 17 |
+| pipeline | 26 | 20 | 26 | 17 |
 | posix | 15 | 15 | 15 | 15 |
 | quote | 35 | 31 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
@@ -238,7 +238,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | sh-usage | 24 | 18 | 22 | 18 |
 | shell-bugs | 1 | 0 | 1 | 1 |
 | smoke | 18 | 18 | 18 | 18 |
-| strict-options | 17 | 3 | 6 | 4 |
+| strict-options | 17 | 4 | 6 | 4 |
 | subshell | 2 | 2 | 2 | 2 |
 | temp-binding | 4 | 2 | 1 | 2 |
 | tilde | 14 | 7 | 11 | 9 |
@@ -252,15 +252,15 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | vars-bash | 1 | 0 | 1 | 0 |
 | vars-special | 42 | 26 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
-| word-eval | 8 | 5 | 8 | 6 |
-| word-split | 55 | 43 | 50 | 47 |
+| word-eval | 8 | 7 | 8 | 6 |
+| word-split | 55 | 44 | 50 | 47 |
 | xtrace | 19 | 5 | 16 | 7 |
 
 ## mksh check.t
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 191 | 392 | 583 | 32.76% |
+| **hellish --posix** | 193 | 390 | 583 | 33.10% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 

@@ -289,6 +289,7 @@ void		emit_array_at(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
+int			herestring_redir(t_shell *state, t_ast_node *curr, int src_fd);
 int			handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 			t_executable_cmd *ret);
 bool		is_ifs_char(char c, const char *ifs);

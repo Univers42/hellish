@@ -23,6 +23,8 @@
 /* '<' family: heredocs, process substitution, dup, read-write, redirect. */
 static int	op_left(const char *s, t_tt *t)
 {
+	if (s[1] == '<' && s[2] == '<')
+		return (*t = TT_HERESTRING, 3);
 	if (s[1] == '<' && s[2] == '-')
 		return (*t = TT_HEREDOC, 3);
 	if (s[1] == '<')
