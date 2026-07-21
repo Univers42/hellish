@@ -164,6 +164,19 @@ pass counts in `bench/baseline/`). Performance claims come from
       in-parent and kills the shell (`exit 3 | exit 5; echo x` never
       echoes; bash contains it). Pipeline builtin containment fix.
 
+## Done (continued 11) — regex + pipeline containment
+
+- [x] **[[ =~ ]] with BASH_REMATCH** (POSIX ERE; the lexer grew a
+      regex-word mode — the word after =~ is ONE token so parens
+      survive; parked-pointer cell threads state to the evaluator).
+      7/7 probes incl multi-group captures.
+- [x] **Pipeline containment fixed**: stages never run in-parent
+      (was zsh-lastpipe style — `true | exit 7` killed the shell,
+      `echo x | read v` leaked v). Inside a forked compound the flag
+      flips back so `| while read` loops work exactly like bash.
+- [x] Batch-2 gate accepted: **Oils 1047 → 1057, mksh 193 → 195**.
+- Session running total: Oils 1029 → 1057+, mksh 191 → 195+.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
