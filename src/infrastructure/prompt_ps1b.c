@@ -36,6 +36,52 @@ void	ps1_host(t_string *out, char kind)
 	vec_push_str(out, shortname);
 }
 
+/* \u: the username, from the live environment. */
+void	ps1_user(t_shell *state, t_string *out)
+{
+	char	*user;
+
+	user = env_expand(state, "USER");
+	if (!user)
+		user = "user";
+	vec_push_str(out, user);
+}
+
+/* \g (hellish extension): the git branch of the cwd's repo with a dirty
+   star, or nothing outside a repo. Rides the built-in prompt's fork-free
+   cached reader, so an rc-file theme gets the same zero-cost git segment
+   the default theme has. */
+void	ps1_git(t_string *out)
+{
+	char	*branch;
+	int		dirty;
+
+	get_git_info(&branch, &dirty);
+	if (!branch)
+		return ;
+	vec_push_str(out, branch);
+	if (dirty)
+		vec_push_str(out, "*");
+	xfree(branch);
+}
+
+/* \S (hellish extension): " ✘N" when the last command failed with N,
+   nothing at all after success — the leading space is built in so the
+   badge spaces itself only when visible, and wrapping the escape in a
+   red \[\e[…m\] span costs no width when the badge is empty. */
+void	ps1_status(t_shell *state, t_string *out)
+{
+	char	*n;
+
+	if (state->last_cmd_st_exe.status == 0)
+		return ;
+	vec_push_str(out, " \xe2\x9c\x98");
+	n = ft_itoa(state->last_cmd_st_exe.status);
+	if (n)
+		vec_push_str(out, n);
+	xfree(n);
+}
+
 /* $NAME / ${NAME} inside PS1: expanded from the live environment at every
    render, so `PS1='${VIRTUAL_ENV} \w> '` tracks changes without re-sourcing
    the rc file. Special single-char parameters ($?, $$, ...) are left to
