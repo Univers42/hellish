@@ -115,13 +115,11 @@ static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 		return (ps1_cwd(state, out, c));
 	if (c == 't' || c == 'd')
 		return (ps1_timedate(out, c));
-	if (c == 'g')
-		return (ps1_git(out));
-	if (c == 'S')
-		return (ps1_status(state, out));
 	if (c == '$')
 		return ((void)vec_push_char(out, "$#"[getuid() == 0]));
 	if (ps1_escape_misc(state, out, c))
+		return ;
+	if (ps1_escape_ext(state, out, c))
 		return ;
 	vec_push_char(out, '\\');
 	vec_push_char(out, c);
