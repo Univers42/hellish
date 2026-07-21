@@ -15,6 +15,7 @@
 #include "sh_input.h"
 
 void	exit_clean(t_shell *state, int code);
+bool	opword_no_split(const char *w, int wlen);
 
 /* The fatal expansion-error status bash uses depends on how input arrived:
    a -c command string exits 127, a script or piped stdin exits 1 (verified
@@ -106,6 +107,34 @@ bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 	tt->start = fmt;
 	tt->len = (int)ft_strlen(fmt);
 	tt->allocated = true;
+	if (split_ctx && tt->tt == TT_ENVVAR && opword_no_split(o.word, o.wlen))
+		tt->tt = TT_DQWORD;
 	parena_note_attach();
+	return (true);
+}
+
+/* Does the operator word contain NO unquoted IFS whitespace? Then its
+   expansion is a single field even in a split context — `${x:-"c d"}`
+   keeps "c d" whole because the space is inside quotes. Words WITH
+   unquoted whitespace stay split-eligible (a mixed word like a "b c" d
+   is a documented v1 divergence — flat splitting mislabels its middle
+   field, but fully-quoted defaults, the common case, are now correct). */
+bool	opword_no_split(const char *w, int wlen)
+{
+	int		i;
+	char	q;
+
+	i = 0;
+	q = 0;
+	while (i < wlen)
+	{
+		if (q && w[i] == q)
+			q = 0;
+		else if (!q && (w[i] == '"' || w[i] == '\''))
+			q = w[i];
+		else if (!q && (w[i] == ' ' || w[i] == '\t' || w[i] == '\n'))
+			return (false);
+		i++;
+	}
 	return (true);
 }
