@@ -96,29 +96,29 @@ static bool	ps1_escape_misc(t_shell *state, t_string *out, char c)
 	return (xfree(jobs), true);
 }
 
-/* Full escape dispatch. Unknown escapes emit backslash + char literally,
-   which is also what bash does for sequences it does not know. */
+/* Full escape dispatch. \g (git branch + dirty star) and \S ("✘N" after
+   a failure, empty after success) are hellish extensions: they expose
+   the built-in prompt's best segments to rc-file themes, which is what
+   makes a fully config-driven modern prompt possible. Unknown escapes
+   emit backslash + char literally, exactly like bash. */
 static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 {
 	char	c;
-	char	*user;
 
 	c = f[*i + 1];
 	*i += 2;
 	if (c == 'u')
-	{
-		user = env_expand(state, "USER");
-		if (!user)
-			user = "user";
-		vec_push_str(out, user);
-		return ;
-	}
+		return (ps1_user(state, out));
 	if (c == 'h' || c == 'H')
 		return (ps1_host(out, c));
 	if (c == 'w' || c == 'W')
 		return (ps1_cwd(state, out, c));
 	if (c == 't' || c == 'd')
 		return (ps1_timedate(out, c));
+	if (c == 'g')
+		return (ps1_git(out));
+	if (c == 'S')
+		return (ps1_status(state, out));
 	if (c == '$')
 		return ((void)vec_push_char(out, "$#"[getuid() == 0]));
 	if (ps1_escape_misc(state, out, c))

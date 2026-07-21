@@ -1,0 +1,72 @@
+# ═══════════════════════════════════════════════════════════════════════
+#  ~/.hellishrc — hellish interactive configuration
+#  Copy this file to ~/.hellishrc; it is sourced by every interactive
+#  hellish (never by scripts, -c, or piped input — tests stay clean).
+# ═══════════════════════════════════════════════════════════════════════
+
+# ── 1. PROMPT ──────────────────────────────────────────────────────────
+# Setting PS1 replaces the built-in prompt entirely; unset it to get the
+# rich built-in theme back. Bash escape set:
+#   \u user   \h host   \H host.fqdn   \w cwd(~)   \W cwd basename
+#   \$ $/#    \n newline   \t HH:MM:SS   \d date   \j job count
+#   \s shell  \v version   \e ESC   \[ \] readline width guards
+# hellish extensions:
+#   \g  git branch of the cwd (+ * when dirty), empty outside a repo
+#   \S  " ✘N" after a failing command, empty after success
+# Live $VAR / ${VAR} expansion happens at every render.
+
+# Theme: "ember" — two-line truecolor, git-aware, failure badge.
+PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \[\e[1;38;2;122;162;247m\]\u\[\e[0m\] \[\e[38;2;108;114;125m\]in\[\e[0m\] \[\e[1;38;2;158;203;255m\]\w\[\e[0m\] \[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\n\[\e[38;2;90;96;106m\]╰─\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
+PS2='\[\e[38;2;108;114;125m\]│ \[\e[0m\]'
+
+# Theme: "minimal" — one line, basename + arrow. Uncomment to use.
+# PS1='\[\e[1;38;2;122;162;247m\]\W\[\e[0m\]\[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
+
+# Theme: "classic" — bash look, zero color. Uncomment to use.
+# PS1='\u@\h:\w\$ '
+
+# ── 2. LINE EDITING & OPTIONS ─────────────────────────────────────────
+# set -o supports: errexit nounset xtrace noglob noclobber allexport
+#                  noexec verbose pipefail vi emacs
+set -o emacs            # line editing mode (or: set -o vi)
+# set -o noclobber      # `>` refuses to overwrite files; force with >|
+# set -o pipefail       # a pipeline fails if ANY stage fails
+
+# ── 3. ENVIRONMENT ────────────────────────────────────────────────────
+export EDITOR=vim
+export PAGER=less
+export LESS='-R'        # let pagers pass ANSI colors through
+
+# ── 4. ALIASES ────────────────────────────────────────────────────────
+alias ls='ls --color=auto'
+alias ll='ls -lh --color=auto'
+alias la='ls -lha --color=auto'
+alias grep='grep --color=auto'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias g='git'
+alias gs='git status --short'
+alias gl='git log --oneline -15'
+alias gd='git diff'
+
+# ── 5. FUNCTIONS ──────────────────────────────────────────────────────
+# mkcd DIR: create a directory (parents included) and cd into it.
+mkcd() { mkdir -p "$1" && cd "$1"; }
+
+# up [N]: climb N directories (default 1).
+up() {
+	n="${1:-1}"
+	while [ "$n" -gt 0 ]; do
+		cd ..
+		n=$((n - 1))
+	done
+}
+
+# ── 6. HISTORY ────────────────────────────────────────────────────────
+# Kept in ~/.hellish_history; multiline commands are joined into one
+# entry (bash cmdhist behaviour) so arrow-up recalls whole constructs.
+
+# ── 7. HELLISH DIAGNOSTIC TOGGLES (for the curious) ───────────────────
+# HELLISH_ALLOC_STATS=1 hellish script.sh   # live heap bytes at exit
+# HELLISH_PROMPT_BENCH=1 hellish            # ns per prompt render
+# hellish --debug=lexer --debug=parser --debug=ast  # pipeline views
