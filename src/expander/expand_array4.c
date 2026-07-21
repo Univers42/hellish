@@ -72,6 +72,9 @@ int	slice_name_len(const char *s, int len, int *colon)
 	if ((s[i + 1] != '@' && s[i + 1] != '*') || s[i + 2] != ']'
 		|| s[i + 3] != ':')
 		return (0);
+	if (i + 4 < len && (s[i + 4] == '-' || s[i + 4] == '+'
+			|| s[i + 4] == '=' || s[i + 4] == '?'))
+		return (0);
 	*colon = i + 3;
 	return (i);
 }
