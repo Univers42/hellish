@@ -289,6 +289,22 @@ void		emit_array_at(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret);
+typedef struct s_slice_ctx
+{
+	char	*val;
+	int		n;
+	int		off;
+	int		lim;
+}	t_slice_ctx;
+
+bool		expand_array_ext(t_shell *state, t_token *tt);
+bool		arr_keys(t_shell *state, t_token *tt);
+bool		arr_slice(t_shell *state, t_token *tt, int nl, int colon);
+char		*idx_str(long idx);
+int			arith_num(t_shell *state, const char *s, int len);
+int			slice_off_len(const char *s, int len, int first);
+int			slice_name_len(const char *s, int len, int *colon);
+char		*arr_slice_build(t_slice_ctx *c);
 int			herestring_redir(t_shell *state, t_ast_node *curr, int src_fd);
 int			handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 			t_executable_cmd *ret);

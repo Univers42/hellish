@@ -77,6 +77,10 @@ static void	fill_builtin_hash2(t_hash *h)
 	hash_set(h, "printf", (void *)builtin_printf);
 	hash_set(h, "ulimit", (void *)builtin_ulimit);
 	hash_set(h, "update", (void *)builtin_update);
+	hash_set(h, "mapfile", (void *)builtin_mapfile);
+	hash_set(h, "readarray", (void *)builtin_mapfile);
+	hash_set(h, "declare", (void *)builtin_declare);
+	hash_set(h, "typeset", (void *)builtin_declare);
 }
 
 static void	init_builtin_hash(t_hash *h)
