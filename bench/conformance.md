@@ -262,11 +262,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 187 | 396 | 583 | 32.08% |
+| **hellish --posix** | 188 | 395 | 583 | 32.25% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 52
+### Consensus divergences on check.t: 51
 
 - `check.t:IFS-arith-1`
 - `check.t:IFS-subst-3-arr`
@@ -309,7 +309,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:oksh-seterror-2`
 - `check.t:pipeline-1`
 - `check.t:regression-12`
-- `check.t:regression-2`
 - `check.t:regression-27`
 - `check.t:regression-32`
 - `check.t:single-quotes-in-brace-pattern`
