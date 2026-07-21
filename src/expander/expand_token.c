@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 char	*expand_param_format(t_shell *state, const char *s, int slen);
 void	nounset_abort(t_shell *state, const char *name, int len);
@@ -108,6 +109,7 @@ static bool	expand_positional(t_shell *state, t_token *curr_tt, bool split_ctx)
 	curr_tt->start = temp;
 	curr_tt->len = (int)ft_strlen(temp);
 	curr_tt->allocated = true;
+	parena_note_attach();
 	return (true);
 }
 
@@ -136,6 +138,7 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 		curr_tt->start = fmt;
 		curr_tt->len = ft_strlen(fmt);
 		curr_tt->allocated = true;
+		parena_note_attach();
 		return ;
 	}
 	expand_simple_var(state, curr_tt);

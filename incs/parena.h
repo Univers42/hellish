@@ -32,6 +32,12 @@
 # define PARENA_FIRST_CHUNK (256 * 1024)
 # define PARENA_MAX_CHUNK (8 * 1024 * 1024)
 
+/* Bump-allocation granularity. alloc and try_extend MUST round with the
+   same formula or the tip test in try_extend misfires. 8 bytes: every
+   parse object is pointer-aligned, and small blocks waste half as much
+   padding as the old 16. */
+# define PARENA_ROUND(n) (((n) + 7) & ~(size_t)7)
+
 typedef struct s_parena
 {
 	void	*chunk[PARENA_MAX_CHUNKS];
@@ -40,6 +46,7 @@ typedef struct s_parena
 	int		cur; /* chunk currently bump-allocated from */
 	size_t	off; /* bump offset inside chunk[cur] */
 	bool	on; /* gate: false -> parena_alloc falls through to xmalloc */
+	bool	attached; /* heap memory attached to the cycle tree this cycle */
 }	t_parena;
 
 t_parena	*parena(void);
@@ -49,5 +56,7 @@ void		parena_free(void *p);
 void		parena_on(bool on);
 void		parena_reset(void);
 void		parena_destroy(void);
+bool		parena_try_extend(void *p, size_t old_n, size_t new_n);
+void		parena_note_attach(void);
 
 #endif

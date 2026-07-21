@@ -30,6 +30,7 @@ static void	update_token_if_changed_ctx(t_word_token_ctx *ctx)
 			ctx->tok->start = newstr;
 			ctx->tok->len = ctx->outbuf->len;
 			ctx->tok->allocated = true;
+			parena_note_attach();
 		}
 		xfree(ctx->outbuf->ctx);
 	}
