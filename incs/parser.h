@@ -30,6 +30,8 @@ typedef struct s_parser
 {
 	t_result_type	res; /* parse result / error code */
 	t_vec			parse_stack; /* heredoc ordering stack */
+	int				stream; /* 1: stop after a TT_NEWLINE list operator */
+	bool			stream_more; /* out: stopped at a boundary, more pending */
 }	t_parser;
 
 /* Token classification helpers: is this token a redirect operator?
@@ -64,6 +66,8 @@ t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_tokens(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_tokens_range(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, bool *more);
 
 /* Process substitution parser */
 t_ast_node	parse_proc_sub(t_shell *state, t_parser *parser,
