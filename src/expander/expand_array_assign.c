@@ -13,6 +13,8 @@
 #include "expander_private.h"
 #include "env.h"
 
+void	scope_save(t_shell *state, const char *key);
+
 /* Apply an AST_ARRAY_ASSIGN node: arr=(a b c) rebuilds the array from
    scratch, arr+=(d e) keeps the existing records and appends after the
    highest index. Each element word expands with assignment semantics
@@ -45,6 +47,30 @@ static void	free_elems(t_vec *args)
 	xfree(args->ctx);
 }
 
+/* Is the command word an assignment builtin (local/declare/typeset/
+   export/readonly)? For those, name=(...) persists in the right scope
+   instead of being a temporary command prefix. */
+static int	is_assign_builtin(t_executable_cmd *ret)
+{
+	char	*c;
+
+	if (ret->argv.len == 0 || !((char **)ret->argv.ctx)[0])
+		return (0);
+	c = ((char **)ret->argv.ctx)[0];
+	return (!ft_strcmp(c, "local") || !ft_strcmp(c, "declare")
+		|| !ft_strcmp(c, "typeset"));
+}
+
+/* Apply the array assignment persistently: local also snapshots the old
+   value so the function-return path restores it. */
+static void	persist_array(t_shell *state, t_executable_cmd *ret, t_env ev)
+{
+	if (!ft_strcmp(((char **)ret->argv.ctx)[0], "local")
+		&& state->func_depth > 0)
+		scope_save(state, ev.key);
+	env_set(&state->env, ev);
+}
+
 int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 		t_executable_cmd *ret)
 {
@@ -65,6 +91,9 @@ int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 				env_expand(state, ev.key));
 	else
 		ev.value = arr_from_elems((char **)args.ctx, (int)args.len, NULL);
-	vec_push(&ret->pre_assigns, &ev);
+	if (is_assign_builtin(ret))
+		persist_array(state, ret, ev);
+	else
+		vec_push(&ret->pre_assigns, &ev);
 	return (free_elems(&args), 0);
 }
