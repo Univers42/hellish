@@ -199,4 +199,8 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);
 
 int		list_set_options(t_shell *state);
+
+/* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
+int		reaped_job_status(t_shell *state, pid_t pid);
+int		wait_one(t_shell *state, const char *arg);
 #endif

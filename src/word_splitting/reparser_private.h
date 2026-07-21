@@ -55,6 +55,17 @@ typedef struct s_reparser
 	int			prev_start;
 }	t_reparser;
 
+/* Decode state for $'...' ANSI-C quoting (reparse_ansic*.c): the source
+   token text, a read cursor, and the write cursor into the decode buffer. */
+typedef struct s_ansic
+{
+	const char	*s;
+	int			len;
+	int			i;
+	char		*dst;
+	int			n;
+}	t_ansic;
+
 void		reparse_dq_bs(t_ast_node *ret, int *i, t_token t);
 void		reparse_squote(t_ast_node *ret, int *i, t_token t);
 void		reparse_bs(t_ast_node *ret, int *i, t_token t);
@@ -90,6 +101,12 @@ bool		handle_envvar_paren_or_special(t_reparser *rp,
 				int prev_start, t_tt tt);
 void		skip_quoted_in_brace(t_reparser *rp, char q);
 void		loop_node_rp(t_reparser *rp);
+void		reparse_ansic(t_ast_node *ret, int *i, t_token t);
+void		ansic_escape(t_ansic *a);
+int			ansic_simple(char c);
+int			ansic_digit(char c, char kind);
+void		ansic_utf8(t_ansic *a, long cp);
+void		ansic_num(t_ansic *a, char kind);
 
 static inline t_interval	create_interval(int start, int end)
 {
