@@ -74,6 +74,10 @@ char		*glob_expand_bracket(const char *start, int len, int *out_len);
 */
 t_vec_glob	word_to_glob(t_ast_node word);
 t_vec		expand_word_glob(t_ast_node word);
+int			*glob_nullglob_cell(void);
+int			glob_nullglob(void);
+int			*glob_dotglob_cell(void);
+int			glob_dotglob(void);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
 size_t		matches_pattern(char *name, t_vec_glob patt,
 				size_t offset, bool first);

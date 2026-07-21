@@ -197,6 +197,7 @@ typedef struct s_shell
 	bool				opt_verbose; /* -v: print input lines as read */
 	bool				opt_pipefail; /* pipefail: status = last failure */
 	bool				opt_posix; /* --posix / set -o posix: no extensions */
+	unsigned int		shopt; /* shopt -s bitset (SHOPT_* in shell.h) */
 	bool				opt_interactive; /* -i: force $- to carry 'i' */
 	/* small scratch buffers -- avoids allocs for $-, $LINENO and $? */
 	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
@@ -243,6 +244,20 @@ typedef struct s_shell
 	t_vec				argv_pool[ARGV_POOL_DEPTH];
 	int					argv_pool_depth; /* current borrow depth */
 }	t_shell;
+
+/* shopt option bits (state->shopt). Only the ones with observable
+   behaviour or that scripts commonly toggle are modelled. */
+# define SHOPT_NULLGLOB   (1u << 0)
+# define SHOPT_DOTGLOB    (1u << 1)
+# define SHOPT_GLOBSTAR   (1u << 2)
+# define SHOPT_NOCASEGLOB (1u << 3)
+# define SHOPT_EXTGLOB    (1u << 4)
+# define SHOPT_LASTPIPE   (1u << 5)
+# define SHOPT_HISTAPPEND (1u << 6)
+# define SHOPT_CHECKWINSIZE (1u << 7)
+# define SHOPT_AUTOCD     (1u << 8)
+# define SHOPT_CDSPELL    (1u << 9)
+
 
 /* Directory matcher ctx for glob expansion */
 typedef struct s_dir_matcher

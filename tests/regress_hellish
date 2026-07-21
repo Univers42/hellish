@@ -146,3 +146,7 @@ mapfile -t lines < <(printf "one\ntwo\nthree\n"); echo "${#lines[@]}: ${lines[0]
 a=(1 2 3); declare -p a
 v=hi; declare -p v
 declare -a arr2; arr2[2]=x; echo "${arr2[2]} ${#arr2[@]}"
+unset x; printf "[%s]" ${x:-"c d"}; echo
+unset x; printf "[%s]" ${x:-a b}; echo
+shopt -s nullglob; echo no_such_glob_pattern_xyz*; echo end
+shopt -q extglob; echo $?; shopt -s globstar; shopt globstar

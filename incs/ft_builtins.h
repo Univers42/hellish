@@ -74,6 +74,7 @@ int				builtin_wait(t_shell *state, t_vec argv);
 int				builtin_times(t_shell *state, t_vec argv);
 int				builtin_mapfile(t_shell *state, t_vec argv);
 int				builtin_declare(t_shell *state, t_vec argv);
+int				builtin_shopt(t_shell *state, t_vec argv);
 void			mapfile_free_elems(t_vec *elems);
 int				builtin_trap(t_shell *state, t_vec argv);
 int				builtin_readonly(t_shell *state, t_vec argv);

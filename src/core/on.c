@@ -94,6 +94,7 @@ void	on(t_shell *state, char **argv, char **envp)
 
 	set_unwind_sig();
 	*state = shell_init();
+	state->shopt = SHOPT_CHECKWINSIZE;
 	cli_parse(state, argv, &cli);
 	if (state->option_flags & OPT_FLAG_HELP)
 		print_opts(argv, state);
