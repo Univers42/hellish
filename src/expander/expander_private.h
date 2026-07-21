@@ -300,6 +300,8 @@ typedef struct s_slice_ctx
 }	t_slice_ctx;
 
 bool		expand_array_ext(t_shell *state, t_token *tt);
+bool		expand_pos_slice(t_shell *state, t_token *tt);
+bool		expand_array_op(t_shell *state, t_token *tt);
 bool		arr_keys(t_shell *state, t_token *tt);
 bool		arr_slice(t_shell *state, t_token *tt, int nl, int colon);
 char		*idx_str(long idx);

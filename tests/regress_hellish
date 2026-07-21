@@ -155,3 +155,9 @@ v=HeLLo; echo "${v,} ${v~~}"
 printf -v out "%d-%s" 42 hi; echo "$out"; printf -v x "%05d" 7; echo "$x"
 [[ -v HOME ]] && echo set; [[ -v NOPE_XYZ_123 ]] || echo unset
 x=; [[ -v x ]] && echo empty-is-set
+set -- one two three four; echo "${@:2}" "${@:2:2}"; echo "${*:3}"
+set -- 1 2 3 4 5; echo "${@: -2}"
+a=(1 2 3); echo "${a[-1]} ${a[-2]}"
+a=(cat dog cow); echo "${a[@]/o/0}"
+a=(apple avocado banana); echo "${a[@]#a}" "${a[@]%a}"
+a=(f.txt g.txt); echo "${a[@]%.txt}"; a2=(aa bb); echo "${a2[@]//a/X}"

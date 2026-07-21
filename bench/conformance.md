@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1057 | 0 | 0 | 0 | 565 | 0 | 1622 | 65.17% |
+| **hellish --posix** | 1058 | 0 | 0 | 0 | 564 | 0 | 1622 | 65.23% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 154
+### Consensus divergences (hellish fails, bash AND dash pass): 158
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -26,6 +26,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `assign` case 16 [FAIL]: dynamic local variables (and splitting)
 - `assign` case 18 [FAIL]: 'local x' does not set variable
 - `assign` case 19 [FAIL]: 'local -a x' does not set variable
+- `assign` case 22 [FAIL]: declare in an if statement
 - `assign` case 25 [FAIL]: Test above without 'local' (which is not POSIX)
 - `assign` case 26 [FAIL]: Using ${x-default} after unsetting local shadowing a global
 - `assign` case 31 [FAIL]: assignment using dynamic var names doesn't split
@@ -89,6 +90,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `empty-bodies` case 0 [FAIL]: Empty do/done
 - `empty-bodies` case 2 [FAIL]: Empty then/fi
 - `errexit` case 11 [FAIL]: errexit and brace group { }
+- `errexit` case 20 [FAIL]: set +o errexit with 2 levels of ignored
 - `errexit` case 24 [FAIL]: errexit double guard
 - `errexit-osh` case 7 [FAIL]: strict_errexit detects proc in && || !
 - `exit-status` case 2 [FAIL]: subshell OverflowError https://github.com/oilshell/oil/issues/996
@@ -122,6 +124,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `parse-errors` case 3 [FAIL]: Bad braced var sub -- not allowed
 - `parse-errors` case 15 [FAIL]: bad var name in local
 - `pipeline` case 18 [FAIL]: Evaluation of argv[0] in pipeline occurs in child
+- `pipeline` case 19 [FAIL]: bash/dash/mksh run the last command is run in its own process
 - `quote` case 19 [FAIL]: $? split over multiple lines
 - `redirect` case 3 [FAIL]: 2&>1 (is it a redirect or is it like a&>1)
 - `redirect` case 12 [FAIL]: : 9> fdleak (OSH regression)
@@ -140,7 +143,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `toysh-posix` case 4 [FAIL]: Evaluation order of redirect and ${undef?error}
 - `toysh-posix` case 7 [FAIL]: no shebang
 - `toysh-posix` case 21 [FAIL]: Command Sub Syntax Error
-- `toysh-posix` case 22 [FAIL]: Pipeline - http://landley.net/notes-2019.html#16-12-2019
 - `var-num` case 2 [FAIL]: $0 with -c
 - `var-num` case 3 [FAIL]: $0 with stdin
 - `var-num` case 4 [FAIL]: $0 with -i
@@ -149,14 +151,16 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `var-op-strip` case 17 [FAIL]: strip unquoted and quoted ?
 - `var-op-strip` case 18 [FAIL]: strip unquoted and quoted [a]
 - `var-op-strip` case 26 [FAIL]: Strip Right Brace (#702)
+- `var-op-test` case 3 [FAIL]: Unquoted with array as default value
+- `var-op-test` case 5 [FAIL]: Assign default with array
 - `var-sub` case 0 [FAIL]: Bad var sub
-- `var-sub-quote` case 11 [FAIL]: Multiple words: no outer quotes, inner single quotes
-- `var-sub-quote` case 12 [FAIL]: Multiple words: no outer quotes, inner double quotes
+- `var-sub-quote` case 1 [FAIL]: ${empty:-}
+- `var-sub-quote` case 5 [FAIL]: -
 - `var-sub-quote` case 14 [FAIL]: Multiple words: outer double quotes, inner double quotes
 - `var-sub-quote` case 16 [FAIL]: Mixed inner quotes
 - `var-sub-quote` case 17 [FAIL]: Mixed inner quotes with outer quotes
 - `var-sub-quote` case 18 [FAIL]: part_value tree with multiple words
-- `var-sub-quote` case 22 [FAIL]: Multiple words: no outer quotes, inner double quotes
+- `var-sub-quote` case 20 [FAIL]: Var with multiple words: no quotes
 - `var-sub-quote` case 26 [FAIL]: No outer quotes, Multiple internal quotes
 - `var-sub-quote` case 27 [FAIL]: Strip a string with single quotes, unquoted
 - `var-sub-quote` case 31 [FAIL]: Syntax error for single quote in double quote
@@ -180,8 +184,8 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | arg-parse | 3 | 1 | 3 | 1 |
 | arith | 74 | 47 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
-| assign | 48 | 24 | 40 | 32 |
-| background | 27 | 21 | 25 | 18 |
+| assign | 48 | 25 | 40 | 32 |
+| background | 27 | 23 | 25 | 18 |
 | ble-features | 9 | 1 | 9 | 1 |
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
@@ -194,11 +198,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | builtin-echo | 27 | 21 | 27 | 5 |
 | builtin-eval-source | 23 | 12 | 14 | 14 |
 | builtin-getopts | 31 | 26 | 27 | 27 |
-| builtin-kill | 20 | 10 | 17 | 7 |
+| builtin-kill | 20 | 9 | 17 | 7 |
 | builtin-meta | 18 | 5 | 17 | 10 |
 | builtin-meta-assign | 11 | 2 | 6 | 1 |
 | builtin-misc | 7 | 3 | 4 | 4 |
-| builtin-printf | 63 | 39 | 51 | 41 |
+| builtin-printf | 63 | 40 | 51 | 41 |
 | builtin-process | 26 | 8 | 17 | 14 |
 | builtin-set | 24 | 21 | 23 | 21 |
 | builtin-special | 12 | 3 | 5 | 10 |
@@ -213,7 +217,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | comments | 2 | 2 | 2 | 2 |
 | divergence | 4 | 3 | 4 | 4 |
 | empty-bodies | 3 | 1 | 3 | 3 |
-| errexit | 35 | 32 | 34 | 30 |
+| errexit | 35 | 31 | 34 | 30 |
 | errexit-osh | 35 | 11 | 12 | 13 |
 | exit-status | 11 | 9 | 11 | 11 |
 | explore-parsing | 5 | 5 | 4 | 5 |
@@ -228,13 +232,13 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | nul-bytes | 16 | 8 | 16 | 6 |
 | paren-ambiguity | 9 | 5 | 9 | 7 |
 | parse-errors | 27 | 21 | 22 | 23 |
-| pipeline | 26 | 23 | 26 | 17 |
+| pipeline | 26 | 20 | 26 | 17 |
 | posix | 15 | 15 | 15 | 15 |
 | quote | 35 | 31 | 34 | 23 |
 | redirect | 41 | 27 | 37 | 32 |
 | redirect-command | 23 | 17 | 22 | 19 |
 | sh-func | 12 | 11 | 11 | 12 |
-| sh-options | 39 | 15 | 38 | 14 |
+| sh-options | 39 | 16 | 38 | 14 |
 | sh-usage | 24 | 18 | 22 | 18 |
 | shell-bugs | 1 | 0 | 1 | 1 |
 | smoke | 18 | 18 | 18 | 18 |
@@ -242,13 +246,13 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | subshell | 2 | 2 | 2 | 2 |
 | temp-binding | 4 | 2 | 1 | 2 |
 | tilde | 14 | 7 | 11 | 9 |
-| toysh-posix | 23 | 14 | 19 | 20 |
+| toysh-posix | 23 | 15 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
 | var-op-strip | 29 | 17 | 26 | 20 |
-| var-op-test | 37 | 24 | 35 | 20 |
+| var-op-test | 37 | 23 | 35 | 20 |
 | var-sub | 6 | 5 | 5 | 6 |
-| var-sub-quote | 41 | 26 | 40 | 35 |
+| var-sub-quote | 41 | 27 | 40 | 35 |
 | vars-bash | 1 | 0 | 1 | 0 |
 | vars-special | 42 | 27 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
@@ -260,11 +264,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 195 | 388 | 583 | 33.45% |
+| **hellish --posix** | 201 | 382 | 583 | 34.48% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 49
+### Consensus divergences on check.t: 44
 
 - `check.t:IFS-arith-1`
 - `check.t:IFS-subst-3-arr`
@@ -303,15 +307,10 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:lineno-unset-use`
 - `check.t:oksh-seterror-1`
 - `check.t:oksh-seterror-2`
-- `check.t:pipeline-1`
 - `check.t:regression-12`
 - `check.t:regression-27`
 - `check.t:regression-32`
 - `check.t:single-quotes-in-brace-pattern`
-- `check.t:single-quotes-in-braces`
-- `check.t:single-quotes-in-braces-nested`
 - `check.t:single-quotes-in-heredoc-braces`
 - `check.t:single-quotes-in-heredoc-nested-braces`
 - `check.t:single-quotes-in-nested-brace-pattern`
-- `check.t:single-quotes-in-nested-braces`
-- `check.t:single-quotes-in-nested-braces-nested`
