@@ -71,15 +71,24 @@ static t_execution_state	pipefail_scan(t_vec_exe_res *results)
 	return (res);
 }
 
-/* Exit status of a pipeline: pipefail (above), else the last command. */
+/* Exit status of a pipeline: pipefail (above), else the last command.
+   Every stage is waited here (bash waits all pipeline members before
+   moving on) and the statuses are recorded into PIPESTATUS. */
 t_execution_state	pipeline_status(t_shell *state, t_vec_exe_res *results)
 {
-	t_execution_state	res;
+	t_execution_state	*r;
+	size_t				i;
 
+	i = 0;
+	while (i < results->len)
+	{
+		r = (t_execution_state *)vec_idx(results, i);
+		if (r->pid != -1)
+			exe_res_set_status(r);
+		i++;
+	}
+	set_pipestatus(state, results);
 	if (state->opt_pipefail)
 		return (pipefail_scan(results));
-	res = *(t_execution_state *)vec_idx(results, results->len - 1);
-	if (res.pid != -1)
-		exe_res_set_status(&res);
-	return (res);
+	return (*(t_execution_state *)vec_idx(results, results->len - 1));
 }

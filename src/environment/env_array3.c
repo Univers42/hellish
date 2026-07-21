@@ -51,3 +51,30 @@ char	*arr_format(const char *val)
 	vec_push_char(&out, '\0');
 	return ((char *)out.ctx);
 }
+
+/* Encoded value minus element `idx` (unset arr[i]). An emptied array
+   keeps its magic byte, so the variable remains an (empty) array —
+   matching bash, where unset a[0] on a one-element array leaves `a`
+   set-but-empty. */
+char	*arr_without(const char *old, long idx)
+{
+	t_string	out;
+	const char	*cur;
+	const char	*v;
+	long		ci;
+	int			vl;
+
+	vec_init(&out);
+	out.elem_size = 1;
+	vec_push_char(&out, ARR_MAGIC);
+	cur = "";
+	if (arr_is(old))
+		cur = old + 1;
+	while (arr_next(&cur, &ci, &v, &vl))
+	{
+		if (ci != idx)
+			rec_append(&out, ci, v, vl);
+	}
+	vec_push_char(&out, '\0');
+	return ((char *)out.ctx);
+}

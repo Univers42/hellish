@@ -18,7 +18,7 @@
    env_set replace-and-free path. */
 
 /* Append one "idx<US>value" record to the buffer under construction. */
-static void	rec_append(t_string *out, long idx, const char *v, int vl)
+void	rec_append(t_string *out, long idx, const char *v, int vl)
 {
 	char	*n;
 

@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "env.h"
+#include "parena.h"
 #include "sh_input.h"
 #include "decomposer.h"
 
@@ -84,6 +85,8 @@ static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
 	}
 	if (!expand_array_token(state, &tok, false))
 		return (NULL);
+	if (tok.allocated)
+		parena_free((char *)tok.start);
 	return (ft_itoa(tok.len));
 }
 

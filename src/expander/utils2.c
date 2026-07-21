@@ -20,7 +20,7 @@
 int	get_default_src_fd(t_tt tt)
 {
 	if (tt == TT_REDIRECT_LEFT || tt == TT_HEREDOC || tt == TT_DUP_IN
-		|| tt == TT_READWRITE)
+		|| tt == TT_READWRITE || tt == TT_HERESTRING)
 		return (STDIN_FILENO);
 	return (STDOUT_FILENO);
 }
@@ -52,6 +52,7 @@ bool	is_redirect(t_tt tt)
 		|| tt == TT_REDIRECT_RIGHT
 		|| tt == TT_APPEND
 		|| tt == TT_HEREDOC
+		|| tt == TT_HERESTRING
 		|| tt == TT_DUP_OUT
 		|| tt == TT_DUP_IN
 		|| tt == TT_READWRITE

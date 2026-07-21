@@ -51,13 +51,21 @@ int	builtin_read(t_shell *state, t_vec argv)
 	t_rdopt	o;
 	int		eof;
 
-	o.raw = false;
-	o.first = parse_read_opts(argv, &o.raw);
+	o = (t_rdopt){0};
+	o.first = parse_read_opts2(argv, &o);
 	o.ifs = dup_ifs(state);
+	if (o.prompt && isatty(STDIN_FILENO))
+		if (write(2, o.prompt, ft_strlen(o.prompt)) < 0)
+			o.prompt = NULL;
 	line = read_one_line(o.raw, &eof);
 	if (!line)
 		return (xfree(o.ifs), 1);
-	if (o.first >= argv.len)
+	if (o.aname)
+	{
+		rd_assign_array(state, line, &o);
+		xfree(line);
+	}
+	else if (o.first >= argv.len)
 		rd_set_var(state, "REPLY", line);
 	else
 	{

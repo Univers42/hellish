@@ -35,7 +35,7 @@ static bool	try_array_child(t_shell *state, t_token *curr_t,
 		emit_array_at(state, name, curr_node, ret);
 	else
 		emit_array_split(state, name, curr_node, ret);
-	return (true);
+	return (free_token_res(curr_t), true);
 }
 
 static void	split_one_child(t_shell *state, t_ast_node *child,
