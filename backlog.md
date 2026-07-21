@@ -67,14 +67,38 @@ pass counts in `bench/baseline/`). Performance claims come from
 - [x] bench/KNOWN_ISSUES.md rewritten — configure saga documented as
       resolved, 64B ASan-configure leak tracked as the open remainder.
 
+## Done (continued 5)
+
+- [x] **Job control LIVE** (`2a7c5c1`): background launches register in
+      the job table; jobs/fg/bg/kill %1 work for the first time. Report
+      lifecycle matches bash EMPIRICALLY (7 probes, all MATCH):
+      script-silent notify, jobs report-once-keep-status, wait purges +
+      forgets (re-wait = 127), ring-miss falls back to the table (jobs'
+      own WNOHANG poll used to eat statuses). job_print byte-identical
+      to bash (27-pad + trailing " &" on running bg jobs). 6 regress
+      cases. hard/12 was broken mid-flight by script-mode notices —
+      the INP_RL gate in job_notify is what fixed it.
+- [x] **Prompt v3 — prettier AND faster** (committed after `2a7c5c1`):
+      truecolor palette + ember gradient fill (COLORTERM-gated, 256
+      fallback preserved), dim-parents/bold-last cwd, @host over SSH,
+      and the dirty `*` RESURRECTED from dead code (real git status
+      fork, 3s TTL cache, one subprocess max). repo_locate cwd-keyed
+      root cache: deep-dir render 44us -> 6.5us; repo root 4.4us
+      steady-state. HELLISH_PROMPT_BENCH=1 is the measuring stick.
+      Battery: 2901 golden, 16/16 hard, 40/40 scripts, both heaps.
+
 ## In flight
 
+- [ ] Conformance gate for `2a7c5c1`+prompt running (expect possible
+      Oils `background` cluster gains). Norminette NOT INSTALLED on
+      this host — norm gate unverified since the audit commits; run
+      `make norm` wherever norminette exists before the next PR.
 - [ ] `make perf BENCH_LAX=1` rerun — first run where the configure
       dimension can TIME hellish (completion gate now passes). Commit
       bench/results.md when it lands.
-- [ ] Prompt v2 (code-complete, unbuilt): git dirty `*`, red `✘N` exit
-      badge with the number, `took N.Ns` after >2s commands, `⚙N` jobs
-      badge, root-red username. Build+pty-test when perf frees the tree.
+- [ ] Job polish: bash prints "Terminated"/"Killed" per signal where we
+      print "Done" (interactive-only path, no golden coverage); wait
+      %jobspec; wait -n.
 
 ## Done (continued 4)
 
