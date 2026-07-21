@@ -79,6 +79,16 @@ static bool	is_subscript_key(char *s, int len)
 	return (is_valid_ident(s, i));
 }
 
+/* NAME+=value: a valid identifier (or NAME[sub]) followed by '+='. The
+   append is applied at assignment time (assignment_to_env sees the
+   trailing '+' on the key). */
+static bool	is_append_key(char *s, int len)
+{
+	if (len < 2 || s[len - 1] != '+')
+		return (false);
+	return (is_valid_ident(s, len - 1) || is_subscript_key(s, len - 1));
+}
+
 /* Attempt to re-classify one AST_WORD as an AST_ASSIGNMENT_WORD if it
    matches the pattern IDENT=value (or IDENT[expr]=value for an array
    element). Guard order matters: we check tt, then the '=' exists, then
@@ -101,7 +111,8 @@ void	reparse_assignment_word(t_ast_node *word)
 	if (eq_pos < 0)
 		return ;
 	if (!is_valid_ident(first_token->start, eq_pos)
-		&& !is_subscript_key(first_token->start, eq_pos))
+		&& !is_subscript_key(first_token->start, eq_pos)
+		&& !is_append_key(first_token->start, eq_pos))
 		return ;
 	apply_assignment_split(word, first_token, eq_pos);
 }
