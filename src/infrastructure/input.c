@@ -51,6 +51,31 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
    stripped copy, which is safe: try_parse_tokens re-tokenizes via
    extract_input_heredocs (into the long-lived hd_stripped) before any
    token text is read. */
+/* One-shot token-deque capacity for a big batch tokenize: real scripts
+   average ~2.5 bytes per token, so bytes/2 slots can never regrow — the
+   ring's doubling path memcpy'd ~60MB of t_token on a 50k-line batch.
+   Only kicks in past 4KB, so interactive lines and eval bodies keep the
+   default geometry. Replacing the buffer wholesale is safe exactly when
+   the pending tokens are about to be discarded anyway: the tokenizer
+   re-clears and re-tokenizes the whole buffer on every call, and tokens
+   are value-copied out of the ring during parsing, never referenced. */
+static void	deque_presize(t_deque *d, size_t bytes)
+{
+	size_t	want;
+
+	if (bytes < 4096)
+		return ;
+	want = bytes / 2 + 64;
+	if (d->cap >= want)
+		return ;
+	xfree(d->buff);
+	d->buff = xmalloc(want * d->elem_size);
+	d->cap = want;
+	d->start = 0;
+	d->end = 0;
+	d->len = 0;
+}
+
 static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 {
 	char	*stripped;
@@ -58,6 +83,7 @@ static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 
 	extend_bs(state);
 	alias_scan_update(state);
+	deque_presize(&tt->deqtok, state->alias_exp.len);
 	stripped = NULL;
 	if (state->alias_exp.ctx && ft_strnstr((char *)state->alias_exp.ctx,
 			"<<", state->alias_exp.len)
