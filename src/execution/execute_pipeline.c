@@ -55,8 +55,7 @@ static void	prepare_child_exec(t_exec_child_ctx *c)
 	c->curr_exe->redirs.elem_size = sizeof(int);
 	c->curr_exe->infd = c->prev_infd;
 	last_index = c->last_index;
-	c->curr_exe->modify_parent_ctx = (c->idx == last_index)
-		&& c->exe->modify_parent_ctx;
+	c->curr_exe->modify_parent_ctx = false;
 	c->curr_exe->node = vec_idx(&c->exe->node->children, c->idx);
 	ft_assert(c->curr_exe->node->node_type == AST_COMMAND);
 	set_up_redir_pipeline_child(c->idx == last_index,
