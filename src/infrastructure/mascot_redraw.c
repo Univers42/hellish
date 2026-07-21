@@ -6,17 +6,21 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/03 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/03 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/07/21 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "prompt_private.h"
 
-/* Prompt repainting support used by the readline idle hook (mascot_hook).
-   The prompt is two rows: the top info bar and the bottom arrow. When the hook
-   fires during typing we need to repaint the top row in place without moving
-   the cursor away from the typed text. The trick is VT100 cursor save/restore
-   (\0337 / \0338): save position, jump up and repaint, restore. */
+/* In-place repaint of the prompt rows above the input, used by the
+   animation idle hook. The first version streamed the frame through
+   unbuffered fputc on stderr — dozens of write() syscalls per tick, so
+   the terminal rendered intermediate states and the caret visibly
+   ping-ponged between the info row and the input row (flicker). Now the
+   ENTIRE frame is composed in memory and delivered in ONE write(),
+   wrapped in cursor-hide (DECTCEM) and synchronized-output (DEC 2026,
+   ignored where unsupported): the caret never appears away from the
+   input line and the repaint lands as a single atomic update. */
 
 /* Lines above the input arrow (one per newline in the rendered prompt). */
 static int	count_nl(const char *s)
@@ -32,32 +36,33 @@ static int	count_nl(const char *s)
 	return (n);
 }
 
-/* Move the cursor up n rows (ESC [ n A). */
-static void	cursor_up(int n)
+/* Append "move cursor up n rows" (ESC [ n A) to the frame buffer. */
+static void	rd_up(t_string *f, int n)
 {
 	char	*s;
 
 	s = ft_itoa(n);
 	if (!s)
 		return ;
-	fputs("\033[", rl_outstream);
-	fputs(s, rl_outstream);
-	fputs("A", rl_outstream);
+	vec_push_str(f, "\033[");
+	vec_push_str(f, s);
+	vec_push_str(f, "A");
 	xfree(s);
 }
 
-/* Emit one prompt byte: drop the \001/\002 width markers, and turn newlines
-   into "down a row, return, clear" so each repainted row is wiped first. */
-static void	emit_char(char c)
+/* Append one prompt byte: drop the \001/\002 width markers, and turn
+   newlines into "down a row, return, clear" so each repainted row is
+   wiped before its new content lands. */
+static void	rd_char(t_string *f, char c)
 {
 	if (c == '\001' || c == '\002')
 		return ;
 	if (c == '\n')
 	{
-		fputs("\n\r\033[2K", rl_outstream);
+		vec_push_str(f, "\n\r\033[2K");
 		return ;
 	}
-	fputc((unsigned char)c, rl_outstream);
+	vec_push_char(f, c);
 }
 
 /* How many rows up the prompt's first row is from the cursor: the prompt
@@ -79,25 +84,30 @@ static int	rows_above(const char *s)
 	return (count_nl(s) + (lastw + rl_point) / cols);
 }
 
-/* Repaint the mascot line in place without disturbing what is being typed:
-   hardware-save the cursor, step up onto the prompt's first row, clear+print
-   every row above the input, then restore the cursor exactly. */
+/* Compose and emit one repaint frame: sync+hide, save cursor, jump up,
+   clear+rewrite every row above the input, restore, show, unsync — all
+   in a single write so the terminal treats it as one update. */
 void	redraw_mascot(t_string *r)
 {
-	char	*s;
-	char	*last;
-	size_t	i;
+	t_string	f;
+	char		*s;
+	char		*last;
+	size_t		i;
 
 	s = (char *)r->ctx;
 	last = ft_strrchr(s, '\n');
 	if (!last)
 		return ;
-	fputs("\0337", rl_outstream);
-	cursor_up(rows_above(s));
-	fputs("\r\033[2K", rl_outstream);
+	vec_init(&f);
+	f.elem_size = 1;
+	vec_push_str(&f, "\033[?2026h\033[?25l\0337");
+	rd_up(&f, rows_above(s));
+	vec_push_str(&f, "\r\033[2K");
 	i = 0;
 	while (s + i < last)
-		emit_char(s[i++]);
-	fputs("\0338", rl_outstream);
-	fflush(rl_outstream);
+		rd_char(&f, s[i++]);
+	vec_push_str(&f, "\0338\033[?25h\033[?2026l");
+	if (write(fileno(rl_outstream), f.ctx, f.len) < 0)
+		f.len = 0;
+	xfree(f.ctx);
 }
