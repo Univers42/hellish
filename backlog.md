@@ -148,6 +148,22 @@ pass counts in `bench/baseline/`). Performance claims come from
       probe divergence), slices ${a[@]:1:2}, ${!a[@]}, unset a[i],
       read -a, mapfile, declare -a, PIPESTATUS, associative arrays.
 
+## Done (continued 10) — bash-replacement batch 2
+
+- [x] **<<< herestrings** (7/7 probes, incl 0<<< fd form; pipe backing
+      + unlinked-tmpfile fallback; TT_HERESTRING keeps the heredoc
+      machinery clean; hang root-caused to get_default_src_fd).
+- [x] **PIPESTATUS** array after every pipeline (all stages now waited
+      synchronously like bash) + single-command form.
+- [x] **unset a[i]** (arith subscript; variable survives as empty array).
+- [x] **read -a NAME / read -p PROMPT** (value-taking option parser;
+      -rp combos work).
+- [x] Array gate ACCEPTED: **Oils 1029 → 1047 (+18, campaign record),
+      mksh 191 → 193**.
+- [ ] FOUND pre-existing: `exit` in the LAST pipeline stage runs
+      in-parent and kills the shell (`exit 3 | exit 5; echo x` never
+      echoes; bash contains it). Pipeline builtin containment fix.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
