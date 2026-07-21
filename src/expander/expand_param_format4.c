@@ -93,6 +93,8 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 	if (op)
 		return (pf_trim_or_subst(state,
 				pf_make_ctx(s, slen, op, name_len)));
+	if (find_case_op(s, slen, &name_len))
+		return (expand_case(state, s, slen, name_len));
 	if (pf_find_substr(s, slen, &name_len))
 		return (expand_substr(state, s, slen, name_len));
 	if (!pf_valid_plain(s, slen))

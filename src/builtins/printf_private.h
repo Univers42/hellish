@@ -33,6 +33,8 @@ typedef struct s_pf
 	bool		stop;
 	int			err;
 	char		*ctx;
+	char		*vname;
+	t_shell		*state;
 }	t_pf;
 
 /* One parsed %-directive, conversion character excluded. Width/precision are
