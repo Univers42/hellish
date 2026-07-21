@@ -122,6 +122,18 @@ pass counts in `bench/baseline/`). Performance claims come from
 - [ ] PROMPT_COMMAND, \D{fmt}, \! \# history escapes, promptvars
       cmdsub — natural PS1 follow-ups, small.
 
+## Done (continued 8) — conformance batch 1
+
+- [x] **$'…' ANSI-C quoting** (full bash escape set incl \uHHHH/\U/\cX,
+      atomic lexing with live \' escapes, TT_SQWORD decode in the
+      reparser, "$'…'" stays literal). 10/10 bash probes.
+- [x] **wait %jobspec + multi-arg + bash error semantics** — wait %1
+      used to HANG (atoi("%1")=0 → waitpid on the whole group).
+- [x] **[[ a < b ]]** string comparison (was silently a REDIRECT).
+- [x] **set -e AND-OR suppression reaches subtrees** — f(){ false; };
+      f || true no longer exits from inside the body. 7/7 probes.
+- 12 regression lines added (tests/regress_hellish, 2913 golden total).
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
