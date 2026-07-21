@@ -109,6 +109,19 @@ pass counts in `bench/baseline/`). Performance claims come from
       PRNG), $SECONDS/$EPOCHSECONDS/$UID/$HOSTNAME/$OSTYPE, times
       format fix, `. file args` positional binding. Gate pending.
 
+## Done (continued 7)
+
+- [x] **PS1/PS2 user theming** — the prompt is configurable from
+      ~/.hellishrc (already sourced at interactive startup): PS1/PS2
+      with the bash escape set (\u \h \H \w \W \$ \n \t \d \e \a \\
+      \j \s \v \[ \]) plus live $NAME/${NAME} expansion; the rich
+      built-in prompt is now just the default theme when PS1 is unset.
+      prompt_ps1.c/prompt_ps1b.c. Pty-test gotcha recorded: script(1)
+      uses $SHELL and bash-family shells strip PS1 from the exported
+      env — test with SHELL=/bin/sh.
+- [ ] PROMPT_COMMAND, \D{fmt}, \! \# history escapes, promptvars
+      cmdsub — natural PS1 follow-ups, small.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
