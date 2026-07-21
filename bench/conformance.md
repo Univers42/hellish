@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1007 | 0 | 0 | 0 | 615 | 0 | 1622 | 62.08% |
+| **hellish --posix** | 1013 | 0 | 0 | 0 | 609 | 0 | 1622 | 62.45% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 157
+### Consensus divergences (hellish fails, bash AND dash pass): 156
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -33,7 +33,6 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `background` case 5 [FAIL]: wait with invalid arg
 - `background` case 11 [FAIL]: Start background pipeline, wait %job_spec
 - `background` case 16 [FAIL]: Wait on multiple specific IDs returns last status
-- `background` case 22 [FAIL]: jobs -p prints one line per job
 - `ble-features` case 2 [FAIL]: [bash_unset] local-unset / dynamic-unset for tempenv
 - `blog1` case 1 [FAIL]: ${###}
 - `blog1` case 2 [FAIL]: ${####}
@@ -184,7 +183,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | arith | 74 | 45 | 69 | 37 |
 | arith-dynamic | 4 | 1 | 3 | 0 |
 | assign | 48 | 22 | 40 | 32 |
-| background | 27 | 15 | 25 | 18 |
+| background | 27 | 17 | 25 | 18 |
 | ble-features | 9 | 0 | 9 | 1 |
 | ble-unset | 5 | 2 | 3 | 3 |
 | blog-other1 | 6 | 4 | 2 | 6 |
@@ -253,7 +252,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | var-sub | 6 | 5 | 5 | 6 |
 | var-sub-quote | 41 | 26 | 40 | 35 |
 | vars-bash | 1 | 0 | 1 | 0 |
-| vars-special | 42 | 22 | 40 | 12 |
+| vars-special | 42 | 26 | 40 | 12 |
 | whitespace | 5 | 0 | 0 | 0 |
 | word-eval | 8 | 5 | 8 | 6 |
 | word-split | 55 | 43 | 50 | 47 |
