@@ -52,8 +52,8 @@ void	ps1_jobs(t_shell *state, t_string *out)
 }
 
 /* Extension dispatch, tried after the bash-compatible set: \g branch,
-   \S failure badge, \p duration, \J jobs. Returns false so unknown
-   escapes still fall through to literal passthrough. */
+   \S failure badge, \p duration, \J jobs, \A animation frame. Returns
+   false so unknown escapes still fall through to literal passthrough. */
 bool	ps1_escape_ext(t_shell *state, t_string *out, char c)
 {
 	if (c == 'g')
@@ -64,5 +64,7 @@ bool	ps1_escape_ext(t_shell *state, t_string *out, char c)
 		return (ps1_duration(state, out), true);
 	if (c == 'J')
 		return (ps1_jobs(state, out), true);
+	if (c == 'A')
+		return (ps1_anim(state, out), true);
 	return (false);
 }
