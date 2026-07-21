@@ -116,6 +116,25 @@ int	main(int argc, char **argv, char **envp)
    The pile of frees at the bottom is the whole trick to staying leak-flat: the
    AST, redirects, input and heredoc scratch are per-command, so we drop them
    each turn. A script can run for an hour and memory just stays flat. */
+/* PROMPT_COMMAND: run its value in the current shell right before each
+   interactive primary prompt (bash behaviour). Non-interactive shells
+   never touch it. The last command's status is preserved so the prompt's
+   $? badge reflects the user's command, not PROMPT_COMMAND's. */
+static void	run_prompt_command(t_shell *state)
+{
+	t_execution_state	saved;
+	char				*pc;
+
+	if (state->metinp != INP_RL)
+		return ;
+	pc = env_expand(state, "PROMPT_COMMAND");
+	if (!pc || !*pc)
+		return ;
+	saved = state->last_cmd_st_exe;
+	exec_string(state, pc);
+	set_cmd_status(state, saved);
+}
+
 static void	repl_shell(t_shell *state)
 {
 	int	buf_fd;
@@ -127,6 +146,7 @@ static void	repl_shell(t_shell *state)
 		vec_init(&state->input);
 		state->input.elem_size = 1;
 		get_g_sig()->should_unwind = 0;
+		run_prompt_command(state);
 		job_notify(state);
 		parse_and_execute_input(state);
 		run_pending_traps(state);
