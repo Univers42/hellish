@@ -39,3 +39,32 @@ t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 		print_ast_dot(state, ret);
 	return (ret);
 }
+
+/* Streaming variant: parse ONE newline-delimited top-level range and leave
+   the rest of the token stream in the deque for the next call. *more is
+   true when a range boundary stopped the parse (execute this range, come
+   back); false when the whole stream is consumed — only then is the TT_END
+   sentinel popped, exactly as parse_tokens does. Both reparse passes run
+   per range, so the executed subtree is indistinguishable from a whole-
+   batch parse. This is what caps the parse footprint at one range instead
+   of one file: the caller resets the arena between ranges. */
+t_ast_node	parse_tokens_range(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, bool *more)
+{
+	t_ast_node	ret;
+
+	parser->res = RES_OK;
+	parser->stream_more = false;
+	ret = parse_simple_list(state, parser, tokens);
+	*more = parser->stream_more;
+	if (parser->res == RES_OK)
+	{
+		if (!*more)
+			(void)deque_pop_start(&tokens->deqtok);
+		reparse_words(&ret);
+		reparse_assignment_words(&ret);
+	}
+	if (PRINT_AST)
+		print_ast_dot(state, ret);
+	return (ret);
+}

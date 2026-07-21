@@ -27,6 +27,7 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	*parser = (t_parser){.res = RES_INIT};
 	vec_init(&parser->parse_stack);
 	parser->parse_stack.elem_size = sizeof(int);
+	state->cycle_streamed = false;
 	if (state->metinp == INP_RL)
 	{
 		p = prompt_normal(state);
@@ -49,7 +50,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 										t_deque_tok *tt,
 										char *prompt)
 {
-	if (parser->res == RES_OK)
+	if (parser->res == RES_OK && !state->cycle_streamed)
 	{
 		execute_top_level(state);
 		if (parena()->attached)

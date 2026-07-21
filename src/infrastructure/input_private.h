@@ -25,12 +25,15 @@
 # include "parser.h"
 # include "prompt.h"
 # include "ast.h"
+# include "executor.h"
+# include "helpers.h"
 
 bool	ends_with_bs_nl(t_string s);
 bool	is_empty_token_list(t_deque_tok *tokens);
 int		readline_cmd(t_shell *state, char **prompt);
 void	extend_bs(t_shell *state);
 int		get_more_tokens(t_shell *state, char **prompt, t_deque_tok *tt);
+bool	stream_try(t_shell *state, t_parser *parser, t_deque_tok *tt);
 bool	try_parse_tokens(t_shell *state, t_parser *parser,
 			t_deque_tok *tt, char **prompt);
 void	get_more_input_parser(t_shell *state,
