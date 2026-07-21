@@ -80,6 +80,7 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 	const char	*op;
 	int			name_len;
 	t_pe_op		o;
+	char		xop;
 
 	if (slen <= 0)
 		return (pf_bad_subst(state, s, slen));
@@ -93,6 +94,8 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 	if (op)
 		return (pf_trim_or_subst(state,
 				pf_make_ctx(s, slen, op, name_len)));
+	if (find_xform_op(s, slen, &name_len, &xop))
+		return (expand_xform(state, s, name_len, xop));
 	if (find_case_op(s, slen, &name_len))
 		return (expand_case(state, s, slen, name_len));
 	if (pf_find_substr(s, slen, &name_len))
