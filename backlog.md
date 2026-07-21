@@ -134,6 +134,20 @@ pass counts in `bench/baseline/`). Performance claims come from
       f || true no longer exits from inside the body. 7/7 probes.
 - 12 regression lines added (tests/regress_hellish, 2913 golden total).
 
+## Done (continued 9) — ARRAYS (the big wall)
+
+- [x] **Indexed arrays**: arr=(a b c), arr+=(d), arr[i]=v (arith
+      subscripts, sparse, scalar promotion), $arr, ${arr[i]},
+      ${arr[@]}/${arr[*]} quoted+unquoted with exact field semantics,
+      ${#arr[@]}, ${#arr[i]}, bash-style set-listing, never exported.
+      16/17 bash probes. Storage = encoded ordinary env value (magic +
+      idx/US/val records) → ZERO env-lifecycle changes; [@] defers via
+      a name-carrying marker registry mirroring pos_mark; splitter has
+      exact analogues of the positional emitters.
+- [ ] Array follow-ups: element-level split/glob in arr=(...) (the one
+      probe divergence), slices ${a[@]:1:2}, ${!a[@]}, unset a[i],
+      read -a, mapfile, declare -a, PIPESTATUS, associative arrays.
+
 ## Feature-gap audit results (agent, 2026-07-21) — ranked queue
 
 1. **Job control inert**: `job_add` (src/job_control/job_table.c:38) has
