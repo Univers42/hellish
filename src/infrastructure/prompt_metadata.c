@@ -49,7 +49,7 @@ static char	*read_head_file(const char *path)
 
 /* Branch for the repo whose root is `dir`: <dir>/.git/HEAD, or, when .git is a
    gitdir file (submodules/worktrees), the referenced gitdir's HEAD. */
-static char	*branch_for_dir(const char *dir)
+char	*branch_for_dir(const char *dir)
 {
 	char	path[PATH_MAX];
 	char	buf[PATH_MAX];
@@ -77,28 +77,21 @@ static char	*branch_for_dir(const char *dir)
 	return (read_head_file(path));
 }
 
-/* Fork-free git branch: walk up from $PWD reading .git/HEAD directly. No
-   subprocess (the old version forked sh->timeout->git twice per prompt). */
+/* Branch + dirty state for the prompt. The root comes from repo_locate's
+   cwd-keyed cache (one stat on the hot path, not a walk), the branch is a
+   single read of that root's HEAD, and the dirty flag is git_dirty_cached's
+   TTL-throttled `git status` — so a prompt outside a repo costs one stat,
+   and inside a repo one stat + one small read. */
 void	get_git_info(char **branch, int *dirty)
 {
-	char	cwd[PATH_MAX];
-	char	*slash;
+	t_gitloc	*loc;
 
 	*branch = NULL;
 	*dirty = 0;
-	if (!getcwd(cwd, sizeof(cwd)))
+	loc = repo_locate();
+	if (!loc || !loc->has)
 		return ;
-	while (1)
-	{
-		if (cwd[0])
-			*branch = branch_for_dir(cwd);
-		else
-			*branch = branch_for_dir("/");
-		if (*branch)
-			return ;
-		slash = ft_strrchr(cwd, '/');
-		if (!slash || slash == cwd)
-			return ;
-		*slash = '\0';
-	}
+	*branch = branch_for_dir(loc->root);
+	if (*branch)
+		*dirty = git_dirty_cached(loc->root);
 }
