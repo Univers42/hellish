@@ -6,11 +6,17 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 23:32:35 by marvin            #+#    #+#             */
-/*   Updated: 2026/01/09 23:32:35 by marvin           ###   ########.fr       */
+/*   Updated: 2026/07/21 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "reparser_private.h"
+
+/* These four helpers used to round-trip through a t_reparser: copy the
+   104-byte current node in, push into the copy, copy it back out — twice
+   per subtoken, ~26MB of struct traffic on a 50k-line parse. They now
+   operate directly on `ret`; the t_reparser dance remains only in the
+   dquote/envvar families whose helpers genuinely share threaded state. */
 
 /* Consume a single-quoted region and emit a TT_SQWORD subtoken covering
    the content (not the surrounding quotes). Single-quoting in POSIX is
@@ -19,65 +25,50 @@
    and that the region ended properly (no runaway string). */
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {
-	t_reparser	rp;
+	int	start;
 
-	create_reparser(&rp, *ret, t, i);
-	ft_assert(rp.current_token.start[rp.i++] == '\'');
-	rp.prev_start = rp.i;
-	while (rp.i < rp.current_token.len
-		&& rp.current_token.start[rp.i] != '\'')
-		rp.i++;
-	push_subtoken_node(&rp.current_node, rp.current_token,
-		create_interval(rp.prev_start, rp.i), TT_SQWORD);
-	ft_assert(rp.current_token.start[rp.i++] == '\'');
-	*i = rp.i;
-	*ret = rp.current_node;
+	ft_assert(t.start[(*i)++] == '\'');
+	start = *i;
+	while (*i < t.len && t.start[*i] != '\'')
+		(*i)++;
+	push_subtoken_node(ret, t, create_interval(start, *i), TT_SQWORD);
+	ft_assert(t.start[(*i)++] == '\'');
 }
 
 /* Consume one backslash escape outside quotes and emit a TT_SQWORD subtoken
    (the escaped char is treated as literal, same as single-quoting). The edge
-   case is a backslash at end-of-token (prev_start--): the lexer may have
+   case is a backslash at end-of-token (start--): the lexer may have
    produced a trailing backslash for a continuation line; we still push it as
    a literal rather than dropping it. */
 void	reparse_bs(t_ast_node *ret, int *i, t_token t)
 {
-	t_reparser	rp;
+	int	start;
 
-	create_reparser(&rp, *ret, t, i);
-	ft_assert(rp.current_token.start[rp.i++] == '\\');
-	rp.prev_start = rp.i;
-	if (rp.i == rp.current_token.len)
-		rp.prev_start--;
+	ft_assert(t.start[(*i)++] == '\\');
+	start = *i;
+	if (*i == t.len)
+		start--;
 	else
-		rp.i++;
-	push_subtoken_node(&rp.current_node, rp.current_token,
-		create_interval(rp.prev_start, rp.i), TT_SQWORD);
-	*i = rp.i;
-	*ret = rp.current_node;
+		(*i)++;
+	push_subtoken_node(ret, t, create_interval(start, *i), TT_SQWORD);
 }
 
 /* Consume a run of plain characters (no quotes, $, \, or backtick) and emit
    a TT_WORD subtoken. The loop stops at any "special" character so the main
-   dispatch loop (loop_node_rp) can handle it. The fallthrough `rp.i++` after
+   dispatch loop (loop_node_rp) can handle it. The fallthrough (*i)++ after
    the loop is the safety valve: if we ended up on a lone special we couldn't
    classify, advance one character anyway to prevent an infinite loop. */
 void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 {
-	t_reparser	rp;
+	int	start;
 
-	create_reparser(&rp, *ret, t, i);
-	rp.prev_start = rp.i;
-	while (rp.i < rp.current_token.len
-		&& !is_special_char(rp.current_token.start[rp.i])
-		&& rp.current_token.start[rp.i] != '\\'
-		&& rp.current_token.start[rp.i] != '`')
-		rp.i++;
-	if (rp.i == rp.prev_start && rp.i < rp.current_token.len)
-		rp.i++;
-	push_subtoken_node(&rp.current_node, rp.current_token,
-		create_interval(rp.prev_start, rp.i), TT_WORD);
-	*i = rp.i;
-	*ret = rp.current_node;
+	start = *i;
+	while (*i < t.len && !is_special_char(t.start[*i])
+		&& t.start[*i] != '\\' && t.start[*i] != '`')
+		(*i)++;
+	if (*i == start && *i < t.len)
+		(*i)++;
+	push_subtoken_node(ret, t, create_interval(start, *i), TT_WORD);
 }
 
 /* Consume a `...` backtick command substitution and emit the whole span as
@@ -88,25 +79,19 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
    command substitution is subject to IFS word splitting. */
 void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 {
-	t_reparser	rp;
-	int			start;
+	int	start;
 
-	create_reparser(&rp, *ret, t, i);
-	start = rp.i++;
-	while (rp.i < rp.current_token.len && rp.current_token.start[rp.i] != '`')
+	start = (*i)++;
+	while (*i < t.len && t.start[*i] != '`')
 	{
-		if (rp.current_token.start[rp.i] == '\\'
-			&& rp.i + 1 < rp.current_token.len)
-			rp.i++;
-		rp.i++;
+		if (t.start[*i] == '\\' && *i + 1 < t.len)
+			(*i)++;
+		(*i)++;
 	}
-	rp.i += (rp.i < rp.current_token.len);
-	push_subtoken_node(&rp.current_node, rp.current_token,
-		create_interval(start, rp.i), TT_WORD);
-	((t_ast_node *)rp.current_node.children.ctx)
-	[rp.current_node.children.len - 1].token.split_eligible = true;
-	*i = rp.i;
-	*ret = rp.current_node;
+	*i += (*i < t.len);
+	push_subtoken_node(ret, t, create_interval(start, *i), TT_WORD);
+	((t_ast_node *)ret->children.ctx)[ret->children.len - 1]
+		.token.split_eligible = true;
 }
 
 /* Dispatch loop: walk the token character by character and call the right
