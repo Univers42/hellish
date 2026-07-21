@@ -10,19 +10,32 @@
 #   \u user   \h host   \H host.fqdn   \w cwd(~)   \W cwd basename
 #   \$ $/#    \n newline   \t HH:MM:SS   \d date   \j job count
 #   \s shell  \v version   \e ESC   \[ \] readline width guards
-# hellish extensions:
+# hellish extensions — all SELF-SPACING (invisible until relevant):
 #   \g  git branch of the cwd (+ * when dirty), empty outside a repo
 #   \S  " ✘N" after a failing command, empty after success
+#   \p  " took N.Ns" once a command ran 2s or longer
+#   \J  " ⚙N" while background jobs exist
 # Live $VAR / ${VAR} expansion happens at every render.
 
-# Theme: "ember" — two-line truecolor, git-aware, failure badge.
-PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \[\e[1;38;2;122;162;247m\]\u\[\e[0m\] \[\e[38;2;108;114;125m\]in\[\e[0m\] \[\e[1;38;2;158;203;255m\]\w\[\e[0m\] \[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\n\[\e[38;2;90;96;106m\]╰─\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
-PS2='\[\e[38;2;108;114;125m\]│ \[\e[0m\]'
+# Theme: "pure" (default) — a blank line for breathing room, then one
+# calm info line (bold blue path, grey branch, red failure badge, amber
+# duration, blue jobs), then a lone magenta arrow on its own line. Your
+# commands always start at the same column, and nothing appears unless
+# it carries information.
+#
+#     ~/Documents/hellish feat/rc-theming* ✘1 took 3.2s ⚙1
+#     ❯
+PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\]\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
+PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
 
-# Theme: "minimal" — one line, basename + arrow. Uncomment to use.
-# PS1='\[\e[1;38;2;122;162;247m\]\W\[\e[0m\]\[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
+# Theme: "ember" — framed two-liner, user shown, same badges.
+# PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \[\e[1;38;2;122;162;247m\]\u\[\e[0m\] \[\e[38;2;108;114;125m\]in\[\e[0m\] \[\e[1;38;2;158;203;255m\]\w\[\e[0m\] \[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\n\[\e[38;2;90;96;106m\]╰─\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
+# PS2='\[\e[38;2;108;114;125m\]│ \[\e[0m\]'
 
-# Theme: "classic" — bash look, zero color. Uncomment to use.
+# Theme: "minimal" — everything on one line, basename only.
+# PS1='\[\e[1;38;2;122;162;247m\]\W\[\e[0m\]\[\e[38;2;125;133;144m\] \g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
+
+# Theme: "classic" — bash look, zero color.
 # PS1='\u@\h:\w\$ '
 
 # ── 2. LINE EDITING & OPTIONS ─────────────────────────────────────────
