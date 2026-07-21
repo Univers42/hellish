@@ -43,6 +43,23 @@ static char	*dup_value_from_args(t_vec *args)
 	return (ft_strdup(""));
 }
 
+/* Turn an already-word-expanded subscript string into a numeric index:
+   the result is a bare arithmetic expression (variables and $((...)) are
+   gone), so arith_expand handles it directly. Empty -> 0. */
+static long	arr_sub_index(t_shell *state, const char *sub)
+{
+	char	*res;
+	long	idx;
+
+	if (!sub || !*sub)
+		return (0);
+	res = arith_expand(state, sub, (int)ft_strlen(sub));
+	idx = 0;
+	if (res)
+		idx = ft_atoi(res);
+	return (xfree(res), idx);
+}
+
 /* arr[expr]=v: the key still carries its "[expr]" suffix here. Evaluate
    the subscript arithmetically, rebuild the array value with that
    element set (scalars promote to a one-element array first), truncate
@@ -52,18 +69,26 @@ static void	subscript_assign(t_shell *state, t_env *ret)
 	char	*br;
 	char	*res;
 	char	*nv;
+	char	*old;
 	long	idx;
 
 	br = ft_strchr(ret->key, '[');
 	if (!br || !ret->value)
 		return ;
 	*br = '\0';
-	res = arith_expand(state, br + 1, (int)ft_strlen(br + 1) - 1);
-	idx = 0;
-	if (res)
-		idx = ft_atoi(res);
+	old = env_expand(state, ret->key);
+	if (assoc_is(old))
+	{
+		res = expand_param_word(state, br + 1,
+				(int)ft_strlen(br + 1) - 1, false);
+		nv = assoc_with_set(old, res, (int)ft_strlen(res), ret->value);
+		xfree(res);
+		return (xfree(ret->value), (void)(ret->value = nv));
+	}
+	res = expand_param_word(state, br + 1, (int)ft_strlen(br + 1) - 1, false);
+	idx = arr_sub_index(state, res);
 	xfree(res);
-	nv = arr_with_set(env_expand(state, ret->key), idx, ret->value);
+	nv = arr_with_set(old, idx, ret->value);
 	xfree(ret->value);
 	ret->value = nv;
 }

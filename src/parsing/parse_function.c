@@ -28,6 +28,8 @@ bool	is_function_def(t_deque_tok *tokens)
 	t0 = (t_token *)deque_idx(&tokens->deqtok, 0);
 	t1 = (t_token *)deque_idx(&tokens->deqtok, 1);
 	t2 = (t_token *)deque_idx(&tokens->deqtok, 2);
+	if (t0->tt == TT_WORD && t0->len > 0 && t0->start[t0->len - 1] == '=')
+		return (false);
 	return (t0->tt == TT_WORD
 		&& t1->tt == TT_BRACE_LEFT
 		&& t2->tt == TT_BRACE_RIGHT);

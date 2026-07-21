@@ -33,6 +33,12 @@ static int	declare_print_one(t_shell *state, const char *name)
 	if (!e)
 		return (ft_eprintf("%s: declare: %s: not found\n",
 				state->ctx, name), 1);
+	if (assoc_is(e->value))
+	{
+		fmt = assoc_format(e->value);
+		ft_printf("declare -A %s=%s\n", e->key, fmt);
+		return (xfree(fmt), 0);
+	}
 	if (arr_is(e->value))
 	{
 		fmt = arr_format(e->value);
@@ -80,14 +86,44 @@ static void	declare_assign(t_shell *state, const char *word, int export)
 	env_set(&state->env, env_create(key, ft_strdup(eq + 1), export != 0));
 }
 
+/* declare -A NAME...: create each NAME as an EMPTY associative array
+   (value = the assoc magic byte). The attribute lives in the value, so a
+   later h[key]=v sees the assoc magic and treats key as a literal string.
+   NAME=(...) compound init after -A is a v1 scope-out; the near-universal
+   pattern is `declare -A h; h[k]=v`. */
+static int	declare_assoc(t_shell *state, t_vec argv, size_t i)
+{
+	char	*empty;
+	char	*eq;
+	char	*key;
+
+	while (i < argv.len)
+	{
+		eq = ft_strchr(((char **)argv.ctx)[i], '=');
+		if (eq)
+			key = ft_strndup(((char **)argv.ctx)[i],
+					eq - ((char **)argv.ctx)[i]);
+		else
+			key = ft_strdup(((char **)argv.ctx)[i]);
+		empty = xmalloc(2);
+		empty[0] = ARR_ASSOC_MAGIC;
+		empty[1] = '\0';
+		env_set(&state->env, env_create(key, empty, false));
+		i++;
+	}
+	return (0);
+}
+
 int	builtin_declare(t_shell *state, t_vec argv)
 {
 	size_t	i;
 	int		export;
 	int		printmode;
+	int		assoc;
 
 	export = 0;
 	printmode = 0;
+	assoc = 0;
 	i = 1;
 	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
 		&& ((char **)argv.ctx)[i][1])
@@ -96,8 +132,12 @@ int	builtin_declare(t_shell *state, t_vec argv)
 			printmode = 1;
 		if (ft_strchr(((char **)argv.ctx)[i], 'x'))
 			export = 1;
+		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
+			assoc = 1;
 		i++;
 	}
+	if (assoc)
+		return (declare_assoc(state, argv, i));
 	if (printmode)
 		return (declare_print(state, argv, i));
 	while (i < argv.len)

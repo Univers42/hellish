@@ -168,3 +168,10 @@ f() { local a=(x y z); echo "${#a[@]} ${a[1]}"; }; f
 declare a=(p q); echo "${a[@]}"
 g() { local -a c=(m n o); echo "${c[@]} ${#c[@]}"; }; g
 declare -a d=(9 8 7); echo "${d[2]} ${d[0]}"
+declare -A h; h[red]=1; h[green]=2; echo "${h[red]} ${h[green]} ${#h[@]}"
+declare -A cnt; for w in a b a c a; do cnt[$w]=$(( ${cnt[$w]:-0} + 1 )); done; echo "${cnt[a]} ${cnt[b]} ${cnt[c]}"
+declare -A m; m[k]=v; unset "m[k]"; echo "${#m[@]}"
+a=(); for i in 0 1 2; do a[$i]=$((i*i)); done; echo "${a[@]}"
+i=2; a2[$i]=X; echo "${a2[2]}"
+a3=(x y z); echo "${a3[0]:-d} ${a3[9]:-d} ${a3[1]#y}"
+declare -A c; c[x]=5; echo "$(( ${c[x]} * 2 ))"

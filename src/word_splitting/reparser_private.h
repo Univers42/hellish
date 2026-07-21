@@ -102,6 +102,7 @@ bool		handle_envvar_paren_or_special(t_reparser *rp,
 void		skip_quoted_in_brace(t_reparser *rp, char q);
 void		loop_node_rp(t_reparser *rp);
 void		reparse_ansic(t_ast_node *ret, int *i, t_token t);
+void		reparse_subscript_assigns(t_ast_node *node);
 void		ansic_escape(t_ansic *a);
 int			ansic_simple(char c);
 int			ansic_digit(char c, char kind);

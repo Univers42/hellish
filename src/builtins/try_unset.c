@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "arith.h"
+#include "env.h"
 #include "builtins_private.h"
 
 /* Remove the variable `key` from the env table in-place. We find its slot
@@ -33,13 +34,16 @@ static bool	unset_array_elem(t_shell *state, char *key, char *br)
 	e = env_get(&state->env, key);
 	res = arith_expand(state, br + 1, (int)ft_strlen(br + 1) - 1);
 	*br = '[';
-	if (!e || !arr_is(e->value))
+	if (!e || (!arr_is(e->value) && !assoc_is(e->value)))
 		return (xfree(res), res != NULL);
 	idx = 0;
 	if (res)
 		idx = ft_atoi(res);
 	xfree(res);
-	nv = arr_without(e->value, idx);
+	if (assoc_is(e->value))
+		nv = assoc_without(e->value, br + 1, (int)ft_strlen(br + 1) - 1);
+	else
+		nv = arr_without(e->value, idx);
 	xfree(e->value);
 	e->value = nv;
 	return (true);

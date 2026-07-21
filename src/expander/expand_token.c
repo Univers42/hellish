@@ -143,7 +143,9 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 		return ;
 	if (expand_array_op(state, curr_tt))
 		return ;
-	if (expand_array_ext(state, curr_tt))
+	if (expand_array_elem_op(state, curr_tt))
+		return ;
+	if (expand_array_ext(state, curr_tt, split_ctx))
 		return ;
 	if (expand_array_token(state, curr_tt, split_ctx))
 		return ;
