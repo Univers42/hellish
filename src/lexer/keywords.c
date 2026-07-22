@@ -19,19 +19,19 @@ bool	is_redirect(t_tt tt);
    Part1 handles the if/elif/else/fi/while/until family. */
 static t_tt	match_kw_part1(const char *s, int len)
 {
-	if (len == 2 && ft_strncmp(s, "if", 2) == 0)
+	if (len == 2 && kw_eq(s, "if", 2))
 		return (TT_IF);
-	if (len == 4 && ft_strncmp(s, "then", 4) == 0)
+	if (len == 4 && kw_eq(s, "then", 4))
 		return (TT_THEN);
-	if (len == 4 && ft_strncmp(s, "elif", 4) == 0)
+	if (len == 4 && kw_eq(s, "elif", 4))
 		return (TT_ELIF);
-	if (len == 4 && ft_strncmp(s, "else", 4) == 0)
+	if (len == 4 && kw_eq(s, "else", 4))
 		return (TT_ELSE);
-	if (len == 2 && ft_strncmp(s, "fi", 2) == 0)
+	if (len == 2 && kw_eq(s, "fi", 2))
 		return (TT_FI);
-	if (len == 5 && ft_strncmp(s, "while", 5) == 0)
+	if (len == 5 && kw_eq(s, "while", 5))
 		return (TT_WHILE);
-	if (len == 5 && ft_strncmp(s, "until", 5) == 0)
+	if (len == 5 && kw_eq(s, "until", 5))
 		return (TT_UNTIL);
 	return (TT_END);
 }
@@ -41,15 +41,15 @@ static t_tt	match_kw_part1(const char *s, int len)
    the operator table handles `(` and `)`. */
 static t_tt	match_kw_part2(const char *s, int len)
 {
-	if (len == 3 && ft_strncmp(s, "for", 3) == 0)
+	if (len == 3 && kw_eq(s, "for", 3))
 		return (TT_FOR);
-	if (len == 2 && ft_strncmp(s, "do", 2) == 0)
+	if (len == 2 && kw_eq(s, "do", 2))
 		return (TT_DO);
-	if (len == 4 && ft_strncmp(s, "done", 4) == 0)
+	if (len == 4 && kw_eq(s, "done", 4))
 		return (TT_DONE);
-	if (len == 4 && ft_strncmp(s, "case", 4) == 0)
+	if (len == 4 && kw_eq(s, "case", 4))
 		return (TT_CASE);
-	if (len == 4 && ft_strncmp(s, "esac", 4) == 0)
+	if (len == 4 && kw_eq(s, "esac", 4))
 		return (TT_ESAC);
 	if (len == 1 && *s == '{')
 		return (TT_LBRACE);
@@ -57,7 +57,7 @@ static t_tt	match_kw_part2(const char *s, int len)
 		return (TT_RBRACE);
 	if (len == 1 && *s == '!')
 		return (TT_BANG);
-	if (len == 6 && ft_strncmp(s, "coproc", 6) == 0)
+	if (len == 6 && kw_eq(s, "coproc", 6))
 		return (TT_COPROC);
 	return (TT_END);
 }

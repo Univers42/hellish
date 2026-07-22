@@ -81,7 +81,7 @@ static bool	parse_for_in_clause(t_shell *state, t_parser *parser,
 		return (parser->res = RES_GETMOREINPUT, false);
 	peek = (t_ltoken *)deque_peek(&tokens->deqtok);
 	if (next == TT_WORD && peek->len == 2
-		&& ft_strncmp(tokens->base + peek->off, "in", 2) == 0)
+		&& kw_eq(tokens->base + peek->off, "in", 2))
 	{
 		ret->negate = true;
 		(void)deque_pop_start(&tokens->deqtok);

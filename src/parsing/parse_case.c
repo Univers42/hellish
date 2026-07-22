@@ -27,7 +27,7 @@ t_ltoken	*pk(t_deque_tok *t)
 bool	is_kw_in(t_ltoken *tk, char *base)
 {
 	return (tk->tt == TT_WORD && tk->len == 2
-		&& ft_strncmp(base + tk->off, "in", 2) == 0);
+		&& kw_eq(base + tk->off, "in", 2));
 }
 
 /* Consume the pattern list of a case item: [(] pattern [| pattern]... ).
