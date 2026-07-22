@@ -67,6 +67,22 @@ char		*arr_without(const char *old, long idx);
 void		rec_append(t_string *out, long idx, const char *v, int vl);
 
 /* Associative arrays (env_assoc*.c). */
+/* declare -i / -n attribute table (env_attr.c). One entry per attributed
+   variable; the table is normally empty, so lookups short-circuit and the
+   assignment/read hot paths pay nothing. */
+typedef struct s_var_attr
+{
+	char	*name;
+	char	kind;   /* 'i' integer, 'n' nameref */
+	char	*target; /* nameref target name (NULL for -i) */
+}	t_var_attr;
+
+char		attr_kind(t_shell *state, const char *name, int nlen);
+char		*attr_target(t_shell *state, const char *name, int nlen);
+void		attr_set(t_shell *state, const char *name, char kind,
+				const char *target);
+void		attr_clear(t_shell *state);
+
 bool		assoc_is(const char *val);
 bool		assoc_next(const char **cur, const char **k, int *kl,
 				const char **v, int *vl);
