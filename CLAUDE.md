@@ -49,6 +49,8 @@ make docker-alpine  # (also -debian/-ubuntu/-arch) interactive hellish in that c
 make cd-zsh-test    # docker diff of the zsh-style `cd old new` extension vs real zsh
 make cd-posix-test  # host-side check that --posix gates that extension off
 make hist-test      # pty-driven check of cmdhist multiline history joining
+make readline-test  # pty gate over every libreadline entry point (completion,
+                    #   history recall, vi/emacs) — run before touching readline linkage
 make anim-test      # pty-driven check that the prompt animation never clobbers pasted input
 make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
                     #   (never re-measures — charting and measuring stay separate)
@@ -59,6 +61,8 @@ make my_shell       # sudo-install to /usr/bin + register as a login shell (OPT=
 Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY). Debug views compose: `--debug=lexer --debug=parser --debug=ast`.
 
 Runtime knobs (env): `HELLISH_ALLOC_STATS=1` (live bytes at exit), `HELLISH_NO_BANNER` / `HELLISH_NO_ANIM` (quiet startup — set these when scripting the shell), `HELLISH_NO_UPDATE_CHECK`, `HELLISH_DBG_SPANS` / `HELLISH_DBG_DQ` / `HELLISH_DBG_CYCLE`, `HELLISH_PROMPT_BENCH`.
+
+Interactive shells (and only interactive shells) source `~/.hellishrc` — never scripts, `-c`, or piped input, so tests stay clean. `hellishrc.example` at the repo root documents the prompt escapes and knobs it can set.
 
 ## Test model (read before "fixing" a failure)
 
@@ -91,7 +95,7 @@ Conceptual pipeline: `input → lexer → parser (AST) → word reparser → her
 
 **Command substitution has two paths.** `capture_subshell_output.c` first tries the forkless fast path `cmdsub_fast()` (`src/expander/cmdsub_fast.c`), which runs the body in-process when it is provably side-effect-free: a single whitelisted builtin (`echo`/`printf`/`pwd`/`true`/`:`), no redirects or control operators, no `${v=…}`, no `$((…))`. NULL means "not eligible" and the caller falls back to the normal fork. A cmdsub bug can live in either path; the eligibility scan (`cmdsub_fast2.c`) deliberately errs toward forking.
 
-Other modules: `builtins` (46 builtins, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
+Other modules: `builtins` (51 builtin names, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
 
 ### Allocator discipline
 
@@ -117,6 +121,7 @@ Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wir
 - Branch from `develop`; PRs target `develop` (`main` and `develop` are protected). Branch names: `type/short-description`, e.g. `fix/heredoc-eof`, `perf/cmdsub-fast-path`.
 - Conventional Commits, enforced by the commit-msg hook (`./vendor/scripts/install-hooks.sh`): `type(scope): imperative subject` with type ∈ feat/fix/refactor/perf/test/docs/chore/style and scope = the module (lexer, parser, expander, executor, builtins, alloc, glob, heredoc, job-control, …). **No AI co-author trailers.**
 - Pre-PR gates, all green from a clean tree: `make re` AND `make re OPT=1` build clean; `make test` green; `cd tests && ./verify_alloc.sh` green on both heaps; no ASan/LSan reports on your cases; `make norm` clean.
+- CI (`.github/workflows/ci.yml`) re-runs these gates: submodule hygiene, the build matrix, norminette (**enforced there**, unlike the local always-exit-0 `make norm`), and the full suite with leak checks. Releases ship via `release.yml`/`ghcr.yml` and an npm package (`npm/`, published as `hellish-shell`).
 
 ## Where the prose lives
 
