@@ -94,8 +94,8 @@ char	*expand_trim(t_shell *state, t_trim_ctx ctx)
 	if (!val)
 		return (ft_strdup(""));
 	op_off = 1 + (ctx.op[1] == '%' || ctx.op[1] == '#');
-	pat = expand_param_word(state, ctx.op + op_off,
-			ctx.slen - ctx.name_len - op_off, false);
+	pat = expand_param_pattern(state, ctx.op + op_off,
+			ctx.slen - ctx.name_len - op_off);
 	if (ctx.op[0] == '%' && ctx.op[1] == '%')
 		result = trim_suffix_longest(val, pat);
 	else if (ctx.op[0] == '%')
