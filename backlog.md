@@ -249,10 +249,28 @@ bash, full battery green each step, both heaps leak-free):
       save_fd) + NAME_PID, backgrounded own-pgid child. Reclassify keeps the
       token after `coproc NAME` in cmd position so `{` opens a compound.
 - Suite 3012 green, both-heap parity, ASan clean, regress_hellish covers all.
-- REMAINING queued big item: **pull-lexer** — parse is ~1.21x bash after
-      streaming/arena; a from-scratch lexer rewrite is deferred as too risky
-      for the ~20% gain. Lower-risk levers first: t_token shrink from 40B,
-      reparse dquote/envvar opt, syscall reduction (see parse-batching memo).
+
+## Done (continued 15, 2026-07-22) — parse profiled; hellish now BEATS bash
+
+Profiled with strace -c + hyperfine User/System split (perf/ptrace locked).
+Finding: hellish's parse USER-CPU already beats bash (47 vs 53ms); the whole
+gap was SYSTEM time (page faults from 4x RSS). Two fixes, both green (3016
+tests, both heaps, ASan, Oils 1069 / mksh 210):
+
+- [x] **64KB file-read buffer** (libft `b7666008`, bump `b477496`): script
+      slurp was 1766 read() calls (1KB buffer in vec_append_fd) vs bash's
+      225; now ~34. Flipped hellish ahead of bash on wall-clock.
+- [x] **Lean 16B deque token** (`2989d00`): the raw token deque stored full
+      32B t_tokens, but full_word/arith_cache are NULL there (attached later
+      on AST nodes / at exec). New t_ltoken (16B prefix) + ltok2tok(); 3
+      deque_init sites use sizeof(t_ltoken), all 87 deque casts routed
+      through t_ltoken (compiler-verified). parse50k RSS 19.9->15.1MB (-24%),
+      system 5.8->4.5ms.
+- pull-lexer verdict: it's a MEMORY lever (user-CPU already wins), not worth a
+      from-scratch rewrite; ft_lexer/ft_yacc rejected (LALR slower on CPU than
+      the tuned RD; shell grammar hostile to yacc). Remaining RSS over bash:
+      two whole-file copies (input + alias_exp, ~3.4MB) and the full-file token
+      deque still materialized (~4.75MB) — only a pull-lexer eliminates that.
 
 ## VERDICT (self-assessment, 2026-07-21)
 hellish is a drop-in bash replacement for interactive use and the vast
