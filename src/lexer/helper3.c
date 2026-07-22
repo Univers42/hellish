@@ -93,7 +93,7 @@ void	parse_op(t_deque_tok *tokens, char **str)
 	if (len > 0)
 	{
 		*str += len;
-		deque_push_end(&tokens->deqtok, &tmp);
+		push_ltok(tokens, tmp);
 		return ;
 	}
 	start = *str;
@@ -107,5 +107,5 @@ void	parse_op(t_deque_tok *tokens, char **str)
 	ft_assert(len > 0);
 	*str += len;
 	tmp = create_token(start, len, type);
-	deque_push_end(&tokens->deqtok, &tmp);
+	push_ltok(tokens, tmp);
 }

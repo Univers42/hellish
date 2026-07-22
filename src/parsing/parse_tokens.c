@@ -29,7 +29,7 @@ t_ast_node	parse_tokens(t_shell *state, t_parser *parser, t_deque_tok *tokens)
 	ret = parse_simple_list(state, parser, tokens);
 	if (parser->res == RES_OK)
 	{
-		tmp = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+		tmp = pop_tok(tokens);
 		tt = tmp.tt;
 		(void)tt;
 		reparse_subscript_assigns(&ret);

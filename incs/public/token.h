@@ -20,6 +20,7 @@
 # define TOKEN_H
 
 # include "libft.h"
+# include <stdint.h>
 
 /* Exhaustive list of terminal token types the lexer can produce.
    TT_WORD is the catch-all for unquoted words; TT_SQWORD/TT_DQWORD for
@@ -113,27 +114,49 @@ typedef struct s_token
 }	t_token;
 
 /* Lean token stored in the RAW token deque (t_deque_tok). full_word and
-   arith_cache are always NULL there — they are attached later, on AST-node
-   tokens (reparse) and at execution (arith memo). Dropping those two
-   pointers halves the per-slot cost (32B -> 16B): a 50k-line parse holds
-   ~310k tokens, so this is ~4.75MB less RSS and fewer page faults. It is
-   an EXACT prefix of t_token, so field reads via either type agree; the
-   parser reads deque slots as t_ltoken and lifts them to full tokens with
-   ltok2tok() wherever one is embedded into an AST node. */
+   arith_cache are always NULL there, and `start` is stored as a 32-bit OFFSET
+   from the deque's tokenize base (t_deque_tok.base) rather than an 8-byte
+   pointer -- halving the slot again, 16B -> 8B: a 50k-line parse holds ~310k
+   tokens, so this is ~2.5MB less RSS. It works because deque tokens are ALWAYS
+   pure slices into the base string: the lexer never sets `allocated` (only the
+   expander does, on AST tokens -- verified), so base+off is exact and it lifts
+   to false. tt/len/split_eligible are bitfields so direct reads (`p->tt`,
+   `p->len`) still work untouched; only `start` had to move behind ltok2tok().
+   len is 24-bit (a single token > 16MB would overflow -- no real lexeme is
+   that long). This is NO LONGER a prefix of t_token, so the tokenizer converts
+   on push via tok2ltok(). */
 typedef struct s_ltoken
 {
-	unsigned char	tt;
-	bool			allocated;
-	bool			split_eligible;
-	int				len;
-	char			*start;
+	uint32_t	off;
+	uint32_t	len : 24;
+	uint32_t	tt : 7;
+	uint32_t	split_eligible : 1;
 }	t_ltoken;
 
-static inline t_token	ltok2tok(t_ltoken l)
+/* Lift a deque token to a full AST token, rebuilding the absolute start
+   pointer from base+off. off==0 also covers the NULL-start sentinel
+   (TT_END): base+0 is a 0-length slice nothing dereferences. */
+static inline t_token	ltok2tok(t_ltoken l, char *base)
 {
-	return ((t_token){.tt = l.tt, .allocated = l.allocated,
-		.split_eligible = l.split_eligible, .len = l.len,
-		.start = l.start, .full_word = NULL});
+	return ((t_token){.tt = (unsigned char)l.tt, .allocated = false,
+		.split_eligible = l.split_eligible, .len = (int)l.len,
+		.start = base + l.off, .full_word = NULL});
+}
+
+/* Pack a freshly-lexed token into a deque slot: start becomes an offset from
+   base. A NULL start (the TT_END sentinel) stores off 0. */
+static inline t_ltoken	tok2ltok(t_token t, char *base)
+{
+	t_ltoken	l;
+
+	if (t.start)
+		l.off = (uint32_t)(t.start - base);
+	else
+		l.off = 0;
+	l.len = (uint32_t)t.len;
+	l.tt = t.tt;
+	l.split_eligible = t.split_eligible;
+	return (l);
 }
 
 static inline t_token	create_token(char *start, int len, t_tt token_type)

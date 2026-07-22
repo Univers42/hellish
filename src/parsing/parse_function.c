@@ -28,7 +28,8 @@ bool	is_function_def(t_deque_tok *tokens)
 	t0 = (t_ltoken *)deque_idx(&tokens->deqtok, 0);
 	t1 = (t_ltoken *)deque_idx(&tokens->deqtok, 1);
 	t2 = (t_ltoken *)deque_idx(&tokens->deqtok, 2);
-	if (t0->tt == TT_WORD && t0->len > 0 && t0->start[t0->len - 1] == '=')
+	if (t0->tt == TT_WORD && t0->len > 0
+		&& (tokens->base + t0->off)[t0->len - 1] == '=')
 		return (false);
 	return (t0->tt == TT_WORD
 		&& t1->tt == TT_BRACE_LEFT
@@ -79,7 +80,7 @@ t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 	t_token		name_tok;
 	t_ast_node	body;
 
-	name_tok = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+	name_tok = pop_tok(tokens);
 	(void)deque_pop_start(&tokens->deqtok);
 	(void)deque_pop_start(&tokens->deqtok);
 	skip_newlines(tokens);

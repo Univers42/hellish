@@ -24,10 +24,10 @@ t_ltoken	*pk(t_deque_tok *t)
    separator. Like `in` in a for-loop, this is classified as TT_WORD by the
    lexer (it is only a keyword in specific positions), so we compare raw
    text rather than the token type. */
-bool	is_kw_in(t_ltoken *tk)
+bool	is_kw_in(t_ltoken *tk, char *base)
 {
 	return (tk->tt == TT_WORD && tk->len == 2
-		&& ft_strncmp(tk->start, "in", 2) == 0);
+		&& ft_strncmp(base + tk->off, "in", 2) == 0);
 }
 
 /* Consume the pattern list of a case item: [(] pattern [| pattern]... ).

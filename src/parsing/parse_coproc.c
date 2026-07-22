@@ -33,7 +33,7 @@ static bool	coproc_has_name(t_deque_tok *tokens)
 		return (false);
 	w = (t_ltoken *)deque_idx(&tokens->deqtok, 0);
 	nx = (t_ltoken *)deque_idx(&tokens->deqtok, 1);
-	if (w->tt != TT_WORD || !is_valid_ident(w->start, w->len))
+	if (w->tt != TT_WORD || !is_valid_ident(tokens->base + w->off, w->len))
 		return (false);
 	return (is_compound_start(nx->tt) || nx->tt == TT_BRACE_LEFT);
 }
@@ -51,7 +51,7 @@ bool	handle_coproc_case(t_shell *state, t_parser *parser,
 	node.children.elem_size = sizeof(t_ast_node);
 	(void)deque_pop_start(&tokens->deqtok);
 	if (coproc_has_name(tokens))
-		node.token = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+		node.token = pop_tok(tokens);
 	inner = parse_command(state, parser, tokens);
 	ast_push_child(&node, &inner);
 	ast_push_child(ret, &node);

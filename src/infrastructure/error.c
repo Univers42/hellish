@@ -57,7 +57,7 @@ t_ast_node	unexpected(t_shell *state, t_parser *parser,
 {
 	t_token	t;
 
-	t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (ft_strncmp(t.start, "\n", t.len) == 0)
 		ft_eprintf("%s: syntax error near unexpected token `newline'\n",
 			state->ctx);
