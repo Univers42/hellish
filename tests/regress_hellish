@@ -201,3 +201,7 @@ trap 'echo E' ERR; if false; then :; fi; echo ok
 trap 'printf D' DEBUG; for i in 1 2; do echo $i; done
 trap 'printf D' DEBUG; case x in x) echo m;; esac; echo
 tg(){ trap 'echo g' RETURN; :; }; tg; th(){ echo h; }; th
+coproc { read x; echo "got:$x"; }; echo hi >&${COPROC[1]}; read y <&${COPROC[0]}; echo "$y"
+coproc { read a; read b; echo "$a-$b"; }; echo one >&${COPROC[1]}; echo two >&${COPROC[1]}; read out <&${COPROC[0]}; echo "$out"
+coproc P { read x; echo "[$x]"; }; echo "n=${#P[@]}"; echo hi >&${P[1]}; read r <&${P[0]}; echo "$r"
+coproc CAT { read l; echo "$l" | tr a-z A-Z; }; echo hello >&${CAT[1]}; read u <&${CAT[0]}; echo "$u"

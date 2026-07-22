@@ -103,7 +103,7 @@ t_ast_node	parse_simple_list(t_shell *state, t_parser *parser,
 	if (next == TT_END)
 		return (ret);
 	if (!is_simple_cmd_token(next) && next != TT_BRACE_LEFT
-		&& !is_compound_start(next))
+		&& !is_compound_start(next) && next != TT_COPROC)
 		return (handle_unexpected_token(state, parser, ret, tokens), ret);
 	push_parsed_pipeline_child(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)

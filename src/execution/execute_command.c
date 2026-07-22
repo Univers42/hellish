@@ -124,6 +124,9 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	if (ft == AST_SIMPLE_COMMAND)
 		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
 			execute_simple_command(state, exe));
+	if (ft == AST_COPROC)
+		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
+			execute_coproc(state, exe));
 	if (!exe->redirs.ctx)
 	{
 		vec_init(&exe->redirs);
