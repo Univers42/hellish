@@ -57,6 +57,8 @@ static t_tt	match_kw_part2(const char *s, int len)
 		return (TT_RBRACE);
 	if (len == 1 && *s == '!')
 		return (TT_BANG);
+	if (len == 6 && ft_strncmp(s, "coproc", 6) == 0)
+		return (TT_COPROC);
 	return (TT_END);
 }
 
@@ -71,7 +73,8 @@ bool	is_cmd_position(t_tt tt)
 		|| tt == TT_AMPERSAND || tt == TT_IF || tt == TT_THEN
 		|| tt == TT_ELIF || tt == TT_ELSE || tt == TT_WHILE
 		|| tt == TT_UNTIL || tt == TT_DO || tt == TT_LBRACE
-		|| tt == TT_BANG || tt == TT_DSEMI || tt == TT_BRACE_RIGHT);
+		|| tt == TT_BANG || tt == TT_DSEMI || tt == TT_BRACE_RIGHT
+		|| tt == TT_COPROC);
 }
 
 /* If the token's text matches a reserved word, upgrade its type from TT_WORD

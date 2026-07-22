@@ -57,21 +57,24 @@ void	reclassify_keywords(t_deque_tok *tokens)
 	size_t	i;
 	t_token	*t;
 	bool	cmd_pos;
-	bool	after_redir;
-	bool	for_name;
+	bool	flags[3];
 
 	cmd_pos = true;
-	after_redir = false;
-	for_name = false;
+	flags[0] = false;
+	flags[1] = false;
+	flags[2] = false;
 	i = 0;
 	while (i < tokens->deqtok.len)
 	{
 		t = (t_token *)deque_idx(&tokens->deqtok, i++);
-		if (step_token(t, &cmd_pos, &after_redir, &for_name))
+		if (step_token(t, &cmd_pos, &flags[0], &flags[1]))
 			continue ;
 		if (t->tt == TT_WORD && cmd_pos)
 			reclassify_word(t);
-		for_name = (t->tt == TT_FOR);
+		flags[1] = (t->tt == TT_FOR);
 		cmd_pos = is_cmd_position(t->tt);
+		if (flags[2] && t->tt == TT_WORD)
+			cmd_pos = true;
+		flags[2] = (t->tt == TT_COPROC);
 	}
 }

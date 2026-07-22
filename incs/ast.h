@@ -51,7 +51,8 @@ typedef enum e_ast_type
 	AST_FUNCTION_DEF,
 	AST_ARITH_CMD,
 	AST_FOR_ARITH,
-	AST_ARRAY_ASSIGN
+	AST_ARRAY_ASSIGN,
+	AST_COPROC
 }	t_ast_type;
 
 /* The universal AST node.  Used for EVERY grammar construct (commands,
