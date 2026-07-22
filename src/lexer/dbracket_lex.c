@@ -57,7 +57,7 @@ int	emit_dbracket_word(char **str, t_deque_tok *ret)
 	int		len;
 
 	len = 0;
-	if (ft_strncmp(*str, "&&", 2) == 0 || ft_strncmp(*str, "||", 2) == 0)
+	if (kw_eq(*str, "&&", 2) || kw_eq(*str, "||", 2))
 		len = 2;
 	else if (**str == '(' || **str == ')')
 		len = 1;
