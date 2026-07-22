@@ -140,6 +140,15 @@ typedef struct s_pos
    realtime maximum) and rejects 65+, so the table must reach that far even
    though only 1..31 have names in the lookup table. */
 # define SH_NSIG 65
+/* Non-signal trap conditions, stored in the same table above the real
+   signals: DEBUG fires before each simple command, RETURN when a function
+   returns, ERR when a command fails (same suppression rules as set -e).
+   Like bash without functrace/errtrace, these are NOT inherited by called
+   functions — execute_func_call save/resets them across the call. */
+# define TRAP_DEBUG 65
+# define TRAP_RETURN 66
+# define TRAP_ERR 67
+# define SH_NTRAP 68
 
 typedef struct s_bg_done
 {
@@ -209,7 +218,8 @@ typedef struct s_shell
 	char				*path_dirs_src; /* PATH string the split came from */
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
 	/* --- traps and readonly vars --- */
-	char				*traps[SH_NSIG]; /* trap strings, by signal num */
+	char				*traps[SH_NTRAP]; /* trap strings, by signal num */
+	int					trap_depth; /* >0 while a trap body runs (no re-entry) */
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */

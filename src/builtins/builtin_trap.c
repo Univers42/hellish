@@ -60,6 +60,12 @@ int	trap_sig_from_name(const char *s)
 		&& ft_tolower((unsigned char)s[1]) == 'i'
 		&& ft_tolower((unsigned char)s[2]) == 'g' && s[3])
 		s += 3;
+	if (!ft_strcasecmp(s, "DEBUG"))
+		return (TRAP_DEBUG);
+	if (!ft_strcasecmp(s, "RETURN"))
+		return (TRAP_RETURN);
+	if (!ft_strcasecmp(s, "ERR"))
+		return (TRAP_ERR);
 	t = trap_sig_table();
 	i = -1;
 	while (t[++i].name)
@@ -76,6 +82,12 @@ char	*sig_to_name(int num)
 	t_signame	*t;
 	int			i;
 
+	if (num == TRAP_DEBUG)
+		return ("DEBUG");
+	if (num == TRAP_RETURN)
+		return ("RETURN");
+	if (num == TRAP_ERR)
+		return ("ERR");
 	t = trap_sig_table();
 	i = -1;
 	while (t[++i].name)
@@ -92,7 +104,7 @@ int	list_traps(t_shell *state)
 	int	i;
 
 	i = -1;
-	while (++i < SH_NSIG)
+	while (++i < SH_NTRAP)
 		if (state->traps[i])
 			print_one_trap(state, i);
 	return (0);

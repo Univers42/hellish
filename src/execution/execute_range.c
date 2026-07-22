@@ -21,14 +21,16 @@ void	exit_clean(t_shell *state, int code);
 static void	errexit_check(t_shell *state, t_execution_state st,
 				bool ran, t_ast_node *last)
 {
-	if (!state->opt_errexit || state->errexit_off || !ran || st.status == 0)
+	if (state->errexit_off || !ran || st.status == 0)
 		return ;
 	if (last && last->node_type == AST_COMMAND_PIPELINE && last->negate)
 		return ;
 	if (state->should_exit || state->func_return || state->loop_break
 		|| state->loop_continue || get_g_sig()->should_unwind)
 		return ;
-	exit_clean(state, st.status);
+	fire_err_trap(state, st.status);
+	if (state->opt_errexit)
+		exit_clean(state, st.status);
 }
 
 /* Run one pipeline/command node from the sequence, inheriting the
