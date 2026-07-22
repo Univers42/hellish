@@ -78,7 +78,7 @@ long long	arith_eval_cached(t_shell *state, t_arith_cache *c, bool *error)
 	t_arith_lexer	lexer;
 
 	arith_lexer_init_toks(&lexer, c->toks, c->ntoks);
-	return (arith_run(state, &lexer, error));
+	return (arith_run(state, &lexer, error, false));
 }
 
 /* Cached $((...)) expansion: lex once, evaluate many times. The cache is

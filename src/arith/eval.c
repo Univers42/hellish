@@ -20,7 +20,8 @@ void	exit_clean(t_shell *state, int code);
    parse logic lives in exactly one place. An empty expression (first token
    already EOF) returns 0 like bash. Any leftover tokens after arith_parse_expr
    returns are also an error -- e.g. "1 2" has no operator between the two. */
-long long	arith_run(t_shell *state, t_arith_lexer *lexer, bool *error)
+long long	arith_run(t_shell *state, t_arith_lexer *lexer, bool *error,
+				bool nse)
 {
 	t_arith_parser	parser;
 	long long		result;
@@ -29,7 +30,7 @@ long long	arith_run(t_shell *state, t_arith_lexer *lexer, bool *error)
 	parser.lexer = lexer;
 	parser.shell = state;
 	parser.error = false;
-	parser.no_side_effects = false;
+	parser.no_side_effects = nse;
 	parser.error_msg = NULL;
 	if (lexer->current.type == ATOK_EOF)
 		return (0);
@@ -53,7 +54,7 @@ long long	arith_eval(t_shell *state, const char *expr, int len, bool *error)
 	t_arith_lexer	lexer;
 
 	arith_lexer_init(&lexer, expr, len);
-	return (arith_run(state, &lexer, error));
+	return (arith_run(state, &lexer, error, false));
 }
 
 /* Convert a long long to a fresh malloc'd decimal string. The trick is casting
