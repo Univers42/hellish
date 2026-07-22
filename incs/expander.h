@@ -75,7 +75,8 @@ int			expand_dollar_sub(t_shell *state, const char *s, int slen,
 /* Expand the body of a ${...} (the bytes between the braces): handles operator
    (${v:-w}), length (${#v}) and trim (${v#p}) forms, NULL otherwise. Used by
    both the word expander and the heredoc expander. */
-char		*expand_param_format(t_shell *state, const char *s, int slen);
+char		*expand_param_format(t_shell *state, const char *s, int slen,
+			bool dq);
 
 /* Process substitution */
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);

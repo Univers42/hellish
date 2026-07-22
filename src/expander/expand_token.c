@@ -13,7 +13,7 @@
 #include "expander_private.h"
 #include "parena.h"
 
-char	*expand_param_format(t_shell *state, const char *s, int slen);
+char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq);
 void	nounset_abort(t_shell *state, const char *name, int len);
 
 /* Join all positional parameters into a single string separated by the first
@@ -151,7 +151,7 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 		return ;
 	if (expand_op_token(state, curr_tt, split_ctx))
 		return ;
-	fmt = expand_param_format(state, curr_tt->start, curr_tt->len);
+	fmt = expand_param_format(state, curr_tt->start, curr_tt->len, false);
 	if (fmt)
 	{
 		curr_tt->start = fmt;
