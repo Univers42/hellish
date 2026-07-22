@@ -50,7 +50,7 @@ bool	is_separator_before_terminator(t_ast_node *ret, t_deque_tok *tokens)
 	if (len == 0)
 		return (false);
 	last_tt = ((t_ast_node *)ret->children.ctx)[len - 1].token.tt;
-	next_tt = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next_tt = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	return ((last_tt == TT_SEMICOLON || last_tt == TT_NEWLINE)
 		&& is_compound_terminator(next_tt));
 }
@@ -60,6 +60,6 @@ bool	is_separator_before_terminator(t_ast_node *ret, t_deque_tok *tokens)
    that multi-line commands like `if true\nthen\necho hi\nfi` work cleanly. */
 void	skip_newlines(t_deque_tok *tokens)
 {
-	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
+	while ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 		(void)deque_pop_start(&tokens->deqtok);
 }

@@ -49,12 +49,12 @@ int	push_simple_list_op_token(t_parser *parser,
 	t_token	tmp;
 	t_tt	next;
 
-	tmp = *(t_token *)deque_peek(&tokens->deqtok);
+	tmp = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 	next = tmp.tt;
 	if (!is_simple_list_op(next) && next != TT_NEWLINE)
 		return (1);
 	vec_push_int(&parser->parse_stack, next);
-	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
+	tmp = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	push_token_child(ret, tmp);
 	if (parser->res != RES_OK)
 		return (2);

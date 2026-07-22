@@ -82,13 +82,13 @@ static void	print_token_rows(t_deque_tok *tokens,
 						size_t w_lexeme)
 {
 	size_t	i;
-	t_token	*curr;
+	t_token	curr;
 
 	i = -1;
 	while (++i < tokens->deqtok.len)
 	{
-		curr = (t_token *)deque_idx(&tokens->deqtok, i);
-		print_token_row(curr, w_name, w_len, w_lexeme);
+		curr = ltok2tok(*(t_ltoken *)deque_idx(&tokens->deqtok, i));
+		print_token_row(&curr, w_name, w_len, w_lexeme);
 	}
 }
 

@@ -23,11 +23,11 @@
    that token is the =~ operator. */
 void	db_track_regex(t_deque_tok *ret, int *in_db)
 {
-	t_token	*last;
+	t_ltoken	*last;
 
 	if (*in_db != 1 || ret->deqtok.len == 0)
 		return ;
-	last = (t_token *)deque_idx(&ret->deqtok, ret->deqtok.len - 1);
+	last = (t_ltoken *)deque_idx(&ret->deqtok, ret->deqtok.len - 1);
 	if (last->tt == TT_WORD && last->len == 2
 		&& last->start[0] == '=' && last->start[1] == '~')
 		*in_db = 2;

@@ -12,7 +12,7 @@
 
 #include "lexer.h"
 
-void	reclassify_word(t_token *t);
+void	reclassify_word(t_ltoken *t);
 bool	is_redirect(t_tt tt);
 bool	is_cmd_position(t_tt tt);
 
@@ -23,7 +23,7 @@ bool	is_cmd_position(t_tt tt);
      - The previous token was `for` and this is the loop variable name
        (for_name) -- `for do` is valid; `do` must not become TT_DO here.
    Returns true if the token should be left as TT_WORD. */
-static bool	step_token(t_token *t, bool *cmd_pos,
+static bool	step_token(t_ltoken *t, bool *cmd_pos,
 						bool *after_redir, bool *for_name)
 {
 	if (*after_redir)
@@ -55,7 +55,7 @@ static bool	step_token(t_token *t, bool *cmd_pos,
 void	reclassify_keywords(t_deque_tok *tokens)
 {
 	size_t	i;
-	t_token	*t;
+	t_ltoken	*t;
 	bool	cmd_pos;
 	bool	flags[3];
 
@@ -66,7 +66,7 @@ void	reclassify_keywords(t_deque_tok *tokens)
 	i = 0;
 	while (i < tokens->deqtok.len)
 	{
-		t = (t_token *)deque_idx(&tokens->deqtok, i++);
+		t = (t_ltoken *)deque_idx(&tokens->deqtok, i++);
 		if (step_token(t, &cmd_pos, &flags[0], &flags[1]))
 			continue ;
 		if (t->tt == TT_WORD && cmd_pos)

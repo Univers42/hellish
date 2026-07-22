@@ -38,7 +38,7 @@ static bool	dispatch_cmd(t_shell *state, t_parser *parser,
 {
 	t_tt	next;
 
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_COPROC)
 		return (handle_coproc_case(state, parser, tokens, ret));
 	if (next == TT_BRACE_LEFT)

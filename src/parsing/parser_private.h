@@ -152,8 +152,8 @@ t_ast_node	parse_case_command(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_case_item(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens);
-t_token		*pk(t_deque_tok *t);
-bool		is_kw_in(t_token *tk);
+t_ltoken	*pk(t_deque_tok *t);
+bool		is_kw_in(t_ltoken *tk);
 bool		handle_subshell_case(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens, t_ast_node *ret);
 bool		handle_compound_case(t_shell *state, t_parser *parser,

@@ -24,7 +24,7 @@
 
 /* Literal delimiter of a heredoc: drop quote characters and one level of
    backslash escaping (`<<'EOF'`, `<<"EOF"`, `<<\EOF` all delimit on EOF). */
-char	*hd_delim(t_token *t)
+char	*hd_delim(t_ltoken *t)
 {
 	char	*d;
 	int		i;

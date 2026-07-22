@@ -80,7 +80,7 @@ bool	is_cmd_position(t_tt tt)
 /* If the token's text matches a reserved word, upgrade its type from TT_WORD
    to the corresponding keyword token type. Called only when the token is in
    command position (determined by reclassify_keywords). */
-void	reclassify_word(t_token *t)
+void	reclassify_word(t_ltoken *t)
 {
 	t_tt	kw;
 
