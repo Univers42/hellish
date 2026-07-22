@@ -194,6 +194,8 @@ typedef struct s_shell
 	   intra-word scan position must be reset (mirrors bash's sv_optind). */
 	/* --- expansion state --- */
 	bool				input_expanded; /* alias expansion already done */
+	bool				alias_exp_owned; /* alias_exp.ctx is its own alloc,
+										not a borrow of input.ctx */
 	int					last_cmdsub_status; /* $? inside $(...) body */
 	/* --- set -o options (each maps to one POSIX flag) --- */
 	bool				opt_errexit; /* -e: exit on first error */
