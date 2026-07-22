@@ -24,12 +24,14 @@
 void	db_track_regex(t_deque_tok *ret, int *in_db)
 {
 	t_ltoken	*last;
+	char		*s;
 
 	if (*in_db != 1 || ret->deqtok.len == 0)
 		return ;
 	last = (t_ltoken *)deque_idx(&ret->deqtok, ret->deqtok.len - 1);
+	s = ret->base + last->off;
 	if (last->tt == TT_WORD && last->len == 2
-		&& last->start[0] == '=' && last->start[1] == '~')
+		&& s[0] == '=' && s[1] == '~')
 		*in_db = 2;
 }
 
@@ -47,7 +49,7 @@ int	db_regex_word(char **str, t_deque_tok *ret, int *in_db)
 	while (**str && !is_space(**str) && **str != '\n')
 		(*str)++;
 	tmp = create_token(start, (int)(*str - start), TT_WORD);
-	deque_push_end(&ret->deqtok, &tmp);
+	push_ltok(ret, tmp);
 	*in_db = 1;
 	return (1);
 }

@@ -21,7 +21,7 @@
 #include "lexer.h"
 #include "redir.h"
 
-char	*hd_delim(t_ltoken *t);
+char	*hd_delim(t_ltoken *t, char *base);
 void	skip_one_body(const char **p, size_t *line, t_hd *s);
 
 /* Record one heredoc spec (line + literal delimiter) from a `<<word` pair. */
@@ -31,10 +31,11 @@ static void	push_spec(t_vec *v, t_deque_tok *tt, size_t i, size_t line)
 
 	sp.dash = false;
 	if (((t_ltoken *)deque_idx(&tt->deqtok, i))->len >= 3
-		&& ((t_ltoken *)deque_idx(&tt->deqtok, i))->start[2] == '-')
+		&& (tt->base
+			+ ((t_ltoken *)deque_idx(&tt->deqtok, i))->off)[2] == '-')
 		sp.dash = true;
 	sp.line = line;
-	sp.delim = hd_delim((t_ltoken *)deque_idx(&tt->deqtok, i + 1));
+	sp.delim = hd_delim((t_ltoken *)deque_idx(&tt->deqtok, i + 1), tt->base);
 	vec_push(v, &sp);
 }
 

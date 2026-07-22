@@ -33,7 +33,7 @@ void	compute_columns(t_deque_tok *tokens, size_t *w_name,
 	i = -1;
 	while (++i < n)
 	{
-		t = ltok2tok(*(t_ltoken *)deque_idx(&tokens->deqtok, i));
+		t = ltok2tok(*(t_ltoken *)deque_idx(&tokens->deqtok, i), tokens->base);
 		tmp = ft_strlen(tt_to_str(t.tt));
 		if (tmp > *w_name)
 			*w_name = tmp;

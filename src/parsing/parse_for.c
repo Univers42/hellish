@@ -81,7 +81,7 @@ static bool	parse_for_in_clause(t_shell *state, t_parser *parser,
 		return (parser->res = RES_GETMOREINPUT, false);
 	peek = (t_ltoken *)deque_peek(&tokens->deqtok);
 	if (next == TT_WORD && peek->len == 2
-		&& ft_strncmp(peek->start, "in", 2) == 0)
+		&& ft_strncmp(tokens->base + peek->off, "in", 2) == 0)
 	{
 		ret->negate = true;
 		(void)deque_pop_start(&tokens->deqtok);
@@ -115,7 +115,7 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 		return (parser->res = RES_GETMOREINPUT, ret);
 	if (!is_word_token(next))
 		return (parser->res = RES_ERR, ret);
-	ret.token = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+	ret.token = pop_tok(tokens);
 	if (!parse_for_in_clause(state, parser, tokens, &ret))
 		return (ret);
 	if (!expect_for_kw(state, parser, tokens, TT_DO))

@@ -53,7 +53,7 @@ static void	arith_resync_tokens(t_deque_tok *tokens, const char *end)
 	t_ltoken	*peek;
 
 	peek = (t_ltoken *)deque_peek(&tokens->deqtok);
-	while (peek->tt != TT_END && peek->start < end)
+	while (peek->tt != TT_END && tokens->base + peek->off < end)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
 		peek = (t_ltoken *)deque_peek(&tokens->deqtok);
@@ -71,7 +71,7 @@ t_token	collect_arith_span(t_parser *parser, t_deque_tok *tokens)
 	int		end;
 	int		r;
 
-	open = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+	open = pop_tok(tokens);
 	span = create_token(open.start, 0, TT_WORD);
 	r = arith_span_chars(open.start, &end);
 	if (r == 1)

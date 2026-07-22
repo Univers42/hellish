@@ -28,14 +28,14 @@ t_ast_node	parse_subshell(t_shell *state,
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	vec_push_int(&parser->parse_stack, TT_BRACE_LEFT);
-	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (peek_t.tt != TT_BRACE_LEFT)
 		return (unexpected(state, parser, ret, tokens));
 	deque_pop_start(&tokens->deqtok);
 	push_parsed_compound_list(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);
-	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (peek_t.tt != TT_BRACE_RIGHT)
 		return (unexpected(state, parser, ret, tokens));
 	return (deque_pop_start(&tokens->deqtok),
@@ -58,14 +58,14 @@ t_ast_node	parse_brace_group(t_shell *state,
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	vec_push_int(&parser->parse_stack, TT_LBRACE);
-	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (peek_t.tt != TT_LBRACE)
 		return (unexpected(state, parser, ret, tokens));
 	deque_pop_start(&tokens->deqtok);
 	push_parsed_compound_list(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);
-	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	peek_t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (peek_t.tt != TT_RBRACE)
 		return (unexpected(state, parser, ret, tokens));
 	return (deque_pop_start(&tokens->deqtok),

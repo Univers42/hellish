@@ -41,7 +41,7 @@ static void	push_word_token(t_deque_tok *tokens, char *start, char *end)
 	t_token	tmp;
 
 	tmp = create_token(start, (int)(end - start), TT_WORD);
-	deque_push_end(&tokens->deqtok, &tmp);
+	push_ltok(tokens, tmp);
 }
 
 /* Handle `$(...)`, backtick `` ` ``, and `${...}` expansions embedded in

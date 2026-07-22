@@ -66,7 +66,7 @@ int	emit_dbracket_word(char **str, t_deque_tok *ret)
 	if (len == 0)
 		return (0);
 	tmp = create_token(*str, len, TT_WORD);
-	deque_push_end(&ret->deqtok, &tmp);
+	push_ltok(ret, tmp);
 	*str += len;
 	return (1);
 }
