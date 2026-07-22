@@ -12,7 +12,7 @@
 
 #include "lexer.h"
 
-void	reclassify_word(t_ltoken *t);
+void	reclassify_word(t_ltoken *t, char *base);
 bool	is_redirect(t_tt tt);
 bool	is_cmd_position(t_tt tt);
 
@@ -70,7 +70,7 @@ void	reclassify_keywords(t_deque_tok *tokens)
 		if (step_token(t, &cmd_pos, &flags[0], &flags[1]))
 			continue ;
 		if (t->tt == TT_WORD && cmd_pos)
-			reclassify_word(t);
+			reclassify_word(t, tokens->base);
 		flags[1] = (t->tt == TT_FOR);
 		cmd_pos = is_cmd_position(t->tt);
 		if (flags[2] && t->tt == TT_WORD)

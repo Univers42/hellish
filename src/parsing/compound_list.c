@@ -25,11 +25,11 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
 	t_tt	op;
 	t_token	tmp;
 
-	tmp = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	tmp = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	op = tmp.tt;
 	if (!is_compund_list_op(op))
 		return (true);
-	tmp = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+	tmp = pop_tok(tokens);
 	push_token_child(ret, tmp);
 	if (is_separator_before_terminator(ret, tokens))
 		return (true);

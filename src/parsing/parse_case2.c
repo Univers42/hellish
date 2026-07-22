@@ -27,7 +27,7 @@ static bool	parse_case_word_in(t_shell *state, t_parser *parser,
 	skip_newlines(tokens);
 	if (pk(tokens)->tt == TT_END)
 		return (parser->res = RES_GETMOREINPUT, false);
-	if (!is_kw_in(pk(tokens)))
+	if (!is_kw_in(pk(tokens), tokens->base))
 		return (parser->res = RES_ERR, false);
 	(void)deque_pop_start(&tokens->deqtok);
 	return (true);

@@ -31,7 +31,27 @@ typedef struct s_deque_tok
 {
 	t_deque		deqtok; /* the token deque */
 	char		looking_for; /* '\0' normally; ')' / '}' if incomplete */
+	char		*base; /* tokenize base: deque slots hold offsets from here */
 }	t_deque_tok;
+
+/* Push a freshly-lexed t_token into the deque as an 8-byte offset slot. The
+   whole lexer builds t_tokens and hands them here; the (start -> off) packing
+   lives in exactly this one spot so no push site has to know about it. */
+static inline void	push_ltok(t_deque_tok *d, t_token t)
+{
+	t_ltoken	l;
+
+	l = tok2ltok(t, d->base);
+	deque_push_end(&d->deqtok, &l);
+}
+
+/* Pop the front deque slot and lift it to a full AST token against the
+   deque base. The lexeme-offset rebuild lives here so parser call sites stay
+   short and never juggle the base pointer by hand. */
+static inline t_token	pop_tok(t_deque_tok *d)
+{
+	return (ltok2tok(*(t_ltoken *)deque_pop_start(&d->deqtok), d->base));
+}
 
 char		*tokenizer(char *str, t_deque_tok *ret);
 int			advance_dquoted(char **str);

@@ -22,13 +22,13 @@ bool	is_valid_ident(char *s, int len);
    exactly as in bash). */
 
 /* Does `w` look like NAME= or NAME+= with `open` immediately after it? */
-static bool	is_array_assign_start(t_token *w, t_ltoken *open)
+static bool	is_array_assign_start(t_token *w, t_ltoken *open, char *base)
 {
 	int	n;
 
 	if (w->tt != TT_WORD || !w->start || w->len < 2)
 		return (false);
-	if (open->tt != TT_BRACE_LEFT || w->start + w->len != open->start)
+	if (open->tt != TT_BRACE_LEFT || w->start + w->len != base + open->off)
 		return (false);
 	if (w->start[w->len - 1] != '=')
 		return (false);
@@ -54,23 +54,23 @@ bool	try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
 	t_ast_node	node;
 	t_token		curr;
 
-	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	if (tokens->deqtok.len < 2 || !is_array_assign_start(&curr,
-			(t_ltoken *)deque_idx(&tokens->deqtok, 1)))
+			(t_ltoken *)deque_idx(&tokens->deqtok, 1), tokens->base))
 		return (false);
 	node = create_node_type(AST_ARRAY_ASSIGN);
 	vec_init(&node.children);
 	node.children.elem_size = sizeof(t_ast_node);
-	add_op_token_child(&node, ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok)));
+	add_op_token_child(&node, pop_tok(tokens));
 	(void)deque_pop_start(&tokens->deqtok);
-	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	while (curr.tt == TT_WORD || curr.tt == TT_NEWLINE)
 	{
 		if (curr.tt == TT_WORD)
 			push_parsed_word(tokens, &node);
 		else
 			(void)deque_pop_start(&tokens->deqtok);
-		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 	}
 	if (curr.tt == TT_BRACE_RIGHT)
 		(void)deque_pop_start(&tokens->deqtok);

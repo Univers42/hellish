@@ -34,7 +34,7 @@ static void	emit_newline(char **str, t_deque_tok *ret)
 	t_token	tmp;
 
 	tmp = create_token(*str, 1, TT_NEWLINE);
-	deque_push_end(&ret->deqtok, &tmp);
+	push_ltok(ret, tmp);
 	(*str)++;
 }
 
@@ -97,6 +97,7 @@ char	*tokenizer(char *str, t_deque_tok *ret)
 
 	prompt = 0;
 	in_db = 0;
+	ret->base = str;
 	deque_clear(&ret->deqtok, NULL);
 	while (str && *str)
 	{
@@ -107,6 +108,6 @@ char	*tokenizer(char *str, t_deque_tok *ret)
 			break ;
 	}
 	tmp = create_token(0, 0, TT_END);
-	deque_push_end(&ret->deqtok, &tmp);
+	push_ltok(ret, tmp);
 	return (prompt);
 }

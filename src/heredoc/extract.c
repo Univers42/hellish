@@ -24,28 +24,30 @@
 
 /* Literal delimiter of a heredoc: drop quote characters and one level of
    backslash escaping (`<<'EOF'`, `<<"EOF"`, `<<\EOF` all delimit on EOF). */
-char	*hd_delim(t_ltoken *t)
+char	*hd_delim(t_ltoken *t, char *base)
 {
 	char	*d;
+	char	*s;
 	int		i;
 	int		k;
 
 	d = xmalloc(t->len + 1);
 	if (!d)
 		return (NULL);
+	s = base + t->off;
 	i = 0;
 	k = 0;
 	while (i < t->len)
 	{
-		if (t->start[i] == '\'' || t->start[i] == '"')
+		if (s[i] == '\'' || s[i] == '"')
 			i++;
-		else if (t->start[i] == '\\' && i + 1 < t->len)
+		else if (s[i] == '\\' && i + 1 < t->len)
 		{
 			i++;
-			d[k++] = t->start[i++];
+			d[k++] = s[i++];
 		}
 		else
-			d[k++] = t->start[i++];
+			d[k++] = s[i++];
 	}
 	d[k] = '\0';
 	return (d);

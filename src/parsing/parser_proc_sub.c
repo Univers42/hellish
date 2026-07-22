@@ -47,7 +47,7 @@ static int	collect_proc_sub_command(t_parser *parser, t_deque_tok *tokens,
 	prev = (t_token){0};
 	while (depth > 0)
 	{
-		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
+		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
 		if (curr.tt == TT_END)
 			return (handle_end_token(parser, tokens));
 		proc_sub_update_depth(curr, &depth);
@@ -126,7 +126,7 @@ t_ast_node	parse_proc_sub(t_shell *state,
 	ret = create_node_type(AST_PROC_SUB);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	op_tok = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
+	op_tok = pop_tok(tokens);
 	add_op_token_child(&ret, op_tok);
 	if (collect_proc_sub_command(parser, tokens, &cmd_start, &cmd_end))
 		return (ret);
