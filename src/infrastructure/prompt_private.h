@@ -75,8 +75,12 @@ enum e_pal
    by the forked readline child's idle hook (plain fork inheritance, the
    same trick the old mascot used): one fully-rendered prompt string per
    frame, differing only in the \A glyph, plus the visible width of the
-   last prompt row for the repaint wrap math. count == 0 disables the
-   idle hook entirely. */
+   last prompt row for the repaint math. count == 0 disables the idle
+   hook entirely. The cells are SINGLE-SHOT: each ps1_animated render
+   arms exactly one readline fork, and attach_input_readline disarms the
+   parent right after forking -- a continuation read (dquote>, heredoc>)
+   must never inherit frames describing a prompt block that is no longer
+   the rows above its cursor. */
 # define PANIM_FRAMES 8
 # define PANIM_MAX 2048
 

@@ -55,7 +55,7 @@ static int	anim_line_fits(void)
 		if ((unsigned char)rl_line_buffer[i] < ' ')
 			return (0);
 		n = mbrtowc(&wc, rl_line_buffer + i, MB_CUR_MAX, &st);
-		if (n == (size_t)-1 || n == (size_t)-2 || n == 0)
+		if (n == 0 || n > MB_CUR_MAX)
 			return (0);
 		if (wcwidth(wc) < 0)
 			return (0);
