@@ -29,22 +29,21 @@ static char	*coproc_name(t_ast_node *node)
 	return (ft_strdup("COPROC"));
 }
 
-/* Publish the coprocess handles: NAME becomes a two-element indexed
-   array ([0]=read fd, [1]=write fd) and NAME_PID the child pid, both
-   ordinary (non-exported) shell variables the script reads back. */
-void	coproc_store(t_shell *state, char *name, int *fds, pid_t pid)
+/* Reset the traps a coprocess child must not inherit (bash without
+   functrace/errtrace): the EXIT trap belongs to the parent, and DEBUG/
+   RETURN/ERR would otherwise fire inside the child and leak their output
+   into the pipe. trap_restore frees the current pseudo-traps and installs
+   the blank set. */
+static void	coproc_reset_traps(t_shell *state)
 {
-	char	*elems[2];
-	char	*pidkey;
+	char	*blank[3];
 
-	elems[0] = ft_itoa(fds[0]);
-	elems[1] = ft_itoa(fds[1]);
-	env_set(&state->env, env_create(ft_strdup(name),
-			arr_from_elems(elems, 2, NULL), false));
-	xfree(elems[0]);
-	xfree(elems[1]);
-	pidkey = ft_strjoin(name, "_PID");
-	env_set(&state->env, env_create(pidkey, ft_itoa((int)pid), false));
+	blank[0] = NULL;
+	blank[1] = NULL;
+	blank[2] = NULL;
+	xfree(state->traps[0]);
+	state->traps[0] = NULL;
+	trap_restore(state, blank);
 }
 
 /* Child side: wire stdin<-inp[0], stdout->outp[1], drop every pipe end,
@@ -58,6 +57,7 @@ static void	coproc_child(t_shell *state, t_executable_node *exe,
 
 	default_signal_handlers();
 	setpgid(0, 0);
+	coproc_reset_traps(state);
 	dup2(inp[0], STDIN_FILENO);
 	dup2(outp[1], STDOUT_FILENO);
 	close(inp[0]);
