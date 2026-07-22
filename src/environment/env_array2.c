@@ -82,7 +82,7 @@ char	*arr_with_set(const char *old, long idx, const char *nv)
 }
 
 /* Highest index present, -1 for empty/scalar. */
-static long	arr_max_idx(const char *val)
+long	arr_max_idx(const char *val)
 {
 	const char	*cur;
 	const char	*v;

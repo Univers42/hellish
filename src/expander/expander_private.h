@@ -322,6 +322,13 @@ char		*arr_slice_build(t_slice_ctx *c);
 int			herestring_redir(t_shell *state, t_ast_node *curr, int src_fd);
 int			handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 			t_executable_cmd *ret);
+int			is_assign_builtin(t_executable_cmd *ret);
+int			parse_sub_elem(char *elem, char **sub, int *subl, char **val);
+int			has_subscript(t_vec *args);
+char		*build_array_value(t_shell *state, t_executable_cmd *ret,
+				t_env *ev, t_vec *args, int append);
+char		*build_indexed_sub(t_shell *state, t_vec *args,
+				const char *base, int append);
 bool		is_ifs_char(char c, const char *ifs);
 bool		is_ws_ifs(char c, const char *ifs);
 bool		is_nw_ifs(char c, const char *ifs);
