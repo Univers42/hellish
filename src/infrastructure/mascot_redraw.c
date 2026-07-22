@@ -65,28 +65,15 @@ static void	rd_char(t_string *f, char c)
 	vec_push_char(f, c);
 }
 
-/* How many rows up the prompt's first row is from the cursor: the prompt
-   rows above the input, plus however far the input itself has wrapped.
-   The input row starts after the prompt's last-row visible width, which
-   ps1_animated measured into the cells (4 was the old built-in arrow's
-   hardcoded width, kept as the fallback). */
-static int	rows_above(const char *s)
-{
-	int	cols;
-	int	lastw;
-
-	cols = get_cols();
-	if (cols < 2)
-		cols = 80;
-	lastw = 4;
-	if (anim_cells()->count > 0)
-		lastw = anim_cells()->last_w;
-	return (count_nl(s) + (lastw + rl_point) / cols);
-}
-
 /* Compose and emit one repaint frame: sync+hide, save cursor, jump up,
    clear+rewrite every row above the input, restore, show, unsync — all
-   in a single write so the terminal treats it as one update. */
+   in a single write so the terminal treats it as one update. The climb
+   is exactly count_nl rows: mascot_hook's anim_line_fits guard already
+   proved the cursor sits on the input's first screen row, so no wrap
+   term is needed. (The old (lastw + rl_point) / cols estimate counted
+   BYTES as columns and a pasted newline as ordinary width — off-by-a-
+   row both ways, and the errant ESC[2K wiped the user's paste or the
+   scrollback above the prompt.) */
 void	redraw_mascot(t_string *r)
 {
 	t_string	f;
@@ -101,7 +88,7 @@ void	redraw_mascot(t_string *r)
 	vec_init(&f);
 	f.elem_size = 1;
 	vec_push_str(&f, "\033[?2026h\033[?25l\0337");
-	rd_up(&f, rows_above(s));
+	rd_up(&f, count_nl(s));
 	vec_push_str(&f, "\r\033[2K");
 	i = 0;
 	while (s + i < last)
