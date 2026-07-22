@@ -204,6 +204,8 @@ int		type_is_keyword(const char *name);
 int		type_find_in_path(t_shell *state, const char *name, char **out);
 int		type_dispatch(t_shell *state, const char *name, char mode);
 void	set_print_env(t_shell *state);
+int		declare_nameref(t_shell *state, t_vec argv, size_t i);
+int		declare_integer(t_shell *state, t_vec argv, size_t i);
 
 struct s_sh
 {

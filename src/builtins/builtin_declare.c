@@ -134,6 +134,10 @@ int	builtin_declare(t_shell *state, t_vec argv)
 			export = 1;
 		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
 			assoc = 1;
+		if (ft_strchr(((char **)argv.ctx)[i], 'n'))
+			return (declare_nameref(state, argv, i));
+		if (ft_strchr(((char **)argv.ctx)[i], 'i'))
+			return (declare_integer(state, argv, i));
 		i++;
 	}
 	if (assoc)

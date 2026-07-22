@@ -92,6 +92,12 @@ char	*env_expand_n(t_shell *state, char *key, int len)
 	sp = expand_special(state, key, len);
 	if (sp != NULL)
 		return (sp);
+	if (state->var_attrs.len != 0)
+	{
+		sp = attr_target(state, key, len);
+		if (sp && *sp)
+			return (env_expand(state, sp));
+	}
 	n = pos_index(key, len);
 	if (n >= 1)
 	{
