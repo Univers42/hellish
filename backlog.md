@@ -228,6 +228,32 @@ bash, full battery green each step, both heaps leak-free):
       c[x] in arith (use ${c[x]}), a[i]+= element append, ${!prefix*},
       printf %(fmt)T, coproc, trap DEBUG/RETURN/ERR, nameref (declare -n).
 
+## Done (continued 14, 2026-07-22) — declare -i/-n, compound init, traps, coproc
+
+- [x] **declare -i / declare -n** (per-var attribute table, env_attr.c;
+      state->var_attrs, empty ⇒ hot paths short-circuit). -i arith-evaluates
+      every assignment (n="3*4"→12, n+=5→old+5); -n retargets read
+      (env_expand_n) and write (apply_var_attrs). Commit `31f2f65`.
+- [x] **Compound array init [k]=v** (`4756c1e`, expand_array_assign2/3.c):
+      declare -A c=([k]=v [k2]=v2) assoc; a=([2]=x foo [7]=y) indexed with
+      arithmetic subscripts + running counter; plain a=(x y z) unchanged.
+      Assoc declare -p prints bash's trailing space before ')'.
+- [x] **trap DEBUG/RETURN/ERR** (`60f4583`, exec_traps{,2}.c): slots above
+      the signals, trap_depth re-entrancy guard. DEBUG before each simple
+      command + for-iter bind + case; ERR in errexit_check (decoupled from
+      -e); RETURN on function return. Not inherited by functions/subshells
+      (save/blank across calls) — matches bash w/o functrace/errtrace. Deep
+      nested-leak firing NOT matched (rare).
+- [x] **coproc** (`10b9cc5`, TT_COPROC/AST_COPROC, parse_coproc.c,
+      execute_coproc.c): all 3 forms; NAME[0]/[1] fds (>fd9, CLOEXEC via
+      save_fd) + NAME_PID, backgrounded own-pgid child. Reclassify keeps the
+      token after `coproc NAME` in cmd position so `{` opens a compound.
+- Suite 3012 green, both-heap parity, ASan clean, regress_hellish covers all.
+- REMAINING queued big item: **pull-lexer** — parse is ~1.21x bash after
+      streaming/arena; a from-scratch lexer rewrite is deferred as too risky
+      for the ~20% gain. Lower-risk levers first: t_token shrink from 40B,
+      reparse dquote/envvar opt, syscall reduction (see parse-batching memo).
+
 ## VERDICT (self-assessment, 2026-07-21)
 hellish is a drop-in bash replacement for interactive use and the vast
 majority of real scripts: arrays (indexed + associative), all common
