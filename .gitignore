@@ -21,3 +21,7 @@ bench/suites/
 bench/.artifacts/
 bench/.bin/
 bench/workloads/
+
+# python bytecode from bench/lib tooling
+__pycache__/
+*.pyc

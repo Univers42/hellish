@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="302" viewBox="0 0 880 302" role="img" aria-label="Scoreboard — hellish against the field">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="302" rx="8"/>
+<text class="title" x="20" y="30">Scoreboard — hellish against the field</text>
+<text class="sub" x="20" y="50">One row per shell we race. Counts are benchmarks where the 95% CI clears parity; ties are differences too small to call.</text>
+<text class="lbl" x="200.0" y="100.0" text-anchor="end">vs bash</text>
+<text class="muted" x="200.0" y="115.0" text-anchor="end">10 benchmarks</text>
+<rect x="210.0" y="86.0" width="332.4" height="26.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="376.2" y="104.0" text-anchor="middle" fill="#ffffff">6</text>
+<rect x="542.4" y="86.0" width="55.4" height="26.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="val" x="570.1" y="104.0" text-anchor="middle" fill="#ffffff">1</text>
+<rect x="597.8" y="86.0" width="166.2" height="26.0" rx="2" fill="#cf6b5e" opacity="1.00"/>
+<text class="val" x="680.9" y="104.0" text-anchor="middle" fill="#ffffff">3</text>
+<text class="muted" x="210.0" y="130.0" text-anchor="start">median 2.20x   ·   geomean 2.38x   ·   hellish ahead: wins 6 of 10</text>
+<text class="lbl" x="200.0" y="176.0" text-anchor="end">vs dash</text>
+<text class="muted" x="200.0" y="191.0" text-anchor="end">10 benchmarks</text>
+<rect x="210.0" y="162.0" width="166.2" height="26.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="293.1" y="180.0" text-anchor="middle" fill="#ffffff">3</text>
+<rect x="376.2" y="162.0" width="110.8" height="26.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="val" x="431.6" y="180.0" text-anchor="middle" fill="#ffffff">2</text>
+<rect x="487.0" y="162.0" width="277.0" height="26.0" rx="2" fill="#cf6b5e" opacity="1.00"/>
+<text class="val" x="625.5" y="180.0" text-anchor="middle" fill="#ffffff">5</text>
+<text class="muted" x="210.0" y="206.0" text-anchor="start">median 0.98x   ·   geomean 1.27x   ·   dash ahead: hellish wins only 3 of 10</text>
+<text class="muted" x="20.0" y="272.0" text-anchor="start">Ratios are other/hellish: above 1.00x means hellish is faster. Every benchmark is weighted equally, so one huge win does not carry the row.</text>
+<text class="muted" x="20.0" y="290.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=performance</text>
+</svg>

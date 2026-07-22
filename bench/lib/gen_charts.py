@@ -272,12 +272,20 @@ def grouped_bars(path, title, subtitle, rows, meta, unit='time',
 
 
 def ratio_chart(path, title, subtitle, rows, meta, note=''):
-    """Speedup relative to hellish on a log-symmetric axis centred at 1.0.
+    """Speedup relative to hellish on a log-symmetric axis centred at 1.0, with
+    a bootstrap 95% confidence interval drawn on every bar.
 
     A ratio chart is the honest way to show 'how much faster', because a plain
     bar of ms lets one slow benchmark flatten every other row into invisibility.
     Bars grow right when hellish wins, left when it loses; the centre line is
-    parity."""
+    parity.
+
+    The whisker is what makes it trustworthy. Marking rows by absolute CV was
+    actively misleading: on a throttling core every shell shows 5-20% CV, so a
+    CV gate stripes a 36x win and a 0.99x coin-flip identically and the reader
+    concludes the whole page is noise. The CI asks the question that actually
+    matters -- could this difference be zero? -- so only genuinely undecidable
+    rows get flagged, and a wide-but-decisive bar reads as the win it is."""
     top = 74
     if not meta.get('governor_ok'):
         top += 34
@@ -309,29 +317,125 @@ def ratio_chart(path, title, subtitle, rows, meta, note=''):
     svg.text(PAD_L, y - 6, '← hellish slower', cls='muted')
     svg.text(W - PAD_R, y - 6, 'hellish faster →', cls='muted', anchor='end')
 
+    def px(v):
+        """ratio -> x, on the log-symmetric axis."""
+        f = max(-1.0, min(1.0, math.log2(v) / span)) if v > 0 else 0.0
+        return mid + (plot_w / 2.0) * f
+
     for r in rows:
         ratio = r['ratio']
+        ci = r.get('ci')
+        undecided = bool(ci) and not ci.get('significant', True)
         cy = y + 8
-        frac = math.log2(ratio) / span if ratio > 0 else 0
-        frac = max(-1.0, min(1.0, frac))
-        bw = (plot_w / 2.0) * frac
+        bx = px(ratio)
+        bw = bx - mid
         color = COLORS['hellish'] if ratio >= 1 else '#8b95a1'
-        svg.rect(min(mid, mid + bw), cy, abs(bw), BAR_H, color,
-                 opacity=1.0 if r.get('reliable', True) else 0.55)
-        if not r.get('reliable', True):
-            svg.rect(min(mid, mid + bw), cy, abs(bw), BAR_H, 'url(#hatch)')
+        svg.rect(min(mid, bx), cy, abs(bw), BAR_H, color,
+                 opacity=0.5 if undecided else 1.0)
+        if undecided:
+            svg.rect(min(mid, bx), cy, abs(bw), BAR_H, 'url(#hatch)')
+        # 95% CI whisker: the honest width of the claim.
+        if ci:
+            lo, hi = px(ci['lo']), px(ci['hi'])
+            mid_y = cy + BAR_H / 2.0
+            svg.line(lo, mid_y, hi, mid_y, 'axis')
+            for ex in (lo, hi):
+                svg.line(ex, cy + 2, ex, cy + BAR_H - 2, 'axis')
         svg.text(PAD_L - 10, cy + BAR_H - 3, r['title'], cls='lbl',
                  anchor='end')
-        cls = 'win' if ratio > 1.05 else ('lose' if ratio < 0.95 else 'tie')
-        tag = '%.2fx' % ratio
-        if not r.get('reliable', True):
-            tag += '  (noisy)'
-        tx = mid + bw + (8 if bw >= 0 else -8)
+        if undecided:
+            cls, tag = 'tie', 'no difference'
+        else:
+            cls = 'win' if ratio > 1.0 else 'lose'
+            tag = '%.2fx' % ratio
+        tx = max(bx, px(ci['hi'])) + 8 if ci and bw >= 0 else \
+            (min(bx, px(ci['lo'])) - 8 if ci else bx + (8 if bw >= 0 else -8))
         svg.text(tx, cy + BAR_H - 3, tag, cls=cls,
                  anchor='start' if bw >= 0 else 'end')
         y += ROW_H
 
     svg.footer(meta, note)
+    return svg.save(path)
+
+
+def scoreboard_chart(path, perf, meta):
+    """Where hellish actually stands, in one picture.
+
+    Every other chart on the page answers one benchmark at a time, which is how
+    a reader ends up concluding 'we lose' from a wall of individually-striped
+    rows. This one states the record: per opponent, how many dimensions hellish
+    wins, ties and loses, and by how much in the median. It exists because the
+    detail charts, read quickly, gave exactly the wrong impression."""
+    opponents = ['bash', 'dash']
+    have = [o for o in opponents
+            if any(r['ratios'].get(o) for r in perf)]
+    if not have:
+        return None
+    import math
+    height = 96 + len(have) * 76 + 54
+    svg = Svg(W, height, 'Scoreboard — hellish against the field',
+              'One row per shell we race. Counts are benchmarks where the 95% '
+              'CI clears parity; ties are differences too small to call.')
+    y = 80
+    plot_w = W - PAD_L - PAD_R
+
+    for opp in have:
+        win = lose = tie = 0
+        ratios = []
+        for r in perf:
+            v = r['ratios'].get(opp)
+            if not v:
+                continue
+            ratios.append(v)
+            ci = (r.get('ci') or {}).get(opp)
+            if ci and not ci.get('significant'):
+                tie += 1
+            elif v > 1.0:
+                win += 1
+            else:
+                lose += 1
+        n = win + lose + tie
+        if not n:
+            continue
+        med = sorted(ratios)[len(ratios) // 2]
+        geo = math.exp(sum(math.log(x) for x in ratios if x > 0) / len(ratios))
+        svg.text(PAD_L - 10, y + 20, 'vs %s' % opp, cls='lbl', anchor='end')
+        svg.text(PAD_L - 10, y + 35, '%d benchmarks' % n, cls='muted',
+                 anchor='end')
+        x = PAD_L
+        for count, color, lab in ((win, COLORS['hellish'], 'hellish faster'),
+                                  (tie, '#8b95a1', 'no difference'),
+                                  (lose, '#cf6b5e', '%s faster' % opp)):
+            bw = plot_w * (count / n)
+            if bw <= 0:
+                continue
+            svg.rect(x, y + 6, bw, 26, color, rx=2)
+            if bw > 26:
+                svg.parts.append(
+                    '<text class="val" x="%.1f" y="%.1f" text-anchor="middle" '
+                    'fill="#ffffff">%d</text>' % (x + bw / 2, y + 24, count))
+            x += bw
+        # Verdict from the RECORD and the MEDIAN, never the geomean. Against
+        # dash the geomean reads 1.13x -- "hellish ahead" -- off a 3-win,
+        # 7-loss card, because one 8x win on the read loop outweighs seven
+        # moderate losses. A summary that inverts the result it summarises is
+        # worse than no summary, so the headline is what the median row did.
+        if win > lose and med > 1.0:
+            verdict = 'hellish ahead: wins %d of %d' % (win, n)
+        elif lose > win and med < 1.0:
+            verdict = '%s ahead: hellish wins only %d of %d' % (opp, win, n)
+        else:
+            verdict = 'split: %dW / %dT / %dL' % (win, tie, lose)
+        svg.text(PAD_L, y + 50,
+                 'median %.2fx   ·   geomean %.2fx   ·   %s'
+                 % (med, geo, verdict), cls='muted')
+        y += 76
+
+    svg.text(20, height - 30,
+             'Ratios are other/hellish: above 1.00x means hellish is faster. '
+             'Every benchmark is weighted equally, so one huge win does not '
+             'carry the row.', cls='muted')
+    svg.footer(meta)
     return svg.save(path)
 
 
@@ -491,8 +595,15 @@ def main():
             'title': r['title'], 'blurb': r['blurb'],
             'values': {s: (v['median_s'] if v else None)
                        for s, v in r['shells'].items()},
-            'reliable': r['reliable'],
+            # Bars are struck through only when the comparison is undecidable,
+            # not when the machine was busy -- see ratio_chart's docstring.
+            'reliable': r.get('conclusive', True),
         } for r in by_dim.get(dim, [])]
+
+    if perf:
+        p = scoreboard_chart(os.path.join(OUT, 'scoreboard.svg'), perf, meta)
+        if p:
+            made.append(p)
 
     if by_dim.get('initialization'):
         made.append(grouped_bars(
@@ -519,20 +630,24 @@ def main():
             'scaled to its own slowest bar (the set spans ms to seconds), so '
             'compare shells within a row, not lengths between rows.',
             rows_for('execution'), meta, per_row=True))
-        rrows = []
-        for r in by_dim['execution'] + by_dim.get('parsing', []) \
-                + by_dim.get('initialization', []):
-            if r['ratios'].get('bash'):
-                rrows.append({'title': r['title'],
-                              'ratio': r['ratios']['bash'],
-                              'reliable': r['reliable']})
-        if rrows:
-            made.append(ratio_chart(
-                os.path.join(OUT, 'speedup-vs-bash.svg'),
-                'Speedup vs bash --posix, per dimension',
-                'Bar = bash median / hellish median. Right of centre means '
-                'hellish is faster. Hatched bars were too noisy to trust.',
-                rrows, meta))
+        for opp in ('bash', 'dash'):
+            rrows = []
+            for r in (by_dim.get('initialization', [])
+                      + by_dim.get('parsing', []) + by_dim['execution']):
+                if r['ratios'].get(opp):
+                    rrows.append({'title': r['title'],
+                                  'ratio': r['ratios'][opp],
+                                  'ci': (r.get('ci') or {}).get(opp)})
+            if rrows:
+                made.append(ratio_chart(
+                    os.path.join(OUT, 'speedup-vs-%s.svg' % opp),
+                    'Speedup vs %s, per dimension'
+                    % ('bash --posix' if opp == 'bash' else opp),
+                    'Bar = %s median / hellish median; right of centre means '
+                    'hellish is faster. The whisker is the bootstrap 95%% CI '
+                    'on that ratio — bars whose interval crosses parity are '
+                    'struck through and reported as no difference.' % opp,
+                    rrows, meta))
 
     res = data.get('resources')
     if res:

@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="300" viewBox="0 0 880 300" role="img" aria-label="Real programs — hellish vs bash --posix">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="300" rx="8"/>
+<text class="title" x="20" y="30">Real programs — hellish vs bash --posix</text>
+<text class="sub" x="20" y="50">Each class of tests/scripts and tests/hard, timed best-of-N. Bar shows how the individual tasks landed.</text>
+<rect x="20.0" y="69.0" width="11.0" height="11.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="muted" x="37.0" y="78.0" text-anchor="start">hellish</text>
+<rect x="110" y="69.0" width="11" height="11" rx="2" fill="#8b95a1"/>
+<text class="muted" x="127.0" y="78.0" text-anchor="start">parity</text>
+<rect x="180" y="69.0" width="11" height="11" rx="2" fill="#cf6b5e"/>
+<text class="muted" x="197.0" y="78.0" text-anchor="start">bash faster</text>
+<text class="lbl" x="200.0" y="112.0" text-anchor="end">micro</text>
+<text class="muted" x="200.0" y="125.0" text-anchor="end">29 tasks</text>
+<rect x="210.0" y="100.0" width="248.3" height="22.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="334.2" y="115.0" text-anchor="middle" fill="#ffffff">13</text>
+<rect x="458.3" y="100.0" width="305.7" height="22.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="val" x="611.2" y="115.0" text-anchor="middle" fill="#ffffff">16</text>
+<text class="win" x="772.0" y="115.0" text-anchor="start">1.45x geo</text>
+<text class="lbl" x="200.0" y="158.0" text-anchor="end">corpus</text>
+<text class="muted" x="200.0" y="171.0" text-anchor="end">38 tasks</text>
+<rect x="210.0" y="146.0" width="554.0" height="22.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="val" x="487.0" y="161.0" text-anchor="middle" fill="#ffffff">38</text>
+<text class="tie" x="772.0" y="161.0" text-anchor="start">1.00x geo</text>
+<text class="lbl" x="200.0" y="204.0" text-anchor="end">hard</text>
+<text class="muted" x="200.0" y="217.0" text-anchor="end">16 tasks</text>
+<rect x="210.0" y="192.0" width="103.9" height="22.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="261.9" y="207.0" text-anchor="middle" fill="#ffffff">3</text>
+<rect x="313.9" y="192.0" width="450.1" height="22.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="val" x="538.9" y="207.0" text-anchor="middle" fill="#ffffff">13</text>
+<text class="win" x="772.0" y="207.0" text-anchor="start">1.12x geo</text>
+<text class="muted" x="20.0" y="268.0" text-anchor="start">overall: n=83  ·  geomean 1.17x  ·  median 1.00x   (&gt;1 means hellish is faster)</text>
+<text class="muted" x="20.0" y="288.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=performance</text>
+</svg>

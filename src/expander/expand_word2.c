@@ -74,11 +74,26 @@ t_token	*lone_nonempty_token(t_ast_node *node)
 	return (t);
 }
 
-/* Fast path for the extremely common case `$PLAIN_VAR` (one TT_ENVVAR token,
-   plain name, default IFS, value has no split/glob chars).  Returns the
-   env value directly (caller must NOT free it — borrowed pointer) or NULL
-   to fall back to the slow path.  The IFS check matters: a non-default IFS
-   could split even a simple value and must use the full pipeline. */
+/* Fast path for the extremely common cases `$PLAIN_VAR` and `"$PLAIN_VAR"`
+   (one $-token, plain name, default IFS, value has no split/glob chars).
+   Returns the env value directly (caller must NOT free it — borrowed
+   pointer) or NULL to fall back to the slow path.  The IFS check matters: a
+   non-default IFS could split even a simple value and must use the full
+   pipeline.
+
+   TT_DQENVVAR belongs here next to TT_ENVVAR: the reparser emits exactly one
+   subtoken for `"$v"`, and both types carry the bare name in start/len
+   (expand_token drives them through a single handler).  Leaving the quoted
+   form out was costing a clone_ast plus the whole expansion pipeline per
+   evaluation: ~2.5k instructions to read one variable, on what is the
+   most common construct in real POSIX scripts.
+
+   The guards below are what make the two safe to share, so do not relax them
+   casually: `!*v` sends unset/empty to the slow path, which is what keeps
+   `"$empty"` producing ONE empty field instead of vanishing, and
+   name_is_plain rejects `$@`, `$*` and `${a[@]}` so aggregates still take the
+   splitting path.  What survives is exactly the set where quoted and
+   unquoted expansion yield byte-identical results. */
 char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 {
 	t_token	*t;
@@ -86,7 +101,8 @@ char	*try_simple_envvar(t_shell *state, t_ast_node *node)
 	char	*v;
 
 	t = lone_nonempty_token(node);
-	if (!t || t->tt != TT_ENVVAR || !name_is_plain(t->start, t->len))
+	if (!t || (t->tt != TT_ENVVAR && t->tt != TT_DQENVVAR)
+		|| !name_is_plain(t->start, t->len))
 		return (NULL);
 	ifs = env_get_ifs(&state->env);
 	if (ifs && ft_strcmp(ifs, " \t\n") != 0)

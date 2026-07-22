@@ -23,6 +23,7 @@ number is a lying chart, so the generator is given what it needs to mark it.
 import json
 import os
 import platform
+import random
 import statistics
 import sys
 
@@ -68,7 +69,76 @@ def read_json(path):
         return None
 
 
+def bootstrap_ratio_ci(a, b, iters=2000, seed=20260722):
+    """95% CI for median(b)/median(a) by percentile bootstrap.
+
+    Absolute CV is the wrong reliability signal for a comparison: on a
+    throttling core every shell shows 5-20% CV, so a CV gate flags the machine
+    rather than the measurement, and a 36x win gets the same warning stripe as
+    a 0.99x coin-flip.  What actually matters is whether the RATIO is
+    distinguishable from parity -- so resample both series and ask whether the
+    resulting interval clears 1.0.  Deterministic seed: the report must not
+    change when nothing was remeasured."""
+    if not a or not b:
+        return None
+    rng = random.Random(seed)
+    na, nb = len(a), len(b)
+    out = []
+    for _ in range(iters):
+        ra = sorted(a[rng.randrange(na)] for _ in range(na))
+        rb = sorted(b[rng.randrange(nb)] for _ in range(nb))
+        ma = ra[na // 2]
+        if ma > 0:
+            out.append(rb[nb // 2] / ma)
+    if not out:
+        return None
+    out.sort()
+    lo = out[int(0.025 * len(out))]
+    hi = out[int(0.975 * len(out)) - 1]
+    return {'lo': lo, 'hi': hi, 'significant': lo > 1.0 or hi < 1.0}
+
+
 # ---- perf (hyperfine) -----------------------------------------------------
+def perf_coherence():
+    """Are the perf artifacts all from the SAME run?
+
+    They are separate files written minutes apart, so a re-run that is still in
+    flight -- or one done on a different branch -- leaves a directory holding
+    two code states at once, and every ratio computed across them silently
+    compares one binary's parse against another's configure.  Nothing errors;
+    the numbers just quietly stop meaning anything.  mtime spread is a crude
+    but sufficient tell: one run writes its files back-to-back."""
+    stamps = {}
+    for key, _, _, _ in BENCHMARKS:
+        p = os.path.join(ART, 'perf', key + '.json')
+        try:
+            if os.path.getsize(p) > 0:
+                stamps[key] = os.path.getmtime(p)
+        except OSError:
+            continue
+    man = read_json(os.path.join(ART, 'perf', 'run.json')) or {}
+    out = {'files': len(stamps), 'stale': [], 'rev': man.get('rev'),
+           'branch': man.get('branch'), 'dirty': man.get('dirty'),
+           'complete': man.get('complete'), 'ok': True}
+    if not man:
+        # Pre-manifest artifacts: fall back to mtime spread, which cannot
+        # distinguish a slow run from a mixed one, so say so rather than
+        # claiming a clean bill of health.
+        out['ok'] = len(stamps) > 0
+        out['unverified'] = True
+        return out
+    if man.get('complete') is not True:
+        out['ok'] = False
+        out['reason'] = 'run did not finish (or is still running)'
+        return out
+    started = man.get('started', 0)
+    out['stale'] = sorted(k for k, t in stamps.items() if t < started - 5)
+    if out['stale']:
+        out['ok'] = False
+        out['reason'] = 'artifacts predate the recorded run'
+    return out
+
+
 def collect_perf():
     """One row per benchmark: each shell's median/stddev/CV plus ratios vs
     hellish.  Ratio is other/hellish so >1 always means hellish is faster --
@@ -76,11 +146,15 @@ def collect_perf():
     never tell opposite stories."""
     rows = []
     for key, title, dim, blurb in BENCHMARKS:
-        data = read_json(os.path.join(ART, 'perf', key + '.json'))
+        path = os.path.join(ART, 'perf', key + '.json')
+        # A zero-byte file is hyperfine's export mid-write: a run is in flight.
+        if os.path.exists(path) and os.path.getsize(path) == 0:
+            continue
+        data = read_json(path)
         if not data:
             continue
         by = {r['command']: r for r in data.get('results', [])}
-        shells, worst_cv = {}, 0.0
+        shells, worst_cv, times = {}, 0.0, {}
         for name in SHELLS:
             r = by.get(name)
             if not r or not r.get('median'):
@@ -89,29 +163,41 @@ def collect_perf():
             med = r['median']
             cv = (r.get('stddev') or 0.0) / med if med else 0.0
             worst_cv = max(worst_cv, cv)
+            times[name] = r.get('times') or []
             shells[name] = {
                 'median_s': med,
+                # `min` is the least-contended run: on a shared, throttling box
+                # it is the closest thing to the shell's intrinsic cost, and it
+                # is reported alongside the median rather than instead of it so
+                # nobody can pick whichever flatters the result.
+                'min_s': min(times[name]) if times[name] else None,
                 'stddev_s': r.get('stddev'),
                 'cv': cv,
-                'runs': len(r.get('times') or []),
+                'runs': len(times[name]),
                 'user_s': r.get('user'),
                 'system_s': r.get('system'),
             }
         hel = shells.get('hellish')
         if not hel:
             continue
-        ratios = {}
+        ratios, cis = {}, {}
         for name in SHELLS:
             if name == 'hellish' or not shells.get(name):
                 continue
             ratios[name] = shells[name]['median_s'] / hel['median_s']
+            ci = bootstrap_ratio_ci(times.get('hellish'), times.get(name))
+            if ci:
+                cis[name] = ci
         ranked = [(n, s['median_s']) for n, s in shells.items() if s]
         rows.append({
             'key': key, 'title': title, 'dimension': dim, 'blurb': blurb,
-            'shells': shells, 'ratios': ratios,
+            'shells': shells, 'ratios': ratios, 'ci': cis,
             'fastest': min(ranked, key=lambda t: t[1])[0] if ranked else None,
             'worst_cv': worst_cv,
             'reliable': worst_cv <= CV_LIMIT,
+            # The signal the charts actually use: is the hellish-vs-bash
+            # comparison distinguishable from parity at all?
+            'conclusive': bool(cis.get('bash', {}).get('significant')),
         })
     return rows or None
 
@@ -254,10 +340,12 @@ def governor():
 
 def main():
     gov = governor()
+    coh = perf_coherence()
     data = {
         'meta': {
             'platform': platform.platform(),
             'governor': gov,
+            'perf_coherent': coh,
             # The single most important honesty flag in the file: on a
             # throttling CPU absolute milliseconds are not comparable across
             # runs, and the charts say so on their face.
@@ -284,6 +372,19 @@ def main():
     if not data['meta']['governor_ok']:
         print('  !! governor=%s -- charts will be marked provisional' % gov,
               file=sys.stderr)
+    if coh.get('unverified'):
+        print('  !! perf artifacts predate run manifests -- coherence '
+              'unverifiable; re-run `make perf`.', file=sys.stderr)
+    elif not coh['ok']:
+        print('  !! perf artifacts are NOT one coherent run: %s'
+              % coh.get('reason', '?'), file=sys.stderr)
+        if coh['stale']:
+            print('  !! stale: %s' % ', '.join(coh['stale']), file=sys.stderr)
+        print('  !! these mix code states; re-run `make perf` before trusting '
+              'any ratio.', file=sys.stderr)
+    elif coh.get('rev'):
+        print('  perf run: %s @ %s%s' % (coh.get('branch'), coh['rev'],
+              ' (dirty tree)' if coh.get('dirty') else ''), file=sys.stderr)
 
 
 if __name__ == '__main__':
