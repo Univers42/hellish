@@ -38,55 +38,56 @@
 <rect x="20.0" y="66.0" width="840.0" height="24.0" rx="5" class="warnbox" opacity="1.00"/>
 <text class="warn" x="30.0" y="82.0" text-anchor="start">PROVISIONAL — CPU governor was &quot;powersave&quot;, not &quot;performance&quot;.</text>
 <line class="grid" x1="210.0" y1="116.0" x2="210.0" y2="390.0"/>
-<text class="muted" x="210.0" y="404.0" text-anchor="middle">0.11x</text>
+<text class="muted" x="210.0" y="404.0" text-anchor="middle">0.016x</text>
 <line class="grid" x1="348.5" y1="116.0" x2="348.5" y2="390.0"/>
-<text class="muted" x="348.5" y="404.0" text-anchor="middle">0.33x</text>
+<text class="muted" x="348.5" y="404.0" text-anchor="middle">0.13x</text>
 <line class="axis" x1="487.0" y1="116.0" x2="487.0" y2="390.0"/>
 <text class="muted" x="487.0" y="404.0" text-anchor="middle">1x</text>
 <line class="grid" x1="625.5" y1="116.0" x2="625.5" y2="390.0"/>
-<text class="muted" x="625.5" y="404.0" text-anchor="middle">3.02x</text>
+<text class="muted" x="625.5" y="404.0" text-anchor="middle">7.85x</text>
 <line class="grid" x1="764.0" y1="116.0" x2="764.0" y2="390.0"/>
-<text class="muted" x="764.0" y="404.0" text-anchor="middle">9.11x</text>
+<text class="muted" x="764.0" y="404.0" text-anchor="middle">61.7x</text>
 <text class="muted" x="487.0" y="110.0" text-anchor="middle">parity</text>
 <text class="muted" x="210.0" y="110.0" text-anchor="start">← hellish slower</text>
 <text class="muted" x="764.0" y="110.0" text-anchor="end">hellish faster →</text>
-<rect x="487.0" y="124.0" width="50.2" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
-<rect x="487.0" y="124.0" width="50.2" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<rect x="487.0" y="124.0" width="48.6" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
+<rect x="487.0" y="124.0" width="48.6" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="136.0" text-anchor="end">Arith loop</text>
-<text class="win" x="545.2" y="136.0" text-anchor="start">1.49x  (noisy)</text>
+<text class="win" x="543.6" y="136.0" text-anchor="start">2.06x  (noisy)</text>
 <rect x="487.0" y="150.0" width="240.9" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
 <rect x="487.0" y="150.0" width="240.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="162.0" text-anchor="end">String concat</text>
-<text class="win" x="735.9" y="162.0" text-anchor="start">6.83x  (noisy)</text>
-<rect x="487.0" y="176.0" width="50.2" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
-<rect x="487.0" y="176.0" width="50.2" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="win" x="735.9" y="162.0" text-anchor="start">36.04x  (noisy)</text>
+<rect x="487.0" y="176.0" width="52.7" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
+<rect x="487.0" y="176.0" width="52.7" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="188.0" text-anchor="end">Colon loop</text>
-<text class="win" x="545.2" y="188.0" text-anchor="start">1.49x  (noisy)</text>
-<rect x="487.0" y="202.0" width="85.1" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
-<rect x="487.0" y="202.0" width="85.1" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="win" x="547.7" y="188.0" text-anchor="start">2.19x  (noisy)</text>
+<rect x="487.0" y="202.0" width="53.6" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
+<rect x="487.0" y="202.0" width="53.6" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="214.0" text-anchor="end">Read loop</text>
-<text class="win" x="580.1" y="214.0" text-anchor="start">1.97x  (noisy)</text>
-<rect x="487.0" y="228.0" width="85.1" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
-<rect x="487.0" y="228.0" width="85.1" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="win" x="548.6" y="214.0" text-anchor="start">2.22x  (noisy)</text>
+<rect x="487.0" y="228.0" width="170.1" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
+<rect x="487.0" y="228.0" width="170.1" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="240.0" text-anchor="end">Cmdsub `$(true)`</text>
-<text class="win" x="580.1" y="240.0" text-anchor="start">1.97x  (noisy)</text>
-<rect x="464.2" y="254.0" width="22.8" height="15.0" rx="2" fill="#8b95a1" opacity="0.55"/>
-<rect x="464.2" y="254.0" width="22.8" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="win" x="665.1" y="240.0" text-anchor="start">12.58x  (noisy)</text>
+<rect x="470.7" y="254.0" width="16.3" height="15.0" rx="2" fill="#8b95a1" opacity="0.55"/>
+<rect x="470.7" y="254.0" width="16.3" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="266.0" text-anchor="end">Cmdsub `$(/bin/true)`</text>
-<text class="lose" x="456.2" y="266.0" text-anchor="end">0.83x  (noisy)</text>
-<rect x="487.0" y="280.0" width="10.9" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
-<rect x="487.0" y="280.0" width="10.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="lose" x="462.7" y="266.0" text-anchor="end">0.78x  (noisy)</text>
+<rect x="486.4" y="280.0" width="0.6" height="15.0" rx="2" fill="#8b95a1" opacity="0.55"/>
+<rect x="486.4" y="280.0" width="0.6" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="292.0" text-anchor="end">3-stage pipeline</text>
-<text class="win" x="505.9" y="292.0" text-anchor="start">1.09x  (noisy)</text>
-<rect x="399.2" y="306.0" width="87.8" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="tie" x="478.4" y="292.0" text-anchor="end">0.99x  (noisy)</text>
+<rect x="448.3" y="306.0" width="38.7" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
 <text class="lbl" x="200.0" y="318.0" text-anchor="end">autoconf configure</text>
-<text class="lose" x="391.2" y="318.0" text-anchor="end">0.50x</text>
-<rect x="401.9" y="332.0" width="85.1" height="15.0" rx="2" fill="#8b95a1" opacity="0.55"/>
-<rect x="401.9" y="332.0" width="85.1" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="lose" x="440.3" y="318.0" text-anchor="end">0.56x</text>
+<rect x="487.0" y="332.0" width="6.7" height="15.0" rx="2" fill="#e2543a" opacity="0.55"/>
+<rect x="487.0" y="332.0" width="6.7" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="344.0" text-anchor="end">Parse 50k lines</text>
-<text class="lose" x="393.9" y="344.0" text-anchor="end">0.51x  (noisy)</text>
-<rect x="486.9" y="358.0" width="0.1" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<text class="win" x="501.7" y="344.0" text-anchor="start">1.10x  (noisy)</text>
+<rect x="473.7" y="358.0" width="13.3" height="15.0" rx="2" fill="#8b95a1" opacity="0.55"/>
+<rect x="473.7" y="358.0" width="13.3" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
 <text class="lbl" x="200.0" y="370.0" text-anchor="end">Startup</text>
-<text class="tie" x="478.9" y="370.0" text-anchor="end">1.00x</text>
+<text class="lose" x="465.7" y="370.0" text-anchor="end">0.82x  (noisy)</text>
 <text class="muted" x="20.0" y="418.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
 </svg>
