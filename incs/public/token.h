@@ -112,6 +112,30 @@ typedef struct s_token
 	t_arith_cache	*arith_cache; /* memoised arith parse (owned, or NULL) */
 }	t_token;
 
+/* Lean token stored in the RAW token deque (t_deque_tok). full_word and
+   arith_cache are always NULL there — they are attached later, on AST-node
+   tokens (reparse) and at execution (arith memo). Dropping those two
+   pointers halves the per-slot cost (32B -> 16B): a 50k-line parse holds
+   ~310k tokens, so this is ~4.75MB less RSS and fewer page faults. It is
+   an EXACT prefix of t_token, so field reads via either type agree; the
+   parser reads deque slots as t_ltoken and lifts them to full tokens with
+   ltok2tok() wherever one is embedded into an AST node. */
+typedef struct s_ltoken
+{
+	unsigned char	tt;
+	bool			allocated;
+	bool			split_eligible;
+	int				len;
+	char			*start;
+}	t_ltoken;
+
+static inline t_token	ltok2tok(t_ltoken l)
+{
+	return ((t_token){.tt = l.tt, .allocated = l.allocated,
+		.split_eligible = l.split_eligible, .len = l.len,
+		.start = l.start, .full_word = NULL});
+}
+
 static inline t_token	create_token(char *start, int len, t_tt token_type)
 {
 	return ((t_token)

@@ -72,7 +72,7 @@ bool	is_empty_token_list(t_deque_tok *tokens)
 	i = 0;
 	while (i + 1 < tokens->deqtok.len)
 	{
-		if (((t_token *)deque_idx(&tokens->deqtok, i))->tt != TT_NEWLINE)
+		if (((t_ltoken *)deque_idx(&tokens->deqtok, i))->tt != TT_NEWLINE)
 			return (false);
 		i++;
 	}

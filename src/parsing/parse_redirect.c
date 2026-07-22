@@ -27,7 +27,7 @@ void	validate_next_token_is_properly_set_for_redirect(t_deque_tok *tokens,
 	(void)state;
 	(void)parser;
 	(void)ret;
-	next = *(t_token *)deque_peek(&tokens->deqtok);
+	next = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 	(void)next;
 }
 
@@ -49,11 +49,11 @@ t_ast_node	parse_redirect(t_shell *state,
 	ret = (t_ast_node){.node_type = AST_REDIRECT};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	t = *(t_token *)deque_pop_start(&tokens->deqtok);
+	t = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	if (!is_redirect(t.tt))
 		return (unexpected(state, parser, ret, tokens));
 	push_token_child(&ret, t);
-	next = *(t_token *)deque_peek(&tokens->deqtok);
+	next = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 	if (next.tt == TT_PROC_SUB_IN || next.tt == TT_PROC_SUB_OUT)
 		ast_push_child(&ret, (t_ast_node[])
 		{parse_proc_sub(state, parser, tokens)});

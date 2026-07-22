@@ -45,7 +45,7 @@ static void	handle_right_brace(t_deque_tok *tokens,
 		return ;
 	}
 	(void)deque_pop_start(&tokens->deqtok);
-	peek = *(t_token *)deque_peek(&tokens->deqtok);
+	peek = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 	if (peek.tt == TT_BRACE_RIGHT)
 		(void)deque_pop_start(&tokens->deqtok);
 	*depth = 0;
@@ -61,7 +61,7 @@ static void	collect_word_token(t_deque_tok *tokens,
 {
 	t_token	peek;
 
-	peek = *(t_token *)deque_peek(&tokens->deqtok);
+	peek = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 	*last_word = peek;
 	(void)deque_pop_start(&tokens->deqtok);
 	if (expr_buf->len > 0)
@@ -84,7 +84,7 @@ void	handle_arith_error_collect(t_deque_tok *tokens,
 	depth = 1;
 	while (depth > 0)
 	{
-		peek = *(t_token *)deque_peek(&tokens->deqtok);
+		peek = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok));
 		if (peek.tt == TT_END)
 			break ;
 		if (peek.tt == TT_BRACE_LEFT)
@@ -117,7 +117,7 @@ int	handle_arith_error(t_shell *state,
 	bool		has_inner_paren;
 	t_token		last_word;
 
-	arith_tok = *(t_token *)deque_pop_start(&tokens->deqtok);
+	arith_tok = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	(void)arith_tok;
 	vec_init(&expr_buf);
 	expr_buf.elem_size = 1;

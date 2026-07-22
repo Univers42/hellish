@@ -67,7 +67,7 @@ t_ast_node	parse_word(t_deque_tok *tokens)
 	ret = (t_ast_node){.node_type = AST_WORD};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	tmp = *(t_token *)deque_pop_start(&tokens->deqtok);
+	tmp = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	token_node = create_node_tok(AST_TOKEN, tmp);
 	vec_init(&token_node.children);
 	token_node.children.elem_size = sizeof(t_ast_node);

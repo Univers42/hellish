@@ -24,7 +24,7 @@ static bool	parse_and_push_simple_cmd_child(t_shell *state,
 {
 	t_tt	next;
 
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_WORD && try_push_array_assign(res, tokens, ret))
 		return (check_res_ok(res));
 	if (next == TT_WORD)
@@ -54,7 +54,7 @@ t_ast_node	parse_simple_command(t_shell *state, t_parser *res,
 	ret = (t_ast_node){.node_type = AST_SIMPLE_COMMAND};
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (!is_simple_cmd_token(next))
 		return (unexpected(state, res, ret, tokens));
 	while (ST_SCANNING)

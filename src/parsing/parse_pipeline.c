@@ -22,12 +22,12 @@ static int	process_pipeline_pipes(t_shell *state, t_parser *parser,
 {
 	t_ast_node	tmp_node;
 
-	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_PIPE)
+	while ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_PIPE)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
-		while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
+		while ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE)
 			(void)deque_pop_start(&tokens->deqtok);
-		if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
+		if ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_END)
 		{
 			parser->res = RES_GETMOREINPUT;
 			return (1);
@@ -55,7 +55,7 @@ static bool	eat_bangs(t_deque_tok *tokens, t_ast_node *ret)
 	bool	saw;
 
 	saw = false;
-	while ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_BANG)
+	while ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_BANG)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
 		ret->negate = !ret->negate;
@@ -75,8 +75,8 @@ t_ast_node	parse_pipeline(t_shell *state,
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	if (eat_bangs(tokens, &ret)
-		&& ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END
-			|| (*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE))
+		&& ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_END
+			|| (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_NEWLINE))
 		return (ret);
 	push_cmd_parsed(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)

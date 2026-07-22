@@ -33,7 +33,7 @@ static bool	fa_expect(t_parser *parser, t_deque_tok *tokens, t_tt expected)
 	t_tt	next;
 
 	skip_newlines(tokens);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_END)
 	{
 		parser->res = RES_GETMOREINPUT;
@@ -65,7 +65,7 @@ t_ast_node	parse_for_arith(t_shell *state, t_parser *parser,
 	if (!push_arith_slices(&ret, ret.token))
 		return (parser->res = RES_ERR, ret);
 	skip_newlines(tokens);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_SEMICOLON)
 		(void)deque_pop_start(&tokens->deqtok);
 	if (!fa_expect(parser, tokens, TT_DO))

@@ -23,7 +23,7 @@ static bool	expect_token(t_shell *state, t_parser *parser,
 
 	(void)state;
 	skip_newlines(tokens);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_END)
 	{
 		parser->res = RES_GETMOREINPUT;
@@ -65,13 +65,13 @@ static bool	parse_elif_chain(t_shell *state, t_parser *parser,
 	t_tt	next;
 
 	skip_newlines(tokens);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	while (next == TT_ELIF)
 	{
 		if (!parse_elif_one(state, parser, tokens, ret))
 			return (false);
 		skip_newlines(tokens);
-		next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+		next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	}
 	if (next == TT_ELSE)
 	{

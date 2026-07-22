@@ -54,7 +54,7 @@ bool	is_semicolon_or_newline_before_brace_right(t_ast_node *ret,
 	if (len == 0)
 		return (false);
 	last_tt = ((t_ast_node *)ret->children.ctx)[len - 1].token.tt;
-	next_tt = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next_tt = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	return ((last_tt == TT_SEMICOLON || last_tt == TT_NEWLINE)
 		&& next_tt == TT_BRACE_RIGHT);
 }
@@ -66,7 +66,7 @@ bool	is_end_token(t_deque_tok *tokens)
 {
 	t_tt	tt;
 
-	tt = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	tt = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	return (tt == TT_END);
 }
 
@@ -77,6 +77,6 @@ bool	is_newline_token(t_deque_tok *tokens)
 {
 	t_tt	tt;
 
-	tt = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	tt = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	return (tt == TT_NEWLINE);
 }
