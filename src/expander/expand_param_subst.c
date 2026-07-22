@@ -24,7 +24,7 @@ int	patsub_match_len(const char *pat, const char *s)
 	int		k;
 	char	*sub;
 
-	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?'))
+	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?') && !ft_strchr(pat, '\\'))
 	{
 		k = (int)ft_strlen(pat);
 		if (!ft_strncmp(pat, s, (size_t)k))
@@ -87,7 +87,7 @@ static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
 	i = start;
 	while (i < ctx.slen && ctx.name[i] != '/')
 		i++;
-	return (expand_param_word(state, ctx.name + start, i - start, false));
+	return (expand_param_pattern(state, ctx.name + start, i - start));
 }
 
 /* Extract and expand the replacement part of ${v/pat/rep}.  If there is no
