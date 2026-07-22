@@ -41,6 +41,8 @@ t_ast_node	create_subtoken_node(t_token t,
 t_ast_node	parse_subshell(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);
+bool		handle_coproc_case(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node *ret);
 t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);

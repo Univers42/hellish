@@ -101,6 +101,9 @@ t_execution_state	execute_range_background(t_shell *state,
 t_execution_state	execute_simple_list(t_shell *state,
 						t_executable_node *exe);
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe);
+t_execution_state	execute_coproc(t_shell *state, t_executable_node *exe);
+void				coproc_store(t_shell *state, char *name, int *fds,
+						pid_t pid);
 void				execute_top_level(t_shell *state);
 t_execution_state	execute_tree_node(t_shell *state, t_executable_node *exe);
 t_shell_func		*func_lookup(t_shell *state, const char *name);

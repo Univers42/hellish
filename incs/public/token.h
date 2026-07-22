@@ -69,7 +69,8 @@ typedef enum e_tt
 	TT_RBRACE,
 	TT_BANG,
 	TT_DSEMI,
-	TT_HERESTRING
+	TT_HERESTRING,
+	TT_COPROC
 }	t_tt;
 
 /* Compact back-reference to the original full word before the lexer split
