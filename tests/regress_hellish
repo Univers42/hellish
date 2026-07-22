@@ -186,3 +186,10 @@ declare -i k=2+2; echo $k; k=8/2; echo $k
 declare -n p=q; p=viaref; echo "$q"
 declare -n a=b; b=1; a+=2; echo "$b"
 declare -n r=t; t=first; echo "$r"; r=second; echo "$t"
+declare -A ci=([red]=1 [green]=2); echo "${ci[red]}|${ci[green]}|${#ci[@]}"
+declare -A ci2; ci2=([a]=x [b]=y); echo "${ci2[a]}|${ci2[b]}|${#ci2[@]}"
+ai=([2]=x [5]=y); echo "${ai[2]}|${ai[5]}|${#ai[@]}|${ai[0]:-e}"
+ai2=([2]=x foo bar); echo "${ai2[0]:-e}|${ai2[2]}|${ai2[3]}|${ai2[4]}"
+declare -A cm=([x]=1); cm[y]=2; cm+=([z]=3); echo "${cm[x]}${cm[y]}${cm[z]}|${#cm[@]}"
+declare -A cp=([red]=1 [green]=2); declare -p cp
+declare -A cs=([k1]="v with space" [k2]=simple); echo "[${cs[k1]}][${cs[k2]}]"

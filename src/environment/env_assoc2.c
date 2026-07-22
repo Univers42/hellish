@@ -87,7 +87,9 @@ char	*assoc_without(const char *old, const char *key, int klen)
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }
 
-/* declare -p / set display form: ([key]="val" ...) with keys quoted. */
+/* declare -p / set display form: ([key]="val" ...) with keys quoted.
+   Bash quirk: a non-empty associative array carries a trailing space
+   before the closing paren ( [k]="v" ) — indexed arrays do not. */
 char	*assoc_format(const char *val)
 {
 	t_string	out;
@@ -111,6 +113,8 @@ char	*assoc_format(const char *val)
 		vec_push_nstr(&out, (char *)v, vl);
 		vec_push_char(&out, '"');
 	}
+	if (out.len > 1)
+		vec_push_char(&out, ' ');
 	vec_push_char(&out, ')');
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }
