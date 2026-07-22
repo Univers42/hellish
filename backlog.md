@@ -9,6 +9,48 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## Done (this program)
 
+- [x] **`"$VAR"` reaches the expander fast path: −19.5% loop instructions**
+      (callgrind, loop_arith: 1,266.9M → 1,019.2M Ir). `try_simple_envvar`
+      (`src/expander/expand_word2.c`) gated on `t->tt != TT_ENVVAR`, so the
+      DOUBLE-QUOTED form fell through every fast path and paid `clone_ast`
+      plus the whole `expand_word_glob_ctl` pipeline — ~2.5k instructions to
+      read one variable, on what is the most common construct in real POSIX
+      scripts. Accepting TT_DQENVVAR alongside TT_ENVVAR is safe because the
+      reparser emits exactly one subtoken for `"$v"` and both types carry the
+      bare name in start/len.
+      The existing guards are what make it sound, and they must not be
+      relaxed casually: `!*v` routes unset/empty to the slow path (keeping
+      `"$empty"` as ONE empty field rather than vanishing), `name_is_plain`
+      rejects `$@`/`$*`/`${a[@]}` so aggregates still split, and
+      `needs_split_or_glob` catches the rest. What is left is exactly the set
+      where quoted and unquoted expansion are byte-identical.
+      Found by a profile-driven fan-out; the claim was adversarially
+      re-verified before landing. Gates: 3016/3016 golden, plus 12 targeted
+      quoting cases (empty/unset → one field, `"$v"` with spaces → one field,
+      `$v` with spaces → three, custom IFS both ways, quoted glob char,
+      `"$@"` and its iteration form).
+- [x] **Hot-path predicate ordering: −33% parse instructions** (callgrind,
+      parse50k: 573.5M → 383.5M Ir, 1.50x less work). Two instances of the
+      same bug — an expensive test placed before the cheap discriminating
+      one — found by profiling, not reading:
+      1. `hazard_at` (`src/infrastructure/rl_multi_line2.c`) ran
+         `ft_strncmp(...,"alias",5)` and `...,"source",6` on **every byte**
+         of input: ~4M libc strncmp calls on a 2MB script, 17.4% of all
+         instructions retired. Gating each on `s[i]=='a'` / `'s'` is exact,
+         not heuristic (strncmp can only match where the first byte does),
+         and cut strncmp 99.8M → 10.0M Ir and `buff_readline` 92.7M → 35.1M.
+      2. `reparse_dquote` evaluated `getenv("HELLISH_DBG_DQ")` **before** a
+         one-byte test, once per double-quoted word — 34.6k linear `environ`
+         walks per parse, 5% of parse time to prove a debug flag was unset.
+         Pure operand swap; both operands are side-effect-free.
+      Gates: 3016/3016 golden, 213/213 regress_hellish incl. 6 new hazard
+      cases (words merely CONTAINING alias/source, dot-source, heredoc
+      bodies, backslash-newline, `$LINENO`), `40_batch_semantics.sh`
+      byte-identical to `bash --posix`.
+      Lesson worth keeping: `perf(1)` is unusable here
+      (`perf_event_paranoid=4`), but callgrind counts *instructions*, which
+      are deterministic — so on a noisy `powersave` box it is strictly
+      better than wall-clock for finding where the work is.
 - [x] **Batched non-interactive input delivery** — parse50k 705ms → ~200ms.
       Hazard fallback (alias/source/heredoc/backslash-newline), newline as
       top-level list operator, per-range heredoc gathering, failure replay
@@ -324,6 +366,48 @@ this session. The remaining gaps are the documented low-frequency tail.
 - [ ] Update bench/KNOWN_ISSUES.md (configure section is now history) +
       let make perf time the configure dimension (completion gate should
       now include hellish).
+
+## Next — profiled perf queue (2026-07-22, adversarially verified)
+
+Both survived a skeptical reviewer whose brief was to refute them. Neither is
+landed: each is medium-risk and needs coverage the current suite cannot give,
+because every category in `tests/tester` runs through `hellish -c`.
+
+- [ ] **dlopen readline instead of linking it — ~30% of startup.**
+      hellish needs 3 shared objects at load time (libreadline, libtinfo,
+      libc); bash needs 2 (its readline is static), dash needs 1. Relocating
+      libreadline + libtinfo costs 291,493 Ir of the 829,882 Ir `-c true`
+      startup, and a non-interactive run calls exactly zero readline entry
+      points. Surface is small — 4 function symbols (`readline`,
+      `add_history`, `rl_completion_matches`, `rl_variable_bind`); the real
+      work is the ~10 R_X86_64_COPY relocations for readline globals
+      (`rl_attempted_completion_function`, `rl_editing_mode`, …), each of
+      which becomes a dlsym'd pointer deref, confined to `src/editing/` and
+      `src/completion/`. Measured dead end: `-z lazy` is NOT the fix (427,753
+      vs 427,782 Ir — the cost is data relocations, not PLT stubs).
+      Keep a `HELLISH_STATIC_READLINE` compile-time fallback for musl/hardened
+      loaders. **Coverage gap**: needs `make hist-test`, `make docker-test`
+      across all four distros, and a NEW pty test for tab-completion and
+      vi/emacs switching. Startup compounds at `./configure`'s fork rate, so
+      this is really a configure fix wearing a startup hat.
+- [ ] **Stop forking twice per command substitution — ~12% of fork workloads.**
+      `x=$(/bin/true)` spawns TWO processes where bash and dash spawn one
+      (measured: clone=2000 vs 1000 vs 1000 over 1000 iterations): the
+      subshell child forks again instead of exec'ing in place. Fix is to
+      thread a "this process is a subshell body and this is its final
+      command" bool through `t_shell` (no new global) from
+      `fork_and_run_inproc` / `execute_subshell` down to `execute_cmd_bg`,
+      and reuse `cmdsub_fast2.c`'s eligibility scan for the conservative
+      single-simple-command precondition.
+      **Hazard**: exec-in-place is irreversible, so `$(a; b)`, `$(a && b)`,
+      `$(a &)` and non-final pipeline stages must never take it or they
+      silently lose the trailing work; DEBUG/ERR/EXIT traps must still fire.
+      Whole-script diffs in `tests/scripts/` and `tests/hard/` are what would
+      catch a lost trailing statement.
+
+Not pursued: the `configure` track proposed a quadratic-parser root cause
+that the verifier refuted (0 of 5 findings survived) — do not re-open it
+without a fresh profile.
 
 ## Next (ordered)
 

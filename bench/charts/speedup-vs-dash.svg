@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="396" viewBox="0 0 880 396" role="img" aria-label="Speedup vs dash, per dimension">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="396" rx="8"/>
+<text class="title" x="20" y="30">Speedup vs dash, per dimension</text>
+<text class="sub" x="20" y="50">Bar = dash median / hellish median; right of centre means hellish is faster. The whisker is the bootstrap 95% CI on that ratio — bars whose interval crosses parity are struck through and reported as no difference.</text>
+<defs><pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#000" opacity="0.001"/><line x1="0" y1="0" x2="0" y2="6" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"/></pattern></defs>
+<line class="grid" x1="210.0" y1="82.0" x2="210.0" y2="356.0"/>
+<text class="muted" x="210.0" y="370.0" text-anchor="middle">0.1x</text>
+<line class="grid" x1="348.5" y1="82.0" x2="348.5" y2="356.0"/>
+<text class="muted" x="348.5" y="370.0" text-anchor="middle">0.32x</text>
+<line class="axis" x1="487.0" y1="82.0" x2="487.0" y2="356.0"/>
+<text class="muted" x="487.0" y="370.0" text-anchor="middle">1x</text>
+<line class="grid" x1="625.5" y1="82.0" x2="625.5" y2="356.0"/>
+<text class="muted" x="625.5" y="370.0" text-anchor="middle">3.17x</text>
+<line class="grid" x1="764.0" y1="82.0" x2="764.0" y2="356.0"/>
+<text class="muted" x="764.0" y="370.0" text-anchor="middle">10x</text>
+<text class="muted" x="487.0" y="76.0" text-anchor="middle">parity</text>
+<text class="muted" x="210.0" y="76.0" text-anchor="start">← hellish slower</text>
+<text class="muted" x="764.0" y="76.0" text-anchor="end">hellish faster →</text>
+<rect x="444.5" y="90.0" width="42.5" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<line class="axis" x1="441.8" y1="97.5" x2="447.6" y2="97.5"/>
+<line class="axis" x1="441.8" y1="92.0" x2="441.8" y2="103.0"/>
+<line class="axis" x1="447.6" y1="92.0" x2="447.6" y2="103.0"/>
+<text class="lbl" x="200.0" y="102.0" text-anchor="end">Startup</text>
+<text class="lose" x="433.8" y="102.0" text-anchor="end">0.70x</text>
+<rect x="409.6" y="116.0" width="77.4" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<line class="axis" x1="404.1" y1="123.5" x2="415.6" y2="123.5"/>
+<line class="axis" x1="404.1" y1="118.0" x2="404.1" y2="129.0"/>
+<line class="axis" x1="415.6" y1="118.0" x2="415.6" y2="129.0"/>
+<text class="lbl" x="200.0" y="128.0" text-anchor="end">Parse 50k lines</text>
+<text class="lose" x="396.1" y="128.0" text-anchor="end">0.53x</text>
+<rect x="487.0" y="142.0" width="2.1" height="15.0" rx="2" fill="#e2543a" opacity="0.50"/>
+<rect x="487.0" y="142.0" width="2.1" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<line class="axis" x1="481.1" y1="149.5" x2="495.2" y2="149.5"/>
+<line class="axis" x1="481.1" y1="144.0" x2="481.1" y2="155.0"/>
+<line class="axis" x1="495.2" y1="144.0" x2="495.2" y2="155.0"/>
+<text class="lbl" x="200.0" y="154.0" text-anchor="end">Arith loop</text>
+<text class="tie" x="503.2" y="154.0" text-anchor="start">no difference</text>
+<rect x="487.0" y="168.0" width="119.1" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<line class="axis" x1="603.5" y1="175.5" x2="608.8" y2="175.5"/>
+<line class="axis" x1="603.5" y1="170.0" x2="603.5" y2="181.0"/>
+<line class="axis" x1="608.8" y1="170.0" x2="608.8" y2="181.0"/>
+<text class="lbl" x="200.0" y="180.0" text-anchor="end">String concat</text>
+<text class="win" x="616.8" y="180.0" text-anchor="start">2.69x</text>
+<rect x="484.1" y="194.0" width="2.9" height="15.0" rx="2" fill="#8b95a1" opacity="0.50"/>
+<rect x="484.1" y="194.0" width="2.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<line class="axis" x1="479.5" y1="201.5" x2="488.7" y2="201.5"/>
+<line class="axis" x1="479.5" y1="196.0" x2="479.5" y2="207.0"/>
+<line class="axis" x1="488.7" y1="196.0" x2="488.7" y2="207.0"/>
+<text class="lbl" x="200.0" y="206.0" text-anchor="end">Colon loop</text>
+<text class="tie" x="471.5" y="206.0" text-anchor="end">no difference</text>
+<rect x="487.0" y="220.0" width="211.4" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<line class="axis" x1="691.2" y1="227.5" x2="704.7" y2="227.5"/>
+<line class="axis" x1="691.2" y1="222.0" x2="691.2" y2="233.0"/>
+<line class="axis" x1="704.7" y1="222.0" x2="704.7" y2="233.0"/>
+<text class="lbl" x="200.0" y="232.0" text-anchor="end">Read loop</text>
+<text class="win" x="712.7" y="232.0" text-anchor="start">5.81x</text>
+<rect x="487.0" y="246.0" width="240.9" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<line class="axis" x1="721.7" y1="253.5" x2="733.7" y2="253.5"/>
+<line class="axis" x1="721.7" y1="248.0" x2="721.7" y2="259.0"/>
+<line class="axis" x1="733.7" y1="248.0" x2="733.7" y2="259.0"/>
+<text class="lbl" x="200.0" y="258.0" text-anchor="end">Cmdsub `$(true)`</text>
+<text class="win" x="741.7" y="258.0" text-anchor="start">7.42x</text>
+<rect x="420.7" y="272.0" width="66.3" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<line class="axis" x1="412.6" y1="279.5" x2="425.7" y2="279.5"/>
+<line class="axis" x1="412.6" y1="274.0" x2="412.6" y2="285.0"/>
+<line class="axis" x1="425.7" y1="274.0" x2="425.7" y2="285.0"/>
+<text class="lbl" x="200.0" y="284.0" text-anchor="end">Cmdsub `$(/bin/true)`</text>
+<text class="lose" x="404.6" y="284.0" text-anchor="end">0.58x</text>
+<rect x="479.6" y="298.0" width="7.4" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<line class="axis" x1="472.9" y1="305.5" x2="482.7" y2="305.5"/>
+<line class="axis" x1="472.9" y1="300.0" x2="472.9" y2="311.0"/>
+<line class="axis" x1="482.7" y1="300.0" x2="482.7" y2="311.0"/>
+<text class="lbl" x="200.0" y="310.0" text-anchor="end">3-stage pipeline</text>
+<text class="lose" x="464.9" y="310.0" text-anchor="end">0.94x</text>
+<rect x="395.4" y="324.0" width="91.6" height="15.0" rx="2" fill="#8b95a1" opacity="1.00"/>
+<line class="axis" x1="392.6" y1="331.5" x2="400.4" y2="331.5"/>
+<line class="axis" x1="392.6" y1="326.0" x2="392.6" y2="337.0"/>
+<line class="axis" x1="400.4" y1="326.0" x2="400.4" y2="337.0"/>
+<text class="lbl" x="200.0" y="336.0" text-anchor="end">autoconf configure</text>
+<text class="lose" x="384.6" y="336.0" text-anchor="end">0.47x</text>
+<text class="muted" x="20.0" y="384.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=performance</text>
+</svg>
