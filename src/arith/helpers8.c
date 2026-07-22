@@ -84,16 +84,21 @@ static int	is_simple_decimal(const char *s)
 
 /* A variable's value may be another name or an expression -- POSIX allows
    `x=y; y=5; echo $((x))` to print 5 via recursive evaluation. We dup the
-   string because arith_eval may modify the input buffer. The static `depth`
+   string because the lexer may modify the input buffer. The static `depth`
    counter caps recursion at 100 levels to kill cycles like `x=x` before
    we blow the C stack. depth is shared across all active evaluations in the
-   process, so nested $((...)) in subshells is still bounded. */
+   process, so nested $((...)) in subshells is still bounded.
+   We drive arith_run directly rather than arith_eval so p->no_side_effects
+   PROPAGATES into the nested evaluation: in `b=a++; ((0 && (b)))` the dead
+   operand expands b to "a++", and a fresh evaluator would happily run that
+   increment. Inheriting the flag is what makes && / || / ?: truly lazy. */
 static long long	resolve_recursive(t_arith_parser *p, const char *val)
 {
-	static int	depth;
-	char		*dup;
-	long long	r;
-	bool		err;
+	static int		depth;
+	char			*dup;
+	long long		r;
+	bool			err;
+	t_arith_lexer	lexer;
 
 	if (depth >= 100)
 		return (p->error = true, 0);
@@ -102,7 +107,8 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
 		return (0);
 	depth++;
 	err = false;
-	r = arith_eval(p->shell, dup, (int)ft_strlen(dup), &err);
+	arith_lexer_init(&lexer, dup, (int)ft_strlen(dup));
+	r = arith_run(p->shell, &lexer, &err, p->no_side_effects);
 	depth--;
 	xfree(dup);
 	if (err)

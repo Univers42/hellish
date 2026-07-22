@@ -29,7 +29,8 @@ char			*arith_expand(t_shell *state, const char *expr, int len);
    arith_run is the single parse+evaluate kernel; the two public entry points
    (arith_eval and arith_eval_cached) differ only in how they initialize the
    lexer before handing it to arith_run. */
-long long		arith_run(t_shell *state, t_arith_lexer *lexer, bool *error);
+long long		arith_run(t_shell *state, t_arith_lexer *lexer, bool *error,
+					bool nse);
 char			*arith_lltoa(long long value);
 char			*arith_fail(t_shell *state, const char *expr, int len);
 long long		arith_eval_cached(t_shell *state, t_arith_cache *c,
