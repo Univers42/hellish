@@ -63,7 +63,7 @@ static char	*array_op_elem(t_shell *state, const char *op, int oplen,
 	ft_memcpy(body, AOP_VAR, kl);
 	ft_memcpy(body + kl, op, oplen);
 	body[kl + oplen] = '\0';
-	res = expand_param_format(state, body, kl + oplen);
+	res = expand_param_format(state, body, kl + oplen, false);
 	xfree(body);
 	if (!res)
 		res = ft_strdup(elem);

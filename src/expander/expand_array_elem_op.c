@@ -101,7 +101,7 @@ static char	*elem_apply(t_shell *state, const char *op, int oplen,
 	ft_memcpy(body, AEOP_VAR, kl);
 	ft_memcpy(body + kl, op, oplen);
 	body[kl + oplen] = '\0';
-	res = expand_param_format(state, body, kl + oplen);
+	res = expand_param_format(state, body, kl + oplen, false);
 	xfree(body);
 	try_unset(state, AEOP_VAR);
 	if (!res)

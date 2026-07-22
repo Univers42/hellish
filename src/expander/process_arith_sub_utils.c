@@ -13,7 +13,7 @@
 #include "expander_private.h"
 #include "env.h"
 
-char	*expand_param_format(t_shell *state, const char *s, int slen);
+char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq);
 
 static void	push_braced_val(t_arith_expand_ctx *ctx, int start, int j)
 {
