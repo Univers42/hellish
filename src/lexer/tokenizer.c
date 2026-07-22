@@ -42,7 +42,7 @@ static void	emit_newline(char **str, t_deque_tok *ret)
    continuations. The continuation must be removed here, not tokenised, else a
    `\<newline>` becomes a spurious empty/newline argument (notably in sourced
    function bodies, which the REPL's line-joining never reaches). */
-static bool	skip_noise(char **str)
+bool	skip_noise(char **str)
 {
 	if (**str == '#')
 	{
@@ -59,7 +59,7 @@ static bool	skip_noise(char **str)
    operator. Inside [[ ]], &&/||/(/) are emitted as WORD tokens so the parser
    does not split the conditional. Returns a continuation prompt if a lexeme
    is unterminated, else NULL. */
-static char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
+char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 {
 	char	*prompt;
 
