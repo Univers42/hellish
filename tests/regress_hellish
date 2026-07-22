@@ -211,3 +211,16 @@ v=source; w=alias; echo "${v}${w}"; echo tail
 printf '%s\n' asource aliased source_x alias_y; echo end
 s="a source and an alias inside a quoted string"; echo "$s"
 echo a; echo b; alias qq='echo Q'; qq; echo c
+x=$(/bin/echo hi); echo "[$x]"
+x=$(/bin/echo z >/dev/null); echo "[$x]"
+x=$(/bin/cat </etc/hostname); echo "[${x:+set}]"
+x=$(/bin/echo a; /bin/echo b); echo "[$x]"
+x=$(/bin/echo a | /bin/cat); echo "[$x]"
+x=$(/bin/true && /bin/echo y); echo "[$x]"
+x=$(/bin/true || /bin/echo n); echo "[$x]"
+x=$(/bin/false); echo "rc=$?"
+x=$(a=1 /bin/sh -c 'echo $a'); echo "[$x]"
+f() { /bin/echo one; /bin/echo two; }; x=$(f); echo "[$x]"
+x=$(eval "/bin/echo a; /bin/echo b"); echo "[$x]"
+x=$(command /bin/echo c); echo "[$x]"
+g() { /bin/echo p; /bin/echo q; }; echo "[$(g)][$(/bin/echo r)]"

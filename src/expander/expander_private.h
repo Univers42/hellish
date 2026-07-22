@@ -205,6 +205,7 @@ char		*pf_trim_or_subst(t_shell *state, t_trim_ctx ctx);
 t_trim_ctx	pf_make_ctx(const char *s, int slen, const char *op, int nlen);
 char		*cmdsub_fast(t_shell *state, const char *cmd);
 bool		csf_eligible(t_shell *state, const char *s);
+bool		cs_single_cmd(t_shell *state, const char *s);
 int			csf_skip_quoted(const char *s, int i);
 int			csf_skip_csub(const char *s, int i);
 int			csf_skip_param(const char *s, int i);
