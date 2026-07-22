@@ -50,7 +50,7 @@ static void	free_elems(t_vec *args)
 /* Is the command word an assignment builtin (local/declare/typeset/
    export/readonly)? For those, name=(...) persists in the right scope
    instead of being a temporary command prefix. */
-static int	is_assign_builtin(t_executable_cmd *ret)
+int	is_assign_builtin(t_executable_cmd *ret)
 {
 	char	*c;
 
@@ -86,11 +86,7 @@ int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 	append = (key.len >= 2 && key.start[key.len - 2] == '+');
 	ev.key = ft_strndup(key.start, key.len - 1 - append);
 	ev.exported = state->opt_allexport;
-	if (append)
-		ev.value = arr_from_elems((char **)args.ctx, (int)args.len,
-				env_expand(state, ev.key));
-	else
-		ev.value = arr_from_elems((char **)args.ctx, (int)args.len, NULL);
+	ev.value = build_array_value(state, ret, &ev, &args, append);
 	if (is_assign_builtin(ret))
 		persist_array(state, ret, ev);
 	else
