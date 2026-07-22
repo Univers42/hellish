@@ -241,6 +241,13 @@ battle-tested libc heap) before installing — the shell you live in should be t
 safe, fast one. Pass `SAFE=0` if you really want the custom heap; then stability
 is on you.
 
+**Once you switch, mind your `PATH`.** hellish reads `~/.hellishrc` and nothing
+else — never `~/.profile`, which is where your distro appends `~/.local/bin`. So
+tools installed there (pipx, `npm -g`, cargo, `pip --user`) become *command not
+found* the moment bash stops being your login shell, with nothing pointing at the
+cause. [`hellishrc.example`](hellishrc.example) ships the guarded block that puts
+them back; copy it across when you copy the rest.
+
 ---
 
 ## Architecture in one breath

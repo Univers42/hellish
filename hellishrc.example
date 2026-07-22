@@ -58,6 +58,26 @@ export EDITOR=vim
 export PAGER=less
 export LESS='-R'        # let pagers pass ANSI colors through
 
+# PATH. If you made hellish your login shell (chsh), read this: hellish
+# sources ~/.hellishrc and nothing else — never ~/.profile. That is where
+# your distro puts PATH="$HOME/.local/bin:$PATH", so switching from bash
+# silently drops it, and everything installed there (pipx, npm -g, cargo,
+# pip --user) turns into "command not found" with no hint as to why. Add
+# the entries you want back, here.
+# The case guard makes each addition idempotent: this file is re-sourced
+# by every nested interactive hellish, and an unguarded prepend would
+# stack a fresh copy each time until PATH is mostly duplicates.
+case ":$PATH:" in
+	*":$HOME/.local/bin:"*) ;;
+	*) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
+# Same shape for anything else you keep outside the system prefixes:
+# case ":$PATH:" in
+#	*":$HOME/.cargo/bin:"*) ;;
+#	*) export PATH="$HOME/.cargo/bin:$PATH" ;;
+# esac
+
 # ── 4. ALIASES ────────────────────────────────────────────────────────
 alias ls='ls --color=auto'
 alias ll='ls -lh --color=auto'
