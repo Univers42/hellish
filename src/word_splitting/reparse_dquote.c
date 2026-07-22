@@ -71,8 +71,14 @@ void	reparse_dquote(t_ast_node *ret, int *i, t_token t)
 	flush_pending_segment_rp(&rp, &pushed_any);
 	if (!pushed_any)
 		push_dqword_subtoken_rp(&rp, rp.i, rp.i);
-	if (getenv("HELLISH_DBG_DQ")
-		&& rp.current_token.start[rp.i] != '"')
+	/* Operand order below is deliberate. This runs once per double-quoted
+	   word, and glibc's getenv is a linear walk of environ doing a strncmp
+	   per entry -- putting it first cost 5% of every parse to prove a debug
+	   flag was unset. The byte test is the discriminating one and is false
+	   in every non-broken case, so it goes first; both operands are pure, so
+	   the short-circuit is a pure win. */
+	if (rp.current_token.start[rp.i] != '"'
+		&& getenv("HELLISH_DBG_DQ"))
 		fprintf(stderr, "[DQ-FAIL i=%d len=%d tok=<<%.*s>>]\n",
 			rp.i, rp.current_token.len,
 			rp.current_token.len, rp.current_token.start);

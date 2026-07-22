@@ -58,7 +58,22 @@ trap 'rmdir "$LOCK" 2>/dev/null || true' EXIT
 # ---- setup ----------------------------------------------------------------
 cd "$ROOT"
 /bin/bash bench/lib/fetch_suites.sh
+# Force the relink. The OPT and debug object trees are separate but the BINARY
+# PATH IS SHARED, so after a `make test` (which builds -O0 +ASan) the binary on
+# disk is newer than every obj-opt/*.o and `make OPT=1` decides there is
+# nothing to do -- handing this harness the AddressSanitizer build to
+# benchmark. It does not fail; it just silently reports numbers ~6x too slow
+# (startup 15ms instead of 2.5ms) with no indication anything is wrong.
+# `make test` and `make bench` already rm the binary for exactly this reason.
+rm -f build/bin/hellish
 make --no-print-directory OPT=1 >/dev/null
+# Belt and braces: if what we just built still links ASan, refuse to publish
+# timings from it rather than quietly producing a slow, wrong report.
+if ldd build/bin/hellish 2>/dev/null | grep -q asan; then
+    echo "!! build/bin/hellish links libasan -- that is the debug build." >&2
+    echo "!! refusing to benchmark it. Run 'make re OPT=1' and retry." >&2
+    exit 1
+fi
 # Update the pinned binary ATOMICALLY: cp to a temp then rename.  A plain
 # `cp` over a binary that a previous/concurrent run is still executing fails
 # with "Text file busy"; rename() swaps the directory entry (new inode) and
@@ -67,6 +82,24 @@ mkdir -p bench/.bin
 cp build/bin/hellish "$HELLISH.tmp.$$"
 mv -f "$HELLISH.tmp.$$" "$HELLISH"
 /bin/bash bench/lib/gen_workloads.sh
+
+# Run manifest. The per-dimension JSONs carry no timestamp and no provenance,
+# so a directory holding a half-finished re-run -- or one dimension left over
+# from another branch -- looks exactly like a clean set, and every ratio
+# computed across it compares one binary against another. Stamping the start
+# epoch and the exact revision lets collect_data.py reject artifacts that
+# predate this run, and lets every chart say which commit it measured.
+mkdir -p "$ART"
+cat > "$ART/run.json" <<EOF
+{
+  "started": $(date +%s),
+  "rev": "$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)",
+  "branch": "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo unknown)",
+  "dirty": $(test -n "$(git -C "$ROOT" status --porcelain 2>/dev/null)" && echo true || echo false),
+  "governor": "$GOV",
+  "complete": false
+}
+EOF
 
 HYPERFINE="$(command -v hyperfine || echo "$BENCH/.bin/hyperfine")"
 T="taskset -c $CPU"
@@ -226,5 +259,20 @@ if [ "${SKIP_CONFIGURE:-0}" != 1 ]; then
 fi
 
 # ---- report ---------------------------------------------------------------
+# Mark the manifest complete only here: a run killed partway leaves
+# complete=false, which is exactly the state collect_data.py must refuse.
+python3 - "$ART/run.json" <<'PY'
+import json, sys, time
+p = sys.argv[1]
+try:
+    with open(p) as f:
+        m = json.load(f)
+except Exception:
+    m = {}
+m['complete'] = True
+m['finished'] = int(time.time())
+with open(p, 'w') as f:
+    json.dump(m, f, indent=2)
+PY
 GOVERNOR="$GOV" python3 bench/lib/report_perf.py
 echo "report: bench/results.md" >&2

@@ -26,17 +26,27 @@
    those conservatively — a false positive only means we fall back to the
    old, always-correct single-line path for that stretch. */
 
+/* Every byte of the input passes through here, so the order of the tests is
+   load-bearing, not stylistic. Dispatching on s[i] FIRST turns the two
+   keyword probes from unconditional libc strncmp calls into a byte compare
+   that fails on ~95% of input: a strncmp against "alias" can only succeed
+   where s[i] is already 'a', so the gate is exact, not heuristic. Before it,
+   scanning a 2MB script cost ~4M strncmp calls -- 17% of every instruction
+   retired during a parse, spent proving that 'x' is not the start of
+   "source". */
 static bool	hazard_at(const char *s, size_t i, size_t n)
 {
-	if (s[i] == '\\' && i + 1 < n && s[i + 1] == '\n')
+	const char	c = s[i];
+
+	if (c == '\\' && i + 1 < n && s[i + 1] == '\n')
 		return (true);
-	if (s[i] == '<' && i + 1 < n && s[i + 1] == '<')
+	if (c == '<' && i + 1 < n && s[i + 1] == '<')
 		return (true);
-	if (n - i >= 5 && ft_strncmp(s + i, "alias", 5) == 0)
+	if (c == 'a' && n - i >= 5 && ft_strncmp(s + i, "alias", 5) == 0)
 		return (true);
-	if (n - i >= 6 && ft_strncmp(s + i, "source", 6) == 0)
+	if (c == 's' && n - i >= 6 && ft_strncmp(s + i, "source", 6) == 0)
 		return (true);
-	if (s[i] == '.' && (i + 1 == n || s[i + 1] == ' ' || s[i + 1] == '\t')
+	if (c == '.' && (i + 1 == n || s[i + 1] == ' ' || s[i + 1] == '\t')
 		&& (i == 0 || ft_strchr(" \t\n;&|", s[i - 1]) != NULL))
 		return (true);
 	return (false);

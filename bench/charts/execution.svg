@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="880" height="710" viewBox="0 0 880 710" role="img" aria-label="Execution — loops, builtins, forks and a real workload">
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="676" viewBox="0 0 880 676" role="img" aria-label="Execution — loops, builtins, forks and a real workload">
 <style>
   .bg{fill:#ffffff}
   .card{fill:#f6f8fa;stroke:#d0d7de}
@@ -31,116 +31,90 @@
     .tie{fill:#9198a1}
   }
 </style>
-<rect class="bg" width="880" height="710" rx="8"/>
+<rect class="bg" width="880" height="676" rx="8"/>
 <text class="title" x="20" y="30">Execution — loops, builtins, forks and a real workload</text>
 <text class="sub" x="20" y="50">Same script fed to every shell. Lower is better. Each row is scaled to its own slowest bar (the set spans ms to seconds), so compare shells within a row, not lengths between rows.</text>
 <defs><pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#000" opacity="0.001"/><line x1="0" y1="0" x2="0" y2="6" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"/></pattern></defs>
-<rect x="20.0" y="66.0" width="840.0" height="24.0" rx="5" class="warnbox" opacity="1.00"/>
-<text class="warn" x="30.0" y="82.0" text-anchor="start">PROVISIONAL — CPU governor was &quot;powersave&quot;, not &quot;performance&quot;. Ratios hold; absolute values are inflated.</text>
-<rect x="20.0" y="95.0" width="11.0" height="11.0" rx="2" fill="#e2543a" opacity="1.00"/>
-<text class="muted" x="37.0" y="104.0" text-anchor="start">hellish</text>
-<rect x="92.4" y="95.0" width="11.0" height="11.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
-<text class="muted" x="109.4" y="104.0" text-anchor="start">bash</text>
-<rect x="143.2" y="95.0" width="11.0" height="11.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="muted" x="160.2" y="104.0" text-anchor="start">dash</text>
-<text class="lbl" x="200.0" y="154.0" text-anchor="end">Arith loop</text>
-<text class="muted" x="200.0" y="167.0" text-anchor="end">100k iterations of `i=$((i+1))`</text>
-<rect x="210.0" y="126.0" width="268.6" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<rect x="210.0" y="126.0" width="268.6" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="485.6" y="138.0" text-anchor="start">166.7 ms</text>
-<rect x="210.0" y="144.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="144.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="156.0" text-anchor="start">343.7 ms</text>
-<rect x="210.0" y="162.0" width="196.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<rect x="210.0" y="162.0" width="196.3" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="413.3" y="174.0" text-anchor="start">121.8 ms</text>
-<text class="warn" x="858.0" y="154.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
-<text class="lbl" x="200.0" y="222.0" text-anchor="end">String concat</text>
-<text class="muted" x="200.0" y="235.0" text-anchor="end">10k iterations of `s=&quot;${s}x&quot;`</text>
-<rect x="210.0" y="194.0" width="15.4" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
-<rect x="210.0" y="194.0" width="15.4" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="232.4" y="206.0" text-anchor="start">22.9 ms</text>
-<rect x="210.0" y="212.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="212.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="224.0" text-anchor="start">824.6 ms</text>
-<rect x="210.0" y="230.0" width="36.7" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
-<rect x="210.0" y="230.0" width="36.7" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="253.7" y="242.0" text-anchor="start">54.6 ms</text>
-<text class="warn" x="858.0" y="222.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="247.0" x2="804.0" y2="247.0"/>
-<text class="lbl" x="200.0" y="290.0" text-anchor="end">Colon loop</text>
-<text class="muted" x="200.0" y="303.0" text-anchor="end">100k iterations of the `:` builtin</text>
-<rect x="210.0" y="262.0" width="252.9" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<rect x="210.0" y="262.0" width="252.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="469.9" y="274.0" text-anchor="start">187.2 ms</text>
-<rect x="210.0" y="280.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="280.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="292.0" text-anchor="start">410.0 ms</text>
-<rect x="210.0" y="298.0" width="194.6" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<rect x="210.0" y="298.0" width="194.6" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="411.6" y="310.0" text-anchor="start">144.0 ms</text>
-<text class="warn" x="858.0" y="290.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="315.0" x2="804.0" y2="315.0"/>
-<text class="lbl" x="200.0" y="358.0" text-anchor="end">Read loop</text>
-<text class="muted" x="200.0" y="371.0" text-anchor="end">`read` over a 50k-line file</text>
-<rect x="210.0" y="330.0" width="66.7" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
-<rect x="210.0" y="330.0" width="66.7" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="283.7" y="342.0" text-anchor="start">108.2 ms</text>
-<rect x="210.0" y="348.0" width="148.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="348.0" width="148.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="365.0" y="360.0" text-anchor="start">240.2 ms</text>
-<rect x="210.0" y="366.0" width="554.0" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
-<rect x="210.0" y="366.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="378.0" text-anchor="start">899.2 ms</text>
-<text class="warn" x="858.0" y="358.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="383.0" x2="804.0" y2="383.0"/>
-<text class="lbl" x="200.0" y="426.0" text-anchor="end">Cmdsub `$(true)`</text>
-<text class="muted" x="200.0" y="439.0" text-anchor="end">1k `$(true)` (hellish forkless fast path)</text>
-<rect x="210.0" y="398.0" width="44.0" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
-<rect x="210.0" y="398.0" width="44.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="261.0" y="410.0" text-anchor="start">20.9 ms</text>
-<rect x="210.0" y="416.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="416.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="428.0" text-anchor="start">263.3 ms</text>
-<rect x="210.0" y="434.0" width="310.5" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
-<rect x="210.0" y="434.0" width="310.5" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="527.5" y="446.0" text-anchor="start">147.6 ms</text>
-<text class="warn" x="858.0" y="426.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="451.0" x2="804.0" y2="451.0"/>
-<text class="lbl" x="200.0" y="494.0" text-anchor="end">Cmdsub `$(/bin/true)`</text>
-<text class="muted" x="200.0" y="507.0" text-anchor="end">1k real fork+exec substitutions</text>
-<rect x="210.0" y="466.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<rect x="210.0" y="466.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="478.0" text-anchor="start">849.4 ms</text>
-<rect x="210.0" y="484.0" width="434.5" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="484.0" width="434.5" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="651.5" y="496.0" text-anchor="start">666.2 ms</text>
-<rect x="210.0" y="502.0" width="308.2" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<rect x="210.0" y="502.0" width="308.2" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="525.2" y="514.0" text-anchor="start">472.5 ms</text>
-<text class="warn" x="858.0" y="494.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="519.0" x2="804.0" y2="519.0"/>
-<text class="lbl" x="200.0" y="562.0" text-anchor="end">3-stage pipeline</text>
-<text class="muted" x="200.0" y="575.0" text-anchor="end">300 `printf | cat | wc -l`</text>
-<rect x="210.0" y="534.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<rect x="210.0" y="534.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="546.0" text-anchor="start">1.56 s</text>
-<rect x="210.0" y="552.0" width="549.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<rect x="210.0" y="552.0" width="549.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="766.0" y="564.0" text-anchor="start">1.55 s</text>
-<rect x="210.0" y="570.0" width="503.0" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<rect x="210.0" y="570.0" width="503.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="720.0" y="582.0" text-anchor="start">1.42 s</text>
-<text class="warn" x="858.0" y="562.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="587.0" x2="804.0" y2="587.0"/>
-<text class="lbl" x="200.0" y="630.0" text-anchor="end">autoconf configure</text>
-<text class="muted" x="200.0" y="643.0" text-anchor="end">GNU hello `./configure` (CONFIG_SHELL)</text>
-<rect x="210.0" y="602.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="771.0" y="614.0" text-anchor="start">15.31 s</text>
-<rect x="210.0" y="620.0" width="311.2" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="528.2" y="632.0" text-anchor="start">8.60 s</text>
-<rect x="210.0" y="638.0" width="285.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="502.3" y="650.0" text-anchor="start">7.88 s</text>
-<text class="muted" x="20.0" y="698.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
+<rect x="20.0" y="61.0" width="11.0" height="11.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="muted" x="37.0" y="70.0" text-anchor="start">hellish</text>
+<rect x="92.4" y="61.0" width="11.0" height="11.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<text class="muted" x="109.4" y="70.0" text-anchor="start">bash</text>
+<rect x="143.2" y="61.0" width="11.0" height="11.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="muted" x="160.2" y="70.0" text-anchor="start">dash</text>
+<text class="lbl" x="200.0" y="120.0" text-anchor="end">Arith loop</text>
+<text class="muted" x="200.0" y="133.0" text-anchor="end">100k iterations of `i=$((i+1))`</text>
+<rect x="210.0" y="92.0" width="204.1" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="421.1" y="104.0" text-anchor="start">129.5 ms</text>
+<rect x="210.0" y="110.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="771.0" y="122.0" text-anchor="start">351.7 ms</text>
+<rect x="210.0" y="128.0" width="207.7" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<text class="val" x="424.7" y="140.0" text-anchor="start">131.8 ms</text>
+<line class="grid" x1="210.0" y1="145.0" x2="804.0" y2="145.0"/>
+<text class="lbl" x="200.0" y="188.0" text-anchor="end">String concat</text>
+<text class="muted" x="200.0" y="201.0" text-anchor="end">10k iterations of `s=&quot;${s}x&quot;`</text>
+<rect x="210.0" y="160.0" width="13.0" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="230.0" y="172.0" text-anchor="start">20.6 ms</text>
+<rect x="210.0" y="178.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="771.0" y="190.0" text-anchor="start">875.4 ms</text>
+<rect x="210.0" y="196.0" width="35.0" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<text class="val" x="252.0" y="208.0" text-anchor="start">55.4 ms</text>
+<line class="grid" x1="210.0" y1="213.0" x2="804.0" y2="213.0"/>
+<text class="lbl" x="200.0" y="256.0" text-anchor="end">Colon loop</text>
+<text class="muted" x="200.0" y="269.0" text-anchor="end">100k iterations of the `:` builtin</text>
+<rect x="210.0" y="228.0" width="206.5" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="423.5" y="240.0" text-anchor="start">165.3 ms</text>
+<rect x="210.0" y="246.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="771.0" y="258.0" text-anchor="start">443.4 ms</text>
+<rect x="210.0" y="264.0" width="201.5" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="418.5" y="276.0" text-anchor="start">161.3 ms</text>
+<line class="grid" x1="210.0" y1="281.0" x2="804.0" y2="281.0"/>
+<text class="lbl" x="200.0" y="324.0" text-anchor="end">Read loop</text>
+<text class="muted" x="200.0" y="337.0" text-anchor="end">`read` over a 50k-line file</text>
+<rect x="210.0" y="296.0" width="95.4" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="312.4" y="308.0" text-anchor="start">124.6 ms</text>
+<rect x="210.0" y="314.0" width="209.7" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="426.7" y="326.0" text-anchor="start">274.1 ms</text>
+<rect x="210.0" y="332.0" width="554.0" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<text class="val" x="771.0" y="344.0" text-anchor="start">724.1 ms</text>
+<line class="grid" x1="210.0" y1="349.0" x2="804.0" y2="349.0"/>
+<text class="lbl" x="200.0" y="392.0" text-anchor="end">Cmdsub `$(true)`</text>
+<text class="muted" x="200.0" y="405.0" text-anchor="end">1k `$(true)` (hellish forkless fast path)</text>
+<rect x="210.0" y="364.0" width="36.6" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="253.6" y="376.0" text-anchor="start">20.0 ms</text>
+<rect x="210.0" y="382.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="771.0" y="394.0" text-anchor="start">303.0 ms</text>
+<rect x="210.0" y="400.0" width="271.8" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<text class="val" x="488.8" y="412.0" text-anchor="start">148.6 ms</text>
+<line class="grid" x1="210.0" y1="417.0" x2="804.0" y2="417.0"/>
+<text class="lbl" x="200.0" y="460.0" text-anchor="end">Cmdsub `$(/bin/true)`</text>
+<text class="muted" x="200.0" y="473.0" text-anchor="end">1k real fork+exec substitutions</text>
+<rect x="210.0" y="432.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="771.0" y="444.0" text-anchor="start">945.2 ms</text>
+<rect x="210.0" y="450.0" width="448.2" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="665.2" y="462.0" text-anchor="start">764.7 ms</text>
+<rect x="210.0" y="468.0" width="319.2" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="536.2" y="480.0" text-anchor="start">544.5 ms</text>
+<line class="grid" x1="210.0" y1="485.0" x2="804.0" y2="485.0"/>
+<text class="lbl" x="200.0" y="528.0" text-anchor="end">3-stage pipeline</text>
+<text class="muted" x="200.0" y="541.0" text-anchor="end">300 `printf | cat | wc -l`</text>
+<rect x="210.0" y="500.0" width="544.7" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<rect x="210.0" y="500.0" width="544.7" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="761.7" y="512.0" text-anchor="start">1.74 s</text>
+<rect x="210.0" y="518.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<rect x="210.0" y="518.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="771.0" y="530.0" text-anchor="start">1.77 s</text>
+<rect x="210.0" y="536.0" width="512.2" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<rect x="210.0" y="536.0" width="512.2" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="729.2" y="548.0" text-anchor="start">1.64 s</text>
+<text class="warn" x="858.0" y="528.0" text-anchor="end">noisy</text>
+<line class="grid" x1="210.0" y1="553.0" x2="804.0" y2="553.0"/>
+<text class="lbl" x="200.0" y="596.0" text-anchor="end">autoconf configure</text>
+<text class="muted" x="200.0" y="609.0" text-anchor="end">GNU hello `./configure` (CONFIG_SHELL)</text>
+<rect x="210.0" y="568.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="771.0" y="580.0" text-anchor="start">18.95 s</text>
+<rect x="210.0" y="586.0" width="283.3" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="500.3" y="598.0" text-anchor="start">9.69 s</text>
+<rect x="210.0" y="604.0" width="258.5" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="475.5" y="616.0" text-anchor="start">8.84 s</text>
+<text class="muted" x="20.0" y="664.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=performance</text>
 </svg>

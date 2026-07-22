@@ -205,3 +205,9 @@ coproc { read x; echo "got:$x"; }; echo hi >&${COPROC[1]}; read y <&${COPROC[0]}
 coproc { read a; read b; echo "$a-$b"; }; echo one >&${COPROC[1]}; echo two >&${COPROC[1]}; read out <&${COPROC[0]}; echo "$out"
 coproc P { read x; echo "[$x]"; }; echo "n=${#P[@]}"; echo hi >&${P[1]}; read r <&${P[0]}; echo "$r"
 coproc CAT { read l; echo "$l" | tr a-z A-Z; }; echo hello >&${CAT[1]}; read u <&${CAT[0]}; echo "$u"
+x=asource; y=aliasing; z=nosourcehere; echo "$x $y $z"
+echo alias-like; echo sourcelike; echo .dotlike; echo done
+v=source; w=alias; echo "${v}${w}"; echo tail
+printf '%s\n' asource aliased source_x alias_y; echo end
+s="a source and an alias inside a quoted string"; echo "$s"
+echo a; echo b; alias qq='echo Q'; qq; echo c

@@ -61,5 +61,5 @@
 <text class="lbl" x="200.0" y="239.0" text-anchor="end">hellish</text>
 <text class="val" x="772.0" y="239.0" text-anchor="start">210/583  36.0%</text>
 <text class="muted" x="20.0" y="302.0" text-anchor="start">hellish is scored conservatively: the `ok` bucket needs a per-shell annotation in the spec file, which exists for bash/dash and cannot exist for hellish.</text>
-<text class="muted" x="20.0" y="320.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
+<text class="muted" x="20.0" y="320.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=performance</text>
 </svg>
