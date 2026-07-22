@@ -198,6 +198,9 @@ typedef struct s_shell
 	bool				alias_exp_owned; /* alias_exp.ctx is its own alloc,
 										not a borrow of input.ctx */
 	int					last_cmdsub_status; /* $? inside $(...) body */
+	bool				cmdsub_in_place; /* this process IS a disposable $( )
+										body whose single external command
+										may execve without forking again */
 	/* --- set -o options (each maps to one POSIX flag) --- */
 	bool				opt_errexit; /* -e: exit on first error */
 	bool				opt_nounset; /* -u: error on unset variable use */

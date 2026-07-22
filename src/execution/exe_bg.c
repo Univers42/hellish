@@ -21,6 +21,20 @@
    process-substitution fds that were opened for this pipeline stage,
    frees cmd and exe, then returns a res_pid to be waited on by
    pipeline_status or exe_res_set_status. */
+/* Do the child's work WITHOUT forking. Only ever reached when this process is
+   already a disposable $( ) body running its one and only command (see
+   cs_single_cmd), so there is nothing left to return to: we are the child.
+   Saves the second clone -- `$(/bin/true)` costs one, like bash and dash.
+   Never returns: actually_run execve's, or exits with its failure status. */
+static void	run_cmd_in_place(t_shell *state,
+					t_executable_node *exe, t_executable_cmd *cmd)
+{
+	default_signal_handlers();
+	set_up_redirection(state, exe);
+	env_extend(&state->env, &cmd->pre_assigns, true);
+	exit(actually_run(state, &cmd->argv));
+}
+
 t_execution_state	execute_cmd_bg(t_shell *state,
 						t_executable_node *exe, t_executable_cmd *cmd)
 {
@@ -34,6 +48,8 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 			env_set(&state->env,
 				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
 	}
+	if (state->cmdsub_in_place)
+		run_cmd_in_place(state, exe, cmd);
 	pid = fork();
 	if (pid == 0)
 	{
