@@ -251,7 +251,8 @@ my_shell:
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
 	@echo "Done. Log out and log back in to use hellish as your default shell."
-	@echo "if impatient, you can use `exec /usr/bin/hellish -l`"
+	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
+	@echo '    exec /usr/bin/hellish --login'
 
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
@@ -311,6 +312,14 @@ cli-opts-test: all
 	@chmod +x $(TEST_DIR)/cli_opts_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cli_opts_compare.sh
 
+# Login-shell startup files: a login hellish must source /etc/profile (which
+# runs the /etc/profile.d snippets) and then ~/.profile, exactly as bash does,
+# and a non-login one must source neither. The golden -c harness only ever
+# spawns non-login shells, so it cannot see this. See tests/login_profile_compare.sh.
+login-test: all
+	@chmod +x $(TEST_DIR)/login_profile_compare.sh
+	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/login_profile_compare.sh
+
 # Third-party conformance sweep: Oils spec tests + mksh check.t, run against
 # hellish, bash --posix and dash; report in bench/conformance.md; the gate
 # fails if hellish's pass count drops vs bench/baseline/. Suites are fetched
@@ -319,10 +328,25 @@ conformance:
 	@/bin/bash bench/conformance.sh
 
 # Dimension-split speed benchmark (startup / parse / loops / forks /
-# configure) vs bash --posix and dash, via pinned hyperfine runs.
+# configure) vs bash --posix and dash, via pinned hyperfine runs, followed by
+# the peak-RSS dimension over the same workloads.
 # Reports land in bench/results.md; methodology in bench/METHODOLOGY.md.
 perf:
 	@/bin/bash bench/run.sh
+	@/bin/bash bench/lib/run_rss.sh
+
+# Peak-RSS dimension on its own (run.sh must have built bench/.bin/hellish).
+rss:
+	@/bin/bash bench/lib/run_rss.sh
+
+# Turn whatever harness output is on disk into bench/charts/*.svg (the images
+# the README embeds). Reads every artifact it can find and skips the rest, so
+# it is safe to run after a single harness; run `make perf conformance bench`
+# first for a full set. Never re-runs a benchmark itself -- charting and
+# measuring stay separate so a chart can always be regenerated for free.
+charts:
+	@python3 bench/lib/collect_data.py
+	@python3 bench/lib/gen_charts.py
 
 # Run an external, configurable 42 "minishell tester" (geoman-style) against
 # the built binary, as an independent cross-check on top of `make test` and
@@ -333,4 +357,4 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test conformance perf cli-opts-test geoman
+	hist-test conformance perf rss charts cli-opts-test login-test geoman

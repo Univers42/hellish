@@ -70,10 +70,36 @@ mv -f "$HELLISH.tmp.$$" "$HELLISH"
 
 HYPERFINE="$(command -v hyperfine || echo "$BENCH/.bin/hyperfine")"
 T="taskset -c $CPU"
-# Per-command timeout safety net (a real binary, not a shell). Configure runs
-# legitimately take ~10s, so its guard is larger.
-TG="timeout ${CMD_TIMEOUT:-45}"
-TGC="timeout ${CONF_TIMEOUT:-120}"
+# Pick a timeout(1) that reaps its child on a SIGCHLD instead of polling.
+# This matters more than it looks: uutils coreutils' timeout (the Rust rewrite
+# that ships as /usr/bin/timeout on some distros) waits on a 100ms grid, so it
+# adds up to ~100ms to EVERY measured command and rounds the result up to the
+# next 100ms bucket -- `dash -c true` reads 103ms instead of 0.5ms. That floor
+# silently dominates every sub-second dimension and turns the ratios into
+# rounding artifacts. GNU coreutils' timeout costs ~1ms, so we hunt for it
+# (often installed alongside as `gnutimeout`) and only fall back to whatever
+# `timeout` is on PATH -- warning loudly, because those numbers cannot be
+# trusted below a second.
+pick_timeout() {
+    for cand in gnutimeout gtimeout timeout; do
+        bin="$(command -v "$cand" 2>/dev/null)" || continue
+        if "$bin" --version 2>/dev/null | head -1 | grep -qi 'GNU coreutils'; then
+            printf '%s' "$bin"
+            return 0
+        fi
+    done
+    return 1
+}
+if TIMEOUT_BIN="$(pick_timeout)"; then
+    :
+else
+    TIMEOUT_BIN="$(command -v timeout || true)"
+    echo "!! no GNU timeout found; using '${TIMEOUT_BIN:-none}'." >&2
+    echo "!! non-GNU timeout implementations can poll on a 100ms grid and" >&2
+    echo "!! inflate every sub-second measurement. Install GNU coreutils." >&2
+fi
+TG="$TIMEOUT_BIN ${CMD_TIMEOUT:-45}"
+TGC="$TIMEOUT_BIN ${CONF_TIMEOUT:-120}"
 
 # Print a HELLISH-centric one-line verdict for a finished dimension, read from
 # its JSON.  hyperfine's own summary picks whichever shell was fastest as the

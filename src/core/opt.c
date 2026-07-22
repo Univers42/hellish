@@ -30,7 +30,7 @@ void	cli_long_word(t_shell *state, t_cli *cli, const char *w)
 	else if (ft_strncmp(w, "--debug=", 8) == 0 && !ft_strcmp(w + 8, "ast"))
 		state->option_flags |= OPT_FLAG_DEBUG_AST;
 	else if (!ft_strcmp(w, "--login"))
-		return ;
+		state->option_flags |= OPT_FLAG_LOGIN;
 	else
 		cli->err = 2;
 }

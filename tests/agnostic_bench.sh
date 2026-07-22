@@ -159,6 +159,20 @@ best_us() {
 declare -A LOGSUM N WALL          # keyed by shell name, geomean inputs
 ms() { awk -v u="$1" 'BEGIN{printf "%.1f", u/1000}'; }
 
+# ---- artifact --------------------------------------------------------------
+# The matrix above is for humans; this TSV is for the chart generator
+# (bench/lib/collect_data.py -> bench/lib/gen_charts.py).  Written even when
+# running inside docker, where the caller bind-mounts or cats it out.
+# Sentinel timings: -1 = output mismatched the oracle, -2 = no translation
+# for this shell (fish only).  Both mean "excluded from the geomean".
+AGN_TSV="${AGN_TSV:-$HERE/agnostic_results.tsv}"
+{
+	echo "# hellish agnostic bench  $(uname -srm)"
+	echo "# rounds=$ROUNDS oracle=$REF shells=${SHELLS[*]}"
+	echo "# cell: cell<TAB>workload<TAB>shell<TAB>us"
+	echo "# rank: rank<TAB>place<TAB>shell<TAB>n<TAB>geomean_us<TAB>wall_us"
+} > "$AGN_TSV" 2>/dev/null || AGN_TSV=/dev/null
+
 # ---- header ----------------------------------------------------------------
 NAMW=20; COLW=9
 echo -e "${BOLD}cross-shell speed matrix${END}  ${GREY}(cells = best-of-$ROUNDS ms; lower is faster; oracle=$REF)${END}"
@@ -180,17 +194,22 @@ for ((w=0; w<NW; w++)); do
 	for si in "${!SHELLS[@]}"; do
 		s="${SHELLS[$si]}"
 		if [[ "$s" == fish ]]; then
-			[[ -z "$fpl" ]] && { cell_us[$si]=-2; cell_txt[$si]="·"; continue; }
+			[[ -z "$fpl" ]] && { cell_us[$si]=-2; cell_txt[$si]="·"
+				printf 'cell\t%s\t%s\t-2\n' "${name// /_}" "$s" >> "$AGN_TSV"
+				continue; }
 			use="$fpl"
 		else
 			use="$pl"
 		fi
 		us=$(best_us "$shout" "$s" "$use")
 		if ! diff -q "$shout" "$refout" >/dev/null 2>&1; then
-			cell_us[$si]=-1; cell_txt[$si]="--"; continue
+			cell_us[$si]=-1; cell_txt[$si]="--"
+			printf 'cell\t%s\t%s\t-1\n' "${name// /_}" "$s" >> "$AGN_TSV"
+			continue
 		fi
 		(( us < 1 )) && us=1
 		cell_us[$si]=$us; cell_txt[$si]="$(ms "$us")"
+		printf 'cell\t%s\t%s\t%s\n' "${name// /_}" "$s" "$us" >> "$AGN_TSV"
 		(( us < rmin )) && rmin=$us
 		LOGSUM[$s]=$(awk -v a="${LOGSUM[$s]:-0}" -v u="$us" 'BEGIN{printf "%.6f", a+log(u)}')
 		N[$s]=$(( ${N[$s]:-0} + 1 ))
@@ -232,6 +251,7 @@ printf "  ${BOLD}%-4s %-10s %4s %12s %12s %10s${END}\n" "#" "shell" "n" "geomean
 i=0
 while read -r g s n wall; do
 	i=$((i+1))
+	printf 'rank\t%s\t%s\t%s\t%s\t%s\n' "$i" "$s" "$n" "$g" "$wall" >> "$AGN_TSV"
 	ratio=$(awk -v g="$g" -v h="$hgeo" 'BEGIN{print (h>0)? sprintf("%.2fx", g/h) : "-"}')
 	tag=""; col="$END"
 	[[ "$s" == hellish ]] && { tag="  ◀ hellish"; col="$CYAN"; }

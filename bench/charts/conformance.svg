@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="332" viewBox="0 0 880 332" role="img" aria-label="Conformance — third-party suites">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="332" rx="8"/>
+<text class="title" x="20" y="30">Conformance — third-party suites</text>
+<text class="sub" x="20" y="50">Oils spec tests and mksh check.t, same case list for every shell. Higher is better.</text>
+<text class="lbl" x="20.0" y="76.0" text-anchor="start">Oils spec tests  (79 files, 1622 cases)</text>
+<rect x="210.0" y="88.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="88.0" width="471.7" height="15.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<text class="lbl" x="200.0" y="100.0" text-anchor="end">bash</text>
+<text class="val" x="772.0" y="100.0" text-anchor="start">1381/1622  85.1%</text>
+<rect x="210.0" y="109.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="109.0" width="379.5" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="lbl" x="200.0" y="121.0" text-anchor="end">dash</text>
+<text class="val" x="772.0" y="121.0" text-anchor="start">1111/1622  68.5%</text>
+<rect x="210.0" y="130.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="130.0" width="365.1" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="lbl" x="200.0" y="142.0" text-anchor="end">hellish</text>
+<text class="val" x="772.0" y="142.0" text-anchor="start">1069/1622  65.9%</text>
+<text class="lbl" x="20.0" y="173.0" text-anchor="start">mksh check.t  (583 cases)</text>
+<rect x="210.0" y="185.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="185.0" width="277.5" height="15.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<text class="lbl" x="200.0" y="197.0" text-anchor="end">bash</text>
+<text class="val" x="772.0" y="197.0" text-anchor="start">292/583  50.1%</text>
+<rect x="210.0" y="206.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="206.0" width="205.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="lbl" x="200.0" y="218.0" text-anchor="end">dash</text>
+<text class="val" x="772.0" y="218.0" text-anchor="start">216/583  37.0%</text>
+<rect x="210.0" y="227.0" width="554.0" height="15.0" rx="2" class="card" opacity="1.00"/>
+<rect x="210.0" y="227.0" width="199.6" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="lbl" x="200.0" y="239.0" text-anchor="end">hellish</text>
+<text class="val" x="772.0" y="239.0" text-anchor="start">210/583  36.0%</text>
+<text class="muted" x="20.0" y="302.0" text-anchor="start">hellish is scored conservatively: the `ok` bucket needs a per-shell annotation in the spec file, which exists for bash/dash and cannot exist for hellish.</text>
+<text class="muted" x="20.0" y="320.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
+</svg>
