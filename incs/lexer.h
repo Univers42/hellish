@@ -54,6 +54,29 @@ static inline t_token	pop_tok(t_deque_tok *d)
 }
 
 char		*tokenizer(char *str, t_deque_tok *ret);
+
+/* Fixed-length keyword compare for the hot lexer/parser paths. ft_strncmp is a
+   non-inlined libft function whose body calls __builtin_strncmp with a RUNTIME
+   n -- which GCC lowers to libc's AVX2 strncmp, so comparing a 2-5 byte keyword
+   pays a call into a routine tuned for long strings. Keyword matching is ~20%
+   of parse50k instructions purely from that overhead. Here n and kw are always
+   compile-time constants at the call site, so GCC unrolls this to a couple of
+   byte loads + compares, fully inlined, no call. Callers length-gate first, so
+   reading n bytes of s is in bounds. */
+static inline bool	kw_eq(const char *s, const char *kw, int n)
+{
+	int	i;
+
+	i = 0;
+	while (i < n)
+	{
+		if (s[i] != kw[i])
+			return (false);
+		i++;
+	}
+	return (true);
+}
+
 bool		skip_noise(char **str);
 char		*tokenize_step(char **str, t_deque_tok *ret, int *in_db);
 char		*lex_line(char *base, char **str, t_deque_tok *ret, int *in_db);
