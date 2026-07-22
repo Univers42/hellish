@@ -365,6 +365,108 @@ this session. The remaining gaps are the documented low-frequency tail.
     arrays? `[[ =~ ]]` regex? printf %(fmt)T? job specs %+/%-? RANDOM/
     SECONDS? set -o pipefail — check present). File findings here.
 
+## Pull-lexer — FULL PLAN for a future session (deferred 2026-07-22)
+
+Branch `perf/pull-lexer` (off develop; carries the 8B deque token). Goal: stop
+materialising the whole file's token deque up front. Even after the 8-byte
+token, a 50k-line parse holds ~310k slots × 8B ≈ **2.5MB** resident that a
+pull-lexer would cut to one range's worth (a few KB). parse50k would go
+~11.9 → ~9.5MB.
+
+**THE DECISIVE CONSTRAINT (why this was deferred, read before starting):** the
+deque's whole-file materialisation is COUPLED to the whole-file *parse*. To lex
+lazily AND stay CPU-neutral you must ALSO make the parser incremental. A simpler
+"re-lex + re-parse each range as it accumulates line-by-line" driver works but
+re-does O(n²) parse work inside every multi-line construct — and parse50k is
+*all* multi-line function bodies, so that is a ~7–14× parse-CPU regression,
+which violates the project's hard "faster than bash" requirement. So a correct
+pull-lexer is effectively a pull-*parser* too: a multi-week, load-bearing
+rewrite. Do NOT ship the simple CPU-regressing version.
+
+**Foundation already built on the branch:** `src/lexer/tokenizer2.c` `lex_line`
+— a resumable single-logical-line lexer (stops after a top-level newline,
+appends to the deque WITHOUT clearing or pushing TT_END, offsets stay relative
+to the whole `base`). `skip_noise`/`tokenize_step` were un-static'd in
+tokenizer.c and declared in lexer.h. It compiles clean, suite green, but is
+NOT wired (dead until the driver exists). Whole-file `tokenizer()` unchanged.
+
+**The exact seam to convert** (verified via architecture map):
+- PRIMARY: `update_prompt` — `src/infrastructure/input.c:92`/`:97` calls
+  `tokenizer(alias_exp.ctx, tt)` over the ENTIRE buffer on the completeness pass;
+  the final NULL-returning call leaves the whole-file deque that
+  `try_parse_tokens` → `stream_try` then consumes. This is the materialisation.
+- The streaming driver `stream_try` — `src/infrastructure/input_stream.c:69`
+  already parses one range at a time (`parse_tokens_range`) but from a
+  PRE-FILLED whole-file deque; it must instead REFILL `tt` per range via
+  `lex_line` before each `parse_tokens_range`.
+- Range boundary is a PARSER decision, not a lexer one: top-level `TT_NEWLINE`
+  consumed as a list operator with `parser->stream` set —
+  `src/parsing/simple_list.c:52-53` (`stream_more=true`). A whole `if…fi` /
+  `while…done` / `{…}` spanning many newlines is ONE range (compound_list has no
+  stream boundary check), so the lexer alone cannot find a range end without
+  tracking keyword nesting (fragile: command-position `echo done` vs `done`).
+
+**Design that avoids the O(n²) trap (parser-driven continuation):**
+1. Drop the whole-buffer completeness tokenize in `update_prompt` for the
+   stream-eligible case (preloaded + ring drained — exactly `stream_eligible`,
+   input_stream.c:32). Completeness then falls out of per-range parsing hitting
+   EOF, like bash: no up-front whole-file scan.
+2. `stream_try` loop: `lex_line` the next logical line(s) into `tt` (append,
+   keep `base = alias_exp.ctx` constant so offsets stay coherent), run
+   `parse_tokens_range`. On RES_OK for a top-level range → execute, CLEAR the
+   deque, advance. On RES_GETMOREINPUT with input remaining → the construct
+   spans more lines: **append the next line's tokens and RESUME the parse WITHOUT
+   re-lexing/re-parsing from scratch** — this is the hard part and needs the
+   parser to (a) distinguish soft-EOF (more tokens coming) from hard-EOF (input
+   exhausted), and (b) not destructively consume until the range is complete, or
+   be re-entrant on the accumulated deque. On hard-EOF mid-construct → syntax
+   error (`stream_finish` already prints bash's "unexpected end of file").
+
+**Correctness mechanisms that MUST keep working (each verified):**
+- **Completeness/continuation**: `tokenizer` returns a continuation prompt on
+  unterminated lexeme; `looking_for` (lexer.h:33). Per-range must still detect
+  an unterminated quote/construct whose range boundary sits inside it.
+- **`base`+offset coherence** (8B token): every slot's `off` is relative to
+  `base`; `ltok2tok(l, base)` is called at PARSE time, so `base` (==
+  `alias_exp.ctx`, kept whole and alive) must still point at the buffer when the
+  range parses. Per-range materialisation is fine because base never changes.
+- **Heredocs**: KEEP EXCLUDED initially. `stream_eligible` returns false when
+  `state->cycle_has_hd` (input_stream.c:34); `split_heredocs` (extract2.c:104)
+  and `gather_range_heredocs` (execute_simple_list.c:92) assume the whole
+  buffer. Incremental `<<` body extraction is a separate follow-up.
+- **Failure replay** (`try_replay_exact` rl_helpers2.c:26): already BYPASSED on
+  the stream path (ranges pre-execute). Keep it disabled while streaming; it
+  rewinds `rl.buff` cursor by `state->input.len` and assumes one-batch-per-cycle.
+- **$LINENO** (`tok_lineno`/`note_cmd_lineno` exec_lineno.c:47/90): maps a
+  token pointer to a line via `nl_count(base, tok-base)` with `base =
+  alias_exp.ctx` and `cycle_line0`. Keep `alias_exp` WHOLE (don't window it) so
+  the offset→line count stays correct across ranges.
+
+**Also note (bonus targets the map surfaced):** the whole file sits in `rl.buff`
+(the ring, ~1.8MB) AND is mirrored into `state->input` (~1.8MB) per batch, on
+top of the deque — so there are ~3 whole-file copies. For the stream path
+(replay bypassed, ring drained) `rl.buff` could potentially be freed/shrunk
+after the batch is consumed for another ~1.8MB — but the cursor/replay coupling
+needs care. This is a smaller, orthogonal lever to the deque one.
+
+**Staged steps for the future session (each gated on 3016 tests + verify_alloc
+both heaps + conformance Oils/mksh unchanged):**
+1. [done] `lex_line` resumable primitive + un-static helpers.
+2. Make `parse_tokens_range`/top-level `parse_simple_list` re-entrant: accept an
+   already-partially-consumed deque and a "soft-EOF vs hard-EOF" signal, so
+   appending tokens and re-invoking continues rather than restarts. Prove with a
+   unit harness that feeding tokens in chunks yields the SAME AST as one-shot.
+3. Wire `stream_try` to refill via `lex_line` per range (non-heredoc only);
+   drop the whole-buffer completeness tokenize in `update_prompt` for
+   stream-eligible cycles. Measure RSS (target ~9.5MB) AND parse50k user-CPU
+   (must NOT regress vs the 8B-token baseline ~53ms — if it does, the driver is
+   re-doing work; fix before landing).
+4. Only then consider heredoc-cycle streaming and the `rl.buff` drain.
+
+Rollback: `perf/pull-lexer` is isolated; if step 3 regresses CPU, revert to the
+8B-token baseline (already merged to develop) — that state beats bash and is the
+safe stopping point.
+
 ## Done (continued 6) — the parse-speed session (2026-07-21)
 
 - [x] **parse50k 221ms → 72ms** (bash 60ms same load — ratio 3.2× → 1.21×),
