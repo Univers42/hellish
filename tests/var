@@ -78,3 +78,9 @@ set -- ""; echo ${@:=x}; echo after
 set -- "" ""; echo x${*?m}x; echo after
 set -- a b; echo ${*:-M}; echo "${*:-M}"; IFS=; echo "${*:-M}"
 set -- a b; IFS=; printf "[%s]" "${@-M}"; echo
+foo=1234; echo ${foo%'2'*} "${foo%'2'*}" ${foo%2'*'} "${foo%2'*'}"
+foo=1234; echo ${foo#'1'*} ${foo#1'*'} ${foo##'1'*}
+v='a*b'; echo ${v%'*b'} ${v%*b} ${v#'a*'}
+v='a*b'; echo ${v/'*'/X} ${v//'*'/X}
+v=abc; echo ${v%"c"} ${v%"*"} ${v#"a"}
+v='x?y'; echo ${v%'?y'} ${v%?y}

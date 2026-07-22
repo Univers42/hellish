@@ -103,6 +103,12 @@ bool	pat_match_pub(const char *p, const char *s)
 {
 	if (*p == '\0')
 		return (*s == '\0');
+	if (*p == '\\' && p[1] != '\0')
+	{
+		if (p[1] == *s && *s != '\0')
+			return (pat_match_pub(p + 2, s + 1));
+		return (false);
+	}
 	if (*p == '*')
 	{
 		while (*p == '*')
