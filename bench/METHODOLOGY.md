@@ -20,8 +20,20 @@ each run so mid-run relinks can't swap the binary underneath the bench.
 
 - **Tool**: hyperfine 1.19 with `-N` (no intermediary shell — commands are
   exec'd directly).  The only wrappers are `taskset` (identical for every
-  shell) and, in the configure dimension only, `env` to set `CONFIG_SHELL`
-  (also identical for every shell).  Neither is a shell.
+  shell), `timeout` as a hang guard (likewise identical), and, in the
+  configure dimension only, `env` to set `CONFIG_SHELL` (also identical for
+  every shell).  None of them is a shell.
+- **`timeout` must be GNU coreutils.**  This is not pedantry: uutils
+  coreutils' `timeout` — the Rust reimplementation shipping as
+  `/usr/bin/timeout` on an increasing number of distros — reaps its child on
+  a **100 ms polling grid**.  That adds up to 100 ms to every measured
+  command *and rounds the total up to the next 100 ms bucket*, so
+  `dash -c true` measures 103 ms instead of 0.5 ms and every sub-second
+  dimension collapses into two or three indistinguishable buckets.  The
+  ratios it produces are rounding artifacts, not measurements.  `run.sh`
+  therefore probes for a binary whose `--version` says *GNU coreutils*
+  (often installed alongside as `gnutimeout`) and warns loudly if it has to
+  fall back.  Measured cost: GNU ~1 ms, uutils ~103 ms.
 - **Pinning**: every measured process runs under `taskset -c 2`
   (`BENCH_CPU` to override) to kill core-migration noise.
 - **Warmup/runs**: `--warmup 10 --min-runs 30` for dimensions a–d.
@@ -61,6 +73,27 @@ e. **configure** — GNU hello 2.12.1 `./configure --quiet` with
    `CONFIG_SHELL` pointed at the shell under test, in a scratch dir wiped
    between runs (`--prepare`, unmeasured).  The classic real-world shell
    torture: thousands of forks, case statements, string ops.
+f. **rss** — peak resident memory for the same workload scripts
+   (`lib/run_rss.sh`), so the speed dimensions have a cost counterpart.
+
+### Memory (peak RSS)
+
+- **Tool**: GNU `time -f %M`, i.e. the kernel's own `ru_maxrss` high-water
+  mark.  Not `/proc` polling (a sampler races a short-lived process and
+  misses the spike it is looking for), and deliberately **not** a python
+  `fork()` + `exec()` harness: `ru_maxrss` is a high-water mark over the
+  whole process lifetime, so a python parent donates its ~10 MB image to
+  every child's peak before `exec()` replaces it, and all three shells read
+  back an identical ~10 MB.  GNU `time` is a 27 KB binary, so its own
+  footprint is noise.
+- **Floor, disclosed**: an exec'd `/bin/true` already costs ~1.5–2.2 MB of
+  mapped libc.  These numbers are "cost to exist and run the job" — the
+  quantity a user actually pays — not heap usage.  The floor is measured
+  each run and printed on the chart so nobody reads a 2 MB bar as 2 MB of
+  shell.
+- The pipeline dimension necessarily includes the `cat`/`wc` children, since
+  `ru_maxrss` covers waited-for descendants.  That is the real cost of
+  running a pipeline, and it is the same for every shell.
 
 ## Conformance
 

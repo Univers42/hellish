@@ -30,34 +30,8 @@ int			setup_output_buffer(t_shell *state, int *bak);
 void		flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
-
-/* Read a whole file into one freshly-allocated, NUL-terminated string. We grow
-   a t_string in 4 KB gulps instead of stat()-ing the size up front -- simpler,
-   and it also works on pipes/things that have no real size. That trailing '\0'
-   is what lets the rest of the shell treat the result like any C string. NULL
-   if the file will not even open. */
-static char	*read_file(const char *path)
-{
-	char		buf[4096];
-	t_string	content;
-	int			fd;
-	ssize_t		n;
-
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		return (NULL);
-	vec_init(&content);
-	content.elem_size = 1;
-	n = read(fd, buf, sizeof(buf));
-	while (n > 0)
-	{
-		vec_push_nstr(&content, buf, n);
-		n = read(fd, buf, sizeof(buf));
-	}
-	close(fd);
-	vec_push(&content, &(char){0});
-	return ((char *)content.ctx);
-}
+char		*read_file(const char *path);
+void		source_profile(t_shell *state);
 
 /* Interactive startup only: source the user's ~/.hellishrc (aliases, exports,
    functions, set-options, prompt tweaks) right in this shell -- our .bashrc
@@ -89,9 +63,12 @@ static void	source_hellishrc(t_shell *state)
 
 /* Entry point. A login shell is started with argv[0] beginning with '-' (the
    old getty convention -- "-bash", "-hellish"); we strip that dash so $0 looks
-   normal everywhere else. Notice there is no explicit return: off() already
-   forwards the last command's status as our exit code, so just falling off the
-   end of main() with that set is exactly the behaviour we want. */
+   normal everywhere else, but we remember it: the flag has to be raised AFTER
+   on() has parsed argv, or cli parsing would clear what we just set, and it is
+   OR-ed in so an explicit --login still counts. Notice there is no explicit
+   return: off() already forwards the last command's status as our exit code,
+   so just falling off the end of main() with that set is exactly the
+   behaviour we want. */
 int	main(int argc, char **argv, char **envp)
 {
 	t_shell	state;
@@ -103,6 +80,9 @@ int	main(int argc, char **argv, char **envp)
 	(void)argc;
 	setlocale(LC_ALL, "");
 	on(&state, argv, envp);
+	if (is_login_shell)
+		state.option_flags |= OPT_FLAG_LOGIN;
+	source_profile(&state);
 	source_hellishrc(&state);
 	show_welcome(&state);
 	maybe_spawn_update_check(&state);

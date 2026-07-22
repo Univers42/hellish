@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="234" viewBox="0 0 880 234" role="img" aria-label="Parsing — lexer + parser throughput">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="234" rx="8"/>
+<text class="title" x="20" y="30">Parsing — lexer + parser throughput</text>
+<text class="sub" x="20" y="50">A 50k-line script under `set -n`: fully lexed and parsed, nothing executed. Lower is better.</text>
+<defs><pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#000" opacity="0.001"/><line x1="0" y1="0" x2="0" y2="6" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"/></pattern></defs>
+<rect x="20.0" y="66.0" width="840.0" height="24.0" rx="5" class="warnbox" opacity="1.00"/>
+<text class="warn" x="30.0" y="82.0" text-anchor="start">PROVISIONAL — CPU governor was &quot;powersave&quot;, not &quot;performance&quot;. Ratios hold; absolute values are inflated.</text>
+<rect x="20.0" y="95.0" width="11.0" height="11.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="muted" x="37.0" y="104.0" text-anchor="start">hellish</text>
+<rect x="92.4" y="95.0" width="11.0" height="11.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<text class="muted" x="109.4" y="104.0" text-anchor="start">bash</text>
+<rect x="143.2" y="95.0" width="11.0" height="11.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="muted" x="160.2" y="104.0" text-anchor="start">dash</text>
+<line class="grid" x1="210.0" y1="124.0" x2="210.0" y2="194.0"/>
+<text class="muted" x="210.0" y="208.0" text-anchor="middle">0 us</text>
+<line class="grid" x1="348.5" y1="124.0" x2="348.5" y2="194.0"/>
+<text class="muted" x="348.5" y="208.0" text-anchor="middle">50.8 ms</text>
+<line class="grid" x1="487.0" y1="124.0" x2="487.0" y2="194.0"/>
+<text class="muted" x="487.0" y="208.0" text-anchor="middle">101.5 ms</text>
+<line class="grid" x1="625.5" y1="124.0" x2="625.5" y2="194.0"/>
+<text class="muted" x="625.5" y="208.0" text-anchor="middle">152.3 ms</text>
+<line class="grid" x1="764.0" y1="124.0" x2="764.0" y2="194.0"/>
+<text class="muted" x="764.0" y="208.0" text-anchor="middle">203.1 ms</text>
+<text class="lbl" x="200.0" y="154.0" text-anchor="end">Parse 50k lines</text>
+<text class="muted" x="200.0" y="167.0" text-anchor="end">lex+parse a 50k-line script under `set -n` (</text>
+<rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="771.0" y="138.0" text-anchor="start">203.1 ms</text>
+<rect x="210.0" y="144.0" width="280.9" height="15.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<rect x="210.0" y="144.0" width="280.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="497.9" y="156.0" text-anchor="start">103.0 ms</text>
+<rect x="210.0" y="162.0" width="281.0" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<rect x="210.0" y="162.0" width="281.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="498.0" y="174.0" text-anchor="start">103.0 ms</text>
+<text class="warn" x="858.0" y="154.0" text-anchor="end">noisy</text>
+<line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
+<line class="grid" x1="210.0" y1="0.0" x2="210.0" y2="0.0"/>
+<text class="muted" x="20.0" y="222.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
+</svg>
