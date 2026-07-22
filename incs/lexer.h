@@ -54,6 +54,9 @@ static inline t_token	pop_tok(t_deque_tok *d)
 }
 
 char		*tokenizer(char *str, t_deque_tok *ret);
+bool		skip_noise(char **str);
+char		*tokenize_step(char **str, t_deque_tok *ret, int *in_db);
+char		*lex_line(char *base, char **str, t_deque_tok *ret, int *in_db);
 int			advance_dquoted(char **str);
 int			advance_squoted(char **str);
 int			advance_ansic(char **str);
