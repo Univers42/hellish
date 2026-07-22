@@ -46,26 +46,24 @@
 <line class="grid" x1="210.0" y1="124.0" x2="210.0" y2="194.0"/>
 <text class="muted" x="210.0" y="208.0" text-anchor="middle">0 us</text>
 <line class="grid" x1="348.5" y1="124.0" x2="348.5" y2="194.0"/>
-<text class="muted" x="348.5" y="208.0" text-anchor="middle">50.8 ms</text>
+<text class="muted" x="348.5" y="208.0" text-anchor="middle">17.3 ms</text>
 <line class="grid" x1="487.0" y1="124.0" x2="487.0" y2="194.0"/>
-<text class="muted" x="487.0" y="208.0" text-anchor="middle">101.5 ms</text>
+<text class="muted" x="487.0" y="208.0" text-anchor="middle">34.7 ms</text>
 <line class="grid" x1="625.5" y1="124.0" x2="625.5" y2="194.0"/>
-<text class="muted" x="625.5" y="208.0" text-anchor="middle">152.3 ms</text>
+<text class="muted" x="625.5" y="208.0" text-anchor="middle">52.0 ms</text>
 <line class="grid" x1="764.0" y1="124.0" x2="764.0" y2="194.0"/>
-<text class="muted" x="764.0" y="208.0" text-anchor="middle">203.1 ms</text>
+<text class="muted" x="764.0" y="208.0" text-anchor="middle">69.3 ms</text>
 <text class="lbl" x="200.0" y="154.0" text-anchor="end">Parse 50k lines</text>
-<text class="muted" x="200.0" y="167.0" text-anchor="end">lex+parse a 50k-line script under `set -n` (</text>
-<rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="771.0" y="138.0" text-anchor="start">203.1 ms</text>
-<rect x="210.0" y="144.0" width="280.9" height="15.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
-<rect x="210.0" y="144.0" width="280.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="497.9" y="156.0" text-anchor="start">103.0 ms</text>
-<rect x="210.0" y="162.0" width="281.0" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
-<rect x="210.0" y="162.0" width="281.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
-<text class="val" x="498.0" y="174.0" text-anchor="start">103.0 ms</text>
+<text class="muted" x="200.0" y="167.0" text-anchor="end">lex+parse a 50k-line script under `set -n`…</text>
+<rect x="210.0" y="126.0" width="501.5" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<rect x="210.0" y="126.0" width="501.5" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="718.5" y="138.0" text-anchor="start">62.7 ms</text>
+<rect x="210.0" y="144.0" width="554.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<rect x="210.0" y="144.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="771.0" y="156.0" text-anchor="start">69.3 ms</text>
+<rect x="210.0" y="162.0" width="231.0" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<rect x="210.0" y="162.0" width="231.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="448.0" y="174.0" text-anchor="start">28.9 ms</text>
 <text class="warn" x="858.0" y="154.0" text-anchor="end">noisy</text>
-<line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
-<line class="grid" x1="210.0" y1="0.0" x2="210.0" y2="0.0"/>
 <text class="muted" x="20.0" y="222.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave</text>
 </svg>

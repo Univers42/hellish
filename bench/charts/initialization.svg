@@ -46,22 +46,24 @@
 <line class="grid" x1="210.0" y1="124.0" x2="210.0" y2="194.0"/>
 <text class="muted" x="210.0" y="208.0" text-anchor="middle">0 us</text>
 <line class="grid" x1="348.5" y1="124.0" x2="348.5" y2="194.0"/>
-<text class="muted" x="348.5" y="208.0" text-anchor="middle">25.8 ms</text>
+<text class="muted" x="348.5" y="208.0" text-anchor="middle">715 us</text>
 <line class="grid" x1="487.0" y1="124.0" x2="487.0" y2="194.0"/>
-<text class="muted" x="487.0" y="208.0" text-anchor="middle">51.5 ms</text>
+<text class="muted" x="487.0" y="208.0" text-anchor="middle">1.4 ms</text>
 <line class="grid" x1="625.5" y1="124.0" x2="625.5" y2="194.0"/>
-<text class="muted" x="625.5" y="208.0" text-anchor="middle">77.3 ms</text>
+<text class="muted" x="625.5" y="208.0" text-anchor="middle">2.1 ms</text>
 <line class="grid" x1="764.0" y1="124.0" x2="764.0" y2="194.0"/>
-<text class="muted" x="764.0" y="208.0" text-anchor="middle">103.0 ms</text>
+<text class="muted" x="764.0" y="208.0" text-anchor="middle">2.9 ms</text>
 <text class="lbl" x="200.0" y="154.0" text-anchor="end">Startup</text>
 <text class="muted" x="200.0" y="167.0" text-anchor="end">fork+exec a shell, run `true`, exit</text>
 <rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="771.0" y="138.0" text-anchor="start">103.0 ms</text>
-<rect x="210.0" y="144.0" width="553.5" height="15.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
-<text class="val" x="770.5" y="156.0" text-anchor="start">102.9 ms</text>
-<rect x="210.0" y="162.0" width="553.5" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
-<text class="val" x="770.5" y="174.0" text-anchor="start">102.9 ms</text>
-<line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
-<line class="grid" x1="210.0" y1="0.0" x2="210.0" y2="0.0"/>
-<text class="muted" x="20.0" y="222.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave  ·  30 runs</text>
+<rect x="210.0" y="126.0" width="554.0" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="771.0" y="138.0" text-anchor="start">2.9 ms</text>
+<rect x="210.0" y="144.0" width="454.5" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<rect x="210.0" y="144.0" width="454.5" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="671.5" y="156.0" text-anchor="start">2.3 ms</text>
+<rect x="210.0" y="162.0" width="372.9" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<rect x="210.0" y="162.0" width="372.9" height="15.0" rx="2" fill="url(#hatch)" opacity="1.00"/>
+<text class="val" x="589.9" y="174.0" text-anchor="start">1.9 ms</text>
+<text class="warn" x="858.0" y="154.0" text-anchor="end">noisy</text>
+<text class="muted" x="20.0" y="222.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave  ·  1200 runs</text>
 </svg>
