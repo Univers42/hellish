@@ -21,7 +21,7 @@
 #include "lexer.h"
 #include "redir.h"
 
-char	*hd_delim(t_token *t);
+char	*hd_delim(t_ltoken *t);
 void	skip_one_body(const char **p, size_t *line, t_hd *s);
 
 /* Record one heredoc spec (line + literal delimiter) from a `<<word` pair. */
@@ -30,11 +30,11 @@ static void	push_spec(t_vec *v, t_deque_tok *tt, size_t i, size_t line)
 	t_hd	sp;
 
 	sp.dash = false;
-	if (((t_token *)deque_idx(&tt->deqtok, i))->len >= 3
-		&& ((t_token *)deque_idx(&tt->deqtok, i))->start[2] == '-')
+	if (((t_ltoken *)deque_idx(&tt->deqtok, i))->len >= 3
+		&& ((t_ltoken *)deque_idx(&tt->deqtok, i))->start[2] == '-')
 		sp.dash = true;
 	sp.line = line;
-	sp.delim = hd_delim((t_token *)deque_idx(&tt->deqtok, i + 1));
+	sp.delim = hd_delim((t_ltoken *)deque_idx(&tt->deqtok, i + 1));
 	vec_push(v, &sp);
 }
 
@@ -51,13 +51,13 @@ int	specs_on_line(const char *ls, size_t len, size_t line, t_vec *v)
 	if (!copy)
 		return (0);
 	tt = (t_deque_tok){0};
-	deque_init(&tt.deqtok, 16, sizeof(t_token));
+	deque_init(&tt.deqtok, 16, sizeof(t_ltoken));
 	tokenizer(copy, &tt);
 	i = 0;
 	found = 0;
 	while (i + 1 < tt.deqtok.len)
 	{
-		if (((t_token *)deque_idx(&tt.deqtok, i))->tt == TT_HEREDOC)
+		if (((t_ltoken *)deque_idx(&tt.deqtok, i))->tt == TT_HEREDOC)
 			(push_spec(v, &tt, i, line), found++);
 		i++;
 	}

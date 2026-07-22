@@ -50,13 +50,13 @@ static int	arith_span_chars(const char *s, int *end)
    consumed; the parser resumes at the first token past the closing "))". */
 static void	arith_resync_tokens(t_deque_tok *tokens, const char *end)
 {
-	t_token	*peek;
+	t_ltoken	*peek;
 
-	peek = (t_token *)deque_peek(&tokens->deqtok);
+	peek = (t_ltoken *)deque_peek(&tokens->deqtok);
 	while (peek->tt != TT_END && peek->start < end)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
-		peek = (t_token *)deque_peek(&tokens->deqtok);
+		peek = (t_ltoken *)deque_peek(&tokens->deqtok);
 	}
 }
 
@@ -71,7 +71,7 @@ t_token	collect_arith_span(t_parser *parser, t_deque_tok *tokens)
 	int		end;
 	int		r;
 
-	open = *(t_token *)deque_pop_start(&tokens->deqtok);
+	open = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	span = create_token(open.start, 0, TT_WORD);
 	r = arith_span_chars(open.start, &end);
 	if (r == 1)

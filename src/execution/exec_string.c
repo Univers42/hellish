@@ -30,11 +30,11 @@ static void	skip_delimiters(t_deque_tok *tt)
 {
 	t_tt	t;
 
-	t = ((t_token *)deque_peek(&tt->deqtok))->tt;
+	t = ((t_ltoken *)deque_peek(&tt->deqtok))->tt;
 	while (t == TT_NEWLINE || t == TT_SEMICOLON)
 	{
 		(void)deque_pop_start(&tt->deqtok);
-		t = ((t_token *)deque_peek(&tt->deqtok))->tt;
+		t = ((t_ltoken *)deque_peek(&tt->deqtok))->tt;
 	}
 }
 
@@ -80,13 +80,13 @@ static int	exec_string_inner(t_shell *state, char *str)
 	bool		stop;
 
 	tt = (t_deque_tok){0};
-	deque_init(&tt.deqtok, 100, sizeof(t_token));
+	deque_init(&tt.deqtok, 100, sizeof(t_ltoken));
 	tokenizer(str, &tt);
 	reclassify_keywords(&tt);
 	status = 0;
 	stop = false;
 	skip_delimiters(&tt);
-	while (!stop && ((t_token *)deque_peek(&tt.deqtok))->tt != TT_END)
+	while (!stop && ((t_ltoken *)deque_peek(&tt.deqtok))->tt != TT_END)
 		status = run_one_stmt(state, &tt, &stop);
 	state->func_return = 0;
 	xfree(tt.deqtok.buff);

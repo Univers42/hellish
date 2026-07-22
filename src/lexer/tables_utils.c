@@ -23,7 +23,7 @@ void	compute_columns(t_deque_tok *tokens, size_t *w_name,
 {
 	size_t	i;
 	size_t	n;
-	t_token	*t;
+	t_token	t;
 	size_t	tmp;
 
 	n = tokens->deqtok.len;
@@ -33,16 +33,16 @@ void	compute_columns(t_deque_tok *tokens, size_t *w_name,
 	i = -1;
 	while (++i < n)
 	{
-		t = (t_token *)deque_idx(&tokens->deqtok, i);
-		tmp = ft_strlen(tt_to_str(t->tt));
+		t = ltok2tok(*(t_ltoken *)deque_idx(&tokens->deqtok, i));
+		tmp = ft_strlen(tt_to_str(t.tt));
 		if (tmp > *w_name)
 			*w_name = tmp;
 		tmp = 0;
-		if (t->len > 0)
-			tmp = visible_lexeme_len(t) + 2;
+		if (t.len > 0)
+			tmp = visible_lexeme_len(&t) + 2;
 		if (tmp > *w_lexeme)
 			*w_lexeme = tmp;
-		tmp = num_digits((size_t)t->len);
+		tmp = num_digits((size_t)t.len);
 		if (tmp > *w_len)
 			*w_len = tmp;
 	}

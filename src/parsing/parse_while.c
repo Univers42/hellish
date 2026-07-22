@@ -23,7 +23,7 @@ static bool	expect_kw(t_shell *state, t_parser *parser,
 
 	(void)state;
 	skip_newlines(tokens);
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_END)
 	{
 		parser->res = RES_GETMOREINPUT;

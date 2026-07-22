@@ -19,15 +19,15 @@
    compound-list) is NOT checked here -- parse_func_body handles that. */
 bool	is_function_def(t_deque_tok *tokens)
 {
-	t_token	*t0;
-	t_token	*t1;
-	t_token	*t2;
+	t_ltoken	*t0;
+	t_ltoken	*t1;
+	t_ltoken	*t2;
 
 	if (tokens->deqtok.len < 3)
 		return (false);
-	t0 = (t_token *)deque_idx(&tokens->deqtok, 0);
-	t1 = (t_token *)deque_idx(&tokens->deqtok, 1);
-	t2 = (t_token *)deque_idx(&tokens->deqtok, 2);
+	t0 = (t_ltoken *)deque_idx(&tokens->deqtok, 0);
+	t1 = (t_ltoken *)deque_idx(&tokens->deqtok, 1);
+	t2 = (t_ltoken *)deque_idx(&tokens->deqtok, 2);
 	if (t0->tt == TT_WORD && t0->len > 0 && t0->start[t0->len - 1] == '=')
 		return (false);
 	return (t0->tt == TT_WORD
@@ -46,7 +46,7 @@ static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 	t_ast_node	body;
 	t_tt		next;
 
-	next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_LBRACE)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
@@ -54,7 +54,7 @@ static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 		if (parser->res != RES_OK)
 			return (body);
 		skip_newlines(tokens);
-		next = (*(t_token *)deque_peek(&tokens->deqtok)).tt;
+		next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 		if (next == TT_RBRACE)
 			(void)deque_pop_start(&tokens->deqtok);
 		else if (next == TT_END)
@@ -79,11 +79,11 @@ t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 	t_token		name_tok;
 	t_ast_node	body;
 
-	name_tok = *(t_token *)deque_pop_start(&tokens->deqtok);
+	name_tok = ltok2tok(*(t_ltoken *)deque_pop_start(&tokens->deqtok));
 	(void)deque_pop_start(&tokens->deqtok);
 	(void)deque_pop_start(&tokens->deqtok);
 	skip_newlines(tokens);
-	if ((*(t_token *)deque_peek(&tokens->deqtok)).tt == TT_END)
+	if ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_END)
 	{
 		ret = create_node_tok(AST_FUNCTION_DEF, name_tok);
 		parser->res = RES_GETMOREINPUT;

@@ -37,7 +37,7 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	else
 		*prompt = ft_strdup("");
 	*tt = (t_deque_tok){0};
-	deque_init(&tt->deqtok, 100, sizeof(t_token));
+	deque_init(&tt->deqtok, 100, sizeof(t_ltoken));
 	tt->looking_for = 0;
 }
 

@@ -15,16 +15,16 @@
 /* Peek at the front of the token deque without consuming it. The alias `pk`
    is used throughout the case parser to keep the frequently repeated
    deque_peek expression short without introducing a macro. */
-t_token	*pk(t_deque_tok *t)
+t_ltoken	*pk(t_deque_tok *t)
 {
-	return ((t_token *)deque_peek(&t->deqtok));
+	return ((t_ltoken *)deque_peek(&t->deqtok));
 }
 
 /* True if the token is the word "in" -- used to detect the `case WORD in`
    separator. Like `in` in a for-loop, this is classified as TT_WORD by the
    lexer (it is only a keyword in specific positions), so we compare raw
    text rather than the token type. */
-bool	is_kw_in(t_token *tk)
+bool	is_kw_in(t_ltoken *tk)
 {
 	return (tk->tt == TT_WORD && tk->len == 2
 		&& ft_strncmp(tk->start, "in", 2) == 0);
