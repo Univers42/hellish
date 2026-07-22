@@ -304,6 +304,14 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Every libreadline entry point hellish uses, driven through a real pty. The
+# golden suite cannot reach ANY of it -- every category runs `hellish -c`,
+# which never enters the readline path -- so this is the only gate protecting
+# completion, history recall and vi/emacs switching. Required before touching
+# the readline linkage (see backlog: dlopen readline). tests/readline_paths_test.py
+readline-test: all
+	@python3 $(TEST_DIR)/readline_paths_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Prompt-animation vs paste regression (real pty): the idle repaint must
 # freeze whenever the cursor may have left the input's first screen row
 # (pasted newline, wrapped or multibyte input) instead of climbing a
@@ -365,5 +373,5 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test anim-test conformance perf rss charts cli-opts-test \
+	hist-test readline-test anim-test conformance perf rss charts cli-opts-test \
 	login-test geoman
