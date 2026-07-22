@@ -9,11 +9,11 @@ Scoring: pass-rate counts `pass` + `ok`.  `ok` requires a per-shell annotation i
 
 | shell | pass | ok | N-I | BUG | FAIL | timeout | total | pass-rate |
 |---|---|---|---|---|---|---|---|---|
-| **hellish --posix** | 1069 | 0 | 0 | 0 | 553 | 0 | 1622 | 65.91% |
+| **hellish --posix** | 1071 | 0 | 0 | 0 | 551 | 0 | 1622 | 66.03% |
 | bash --posix | 1311 | 70 | 30 | 36 | 175 | 0 | 1622 | 85.14% |
 | dash | 977 | 134 | 223 | 63 | 216 | 0 | 1622 | 68.50% |
 
-### Consensus divergences (hellish fails, bash AND dash pass): 159
+### Consensus divergences (hellish fails, bash AND dash pass): 157
 
 These are the real bugs — behaviour bash --posix and dash agree on that hellish gets wrong.
 
@@ -149,9 +149,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `var-num` case 4 [FAIL]: $0 with -i
 - `var-op-len` case 6 [FAIL]: Length of undefined variable with nounset
 - `var-op-strip` case 9 [FAIL]: Strip char class
-- `var-op-strip` case 17 [FAIL]: strip unquoted and quoted ?
 - `var-op-strip` case 18 [FAIL]: strip unquoted and quoted [a]
-- `var-op-strip` case 26 [FAIL]: Strip Right Brace (#702)
 - `var-op-test` case 3 [FAIL]: Unquoted with array as default value
 - `var-op-test` case 5 [FAIL]: Assign default with array
 - `var-sub` case 0 [FAIL]: Bad var sub
@@ -250,7 +248,7 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 | toysh-posix | 23 | 15 | 19 | 20 |
 | var-num | 7 | 4 | 7 | 7 |
 | var-op-len | 9 | 2 | 5 | 3 |
-| var-op-strip | 29 | 20 | 26 | 20 |
+| var-op-strip | 29 | 22 | 26 | 20 |
 | var-op-test | 37 | 22 | 35 | 20 |
 | var-sub | 6 | 5 | 5 | 6 |
 | var-sub-quote | 41 | 28 | 40 | 35 |
@@ -265,11 +263,11 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 
 | shell | pass | fail | total | pass-rate |
 |---|---|---|---|---|
-| **hellish --posix** | 210 | 373 | 583 | 36.02% |
+| **hellish --posix** | 218 | 365 | 583 | 37.39% |
 | bash --posix | 292 | 291 | 583 | 50.09% |
 | dash | 216 | 367 | 583 | 37.05% |
 
-### Consensus divergences on check.t: 44
+### Consensus divergences on check.t: 40
 
 - `check.t:IFS-arith-1`
 - `check.t:IFS-subst-3-arr`
@@ -311,7 +309,3 @@ These are the real bugs — behaviour bash --posix and dash agree on that hellis
 - `check.t:regression-12`
 - `check.t:regression-27`
 - `check.t:regression-32`
-- `check.t:single-quotes-in-brace-pattern`
-- `check.t:single-quotes-in-heredoc-braces`
-- `check.t:single-quotes-in-heredoc-nested-braces`
-- `check.t:single-quotes-in-nested-brace-pattern`
