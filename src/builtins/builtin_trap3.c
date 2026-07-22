@@ -102,9 +102,9 @@ void	reset_traps_child(t_shell *state)
 	xfree(state->traps[0]);
 	state->traps[0] = NULL;
 	i = 0;
-	while (++i < SH_NSIG)
+	while (++i < SH_NTRAP)
 	{
-		if (state->traps[i] && state->traps[i][0] != '\0')
+		if (i < SH_NSIG && state->traps[i] && state->traps[i][0] != '\0')
 			signal(i, SIG_DFL);
 		xfree(state->traps[i]);
 		state->traps[i] = NULL;

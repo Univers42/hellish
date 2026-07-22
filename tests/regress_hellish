@@ -193,3 +193,11 @@ ai2=([2]=x foo bar); echo "${ai2[0]:-e}|${ai2[2]}|${ai2[3]}|${ai2[4]}"
 declare -A cm=([x]=1); cm[y]=2; cm+=([z]=3); echo "${cm[x]}${cm[y]}${cm[z]}|${#cm[@]}"
 declare -A cp=([red]=1 [green]=2); declare -p cp
 declare -A cs=([k1]="v with space" [k2]=simple); echo "[${cs[k1]}][${cs[k2]}]"
+trap 'echo DBG' DEBUG; echo a; echo b
+f() { echo in-f; return 5; }; trap 'echo RET' RETURN; f; echo after=$?
+tf(){ trap 'echo lr' RETURN; echo body; }; tf
+trap 'echo E rc=$?' ERR; false; true; (exit 3); echo done
+trap 'echo E' ERR; if false; then :; fi; echo ok
+trap 'printf D' DEBUG; for i in 1 2; do echo $i; done
+trap 'printf D' DEBUG; case x in x) echo m;; esac; echo
+tg(){ trap 'echo g' RETURN; :; }; tg; th(){ echo h; }; th

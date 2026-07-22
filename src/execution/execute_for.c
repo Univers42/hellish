@@ -69,6 +69,7 @@ static t_execution_state	for_word_loop(t_shell *state,
 	state->loop_depth++;
 	while (i < words.len)
 	{
+		fire_debug_trap(state);
 		set_for_var(state, var_name, ((char **)words.ctx)[i]);
 		status = run_body(state, vec_idx(&node->children, wc));
 		if (handle_loop_ctl(state))
@@ -103,6 +104,7 @@ static t_execution_state	for_positional_loop(t_shell *state,
 	i = 0;
 	while (i < words.len)
 	{
+		fire_debug_trap(state);
 		set_for_var(state, var_name, ((char **)words.ctx)[i]);
 		i++;
 		status = run_body(state, vec_idx(&node->children, 0));

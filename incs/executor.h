@@ -74,6 +74,11 @@ t_string			word_to_hrdoc_string(t_ast_node node);
 void				set_cmd_status(t_shell *state, t_execution_state res);
 t_execution_state	res_status(int status);
 t_execution_state	res_pid(int pid);
+void				fire_debug_trap(t_shell *state);
+void				fire_err_trap(t_shell *state, int code);
+void				fire_return_trap(t_shell *state, int code);
+void				trap_save_reset(t_shell *state, char **save);
+void				trap_restore(t_shell *state, char **save);
 void				exe_res_set_status(t_execution_state *res);
 int					find_cmd_path(t_shell *state, char *cmd_name,
 						char **path_of_exe);
