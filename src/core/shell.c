@@ -154,8 +154,10 @@ static void	repl_shell(t_shell *state)
 		free_ast(&state->tree);
 		xfree(state->input.ctx);
 		state->input = (t_string){0};
-		xfree(state->alias_exp.ctx);
+		if (state->alias_exp_owned)
+			xfree(state->alias_exp.ctx);
 		state->alias_exp = (t_string){0};
+		state->alias_exp_owned = false;
 		xfree(state->hd_src);
 		state->hd_src = NULL;
 		state->hd_pos = 0;

@@ -112,16 +112,30 @@ char	*alias_scan_line(t_hash *aliases, const char *input)
 
 /* Refresh state->alias_exp: the tokenizer parses this expanded copy while
    state->input keeps the user's original bytes for history and errors.
-   With no aliases defined the scan degenerates to a straight copy. */
+   With no aliases defined the expansion is a no-op, so instead of strdup'ing
+   the whole file we BORROW input.ctx (alias_exp_owned=false) -- the lexer
+   never mutates the buffer (tokens are slices) so input stays pristine, and
+   we save a full-file copy (~1.7MB on a 50k-line script). The previous
+   alias_exp is freed only when we owned it; a borrow is left for input's own
+   teardown. input.ctx moves under vec regrowth between reads, but this runs
+   after every read and re-borrows the current pointer. */
 void	alias_scan_update(t_shell *state)
 {
-	if (state->alias_exp.ctx)
+	if (state->alias_exp_owned && state->alias_exp.ctx)
 		xfree(state->alias_exp.ctx);
 	state->alias_exp = (t_string){0};
+	state->alias_exp_owned = false;
 	if (!state->input.ctx)
 		return ;
+	state->alias_exp.elem_size = 1;
+	if (alias_table_empty(&state->aliases))
+	{
+		state->alias_exp.ctx = state->input.ctx;
+		state->alias_exp.len = ft_strlen((char *)state->input.ctx);
+		return ;
+	}
 	state->alias_exp.ctx
 		= alias_scan_line(&state->aliases, (char *)state->input.ctx);
 	state->alias_exp.len = ft_strlen((char *)state->alias_exp.ctx);
-	state->alias_exp.elem_size = 1;
+	state->alias_exp_owned = true;
 }
