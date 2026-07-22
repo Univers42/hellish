@@ -104,7 +104,7 @@ void	on(t_shell *state, char **argv, char **envp)
 	vec_init(&state->rl.buff);
 	state->rl.buff.elem_size = 1;
 	state->rl.edit_mode = 1;
-	state->pid = xgetpid();
+	state->pid = ft_itoa((int)getpid());
 	state->ctx = ft_strdup(shell_basename(argv[0]));
 	state->dft_ctx = ft_strdup(shell_basename(argv[0]));
 	set_cmd_status(state, res_status(0));
