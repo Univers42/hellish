@@ -117,6 +117,72 @@ static void	scalar_append(t_shell *state, t_env *ret)
 	ret->value = joined;
 }
 
+/* Bare variable name in a key that may carry a trailing '+' (append) or
+   a '[sub]' element: everything up to the first of those. */
+static int	bare_name_len(const char *key)
+{
+	int	i;
+
+	i = 0;
+	while (key[i] && key[i] != '[' && key[i] != '+' && key[i] != '=')
+		i++;
+	return (i);
+}
+
+/* Integer attribute: replace the value with the arithmetic evaluation of
+   the RHS (n="3*4" -> "12"). For += the new value is old+rhs. */
+static void	apply_int_attr(t_shell *state, t_env *ret, int append)
+{
+	t_string	expr;
+	char		*old;
+	char		*res;
+
+	vec_init(&expr);
+	expr.elem_size = 1;
+	old = env_expand(state, ret->key);
+	if (append && old && *old)
+	{
+		vec_push_str(&expr, old);
+		vec_push_char(&expr, '+');
+	}
+	vec_push_str(&expr, ret->value);
+	vec_push_char(&expr, '\0');
+	res = arith_expand(state, (char *)expr.ctx, (int)expr.len - 1);
+	xfree(expr.ctx);
+	xfree(ret->value);
+	ret->value = (res ? res : ft_strdup("0"));
+}
+
+/* Resolve declare -n / -i attributes on a scalar assignment. A nameref
+   retargets the write to its target name (re-checked for int-ness);
+   an integer attribute arithmetic-evaluates the RHS. Array-element and
+   append+nameref combos fall through unchanged (v1). */
+static void	apply_var_attrs(t_shell *state, t_env *ret)
+{
+	int		nl;
+	int		append;
+	char	*tgt;
+	char	*suffix;
+
+	nl = bare_name_len(ret->key);
+	tgt = attr_target(state, ret->key, nl);
+	if (tgt && *tgt)
+	{
+		suffix = ft_strdup(ret->key + nl);
+		xfree(ret->key);
+		ret->key = ft_strjoin(tgt, suffix);
+		xfree(suffix);
+		nl = bare_name_len(ret->key);
+	}
+	if (attr_kind(state, ret->key, nl) != 'i' || ret->key[nl] == '[')
+		return ;
+	append = (ret->key[nl] == '+');
+	if (append)
+		ret->key[nl] = '\0';
+	if (ret->value)
+		apply_int_attr(state, ret, append);
+}
+
 /* Convert a VAR=value AST node into a t_env ready to be pushed into the
    environment.  The RHS (child [1]) is expanded with assignment semantics
    (keep-as-one, no glob, malloc allocator rather than slab) so the resulting
@@ -143,6 +209,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 		else
 			ret.value = ft_strdup("");
 	}
+	apply_var_attrs(state, &ret);
 	scalar_append(state, &ret);
 	subscript_assign(state, &ret);
 	return (xfree(args.ctx), ret);

@@ -180,3 +180,9 @@ a=hello; b=a; echo "${!b}"; p=NONEXISTENT; echo "[${!p}]"
 n=5; n+=3; echo $n
 s=hello; s+=world; echo $s
 x=; x+=abc; echo $x; unset y; y+=start; echo $y
+declare -i n=10; n+=5; echo $n
+declare -i m; m="3*4"; echo $m
+declare -i k=2+2; echo $k; k=8/2; echo $k
+declare -n p=q; p=viaref; echo "$q"
+declare -n a=b; b=1; a+=2; echo "$b"
+declare -n r=t; t=first; echo "$r"; r=second; echo "$t"
