@@ -117,6 +117,7 @@ t_execution_state	execute_case(t_shell *state, t_executable_node *exe)
 	size_t				i;
 
 	ft_assert(exe->node->children.len >= 1);
+	fire_debug_trap(state);
 	subj = expand_case_word(state, vec_idx(&exe->node->children, 0));
 	st = res_status(0);
 	i = 0;

@@ -79,7 +79,7 @@ static void	free_traps(t_shell *state)
 	int	i;
 
 	i = -1;
-	while (++i < SH_NSIG)
+	while (++i < SH_NTRAP)
 	{
 		xfree(state->traps[i]);
 		state->traps[i] = NULL;

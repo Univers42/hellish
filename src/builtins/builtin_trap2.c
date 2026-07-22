@@ -98,20 +98,20 @@ int	print_traps_for(t_shell *state, t_vec argv)
    exit_clean(). Frees any previous action string first to avoid leaks. */
 int	set_one_trap(t_shell *state, const char *action, int num)
 {
-	if (num < 0 || num >= SH_NSIG)
+	if (num < 0 || num >= SH_NTRAP)
 		return (1);
 	xfree(state->traps[num]);
 	state->traps[num] = NULL;
 	if (action[0] == '-')
 	{
-		if (num > 0)
+		if (num > 0 && num < SH_NSIG)
 			signal(num, SIG_DFL);
 		return (0);
 	}
 	state->traps[num] = ft_strdup(action);
-	if (num > 0 && action[0] == '\0')
+	if (num > 0 && num < SH_NSIG && action[0] == '\0')
 		signal(num, SIG_IGN);
-	else if (num > 0)
+	else if (num > 0 && num < SH_NSIG)
 		signal(num, trap_sighandler);
 	return (0);
 }
