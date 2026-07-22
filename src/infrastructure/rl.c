@@ -89,11 +89,18 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 /* Parent side of the fork: drain the pipe into the buffer and wait for the
    child. If the child was killed by a signal (e.g. SIGINT in readline),
    return 2 to propagate the interrupt; otherwise use the child's exit status
-   (0 = line, 1 = EOF). The waitpid loop retries on EINTR. */
+   (0 = line, 1 = EOF). The waitpid loop retries on EINTR.
+   The animation frames are single-shot: the fork that just happened gave
+   the child its own armed copy, so the parent's cells are disarmed here.
+   A continuation read (dquote> / heredoc> / loop body) forks again WITHOUT
+   a ps1_animated render in between -- the rows above its cursor are the
+   user's earlier input lines, and an armed hook would stamp the PS1 info
+   row over them once per tick. Only the next PS1 render re-arms. */
 int	attach_input_readline(t_rl *l, int pp[2], int pid)
 {
 	int	status;
 
+	anim_cells()->count = 0;
 	close(pp[1]);
 	vec_append_fd(pp[0], &l->buff);
 	buff_readline_update(l);

@@ -128,6 +128,25 @@ def main():
           re.search(b"\\r" + "✦MB_MARKER".encode() + b"\\r\\n",
                     s.raw) is not None)
 
+    # continuation prompt (PS2): the armed frames describe the PS1 block,
+    # but the rows above a dquote> cursor are the user's own input lines --
+    # the repaint must stay disarmed for the whole multiline read
+    # (<=1 tolerates one armed tick racing the accept of the first line)
+    s.frames_during(b'echo "', 0.3)
+    n = s.frames_during(b"\r", 0.7)
+    check("continuation read never repaints", n <= 1, "frames=%d" % n)
+    s.frames_during(b'L2"\r', 0.5)
+    check("multiline executes intact",
+          re.search(rb"\r\nL2\r\n", s.raw) is not None)
+
+    # heredoc body lines are readline forks too -- same single-shot rule
+    s.frames_during(b"cat <<EOF\r", 0.2)
+    n = s.frames_during(b"", 0.6)
+    check("heredoc read never repaints", n <= 1, "frames=%d" % n)
+    s.frames_during(b"HD_BODY\rEOF\r", 0.6)
+    check("heredoc executes intact",
+          re.search(rb"\rHD_BODY\r\n", s.raw) is not None)
+
     ups = set(int(m) for m in re.findall(rb"\x1b\[(\d+)A", s.raw))
     check("every repaint climbs exactly 2 rows", ups <= {2}, str(ups))
 
