@@ -42,20 +42,31 @@ make perf           # dimension-split hyperfine bench (startup/parse/loops/forks
                     #   → bench/results.md; needs performance CPU governor, or BENCH_LAX=1
 make geoman         # external 42 "minishell tester" as an independent cross-check (GEOMAN_URL=…)
 make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash --posix
-make norm           # 42 norminette over src/ incs/ tests/
+make login-test     # login shell sources /etc/profile then ~/.profile; non-login sources neither
+make norm           # 42 norminette over src/ incs/ tests/ — REPORTS ONLY, always exits 0
 make docker-test    # build + smoke-test from source on Alpine/Debian/Ubuntu/Arch
+make docker-alpine  # (also -debian/-ubuntu/-arch) interactive hellish in that container
 make cd-zsh-test    # docker diff of the zsh-style `cd old new` extension vs real zsh
 make cd-posix-test  # host-side check that --posix gates that extension off
 make hist-test      # pty-driven check of cmdhist multiline history joining
+make anim-test      # pty-driven check that the prompt animation never clobbers pasted input
+make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
+                    #   (never re-measures — charting and measuring stay separate)
+make rss            # peak-RSS dimension alone (needs a prior `make perf` build)
+make my_shell       # sudo-install to /usr/bin + register as a login shell (OPT=1 SAFE=1)
 ```
 
 Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY). Debug views compose: `--debug=lexer --debug=parser --debug=ast`.
 
+Runtime knobs (env): `HELLISH_ALLOC_STATS=1` (live bytes at exit), `HELLISH_NO_BANNER` / `HELLISH_NO_ANIM` (quiet startup — set these when scripting the shell), `HELLISH_NO_UPDATE_CHECK`, `HELLISH_DBG_SPANS` / `HELLISH_DBG_DQ` / `HELLISH_DBG_CYCLE`, `HELLISH_PROMPT_BENCH`.
+
 ## Test model (read before "fixing" a failure)
 
 - A test category is a plain file in `tests/`, one command per line. The harness runs each line through `hellish -c` AND `bash --posix` and diffs **stdout + exit status + any files written**. stderr text is NOT diffed — error wording is free, exit codes are not.
-- Adding a test = append a line to the right category file (or a new file), then `cd tests && ./tester <file>`. Larger programs go in `tests/scripts/*.sh` and `tests/hard/*.sh`, run as whole scripts vs bash.
-- Gotcha: `make test` runs the default category list **hardcoded in `tests/tester`** — a brand-new category file must be added to that array or it silently never runs in the full suite.
+- Adding a test = append a line to the right category file (or a new file), then `cd tests && ./tester <file>`. Cases too big for one line go in `tests/hard/*.sh` as whole programs.
+- Gotcha: `make test` runs the default category list **hardcoded in the `test_lists=(…)` array at the top of `tests/tester`** — a brand-new category file must be added there or it silently never runs in the full suite.
+- `tests/hard/` has its **own** runner, not wired into `make test`: `tests/hard/run.sh [script.sh …]` diffs each script vs `bash --posix` (output + exit status) and prints a best-of-3 timing next to each PASS. Run it explicitly after touching the executor or expander.
+- The harness runs 16 cases in parallel (`xargs -P 16`) in a scratch copy of `tests/test_files` — a test that depends on cwd state left by an earlier line will not behave the way it reads.
 - Every fix ships with a test — non-negotiable (CONTRIBUTING.md). Cover the neighbouring cases too.
 - Leak checking: ASan/LSan is only meaningful on `SAFE=1`. On `SAFE=0` use the allocator's own oracle: `HELLISH_ALLOC_STATS=1 ./build/bin/hellish script.sh` (prints live bytes at exit).
 - Gotcha: the tester `chmod 000`s `tests/test_files/invalid_permission` at startup and leaves it that way. Run `chmod 755 tests/test_files/invalid_permission` before git operations or they fail on the unreadable file.
@@ -96,7 +107,7 @@ Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wir
 
 ## Code style — 42 Norm + house rules
 
-- 42 Norm: ≤ 5 functions per file, ≤ 80 columns, the standard 42 header on every file, no `for` loops or ternaries. `make norm` must be clean on touched files.
+- 42 Norm: ≤ 5 functions per file, ≤ 80 columns, the standard 42 header on every file, no `for` loops or ternaries. `make norm` must be clean on touched files — but note it only *reports* and always exits 0, so read its output rather than trusting the exit status, and confirm `norminette` is actually installed before believing a pass.
 - **Comments go outside function bodies only** — block comments before a function or at file scope, never inside. Write the *why*, the trick, the gotcha, in the house voice; use a Doxygen block for genuinely subtle functions.
 - **No new global variables.** New state goes in `t_shell` (or a struct you thread through). The few legacy globals (word slab, env index, readline completion iterators) are a known cleanup target, not a precedent — readline's callback signature is the one painful exception.
 - Bugs rooted in `vendor/libft` or `ft_malloc` are fixed in the submodule's own repository (then the pointer is bumped here) — never patched around from the shell.
@@ -106,3 +117,7 @@ Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wir
 - Branch from `develop`; PRs target `develop` (`main` and `develop` are protected). Branch names: `type/short-description`, e.g. `fix/heredoc-eof`, `perf/cmdsub-fast-path`.
 - Conventional Commits, enforced by the commit-msg hook (`./vendor/scripts/install-hooks.sh`): `type(scope): imperative subject` with type ∈ feat/fix/refactor/perf/test/docs/chore/style and scope = the module (lexer, parser, expander, executor, builtins, alloc, glob, heredoc, job-control, …). **No AI co-author trailers.**
 - Pre-PR gates, all green from a clean tree: `make re` AND `make re OPT=1` build clean; `make test` green; `cd tests && ./verify_alloc.sh` green on both heaps; no ASan/LSan reports on your cases; `make norm` clean.
+
+## Where the prose lives
+
+Per-module design notes are in `src/<module>/README.md` (13 of them) — read the one for the stage you're touching before changing it. User-facing docs are in `wiki/` (`scripting.md`, `interactive.md`, `performance.md`, `builtins/`, `fixes/`, `troubleshoot/`). Benchmark methodology and fairness calls are in `bench/METHODOLOGY.md`, with known gaps in `bench/KNOWN_ISSUES.md`. `backlog.md` is the running list of what's not done yet.

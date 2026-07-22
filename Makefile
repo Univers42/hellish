@@ -304,6 +304,14 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Prompt-animation vs paste regression (real pty): the idle repaint must
+# freeze whenever the cursor may have left the input's first screen row
+# (pasted newline, wrapped or multibyte input) instead of climbing a
+# mis-computed row count and erasing the paste or the scrollback. Also
+# proves the animation still runs on plain input. See tests/anim_paste_test.py.
+anim-test: all
+	@python3 $(TEST_DIR)/anim_paste_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Command-line option parsing (-e, -o name, +c, flags after -c, --/-,
 # invalid-option status, $-, mode-dependent nounset) vs bash --posix. These
 # exercise how the shell parses its own argv, which the golden -c harness
@@ -357,4 +365,5 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test conformance perf rss charts cli-opts-test login-test geoman
+	hist-test anim-test conformance perf rss charts cli-opts-test \
+	login-test geoman
