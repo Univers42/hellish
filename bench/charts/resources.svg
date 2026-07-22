@@ -54,53 +54,51 @@
 <line class="grid" x1="764.0" y1="124.0" x2="764.0" y2="534.0"/>
 <text class="muted" x="764.0" y="548.0" text-anchor="middle">11.6 MB</text>
 <text class="lbl" x="200.0" y="154.0" text-anchor="end">Startup</text>
-<rect x="210.0" y="126.0" width="182.6" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="399.6" y="138.0" text-anchor="start">3.8 MB</text>
-<rect x="210.0" y="144.0" width="183.5" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="400.5" y="156.0" text-anchor="start">3.8 MB</text>
-<rect x="210.0" y="162.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="320.4" y="174.0" text-anchor="start">2.2 MB</text>
+<rect x="210.0" y="126.0" width="184.9" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="401.9" y="138.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="144.0" width="181.6" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="398.6" y="156.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="162.0" width="106.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="323.3" y="174.0" text-anchor="start">2.2 MB</text>
 <line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
 <text class="lbl" x="200.0" y="222.0" text-anchor="end">Parse 50k lines</text>
 <rect x="210.0" y="194.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
 <text class="val" x="771.0" y="206.0" text-anchor="start">11.6 MB</text>
-<rect x="210.0" y="212.0" width="230.9" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="447.9" y="224.0" text-anchor="start">4.8 MB</text>
-<rect x="210.0" y="230.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="320.4" y="242.0" text-anchor="start">2.2 MB</text>
+<rect x="210.0" y="212.0" width="231.6" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="448.6" y="224.0" text-anchor="start">4.9 MB</text>
+<rect x="210.0" y="230.0" width="106.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="323.3" y="242.0" text-anchor="start">2.2 MB</text>
 <line class="grid" x1="210.0" y1="247.0" x2="804.0" y2="247.0"/>
 <text class="lbl" x="200.0" y="290.0" text-anchor="end">Arith loop</text>
-<rect x="210.0" y="262.0" width="183.2" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="400.2" y="274.0" text-anchor="start">3.8 MB</text>
-<rect x="210.0" y="280.0" width="183.9" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="400.9" y="292.0" text-anchor="start">3.9 MB</text>
-<rect x="210.0" y="298.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="320.4" y="310.0" text-anchor="start">2.2 MB</text>
+<rect x="210.0" y="262.0" width="185.1" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="402.1" y="274.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="280.0" width="182.7" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="399.7" y="292.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="298.0" width="106.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="323.3" y="310.0" text-anchor="start">2.2 MB</text>
 <line class="grid" x1="210.0" y1="315.0" x2="804.0" y2="315.0"/>
 <text class="lbl" x="200.0" y="358.0" text-anchor="end">String concat</text>
-<rect x="210.0" y="330.0" width="182.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="399.4" y="342.0" text-anchor="start">3.8 MB</text>
-<rect x="210.0" y="348.0" width="198.8" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="415.8" y="360.0" text-anchor="start">4.2 MB</text>
-<rect x="210.0" y="366.0" width="103.2" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="320.2" y="378.0" text-anchor="start">2.2 MB</text>
+<rect x="210.0" y="330.0" width="184.7" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="401.7" y="342.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="348.0" width="194.6" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="411.6" y="360.0" text-anchor="start">4.1 MB</text>
+<rect x="210.0" y="366.0" width="106.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="323.3" y="378.0" text-anchor="start">2.2 MB</text>
 <line class="grid" x1="210.0" y1="383.0" x2="804.0" y2="383.0"/>
 <text class="lbl" x="200.0" y="426.0" text-anchor="end">Read loop</text>
-<rect x="210.0" y="398.0" width="183.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="400.4" y="410.0" text-anchor="start">3.8 MB</text>
-<rect x="210.0" y="416.0" width="185.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="402.0" y="428.0" text-anchor="start">3.9 MB</text>
-<rect x="210.0" y="434.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="320.4" y="446.0" text-anchor="start">2.2 MB</text>
+<rect x="210.0" y="398.0" width="184.9" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="401.9" y="410.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="416.0" width="184.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="401.0" y="428.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="434.0" width="106.3" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="323.3" y="446.0" text-anchor="start">2.2 MB</text>
 <line class="grid" x1="210.0" y1="451.0" x2="804.0" y2="451.0"/>
 <text class="lbl" x="200.0" y="494.0" text-anchor="end">3-stage pipeline</text>
-<rect x="210.0" y="466.0" width="362.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
-<text class="val" x="579.4" y="478.0" text-anchor="start">7.6 MB</text>
-<rect x="210.0" y="484.0" width="361.7" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
-<text class="val" x="578.7" y="496.0" text-anchor="start">7.6 MB</text>
-<rect x="210.0" y="502.0" width="360.9" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
-<text class="val" x="577.9" y="514.0" text-anchor="start">7.6 MB</text>
-<line class="grid" x1="210.0" y1="519.0" x2="804.0" y2="519.0"/>
-<line class="grid" x1="210.0" y1="0.0" x2="210.0" y2="0.0"/>
-<text class="muted" x="20.0" y="562.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave  ·  3 rounds  ·  floor 2.2 MB</text>
+<rect x="210.0" y="466.0" width="370.6" height="15.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="val" x="587.6" y="478.0" text-anchor="start">7.8 MB</text>
+<rect x="210.0" y="484.0" width="371.3" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="588.3" y="496.0" text-anchor="start">7.8 MB</text>
+<rect x="210.0" y="502.0" width="371.3" height="15.0" rx="2" fill="#6f9e78" opacity="0.80"/>
+<text class="val" x="588.3" y="514.0" text-anchor="start">7.8 MB</text>
+<text class="muted" x="20.0" y="562.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave  ·  7 rounds  ·  floor 2.2 MB</text>
 </svg>
