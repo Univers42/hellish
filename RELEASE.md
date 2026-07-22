@@ -62,7 +62,7 @@ update --version  # print the running version
 
 **Config:** drop a `~/.hellishrc` (aliases, exports, functions, `set` options) —
 it's sourced on interactive startup, the `.bashrc` analogue. A starter lives in
-[assets/hellishrc.example](assets/hellishrc.example).
+[hellishrc.example](hellishrc.example).
 
 **Knobs:**
 
