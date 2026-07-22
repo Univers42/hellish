@@ -373,7 +373,47 @@ Both survived a skeptical reviewer whose brief was to refute them. Neither is
 landed: each is medium-risk and needs coverage the current suite cannot give,
 because every category in `tests/tester` runs through `hellish -c`.
 
-- [ ] **dlopen readline instead of linking it — ~30% of startup.**
+- [~] **dlopen readline instead of linking it — ~30% of startup.**
+      **HARNESS DONE (`make readline-test`), payoff re-measured, surface mapped.**
+      The coverage gap that blocked this is CLOSED: tests/readline_paths_test.py
+      drives a real pty over every readline entry point (line read+run, up-arrow
+      recall, command/filename/ambiguous completion, vi<->emacs, emacs keys after
+      the round trip, clean exit). It passes on the unmodified shell, so it is a
+      valid before/after gate. Two traps it encodes: a pty ECHOES input (a literal
+      marker "passes" against a dead shell — assert on an EXPANSION result), and
+      completion output interleaves with prompt redraws (assert by EXECUTION).
+      Re-measured payoff (callgrind, deterministic): a trivial C program costs
+      137,115 Ir; the same program linked -lreadline costs 430,920 Ir, so loading
+      libreadline+libtinfo is **293,805 Ir** — confirming the old 291k figure.
+      hellish `-c true` startup is 814,492 Ir (bash 1,208,806 — we already beat
+      bash 33%; dash 268,563), so this is **36% of our startup** and would land
+      us at ~521k, roughly 1.9x dash instead of 3.0x.
+      EXACT surface (from `nm -D` + `readelf -r`, not guesswork) — 4 imported
+      functions: readline, add_history, rl_completion_matches, rl_variable_bind;
+      7 R_X86_64_COPY data relocs: rl_outstream, rl_completion_append_character,
+      rl_attempted_completion_function, rl_instream, rl_editing_mode, rl_point,
+      rl_event_hook; plus rl_line_buffer, rl_readline_state and
+      rl_filename_completion_function referenced in source. 10 files touch them:
+      completion/{completion,complete_files,complete_commands2,complete_variables}.c,
+      editing/{vi_mode,emacs_mode}.c,
+      infrastructure/{rl,history,mascot_anim,mascot_redraw}.c.
+      DESIGN THAT AVOIDS TOUCHING ALL 10 (do it this way): a `t_rl_dyn` table of
+      function+data pointers filled once by a lazy dlopen/dlsym, exposed as ONE
+      accessor `rl_dyn()`, then a header that redirects the names —
+      `#define rl_editing_mode (*rl_dyn()->editing_mode)`,
+      `#define readline(p) rl_dyn_readline(p)` etc. Swap
+      `#include <readline/readline.h>` for that header in the 10 files and NO call
+      site changes. Keep the readline headers included for types/RL_STATE_*; an
+      unreferenced `extern` emits no relocation. Link becomes -ldl, not
+      -lreadline. Norm: one accessor + two loader statics, not 14 accessors.
+      The pointer cache is a file-static — allowed under the documented
+      "readline is the painful exception" clause in CLAUDE.md; document it.
+      REMAINING: write the shim, swap the includes, flip the link, add the
+      HELLISH_STATIC_READLINE fallback, then gate on `make readline-test` +
+      `make hist-test` + `make anim-test` + `make docker-test` (4 distros) and
+      re-measure startup Ir.
+      Original notes below.
+- [ ] (original) **dlopen readline instead of linking it — ~30% of startup.**
       hellish needs 3 shared objects at load time (libreadline, libtinfo,
       libc); bash needs 2 (its readline is static), dash needs 1. Relocating
       libreadline + libtinfo costs 291,493 Ir of the 829,882 Ir `-c true`
