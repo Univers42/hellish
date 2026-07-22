@@ -75,7 +75,7 @@ static const char	*find_subst_op(const char *s, int slen, int *name_len)
    Anything that matches none of these and is not a plain parameter is a
    bad substitution (127, fatal when non-interactive — bash parity).
    Returns a freshly allocated string, or NULL if it is just a plain name. */
-char	*expand_param_format(t_shell *state, const char *s, int slen)
+char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq)
 {
 	const char	*op;
 	int			name_len;
@@ -89,7 +89,7 @@ char	*expand_param_format(t_shell *state, const char *s, int slen)
 	if (s[0] == '!' && slen > 1 && pf_is_indirect(s + 1, slen - 1))
 		return (expand_indirect(state, s + 1, slen - 1));
 	if (find_param_op(s, slen, &o))
-		return (expand_param_op(state, o));
+		return (o.dq = dq, expand_param_op(state, o));
 	op = find_trim_op(s, slen, &name_len);
 	if (!op)
 		op = find_subst_op(s, slen, &name_len);

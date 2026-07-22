@@ -40,7 +40,7 @@ static void	push_braced_value(t_shell *state, t_string *ff,
 	char	*fmt;
 	char	*env;
 
-	fmt = expand_param_format(state, body, blen);
+	fmt = expand_param_format(state, body, blen, true);
 	if (fmt)
 		return (vec_push_str(ff, fmt), xfree(fmt));
 	env = env_expand_n(state, (char *)body, blen);
