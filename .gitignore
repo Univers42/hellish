@@ -8,6 +8,7 @@ build/
 out.dot
 tests/results.log
 tests/bench_results.txt
+tests/agnostic_results.tsv
 .claude/
 
 # secrets / credentials — never commit

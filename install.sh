@@ -48,4 +48,6 @@ trap - EXIT
 
 echo "hellish: installed → $DEST"
 echo "make it a login shell:   echo $DEST | sudo tee -a /etc/shells && chsh -s $DEST"
+echo "                         (chsh only affects sessions you start AFTER it —"
+echo "                          your current terminal stays on the old shell)"
 echo "or just run:             $DEST"

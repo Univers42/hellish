@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="574" viewBox="0 0 880 574" role="img" aria-label="Resources — peak resident memory">
+<style>
+  .bg{fill:#ffffff}
+  .card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .lbl{fill:#1f2328;font:500 12px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .grid{stroke:#d8dee4;stroke-width:1}
+  .axis{stroke:#8c959f;stroke-width:1}
+  .warn{fill:#9a6700;font:600 11px system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .warnbox{fill:#fff8c5;stroke:#d4a72c}
+  .win{fill:#1a7f37;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .lose{fill:#cf222e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tie{fill:#59636e;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  @media (prefers-color-scheme: dark){
+    .bg{fill:#0d1117}
+    .card{fill:#161b22;stroke:#30363d}
+    .title{fill:#e6edf3}
+    .sub{fill:#9198a1}
+    .lbl{fill:#e6edf3}
+    .val{fill:#e6edf3}
+    .muted{fill:#9198a1}
+    .grid{stroke:#30363d}
+    .axis{stroke:#6e7681}
+    .warn{fill:#d29922}
+    .warnbox{fill:#282215;stroke:#9e6a03}
+    .win{fill:#3fb950}
+    .lose{fill:#f85149}
+    .tie{fill:#9198a1}
+  }
+</style>
+<rect class="bg" width="880" height="574" rx="8"/>
+<text class="title" x="20" y="30">Resources — peak resident memory</text>
+<text class="sub" x="20" y="50">Peak RSS (kernel high-water mark) for the same workloads. Lower is better. The ~2.2 MB floor is mapped libc, paid by any process.</text>
+<defs><pattern id="hatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="6" height="6" fill="#000" opacity="0.001"/><line x1="0" y1="0" x2="0" y2="6" stroke="#ffffff" stroke-opacity="0.45" stroke-width="3"/></pattern></defs>
+<rect x="20.0" y="66.0" width="840.0" height="24.0" rx="5" class="warnbox" opacity="1.00"/>
+<text class="warn" x="30.0" y="82.0" text-anchor="start">PROVISIONAL — CPU governor was &quot;powersave&quot;, not &quot;performance&quot;. Ratios hold; absolute values are inflated.</text>
+<rect x="20.0" y="95.0" width="11.0" height="11.0" rx="2" fill="#e2543a" opacity="1.00"/>
+<text class="muted" x="37.0" y="104.0" text-anchor="start">hellish</text>
+<rect x="92.4" y="95.0" width="11.0" height="11.0" rx="2" fill="#5b7fa6" opacity="1.00"/>
+<text class="muted" x="109.4" y="104.0" text-anchor="start">bash</text>
+<rect x="143.2" y="95.0" width="11.0" height="11.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="muted" x="160.2" y="104.0" text-anchor="start">dash</text>
+<line class="grid" x1="210.0" y1="124.0" x2="210.0" y2="534.0"/>
+<text class="muted" x="210.0" y="548.0" text-anchor="middle">0 KB</text>
+<line class="grid" x1="348.5" y1="124.0" x2="348.5" y2="534.0"/>
+<text class="muted" x="348.5" y="548.0" text-anchor="middle">2.9 MB</text>
+<line class="grid" x1="487.0" y1="124.0" x2="487.0" y2="534.0"/>
+<text class="muted" x="487.0" y="548.0" text-anchor="middle">5.8 MB</text>
+<line class="grid" x1="625.5" y1="124.0" x2="625.5" y2="534.0"/>
+<text class="muted" x="625.5" y="548.0" text-anchor="middle">8.7 MB</text>
+<line class="grid" x1="764.0" y1="124.0" x2="764.0" y2="534.0"/>
+<text class="muted" x="764.0" y="548.0" text-anchor="middle">11.6 MB</text>
+<text class="lbl" x="200.0" y="154.0" text-anchor="end">Startup</text>
+<rect x="210.0" y="126.0" width="182.6" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="399.6" y="138.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="144.0" width="183.5" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="400.5" y="156.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="162.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="320.4" y="174.0" text-anchor="start">2.2 MB</text>
+<line class="grid" x1="210.0" y1="179.0" x2="804.0" y2="179.0"/>
+<text class="lbl" x="200.0" y="222.0" text-anchor="end">Parse 50k lines</text>
+<rect x="210.0" y="194.0" width="554.0" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="771.0" y="206.0" text-anchor="start">11.6 MB</text>
+<rect x="210.0" y="212.0" width="230.9" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="447.9" y="224.0" text-anchor="start">4.8 MB</text>
+<rect x="210.0" y="230.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="320.4" y="242.0" text-anchor="start">2.2 MB</text>
+<line class="grid" x1="210.0" y1="247.0" x2="804.0" y2="247.0"/>
+<text class="lbl" x="200.0" y="290.0" text-anchor="end">Arith loop</text>
+<rect x="210.0" y="262.0" width="183.2" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="400.2" y="274.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="280.0" width="183.9" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="400.9" y="292.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="298.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="320.4" y="310.0" text-anchor="start">2.2 MB</text>
+<line class="grid" x1="210.0" y1="315.0" x2="804.0" y2="315.0"/>
+<text class="lbl" x="200.0" y="358.0" text-anchor="end">String concat</text>
+<rect x="210.0" y="330.0" width="182.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="399.4" y="342.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="348.0" width="198.8" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="415.8" y="360.0" text-anchor="start">4.2 MB</text>
+<rect x="210.0" y="366.0" width="103.2" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="320.2" y="378.0" text-anchor="start">2.2 MB</text>
+<line class="grid" x1="210.0" y1="383.0" x2="804.0" y2="383.0"/>
+<text class="lbl" x="200.0" y="426.0" text-anchor="end">Read loop</text>
+<rect x="210.0" y="398.0" width="183.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="400.4" y="410.0" text-anchor="start">3.8 MB</text>
+<rect x="210.0" y="416.0" width="185.0" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="402.0" y="428.0" text-anchor="start">3.9 MB</text>
+<rect x="210.0" y="434.0" width="103.4" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="320.4" y="446.0" text-anchor="start">2.2 MB</text>
+<line class="grid" x1="210.0" y1="451.0" x2="804.0" y2="451.0"/>
+<text class="lbl" x="200.0" y="494.0" text-anchor="end">3-stage pipeline</text>
+<rect x="210.0" y="466.0" width="362.4" height="15.0" rx="2" fill="#e2543a" opacity="0.80"/>
+<text class="val" x="579.4" y="478.0" text-anchor="start">7.6 MB</text>
+<rect x="210.0" y="484.0" width="361.7" height="15.0" rx="2" fill="#5b7fa6" opacity="0.80"/>
+<text class="val" x="578.7" y="496.0" text-anchor="start">7.6 MB</text>
+<rect x="210.0" y="502.0" width="360.9" height="15.0" rx="2" fill="#6f9e78" opacity="1.00"/>
+<text class="val" x="577.9" y="514.0" text-anchor="start">7.6 MB</text>
+<line class="grid" x1="210.0" y1="519.0" x2="804.0" y2="519.0"/>
+<line class="grid" x1="210.0" y1="0.0" x2="210.0" y2="0.0"/>
+<text class="muted" x="20.0" y="562.0" text-anchor="start">Linux-7.0.0-27-generic-x86_64  ·  governor=powersave  ·  3 rounds  ·  floor 2.2 MB</text>
+</svg>

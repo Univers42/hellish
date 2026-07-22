@@ -58,12 +58,11 @@ export EDITOR=vim
 export PAGER=less
 export LESS='-R'        # let pagers pass ANSI colors through
 
-# PATH. If you made hellish your login shell (chsh), read this: hellish
-# sources ~/.hellishrc and nothing else — never ~/.profile. That is where
-# your distro puts PATH="$HOME/.local/bin:$PATH", so switching from bash
-# silently drops it, and everything installed there (pipx, npm -g, cargo,
-# pip --user) turns into "command not found" with no hint as to why. Add
-# the entries you want back, here.
+# PATH. A LOGIN hellish (chsh, or --login) sources /etc/profile — and so
+# the .sh snippets in /etc/profile.d, which is where your distro adds
+# things like /snap/bin — and then ~/.profile, before it gets here. So the
+# PATH you had under bash carries over; you do not need to rebuild it.
+# What you still add by hand is anything you only want under hellish.
 # The case guard makes each addition idempotent: this file is re-sourced
 # by every nested interactive hellish, and an unguarded prepend would
 # stack a fresh copy each time until PATH is mostly duplicates.
