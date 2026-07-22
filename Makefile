@@ -282,7 +282,10 @@ docker-clean:
 agnostic-bench:
 	docker build -f docker/Dockerfile.agnostic -t hellish:agnostic .
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRacing hellish against every shell we could install\033[0m\n\n" >&2
-	docker run --rm -e ROUNDS=$(ROUNDS) -e TIMEOUT_S=$(TIMEOUT_S) hellish:agnostic
+	@mkdir -p bench/.artifacts
+	docker run --rm -e ROUNDS=$(ROUNDS) -e TIMEOUT_S=$(TIMEOUT_S) hellish:agnostic \
+		| tee bench/.artifacts/agnostic-matrix.txt
+	@python3 bench/lib/gen_matrix_chart.py
 
 # Build hellish + zsh in one image and diff the zsh-style two-argument
 # `cd old new` extension against real zsh (the bash suite can't cover it).
@@ -363,6 +366,7 @@ rss:
 charts:
 	@python3 bench/lib/collect_data.py
 	@python3 bench/lib/gen_charts.py
+	@python3 bench/lib/gen_matrix_chart.py
 
 # Run an external, configurable 42 "minishell tester" (geoman-style) against
 # the built binary, as an independent cross-check on top of `make test` and
