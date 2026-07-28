@@ -18,8 +18,9 @@ static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe);
    already been identified.  Brace groups { } run their single child in
    place; every other type has a dedicated executor.  ft_assert(0) is the
    "should never happen" guard -- if we forgot a node type, crash loudly
-   rather than silently returning 0. */
-static t_execution_state	run_compound(t_shell *state,
+   rather than silently returning 0.  Non-static: the platform fork leaf
+   (fork_compound) runs it as the child body. */
+t_execution_state	run_compound(t_shell *state,
 								t_executable_node *exe)
 {
 	t_ast_type	t;
@@ -78,26 +79,13 @@ static t_execution_state	compound_in_parent(t_shell *state,
    subshell ( ... ) always forks (handled earlier).  Anything else forks
    UNLESS modify_parent_ctx is set -- that flag is true when we're the
    last (or only) command in a pipeline that feeds the parent's stdout,
-   so redirections and variable changes must survive the call.  The child
-   resets signal handlers to defaults (they were set to SIG_IGN for job
-   control) before running. */
+   so redirections and variable changes must survive the call.  The
+   process creation itself lives in the platform leaf (fork_compound). */
 static t_execution_state	dispatch_compound(t_shell *state,
 								t_executable_node *exe)
 {
-	int	pid;
-
 	if (!exe->modify_parent_ctx)
-	{
-		pid = fork();
-		if (pid == 0)
-		{
-			default_signal_handlers();
-			set_up_redirection(state, exe);
-			exe->modify_parent_ctx = true;
-			exit(run_compound(state, exe).status);
-		}
-		return (res_pid(pid));
-	}
+		return (fork_compound(state, exe));
 	return (compound_in_parent(state, exe));
 }
 
