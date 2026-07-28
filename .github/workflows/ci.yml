@@ -111,6 +111,11 @@ jobs:
   # The debug build (SAFE=1) is used so AddressSanitizer / LeakSanitizer are
   # meaningful. Two layers: the ~2481-case unit suite (diffed against
   # `bash --posix`), and the self-contained script corpus + leak check.
+  #
+  # The golden oracle is a PINNED bash (5.3.9), built once and cached: the
+  # suite diffs hellish against whatever `bash` is first in PATH, and the
+  # runner's distro bash drifts (24.04 ships 5.2) — 5.2 vs 5.3 disagree on
+  # ~30 cases, which shows up here as phantom hellish failures.
   tests:
     name: Tests · suite + scripts + leaks
     runs-on: ubuntu-latest
@@ -120,6 +125,29 @@ jobs:
           submodules: recursive
       - name: Install deps
         run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev
+      - name: Restore pinned bash 5.3.9
+        id: bashcache
+        uses: actions/cache@v4
+        with:
+          path: ~/bash-5.3.9
+          key: bash-5.3.9-${{ runner.os }}-${{ runner.arch }}
+      - name: Build pinned bash 5.3.9
+        if: steps.bashcache.outputs.cache-hit != 'true'
+        run: |
+          curl -sLO https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+          tar xzf bash-5.3.tar.gz
+          cd bash-5.3
+          for i in $(seq 1 9); do
+            p=$(printf 'bash53-%03d' "$i")
+            curl -sL "https://ftp.gnu.org/gnu/bash/bash-5.3-patches/$p" | patch -p0
+          done
+          ./configure --prefix="$HOME/bash-5.3.9" > configure.log 2>&1
+          make -j"$(nproc)" > make.log 2>&1
+          make install > install.log 2>&1
+      - name: Use pinned bash as the golden oracle
+        run: |
+          echo "$HOME/bash-5.3.9/bin" >> "$GITHUB_PATH"
+          "$HOME/bash-5.3.9/bin/bash" --version | head -1
       - name: Build debug (SAFE=1, ASan)
         run: |
           if ! make re > build.log 2>&1; then
@@ -132,5 +160,12 @@ jobs:
           cd tests
           ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../suite.log | grep -E 'PASSED|FAIL' | tail -3
           grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log || { echo "::error::Unit suite has failures"; exit 1; }
+      - name: Upload suite log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: suite-log
+          path: suite.log
+          if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
