@@ -31,7 +31,11 @@ GREEN="\e[0;32m"
 END="\033[0m"
 
 TEST_DIR="$(pwd)"
-MINISHELL_PATH="$(cd .. && pwd)/build/bin/hellish"
+bash "$TEST_DIR/gen_fixtures.sh"
+MINISHELL_PATH="${HELLISH_BIN:-$(cd .. && pwd)/build/bin/hellish}"
+if [[ ! -f "$MINISHELL_PATH" && -f "$MINISHELL_PATH.exe" ]]; then
+    MINISHELL_PATH="$MINISHELL_PATH.exe"
+fi
 if [[ ! -f "$MINISHELL_PATH" ]]; then
     echo -e "${RED}Error: hellish not found at $MINISHELL_PATH${END}"
     exit 1
