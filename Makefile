@@ -167,7 +167,20 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 
 # Build libft (in its directory) into a per-SAFE tree so the libc and ft_malloc
 # archives coexist and never reuse each other's objects.
+# SAFE=0 needs the ft_malloc sources, but libft declares that nested
+# submodule `update = none`, so `git submodule update --init --recursive`
+# skips it — a fresh clone (and CI) would silently build the libc fallback
+# and then die at link on the force-bound malloc_live_bytes. Materialize it
+# here, with --checkout to override the none policy, before the libft build.
 $(LIBFT_A):
+	@if [ "$(SAFE_TAG)" = "ft" ] \
+		&& [ ! -f vendor/libft/srcs/memory/ft_malloc/Makefile ]; then \
+		printf "  fetching ft_malloc (declared update=none in libft)\n" >&2; \
+		git -C vendor/libft submodule update --init --checkout \
+			srcs/memory/ft_malloc >&2 \
+		|| { printf "SAFE=0 needs ft_malloc; run: git -C vendor/libft \
+submodule update --init --checkout srcs/memory/ft_malloc\n" >&2; exit 1; }; \
+	fi
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3, %s)\033[0m\n\n" \
 		"$(if $(filter ft,$(SAFE_TAG)),ft_malloc,libc)" >&2
 	@$(MAKE) -C vendor/libft -j1 SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
