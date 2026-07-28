@@ -56,7 +56,7 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 		default_signal_handlers();
 		set_up_redirection(state, exe);
 		env_extend(&state->env, &cmd->pre_assigns, true);
-		exit(actually_run(state, &cmd->argv));
+		_exit(actually_run(state, &cmd->argv));
 	}
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
