@@ -20,6 +20,7 @@
 #include "env.h"
 #include "libft.h"
 #include "sys.h"
+#include <pwd.h>
 
 /* Seed state->cwd from getcwd().  If the syscall fails (deleted dir,
    permissions) we emit a warning and leave cwd empty rather than crash.
@@ -52,6 +53,24 @@ void	set_cwd(t_shell *state)
 	else
 		ft_eprintf(MSG_GETCWD_SHINIT);
 	xfree(cwd);
+}
+
+/* bash synthesises $SHELL from the user's passwd login shell when the
+   parent left it entirely ABSENT (an inherited empty SHELL= stays
+   empty), and keeps it un-exported — children only see it once the user
+   exports it themselves. Docker containers and scrubbed CI runners hit
+   this path; interactive sessions normally inherit the real value. */
+void	set_shell_var(t_shell *state)
+{
+	struct passwd	*pw;
+
+	if (env_get(&state->env, "SHELL"))
+		return ;
+	pw = getpwuid(getuid());
+	if (!pw || !pw->pw_shell || !pw->pw_shell[0])
+		return ;
+	env_set(&state->env, env_create(ft_strdup("SHELL"),
+			ft_strdup(pw->pw_shell), false));
 }
 
 /* Increment SHLVL (capped via ft_checked_atoi's flags=42 to avoid huge
