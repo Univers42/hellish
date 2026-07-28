@@ -52,6 +52,8 @@ make hist-test      # pty-driven check of cmdhist multiline history joining
 make readline-test  # pty gate over every libreadline entry point (completion,
                     #   history recall, vi/emacs) — run before touching readline linkage
 make anim-test      # pty-driven check that the prompt animation never clobbers pasted input
+make git-prompt-test # pty gate: the prompt's git dirty check never blocks a render — cd
+                    #   into a slow-scanning repo must prompt instantly, star arrives async
 make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
                     #   (never re-measures — charting and measuring stay separate)
 make rss            # peak-RSS dimension alone (needs a prior `make perf` build)

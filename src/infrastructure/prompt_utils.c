@@ -72,9 +72,10 @@ void	prompt_user_and_cwd(t_string *ret, t_prompt *p)
 }
 
 /* Append " on <branch>" when inside a git repo, plus an amber "*" when the
-   working tree has tracked modifications (git_dirty_cached — a TTL-throttled
-   `git status -uno`, so the star is at most 3s stale and costs nothing on
-   the prompts in between). Branch names count display columns, not bytes. */
+   working tree has tracked modifications (git_dirty_cached — an async,
+   TTL-throttled `git status -uno`: the render never waits for the scan, so
+   on a huge repo the star may arrive a render late rather than the prompt
+   arriving seconds late). Branch names count display columns, not bytes. */
 void	prompt_branch(t_string *ret, t_prompt *p)
 {
 	p->branch = NULL;
