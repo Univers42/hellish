@@ -26,7 +26,10 @@ int	declare_nameref(t_shell *state, t_vec argv, size_t i)
 	while (i < argv.len)
 	{
 		if (((char **)argv.ctx)[i][0] == '-')
-			return (i++, (i < argv.len) ? declare_nameref(state, argv, i) : 0);
+		{
+			i++;
+			continue ;
+		}
 		eq = ft_strchr(((char **)argv.ctx)[i], '=');
 		if (eq)
 		{
@@ -80,6 +83,34 @@ int	declare_integer(t_shell *state, t_vec argv, size_t i)
 			val = int_eval(state, eq + 1);
 			env_set(&state->env, env_create(name, val, false));
 		}
+		i++;
+	}
+	return (0);
+}
+
+/* declare -A NAME...: create each NAME as an EMPTY associative array
+   (value = the assoc magic byte). The attribute lives in the value, so a
+   later h[key]=v sees the assoc magic and treats key as a literal string.
+   NAME=(...) compound init after -A is a v1 scope-out; the near-universal
+   pattern is `declare -A h; h[k]=v`. */
+int	declare_assoc(t_shell *state, t_vec argv, size_t i)
+{
+	char	*empty;
+	char	*eq;
+	char	*key;
+
+	while (i < argv.len)
+	{
+		eq = ft_strchr(((char **)argv.ctx)[i], '=');
+		if (eq)
+			key = ft_strndup(((char **)argv.ctx)[i],
+					eq - ((char **)argv.ctx)[i]);
+		else
+			key = ft_strdup(((char **)argv.ctx)[i]);
+		empty = xmalloc(2);
+		empty[0] = ARR_ASSOC_MAGIC;
+		empty[1] = '\0';
+		env_set(&state->env, env_create(key, empty, false));
 		i++;
 	}
 	return (0);

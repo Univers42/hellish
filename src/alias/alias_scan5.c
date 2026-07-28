@@ -57,7 +57,7 @@ void	asc_hd_drop(t_ascan *a)
    alias expansion stays live for what follows. */
 bool	asc_kw_cmdnext(const char *w, size_t len)
 {
-	static const char	*const	kw[] = {"if", "then", "elif", "else",
+	static const char *const	kw[] = {"if", "then", "elif", "else",
 		"while", "until", "do", "{", "!", NULL};
 	int							i;
 
@@ -75,7 +75,7 @@ bool	asc_kw_cmdnext(const char *w, size_t len)
    variables, case subjects, wordlists). */
 bool	asc_kw_noncmd(const char *w, size_t len)
 {
-	static const char	*const	kw[] = {"for", "case", "in", NULL};
+	static const char *const	kw[] = {"for", "case", "in", NULL};
 	int							i;
 
 	i = 0;

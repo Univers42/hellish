@@ -14,14 +14,18 @@
 
 /* The dispatch table lives in a static t_hash inside builtin_func() and is
    built exactly once (lazy-init on first call). We split the registration
-   into two helpers only to stay within the 42-norm 25-line limit per
-   function — both fill the same hash table `h`.
+   into three helpers only to stay within the 42-norm 25-line limit per
+   function — all of them fill the same hash table `h`.
 
    Why a hash table and not a switch? The builtin name arrives as a string;
    hashing gives O(1) lookup with no strcmp chain and no need to intern the
    name. The function pointers are cast to void* for storage and back to
    t_builtin_fn on retrieval — ugly but correct because data/code pointer
-   sizes match on all the targets we care about (Linux x86-64/arm64). */
+   sizes match on all the targets we care about (Linux x86-64/arm64).
+
+   env is NOT a builtin: real env execs its command arg (env cmd, env -i
+   cmd) and prints the environment with no args -- external /usr/bin/env
+   does both identically, so registering a builtin only broke `env cmd`. */
 static void	fill_builtin_hash1(t_hash *h)
 {
 	hash_set(h, "echo", (void *)builtin_echo);
@@ -32,9 +36,6 @@ static void	fill_builtin_hash1(t_hash *h)
 	hash_set(h, "[[", (void *)builtin_test);
 	hash_set(h, "exit", (void *)builtin_exit);
 	hash_set(h, "pwd", (void *)builtin_pwd);
-	/* env is NOT a builtin: real env execs its command arg (env cmd, env -i
-	   cmd) and prints the environment with no args -- external /usr/bin/env
-	   does both identically, so registering a builtin only broke `env cmd`. */
 	hash_set(h, "unset", (void *)builtin_unset);
 	hash_set(h, "type", (void *)builtin_type);
 	hash_set(h, "set", (void *)builtin_set);
@@ -77,6 +78,12 @@ static void	fill_builtin_hash2(t_hash *h)
 	hash_set(h, "printf", (void *)builtin_printf);
 	hash_set(h, "ulimit", (void *)builtin_ulimit);
 	hash_set(h, "update", (void *)builtin_update);
+}
+
+/* Registration overflow: fill_builtin_hash2 hit the 25-line ceiling, so
+   the newest builtins spill over here. */
+static void	fill_builtin_hash3(t_hash *h)
+{
 	hash_set(h, "mapfile", (void *)builtin_mapfile);
 	hash_set(h, "readarray", (void *)builtin_mapfile);
 	hash_set(h, "declare", (void *)builtin_declare);
@@ -89,6 +96,7 @@ static void	init_builtin_hash(t_hash *h)
 	hash_init(h, 32);
 	fill_builtin_hash1(h);
 	fill_builtin_hash2(h);
+	fill_builtin_hash3(h);
 }
 
 /* Look up a builtin by name. The hash table is initialised on the first call

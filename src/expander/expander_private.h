@@ -296,13 +296,13 @@ char		*arr_mark_name(t_shell *state, const char *p);
 void		arr_marks_clear(t_shell *state);
 bool		arr_keys_defer(t_shell *state, t_token *tt);
 void		emit_keys_fields(t_shell *state, const char *name,
-			t_ast_node *curr_node, t_vec_nd *ret);
+				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_at(t_shell *state, const char *name,
-			t_ast_node *curr_node, t_vec_nd *ret);
+				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
-			t_ast_node *curr_node, t_vec_nd *ret);
+				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
-			int want_keys);
+				int want_keys);
 typedef struct s_slice_ctx
 {
 	char	*val;
@@ -324,12 +324,24 @@ int			slice_name_len(const char *s, int len, int *colon);
 char		*arr_slice_build(t_slice_ctx *c);
 int			herestring_redir(t_shell *state, t_ast_node *curr, int src_fd);
 int			handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
-			t_executable_cmd *ret);
+				t_executable_cmd *ret);
 int			is_assign_builtin(t_executable_cmd *ret);
 int			parse_sub_elem(char *elem, char **sub, int *subl, char **val);
 int			has_subscript(t_vec *args);
+
+/* One compound assignment name=(...) being applied: the half-built env
+   entry (key already stripped of any +=), the expanded element strings,
+   and whether the spelling was +=. Bundled so build_array_value keeps a
+   four-argument signature (same move as t_expand_glob_ctx above). */
+typedef struct s_arr_assign
+{
+	t_env	*ev;
+	t_vec	*args;
+	int		append;
+}	t_arr_assign;
+
 char		*build_array_value(t_shell *state, t_executable_cmd *ret,
-				t_env *ev, t_vec *args, int append);
+				t_arr_assign *aa);
 char		*build_indexed_sub(t_shell *state, t_vec *args,
 				const char *base, int append);
 bool		is_ifs_char(char c, const char *ifs);

@@ -93,12 +93,34 @@ static int	exec_string_inner(t_shell *state, char *str)
 	return (status);
 }
 
-/* Extract heredoc bodies up front (so they aren't parsed as commands) and feed
-   them to the heredoc reader via state->hd_src. hd_src is saved/restored so
-   nested command substitutions each get their own body stream. */
-int	exec_string(t_shell *state, char *str)
+/* Extract heredoc bodies up front (so they aren't parsed as commands),
+   feed them to the heredoc reader via state->hd_src, and run the stripped
+   text.  A string without << (or where splitting finds nothing) runs
+   as-is, under whatever hd_src the caller already installed. */
+static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
 {
 	char	*stripped;
+	int		status;
+
+	stripped = NULL;
+	if (ft_strnstr(str, "<<", ft_strlen(str))
+		&& split_heredocs(str, &stripped, bodies))
+	{
+		state->hd_src = *bodies;
+		state->hd_pos = 0;
+		status = exec_string_inner(state, stripped);
+		xfree(stripped);
+	}
+	else
+		status = exec_string_inner(state, str);
+	return (status);
+}
+
+/* Alias-expand the line, then execute it, routing any heredoc bodies
+   aside first.  hd_src/hd_pos are saved/restored so nested command
+   substitutions each get their own body stream. */
+int	exec_string(t_shell *state, char *str)
+{
 	char	*bodies;
 	char	*prev_src;
 	size_t	prev_pos;
@@ -106,19 +128,9 @@ int	exec_string(t_shell *state, char *str)
 
 	prev_src = state->hd_src;
 	prev_pos = state->hd_pos;
-	stripped = NULL;
 	bodies = NULL;
 	str = alias_scan_line(&state->aliases, str);
-	if (ft_strnstr(str, "<<", ft_strlen(str))
-		&& split_heredocs(str, &stripped, &bodies))
-	{
-		state->hd_src = bodies;
-		state->hd_pos = 0;
-		status = exec_string_inner(state, stripped);
-		xfree(stripped);
-	}
-	else
-		status = exec_string_inner(state, str);
+	status = exec_split_heredocs(state, str, &bodies);
 	xfree(str);
 	xfree(bodies);
 	state->hd_src = prev_src;

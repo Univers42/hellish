@@ -23,11 +23,23 @@
 
 static char	*shell_basename(char *arg0);
 
-/* --help: dump the flag reference, free everything, and exit cleanly.
-   Calling free_all_state first means valgrind/ASan stay quiet even when
-   --help is the only thing the user asked for. */
-static void	print_opts(char **argv, t_shell *state)
+/* The two invocations that never reach the REPL, checked in the order the
+   old inline pair used: --help wins and dumps the flag reference, exit 0;
+   otherwise an unrecognised option (e.g. `hellish -z`, `hellish -c -q`)
+   aborts startup with usage status 2 like bash and dash, naming the shell
+   by argv[0]'s basename. Both paths free_all_state first so valgrind/ASan
+   stay quiet; state is still mostly zero here, which free_all_state
+   tolerates. */
+static void	cli_early_exit(t_shell *state, char **argv, t_cli *cli)
 {
+	if (!(state->option_flags & OPT_FLAG_HELP))
+	{
+		if (!cli->err)
+			return ;
+		ft_eprintf("%s: invalid option\n", shell_basename(argv[0]));
+		free_all_state(state);
+		exit(2);
+	}
 	ft_printf("Usage: %s [options] [file]\n", argv[0]);
 	ft_printf("  --help           Show this help\n");
 	ft_printf("  -c <script>      Execute script string\n");
@@ -38,17 +50,6 @@ static void	print_opts(char **argv, t_shell *state)
 	ft_printf("  --debug=ast      Debug AST only\n");
 	free_all_state(state);
 	exit(0);
-}
-
-/* An unrecognised invocation option (e.g. `hellish -z`, `hellish -c -q`):
-   bash and dash both abort startup with usage status 2.  argv[0]'s basename
-   names the shell in the diagnostic; state is still mostly zero here, which
-   free_all_state tolerates. */
-static void	cli_usage_error(t_shell *state, char **argv)
-{
-	ft_eprintf("%s: invalid option\n", shell_basename(argv[0]));
-	free_all_state(state);
-	exit(2);
 }
 
 /* Zero-initialise every table that survives across commands: redirect list,
@@ -81,6 +82,17 @@ static char	*shell_basename(char *arg0)
 	return (arg0);
 }
 
+/* Readline-buffer defaults that are non-zero, so shell_init()'s zeroing
+   cannot provide them (the on.c contract): a byte-granular input buffer
+   and edit_mode 1, the emacs keymap. */
+static void	init_rl_buffer(t_shell *state)
+{
+	buff_readline_init(&state->rl);
+	vec_init(&state->rl.buff);
+	state->rl.buff.elem_size = 1;
+	state->rl.edit_mode = 1;
+}
+
 /* Bootstrap the whole shell. Order matters: signals first (Ctrl-C must be
    safe the moment we start reading), then env (commands may read it during
    init), then tables (used by init_history / mode_input), then the input
@@ -96,14 +108,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	*state = shell_init();
 	state->shopt = SHOPT_CHECKWINSIZE;
 	cli_parse(state, argv, &cli);
-	if (state->option_flags & OPT_FLAG_HELP)
-		print_opts(argv, state);
-	if (cli.err)
-		cli_usage_error(state, argv);
-	buff_readline_init(&state->rl);
-	vec_init(&state->rl.buff);
-	state->rl.buff.elem_size = 1;
-	state->rl.edit_mode = 1;
+	cli_early_exit(state, argv, &cli);
+	init_rl_buffer(state);
 	state->pid = ft_itoa((int)getpid());
 	state->ctx = ft_strdup(shell_basename(argv[0]));
 	state->dft_ctx = ft_strdup(shell_basename(argv[0]));

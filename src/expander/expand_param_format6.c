@@ -62,28 +62,6 @@ char	*pf_assign_err(t_shell *state, t_pe_op o)
 	return (ft_strdup(""));
 }
 
-/* Expand an operator word that sits inside double quotes.  Rather than
-   duplicating the reparser's dq escape rules, wrap the raw word in a pair
-   of double quotes and run it through the normal unquoted pipeline: the
-   reparser then applies exactly the "..." semantics — \$ \" \\ \` stay
-   active escapes, any other backslash is kept literally ("${u-\z}" prints
-   \z), tilde stays literal, and embedded quotes behave as they do in bash
-   ("${u-'a b'}" keeps the single quotes). */
-char	*expand_param_word_dq(t_shell *state, const char *word, int wlen)
-{
-	char	*buf;
-	char	*ret;
-
-	buf = xmalloc((size_t)wlen + 3);
-	buf[0] = '"';
-	ft_memcpy(buf + 1, word, (size_t)wlen);
-	buf[wlen + 1] = '"';
-	buf[wlen + 2] = '\0';
-	ret = expand_param_word(state, buf, wlen + 2, false);
-	xfree(buf);
-	return (ret);
-}
-
 /* Token-level entry for the ${p-w} operator family: unlike the generic
    expand_param_format path (arith, heredoc) this one knows the enclosing
    token type, so it threads the double-quote context into the word

@@ -82,14 +82,30 @@ static bool	glob_has_wildcard(t_vec_glob glob)
 	return (false);
 }
 
+/* Expansions that need no directory walk: an empty token list yields one
+   empty string, and a pattern with no wildcards can never expand to more
+   than itself, so the word is returned as-is (after converting to string)
+   without any filesystem access. True means args is already final. */
+static bool	glob_trivial(t_vec *args, t_vec_glob *glob, t_ast_node word)
+{
+	if (glob->len == 0)
+		return (vec_push(args, &(char *){ft_strdup("")}), true);
+	if (!glob_has_wildcard(*glob))
+	{
+		vec_push(args, &(char *){(char *)word_to_string(word).ctx});
+		return (glob_free_tokens(glob), true);
+	}
+	return (false);
+}
+
 /* Expand a word node by glob matching and return a vector of malloc'd path
-   strings. If the pattern has no wildcards, the word is returned as-is
-   (after converting to string) without any filesystem access. If wildcards
-   exist, we start the directory walk at "/" for absolute patterns (first token
-   is G_SLASH) or at "" (meaning CWD) for relative ones. When the walk finds
-   nothing, the original word is pushed unchanged -- POSIX "no-match = literal".
-   Results are sorted with glob_sort after the walk. If a signal arrived during
-   the walk (should_unwind), we destroy the partial results and return empty. */
+   strings. Trivial cases (no tokens, no wildcards) are settled by
+   glob_trivial; otherwise we start the directory walk at "/" for absolute
+   patterns (first token is G_SLASH) or at "" (meaning CWD) for relative
+   ones. When the walk finds nothing, the original word is pushed unchanged
+   -- POSIX "no-match = literal". Results are sorted with glob_sort after
+   the walk. If a signal arrived during the walk (should_unwind), we
+   destroy the partial results and return empty. */
 t_vec	expand_word_glob(t_ast_node word)
 {
 	t_vec		args;
@@ -98,13 +114,8 @@ t_vec	expand_word_glob(t_ast_node word)
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
 	glob = word_to_glob(word);
-	if (glob.len == 0)
-		return (vec_push(&args, &(char *){ft_strdup("")}), args);
-	if (!glob_has_wildcard(glob))
-	{
-		vec_push(&args, &(char *){(char *)word_to_string(word).ctx});
-		return (glob_free_tokens(&glob), args);
-	}
+	if (glob_trivial(&args, &glob, word))
+		return (args);
 	if (((t_glob *)glob.ctx)[0].ty == G_SLASH)
 		match_dir(&args, glob, "/", 1);
 	else

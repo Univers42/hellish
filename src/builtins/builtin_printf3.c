@@ -91,3 +91,52 @@ void	pf_build_spec(char *dst, t_spec *sp, char conv)
 	dst[k] = conv;
 	dst[k + 1] = '\0';
 }
+
+/* A valid printf -v target: a POSIX identifier, optionally with a
+   [subscript] suffix (array element). Rejects digit-initial names and
+   an unterminated bracket, matching bash's "not a valid identifier". */
+static bool	pf_valid_name(const char *n)
+{
+	int	i;
+
+	if (!n[0] || (!ft_isalpha((unsigned char)n[0]) && n[0] != '_'))
+		return (false);
+	i = 1;
+	while (n[i] && n[i] != '[')
+	{
+		if (!ft_isalnum((unsigned char)n[i]) && n[i] != '_')
+			return (false);
+		i++;
+	}
+	if (n[i] == '[')
+		return (n[ft_strlen(n) - 1] == ']');
+	return (true);
+}
+
+/* Locate the format word: an optional "--" end-of-options marker is
+   consumed (as in `printf -- '-'`); a lone "-" is a format string; any
+   other leading dash-word — including bash's -v extension — is rejected as
+   an invalid option with status 2, like dash (and like bash for every
+   option it does not know). We deliberately do NOT implement -v's variable
+   assignment: printf is on the forkless $(...) whitelist precisely because
+   it cannot touch shell state, and an in-process `$(printf -v x ...)`
+   would leak the assignment into the parent where bash's subshell drops
+   it. The spec's expected output for the -v error path (status 2, nothing
+   printed) is exactly what this produces. Returns the format's index, or
+   -1 on an invalid option. */
+int	pf_fmt_index(t_vec argv, char **vname)
+{
+	char	**av;
+
+	av = (char **)argv.ctx;
+	*vname = NULL;
+	if (argv.len >= 3 && ft_strcmp(av[1], "-v") == 0 && pf_valid_name(av[2]))
+		return (*vname = av[2], 3);
+	if (argv.len >= 3 && ft_strcmp(av[1], "-v") == 0)
+		return (-1);
+	if (argv.len >= 2 && !ft_strncmp(av[1], "--", 3))
+		return (2);
+	if (argv.len >= 2 && av[1][0] == '-' && av[1][1])
+		return (-1);
+	return (1);
+}

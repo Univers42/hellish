@@ -29,14 +29,15 @@
 # include <stdbool.h>
 
 # define PARENA_MAX_CHUNKS 64
-# define PARENA_FIRST_CHUNK (256 * 1024)
-# define PARENA_MAX_CHUNK (8 * 1024 * 1024)
+# define PARENA_FIRST_CHUNK 262144
+# define PARENA_MAX_CHUNK 8388608
 
-/* Bump-allocation granularity. alloc and try_extend MUST round with the
-   same formula or the tip test in try_extend misfires. 8 bytes: every
-   parse object is pointer-aligned, and small blocks waste half as much
-   padding as the old 16. */
-# define PARENA_ROUND(n) (((n) + 7) & ~(size_t)7)
+/* Bump-allocation granularity is 8 bytes: every parse object is
+   pointer-aligned, and small blocks waste half as much padding as the
+   old 16. alloc and try_extend MUST round through this one function or
+   the tip test in try_extend misfires (it replaced a macro the 42 norm
+   forbids; LTO inlines it right back on optimized builds). */
+size_t		parena_round(size_t n);
 
 typedef struct s_parena
 {

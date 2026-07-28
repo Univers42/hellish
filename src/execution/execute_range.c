@@ -12,26 +12,8 @@
 
 #include "execution_private.h"
 
-void	exit_clean(t_shell *state, int code);
-
-/* set -e: exit when the AND-OR list's last *executed* command failed. This
-   excludes the left operand of && / || (it isn't the one that ran last, e.g.
-   `false && true` skips true so `false` is non-terminal), a negated pipeline
-   (! ...), and any list run as an if/while/until condition (errexit_off). */
-static void	errexit_check(t_shell *state, t_execution_state st,
-				bool ran, t_ast_node *last)
-{
-	if (state->errexit_off || !ran || st.status == 0)
-		return ;
-	if (last && last->node_type == AST_COMMAND_PIPELINE && last->negate)
-		return ;
-	if (state->should_exit || state->func_return || state->loop_break
-		|| state->loop_continue || get_g_sig()->should_unwind)
-		return ;
-	fire_err_trap(state, st.status);
-	if (state->opt_errexit)
-		exit_clean(state, st.status);
-}
+void	errexit_check(t_shell *state, t_execution_state st, bool ran,
+			t_ast_node *last);
 
 /* Run one pipeline/command node from the sequence, inheriting the
    surrounding exe's fds and redirects (via struct copy).  We immediately
@@ -83,6 +65,17 @@ static void	execute_lhs(t_executable_node *exe, t_ast_node *child,
 	state->errexit_off = saved;
 }
 
+/* An AST_TOKEN child carries the list operator (&&, ||, ;, newline).
+   It executes nothing itself: it only becomes the pending operator that
+   should_execute consults for the next command child. */
+static bool	take_operator(t_ast_node *child, t_tt *op)
+{
+	if (child->node_type != AST_TOKEN)
+		return (false);
+	*op = child->token.tt;
+	return (true);
+}
+
 /* Execute the range of AST children [start, end) as a sequential
    AND-OR list.  AST_TOKEN children carry the operator (&&, ||, ;, etc.)
    and shift the `op` variable that should_execute reads.  Non-token
@@ -106,11 +99,8 @@ t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 	while (i < end)
 	{
 		child = &((t_ast_node *)exe->node->children.ctx)[i++];
-		if (child->node_type == AST_TOKEN)
-		{
-			op = child->token.tt;
+		if (take_operator(child, &op))
 			continue ;
-		}
 		ran = should_execute(status, op);
 		if (ran && next_is_andor(exe->node, i, end))
 			execute_lhs(exe, child, state, &status);

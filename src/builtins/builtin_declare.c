@@ -13,6 +13,8 @@
 #include "builtins_private.h"
 #include "env.h"
 
+int	declare_assoc(t_shell *state, t_vec argv, size_t i);
+
 /* declare / typeset: the subset scripts actually depend on.
    - declare -p [NAME...]  prints each variable's declaration in bash form
      (declare -a a=([0]="x") for arrays, declare -- v="val" for scalars).
@@ -86,65 +88,54 @@ static void	declare_assign(t_shell *state, const char *word, int export)
 	env_set(&state->env, env_create(key, ft_strdup(eq + 1), export != 0));
 }
 
-/* declare -A NAME...: create each NAME as an EMPTY associative array
-   (value = the assoc magic byte). The attribute lives in the value, so a
-   later h[key]=v sees the assoc magic and treats key as a literal string.
-   NAME=(...) compound init after -A is a v1 scope-out; the near-universal
-   pattern is `declare -A h; h[k]=v`. */
-static int	declare_assoc(t_shell *state, t_vec argv, size_t i)
-{
-	char	*empty;
-	char	*eq;
-	char	*key;
-
-	while (i < argv.len)
-	{
-		eq = ft_strchr(((char **)argv.ctx)[i], '=');
-		if (eq)
-			key = ft_strndup(((char **)argv.ctx)[i],
-					eq - ((char **)argv.ctx)[i]);
-		else
-			key = ft_strdup(((char **)argv.ctx)[i]);
-		empty = xmalloc(2);
-		empty[0] = ARR_ASSOC_MAGIC;
-		empty[1] = '\0';
-		env_set(&state->env, env_create(key, empty, false));
-		i++;
-	}
-	return (0);
-}
-
-int	builtin_declare(t_shell *state, t_vec argv)
+/* Scan declare's leading option words into a p/x/A bitmask (1/2/4).
+   -n and -i are terminal: everything from that word on goes to the
+   nameref/integer routine, so we stop at the word carrying one and
+   report it through *term ('n' outranks 'i' inside one cluster, as
+   before). Returns the index of the first unconsumed word. */
+static size_t	declare_scan(t_vec argv, int *flags, char *term)
 {
 	size_t	i;
-	int		export;
-	int		printmode;
-	int		assoc;
 
-	export = 0;
-	printmode = 0;
-	assoc = 0;
+	*flags = 0;
+	*term = 0;
 	i = 1;
 	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
 		&& ((char **)argv.ctx)[i][1])
 	{
 		if (ft_strchr(((char **)argv.ctx)[i], 'p'))
-			printmode = 1;
+			*flags |= 1;
 		if (ft_strchr(((char **)argv.ctx)[i], 'x'))
-			export = 1;
+			*flags |= 2;
 		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
-			assoc = 1;
+			*flags |= 4;
 		if (ft_strchr(((char **)argv.ctx)[i], 'n'))
-			return (declare_nameref(state, argv, i));
-		if (ft_strchr(((char **)argv.ctx)[i], 'i'))
-			return (declare_integer(state, argv, i));
+			*term = 'n';
+		else if (ft_strchr(((char **)argv.ctx)[i], 'i'))
+			*term = 'i';
+		if (*term)
+			return (i);
 		i++;
 	}
-	if (assoc)
+	return (i);
+}
+
+int	builtin_declare(t_shell *state, t_vec argv)
+{
+	size_t	i;
+	int		flags;
+	char	term;
+
+	i = declare_scan(argv, &flags, &term);
+	if (term == 'n')
+		return (declare_nameref(state, argv, i));
+	if (term == 'i')
+		return (declare_integer(state, argv, i));
+	if (flags & 4)
 		return (declare_assoc(state, argv, i));
-	if (printmode)
+	if (flags & 1)
 		return (declare_print(state, argv, i));
 	while (i < argv.len)
-		declare_assign(state, ((char **)argv.ctx)[i++], export);
+		declare_assign(state, ((char **)argv.ctx)[i++], (flags & 2) != 0);
 	return (0);
 }

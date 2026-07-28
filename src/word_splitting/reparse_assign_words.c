@@ -16,7 +16,7 @@
    node has no children or the first child is not a plain AST_TOKEN. This is
    where we verify the shape is what we expect before mutating it; bailing out
    on unexpected shapes avoids crashes on malformed ASTs during fuzzing. */
-static t_token	*get_first_token_ptr(t_ast_node *word)
+t_token	*get_first_token_ptr(t_ast_node *word)
 {
 	if (!word->children.ctx || word->children.len == 0)
 		return (NULL);
@@ -29,7 +29,7 @@ static t_token	*get_first_token_ptr(t_ast_node *word)
    or if the token is empty/NULL. We use ft_strnchr (bounded search) rather
    than strchr because tok->start is not necessarily NUL-terminated -- it is a
    slice into the raw input buffer. */
-static int	find_eq_pos(t_token *tok)
+int	find_eq_pos(t_token *tok)
 {
 	char	*eq;
 
@@ -48,8 +48,8 @@ static int	find_eq_pos(t_token *tok)
    original raw text is not duplicated -- everything still points into the
    same input buffer. This is the cheapest correct way to split KEY=val
    without re-allocating the token strings. */
-static void	apply_assignment_split(t_ast_node *word,
-				t_token *first_token, int eq_pos)
+void	apply_assignment_split(t_ast_node *word,
+			t_token *first_token, int eq_pos)
 {
 	t_ast_node	new_root;
 
@@ -67,7 +67,7 @@ static void	apply_assignment_split(t_ast_node *word,
 /* NAME[subscript] as an assignment left side: a valid identifier, an
    opening bracket, anything (an arithmetic expression) and the closing
    bracket exactly at the end — arr[i+1]=v assigns an array element. */
-static bool	is_subscript_key(char *s, int len)
+bool	is_subscript_key(char *s, int len)
 {
 	int	i;
 
@@ -82,101 +82,9 @@ static bool	is_subscript_key(char *s, int len)
 /* NAME+=value: a valid identifier (or NAME[sub]) followed by '+='. The
    append is applied at assignment time (assignment_to_env sees the
    trailing '+' on the key). */
-static bool	is_append_key(char *s, int len)
+bool	is_append_key(char *s, int len)
 {
 	if (len < 2 || s[len - 1] != '+')
 		return (false);
 	return (is_valid_ident(s, len - 1) || is_subscript_key(s, len - 1));
-}
-
-/* Attempt to re-classify one AST_WORD as an AST_ASSIGNMENT_WORD if it
-   matches the pattern IDENT=value (or IDENT[expr]=value for an array
-   element). Guard order matters: we check tt, then the '=' exists, then
-   the left side is valid -- all must pass before we mutate the node.
-   Early returns on any failure leave the node unchanged so normal word
-   expansion picks it up. */
-void	reparse_assignment_word(t_ast_node *word)
-{
-	t_token	*first_token;
-	int		eq_pos;
-
-	first_token = get_first_token_ptr(word);
-	if (!first_token)
-		return ;
-	if (first_token->tt != TT_WORD)
-		return ;
-	if (!first_token->start || first_token->len <= 0)
-		return ;
-	eq_pos = find_eq_pos(first_token);
-	if (eq_pos < 0)
-		return ;
-	if (!is_valid_ident(first_token->start, eq_pos)
-		&& !is_subscript_key(first_token->start, eq_pos)
-		&& !is_append_key(first_token->start, eq_pos))
-		return ;
-	apply_assignment_split(word, first_token, eq_pos);
-}
-
-/* Pre-pass (runs BEFORE reparse_words): a raw word matching NAME[...]=value
-   is classified as an assignment while still a single token, so a '$' in
-   the subscript (a[$i]=x, h[$key]=v) does not split the word out from
-   under the classifier. Only words with a '[' before the '=' are touched;
-   plain NAME=value is left to the normal post-split pass. subscript_assign
-   later expands the raw subscript (arith for indexed, param for assoc). */
-static void	subscript_assign_word(t_ast_node *word)
-{
-	t_token	*ft;
-	int		eq;
-
-	ft = get_first_token_ptr(word);
-	if (!ft || ft->tt != TT_WORD || !ft->start || ft->len <= 0)
-		return ;
-	eq = find_eq_pos(ft);
-	if (eq < 1 || !is_subscript_key(ft->start, eq))
-		return ;
-	if (!ft_strnchr(ft->start, '[', eq))
-		return ;
-	apply_assignment_split(word, ft, eq);
-}
-
-void	reparse_subscript_assigns(t_ast_node *node)
-{
-	size_t	i;
-
-	if (!node->children.ctx)
-		return ;
-	if (node->node_type == AST_PROC_SUB)
-		return ;
-	if (node->node_type != AST_REDIRECT)
-	{
-		i = 0;
-		while (i < node->children.len)
-			reparse_subscript_assigns(
-				&((t_ast_node *)node->children.ctx)[i++]);
-	}
-	if (node->node_type == AST_WORD)
-		subscript_assign_word(node);
-}
-
-/* Recursively walk the AST and promote eligible word nodes to assignment
-   words. We skip AST_REDIRECT subtrees (the filename in `>foo=bar` is not an
-   assignment) and AST_PROC_SUB bodies (they are their own shell context).
-   Every AST_WORD leaf gets tried last, after its children have been walked,
-   matching the depth-first order that the POSIX spec implies. */
-void	reparse_assignment_words(t_ast_node *node)
-{
-	size_t	i;
-
-	if (!node->children.ctx)
-		return ;
-	if (node->node_type == AST_PROC_SUB)
-		return ;
-	if (node->node_type != AST_REDIRECT)
-	{
-		i = 0;
-		while (i < node->children.len)
-			reparse_assignment_words(&((t_ast_node *)node->children.ctx)[i++]);
-	}
-	if (node->node_type == AST_WORD)
-		reparse_assignment_word(node);
 }

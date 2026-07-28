@@ -40,6 +40,26 @@ size_t	parse_read_opts(t_vec argv, bool *raw)
 	return (i);
 }
 
+/* Route the completed line to its destination: -a fills the named array,
+   no variable names sends the whole line to $REPLY, otherwise the line is
+   IFS-split across the named variables. rd_set_var takes ownership of the
+   line; the array/word paths copy fields out of it, so it is freed here. */
+static void	rd_dispatch(t_shell *state, t_vec argv, char *line, t_rdopt *o)
+{
+	if (o->aname)
+	{
+		rd_assign_array(state, line, o);
+		xfree(line);
+	}
+	else if (o->first >= argv.len)
+		rd_set_var(state, "REPLY", line);
+	else
+	{
+		assign_words(state, line, argv, o);
+		xfree(line);
+	}
+}
+
 /* read [-r] [var ...]: read one line from stdin and split it into variables.
    If no variable names are given, the whole line goes into $REPLY (POSIX).
    Returns 1 on EOF even if some data was read (mimics bash), so `while read
@@ -60,17 +80,6 @@ int	builtin_read(t_shell *state, t_vec argv)
 	line = read_one_line(o.raw, &eof);
 	if (!line)
 		return (xfree(o.ifs), 1);
-	if (o.aname)
-	{
-		rd_assign_array(state, line, &o);
-		xfree(line);
-	}
-	else if (o.first >= argv.len)
-		rd_set_var(state, "REPLY", line);
-	else
-	{
-		assign_words(state, line, argv, &o);
-		xfree(line);
-	}
+	rd_dispatch(state, argv, line, &o);
 	return (xfree(o.ifs), eof != 0);
 }

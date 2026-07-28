@@ -54,14 +54,6 @@ char	*expand_param_word(t_shell *state, const char *word, int wlen, bool dq)
 	return (ret);
 }
 
-/* Thin wrapper: look up `name[0..len)` in the environment.  Returns NULL if
-   the variable is unset (distinct from set-but-empty, which returns "").
-   Centralised here so every expand_param_* helper uses the same lookup. */
-char	*pf_get_var_value(t_shell *state, const char *name, int len)
-{
-	return (env_expand_n(state, (char *)name, len));
-}
-
 static bool	is_unset_or_null(const char *val)
 {
 	return (val == NULL || *val == '\0');

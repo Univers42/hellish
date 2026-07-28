@@ -33,16 +33,29 @@ static bool	arr_emit(t_token *tt, char *owned)
 	return (parena_note_attach(), true);
 }
 
+/* Space-join the indices of an encoded indexed array into `out`. */
+static void	arr_keys_join(const char *val, t_string *out)
+{
+	const char	*cur;
+	const char	*v;
+	long		idx;
+	int			vl;
+
+	cur = val + 1;
+	while (arr_next(&cur, &idx, &v, &vl))
+	{
+		if (out->len)
+			vec_push_char(out, ' ');
+		vec_push_str(out, (char *)(idx_str(idx)));
+	}
+}
+
 /* ${!name[@]} / ${!name[*]}: space-joined index list of the array (or
    "0" for a set scalar, nothing for unset — bash semantics). */
 bool	arr_keys(t_shell *state, t_token *tt, bool split_ctx)
 {
 	t_string	out;
 	char		*val;
-	const char	*cur;
-	const char	*v;
-	long		idx;
-	int			vl;
 
 	if (split_ctx)
 		return (arr_keys_defer(state, tt));
@@ -58,15 +71,7 @@ bool	arr_keys(t_shell *state, t_token *tt, bool split_ctx)
 	if (val && !arr_is(val))
 		vec_push_str(&out, "0");
 	else if (val)
-	{
-		cur = val + 1;
-		while (arr_next(&cur, &idx, &v, &vl))
-		{
-			if (out.len)
-				vec_push_char(&out, ' ');
-			vec_push_str(&out, (char *)(idx_str(idx)));
-		}
-	}
+		arr_keys_join(val, &out);
 	vec_push_char(&out, '\0');
 	return (arr_emit(tt, (char *)out.ctx));
 }

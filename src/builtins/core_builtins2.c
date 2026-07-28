@@ -16,7 +16,10 @@
    (-f). Like export and cd, must run in the parent shell; a forked child
    unsetting a variable would have zero visible effect. The -f/-v flag is
    optional and only detected when it is a standalone single-char word —
-   `-fv` is not parsed to keep the logic simple (bash behaves the same). */
+   `-fv` is not parsed to keep the logic simple (bash behaves the same).
+   The option scan stops on a literal "--"; the boolean increment right
+   after the loop consumes that terminator (and nothing else) so it is
+   never handed to try_unset as a name. */
 int	builtin_unset(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -24,21 +27,17 @@ int	builtin_unset(t_shell *state, t_vec argv)
 	int		fmode;
 
 	av = (char **)argv.ctx;
-	i = 1;
 	fmode = 0;
-	while (i < argv.len && av[i][0] == '-' && av[i][1])
+	i = 0;
+	while (++i < argv.len && av[i][0] == '-' && av[i][1]
+		&& ft_strcmp(av[i], "--") != 0)
 	{
-		if (!ft_strcmp(av[i], "--"))
-		{
-			i++;
-			break ;
-		}
 		if (bad_opt_word(av[i], "vf"))
 			return (ft_eprintf("%s: unset: %s: invalid option\n",
 					state->ctx, av[i]), 2);
 		fmode = (ft_strchr(av[i], 'f') != NULL);
-		i++;
 	}
+	i += (i < argv.len && !ft_strcmp(av[i], "--"));
 	while (i < argv.len)
 	{
 		if (fmode)

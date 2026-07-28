@@ -49,29 +49,12 @@ static void	shopt_sync(t_shell *state)
 	*glob_dotglob_cell() = (state->shopt & SHOPT_DOTGLOB) != 0;
 }
 
-/* Print every known option as "name<TAB>on|off" (the no-argument form). */
-static int	shopt_print_all(t_shell *state)
-{
-	static const char	*const	names[] = {"autocd", "cdspell",
-		"checkwinsize", "dotglob", "extglob", "globstar", "histappend",
-		"lastpipe", "nocaseglob", "nullglob", NULL};
-	int							i;
-
-	i = 0;
-	while (names[i])
-	{
-		ft_printf("%-20s\t%s\n", names[i],
-			((state->shopt & shopt_bit(names[i])) ? "on" : "off"));
-		i++;
-	}
-	return (0);
-}
-
 /* Apply/query one name under mode ('s' set, 'u' unset, 'q' query,
    0 print). Returns the per-name status for -q/print accumulation. */
 static int	shopt_one(t_shell *state, const char *name, char mode)
 {
 	unsigned int	bit;
+	const char		*st;
 
 	bit = shopt_bit(name);
 	if (bit == 0)
@@ -82,9 +65,31 @@ static int	shopt_one(t_shell *state, const char *name, char mode)
 	else if (mode == 'u')
 		state->shopt &= ~bit;
 	else if (mode == 0)
-		ft_printf("%-20s\t%s\n", name,
-			((state->shopt & bit) ? "on" : "off"));
-	return ((state->shopt & bit) ? 0 : 1);
+	{
+		st = "off";
+		if (state->shopt & bit)
+			st = "on";
+		ft_printf("%-20s\t%s\n", name, st);
+	}
+	if (state->shopt & bit)
+		return (0);
+	return (1);
+}
+
+/* Print every known option as "name<TAB>on|off" (the no-argument form).
+   Each line goes through shopt_one's print mode so the output format
+   lives in exactly one place. */
+static int	shopt_print_all(t_shell *state)
+{
+	static const char *const	names[] = {"autocd", "cdspell",
+		"checkwinsize", "dotglob", "extglob", "globstar", "histappend",
+		"lastpipe", "nocaseglob", "nullglob", NULL};
+	int							i;
+
+	i = 0;
+	while (names[i])
+		shopt_one(state, names[i++], 0);
+	return (0);
 }
 
 int	builtin_shopt(t_shell *state, t_vec argv)

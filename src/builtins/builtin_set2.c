@@ -99,26 +99,6 @@ static char	**collect_tail_positionals(t_shell *state, int from, int count)
 	return (vals);
 }
 
-/* Like pos_build but the strings are BORROWED (pointer copy, no strdup): used
-   for a function call's $1.. which live in the caller's argv for the call's
-   duration. shift/set promote to an owned copy (pos_build) before mutating, so
-   the borrowed strings are never freed by pos_free. */
-void	pos_borrow(t_pos *pos, char **args, size_t n)
-{
-	size_t	i;
-
-	pos->args = ft_calloc(n + 1, sizeof(char *));
-	i = 0;
-	while (pos->args && args && i < n)
-	{
-		pos->args[i] = args[i];
-		i++;
-	}
-	pos->count = (int)n;
-	pos->args_owned = false;
-	pos_set_cnt(pos);
-}
-
 /* shift [n]: discard the first n positional parameters (default 1). We
    collect the remaining tail as a new owned array, then replace the current
    set. Shifting by more than $# is an error (status 1) per POSIX — we do

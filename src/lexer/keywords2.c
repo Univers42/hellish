@@ -54,10 +54,10 @@ static bool	step_token(t_ltoken *t, bool *cmd_pos,
    `in` is handled separately by the parser, not here. */
 void	reclassify_keywords(t_deque_tok *tokens)
 {
-	size_t	i;
+	size_t		i;
 	t_ltoken	*t;
-	bool	cmd_pos;
-	bool	flags[3];
+	bool		cmd_pos;
+	bool		flags[3];
 
 	cmd_pos = true;
 	flags[0] = false;

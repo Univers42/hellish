@@ -90,21 +90,20 @@ int	main(int argc, char **argv, char **envp)
 	off(&state);
 }
 
-/* The read-eval-print loop -- the beating heart of the shell. Each turn hands
-   out a fresh input buffer, clears the "Ctrl-C just unwound us" flag, reports
-   any background jobs that finished, then parses and runs exactly one command.
-   The pile of frees at the bottom is the whole trick to staying leak-flat: the
-   AST, redirects, input and heredoc scratch are per-command, so we drop them
-   each turn. A script can run for an hour and memory just stays flat. */
-/* PROMPT_COMMAND: run its value in the current shell right before each
-   interactive primary prompt (bash behaviour). Non-interactive shells
-   never touch it. The last command's status is preserved so the prompt's
-   $? badge reflects the user's command, not PROMPT_COMMAND's. */
-static void	run_prompt_command(t_shell *state)
+/* Open one REPL turn: hand out a fresh input buffer and clear the "Ctrl-C
+   just unwound us" flag, then run $PROMPT_COMMAND in the current shell
+   right before each interactive primary prompt (bash behaviour).
+   Non-interactive shells never touch it. The last command's status is
+   preserved so the prompt's $? badge reflects the user's command, not
+   PROMPT_COMMAND's. */
+static void	open_cycle(t_shell *state)
 {
 	t_execution_state	saved;
 	char				*pc;
 
+	vec_init(&state->input);
+	state->input.elem_size = 1;
+	get_g_sig()->should_unwind = 0;
 	if (state->metinp != INP_RL)
 		return ;
 	pc = env_expand(state, "PROMPT_COMMAND");
@@ -115,6 +114,12 @@ static void	run_prompt_command(t_shell *state)
 	set_cmd_status(state, saved);
 }
 
+/* The read-eval-print loop -- the beating heart of the shell. Each turn hands
+   out a fresh input buffer, clears the "Ctrl-C just unwound us" flag, reports
+   any background jobs that finished, then parses and runs exactly one command.
+   The pile of frees at the bottom is the whole trick to staying leak-flat: the
+   AST, redirects, input and heredoc scratch are per-command, so we drop them
+   each turn. A script can run for an hour and memory just stays flat. */
 static void	repl_shell(t_shell *state)
 {
 	int	buf_fd;
@@ -123,10 +128,7 @@ static void	repl_shell(t_shell *state)
 	buf_fd = setup_output_buffer(state, &stdout_bak);
 	while (!state->should_exit)
 	{
-		vec_init(&state->input);
-		state->input.elem_size = 1;
-		get_g_sig()->should_unwind = 0;
-		run_prompt_command(state);
+		open_cycle(state);
 		job_notify(state);
 		parse_and_execute_input(state);
 		run_pending_traps(state);

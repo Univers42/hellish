@@ -79,31 +79,32 @@ int	slice_name_len(const char *s, int len, int *colon)
 	return (i);
 }
 
-/* Build the space-joined element slice from the resolved context. */
+/* Build the space-joined element slice from the resolved context.
+   nth[0] is the element counter, nth[1] the element length out-param
+   (the split_array.c pairing, to stay under the norm's five locals). */
 char	*arr_slice_build(t_slice_ctx *c)
 {
 	t_string	out;
 	const char	*cur;
 	const char	*v;
 	long		idx;
-	int			vl;
-	int			k;
+	int			nth[2];
 
 	vec_init(&out);
 	out.elem_size = 1;
-	k = 0;
+	nth[0] = 0;
 	cur = "";
 	if (arr_is(c->val))
 		cur = c->val + 1;
-	while (arr_next(&cur, &idx, &v, &vl))
+	while (arr_next(&cur, &idx, &v, &nth[1]))
 	{
-		if (k >= c->off && k < c->lim)
+		if (nth[0] >= c->off && nth[0] < c->lim)
 		{
 			if (out.len)
 				vec_push_char(&out, ' ');
-			vec_push_nstr(&out, (char *)v, vl);
+			vec_push_nstr(&out, (char *)v, nth[1]);
 		}
-		k++;
+		nth[0]++;
 	}
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }

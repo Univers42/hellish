@@ -127,11 +127,6 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
 	if (ft == AST_COPROC)
 		return (exe->node = &((t_ast_node *)exe->node->children.ctx)[0],
 			execute_coproc(state, exe));
-	if (!exe->redirs.ctx)
-	{
-		vec_init(&exe->redirs);
-		exe->redirs.elem_size = sizeof(int);
-	}
 	if (collect_redirects_from_ast(state, exe))
 		return (res_status(AMBIGUOUS_REDIRECT));
 	exe->node = vec_idx(&exe->node->children, 0);
@@ -147,13 +142,20 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
    redirect_from_ast_redir and push its index into exe->redirs.  The
    indices rather than the t_redir structs are stored so the redirect
    table lives in one place (state->redirects) and children can share an
-   entry if the same redirect appears twice. */
+   entry if the same redirect appears twice.  The redirs vec is created
+   lazily on first use: an exe inherited from an enclosing command may
+   already carry redirect indices we must append to, never clobber. */
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe)
 {
 	size_t		i;
 	t_ast_node	*curr;
 	int			redir_idx;
 
+	if (!exe->redirs.ctx)
+	{
+		vec_init(&exe->redirs);
+		exe->redirs.elem_size = sizeof(int);
+	}
 	i = 0;
 	while (++i < exe->node->children.len)
 	{
