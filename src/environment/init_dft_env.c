@@ -110,6 +110,7 @@ void	ensure_essential_env_vars(t_shell *state)
 	cwd = NULL;
 	set_path(state);
 	set_shlvl(state);
+	set_shell_var(state);
 	set_underscore(state);
 	set_optind(state);
 	set_id_vars(state);
