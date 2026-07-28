@@ -18,6 +18,16 @@ UNAME_S := $(shell uname -s 2>/dev/null)
 CC_IS_CLANG := $(shell $(CC) --version 2>/dev/null | grep -qi clang && echo 1)
 CC_IS_GCC   := $(shell $(CC) --version 2>/dev/null | grep -qi gcc   && echo 1)
 
+# Platform target. Exactly one src/platform/$(TARGET)/ tree is compiled in;
+# platform differences live in per-file implementations there, never in
+# inline #ifdefs. Auto-detects an MSYS2/MinGW host; everything else builds
+# the posix tree.
+ifneq (,$(filter MINGW% MSYS%,$(UNAME_S)))
+TARGET ?= win32
+else
+TARGET ?= posix
+endif
+
 # Includes (must be defined before CPPFLAGS assignment)
 INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public -I./vendor/libft/srcs/memory/memalloc/slab
 
@@ -104,8 +114,11 @@ BIN_TEST := tester
 LIBFT_A := $(LIBFT_DIR)/libft.a
 LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
 
-# Source and object files
-SRCS := $(shell find $(SRC_DIR) -name '*.c' | sort)
+# Source and object files. src/platform/ holds one subtree per TARGET; only
+# the active one is compiled (the other would multiply-define every symbol).
+SRCS := $(shell find $(SRC_DIR) -path $(SRC_DIR)/platform -prune -o \
+	-name '*.c' -print | sort) \
+	$(shell find $(SRC_DIR)/platform/$(TARGET) -name '*.c' 2>/dev/null | sort)
 
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
@@ -135,6 +148,12 @@ safe_banner:
 $(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
+
+# Platform files implement module seams (the fork/spawn leaves), so they —
+# and only they — may see the module-private headers of the modules whose
+# functions they carry.
+$(OBJ_DIR)/platform/%.o: CPPFLAGS += -I./src/execution -I./src/expander \
+	-I./src/builtins -I./src/job_control -I./src/infrastructure
 
 # Compile .c -> .o with inline animation
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c

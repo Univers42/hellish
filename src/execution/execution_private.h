@@ -102,6 +102,8 @@ t_execution_state	execute_simple_list(t_shell *state,
 						t_executable_node *exe);
 t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_coproc(t_shell *state, t_executable_node *exe);
+t_execution_state	run_compound(t_shell *state, t_executable_node *exe);
+t_execution_state	fork_compound(t_shell *state, t_executable_node *exe);
 void				coproc_store(t_shell *state, char *name, int *fds,
 						pid_t pid);
 void				execute_top_level(t_shell *state);
