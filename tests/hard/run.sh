@@ -1,7 +1,8 @@
 #!/bin/sh
 # Compare hellish vs bash --posix (and plain bash) on each hard script.
 # Usage: ./run.sh [script.sh ...]   (default: all hard/*.sh)
-H="$(cd "$(dirname "$0")/../.." && pwd)/build/bin/hellish"
+H="${HELLISH_BIN:-$(cd "$(dirname "$0")/../.." && pwd)/build/bin/hellish}"
+if [ ! -x "$H" ] && [ -x "$H.exe" ]; then H="$H.exe"; fi
 DIR="$(cd "$(dirname "$0")" && pwd)"
 scripts="$*"; [ -z "$scripts" ] && scripts="$(ls "$DIR"/[0-9]*.sh 2>/dev/null)"
 pass=0; fail=0

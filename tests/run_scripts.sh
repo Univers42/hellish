@@ -15,7 +15,11 @@
 # ============================================================================
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-H="$ROOT/build/bin/hellish"
+bash "$ROOT/tests/gen_fixtures.sh"
+H="${HELLISH_BIN:-$ROOT/build/bin/hellish}"
+if [ ! -x "$H" ] && [ -x "$H.exe" ]; then
+	H="$H.exe"
+fi
 if [ ! -x "$H" ]; then
 	echo "error: hellish not built at $H (run 'make' first)" >&2
 	exit 2
