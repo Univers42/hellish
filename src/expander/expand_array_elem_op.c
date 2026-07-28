@@ -20,15 +20,14 @@
 bool	is_valid_ident(char *s, int len);
 void	try_unset(t_shell *state, char *key);
 
-/* ${name[sub]OP} for a single element (sub is not the @ or star form), OP any parameter
-   operator (default/alt/trim/subst/case). The element is
-   resolved, bound to a scratch var (UNSET when the element is unset, so
-   :- vs - distinguish correctly), then `scratch OP` runs through the
+/* ${name[sub]OP} for a single element (sub is not the @ or star form),
+   OP any parameter operator (default/alt/trim/subst/case). The element
+   is resolved, bound to a scratch var (UNSET when the element is unset,
+   so :- vs - distinguish correctly), then `scratch OP` runs through the
    scalar engine — so ${c[x]:-0}, ${a[i]#pre}, ${h[k]:+1} all work. */
 
-/* Resolve the value of name[sub]; *found=0 when the element is unset. */
-static char	*elem_value(t_shell *state, const char *s, int nl, int sublen,
-				int *found)
+/* Resolve the value of name[sub]; NULL when the element is unset. */
+static char	*elem_value(t_shell *state, const char *s, int nl, int sublen)
 {
 	char	*val;
 	char	*sub;
@@ -37,10 +36,12 @@ static char	*elem_value(t_shell *state, const char *s, int nl, int sublen,
 
 	val = env_expand_n(state, (char *)s, nl);
 	sub = expand_param_word(state, (char *)s + nl + 1, sublen, false);
-	*found = 1;
 	if (assoc_is(val))
-		return (r = assoc_get(val, sub, (int)ft_strlen(sub)),
-			xfree(sub), (r ? r : (*found = 0, ft_strdup(""))));
+	{
+		r = assoc_get(val, sub, (int)ft_strlen(sub));
+		xfree(sub);
+		return (r);
+	}
 	r = arith_expand(state, sub, (int)ft_strlen(sub));
 	idx = 0;
 	if (r)
@@ -48,14 +49,10 @@ static char	*elem_value(t_shell *state, const char *s, int nl, int sublen,
 	xfree(r);
 	xfree(sub);
 	if (arr_is(val))
-		r = arr_get_idx(val, idx);
-	else if (val && idx == 0)
-		r = ft_strdup(val);
-	else
-		r = NULL;
-	if (!r)
-		*found = 0;
-	return (r ? r : ft_strdup(""));
+		return (arr_get_idx(val, idx));
+	if (val && idx == 0)
+		return (ft_strdup(val));
+	return (NULL);
 }
 
 /* Split name[sub]OP: *nl name length, *sublen subscript length, *opat
@@ -84,18 +81,19 @@ static bool	elem_op_split(const char *s, int len, int *nl, int sublen[2])
 	return (true);
 }
 
-/* Apply OP to the element via the scratch var + scalar engine. */
-static char	*elem_apply(t_shell *state, const char *op, int oplen,
-				char *elem, int found)
+/* Apply OP to the element via the scratch var + scalar engine.  elem is
+   moved into the scratch var; a NULL elem means the element is unset, so
+   the scratch var is unset too and :- vs - distinguish correctly. */
+static char	*elem_apply(t_shell *state, const char *op, int oplen, char *elem)
 {
 	char	*body;
 	char	*res;
 	int		kl;
 
-	if (found)
+	if (elem)
 		env_set(&state->env, env_create(ft_strdup(AEOP_VAR), elem, false));
 	else
-		(try_unset(state, AEOP_VAR), xfree(elem));
+		try_unset(state, AEOP_VAR);
 	kl = (int)ft_strlen(AEOP_VAR);
 	body = xmalloc((size_t)kl + oplen + 1);
 	ft_memcpy(body, AEOP_VAR, kl);
@@ -115,16 +113,14 @@ bool	expand_array_elem_op(t_shell *state, t_token *tt)
 	char	*res;
 	int		nl;
 	int		sub[2];
-	int		found;
 
 	if ((tt->tt != TT_ENVVAR && tt->tt != TT_DQENVVAR)
 		|| !elem_op_split(tt->start, tt->len, &nl, sub))
 		return (false);
 	if (sub[1] >= tt->len)
 		return (false);
-	elem = elem_value(state, tt->start, nl, sub[0], &found);
-	res = elem_apply(state, tt->start + sub[1], tt->len - sub[1],
-			elem, found);
+	elem = elem_value(state, tt->start, nl, sub[0]);
+	res = elem_apply(state, tt->start + sub[1], tt->len - sub[1], elem);
 	tt->start = res;
 	tt->len = (int)ft_strlen(res);
 	tt->allocated = true;

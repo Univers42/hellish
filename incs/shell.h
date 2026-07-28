@@ -225,7 +225,7 @@ typedef struct s_shell
 	int					errexit_off; /* >0: -e is suspended (in conditions) */
 	/* --- traps and readonly vars --- */
 	char				*traps[SH_NTRAP]; /* trap strings, by signal num */
-	int					trap_depth; /* >0 while a trap body runs (no re-entry) */
+	int					trap_depth; /* >0 while a trap body runs */
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */
@@ -264,17 +264,16 @@ typedef struct s_shell
 
 /* shopt option bits (state->shopt). Only the ones with observable
    behaviour or that scripts commonly toggle are modelled. */
-# define SHOPT_NULLGLOB   (1u << 0)
-# define SHOPT_DOTGLOB    (1u << 1)
-# define SHOPT_GLOBSTAR   (1u << 2)
-# define SHOPT_NOCASEGLOB (1u << 3)
-# define SHOPT_EXTGLOB    (1u << 4)
-# define SHOPT_LASTPIPE   (1u << 5)
-# define SHOPT_HISTAPPEND (1u << 6)
-# define SHOPT_CHECKWINSIZE (1u << 7)
-# define SHOPT_AUTOCD     (1u << 8)
-# define SHOPT_CDSPELL    (1u << 9)
-
+# define SHOPT_NULLGLOB 0x001
+# define SHOPT_DOTGLOB 0x002
+# define SHOPT_GLOBSTAR 0x004
+# define SHOPT_NOCASEGLOB 0x008
+# define SHOPT_EXTGLOB 0x010
+# define SHOPT_LASTPIPE 0x020
+# define SHOPT_HISTAPPEND 0x040
+# define SHOPT_CHECKWINSIZE 0x080
+# define SHOPT_AUTOCD 0x100
+# define SHOPT_CDSPELL 0x200
 
 /* Directory matcher ctx for glob expansion */
 typedef struct s_dir_matcher

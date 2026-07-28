@@ -83,7 +83,7 @@ void	*parena_alloc(size_t n)
 {
 	void	*p;
 
-	n = PARENA_ROUND(n);
+	n = parena_round(n);
 	if (!g_parena.on)
 		return (xmalloc(n));
 	if (g_parena.n_chunks == 0
@@ -122,15 +122,4 @@ bool	parena_owns(const void *p)
 		return (false);
 	c = (const char *)g_parena.chunk[lo];
 	return ((const char *)p >= c && (const char *)p < c + g_parena.size[lo]);
-}
-
-/* Free router: arena blocks are reclaimed wholesale by parena_reset, so
-   they are a no-op here; anything else goes to the real heap free. This
-   lets one call site tear down both arena-backed cycle trees and
-   heap-backed clones (function bodies, eval ASTs). */
-void	parena_free(void *p)
-{
-	if (!p || parena_owns(p))
-		return ;
-	xfree(p);
 }

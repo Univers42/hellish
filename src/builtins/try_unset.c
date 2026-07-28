@@ -14,13 +14,6 @@
 #include "env.h"
 #include "builtins_private.h"
 
-/* Remove the variable `key` from the env table in-place. We find its slot
-   via pointer arithmetic (e - arr), free the strings, then compact the array
-   by shifting everything after it one position left. This keeps the table a
-   flat contiguous array — no holes — at the cost of O(n) per unset. For the
-   typical number of variables that is fine and much simpler than a linked
-   list. env_index_mark_dirty() invalidates any cached pointer-by-name index
-   so the next lookup does a fresh linear scan. */
 /* unset arr[i]: evaluate the subscript, rebuild the value without that
    record. The variable itself survives (possibly as an empty array). */
 static bool	unset_array_elem(t_shell *state, char *key, char *br)
@@ -49,23 +42,19 @@ static bool	unset_array_elem(t_shell *state, char *key, char *br)
 	return (true);
 }
 
-void	try_unset(t_shell *state, char *key)
+/* Remove the entry `e` from the env table in-place. We find its slot
+   via pointer arithmetic (e - arr), free the strings, then compact the array
+   by shifting everything after it one position left. This keeps the table a
+   flat contiguous array — no holes — at the cost of O(n) per unset. For the
+   typical number of variables that is fine and much simpler than a linked
+   list. env_index_mark_dirty() invalidates any cached pointer-by-name index
+   so the next lookup does a fresh linear scan. */
+static void	env_drop_entry(t_shell *state, t_env *e)
 {
-	t_env	*e;
-	size_t	idx;
 	t_env	*arr;
+	size_t	idx;
 	size_t	i;
-	char	*br;
 
-	if (!state || state->env.ctx == NULL)
-		return ;
-	br = ft_strchr(key, '[');
-	if (br && key[ft_strlen(key) - 1] == ']'
-		&& unset_array_elem(state, key, br))
-		return ;
-	e = env_get(&state->env, key);
-	if (!e)
-		return ;
 	arr = (t_env *)state->env.ctx;
 	idx = (size_t)(e - arr);
 	xfree(arr[idx].key);
@@ -78,4 +67,21 @@ void	try_unset(t_shell *state, char *key)
 	}
 	state->env.len--;
 	env_index_mark_dirty();
+}
+
+void	try_unset(t_shell *state, char *key)
+{
+	t_env	*e;
+	char	*br;
+
+	if (!state || state->env.ctx == NULL)
+		return ;
+	br = ft_strchr(key, '[');
+	if (br && key[ft_strlen(key) - 1] == ']'
+		&& unset_array_elem(state, key, br))
+		return ;
+	e = env_get(&state->env, key);
+	if (!e)
+		return ;
+	env_drop_entry(state, e);
 }

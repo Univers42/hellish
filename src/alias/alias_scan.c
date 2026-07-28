@@ -51,17 +51,29 @@ void	asc_pop(t_ascan *a)
 	a->depth--;
 }
 
-/* A newline inside a spliced alias value would break the driver's
-   one-statement-list-per-cycle model (everything after the first
-   statement would be dropped), so it is rewritten exactly like the
-   cmdhist joiner rewrites history: "; " where a separator is valid, a
-   plain space where the grammar still expects a command (right after
-   do/then/{/;/&&...) — which is precisely what cmd_pos tracks. */
-void	asc_emit_sep(t_ascan *a)
+/* One scan step: classify the byte at the top-of-stack cursor and hand
+   it to the matching handler.  Order is load-bearing: NUL pops the
+   exhausted source before anything reads past it, and '#' opens a
+   comment only at the start of a word. */
+static void	asc_step(t_ascan *a)
 {
-	if (!a->cmd_pos)
-		vec_push_nstr(&a->out, ";", 1);
-	vec_push_nstr(&a->out, " ", 1);
+	t_ascan_src	*s;
+	char		c;
+
+	s = &a->src[a->depth - 1];
+	c = s->s[s->pos];
+	if (c == '\0')
+		asc_pop(a);
+	else if (c == ' ' || c == '\t')
+		asc_scan_blank(a, s, c);
+	else if (c == '\n')
+		asc_newline(a);
+	else if (c == '#' && a->wstart)
+		asc_comment(a);
+	else if (ft_strchr(";|&()<>", c))
+		asc_op(a);
+	else
+		asc_word(a);
 }
 
 /* One full scan of a logical input line: aliases in command position are
@@ -70,9 +82,8 @@ void	asc_emit_sep(t_ascan *a)
    all behave like bash.  Returns an xmalloc'd NUL-terminated string. */
 char	*alias_scan_line(t_hash *aliases, const char *input)
 {
-	t_ascan		a;
-	t_ascan_src	*s;
-	char		c;
+	t_ascan	a;
+	char	c;
 
 	if (!input)
 		return (NULL);
@@ -87,22 +98,7 @@ char	*alias_scan_line(t_hash *aliases, const char *input)
 	a.src[0] = (t_ascan_src){.s = input};
 	a.depth = 1;
 	while (a.depth > 0)
-	{
-		s = &a.src[a.depth - 1];
-		c = s->s[s->pos];
-		if (c == '\0')
-			asc_pop(&a);
-		else if (c == ' ' || c == '\t')
-			asc_scan_blank(&a, s, c);
-		else if (c == '\n')
-			asc_newline(&a);
-		else if (c == '#' && a.wstart)
-			asc_comment(&a);
-		else if (ft_strchr(";|&()<>", c))
-			asc_op(&a);
-		else
-			asc_word(&a);
-	}
+		asc_step(&a);
 	c = '\0';
 	vec_push(&a.out, &c);
 	while (a.hd_n > 0)

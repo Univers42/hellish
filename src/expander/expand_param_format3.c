@@ -12,6 +12,26 @@
 
 #include "expander_private.h"
 
+/* ${val%pattern} — remove the SHORTEST suffix of `val` that matches
+   `pattern`.  We scan from the end of val backwards until we find the
+   rightmost position where pat_match_pub(pattern, val+i) succeeds.
+   Shortest means we try from the end first and stop at the first match. */
+char	*trim_suffix_shortest(const char *val, const char *pattern)
+{
+	int	vlen;
+	int	i;
+
+	vlen = ft_strlen(val);
+	i = vlen;
+	while (i >= 0)
+	{
+		if (pat_match_pub(pattern, val + i))
+			return (ft_strndup(val, i));
+		i--;
+	}
+	return (ft_strdup(val));
+}
+
 /* ${val%%pattern} — remove the LONGEST suffix of `val` that matches
    `pattern`.  Scan from i=0 forward: the first position where the remainder
    of val matches the pattern gives the longest possible suffix to remove. */

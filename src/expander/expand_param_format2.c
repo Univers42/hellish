@@ -94,6 +94,24 @@ bool	find_param_op(const char *s, int slen, t_pe_op *o)
 	return (true);
 }
 
+/* The '*' arm of pat_match_pub: swallow the star run, then advance `s` one
+   character at a time until the rest of the pattern matches — the shortest
+   viable position.  Split out to keep pat_match_pub in the line budget. */
+static bool	pat_match_star(const char *p, const char *s)
+{
+	while (*p == '*')
+		p++;
+	if (*p == '\0')
+		return (true);
+	while (*s)
+	{
+		if (pat_match_pub(p, s))
+			return (true);
+		s++;
+	}
+	return (pat_match_pub(p, s));
+}
+
 /* Minimal shell-pattern matcher used by prefix/suffix trimming and ${/} subst.
    Handles * (any sequence) and ? (any single character) only — not [ranges].
    Recursive descent: consume one pattern unit and recurse on the rest.
@@ -110,42 +128,10 @@ bool	pat_match_pub(const char *p, const char *s)
 		return (false);
 	}
 	if (*p == '*')
-	{
-		while (*p == '*')
-			p++;
-		if (*p == '\0')
-			return (true);
-		while (*s)
-		{
-			if (pat_match_pub(p, s))
-				return (true);
-			s++;
-		}
-		return (pat_match_pub(p, s));
-	}
+		return (pat_match_star(p, s));
 	if (*p == '?' && *s != '\0')
 		return (pat_match_pub(p + 1, s + 1));
 	if (*p == *s && *s != '\0')
 		return (pat_match_pub(p + 1, s + 1));
 	return (false);
-}
-
-/* ${val%pattern} — remove the SHORTEST suffix of `val` that matches
-   `pattern`.  We scan from the end of val backwards until we find the
-   rightmost position where pat_match_pub(pattern, val+i) succeeds.
-   Shortest means we try from the end first and stop at the first match. */
-char	*trim_suffix_shortest(const char *val, const char *pattern)
-{
-	int	vlen;
-	int	i;
-
-	vlen = ft_strlen(val);
-	i = vlen;
-	while (i >= 0)
-	{
-		if (pat_match_pub(pattern, val + i))
-			return (ft_strndup(val, i));
-		i--;
-	}
-	return (ft_strdup(val));
 }

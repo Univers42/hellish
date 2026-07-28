@@ -21,6 +21,7 @@
 
 # include "libft.h"
 # include <stdint.h>
+# include "token_old.h"
 
 /* Exhaustive list of terminal token types the lexer can produce.
    TT_WORD is the catch-all for unquoted words; TT_SQWORD/TT_DQWORD for
@@ -73,19 +74,6 @@ typedef enum e_tt
 	TT_HERESTRING,
 	TT_COPROC
 }	t_tt;
-
-/* Compact back-reference to the original full word before the lexer split
-   it into sub-tokens.  Used by the expander to reconstruct the original
-   text for ${v} word forms that span multiple sub-tokens.
-   Field order packs the struct to 16 bytes (pointer, int, two flag bytes)
-   instead of the 24 the old bool-first layout padded out to. */
-typedef struct s_token_old
-{
-	char	*start; /* pointer to start of original word in input */
-	int		len; /* byte length of the original word */
-	bool	present; /* true if this back-reference is valid */
-	bool	allocated; /* true if start is heap (must be freed) */
-}	t_token_old;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
    re-evaluates without re-lexing/re-parsing. Defined in arith.h; owned by the
@@ -182,21 +170,6 @@ static inline t_token	create_tok4(char *start, int len,
 			.allocated = allocated,
 			.full_word = NULL
 		});
-}
-
-static inline t_token_old	create_token_old(char *start, int len, bool present)
-{
-	return ((t_token_old)
-		{
-			.start = start,
-			.len = len,
-			.present = present
-		});
-}
-
-static inline t_token_old	init_token_old(void)
-{
-	return ((t_token_old){.present = false, .start = NULL, .len = 0});
 }
 
 #endif

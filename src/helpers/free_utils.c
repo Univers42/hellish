@@ -71,43 +71,13 @@ static void	free_functions(t_vec *fns)
 	xfree(fns->ctx);
 }
 
-/* trap handler strings (ft_strdup'd in set_one_trap) live for the session and
-   were never released at exit — free the whole table so a script using trap is
-   leak-clean like any other. */
-static void	free_traps(t_shell *state)
+/* Session-lifetime strings and caches, in the exact order free_all_state
+   always released them: input buffer, alias-expansion scratch, the pid /
+   $! / ctx strings, the readline buffer, then the split-$PATH cache (see
+   path_cache_sync — free_tab is not NULL-safe, hence the guard, and the
+   pointers are NULLed so a stray re-entry cannot double-free). */
+static void	free_session_strings(t_shell *state)
 {
-	int	i;
-
-	i = -1;
-	while (++i < SH_NTRAP)
-	{
-		xfree(state->traps[i]);
-		state->traps[i] = NULL;
-	}
-}
-
-/* Drop the split-$PATH cache (see path_cache_sync). free_tab is not
-   NULL-safe, hence the guard; the pointers are NULLed so a stray re-entry
-   cannot double-free. */
-static void	free_path_cache(t_shell *state)
-{
-	if (state->path_dirs)
-		free_tab(state->path_dirs);
-	state->path_dirs = NULL;
-	xfree(state->path_dirs_src);
-	state->path_dirs_src = NULL;
-}
-
-/* The single canonical shutdown path. Order is deliberate: functions first
-   (they may reference variables), then per-command scratch (input, AST,
-   redirects, proc subs), then session data (history, cwd, positional args,
-   the argv pool, traps). env_index_free() must come after all env lookups;
-   word_slab_teardown() is last so any stray word_free() calls during the
-   earlier steps still work. alloc_live_report() is the ft_malloc leak oracle
-   -- it's a no-op on libc builds and a canary for the slab backend. */
-void	free_all_state(t_shell *state)
-{
-	free_functions(&state->functions);
 	xfree(state->input.ctx);
 	state->input = (t_string){};
 	if (state->alias_exp_owned)
@@ -121,21 +91,56 @@ void	free_all_state(t_shell *state)
 	state->ctx = 0;
 	state->dft_ctx = 0;
 	xfree(state->rl.buff.ctx);
-	free_path_cache(state);
+	if (state->path_dirs)
+		free_tab(state->path_dirs);
+	state->path_dirs = NULL;
+	xfree(state->path_dirs_src);
+	state->path_dirs_src = NULL;
+}
+
+/* Session data, still in free_all_state's order: history, cwd, positional
+   args, the argv pool, the trap table (handler strings are ft_strdup'd in
+   set_one_trap and live for the whole session — freeing them here keeps a
+   script using trap leak-clean like any other), then the dirstack and the
+   for-loop positional snapshot. */
+static void	free_session_data(t_shell *state)
+{
+	int	i;
+
+	free_hist(state);
+	xfree(state->cwd.ctx);
+	pos_free(&state->pos);
+	free_argv_pool(state);
+	i = -1;
+	while (++i < SH_NTRAP)
+	{
+		xfree(state->traps[i]);
+		state->traps[i] = NULL;
+	}
+	free_dirstack(state);
+	if (state->for_snapshot)
+		free_positional_snapshot(state->for_snapshot);
+	state->for_snapshot = NULL;
+}
+
+/* The single canonical shutdown path. Order is deliberate: functions first
+   (they may reference variables), then the owned strings and caches, then
+   per-command scratch (redirects, proc subs, AST), then session data
+   (history, cwd, positional args, the argv pool, traps). env_index_free()
+   must come after all env lookups; word_slab_teardown() is last so any
+   stray word_free() calls during the earlier steps still work.
+   alloc_live_report() is the ft_malloc leak oracle -- it's a no-op on libc
+   builds and a canary for the slab backend. */
+void	free_all_state(t_shell *state)
+{
+	free_functions(&state->functions);
+	free_session_strings(state);
 	free_redirects(&state->redirects);
 	cleanup_proc_subs(state);
 	free_ast(&state->tree);
 	arr_marks_clear(state);
 	attr_clear(state);
-	free_hist(state);
-	xfree(state->cwd.ctx);
-	pos_free(&state->pos);
-	free_argv_pool(state);
-	free_traps(state);
-	free_dirstack(state);
-	if (state->for_snapshot)
-		free_positional_snapshot(state->for_snapshot);
-	state->for_snapshot = NULL;
+	free_session_data(state);
 	env_index_free();
 	parena_destroy();
 	word_slab_teardown();

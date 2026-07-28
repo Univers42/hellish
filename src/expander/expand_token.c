@@ -16,40 +16,6 @@
 char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq);
 void	nounset_abort(t_shell *state, const char *name, int len);
 
-/* Join all positional parameters into a single string separated by the first
-   character of IFS (space by default).  This is the $* / unquoted $@
-   expansion: POSIX says "$@" in a split context should produce one field per
-   positional — that case is handled separately in emit_positional_at.
-   env_get_ifs never returns NULL (unset falls back to " \t\n"), so the
-   separator test must look at the first CHARACTER: with IFS='' there is no
-   separator at all and "$*" concatenates ("ab", not "a<NUL>b").
-   Note: getting $# as a string to do ft_atoi on it is slightly clunky but
-   avoids adding a separate counter field to t_shell. */
-char	*join_positionals(t_shell *state)
-{
-	t_string	out;
-	char		*cnt;
-	char		*k;
-	char		*v;
-	int			i;
-
-	cnt = env_expand(state, "#");
-	i = 0;
-	vec_init(&out);
-	out.elem_size = 1;
-	while (cnt && ++i <= ft_atoi(cnt))
-	{
-		k = ft_itoa(i);
-		v = env_expand(state, k);
-		xfree(k);
-		if (i > 1 && env_get_ifs(&state->env)[0])
-			vec_push(&out, &env_get_ifs(&state->env)[0]);
-		if (v)
-			vec_push_str(&out, v);
-	}
-	return (vec_push(&out, &(char){0}), (char *)out.ctx);
-}
-
 static bool	handle_empty_token(t_token *curr_tt)
 {
 	if (curr_tt->len != 0)
@@ -122,6 +88,23 @@ static bool	expand_positional(t_shell *state, t_token *curr_tt, bool split_ctx)
 	return (true);
 }
 
+/* The array-flavoured ${...} shapes, tried in the exact dispatch order the
+   inline chain used: positional slices, ${#a[@]}, element operators, the
+   extended forms, then plain subscripts.  Split out of expand_token only to
+   stay inside the norm line budget. */
+static bool	try_array_forms(t_shell *state, t_token *curr_tt, bool split_ctx)
+{
+	if (expand_pos_slice(state, curr_tt))
+		return (true);
+	if (expand_array_op(state, curr_tt))
+		return (true);
+	if (expand_array_elem_op(state, curr_tt))
+		return (true);
+	if (expand_array_ext(state, curr_tt, split_ctx))
+		return (true);
+	return (expand_array_token(state, curr_tt, split_ctx));
+}
+
 /* Expand a single $-token (TT_ENVVAR or TT_DQENVVAR) in place.  Priority:
      1. $@ / $* in a split context (emit_positional_at or join_positionals)
      2. Empty-token edge cases (bare $ or $'')
@@ -139,15 +122,7 @@ void	expand_token(t_shell *state, t_token *curr_tt, bool split_ctx)
 		return ;
 	if (handle_empty_token(curr_tt))
 		return ;
-	if (expand_pos_slice(state, curr_tt))
-		return ;
-	if (expand_array_op(state, curr_tt))
-		return ;
-	if (expand_array_elem_op(state, curr_tt))
-		return ;
-	if (expand_array_ext(state, curr_tt, split_ctx))
-		return ;
-	if (expand_array_token(state, curr_tt, split_ctx))
+	if (try_array_forms(state, curr_tt, split_ctx))
 		return ;
 	if (expand_op_token(state, curr_tt, split_ctx))
 		return ;

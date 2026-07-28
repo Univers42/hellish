@@ -75,8 +75,8 @@ bool	parena_try_extend(void *p, size_t old_n, size_t new_n)
 	a = parena();
 	if (!a->on || !p || a->n_chunks == 0)
 		return (false);
-	old_n = PARENA_ROUND(old_n);
-	new_n = PARENA_ROUND(new_n);
+	old_n = parena_round(old_n);
+	new_n = parena_round(new_n);
 	base = (char *)a->chunk[a->cur];
 	if ((char *)p < base || (char *)p + old_n != base + a->off)
 		return (false);

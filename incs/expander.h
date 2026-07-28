@@ -76,7 +76,7 @@ int			expand_dollar_sub(t_shell *state, const char *s, int slen,
    (${v:-w}), length (${#v}) and trim (${v#p}) forms, NULL otherwise. Used by
    both the word expander and the heredoc expander. */
 char		*expand_param_format(t_shell *state, const char *s, int slen,
-			bool dq);
+				bool dq);
 
 /* Process substitution */
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);

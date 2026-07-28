@@ -64,6 +64,27 @@ static const char	*find_subst_op(const char *s, int slen, int *name_len)
 	return (NULL);
 }
 
+/* The lower-priority ${...} forms tried after the operator and trim/subst
+   scans: transforms (@Q family), case conversion (^ , ~), substrings, then
+   the plain-parameter validity gate.  NULL keeps the "plain $v, caller
+   falls through" contract.  Split out of expand_param_format only to stay
+   inside the norm line budget — the priority order is unchanged. */
+static char	*pf_tail_dispatch(t_shell *state, const char *s, int slen)
+{
+	int		name_len;
+	char	xop;
+
+	if (find_xform_op(s, slen, &name_len, &xop))
+		return (expand_xform(state, s, name_len, xop));
+	if (find_case_op(s, slen, &name_len))
+		return (expand_case(state, s, slen, name_len));
+	if (pf_find_substr(s, slen, &name_len))
+		return (expand_substr(state, s, slen, name_len));
+	if (!pf_valid_plain(s, slen))
+		return (pf_bad_subst(state, s, slen));
+	return (NULL);
+}
+
 /* Top-level ${...} dispatcher.  `s` is the raw text between the braces,
    `slen` its byte count.  Priority order — first match wins:
      ${#v}      → length of v                  (expand_strlen)
@@ -80,7 +101,6 @@ char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq)
 	const char	*op;
 	int			name_len;
 	t_pe_op		o;
-	char		xop;
 
 	if (slen <= 0)
 		return (pf_bad_subst(state, s, slen));
@@ -96,13 +116,5 @@ char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq)
 	if (op)
 		return (pf_trim_or_subst(state,
 				pf_make_ctx(s, slen, op, name_len)));
-	if (find_xform_op(s, slen, &name_len, &xop))
-		return (expand_xform(state, s, name_len, xop));
-	if (find_case_op(s, slen, &name_len))
-		return (expand_case(state, s, slen, name_len));
-	if (pf_find_substr(s, slen, &name_len))
-		return (expand_substr(state, s, slen, name_len));
-	if (!pf_valid_plain(s, slen))
-		return (pf_bad_subst(state, s, slen));
-	return (NULL);
+	return (pf_tail_dispatch(state, s, slen));
 }

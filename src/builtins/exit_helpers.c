@@ -19,21 +19,22 @@
    accepts the entire long long range so `exit 9223372036854775807` is a
    valid status that later gets masked to 8 bits.  A non-numeric operand or
    a value that overflows long long returns -1 -> "numeric argument
-   required".  On success stores the value and returns 0. */
+   required".  On success stores the value and returns 0.  The sign is
+   consumed by a boolean increment (i += ...) — one line, not an if, to
+   keep the body inside the 42-norm 25-line ceiling. */
 int	exit_parse_ll(const char *s, long long *out)
 {
 	long long	n;
 	int			i;
 	int			neg;
 
-	i = 0;
-	while (s && (s[i] == ' ' || s[i] == '\t'))
-		i++;
 	if (!s)
 		return (-1);
-	neg = (s[i] == '-');
-	if (s[i] == '-' || s[i] == '+')
+	i = 0;
+	while (s[i] == ' ' || s[i] == '\t')
 		i++;
+	neg = (s[i] == '-');
+	i += (s[i] == '-' || s[i] == '+');
 	if (!ft_isdigit(s[i]))
 		return (-1);
 	n = 0;

@@ -59,7 +59,7 @@ int	umask_opts(char **av, size_t len, int *idx)
 	int	j;
 
 	flags = 0;
-	while ((size_t)*idx < len && av[*idx][0] == '-' && av[*idx][1])
+	while ((size_t)(*idx) < len && av[*idx][0] == '-' && av[*idx][1])
 	{
 		if (ft_strcmp(av[*idx], "--") == 0)
 			return ((*idx)++, flags);

@@ -20,25 +20,6 @@
    target and builds the associative form; the indexed form lives in
    expand_array_assign3.c. */
 
-/* Split one expanded element into "[sub]=value": true with sub/subl/val
-   filled when it starts '[' and has a "]=", false (bare value) otherwise.
-   Quoting that would suppress the subscript is already lost by word
-   expansion — a documented element-level v1 divergence. */
-int	parse_sub_elem(char *elem, char **sub, int *subl, char **val)
-{
-	char	*rb;
-
-	if (elem[0] != '[')
-		return (0);
-	rb = ft_strchr(elem, ']');
-	if (!rb || rb[1] != '=')
-		return (0);
-	*sub = elem + 1;
-	*subl = (int)(rb - (elem + 1));
-	*val = rb + 2;
-	return (1);
-}
-
 /* Does any element carry an explicit [subscript]= prefix? Plain lists
    (a=(x y z)) skip the incremental builder and keep the fast path. */
 int	has_subscript(t_vec *args)
@@ -80,6 +61,18 @@ static int	is_assoc_target(t_executable_cmd *ret, const char *base)
 	return (0);
 }
 
+/* assoc_with_set on `cur`, freeing the old buffer; returns the new one
+   (the assoc twin of idx_set_free in expand_array_assign3.c). */
+static char	*assoc_set_free(char *cur, const char *sub, int subl,
+				const char *val)
+{
+	char	*nv;
+
+	nv = assoc_with_set(cur, sub, subl, val);
+	xfree(cur);
+	return (nv);
+}
+
 /* Build an associative value from [key]=value elements. A plain `=`
    assignment starts from an empty array (bash replaces the whole map);
    `+=` starts from the current value and merges. Bare elements (no
@@ -87,7 +80,6 @@ static int	is_assoc_target(t_executable_cmd *ret, const char *base)
 static char	*build_assoc(t_vec *args, const char *base, int append)
 {
 	char	*cur;
-	char	*nv;
 	char	*sub;
 	char	*val;
 	int		subl;
@@ -101,11 +93,7 @@ static char	*build_assoc(t_vec *args, const char *base, int append)
 	while (i < args->len)
 	{
 		if (parse_sub_elem(((char **)args->ctx)[i++], &sub, &subl, &val))
-		{
-			nv = assoc_with_set(cur, sub, subl, val);
-			xfree(cur);
-			cur = nv;
-		}
+			cur = assoc_set_free(cur, sub, subl, val);
 	}
 	return (cur);
 }
@@ -113,18 +101,21 @@ static char	*build_assoc(t_vec *args, const char *base, int append)
 /* Decide the encoded form for a compound array assignment and build it:
    associative when the target is assoc-typed, indexed-with-subscripts
    when any element is [i]=v, else the plain sequential fast path. base
-   aliases the current value (never freed here). */
+   aliases the current value (never freed here). aa bundles the half-built
+   env entry, the element list and the += flag (norm: four args max). */
 char	*build_array_value(t_shell *state, t_executable_cmd *ret,
-			t_env *ev, t_vec *args, int append)
+			t_arr_assign *aa)
 {
 	const char	*base;
 
-	base = env_expand(state, ev->key);
+	base = env_expand(state, aa->ev->key);
 	if (is_assoc_target(ret, base))
-		return (build_assoc(args, base, append));
-	if (has_subscript(args))
-		return (build_indexed_sub(state, args, base, append));
-	if (append)
-		return (arr_from_elems((char **)args->ctx, (int)args->len, base));
-	return (arr_from_elems((char **)args->ctx, (int)args->len, NULL));
+		return (build_assoc(aa->args, base, aa->append));
+	if (has_subscript(aa->args))
+		return (build_indexed_sub(state, aa->args, base, aa->append));
+	if (aa->append)
+		return (arr_from_elems((char **)aa->args->ctx,
+				(int)aa->args->len, base));
+	return (arr_from_elems((char **)aa->args->ctx,
+			(int)aa->args->len, NULL));
 }

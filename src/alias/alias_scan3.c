@@ -12,11 +12,26 @@
 
 #include "sh_alias.h"
 
+/* << at the cursor, first < already emitted: copy the second <, queue a
+   here-doc delimiter capture (2 = <<- tab-stripping form), and pull in a
+   clustered - or a third < (<<< here-string turns back into a plain
+   redirection target inside asc_op_extra). */
+static void	asc_op_hd(t_ascan *a, t_ascan_src *s)
+{
+	vec_push(&a->out, &s->s[s->pos]);
+	s->pos++;
+	a->pend_hd = 1;
+	if (s->s[s->pos] == '-')
+		a->pend_hd = 2;
+	if (s->s[s->pos] == '-' || s->s[s->pos] == '<')
+		asc_op_extra(a, s);
+}
+
 /* Operator characters at the cursor: copy them through and update the
    position state.  ; | & ( ) and friends put the scanner back in command
    position; < and > (plus clustered <<, >>, <&, >&, >|, <>) arm the
    redirection-target rule instead, and << additionally queues a here-doc
-   delimiter capture (2 = <<- tab-stripping form). */
+   delimiter capture via asc_op_hd. */
 void	asc_op(t_ascan *a)
 {
 	t_ascan_src	*s;
@@ -35,13 +50,7 @@ void	asc_op(t_ascan *a)
 	}
 	if (c == '<' && s->s[s->pos] == '<')
 	{
-		vec_push(&a->out, &s->s[s->pos]);
-		s->pos++;
-		a->pend_hd = 1;
-		if (s->s[s->pos] == '-')
-			a->pend_hd = 2;
-		if (s->s[s->pos] == '-' || s->s[s->pos] == '<')
-			asc_op_extra(a, s);
+		asc_op_hd(a, s);
 		return ;
 	}
 	a->after_redir = true;
@@ -64,32 +73,6 @@ void	asc_op_extra(t_ascan *a, t_ascan_src *s)
 		a->pend_hd = 0;
 		a->after_redir = true;
 	}
-}
-
-/* A newline ends the command: emit it, then, if here-doc delimiters are
-   queued, copy the body lines through verbatim (aliases never expand
-   inside a here-doc body).  Inside an alias value the newline becomes a
-   "; " (or " ") instead — see asc_emit_sep.  The next word is in
-   command position. */
-void	asc_newline(t_ascan *a)
-{
-	t_ascan_src	*s;
-	char		c;
-
-	s = &a->src[a->depth - 1];
-	c = '\n';
-	s->pos++;
-	if (a->depth > 1 && a->hd_n == 0)
-		asc_emit_sep(a);
-	else
-		vec_push(&a->out, &c);
-	while (a->hd_n > 0 && s->s[s->pos])
-		asc_hd_body(a, s);
-	a->cmd_pos = true;
-	a->chk_next = false;
-	a->after_redir = false;
-	a->pend_hd = 0;
-	a->wstart = true;
 }
 
 /* Register a here-doc delimiter captured right after <<.  One level of
