@@ -42,7 +42,11 @@ done
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
-HELLISH="$ROOT/build/bin/hellish"
+bash "$HERE/gen_fixtures.sh"
+HELLISH="${HELLISH_BIN:-$ROOT/build/bin/hellish}"
+if [[ ! -x "$HELLISH" && -x "$HELLISH.exe" ]]; then
+	HELLISH="$HELLISH.exe"
+fi
 BOLD="\e[1m"; GREEN="\e[0;32m"; RED="\e[0;31m"; YEL="\e[0;33m"; GREY="\e[38;5;244m"; END="\e[0m"
 [[ -x "$HELLISH" ]] || { echo -e "${RED}hellish not built at $HELLISH (run: make OPT=1 all)${END}"; exit 1; }
 
