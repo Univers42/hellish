@@ -323,6 +323,14 @@ readline-test: all
 anim-test: all
 	@python3 $(TEST_DIR)/anim_paste_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Prompt git segment must never block on `git status` (real pty): cd into
+# a repo where the scan takes seconds shows the next prompt immediately
+# (the check finishes in the background and the star arrives a render
+# late), TTL refreshes stay non-blocking, and normal-speed repos keep
+# their exact synchronous star. See tests/git_prompt_stall_test.py.
+git-prompt-test: all
+	@python3 $(TEST_DIR)/git_prompt_stall_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Command-line option parsing (-e, -o name, +c, flags after -c, --/-,
 # invalid-option status, $-, mode-dependent nounset) vs bash --posix. These
 # exercise how the shell parses its own argv, which the golden -c harness
@@ -377,5 +385,5 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test readline-test anim-test conformance perf rss charts cli-opts-test \
-	login-test geoman
+	hist-test readline-test anim-test git-prompt-test conformance perf rss \
+	charts cli-opts-test login-test geoman

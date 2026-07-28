@@ -102,6 +102,21 @@ typedef struct s_gitloc
 	int		init;
 }	t_gitloc;
 
+/* State of the async dirty check: the cached answer for `root` (valid for
+   `ttl` seconds past `at`) plus the in-flight `git status` child, if any
+   (pid > 0, `fd` its non-blocking read end, forked at `spawned`). */
+typedef struct s_dcache
+{
+	char	root[PATH_MAX];
+	time_t	at;
+	time_t	ttl;
+	time_t	spawned;
+	pid_t	pid;
+	int		fd;
+	int		dirty;
+	int		init;
+}	t_dcache;
+
 void		vec_push_ansi(t_string *v, const char *seq);
 int			get_cols(void);
 int			measure_width(const char *str);
