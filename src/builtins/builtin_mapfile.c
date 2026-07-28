@@ -40,6 +40,15 @@ static char	*slurp_stdin(void)
 	return ((char *)buf.ctx);
 }
 
+/* Duplicate n bytes of `line` into a fresh element appended to `elems`. */
+static void	push_line(t_vec *elems, const char *line, size_t n)
+{
+	char	*el;
+
+	el = ft_strndup(line, n);
+	vec_push(elems, &el);
+}
+
 /* Split `text` into lines, one array element each. With keep_nl the
    terminating '\n' stays on the element (bash without -t); otherwise it
    is dropped. A trailing partial line (no newline) still becomes an
@@ -59,17 +68,13 @@ static char	*mapfile_encode(const char *text, int keep_nl)
 	{
 		if (text[i] == '\n')
 		{
-			el = ft_strndup(text + start, i - start + keep_nl);
-			vec_push(&elems, &el);
+			push_line(&elems, text + start, i - start + keep_nl);
 			start = i + 1;
 		}
 		i++;
 	}
 	if (i > start)
-	{
-		el = ft_strndup(text + start, i - start);
-		vec_push(&elems, &el);
-	}
+		push_line(&elems, text + start, i - start);
 	el = arr_from_elems((char **)elems.ctx, (int)elems.len, NULL);
 	return (mapfile_free_elems(&elems), el);
 }

@@ -104,39 +104,3 @@ int	set_long_option(t_shell *state, char sign, const char *name)
 		set_opt_edit_mode(state, name, on);
 	return (0);
 }
-
-/* Apply one flag word like "-e", "+e", "-eux". Returns false when the
-   word contains a letter this shell does not implement, so the caller
-   can emit bash's "invalid option" error + status 2 instead of silently
-   swallowing it (a lie about what the shell honours). */
-bool	apply_flag_word(t_shell *state, const char *w)
-{
-	char	sign;
-	int		j;
-
-	sign = w[0];
-	j = 1;
-	while (w[j])
-	{
-		if (!ft_strchr("euxfCanv", w[j]))
-			return (false);
-		if (w[j] == 'e')
-			state->opt_errexit = (sign == '-');
-		else if (w[j] == 'u')
-			state->opt_nounset = (sign == '-');
-		else if (w[j] == 'x')
-			state->opt_xtrace = (sign == '-');
-		else if (w[j] == 'f')
-			state->opt_noglob = (sign == '-');
-		else if (w[j] == 'C')
-			state->opt_noclobber = (sign == '-');
-		else if (w[j] == 'a')
-			state->opt_allexport = (sign == '-');
-		else if (w[j] == 'n')
-			state->opt_noexec = (sign == '-');
-		else if (w[j] == 'v')
-			state->opt_verbose = (sign == '-');
-		j++;
-	}
-	return (true);
-}

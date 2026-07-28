@@ -32,28 +32,6 @@ void	reap_background_children(t_shell *state)
 	}
 }
 
-/* Decide whether to run the next command based on the operator that
-   separates it from the previous one.  ; and newline always run.  &&
-   short-circuits on failure; || short-circuits on success.  Ctrl-C
-   (ctrl_c=true) stops execution regardless of operator so an interrupted
-   pipeline does not stumble forward into the right-hand side. */
-bool	should_execute(t_execution_state prev_status, t_tt prev_op)
-{
-	if (prev_status.ctrl_c)
-		return (false);
-	ft_assert(prev_status.status != -1);
-	ft_assert(prev_op == TT_SEMICOLON || prev_op == TT_NEWLINE
-		|| prev_op == TT_AND || prev_op == TT_OR || prev_op == TT_AMPERSAND);
-	if (prev_op == TT_SEMICOLON || prev_op == TT_NEWLINE
-		|| prev_op == TT_AMPERSAND)
-		return (true);
-	if (prev_op == TT_AND && prev_status.status == 0)
-		return (true);
-	if (prev_op == TT_OR && prev_status.status != 0)
-		return (true);
-	return (false);
-}
-
 /* Find the next & or ; operator in the children list starting from index i.
    Returns the index of the operator, or children.len if not found.
    Also sets *found_amp to true if & was found before ; */
@@ -103,6 +81,28 @@ static void	gather_range_heredocs(t_shell *state, t_ast_node *node,
 	}
 }
 
+/* One separator-delimited range of the list: find where it ends and
+   whether that separator is &, gather its deferred heredocs just in
+   time, run it as a foreground or background group, then advance *i
+   past the separator token. */
+static t_execution_state	run_list_range(t_shell *state,
+								t_executable_node *exe, size_t *i, bool defer)
+{
+	t_execution_state	status;
+	size_t				sep_idx;
+	bool				is_background;
+
+	sep_idx = find_next_separator(exe->node, *i, &is_background);
+	if (defer)
+		gather_range_heredocs(state, exe->node, *i, sep_idx);
+	if (is_background)
+		status = execute_range_background(state, exe, *i, sep_idx);
+	else
+		status = execute_range(state, exe, *i, sep_idx);
+	*i = sep_idx + 1;
+	return (status);
+}
+
 /* Run an AST_SIMPLE_LIST or AST_COMPOUND_LIST.  These are sequences of
    pipelines separated by ; & newline && ||.  We scan forward from the
    current index to the next separator, execute the range as a foreground
@@ -116,8 +116,6 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	status;
 	size_t				i;
-	size_t				sep_idx;
-	bool				is_background;
 	bool				defer;
 
 	defer = state->hd_defer;
@@ -127,14 +125,7 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 	i = 0;
 	while (i < exe->node->children.len)
 	{
-		sep_idx = find_next_separator(exe->node, i, &is_background);
-		if (defer)
-			gather_range_heredocs(state, exe->node, i, sep_idx);
-		if (is_background)
-			status = execute_range_background(state, exe, i, sep_idx);
-		else
-			status = execute_range(state, exe, i, sep_idx);
-		i = sep_idx + 1;
+		status = run_list_range(state, exe, &i, defer);
 		run_pending_traps(state);
 		if (state->should_exit || state->loop_break || state->loop_continue
 			|| state->func_return || get_g_sig()->should_unwind)

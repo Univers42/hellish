@@ -74,19 +74,21 @@ static void	persist_array(t_shell *state, t_executable_cmd *ret, t_env ev)
 int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 		t_executable_cmd *ret)
 {
-	t_vec	args;
-	t_token	key;
-	t_env	ev;
-	int		append;
+	t_vec			args;
+	t_token			key;
+	t_env			ev;
+	t_arr_assign	aa;
 
 	key = ((t_ast_node *)exp->curr->children.ctx)[0].token;
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
 	expand_elems(state, exp->curr, &args);
-	append = (key.len >= 2 && key.start[key.len - 2] == '+');
-	ev.key = ft_strndup(key.start, key.len - 1 - append);
+	aa.append = (key.len >= 2 && key.start[key.len - 2] == '+');
+	ev.key = ft_strndup(key.start, key.len - 1 - aa.append);
 	ev.exported = state->opt_allexport;
-	ev.value = build_array_value(state, ret, &ev, &args, append);
+	aa.ev = &ev;
+	aa.args = &args;
+	ev.value = build_array_value(state, ret, &aa);
 	if (is_assign_builtin(ret))
 		persist_array(state, ret, ev);
 	else

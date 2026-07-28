@@ -47,7 +47,7 @@ t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);
 bool		try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
-			t_ast_node *ret);
+				t_ast_node *ret);
 t_ast_node	parse_tokens(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);

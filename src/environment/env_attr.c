@@ -56,6 +56,15 @@ char	*attr_target(t_shell *state, const char *name, int nlen)
 	return (NULL);
 }
 
+/* Duplicate the optional nameref target: NULL stays NULL so plain -i
+   entries carry no target allocation. */
+static char	*dup_or_null(const char *target)
+{
+	if (target)
+		return (ft_strdup(target));
+	return (NULL);
+}
+
 /* Set (or replace) the attribute of `name`. */
 void	attr_set(t_shell *state, const char *name, char kind,
 			const char *target)
@@ -77,13 +86,13 @@ void	attr_set(t_shell *state, const char *name, char kind,
 		{
 			e->kind = kind;
 			xfree(e->target);
-			e->target = (target ? ft_strdup(target) : NULL);
+			e->target = dup_or_null(target);
 			return ;
 		}
 	}
 	a.name = ft_strdup(name);
 	a.kind = kind;
-	a.target = (target ? ft_strdup(target) : NULL);
+	a.target = dup_or_null(target);
 	vec_push(&state->var_attrs, &a);
 }
 

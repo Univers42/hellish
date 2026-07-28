@@ -25,7 +25,7 @@ bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 char	*lineno_str(t_shell *state);
 
-int	tok_lineno(t_shell *state);
+int		tok_lineno(t_shell *state);
 
 /* Dynamic special variables computed at expansion time, second tier of
    expand_special: $LINENO, plus the bash-isms $RANDOM (0..32767 from the

@@ -71,7 +71,7 @@ static void	collect_word_list(t_deque_tok *tokens, t_ast_node *ret)
 static bool	parse_for_in_clause(t_shell *state, t_parser *parser,
 								t_deque_tok *tokens, t_ast_node *ret)
 {
-	t_tt	next;
+	t_tt		next;
 	t_ltoken	*peek;
 
 	(void)state;

@@ -38,7 +38,7 @@ void	cli_apply_short(t_shell *state, char sign, char c)
    `-o bogus` fails like bash instead of being silently swallowed. */
 int	cli_apply_long(t_shell *state, char sign, const char *name)
 {
-	static const char	*const	ok[] = {"errexit", "nounset", "xtrace",
+	static const char *const	ok[] = {"errexit", "nounset", "xtrace",
 		"noglob", "noclobber", "allexport", "noexec", "verbose", "pipefail",
 		"vi", "emacs", NULL};
 	int							i;

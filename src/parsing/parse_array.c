@@ -40,14 +40,38 @@ static bool	is_array_assign_start(t_token *w, t_ltoken *open, char *base)
 	return (is_valid_ident(w->start, n));
 }
 
+/* Consume the element words up to the closing ')'. Each element is a
+   normal AST_WORD that the reparse pass refines like any other word.
+   Newlines inside the parens are separators (bash allows multi-line
+   arrays); end of input inside the parens asks for more; anything else
+   before the closing brace is a syntax error. */
+static void	collect_array_elems(t_parser *parser, t_deque_tok *tokens,
+				t_ast_node *node)
+{
+	t_token	curr;
+
+	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
+	while (curr.tt == TT_WORD || curr.tt == TT_NEWLINE)
+	{
+		if (curr.tt == TT_WORD)
+			push_parsed_word(tokens, node);
+		else
+			(void)deque_pop_start(&tokens->deqtok);
+		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
+	}
+	if (curr.tt == TT_BRACE_RIGHT)
+		(void)deque_pop_start(&tokens->deqtok);
+	else if (curr.tt == TT_END)
+		parser->res = RES_GETMOREINPUT;
+	else
+		parser->res = RES_ERR;
+}
+
 /* Try to consume WORD=( word... ) from the stream into an
    AST_ARRAY_ASSIGN node: child[0] is the raw key token (kept with its
    trailing '=' or '+=' so the expander can see the append flag), the
-   rest are the element words, each a normal AST_WORD that the reparse
-   pass refines like any other word. Newlines inside the parens are
-   separators (bash allows multi-line arrays); end of input inside the
-   parens asks for more. Returns false when the shape does not match and
-   the caller should treat the word normally. */
+   rest are the element words. Returns false when the shape does not
+   match and the caller should treat the word normally. */
 bool	try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
 			t_ast_node *ret)
 {
@@ -63,20 +87,6 @@ bool	try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
 	node.children.elem_size = sizeof(t_ast_node);
 	add_op_token_child(&node, pop_tok(tokens));
 	(void)deque_pop_start(&tokens->deqtok);
-	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
-	while (curr.tt == TT_WORD || curr.tt == TT_NEWLINE)
-	{
-		if (curr.tt == TT_WORD)
-			push_parsed_word(tokens, &node);
-		else
-			(void)deque_pop_start(&tokens->deqtok);
-		curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
-	}
-	if (curr.tt == TT_BRACE_RIGHT)
-		(void)deque_pop_start(&tokens->deqtok);
-	else if (curr.tt == TT_END)
-		parser->res = RES_GETMOREINPUT;
-	else
-		parser->res = RES_ERR;
+	collect_array_elems(parser, tokens, &node);
 	return (ast_push_child(ret, &node), true);
 }

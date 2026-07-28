@@ -117,16 +117,7 @@ static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 		elem = arr_get_idx(val, idx);
 	else if (val && idx == 0)
 		elem = ft_strdup(val);
-	if (elem)
-	{
-		tt->start = elem;
-		tt->len = (int)ft_strlen(elem);
-		tt->allocated = true;
-		return ((void)parena_note_attach());
-	}
-	tt->start = "";
-	tt->len = 0;
-	tt->allocated = false;
+	arr_elem_emit(tt, elem);
 }
 
 /* Entry, tried before the ${p-w} operator family: recognise NAME[...]

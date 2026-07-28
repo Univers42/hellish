@@ -61,6 +61,22 @@ static void	expand_tilde_user(t_token *t)
 	parena_note_attach();
 }
 
+/* Splice `val` over the first `plen` bytes of token `t`, keeping the rest
+   of the word.  The joined buffer is a fresh allocation the token now owns
+   (allocated flag) and the parena is told about the attachment. */
+static void	tilde_splice(t_token *t, char *val, int plen)
+{
+	t_string	s;
+
+	vec_init(&s);
+	vec_push_str(&s, val);
+	t->allocated = true;
+	parena_note_attach();
+	vec_push_nstr(&s, t->start + plen, t->len - plen);
+	t->start = (char *)s.ctx;
+	t->len = s.len;
+}
+
 /* Replace the leading tilde prefix of token `t` with the appropriate path.
    Dispatch: ~+ → $PWD, ~- → $OLDPWD, ~name → getpwnam(name)->pw_dir,
    ~ alone → $HOME (or the passwd home when HOME is unset, see tilde_home_dir).
@@ -68,9 +84,8 @@ static void	expand_tilde_user(t_token *t)
    unresolvable tilde stays literal). */
 void	expand_tilde_token(t_shell *state, t_token *t)
 {
-	int			template_len;
-	char		*env_val;
-	t_string	s;
+	int		template_len;
+	char	*env_val;
 
 	template_len = 2;
 	if (token_starts_with(*t, CUR_DIR))
@@ -86,12 +101,5 @@ void	expand_tilde_token(t_shell *state, t_token *t)
 	}
 	if (!env_val)
 		return ;
-	vec_init(&s);
-	if (env_val)
-		vec_push_str(&s, env_val);
-	t->allocated = true;
-	parena_note_attach();
-	vec_push_nstr(&s, t->start + template_len, t->len - template_len);
-	t->start = (char *)s.ctx;
-	t->len = s.len;
+	tilde_splice(t, env_val, template_len);
 }

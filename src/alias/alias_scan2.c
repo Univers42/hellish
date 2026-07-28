@@ -12,24 +12,6 @@
 
 #include "sh_alias.h"
 
-/* True while the given name is an active expansion source: POSIX forbids
-   re-expanding a name whose own value is still being spliced, which is
-   what turns `alias e='echo e'; e` into `echo e` instead of a loop. */
-bool	asc_active(t_ascan *a, const char *w, size_t len)
-{
-	int	i;
-
-	i = 1;
-	while (i < a->depth)
-	{
-		if (a->src[i].name && ft_strlen(a->src[i].name) == len
-			&& !ft_strncmp(a->src[i].name, w, len))
-			return (true);
-		i++;
-	}
-	return (false);
-}
-
 /* Measure the word starting at p.  A word runs until an unquoted blank,
    newline or operator character; quoted spans, backslash pairs, $(...)
    and `...` bodies belong to the word.  *plain reports whether the word
@@ -101,11 +83,32 @@ static void	asc_word_state(t_ascan *a, const char *w, size_t len, bool plain)
 	a->wstart = false;
 }
 
+/* Words copied through untouched, never alias-expanded: a queued
+   here-doc delimiter (captured for the body matcher on the way) and a
+   pure digit run glued to < or > (an fd prefix, part of the operator,
+   not a command word).  True means the word was consumed. */
+static bool	asc_word_verbatim(t_ascan *a, t_ascan_src *s, size_t len)
+{
+	if (a->pend_hd)
+	{
+		asc_hd_delim(a, s->s + s->pos, len);
+		vec_push_nstr(&a->out, s->s + s->pos, len);
+		s->pos += len;
+		return (true);
+	}
+	if (asc_digits_redir(s->s + s->pos, len))
+	{
+		vec_push_nstr(&a->out, s->s + s->pos, len);
+		s->pos += len;
+		return (true);
+	}
+	return (false);
+}
+
 /* Handle one word at the cursor: here-doc delimiters and redirection
    targets are copied through untouched; an eligible alias word is
    replaced by pushing its value as the new source; everything else is
-   emitted and folded into the position-tracking state machine.  A pure
-   digit run glued to < or > is an fd prefix, not a word. */
+   emitted and folded into the position-tracking state machine. */
 void	asc_word(t_ascan *a)
 {
 	t_ascan_src	*s;
@@ -114,19 +117,8 @@ void	asc_word(t_ascan *a)
 
 	s = &a->src[a->depth - 1];
 	len = asc_word_span(s->s + s->pos, &plain);
-	if (a->pend_hd)
-	{
-		asc_hd_delim(a, s->s + s->pos, len);
-		vec_push_nstr(&a->out, s->s + s->pos, len);
-		s->pos += len;
+	if (asc_word_verbatim(a, s, len))
 		return ;
-	}
-	if (asc_digits_redir(s->s + s->pos, len))
-	{
-		vec_push_nstr(&a->out, s->s + s->pos, len);
-		s->pos += len;
-		return ;
-	}
 	if (!a->after_redir && (a->cmd_pos || a->chk_next) && plain
 		&& !asc_is_assign(s->s + s->pos, len)
 		&& asc_try_alias(a, s->s + s->pos, len))

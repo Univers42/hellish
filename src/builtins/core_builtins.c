@@ -144,4 +144,3 @@ int	builtin_echo(t_shell *state, t_vec argv)
 	xfree(out.ctx);
 	return (0);
 }
-

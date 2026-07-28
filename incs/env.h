@@ -74,7 +74,7 @@ void		rec_append(t_string *out, long idx, const char *v, int vl);
 typedef struct s_var_attr
 {
 	char	*name;
-	char	kind;   /* 'i' integer, 'n' nameref */
+	char	kind; /* 'i' integer, 'n' nameref */
 	char	*target; /* nameref target name (NULL for -i) */
 }	t_var_attr;
 
@@ -84,9 +84,22 @@ void		attr_set(t_shell *state, const char *name, char kind,
 				const char *target);
 void		attr_clear(t_shell *state);
 
+/* Streaming iterator over an assoc-encoded value: prime with
+   assoc_it_init, then each assoc_next fills k/kl (key slice) and
+   v/vl (value slice), false at end. One struct instead of the five
+   pointer out-params the 42 norm forbids. */
+typedef struct s_assoc_it
+{
+	const char	*cur;
+	const char	*k;
+	const char	*v;
+	int			kl;
+	int			vl;
+}	t_assoc_it;
+
 bool		assoc_is(const char *val);
-bool		assoc_next(const char **cur, const char **k, int *kl,
-				const char **v, int *vl);
+void		assoc_it_init(t_assoc_it *it, const char *val);
+bool		assoc_next(t_assoc_it *it);
 int			assoc_count(const char *val);
 char		*assoc_get(const char *val, const char *key, int klen);
 char		*assoc_with_set(const char *old, const char *key, int klen,

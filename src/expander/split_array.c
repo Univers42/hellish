@@ -52,44 +52,33 @@ void	emit_array_at(t_shell *state, const char *name, t_ast_node *curr_node,
 void	emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
 			int want_keys)
 {
-	const char	*cur;
-	const char	*k;
-	const char	*v;
-	int			kl;
-	int			nth[2];
+	t_assoc_it	it;
+	int			nth;
 
-	cur = val + 1;
-	nth[0] = 0;
-	while (assoc_next(&cur, &k, &kl, &v, &nth[1]))
+	assoc_it_init(&it, val);
+	nth = 0;
+	while (assoc_next(&it))
 	{
-		if (nth[0]++ > 0)
+		if (nth++ > 0)
 			push_and_reinit_curr_node(ret, curr_node);
 		if (want_keys)
-			push_new_env_child(curr_node, ft_strndup(k, kl));
+			push_new_env_child(curr_node, ft_strndup(it.k, it.kl));
 		else
-			push_new_env_child(curr_node, ft_strndup(v, nth[1]));
+			push_new_env_child(curr_node, ft_strndup(it.v, it.vl));
 	}
 }
 
-/* Unquoted ${arr[@]} / ${arr[*]}: one field per element, each element
-   itself IFS-split, exactly like unquoted $@. */
-void	emit_array_split(t_shell *state, const char *name,
-			t_ast_node *curr_node, t_vec_nd *ret)
+/* Element walk of the unquoted form: hard field break between elements,
+   then each element runs through the ordinary IFS splitter. */
+static void	emit_split_loop(t_shell *state, const char *val,
+				t_ast_node *curr_node, t_vec_nd *ret)
 {
-	char		*val;
 	char		*elem;
 	const char	*cur;
 	const char	*v;
 	long		idx;
 	int			nth[2];
 
-	val = env_expand(state, (char *)name);
-	if (!val)
-		return ;
-	if (assoc_is(val))
-		return (emit_assoc_fields(val, curr_node, ret, 0));
-	if (!arr_is(val))
-		return (split_value(state, val, curr_node, ret));
 	cur = val + 1;
 	nth[0] = 0;
 	while (arr_next(&cur, &idx, &v, &nth[1]))
@@ -102,8 +91,26 @@ void	emit_array_split(t_shell *state, const char *name,
 	}
 }
 
+/* Unquoted ${arr[@]} / ${arr[*]}: one field per element, each element
+   itself IFS-split, exactly like unquoted $@. */
+void	emit_array_split(t_shell *state, const char *name,
+			t_ast_node *curr_node, t_vec_nd *ret)
+{
+	char	*val;
+
+	val = env_expand(state, (char *)name);
+	if (!val)
+		return ;
+	if (assoc_is(val))
+		return (emit_assoc_fields(val, curr_node, ret, 0));
+	if (!arr_is(val))
+		return (split_value(state, val, curr_node, ret));
+	emit_split_loop(state, val, curr_node, ret);
+}
+
 /* Emit one field per index (indexed) or key (assoc) for a deferred
-   ${!name[@]} keys-marker; `name` still has its leading '!'. */
+   ${!name[@]} keys-marker; `name` still has its leading '!'. nth pairs
+   the field counter with arr_next's length out-param like above. */
 void	emit_keys_fields(t_shell *state, const char *name,
 			t_ast_node *curr_node, t_vec_nd *ret)
 {
@@ -111,8 +118,7 @@ void	emit_keys_fields(t_shell *state, const char *name,
 	const char	*cur;
 	const char	*v;
 	long		idx;
-	int			vl;
-	int			nth;
+	int			nth[2];
 
 	val = env_expand(state, (char *)name + 1);
 	if (!val)
@@ -122,10 +128,10 @@ void	emit_keys_fields(t_shell *state, const char *name,
 	cur = "";
 	if (arr_is(val))
 		cur = val + 1;
-	nth = 0;
-	while (arr_next(&cur, &idx, &v, &vl))
+	nth[0] = 0;
+	while (arr_next(&cur, &idx, &v, &nth[1]))
 	{
-		if (nth++ > 0)
+		if (nth[0]++ > 0)
 			push_and_reinit_curr_node(ret, curr_node);
 		push_new_env_child(curr_node, ft_itoa((int)idx));
 	}

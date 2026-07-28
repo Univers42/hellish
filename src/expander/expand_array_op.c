@@ -48,25 +48,26 @@ static bool	array_op_split(const char *s, int len, int *nl, int *opat)
 	return (s[*opat] == '#' || s[*opat] == '%' || s[*opat] == '/');
 }
 
-/* Expand OP against one element via the scratch var + scalar engine. */
-static char	*array_op_elem(t_shell *state, const char *op, int oplen,
-				const char *elem)
+/* Expand OP against one element (the [v, v+vl) slice) via the scratch
+   var + scalar engine. Takes the raw slice rather than a C string so the
+   caller does not need its own elem temporary. */
+static char	*array_op_elem(t_shell *state, t_pe_op op, const char *v, int vl)
 {
 	char	*body;
 	char	*res;
 	int		kl;
 
 	env_set(&state->env, env_create(ft_strdup(AOP_VAR),
-			ft_strdup(elem), false));
+			ft_strndup(v, vl), false));
 	kl = (int)ft_strlen(AOP_VAR);
-	body = xmalloc((size_t)kl + oplen + 1);
+	body = xmalloc((size_t)kl + op.wlen + 1);
 	ft_memcpy(body, AOP_VAR, kl);
-	ft_memcpy(body + kl, op, oplen);
-	body[kl + oplen] = '\0';
-	res = expand_param_format(state, body, kl + oplen, false);
+	ft_memcpy(body + kl, op.word, op.wlen);
+	body[kl + op.wlen] = '\0';
+	res = expand_param_format(state, body, kl + op.wlen, false);
 	xfree(body);
 	if (!res)
-		res = ft_strdup(elem);
+		res = ft_strndup(v, vl);
 	return (res);
 }
 
@@ -81,20 +82,17 @@ static void	array_op_loop(t_shell *state, const char *val, t_string *out,
 	long		idx;
 	int			vl;
 	char		*r;
-	char		*el;
 
 	cur = "";
 	if (arr_is(val))
 		cur = val + 1;
 	while (arr_next(&cur, &idx, &v, &vl))
 	{
-		el = ft_strndup(v, vl);
-		r = array_op_elem(state, op.word, op.wlen, el);
+		r = array_op_elem(state, op, v, vl);
 		if (out->len)
 			vec_push_char(out, ' ');
 		vec_push_str(out, r);
 		xfree(r);
-		xfree(el);
 	}
 }
 

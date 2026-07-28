@@ -57,5 +57,6 @@ void		pf_emit_b(t_string *out, const char *arg, bool *stop);
 void		pf_conv(t_pf *pf, t_spec *sp, char conv);
 void		pf_parse_spec(t_pf *pf, const char *fmt, int *i, t_spec *sp);
 void		pf_build_spec(char *dst, t_spec *sp, char conv);
+int			pf_fmt_index(t_vec argv, char **vname);
 
 #endif
