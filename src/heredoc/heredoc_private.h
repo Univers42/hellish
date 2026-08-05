@@ -15,12 +15,13 @@
 
 # include "libft.h"
 # include "shell.h"
+# include "pal.h"
 # include "redir.h"
 # include "env.h"
 # include "expander.h"
 # include <unistd.h>
 # include "helpers.h"
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <stdio.h>
 # include <readline/readline.h>
 # include <fcntl.h>

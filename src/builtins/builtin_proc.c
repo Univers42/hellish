@@ -16,7 +16,7 @@
 #include "job_control.h"
 #include <errno.h>
 #include <string.h>
-#include <sys/wait.h>
+#include "pal_wait.h"
 #include <sys/times.h>
 #include <unistd.h>
 
@@ -124,12 +124,12 @@ int	builtin_wait(t_shell *state, t_vec argv)
 			status = wait_one(state, ((char **)argv.ctx)[i++]);
 		return (status);
 	}
-	pid = waitpid(-1, &status, 0);
+	pid = pal_wait_any(state, &status, 0);
 	while (pid > 0)
 	{
 		bg_done_record(state, pid, status);
 		bg_done_take(state, pid, &drop);
-		pid = waitpid(-1, &status, 0);
+		pid = pal_wait_any(state, &status, 0);
 	}
 	return (job_purge_done(&state->job_table), 0);
 }

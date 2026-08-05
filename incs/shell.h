@@ -36,6 +36,7 @@
 # include "redir.h"
 # include "history.h"
 # include "prompt.h"
+# include "pal_types.h"
 # include "job_control.h"
 # include "sh_alias.h"
 # include "cmd_hash.h"
@@ -250,6 +251,7 @@ typedef struct s_shell
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
 	t_job_table			job_table; /* background job list */
+	t_pal_procs			pal_procs; /* platform process registry (win32) */
 	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				var_attrs; /* declare -i/-n attribute table */
 	t_vec				dirstack; /* pushd/popd dir stack */

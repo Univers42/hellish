@@ -12,7 +12,7 @@
 
 #include "builtins_private.h"
 #include "job_control.h"
-#include <sys/wait.h>
+#include "pal_wait.h"
 #include <sys/times.h>
 #include <unistd.h>
 
@@ -61,7 +61,7 @@ int	wait_one(t_shell *state, const char *arg)
 	pid = wait_arg_pid(state, arg, &rc);
 	if (pid <= 0)
 		return (rc);
-	if (waitpid(pid, &status, 0) < 0)
+	if (pal_waitpid(state, pid, &status, 0) < 0)
 		return (reaped_job_status(state, pid));
 	bg_done_record(state, pid, status);
 	bg_done_take(state, pid, &drop);
@@ -81,7 +81,7 @@ int	wait_n(t_shell *state)
 	int		drop;
 	pid_t	pid;
 
-	pid = waitpid(-1, &status, 0);
+	pid = pal_wait_any(state, &status, 0);
 	if (pid <= 0)
 		return (127);
 	bg_done_record(state, pid, status);

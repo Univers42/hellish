@@ -60,7 +60,7 @@ void	hdoc_attach_backing(t_shell *state, int idx, t_string *body)
 	r = &((t_redir *)state->redirects.ctx)[idx];
 	if (body->len <= HDOC_PIPE_MAX)
 	{
-		if (pipe(p))
+		if (pal_pipe(p))
 			critical_error_errno_ctx("pipe");
 		if (body->len)
 			ft_assert(write_to_file((char *)body->ctx, p[1]) == 0);

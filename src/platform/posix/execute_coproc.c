@@ -70,7 +70,7 @@ static void	coproc_child(t_shell *state, t_executable_node *exe,
 	exe->outfd = STDOUT_FILENO;
 	res = execute_command(state, exe);
 	if (res.pid != -1)
-		exe_res_set_status(&res);
+		exe_res_set_status(state, &res);
 	run_exit_trap(state);
 	forward_exit_status(res);
 }

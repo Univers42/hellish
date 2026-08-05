@@ -30,7 +30,7 @@ static int	herestring_fd(const char *text, size_t len)
 
 	if (len < 60000)
 	{
-		if (pipe(p) != 0)
+		if (pal_pipe(p) != 0)
 			return (-1);
 		if (write(p[1], text, len) < 0 || write(p[1], "\n", 1) < 0)
 			return (close(p[0]), close(p[1]), -1);

@@ -32,8 +32,10 @@ t_execution_state	res_pid(int pid)
    We restart on EINTR (the inner while(1)/waitpid loop) so a SIGCHLD
    from an unrelated background job does not cause us to lose track of
    this specific child.  Ctrl-C (SIGINT from the terminal) is noted in
-   ctrl_c so the parent can print a newline or exit a script. */
-void	exe_res_set_status(t_execution_state *res)
+   ctrl_c so the parent can print a newline or exit a script.  Waits go
+   through pal_waitpid: the win32 shim resolves the pid to a HANDLE via
+   st->pal_procs, which is why the shell handle is threaded in here. */
+void	exe_res_set_status(t_shell *st, t_execution_state *res)
 {
 	int	status;
 
@@ -41,7 +43,7 @@ void	exe_res_set_status(t_execution_state *res)
 		return ;
 	ft_assert(res->pid != -1);
 	while (1)
-		if (waitpid(res->pid, &status, 0) != -1)
+		if (pal_waitpid(st, res->pid, &status, 0) != -1)
 			break ;
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
 		res->ctrl_c = true;
@@ -51,7 +53,7 @@ void	exe_res_set_status(t_execution_state *res)
 
 /* `set -o pipefail`: wait every child (reaping them) and return the rightmost
    non-zero exit, or 0 if all succeeded. */
-static t_execution_state	pipefail_scan(t_vec_exe_res *results)
+static t_execution_state	pipefail_scan(t_shell *st, t_vec_exe_res *results)
 {
 	t_execution_state	*r;
 	t_execution_state	res;
@@ -63,7 +65,7 @@ static t_execution_state	pipefail_scan(t_vec_exe_res *results)
 	{
 		r = (t_execution_state *)vec_idx(results, i);
 		if (r->pid != -1)
-			exe_res_set_status(r);
+			exe_res_set_status(st, r);
 		if (r->status != 0)
 			res = *r;
 		i++;
@@ -84,11 +86,11 @@ t_execution_state	pipeline_status(t_shell *state, t_vec_exe_res *results)
 	{
 		r = (t_execution_state *)vec_idx(results, i);
 		if (r->pid != -1)
-			exe_res_set_status(r);
+			exe_res_set_status(state, r);
 		i++;
 	}
 	set_pipestatus(state, results);
 	if (state->opt_pipefail)
-		return (pipefail_scan(results));
+		return (pipefail_scan(state, results));
 	return (*(t_execution_state *)vec_idx(results, results->len - 1));
 }

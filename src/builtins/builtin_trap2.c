@@ -105,13 +105,13 @@ int	set_one_trap(t_shell *state, const char *action, int num)
 	if (action[0] == '-')
 	{
 		if (num > 0 && num < SH_NSIG)
-			signal(num, SIG_DFL);
+			pal_trap_dfl(state, num);
 		return (0);
 	}
 	state->traps[num] = ft_strdup(action);
 	if (num > 0 && num < SH_NSIG && action[0] == '\0')
-		signal(num, SIG_IGN);
+		pal_trap_ign(state, num);
 	else if (num > 0 && num < SH_NSIG)
-		signal(num, trap_sighandler);
+		pal_trap_arm(state, num, trap_sighandler);
 	return (0);
 }
