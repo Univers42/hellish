@@ -75,7 +75,7 @@ void	cleanup_proc_subs(t_shell *state)
 		entry = &((t_procsub_entry *)state->proc_subs.ctx)[i];
 		if (entry->pid > 0)
 		{
-			waitpid(entry->pid, &status, 0);
+			pal_waitpid(state, entry->pid, &status, 0);
 			entry->pid = -1;
 		}
 		xfree(entry->path);

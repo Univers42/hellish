@@ -22,7 +22,7 @@
 # include "shell.h"
 # include <readline/readline.h>
 # include <stdbool.h>
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <unistd.h>
 # include "sh_input.h"
 # include <stdio.h>

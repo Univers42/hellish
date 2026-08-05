@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/wait.h>
+#include "pal_wait.h"
 
 /* Translate a history specifier to a 0-based array index. NULL means "most
    recent". Positive numbers are 1-based history positions; negative numbers

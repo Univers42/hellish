@@ -27,7 +27,7 @@ void	set_up_redir_pipeline_child(bool is_last, t_executable_node *exe,
 {
 	if (!is_last)
 	{
-		if (pipe(*pp))
+		if (pal_pipe(*pp))
 			critical_error_errno_ctx("pipe");
 		curr_exe->outfd = (*pp)[1];
 		curr_exe->next_infd = (*pp)[0];

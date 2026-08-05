@@ -12,7 +12,7 @@
 
 #include "shell.h"
 #include "job_control.h"
-#include <sys/wait.h>
+#include "pal_wait.h"
 
 /* Stash a finished background child's raw waitpid() status in the ring, so a
    later `wait <pid>` can report it. Writing into a ring means we always have a

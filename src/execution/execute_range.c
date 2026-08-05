@@ -31,7 +31,7 @@ static void	execute_then(t_executable_node *exe,
 	exe_curr.node = child;
 	*status = execute_tree_node(state, &exe_curr);
 	if (status->pid != -1)
-		exe_res_set_status(status);
+		exe_res_set_status(state, status);
 	ft_assert(status->status != -1);
 }
 

@@ -20,7 +20,7 @@
 #include "job_control.h"
 #include "libft.h"
 #include <stdlib.h>
-#include <sys/wait.h>
+#include "pal_wait.h"
 
 /* Zero the whole table and set sentinel values: IDs start at 1,
    current/previous at -1 (meaning "no current job yet"). */
