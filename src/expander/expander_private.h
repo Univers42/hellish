@@ -32,6 +32,7 @@
 
 # include "libft.h"
 # include "shell.h"
+# include "pal.h"
 # include <stdio.h>
 # include "env.h"
 # include "expander.h"
@@ -39,14 +40,14 @@
 # include <stdbool.h>
 # include "ft_glob.h"
 # include "helpers.h"
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <stdlib.h>
 # include <string.h>
 # include "arith.h"
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <errno.h>
 # include <unistd.h>
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <signal.h>
 
 /* Carry-along for $((expr)) expansion: the shell state, the expression text,

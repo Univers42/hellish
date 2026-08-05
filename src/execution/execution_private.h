@@ -14,6 +14,7 @@
 # define EXECUTION_PRIVATE_H
 
 # include "shell.h"
+# include "pal.h"
 # include <stdbool.h>
 # include <sys/stat.h>
 # include <fcntl.h>
@@ -27,7 +28,7 @@
 # include "libft.h"
 # include <readline/readline.h>
 # include <string.h>
-# include <sys/wait.h>
+# include "pal_wait.h"
 # include <signal.h>
 # include "helpers.h"
 # include "expander.h"
@@ -127,7 +128,7 @@ void				prehash_external(t_shell *state, char *argv0);
 void				path_cache_sync(t_shell *state);
 t_execution_state	res_status(int status);
 t_execution_state	res_pid(int pid);
-void				exe_res_set_status(t_execution_state *res);
+void				exe_res_set_status(t_shell *st, t_execution_state *res);
 t_execution_state	pipeline_status(t_shell *state, t_vec_exe_res *results);
 void				set_pipestatus(t_shell *state, t_vec_exe_res *results);
 void				set_pipestatus_one(t_shell *state, int status);

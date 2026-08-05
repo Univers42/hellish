@@ -14,6 +14,7 @@
 # define BUILTINS_PRIVATE_H
 
 # include "shell.h"
+# include "pal.h"
 # include "env.h"
 # include "libft.h"
 # include "ft_builtins.h"

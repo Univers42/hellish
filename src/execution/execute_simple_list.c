@@ -24,11 +24,11 @@ void	reap_background_children(t_shell *state)
 
 	if (state->bg_job_count == 0)
 		return ;
-	pid = waitpid(-1, &status, WNOHANG);
+	pid = pal_wait_any(state, &status, WNOHANG);
 	while (pid > 0)
 	{
 		bg_done_record(state, pid, status);
-		pid = waitpid(-1, &status, WNOHANG);
+		pid = pal_wait_any(state, &status, WNOHANG);
 	}
 }
 

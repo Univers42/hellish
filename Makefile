@@ -29,7 +29,7 @@ TARGET ?= posix
 endif
 
 # Includes (must be defined before CPPFLAGS assignment)
-INCLUDES := -I./incs -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public -I./vendor/libft/srcs/memory/memalloc/slab
+INCLUDES := -I./incs -I./incs/platform/$(TARGET) -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public -I./vendor/libft/srcs/memory/memalloc/slab
 
 # Base compile flags
 CFLAGS_BASE := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
