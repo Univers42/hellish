@@ -1,0 +1,17 @@
+# Build context for docker/Dockerfile.static. Same rule as the from-source
+# image: ship sources + checked-out submodules, never host build artifacts.
+# Host objects leaking in would be worse here than elsewhere -- they are glibc
+# objects, and the whole point of this image is a musl-static link.
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+dist/
+*.log

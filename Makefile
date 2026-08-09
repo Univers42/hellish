@@ -82,6 +82,20 @@ CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
 endif
 
+# Append-only escape hatches for callers that must add flags without rewriting
+# the computed sets. A command-line `CFLAGS=...` would REPLACE everything above
+# (command-line variables beat makefile assignments), silently dropping -O3, the
+# warning flags or the sanitizers; these add instead. `make static` uses
+# EXTRA_LDFLAGS=-static, and libft already exposes the same EXTRA_CFLAGS hook.
+CFLAGS  += $(EXTRA_CFLAGS)
+LDFLAGS += $(EXTRA_LDFLAGS)
+
+# Extra -l flags, appended AFTER -lreadline. Order is load-bearing for a static
+# link: readline's undefined terminal symbols are only resolved by a -lncurses
+# that follows it. Putting them in EXTRA_LDFLAGS would place them before
+# -lreadline (see the link rule) and leave those symbols undefined.
+LDLIBS  += $(EXTRA_LDLIBS)
+
 # Allocator backend selector. SAFE=1 links against libc malloc/free (keeps
 # AddressSanitizer meaningful); SAFE=0 links against the custom ft_malloc heap
 # inside libft (faster, less battle-tested). The default tracks the build mode:
@@ -333,6 +347,52 @@ my_shell:
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
 	@echo '    exec /usr/bin/hellish --login'
 
+# Build a fully static hellish in Alpine and drop it on the HOST at
+# dist/hellish-linux-<arch>. This is the answer to "build it in docker, then
+# run it here": an ordinary container build is NOT host-runnable (it links
+# libreadline.so.8 plus the container's glibc, so it breaks on an older glibc
+# and on every musl distro). Static musl has no interpreter and no .so deps, so
+# the same file runs on Alpine, Debian, Ubuntu, Arch and the 42 machines alike.
+#
+# Needs BuildKit for --output (docker >= 18.09; standard on any current docker).
+# Cross-build with ARCH=arm64 -- that path needs binfmt/qemu registered:
+#   docker run --privileged --rm tonistiigi/binfmt --install all
+STATIC_ARCH ?= $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
+STATIC_OUT  := dist/hellish-linux-$(STATIC_ARCH)
+
+static:
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding static hellish (linux/%s)\033[0m\n\n" \
+		"$(STATIC_ARCH)" >&2
+	@mkdir -p dist
+	DOCKER_BUILDKIT=1 docker build \
+		--platform linux/$(STATIC_ARCH) \
+		-f docker/Dockerfile.static \
+		--target export \
+		--output type=local,dest=dist/.static-$(STATIC_ARCH) \
+		$(if $(BUILD_FLAGS),--build-arg BUILD_FLAGS="$(BUILD_FLAGS)",) \
+		.
+	@mv dist/.static-$(STATIC_ARCH)/hellish $(STATIC_OUT)
+	@rm -rf dist/.static-$(STATIC_ARCH)
+	@chmod 755 $(STATIC_OUT)
+	@printf "\n  \033[1;32m✓\033[0m \033[1;37m%s\033[0m \033[90m(%s)\033[0m\n" \
+		"$(STATIC_OUT)" "$$(du -h $(STATIC_OUT) | cut -f1)" >&2
+	@printf "  \033[90m%s\033[0m\n\n" "$$(file -b $(STATIC_OUT))" >&2
+
+# Prove the container-built binary really does run on THIS host: no dynamic
+# deps, and a real command executes. `make static` alone only proves it ran
+# inside Alpine; this is the part that answers "can I use it on my machine".
+static-verify: static
+	@printf "  \033[1;36m▸\033[0m \033[1;37mVerifying on the host\033[0m\n\n" >&2
+	@if readelf -l $(STATIC_OUT) | grep -q 'program interpreter' \
+		|| readelf -d $(STATIC_OUT) 2>/dev/null | grep -q 'NEEDED'; then \
+		printf "  \033[1;31m✗\033[0m still dynamically linked\n" >&2; exit 1; \
+	else \
+		printf "  \033[1;32m✓\033[0m no interpreter, no shared deps\n" >&2; \
+	fi
+	@HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
+		$(STATIC_OUT) -c 'echo "  ✓ runs on host: $$(uname -s) $$(uname -m), 6*7=$$((6*7))"' >&2
+	@printf "\n" >&2
+
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
 # `docker-test` builds + smoke-tests all four distros; `docker-<distro>` drops
@@ -462,6 +522,7 @@ geoman: all
 	@/bin/bash bench/lib/run_geoman.sh
 
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
+	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
