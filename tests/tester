@@ -41,6 +41,33 @@ if [[ ! -f "$MINISHELL_PATH" ]]; then
     exit 1
 fi
 
+# The suite is a DIFF against `bash --posix`, so the bash in PATH is not a
+# detail -- it is the definition of "correct". bash changes POSIX-visible
+# behaviour between minor releases (5.1 vs 5.3 disagree on ~35 of these cases:
+# printf's status on numeric overflow, umask symbolic validation, cd's status
+# on too many operands, whether `.*` matches . and ..), so an older bash reports
+# failures that are really bash-version drift, not shell bugs. CI pins 5.3.9 for
+# exactly this reason; without the same pin here, `make test` and CI disagree.
+#
+# Prefer a locally built pinned oracle when one exists (`make oracle` puts it
+# there), otherwise use PATH and say plainly what is about to happen.
+ORACLE_HOME="${HELLISH_ORACLE:-$HOME/bash-5.3.9}"
+if [[ -x "$ORACLE_HOME/bin/bash" ]]; then
+    PATH="$ORACLE_HOME/bin:$PATH"
+    export PATH
+fi
+ORACLE_VERSION="$(bash --version 2>/dev/null | head -1 | sed 's/.*version \([0-9.]*\).*/\1/')"
+case "$ORACLE_VERSION" in
+    5.3*) ;;
+    *)
+        printf "${RED}⚠  oracle drift: this suite diffs against bash %s, but the\n" \
+            "${ORACLE_VERSION:-unknown}"
+        printf "   pinned golden oracle is 5.3.x. Expect phantom failures that are\n"
+        printf "   bash-version differences, not hellish bugs.\n"
+        printf "   Build the pinned oracle once:  make oracle${END}\n\n"
+        ;;
+esac
+
 chmod 000 "$TEST_DIR/test_files/invalid_permission" 2>/dev/null
 mkdir -p "$TEST_DIR/outfiles" "$TEST_DIR/mini_outfiles" "$TEST_DIR/bash_outfiles"
 
