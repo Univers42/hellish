@@ -29,7 +29,12 @@ Everything goes through the root Makefile. Two independent knobs; the build bann
 make                # debug build (ASan+LSan, libc heap)
 make OPT=1          # optimized build (ft_malloc heap)
 make re             # fclean + rebuild, race-safe ordering (OPT/SAFE propagate)
-make test           # full suite: ~2500 golden-diff cases vs bash --posix
+make oracle         # build the PINNED bash 5.3.9 the suite is defined against
+                    #   (cached in ~/bash-5.3.9; tests/tester auto-uses it)
+make test           # full suite: ~3000 golden-diff cases vs bash --posix
+make docker-suite   # same suite, hermetic: shell AND oracle from the image
+make static         # static musl binary via docker -> dist/hellish-linux-<arch>
+make static-verify  #   ... and prove it runs on THIS host
 cd tests && ./tester redir pipe   # run only specific category files
 cd tests && ./tester -v <file>    # verbose: show each case's diff
 cd tests && ./verify_alloc.sh     # build BOTH heaps, prove output parity + no leaks
@@ -67,6 +72,17 @@ Runtime knobs (env): `HELLISH_ALLOC_STATS=1` (live bytes at exit), `HELLISH_NO_B
 Interactive shells (and only interactive shells) source `~/.hellishrc` — never scripts, `-c`, or piped input, so tests stay clean. `hellishrc.example` at the repo root documents the prompt escapes and knobs it can set.
 
 ## Test model (read before "fixing" a failure)
+
+- **The bash in PATH is the specification, not an environment detail.** The suite
+  diffs against `bash --posix`, and bash changes POSIX-visible behaviour between
+  minor releases: 5.1/5.2 vs 5.3 disagree on ~35 of these cases (printf's status
+  on numeric overflow and on an empty numeric arg, umask symbolic-mode
+  validation, cd's status on too many operands and on an empty operand, whether
+  `.*` matches `.` and `..`). Grading against an older bash reports those as
+  hellish failures. **Run `make oracle` once**, then `make test`; `tests/tester`
+  prefers that pinned 5.3.9 and warns loudly when it is grading against anything
+  else. If a batch of failures appears in `builtins`/`globbing`/`cd_posix`
+  without a matching source change, suspect oracle drift before touching C.
 
 - A test category is a plain file in `tests/`, one command per line. The harness runs each line through `hellish -c` AND `bash --posix` and diffs **stdout + exit status + any files written**. stderr text is NOT diffed — error wording is free, exit codes are not.
 - Adding a test = append a line to the right category file (or a new file), then `cd tests && ./tester <file>`. Cases too big for one line go in `tests/hard/*.sh` as whole programs.
