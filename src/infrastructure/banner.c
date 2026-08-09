@@ -94,7 +94,6 @@ void	show_welcome(t_shell *state)
 		return ;
 	if (getenv("HELLISH_NO_BANNER"))
 		return ;
-	play_intro();
 	p.title = "hellish " HELLISH_VERSION;
 	p.logo_color = "\033[38;5;209m";
 	build_left(l);
