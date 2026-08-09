@@ -296,6 +296,30 @@ re:
 	@$(MAKE) --no-print-directory all
 	@printf "  \033[1;32m✓\033[0m \033[1;37mRebuilt $(BAPTIZE_SHELL)\033[0m\n\n" >&2
 
+# Build the golden oracle: the exact bash the suite is defined against.
+#
+# `make test` diffs hellish against `bash --posix`, so the bash in PATH IS the
+# specification. bash changes POSIX-visible behaviour across minor releases, and
+# 5.1/5.2 vs 5.3 disagree on ~35 of these cases (printf's status on numeric
+# overflow, umask symbolic validation, cd's status on too many operands, whether
+# `.*` matches . and ..). Run the suite against a distro bash that is a version
+# or two behind and it reports those as hellish failures. They are not. CI has
+# pinned 5.3.9 since the beginning for this reason; this target gives the same
+# pin locally, so `make test` here and CI agree instead of quietly disagreeing.
+#
+# Idempotent and cached: builds once into ~/bash-5.3.9, then exits immediately.
+# tests/tester picks it up automatically (override with HELLISH_ORACLE=...).
+ORACLE_PREFIX ?= $(HOME)/bash-5.3.9
+
+oracle:
+	@if [ -x "$(ORACLE_PREFIX)/bin/bash" ]; then \
+		printf "\n  \033[1;32m✓\033[0m \033[1;37m%s\033[0m \033[90m(cached)\033[0m\n\n" \
+			"$$($(ORACLE_PREFIX)/bin/bash --version | head -1)" >&2; \
+	else \
+		printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding pinned bash 5.3.9 oracle\033[0m\n\n" >&2; \
+		/bin/bash tests/build_oracle.sh "$(ORACLE_PREFIX)"; \
+	fi
+
 # Force a relink so the binary always matches the requested mode (debug here):
 # the OPT/debug object trees are separate but the binary path is shared, and
 # make won't relink on a mode switch alone.
@@ -528,4 +552,4 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman
+	charts cli-opts-test login-test geoman oracle
