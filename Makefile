@@ -362,11 +362,21 @@ norm:
 # Install as the login shell. This is the binary you live in, so it is rebuilt
 # optimized AND safe (OPT=1 SAFE=1 -> libc allocator) by default. You may force
 # the custom heap with `make my_shell SAFE=0`, but then stability is on you.
+# Which binary gets installed. STATIC=1 takes the container-built static one
+# from dist/ instead of compiling here -- the "build it in docker, then run it
+# on my machine" flow. Recursively expanded (`=`, not `:=`) because STATIC_OUT
+# is defined further down the file.
+MY_SHELL_BIN = $(if $(filter 1,$(STATIC)),$(STATIC_OUT),$(BIN_DIR)/$(BAPTIZE_SHELL))
+
 my_shell:
-	@$(MAKE) --no-print-directory re OPT=1 \
-		SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1)
-	@echo "Installing hellish shell (OPT=1 SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1))..."
-	sudo install -m 755 build/bin/hellish /usr/bin/hellish
+	@if [ "$(STATIC)" = "1" ]; then \
+		$(MAKE) --no-print-directory static-verify; \
+	else \
+		$(MAKE) --no-print-directory re OPT=1 \
+			SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1); \
+	fi
+	@echo "Installing hellish shell from $(MY_SHELL_BIN)..."
+	sudo install -m 755 $(MY_SHELL_BIN) /usr/bin/hellish
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
 	@echo "Done. Log out and log back in to use hellish as your default shell."
@@ -418,6 +428,19 @@ static-verify: static
 	@HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
 		$(STATIC_OUT) -c 'echo "  ✓ runs on host: $$(uname -s) $$(uname -m), 6*7=$$((6*7))"' >&2
 	@printf "\n" >&2
+
+# `make docker` -- the reproducible path, and the answer to every "it does not
+# build on this machine" report: the toolchain comes from the image, so a host
+# with a clang too old for -ffat-lto-objects, or without readline headers, or
+# with a purged /goinfre docker root, is no longer your problem. It leaves a
+# fully static, host-runnable binary in dist/ and verifies it HERE.
+#
+# `make` / `make all` deliberately stay a plain native build: this is a 42
+# project, and an evaluator (or CI, or `make test`) runs make on the machine in
+# front of them. Docker is the guaranteed path, not the only one.
+docker: static-verify
+	@printf "  \033[1;37mInstall it as your login shell with:\033[0m\n" >&2
+	@printf "      \033[1;36mmake my_shell STATIC=1\033[0m\n\n" >&2
 
 # Hermetic golden suite: build the shell AND the pinned bash 5.3.9 oracle in
 # one image, then diff them there. This is the run that cannot be wrong because
@@ -562,4 +585,4 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman oracle docker-suite
+	charts cli-opts-test login-test geoman oracle docker-suite docker
