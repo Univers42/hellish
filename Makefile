@@ -510,6 +510,9 @@ hist-test: all
 # which never enters the readline path -- so this is the only gate protecting
 # completion, history recall and vi/emacs switching. Required before touching
 # the readline linkage (see backlog: dlopen readline). tests/readline_paths_test.py
+widechar-test: all
+	@python3 $(TEST_DIR)/widechar_prompt_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 readline-test: all
 	@python3 $(TEST_DIR)/readline_paths_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
@@ -585,4 +588,4 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman oracle docker-suite docker
+	charts cli-opts-test login-test geoman oracle docker-suite docker widechar-test
