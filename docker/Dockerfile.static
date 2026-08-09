@@ -1,0 +1,60 @@
+# ============================================================================
+# Build a FULLY STATIC hellish that runs on any x86_64/arm64 Linux host.
+#
+# Why this exists, and why it is not just docker/Dockerfile with -static:
+# a binary built in an ordinary container is NOT portable to the host. It links
+# libreadline.so.8 and a specific glibc, so it dies on a host with an older
+# glibc ("version `GLIBC_2.38' not found") and on any musl distro. Docker alone
+# buys a REPRODUCIBLE build, not a PORTABLE binary.
+#
+# musl links statically without the caveats glibc has (glibc's static NSS still
+# dlopen()s for getpwnam, which tilde expansion needs), so Alpine is the base.
+# The result has no interpreter and no shared-library dependencies at all.
+#
+# Not run directly -- `make static` drives it and copies the binary out:
+#     make static                 # -> dist/hellish-linux-<arch>
+#     make static ARCH=arm64      # cross-build (needs binfmt/qemu)
+# ============================================================================
+FROM alpine:3.20 AS build
+
+# *-static are the archives themselves; the -dev packages only bring headers
+# and the .so symlinks. A static link needs libreadline.a and libncursesw.a,
+# which live in readline-static / ncurses-static.
+RUN apk add --no-cache \
+	build-base make git bash coreutils \
+	readline-dev readline-static \
+	ncurses-dev ncurses-static
+
+WORKDIR /hellish
+COPY . .
+
+# SAFE=1 (libc allocator) by default: the widest-compatibility combination for
+# a binary meant to be handed to strangers. Override for the custom heap:
+#   docker build --build-arg BUILD_FLAGS="OPT=1 SAFE=0" ...
+ARG BUILD_FLAGS="OPT=1 SAFE=1"
+
+# -static makes it self-contained; -lncursesw resolves the terminal symbols
+# readline leaves undefined (a shared link gets those for free through
+# readline's own DT_NEEDED, a static one does not). EXTRA_* append to the
+# Makefile's computed flags instead of replacing them.
+RUN make fclean >/dev/null 2>&1 || true; \
+	make ${BUILD_FLAGS} EXTRA_LDFLAGS="-static" EXTRA_LDLIBS="-lncursesw"
+
+# Prove it is actually static and actually works, in the image that built it,
+# so a dynamic binary fails the BUILD instead of failing on the user's machine.
+# Asserted with readelf, not ldd: ldd's wording is libc-specific (musl's wrapper
+# and glibc's disagree on what they print for a static binary), whereas the
+# absence of a PT_INTERP segment and of any DT_NEEDED entry is the definition.
+RUN set -eux; \
+	if readelf -l build/bin/hellish | grep -q 'program interpreter'; then \
+		echo "FAIL: binary has a program interpreter (not static)" >&2; exit 1; \
+	fi; \
+	if readelf -d build/bin/hellish 2>/dev/null | grep -q 'NEEDED'; then \
+		echo "FAIL: binary still has shared library dependencies" >&2; exit 1; \
+	fi; \
+	HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
+		./build/bin/hellish -c 'echo static-ok $(uname -m)'
+
+# Scratch stage so `docker build --output` writes ONLY the binary to the host.
+FROM scratch AS export
+COPY --from=build /hellish/build/bin/hellish /hellish

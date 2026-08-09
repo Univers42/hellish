@@ -41,3 +41,6 @@ tests/glob-zoo/symbols/\\\*
 tests/glob-zoo/symbols/\\\?
 tests/[]
 tests/glob-zoo/tab	file
+
+# Host-runnable static binaries produced by `make static`.
+dist/
