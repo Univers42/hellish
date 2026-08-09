@@ -150,11 +150,13 @@ TOTAL := $(words $(SRCS))
 # source file and thrashes the machine. Fall back to sysctl, then to a safe 4.
 NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
-ifeq ($(OPT),1)
-	MAKEFLAGS := --no-print-directory -j$(NPROC)
-else
-	MAKEFLAGS := --no-print-directory -j1
-endif
+# Every mode builds in parallel. The debug tree used to be pinned to -j1, which
+# cost ~6x on a 6-core box for no benefit: the compile rule creates its output
+# directories with `mkdir -p` (race-safe), each .o is an independent target, and
+# `re` already serialises fclean before all via two sub-makes rather than by
+# starving the job server. Only the inline progress animation interleaves, which
+# is cosmetic. -j is exported through MAKEFLAGS, so libft inherits it too.
+MAKEFLAGS := --no-print-directory -j$(NPROC)
 
 # Add this variable at the top with your other variables
 COMPILED := 0
