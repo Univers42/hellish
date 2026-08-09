@@ -1,0 +1,16 @@
+# Build context for docker/Dockerfile.suite (hermetic golden-suite run): ship
+# sources + submodules + the tests tree, never host build artifacts. Host
+# objects leaking in would be built against the host's libc, not the image's.
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+dist/
+*.log

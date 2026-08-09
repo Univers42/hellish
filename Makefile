@@ -419,6 +419,16 @@ static-verify: static
 		$(STATIC_OUT) -c 'echo "  ✓ runs on host: $$(uname -s) $$(uname -m), 6*7=$$((6*7))"' >&2
 	@printf "\n" >&2
 
+# Hermetic golden suite: build the shell AND the pinned bash 5.3.9 oracle in
+# one image, then diff them there. This is the run that cannot be wrong because
+# of the host -- both sides of the comparison come from the image. Use it when a
+# local `make test` disagrees with CI, or on any machine whose bash is not 5.3.
+#   make docker-suite                      # everything
+#   make docker-suite SUITE_ARGS="redir pipe"
+docker-suite:
+	docker build -f docker/Dockerfile.suite -t hellish:suite .
+	docker run --rm hellish:suite $(SUITE_ARGS)
+
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
 # `docker-test` builds + smoke-tests all four distros; `docker-<distro>` drops
@@ -552,4 +562,4 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman oracle
+	charts cli-opts-test login-test geoman oracle docker-suite

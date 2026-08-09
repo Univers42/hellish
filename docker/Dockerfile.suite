@@ -1,0 +1,44 @@
+# ============================================================================
+# Run the full golden suite in a container that pins BOTH sides of the diff.
+#
+# The suite compares hellish against `bash --posix`, so a run is only
+# meaningful if the bash grading it is the pinned 5.3.9. On a host with an
+# older bash the suite reports ~35 phantom failures that are bash-version
+# drift, not shell bugs (5.1/5.2 vs 5.3 disagree on printf's overflow status,
+# umask symbolic validation, cd's status on too many operands, and whether
+# `.*` matches . and ..). That is the configuration problem this image ends:
+# the toolchain AND the oracle come from the image, not from the host.
+#
+#     make docker-suite          # full suite, hermetic
+#     make docker-suite SUITE_ARGS="redir pipe"
+# ============================================================================
+FROM debian:stable-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+        build-essential libreadline-dev git ca-certificates bash \
+        curl patch \
+ && rm -rf /var/lib/apt/lists/*
+
+# Build the pinned oracle FIRST and in its own layer: it is the slowest step
+# and it changes only when the pin changes, so editing shell sources re-runs
+# the suite without rebuilding bash.
+COPY tests/build_oracle.sh /tmp/build_oracle.sh
+RUN /bin/bash /tmp/build_oracle.sh /opt/bash-5.3.9 \
+ && /opt/bash-5.3.9/bin/bash --version | head -1
+
+# Ahead of the distro bash, so `bash --posix` inside the harness IS the pin.
+ENV PATH=/opt/bash-5.3.9/bin:$PATH
+ENV HELLISH_ORACLE=/opt/bash-5.3.9
+
+WORKDIR /hellish
+COPY . .
+
+ARG BUILD_FLAGS="OPT=1 SAFE=1"
+RUN make fclean >/dev/null 2>&1 || true; make ${BUILD_FLAGS}
+
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
+
+# The harness must run from tests/. Args pass through as category filters.
+WORKDIR /hellish/tests
+ENTRYPOINT ["/bin/bash", "tester"]
