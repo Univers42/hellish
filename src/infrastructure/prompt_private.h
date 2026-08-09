@@ -121,6 +121,10 @@ void		vec_push_ansi(t_string *v, const char *seq);
 int			get_cols(void);
 int			measure_width(const char *str);
 char		*shorten_path(const char *path, int maxlen);
+
+/* Tail of `path` fitting `cols` terminal columns, cut on a character
+   boundary (never inside a multibyte sequence). Defined in prompt_path.c. */
+char		*path_tail_cols(const char *path, int cols);
 const char	*pal(int id);
 int			pal_truecolor(void);
 t_gitloc	*repo_locate(void);

@@ -97,30 +97,34 @@ int	measure_width(const char *str)
 	return (total);
 }
 
-/* Shorten a long path to fit in `maxlen` bytes by replacing a long leading
-   prefix with ".../" while keeping as many trailing path components as fit.
-   We walk backwards from the end to find a slash boundary rather than cutting
-   mid-component, so the result is always a valid path fragment. */
+/* Shorten a long path to fit in `maxlen` terminal COLUMNS by replacing a long
+   leading prefix with ".../", keeping as many trailing path components as fit.
+   We walk backwards to a slash boundary rather than cutting mid-component, so
+   the result is always a valid path fragment.
+
+   Both measurements here used to be byte counts weighed against a column
+   budget (the caller passes cols - 50). They agree only while the path is
+   pure ASCII; one accented directory name and the prompt is shortened more
+   than it needed to be. The fallback cut is delegated to path_tail_cols so it
+   can never land inside a multibyte character -- see the note there. */
 char	*shorten_path(const char *path, int maxlen)
 {
-	size_t			plen;
 	const char		*p;
 	int				kept;
 	char			*out;
 
-	plen = ft_strlen(path);
-	if ((int)plen <= maxlen)
+	if (measure_width(path) <= maxlen)
 		return (ft_strdup(path));
-	p = path + plen;
+	p = path + ft_strlen(path);
 	kept = 0;
 	while (p > path && kept < maxlen - 4)
 	{
 		p--;
 		if (*p == '/')
-			kept = (int)(path + plen - p - 1);
+			kept = measure_width(p + 1);
 	}
 	if (p <= path || kept == 0)
-		return (ft_strdup(path + plen - (maxlen - 4)));
+		return (path_tail_cols(path, maxlen - 4));
 	out = ft_strjoin(".../", p + 1);
 	return (out);
 }
