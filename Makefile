@@ -6,7 +6,7 @@
 #    By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/06/06 03:00:29 by dlesieur          #+#    #+#              #
-#    Updated: 2026/06/06 03:00:30 by dlesieur         ###   ########.fr        #
+#    Updated: 2026/08/05 17:19:23 by dlesieur         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -57,9 +57,16 @@ else
 LDFLAGS_BASE +=
 endif
 
+# The shell links against libreadline for its interactive line editor. Kept in
+# LDLIBS (not LDFLAGS) so it lands AFTER the objects and libft.a on the link
+# line, where a static-archive-aware linker actually resolves it.
 LDLIBS      := -lreadline
-BAPTIZE_SHELL ?= hellish
 
+# Binary name. MUST stay `?=`-defined and non-empty: every rule below builds
+# `$(BIN_DIR)/$(BAPTIZE_SHELL)`, and an empty value makes that the *directory*
+# `build/bin/`, which already exists -- so `make` prints the banner, decides
+# there is nothing to do, and exits 0 without compiling a single file.
+BAPTIZE_SHELL ?= hellish
 
 # Choose flags: default = debug; pass OPT=1 when calling make to enable optimizations
 ifdef OPT
@@ -124,8 +131,13 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
+# Job count. `nproc` is coreutils, so it is absent on macOS/BSD -- and a bare
+# `-j` with an empty argument means UNLIMITED jobs, which forks one compiler per
+# source file and thrashes the machine. Fall back to sysctl, then to a safe 4.
+NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+
 ifeq ($(OPT),1)
-	MAKEFLAGS := --no-print-directory -j$(shell nproc)
+	MAKEFLAGS := --no-print-directory -j$(NPROC)
 else
 	MAKEFLAGS := --no-print-directory -j1
 endif
@@ -156,30 +168,60 @@ $(OBJ_DIR)/platform/%.o: CPPFLAGS += -I./src/execution -I./src/expander \
 	-I./src/builtins -I./src/job_control -I./src/infrastructure
 
 # Compile .c -> .o with inline animation
+
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(BIN_DIR)
 	@mkdir -p $(dir $@)
 	@printf "\033c\n" >&2
-	@filename=$$(basename $<); \
-	{ \
-	    for spin in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'; do \
-	        printf "\r  \033[1;35m$$spin\033[0m \033[37mCompiling %-40s\033[0m" "$$filename" >&2; \
-	        sleep 0.02; \
-	    done & \
-	    pid=$$!; \
-	    $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@ 2>/dev/null; \
-	    result=$$?; \
-	    kill $$pid 2>/dev/null; \
-	    wait $$pid 2>/dev/null; \
-	    if [ $$result -eq 0 ]; then \
-	        count=$$(find $(OBJ_DIR) -name "*.o" 2>/dev/null | wc -l); \
-	        printf "\r  \033[1;32m✓\033[0m \033[37m%-40s\033[0m \033[1;36m%d\033[90m/\033[37m%d\033[0m" "$$filename" $$count $(TOTAL) >&2; \
-	    else \
-	        printf "\r  \033[1;31m✗\033[0m \033[37m%-40s\033[0m \033[1;31mFAILED\033[0m\n\n" "$$filename" >&2; \
-	        $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@; \
-	        exit 1; \
-	    fi; \
-	}
+	@filename=$$(basename "$<"); \
+	( \
+		while :; do \
+			for spin in "⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧"; do \
+				printf "\r  \033[1;35m%s\033[0m \033[37mCompiling %-40s\033[0m" "$$spin" "$$filename" >&2; \
+				sleep 0.02; \
+			done; \
+		done \
+	) & \
+	pid=$$!; \
+	$(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c "$<" -o "$@"; \
+	result=$$?; \
+	kill $$pid >/dev/null 2>&1 || true; \
+	wait $$pid >/dev/null 2>&1 || true; \
+	if [ $$result -eq 0 ]; then \
+		count=$$(find "$(OBJ_DIR)" -name "*.o" | wc -l); \
+		printf "\r  \033[1;32m✓\033[0m \033[37m%-40s\033[0m \033[1;36m%d\033[90m/\033[37m%d\033[0m\n" \
+			"$$filename" "$$count" "$(TOTAL)" >&2; \
+	else \
+		printf "\r  \033[1;31m✗\033[0m \033[37m%-40s\033[0m \033[1;31mFAILED\033[0m\n\n" \
+			"$$filename" >&2; \
+		exit $$result; \
+	fi
+
+# $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+# 	@mkdir -p $(BIN_DIR)
+# 	@mkdir -p $(dir $@)
+# 	@printf "\033c\n" >&2
+# 	@filename=$$(basename $<); \
+# 	{ \
+# 	    for spin in '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧'; do \
+# 	        printf "\r  \033[1;35m$$spin\033[0m \033[37mCompiling %-40s\033[0m" "$$filename" >&2; \
+# 	        sleep 0.02; \
+# 	    done & \
+# 	    pid=$$!; \
+# 	    echo $(CC) $(CPPFLAGS) $(CFLAGS);
+# 	    $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@; \
+# 	    result=$$?; \
+# 	    kill $$pid 2>/dev/null; \
+# 	    wait $$pid 2>/dev/null; \
+# 	    if [ $$result -eq 0 ]; then \
+# 	        count=$$(find $(OBJ_DIR) -name "*.o" 2>/dev/null | wc -l); \
+# 	        printf "\r  \033[1;32m✓\033[0m \033[37m%-40s\033[0m \033[1;36m%d\033[90m/\033[37m%d\033[0m" "$$filename" $$count $(TOTAL) >&2; \
+# 	    else \
+# 	        printf "\r  \033[1;31m✗\033[0m \033[37m%-40s\033[0m \033[1;31mFAILED\033[0m\n\n" "$$filename" >&2; \
+# 	        $(CC) $(CPPFLAGS) $(CFLAGS) -MMD -MP -c $< -o $@; \
+# 	        exit 1; \
+# 	    fi; \
+# 	}
 
 # Include dependency files if present
 -include $(DEPS)
@@ -202,7 +244,7 @@ submodule update --init --checkout srcs/memory/ft_malloc\n" >&2; exit 1; }; \
 	fi
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3, %s)\033[0m\n\n" \
 		"$(if $(filter ft,$(SAFE_TAG)),ft_malloc,libc)" >&2
-	@$(MAKE) -C vendor/libft -j1 SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
+	@$(MAKE) -C vendor/libft  SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
 	@printf "\n" >&2
 
 clean:
@@ -210,12 +252,17 @@ clean:
 	@rm -rf $(OBJ_DIR)
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mBuild artifacts cleaned\033[0m\n\n" >&2
 
+# SAFE is forwarded explicitly to the libft sub-make below. Only a SAFE= typed
+# on the command line propagates on its own (via MAKEFLAGS); the per-mode
+# default set above does not, so a plain `make fclean` used to reach libft with
+# SAFE unset -- landing in its SAFE!=1 branch, running the LTO capability probe
+# and printing its warning just to delete files.
 fclean: clean
 	@printf "  \033[1;33m⚠\033[0m \033[1;37mRemoving binary\033[0m" >&2
 	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mBinary removed\033[0m\n\n" >&2
 	@printf "  \033[1;35m●\033[0m \033[1;37mCleaning libft\033[0m" >&2
-	@$(MAKE) -C vendor/libft fclean BUILD_DIR=build-$(SAFE_TAG)
+	@$(MAKE) -C vendor/libft fclean SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
 	@rm -rf vendor/libft/build-ft vendor/libft/build-libc vendor/libft/build
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mlibft cleaned\033[0m\n" >&2
 	@rm -rf build
