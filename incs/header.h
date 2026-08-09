@@ -69,17 +69,8 @@ int			header_width(const char *s);
 /* Copy at most `max` columns of `src` into `dst`; returns the width used. */
 int			header_clip(char *dst, size_t size, const char *src, int max);
 
-/* The mascot animation frames (array of frames, each a NULL-ended line list);
-   `count` receives the frame count. Defined in intro_frames.c. */
-const char	***intro_frames(size_t *count);
-
 /* Render the whole panel: a title-bearing top border, the two columns, and the
    closing border — spanning the full width and truncating to fit. */
 void		render_panel(const t_panel *p);
-
-/* First-run marker, so the entrance animation plays once then stays out of the
-   way (a fast startup on every later launch). */
-int			intro_seen(void);
-void		intro_mark_seen(void);
 
 #endif

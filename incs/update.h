@@ -67,7 +67,4 @@ int			fetch_latest_tag(char *out, size_t n);
 /* The welcome banner, shown once at interactive startup. */
 void		show_welcome(t_shell *state);
 
-/* The animated mascot entrance, played once before the welcome panel. */
-void		play_intro(void);
-
 #endif
