@@ -12,14 +12,23 @@
 
 #include "expander_private.h"
 
-/* Scan the ${...} body for a # / ## or % / %% operator that follows the
-   variable name.  Sets *name_len to the length of the name prefix so the
-   caller knows where the operator starts.  Returns a pointer to the first
-   operator character, or NULL if no trim operator is present. */
-static const char	*find_trim_op(const char *s, int slen, int *name_len)
+/* Length of the parameter name at the head of a ${...} body, for the
+   trim and substitution scanners: one of the SCALAR specials, a digit-run
+   positional, or an identifier.  0 when no name starts the body.
+     The scalar set is "-?$!" and the omissions are deliberate.  @ and * are
+   out because they expand to a field LIST — trimming those is per-element
+   work the scalar evaluators below cannot do, so ${@%x} keeps routing to
+   bad substitution exactly as before.  # is out because it is unreachable:
+   expand_param_format claims a leading '#' as the length form first.
+     Without the specials here, `${-#*e}` — the idiom every nvm.sh-style rc
+   file uses to test a flag in $- — died as a bad substitution, which is
+   fatal (127) in a non-interactive shell. */
+static int	pf_scan_scalar_name(const char *s, int slen)
 {
 	int	i;
 
+	if (slen > 0 && s[0] && ft_strchr("-?$!", s[0]))
+		return (1);
 	i = 0;
 	if (i < slen && ft_isdigit((unsigned char)s[i]))
 		while (i < slen && ft_isdigit((unsigned char)s[i]))
@@ -30,7 +39,19 @@ static const char	*find_trim_op(const char *s, int slen, int *name_len)
 		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
 			i++;
 	}
-	else
+	return (i);
+}
+
+/* Scan the ${...} body for a # / ## or % / %% operator that follows the
+   variable name.  Sets *name_len to the length of the name prefix so the
+   caller knows where the operator starts.  Returns a pointer to the first
+   operator character, or NULL if no trim operator is present. */
+static const char	*find_trim_op(const char *s, int slen, int *name_len)
+{
+	int	i;
+
+	i = pf_scan_scalar_name(s, slen);
+	if (i <= 0)
 		return (NULL);
 	*name_len = i;
 	if (i < slen && (s[i] == '%' || s[i] == '#'))
@@ -46,17 +67,8 @@ static const char	*find_subst_op(const char *s, int slen, int *name_len)
 {
 	int	i;
 
-	i = 0;
-	if (i < slen && ft_isdigit((unsigned char)s[i]))
-		while (i < slen && ft_isdigit((unsigned char)s[i]))
-			i++;
-	else if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
-	{
-		i++;
-		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
-			i++;
-	}
-	else
+	i = pf_scan_scalar_name(s, slen);
+	if (i <= 0)
 		return (NULL);
 	*name_len = i;
 	if (i < slen && s[i] == '/')

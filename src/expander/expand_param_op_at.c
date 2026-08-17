@@ -13,16 +13,22 @@
 #include "expander_private.h"
 
 /* Scan a parameter name at the start of a ${...} body: the aggregates @ and
-   *, a digit-run positional, or an identifier.  Returns the name length, or
-   0 when the body does not start with a parameter name.  Shared by
-   find_param_op; the trim/subst scanners keep their own identifier-only
-   scan so ${@%x} still routes to bad substitution unchanged. */
+   *, the scalar specials - ? $ !, a digit-run positional, or an identifier.
+   Returns the name length, or 0 when the body does not start with a
+   parameter name.  Shared by find_param_op; the trim/subst scanners keep
+   their own scan, which omits @ and * so ${@%x} still routes to bad
+   substitution unchanged.
+     '!' lands here only once ${!name} indirection has been ruled out, so
+   ${!v}, ${!pre*} and ${!a[@]} are unaffected — what it buys is ${!-w} and
+   friends, where the operator, not the name, is what follows the bang. */
 int	pf_scan_name(const char *s, int slen)
 {
 	int	i;
 
 	i = 0;
 	if (i < slen && (s[i] == '@' || s[i] == '*'))
+		return (1);
+	if (i < slen && s[i] && ft_strchr("-?$!", s[i]))
 		return (1);
 	if (i < slen && ft_isdigit((unsigned char)s[i]))
 	{

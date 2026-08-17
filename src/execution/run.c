@@ -30,14 +30,14 @@ static void	preserve_errno_exec_failed(t_shell *state, char **path_of_exe,
 	errno = saved_errno;
 }
 
-/* The child side of executing an external command.  We check builtins and
-   functions first (run_builtin_or_continue calls exit()), then resolve the
-   path (find_exe_path_wrapper), publish it as ULTIMATE_ARG ("_"), build
-   the envp array, and finally execve.  execve only returns on failure, so
+/* Resolve argv[0] on PATH and execve it, consulting NEITHER the function
+   table nor the builtin table.  Publishes the resolved path as ULTIMATE_ARG
+   ("_"), builds envp, then execve -- which only returns on failure, so
    everything after try_exec_with_fallback is cleanup + status mapping.
-   This function runs in a forked child -- it must never return to the
-   parent's call stack. */
-int	actually_run(t_shell *state, t_vec *args)
+   Runs in a forked child; it must never return to the parent's call stack.
+     Split out of actually_run for `command`: skipping the function lookup
+   is the entire point of that builtin, and it needs this half alone. */
+int	exec_external_argv(t_shell *state, t_vec *args)
 {
 	char	*path_of_exe;
 	char	**envp;
@@ -45,7 +45,6 @@ int	actually_run(t_shell *state, t_vec *args)
 
 	path_of_exe = NULL;
 	ft_assert(args->len >= 1);
-	run_builtin_or_continue(state, args);
 	status = find_exe_path_wrapper(state,
 			((char **)(args->ctx))[0], &path_of_exe);
 	if (status != 0)
@@ -56,4 +55,14 @@ int	actually_run(t_shell *state, t_vec *args)
 	try_exec_with_fallback(path_of_exe, args, envp);
 	preserve_errno_exec_failed(state, &path_of_exe, args, envp);
 	return (map_errno_to_exit());
+}
+
+/* The child side of executing an external command.  Builtins and functions
+   win first (run_builtin_or_continue calls exit()); everything else falls
+   through to the plain external path. */
+int	actually_run(t_shell *state, t_vec *args)
+{
+	ft_assert(args->len >= 1);
+	run_builtin_or_continue(state, args);
+	return (exec_external_argv(state, args));
 }
