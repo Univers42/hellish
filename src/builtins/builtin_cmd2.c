@@ -46,32 +46,6 @@ int	builtin_return(t_shell *state, t_vec argv)
 	return (n & 0xFF);
 }
 
-/* Join argv[from..] into a space-separated string to feed to exec_string.
-   Used by command_run when we need to fall back to re-parsing an external
-   command invocation (the builtin path takes a different route). */
-static char	*join_from(t_vec argv, size_t from)
-{
-	char	**av;
-	char	*acc;
-	char	*tmp;
-
-	av = (char **)argv.ctx;
-	acc = ft_strdup("");
-	while (from < argv.len)
-	{
-		tmp = ft_strjoin(acc, av[from]);
-		xfree(acc);
-		acc = tmp;
-		if (++from < argv.len)
-		{
-			tmp = ft_strjoin(acc, " ");
-			xfree(acc);
-			acc = tmp;
-		}
-	}
-	return (acc);
-}
-
 /* Silent PATH search for command -v. */
 static int	command_v(t_shell *state, char *name)
 {
@@ -102,14 +76,23 @@ static int	command_v(t_shell *state, char *name)
 }
 
 /* Run the command at argv[start..], bypassing function lookup. If it is a
-   builtin, invoke it directly. Otherwise re-join the words and hand them to
-   exec_string so the full pipeline/redirect machinery runs. */
+   builtin, invoke it directly; otherwise fork and execve the words we
+   already hold.
+     This used to re-join those words with spaces and feed the result back
+   through exec_string -- a SECOND trip through the lexer, expander and
+   dispatcher. Every one of those stages then re-ran on already-final text,
+   so `command sed -e "s#a#A#"` lost its quoting, an argument containing a
+   space became two, a literal `a*` re-globbed against the cwd, an embedded
+   newline or `;` split the line into extra commands, an empty argument
+   vanished -- and the re-dispatch found the shell function again, defeating
+   the one thing `command` is for. run_external_sync takes the argv as it
+   stands and never re-parses it. */
 static int	command_run(t_shell *state, t_vec argv, size_t start)
 {
 	char	**av;
 	t_vec	sub;
 	size_t	i;
-	char	*cur;
+	int		rc;
 
 	av = (char **)argv.ctx;
 	vec_init(&sub);
@@ -118,11 +101,9 @@ static int	command_run(t_shell *state, t_vec argv, size_t start)
 	while (i < argv.len)
 		vec_push(&sub, &av[i++]);
 	if (builtin_func(av[start]))
-		return (i = builtin_func(av[start])(state, sub), xfree(sub.ctx), i);
-	xfree(sub.ctx);
-	cur = join_from(argv, start);
-	i = exec_string(state, cur);
-	return (xfree(cur), i);
+		return (rc = builtin_func(av[start])(state, sub), xfree(sub.ctx), rc);
+	rc = run_external_sync(state, &sub);
+	return (xfree(sub.ctx), rc);
 }
 
 /* command [-p] [-v|-V] cmd [args]: run cmd bypassing functions. */

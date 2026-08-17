@@ -63,6 +63,12 @@ make charts         # regenerate bench/charts/*.svg from whatever harness output
                     #   (never re-measures — charting and measuring stay separate)
 make rss            # peak-RSS dimension alone (needs a prior `make perf` build)
 make my_shell       # sudo-install to /usr/bin + register as a login shell (OPT=1 SAFE=1)
+make user-install   # the SUDO-LESS route (user-install.sh): ~/.local/bin + a
+                    #   marker-delimited `exec hellish` hook in the login shell's rc.
+                    #   chsh cannot be used without root (shell must be in /etc/shells),
+                    #   so the rc hook is the mechanism. Idempotent; smoke-tests the
+                    #   binary BEFORE writing the hook. PREFIX=/RC_TARGET=/STATIC=1.
+make user-uninstall #   ... strip the hook and remove the binary
 ```
 
 Run it: `./build/bin/hellish [script.sh]`, `-c 'cmd'`, or pipe into it (non-TTY). Debug views compose: `--debug=lexer --debug=parser --debug=ast`.

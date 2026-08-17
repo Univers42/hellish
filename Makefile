@@ -383,6 +383,45 @@ my_shell:
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
 	@echo '    exec /usr/bin/hellish --login'
 
+# The same thing on a machine where you are not root -- a lab box, a shared
+# server, a 42 cluster account. `my_shell` cannot work there: it needs sudo to
+# drop the binary in /usr/bin and, more fundamentally, chsh REFUSES any shell
+# that is not listed in /etc/shells, and only root writes that file.
+#
+# So this target takes the other route every user already owns: install into
+# ~/.local/bin, then append one marker-delimited block to your login shell's
+# rc file that `exec`s hellish for interactive sessions. exec replaces the
+# process, so this is a real shell and not an alias or a wrapper -- ps shows
+# hellish, $$ is hellish, closing it closes the tab. Your passwd entry is
+# never touched, which is what keeps `ssh host 'cmd'` working and leaves you a
+# way back in.
+#
+# Idempotent: re-run it after every rebuild, it replaces the block in place.
+# The binary is smoke-tested BEFORE the hook is written, so a broken build can
+# never leave you with terminals that die on open.
+#
+#   make user-install                 OPT=1 SAFE=1 build, then install
+#   make user-install STATIC=1        install the docker-built static binary
+#   make user-install PREFIX=~/opt    somewhere other than ~/.local
+#   make user-install RC_TARGET=~/.bashrc   hook a specific rc file
+#   make user-uninstall               remove the hook and the binary
+user-install:
+	@if [ "$(STATIC)" = "1" ]; then \
+		$(MAKE) --no-print-directory static-verify; \
+	else \
+		rm -f $(BIN_DIR)/$(BAPTIZE_SHELL); \
+		$(MAKE) --no-print-directory all OPT=1 \
+			SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1); \
+	fi
+	@PREFIX="$(if $(PREFIX),$(PREFIX),$$HOME/.local)" \
+		RC_TARGET="$(RC_TARGET)" \
+		./user-install.sh --bin "$(MY_SHELL_BIN)"
+
+user-uninstall:
+	@PREFIX="$(if $(PREFIX),$(PREFIX),$$HOME/.local)" \
+		RC_TARGET="$(RC_TARGET)" \
+		./user-install.sh --uninstall
+
 # Build a fully static hellish in Alpine and drop it on the HOST at
 # dist/hellish-linux-<arch>. This is the answer to "build it in docker, then
 # run it here": an ordinary container build is NOT host-runnable (it links
@@ -588,4 +627,5 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman oracle docker-suite docker widechar-test
+	charts cli-opts-test login-test geoman oracle docker-suite docker widechar-test \
+	user-install user-uninstall

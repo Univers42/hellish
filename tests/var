@@ -84,3 +84,19 @@ v='a*b'; echo ${v%'*b'} ${v%*b} ${v#'a*'}
 v='a*b'; echo ${v/'*'/X} ${v//'*'/X}
 v=abc; echo ${v%"c"} ${v%"*"} ${v#"a"}
 v='x?y'; echo ${v%'?y'} ${v%?y}
+if [ "${-#*e}" != "$-" ]; then echo had-e; else echo no-e; fi
+set -e; if [ "${-#*e}" != "$-" ]; then echo had-e; else echo no-e; fi
+set -a; if [ "${-#*a}" != "$-" ]; then echo had-a; else echo no-a; fi
+case "${-#*e}" in "$-") echo no-errexit;; *) echo errexit;; esac; echo done
+set -e; case "${-#*e}" in "$-") echo no-errexit;; *) echo errexit;; esac; echo done
+set -e; case "${-%e*}" in "$-") echo untrimmed;; *) echo trimmed;; esac; echo done
+set -e; case "${-##*e}" in "$-") echo untrimmed;; *) echo trimmed;; esac; echo done
+set -e; case "${-/e/E}" in *E*) echo subst-ok;; *) echo subst-miss;; esac; echo done
+set -f; case "${-#*f}" in "$-") echo no-noglob;; *) echo noglob;; esac; echo done
+set -u; case "${-#*u}" in "$-") echo no-nounset;; *) echo nounset;; esac; echo done
+true; echo "[${?#0}][${?%0}][${?-D}][${?:-D}][${?+A}][${?/0/zero}]"; echo done
+false; echo "[${?#1}][${?%1}][${?/1/one}]"; echo done
+echo "[${$+haspid}][${$:+haspid}]"; echo done
+echo "[${!#x}][${!%x}][${!/x/y}]"; echo done
+v=abc; echo "[${v#a}][${v%c}][${v/b/B}][${v-D}][${v+A}]"; echo done
+set -- aa bb; echo "[${1#a}][${2%b}][${1/a/A}]"; echo done
