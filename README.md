@@ -281,6 +281,34 @@ make norm       # 42 norminette over src/ incs/ tests/
 make my_shell   # install as your login shell (rebuilds OPT=1 SAFE=1 first)
 ```
 
+### Making it your shell without root
+
+`make my_shell` needs sudo twice over: to write `/usr/bin`, and because
+`chsh` refuses any shell that is not listed in `/etc/shells` — a file only
+root can edit. On a lab machine or a shared server that route is closed.
+
+```sh
+make user-install     # ~/.local/bin + an exec hook in your login shell's rc
+make user-uninstall   # put everything back
+```
+
+`user-install` installs into `~/.local/bin`, seeds `~/.hellishrc` from
+`hellishrc.example` (never overwriting one you already have), and appends a
+marker-delimited block to your login shell's rc file that `exec`s hellish for
+interactive sessions. `exec` *replaces* the process, so this is a real login
+shell and not an alias or a wrapper: `ps` shows hellish, `$$` is hellish, and
+closing it closes the tab.
+
+Your passwd entry is never touched, which keeps `ssh host 'cmd'` working and
+leaves you a guaranteed way back in. The installed binary is smoke-tested
+*before* the hook is written, so a bad build can never leave you with
+terminals that die on open. Escape hatches, in increasing permanence:
+`HELLISH_NO_EXEC=1` for one session, `touch ~/.hellish-disable` for all of
+them, `make user-uninstall` to remove the block.
+
+Knobs: `PREFIX=~/opt`, `RC_TARGET=~/.bashrc`, `STATIC=1` (install the
+docker-built static binary instead of compiling here).
+
 ---
 
 ## 🐚 What it can do

@@ -358,3 +358,11 @@ umask 0124; umask -- u-r; umask
 umask 0124; umask -rwx; echo st=$?; umask
 umask 0111; umask u=w u=r; umask
 umask 0111; umask u=, g+, o-; echo st=$?; umask
+printf 'a b\n' | command grep "a b"
+printf 'a\n' | command sed -e "s#a#A#"
+cat(){ echo FUNC; }; printf 'hi\n' | command cat
+command /bin/echo "a b"; command /bin/echo 'a*'; command /bin/echo 'x;y'
+command /bin/sh -c 'exit 42'; echo "st=$?"
+command false; echo "st=$?"
+command -p /bin/echo "a b"
+command -v command

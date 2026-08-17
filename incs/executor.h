@@ -82,6 +82,8 @@ void				trap_restore(t_shell *state, char **save);
 void				exe_res_set_status(t_shell *st, t_execution_state *res);
 int					find_cmd_path(t_shell *state, char *cmd_name,
 						char **path_of_exe);
+int					exec_external_argv(t_shell *state, t_vec *args);
+int					run_external_sync(t_shell *state, t_vec *args);
 int					expand_simple_command(t_shell *state, t_ast_node *node,
 						t_executable_cmd *ret, t_vec_int *redirects);
 int					(*builtin_func(char *name))(t_shell *state, t_vec argv);

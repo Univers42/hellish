@@ -35,6 +35,31 @@ static void	run_cmd_in_place(t_shell *state,
 	exit(actually_run(state, &cmd->argv));
 }
 
+/* Fork argv as an EXTERNAL program, wait for it, hand back its status.
+   `command NAME args` is the caller: it has to reach the external NAME even
+   when a shell function shadows it, so it cannot go through actually_run
+   (whose function lookup would run the very function `command` exists to
+   step around).  Redirections are already in force on this process, so the
+   child inherits them across the fork and needs no set_up_redirection. */
+int	run_external_sync(t_shell *state, t_vec *args)
+{
+	t_execution_state	res;
+	int					pid;
+
+	pid = fork();
+	if (pid < 0)
+		return (ft_eprintf("%s: fork: %s\n", state->ctx,
+				strerror(errno)), 1);
+	if (pid == 0)
+	{
+		default_signal_handlers();
+		_exit(exec_external_argv(state, args));
+	}
+	res = res_pid(pid);
+	exe_res_set_status(state, &res);
+	return (res.status);
+}
+
 t_execution_state	execute_cmd_bg(t_shell *state,
 						t_executable_node *exe, t_executable_cmd *cmd)
 {
