@@ -13,6 +13,8 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
+void	exit_clean(t_shell *state, int code);
+
 void	replace_null_argv_with_empty(t_executable_cmd *cmd);
 
 /* Run a shell function in the parent process.  Pre-assignment NAME=val
@@ -118,6 +120,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 									t_executable_node *exe)
 {
 	t_executable_cmd	cmd;
+	bool				fatal;
 
 	cmd = (t_executable_cmd){0};
 	state->last_cmdsub_status = 0;
@@ -125,11 +128,14 @@ t_execution_state	execute_simple_command(t_shell *state,
 	fire_debug_trap(state);
 	if (expand_simple_command(state, exe->node, &cmd, &exe->redirs))
 	{
+		fatal = redir_err_is_fatal(state, &cmd);
 		procsub_close_fds_parent(state);
 		free_executable_cmd(state, cmd);
 		free_executable_node(exe);
 		if (get_g_sig()->should_unwind)
 			return (res_status(CANCELED));
+		if (fatal)
+			exit_clean(state, 1);
 		return (res_status(AMBIGUOUS_REDIRECT));
 	}
 	if (!cmd.argv.ctx)
