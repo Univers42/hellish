@@ -62,6 +62,8 @@ make anim-test      # pty-driven check that the prompt animation never clobbers 
 make prompt-atomic-test # pty gate: the prompt prefix must reach the tty in ONE write.
                     #   Byte-at-a-time let kernel echo of type-ahead split a colour
                     #   escape or a box-drawing glyph — run after touching rl.c
+make widechar-test  # pty gate for non-ASCII: the shortened cwd in the prompt, and a
+                    #   wrapping TYPED line starting with a 2-byte/1-column character
 make git-prompt-test # pty gate: the prompt's git dirty check never blocks a render — cd
                     #   into a slow-scanning repo must prompt instantly, star arrives async
 make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
