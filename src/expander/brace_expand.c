@@ -14,7 +14,9 @@
 #include "brace_expand.h"
 
 /* Find the matching '}' for the '{' at index `open`, tracking nesting.
-   Returns the index of the matching '}', or -1 if unmatched. */
+   Returns the index of the matching '}', or -1 if unmatched.  The cursor
+   steps with brace_next so a '}' sitting inside a substitution or a quoted
+   span cannot close the group. */
 int	brace_match(const char *s, int open)
 {
 	int	depth;
@@ -28,7 +30,7 @@ int	brace_match(const char *s, int open)
 			depth++;
 		else if (s[i] == '}' && --depth == 0)
 			return (i);
-		i++;
+		i = brace_next(s, i);
 	}
 	return (-1);
 }
