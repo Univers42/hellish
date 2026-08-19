@@ -54,6 +54,46 @@ enum e_opt_flag
 	OPT_FLAG_DEBUG_AST = 1u << 10
 };
 
+/* The `set -o` options that do not own a dedicated opt_* bool.  bash accepts
+   every one of these as a short letter and/or a long name, and a script that
+   opens with `set -euo pipefail` or `set -m` must not die on a usage error --
+   so the roster is complete even where the semantics are not.  braceexpand
+   is genuinely wired (it gates the expander's brace pass); the rest are
+   recorded so `set -o`, `$-` and a later `set +o <name>` report back exactly
+   what the script asked for instead of lying by omission.  The roster and
+   the letter<->name mapping live in src/builtins/set_opts4.c. */
+enum e_setopt
+{
+	SETOPT_BRACEEXPAND = 1u << 0,
+	SETOPT_ERRTRACE = 1u << 1,
+	SETOPT_FUNCTRACE = 1u << 2,
+	SETOPT_HASHALL = 1u << 3,
+	SETOPT_HISTEXPAND = 1u << 4,
+	SETOPT_HISTORY = 1u << 5,
+	SETOPT_IGNOREEOF = 1u << 6,
+	SETOPT_ICOMMENTS = 1u << 7,
+	SETOPT_KEYWORD = 1u << 8,
+	SETOPT_MONITOR = 1u << 9,
+	SETOPT_NOLOG = 1u << 10,
+	SETOPT_NOTIFY = 1u << 11,
+	SETOPT_ONECMD = 1u << 12,
+	SETOPT_PHYSICAL = 1u << 13,
+	SETOPT_PRIVILEGED = 1u << 14,
+	SETOPT_EMACS = 1u << 15,
+	SETOPT_VI = 1u << 16,
+	SETOPT_DEFAULT = SETOPT_BRACEEXPAND | SETOPT_HASHALL | SETOPT_ICOMMENTS
+};
+
+/* One row of the `set -o` roster; the table itself is in set_opts4.c.  Both
+   the `set` builtin and the command-line parser look options up through it,
+   so the two can never disagree about which options exist. */
+typedef struct s_setopt
+{
+	const char	*name;
+	char		letter;
+	uint32_t	bit;
+}	t_setopt;
+
 void	parse_and_execute_input(t_shell *state);
 /* getcwd(NULL,0) onto the active fn_* heap; see helpers/x_getcwd.c */
 char	*x_getcwd(void);
@@ -213,10 +253,12 @@ typedef struct s_shell
 	bool				opt_verbose; /* -v: print input lines as read */
 	bool				opt_pipefail; /* pipefail: status = last failure */
 	bool				opt_posix; /* --posix / set -o posix: no extensions */
+	uint32_t			setopt; /* e_setopt bitset: the rest of `set -o` */
 	unsigned int		shopt; /* shopt -s bitset (SHOPT_* in shell.h) */
 	bool				opt_interactive; /* -i: force $- to carry 'i' */
 	/* small scratch buffers -- avoids allocs for $-, $LINENO and $? */
-	char				flagbuf[16]; /* scratch for build_flagstr ($-) */
+	/* flagbuf: 20 option letters + the invocation letter + NUL */
+	char				flagbuf[32]; /* scratch for build_flagstr ($-) */
 	char				linebuf[24]; /* scratch for $LINENO/$RANDOM/... */
 	long long			start_sec; /* epoch at startup, for $SECONDS */
 	char				statbuf[16]; /* scratch for set_cmd_status ($?) */

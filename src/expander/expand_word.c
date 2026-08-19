@@ -69,13 +69,19 @@ static void	expand_brace_result(t_shell *state, t_vec *results, t_vec *args)
    stringified via word_to_brace_src (which preserves $var and quotes so
    re-lexing sees the right token types), brace-expanded into N strings,
    then each is re-parsed and passed to expand_word.  Returns true when it
-   consumed the node so the caller knows NOT to run the normal pipeline. */
+   consumed the node so the caller knows NOT to run the normal pipeline.
+
+   `set +B` (braceexpand off) short-circuits the whole pass, leaving the
+   braces as literal text -- the node then goes through the ordinary word
+   pipeline untouched, which is what bash does. */
 bool	try_brace_expand(t_shell *state, t_ast_node *node, t_vec *args)
 {
 	t_string	flat;
 	char		*fs;
 	t_vec		results;
 
+	if (!(state->setopt & SETOPT_BRACEEXPAND))
+		return (false);
 	if (!word_has_unquoted_brace(node))
 		return (false);
 	flat = word_to_brace_src(*node);
