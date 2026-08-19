@@ -131,6 +131,16 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] A locale change made INSIDE a running script does not reach the glob
+      sort. Every startup form is right now (LC_ALL=C hellish -c 'echo *',
+      LC_COLLATE=C, and the prefix assignment LC_ALL=C echo *), but:
+        $ hellish -c 'export LC_ALL=C; echo *'  -> still locale order
+        $ bash    -c 'export LC_ALL=C; echo *'  -> byte order
+      bash re-runs setlocale when LC_ALL / LC_COLLATE / LANG is assigned.
+      Doing the same needs the assignment path to push the value into the
+      C library's environ (t_vec_env is the truth here and envp is only
+      materialised for execve), so it is not a one-liner.
+
 - [ ] Backslash before a brace inside a double-quoted expansion keeps the
       slash where bash drops it:
         $ hellish --posix -c 'echo "${u-\}}"'   ->  \}
