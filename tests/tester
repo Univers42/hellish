@@ -25,6 +25,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue13_bg_pid"
         "issue17_signal_report"
         "issue16_net_redir"
+        "redir_multi_fd"
     )
 fi
 
