@@ -19,7 +19,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "regress_hellish" "regress_combos" "cd_posix" "torture"
         "alias_posix" "builtins_posix"
         "issue12_export" "issue14_dollar0"
-        "issue15_colon_question"
+        "issue15_colon_question" "issue11_cmdsub_brace"
     )
 fi
 
