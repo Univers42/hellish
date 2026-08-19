@@ -50,7 +50,7 @@ static int	build_choices(t_choice *ch, t_origin det, const char *repo)
 /* `update --now`: on a TTY, always present the chooser (pre-selected on the
    detected method) and run whatever the user picks; off a TTY, run the detected
    method directly so scripts never block. */
-int	update_interactive(t_origin det, const char *repo)
+int	update_interactive(t_origin det, const char *repo, const char *tag)
 {
 	t_choice	ch[5];
 	const char	*r;
@@ -58,7 +58,7 @@ int	update_interactive(t_origin det, const char *repo)
 	int			sel;
 
 	if (!isatty(STDIN_FILENO) || !isatty(STDERR_FILENO))
-		return (run_origin_update(det, repo));
+		return (run_origin_update(det, repo, tag));
 	count = build_choices(ch, det, repo);
 	sel = run_menu(ch, count, 0);
 	if (sel < 0)
@@ -70,5 +70,5 @@ int	update_interactive(t_origin det, const char *repo)
 	if (ch[sel].origin == ORIGIN_SOURCE)
 		r = repo;
 	ft_eprintf("hellish: %s\n", ch[sel].cmd);
-	return (run_origin_update(ch[sel].origin, r));
+	return (run_origin_update(ch[sel].origin, r, tag));
 }

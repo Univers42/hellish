@@ -50,6 +50,10 @@ make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash
 make net-redir-test # /dev/tcp and /dev/udp redirections vs bash --posix; brings up its
                     #   own TCP+UDP peer, so it needs python3 but no network access
 make login-test     # login shell sources /etc/profile then ~/.profile; non-login sources neither
+make update-test    # the whole update path against a LOCAL fake release server
+                    #   (discovery, download, sha256, atomic replace, every rejection
+                    #   path) plus a pty gate for the lazy header and for a discovered
+                    #   update never disturbing a line being typed. No network.
 make update-config-test # offline gate on the release/update config: the GitHub slug in
                     #   version.h must match the git remote, install.sh/npm/Dockerfile/docs
                     #   must agree with it, npm version must track HELLISH_VERSION

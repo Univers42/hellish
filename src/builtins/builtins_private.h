@@ -83,6 +83,7 @@ typedef struct s_rdbuf
 }	t_rdbuf;
 
 int		try_unset(t_shell *state, char *key);
+int		confirm_update(void);
 int		unset_operands(t_shell *state, t_vec argv, size_t i, int fmode);
 int		builtin_unset(t_shell *state, t_vec argv);
 int		parse_flags(t_vec argv, int *n, int *e);
