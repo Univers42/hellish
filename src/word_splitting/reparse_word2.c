@@ -17,7 +17,7 @@
    TT_ENVVAR, TT_WORD ...). The returned node owns its children vec; the
    caller must free_ast() it when done. This is the "second parse pass" that
    turns the flat lexer output into something the expander can act on. */
-t_ast_node	reparse_word(t_token t)
+t_ast_node	reparse_word(t_token t, bool no_squote)
 {
 	t_ast_node	ret;
 	t_reparser	rp;
@@ -26,6 +26,7 @@ t_ast_node	reparse_word(t_token t)
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	create_reparser(&rp, ret, t, &(int){0});
+	rp.no_squote = no_squote;
 	loop_node_rp(&rp);
 	ret = rp.current_node;
 	return (ret);

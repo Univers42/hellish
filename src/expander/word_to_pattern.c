@@ -84,7 +84,7 @@ char	*expand_param_pattern(t_shell *state, const char *word, int wlen)
 	t.start = (char *)word;
 	t.len = wlen;
 	t.tt = TT_WORD;
-	w = reparse_word(t);
+	w = reparse_word(t, false);
 	expand_tilde_word(state, &w);
 	expand_cmd_substitutions(state, &w);
 	expand_env_vars(state, &w, false);

@@ -19,15 +19,19 @@
    not close the brace early — bash treats both as escaped literals. An
    opening brace bumps depth; a closing brace that hits depth==0 stops the
    scan (caller's loop exits on the next iteration). Everything else is
-   consumed one character at a time. */
-static void	scan_brace_depth(t_reparser *rp, int *depth)
+   consumed one character at a time.
+   in_dq says the expansion sits inside a double-quoted word, where a '
+   is an ORDINARY character: bash prints a'b for "${u:-a'b}" but calls
+   ${u:-a'b} an unterminated quote. Treating it as a quote opener here
+   made the scan run off the end of the word. */
+static void	scan_brace_depth(t_reparser *rp, int *depth, bool in_dq)
 {
 	char	c;
 
 	c = rp->current_token.start[rp->i];
 	if (c == '\\' && rp->i + 1 < rp->current_token.len)
 		rp->i += 2;
-	else if (c == '\'' || c == '"')
+	else if (c == '"' || (c == '\'' && !in_dq))
 	{
 		skip_quoted_in_brace(rp, c);
 		rp->i++;
@@ -64,7 +68,7 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 	start = rp->i;
 	depth = 1;
 	while (rp->i < rp->current_token.len && depth > 0)
-		scan_brace_depth(rp, &depth);
+		scan_brace_depth(rp, &depth, tt == TT_DQENVVAR);
 	if (rp->i == start && rp->i < rp->current_token.len)
 		push_subtoken_node(&rp->current_node, rp->current_token,
 			create_interval(start - 1, rp->i + 1), tt);

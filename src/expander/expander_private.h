@@ -172,6 +172,8 @@ int			try_create_redir(t_shell *state, t_ast_node *curr,
 char		*expand_param_word(t_shell *state, const char *word, int wlen,
 				bool dq);
 char		*expand_param_word_dq(t_shell *state, const char *word, int wlen);
+char		*pf_word_pipeline(t_shell *state, const char *word, int wlen,
+				bool no_sq);
 t_string	word_to_pattern(t_ast_node node);
 char		*expand_param_pattern(t_shell *state, const char *word, int wlen);
 char		*pf_get_var_value(t_shell *state, const char *name, int len);
