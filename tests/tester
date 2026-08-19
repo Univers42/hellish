@@ -20,6 +20,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "alias_posix" "builtins_posix"
         "issue12_export" "issue14_dollar0"
         "issue15_colon_question" "issue11_cmdsub_brace"
+        "issue8_set_options"
     )
 fi
 

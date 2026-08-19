@@ -19,7 +19,7 @@
 # define CORE_H
 
 # include "shell.h"
-# include "shell.h"
+# include "ft_builtins.h"
 # include "helpers.h"
 # include "sh_input.h"
 # include "env.h"
@@ -52,7 +52,6 @@ bool		cli_known_short(char c);
 int			cli_apply_long(t_shell *state, char sign, const char *name);
 void		cli_apply_short(t_shell *state, char sign, char c);
 int			cli_take_o(t_shell *state, t_cli *cli, char sign, int idx);
-void		apply_flag_word(t_shell *state, const char *w);
 int			set_long_option(t_shell *state, char sign, const char *name);
 void		init_arg(t_shell *state, char **argv);
 void		init_file(t_shell *state, char **argv);

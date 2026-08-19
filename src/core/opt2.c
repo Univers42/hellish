@@ -12,45 +12,40 @@
 
 #include "core.h"
 
-/* The single-letter options hellish accepts at invocation.  e/u/x/f/C/a/n/v
-   map to set options; b/m/h/H are accepted-and-ignored (bash's notify /
-   monitor / hashall / histexpand) so real-world `#!/bin/sh -h` shebangs and
-   the like don't abort.  c and i are handled by the caller. */
+/* The single-letter options hellish accepts at invocation.  The `set`
+   builtin's roster (src/builtins/set_opts4.c) is the authority for which
+   letters exist, so command-line and runtime `set` can never disagree; l, c
+   and i are invocation-only and handled by the caller. */
 bool	cli_known_short(char c)
 {
-	return (c != '\0' && ft_strchr("euxfCanvbmhHl", c) != NULL);
+	if (c == '\0')
+		return (false);
+	if (ft_strchr("lci", c))
+		return (true);
+	return (setopt_find(NULL, c) != NULL);
 }
 
 /* Apply one validated set letter by reusing the `set` builtin's flag-word
-   logic: a two-character word "<sign><letter>" is exactly what it expects. */
+   logic: a two-character word "<sign><letter>" is exactly what it expects.
+   `-o` never reaches here -- cli_scan peels it off and calls cli_take_o. */
 void	cli_apply_short(t_shell *state, char sign, char c)
 {
 	char	word[3];
+	bool	want_o;
 
 	word[0] = sign;
 	word[1] = c;
 	word[2] = '\0';
-	(void)apply_flag_word(state, word);
+	want_o = false;
+	(void)apply_flag_letters(state, word, &want_o);
 }
 
-/* `-o name` / `+o name`.  Only the long option names the `set` builtin
-   actually implements are accepted; anything else is a usage error so that
-   `-o bogus` fails like bash instead of being silently swallowed. */
+/* `-o name` / `+o name`.  The `set` builtin's roster is the single list of
+   valid names, so the command line and the builtin can never disagree about
+   what exists; an unknown name is a usage error, as in bash. */
 int	cli_apply_long(t_shell *state, char sign, const char *name)
 {
-	static const char *const	ok[] = {"errexit", "nounset", "xtrace",
-		"noglob", "noclobber", "allexport", "noexec", "verbose", "pipefail",
-		"vi", "emacs", NULL};
-	int							i;
-
-	i = 0;
-	while (ok[i])
-	{
-		if (!ft_strcmp(ok[i], name))
-			return (set_long_option(state, sign, name), 0);
-		i++;
-	}
-	return (2);
+	return (set_long_option(state, sign, name));
 }
 
 /* Consume the argv word at `idx` as the name for an `-o`/`+o` embedded in a
@@ -68,13 +63,17 @@ int	cli_take_o(t_shell *state, t_cli *cli, char sign, int idx)
 
 /* Top-level command-line parse: scan+apply every option into `state`,
    leaving `cli` describing where the operands start and whether this is a
-   -c invocation.  --posix implies opt_posix immediately so later init sees
-   it.  The caller checks cli->err / OPT_FLAG_HELP, then calls cli_dispatch
+   -c invocation.  The default `set -o` roster is seeded here rather than in
+   on() because it has to be in place BEFORE cli_scan applies the user's own
+   options -- seeding it later would silently undo `hellish +B` and friends.
+   --posix implies opt_posix immediately so later init sees it.  The
+   caller checks cli->err / OPT_FLAG_HELP, then calls cli_dispatch
    once the env and tables are ready. */
 void	cli_parse(t_shell *state, char **argv, t_cli *cli)
 {
 	*cli = (t_cli){0};
 	cli->argv = argv;
+	state->setopt = SETOPT_DEFAULT;
 	cli_scan(state, cli);
 	if (state->option_flags & OPT_FLAG_POSIX)
 		state->opt_posix = true;

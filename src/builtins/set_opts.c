@@ -60,47 +60,39 @@ void	nounset_abort(t_shell *state, const char *name, int len)
 	exit_clean(state, 1);
 }
 
-/* Switch the line-editor mode. Only "vi" and "emacs" are recognised; +vi
-   or +emacs with `on=false` is ignored (no "neither mode" concept here). */
-static void	set_opt_edit_mode(t_shell *state, const char *name, bool on)
+/* Switch the line-editor mode.  vi and emacs are mutually exclusive in bash,
+   so turning one on clears the other's flag; turning one off (`set +o vi`)
+   only drops the flag -- there is no "neither mode" for the editor itself,
+   so edit_mode keeps whatever it had. */
+void	set_opt_edit_mode(t_shell *state, const char *name, bool on)
 {
-	if (!ft_strcmp(name, "vi") && on)
+	if (!on)
+		return ;
+	if (!ft_strcmp(name, "vi"))
 	{
 		state->edit_mode = 0;
 		state->rl.edit_mode = 0;
+		state->setopt &= ~SETOPT_EMACS;
 	}
-	else if (!ft_strcmp(name, "emacs") && on)
+	else if (!ft_strcmp(name, "emacs"))
 	{
 		state->edit_mode = 1;
 		state->rl.edit_mode = 1;
+		state->setopt &= ~SETOPT_VI;
 	}
 }
 
-/* set -o name / set +o name. */
+/* set -o name / set +o name.  Every name bash knows is accepted, so a script
+   that turns on an option hellish tracks-but-does-not-yet-honour keeps
+   running instead of dying on a usage error; an unknown name returns 1 and
+   the caller reports it. */
 int	set_long_option(t_shell *state, char sign, const char *name)
 {
-	bool	on;
+	const t_setopt	*e;
 
-	on = (sign == '-');
-	if (!ft_strcmp(name, "errexit"))
-		state->opt_errexit = on;
-	else if (!ft_strcmp(name, "nounset"))
-		state->opt_nounset = on;
-	else if (!ft_strcmp(name, "xtrace"))
-		state->opt_xtrace = on;
-	else if (!ft_strcmp(name, "noglob"))
-		state->opt_noglob = on;
-	else if (!ft_strcmp(name, "noclobber"))
-		state->opt_noclobber = on;
-	else if (!ft_strcmp(name, "allexport"))
-		state->opt_allexport = on;
-	else if (!ft_strcmp(name, "noexec"))
-		state->opt_noexec = on;
-	else if (!ft_strcmp(name, "verbose"))
-		state->opt_verbose = on;
-	else if (!ft_strcmp(name, "pipefail"))
-		state->opt_pipefail = on;
-	else
-		set_opt_edit_mode(state, name, on);
+	e = setopt_find(name, 0);
+	if (!e)
+		return (1);
+	setopt_put(state, e, sign == '-');
 	return (0);
 }
