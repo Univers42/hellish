@@ -1,0 +1,51 @@
+# GitHub issue #11 -- brace expansion was applied to the raw source text of a
+# command substitution, so `$(cmd "{a,b}")` split into two words and the command
+# RAN ONCE PER ALTERNATIVE: duplicated side effects and corrupted output.
+# The side-effect count is the definitive case -- the appends are counted.
+rm -f c; echo "$(printf "run\n" >> c; echo "{a,b}")" >/dev/null; wc -l < c
+rm -f c; echo "$(printf "r\n" >> c; echo "{a,b,c}")" >/dev/null; wc -l < c
+rm -f c; echo "$(printf "r\n" >> c; echo "{a,b,c,d}")" >/dev/null; wc -l < c
+rm -f c; echo "$(printf "r\n" >> c; echo noBraces)" >/dev/null; wc -l < c
+# visible output must be the substitution's output, verbatim, as one word
+echo "$(echo "{a,b}")"
+echo $(echo "{a,b}")
+echo "$(printf "%s-END" "{a,b}")"
+echo "$(echo '{a,b}')"
+echo "$(echo "{a,{b,c}}")"
+echo "$(echo "{1..3}")"
+echo "$(echo "{a,b}" ; echo "{c,d}")"
+echo "$( (echo "{a,b}") )"
+echo "$(echo "$(echo "{a,b}")")"
+v=1; echo "$(echo "{a,b}$v")"
+echo "[$(awk "BEGIN{ printf \"%d\", 20 }")]"
+echo "$(printf '%s' '{"a", "b"}')"
+# a brace group in the word OUTSIDE the substitution still expands, and the
+# substitution text it carries along stays intact
+echo {x,y}$(echo A)
+echo $(echo A){x,y}
+echo {1..3}$(echo "{4..6}")
+echo $(echo "{a,b}")x{y,z}
+echo {a,$(echo "x,y"),b}
+echo {a,$(echo "}"),b}
+echo {a,$(echo "{"),b}
+# quoted brace text elsewhere in the word must not be expanded either
+echo x{a,b}'{c,d}'
+echo x{a,b}"{c,d}"
+# plain brace expansion is untouched
+echo {a,b}
+echo x{a,b}y
+echo {1..3}
+echo pre{1..3}post
+echo {a,{b,c}}
+echo "{a,b}"
+echo '{a,b}'
+echo a'{b,c}'d
+echo \{a,b\}
+echo $((1+1)){a,b}
+echo "${v9:-{a,b}}"
+# brace text arriving as DATA was always fine and must stay fine
+v="{a,b}"; echo "$v"
+v="$(echo "{a,b}")"; echo "$v"
+printf "{a,b}\n" > f; echo "$(cat f)"; rm -f f
+set -- "{a,b}"; echo "$1"
+export V="{a,b}"; sh -c 'echo "$V"'
