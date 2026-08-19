@@ -138,7 +138,7 @@ void	reparse_words(t_ast_node *node)
 			return ;
 		full_word = create_token_old(tok.start, tok.len, true);
 		temp = *node;
-		*node = reparse_word(tok);
+		*node = reparse_word(tok, false);
 		new_ctx = node->children.ctx;
 		new_len = node->children.len;
 		if (temp.children.ctx != new_ctx && !parena()->on)

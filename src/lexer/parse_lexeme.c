@@ -68,7 +68,7 @@ static int	handle_special(t_deque_tok *tokens, char **str, char **out)
 	}
 	if (**str == '$' && (*str)[1] == '{')
 	{
-		if (advance_brace_param(str))
+		if (advance_brace_param(str, 0))
 			return (tokens->looking_for = '}', *out = "param> ", -1);
 		return (1);
 	}

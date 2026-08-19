@@ -53,6 +53,7 @@ typedef struct s_reparser
 	t_token		current_token;
 	t_tt		ctx_tt;
 	int			prev_start;
+	bool		no_squote;
 }	t_reparser;
 
 /* Decode state for $'...' ANSI-C quoting (reparse_ansic*.c): the source
@@ -70,7 +71,7 @@ void		reparse_dq_bs(t_ast_node *ret, int *i, t_token t);
 void		reparse_squote(t_ast_node *ret, int *i, t_token t);
 void		reparse_bs(t_ast_node *ret, int *i, t_token t);
 void		reparse_norm_word(t_ast_node *ret, int *i, t_token t);
-t_ast_node	reparse_word(t_token t);
+t_ast_node	reparse_word(t_token t, bool no_squote);
 bool		reparse_special_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt);
 void		reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt);
 void		reparse_dquote(t_ast_node *ret, int *i, t_token t);
