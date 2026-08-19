@@ -131,6 +131,15 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] Backslash before a brace inside a double-quoted expansion keeps the
+      slash where bash drops it:
+        $ hellish --posix -c 'echo "${u-\}}"'   ->  \}
+        $ bash    --posix -c 'echo "${u-\}}"'   ->  }
+      The unquoted form `echo ${u-\}}` agrees (both print `}`), so it is
+      the dq path's escape handling, not the brace scan. Pre-existing:
+      reproduced identically before and after the lexer/reparser nested
+      quote fix.
+
 - [ ] Redirections are RESOLVED (all of them) and only then APPLIED, where
       bash interleaves resolve+apply left to right. Parking every opened
       scratch fd at >= 10 fixes the common collisions (fixed, see
