@@ -47,6 +47,7 @@ int		run_menu(t_choice *ch, int count, int start);
 
 /* `update --now`: build the method list, let the user pick (always, when on a
    TTY), and run the chosen upgrade. Without a TTY, runs the detected method. */
-int		update_interactive(t_origin detected, const char *repo);
+int		update_interactive(t_origin detected, const char *repo,
+			const char *tag);
 
 #endif

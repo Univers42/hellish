@@ -15,20 +15,35 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <time.h>
 
-/* In the forked child: redirect curl's output to the pipe and exec it. */
+/* In the forked child: stdout to the pipe, stderr to /dev/null, then exec.
+   curl's own diagnostics are silenced because we report failures ourselves
+   -- a raw "curl: (22) ... 404" leaking into an interactive session is
+   noise the user can do nothing with, and it used to be the only visible
+   symptom of a misconfigured release URL. */
 static void	run_pipe_child(int *fd, char *const argv[])
 {
+	int	nul;
+
 	dup2(fd[1], STDOUT_FILENO);
 	close(fd[0]);
 	close(fd[1]);
+	nul = open("/dev/null", O_WRONLY);
+	if (nul >= 0)
+	{
+		dup2(nul, STDERR_FILENO);
+		if (nul > 2)
+			close(nul);
+	}
 	execvp(argv[0], argv);
 	_exit(127);
 }
 
-/* Run argv, capturing its stdout into out (NUL-terminated). Bytes read, or -1.
-   Used to shell out to curl without dragging in a TLS library. */
-static ssize_t	capture_cmd(char *const argv[], char *out, size_t n)
+/* Run argv, capturing its stdout into out (NUL-terminated). Bytes read, or
+   -1. Lets the updater shell out to curl and sha256sum without dragging a
+   TLS or hashing library into the shell. */
+ssize_t	update_capture(char *const argv[], char *out, size_t n)
 {
 	int		fd[2];
 	pid_t	pid;
@@ -57,7 +72,7 @@ static ssize_t	capture_cmd(char *const argv[], char *out, size_t n)
 	return ((ssize_t)total);
 }
 
-/* Pull the "tag_name" string out of the GitHub JSON, dropping a leading 'v'. */
+/* Pull "tag_name" out of the release metadata, dropping a leading 'v'. */
 static int	parse_tag(const char *buf, char *out, size_t n)
 {
 	const char	*p;
@@ -84,24 +99,33 @@ static int	parse_tag(const char *buf, char *out, size_t n)
 	return (i > 0);
 }
 
-/* Ask GitHub for the latest release tag (curl, ~4s timeout). 1 on success. */
+/* Ask the release endpoint for the latest tag. 1 = got one, 0 = could not
+   reach the endpoint, -1 = it answered but published no release. Those are
+   kept apart because "you are offline" and "that repository has no
+   releases" need different fixes, and conflating them is what made a dead
+   URL look like a network outage for the whole life of this feature. */
 int	fetch_latest_tag(char *out, size_t n)
 {
-	char		buf[8192];
-	char *const	argv[] = {"curl", "-fsSL", "--max-time", "4",
-		"https://api.github.com/repos/" HELLISH_REPO "/releases/latest", NULL};
+	char		url[640];
+	char		buf[65536];
+	char *const	argv[] = {"curl", "-fsSL", "--proto", "=https,http",
+		"--max-time", "8", url, NULL};
 
-	if (capture_cmd(argv, buf, sizeof(buf)) <= 0)
+	update_api_url(url, sizeof(url));
+	if (update_capture(argv, buf, sizeof(buf)) <= 0)
 		return (0);
-	return (parse_tag(buf, out, n));
+	if (!parse_tag(buf, out, n))
+		return (-1);
+	return (1);
 }
 
-/* Detach from the terminal, fetch the latest tag, and cache it. Runs in the
-   background grandchild, so the prompt is never delayed by the network. */
+/* Detach from the terminal, refresh the latest tag, and persist it. Runs in
+   the background grandchild, so the prompt is never delayed by the network. */
 void	run_bg_update_check(void)
 {
-	char	tag[64];
-	int		nul;
+	t_upd_state	s;
+	char		tag[64];
+	int			nul;
 
 	setsid();
 	nul = open("/dev/null", O_RDWR);
@@ -112,6 +136,12 @@ void	run_bg_update_check(void)
 		if (nul > 2)
 			close(nul);
 	}
-	if (fetch_latest_tag(tag, sizeof(tag)))
-		hellish_write_cache(tag);
+	update_state_load(&s);
+	if (fetch_latest_tag(tag, sizeof(tag)) != 1)
+		return ;
+	if (ft_strcmp(s.latest, tag) != 0)
+		s.notified = 0;
+	ft_strlcpy(s.latest, tag, sizeof(s.latest));
+	s.checked = (long)time(NULL);
+	update_state_save(&s);
 }

@@ -80,7 +80,10 @@ static void	build_left(const char **l)
 	l[i + 5] = NULL;
 }
 
-/* Print the welcome panel once, on interactive (tty) startup. Spans the full
+/* Print the welcome panel on interactive (tty) startup, when it has
+   something new to say -- see banner_should_show(). It used to run on every
+   single startup AND wipe the screen and scrollback first, which is what
+   made it something to opt out of rather than something to read. Spans the full
    width. The right column reads the cached release check (no network here, so
    startup stays instant) and flags a newer release. Opt out: HELLISH_NO_BANNER.
 */
@@ -92,7 +95,7 @@ void	show_welcome(t_shell *state)
 
 	if (state->metinp != INP_RL || !isatty(STDERR_FILENO))
 		return ;
-	if (getenv("HELLISH_NO_BANNER"))
+	if (getenv("HELLISH_NO_BANNER") || !banner_should_show())
 		return ;
 	p.title = "hellish " HELLISH_VERSION;
 	p.logo_color = "\033[38;5;209m";
@@ -100,6 +103,6 @@ void	show_welcome(t_shell *state)
 	build_right(r);
 	p.left = l;
 	p.right = r;
-	ft_eprintf("\033[H\033[2J\033[3J");
 	render_panel(&p);
+	banner_mark_shown();
 }
