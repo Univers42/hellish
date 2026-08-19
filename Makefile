@@ -505,6 +505,8 @@ docker-debian:
 	docker compose run --rm debian
 docker-ubuntu:
 	docker compose run --rm ubuntu
+docker-ubuntu2204:
+	docker compose run --rm ubuntu2204
 docker-arch:
 	docker compose run --rm arch
 docker-clean:
