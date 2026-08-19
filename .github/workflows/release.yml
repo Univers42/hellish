@@ -35,6 +35,11 @@ jobs:
             hellish-linux-x86_64
             hellish-linux-x86_64.sha256
           generate_release_notes: true
+          # A tag carrying a pre-release suffix must never become "latest":
+          # the update check reads /releases/latest, so publishing a test
+          # build as a full release would tell every installed hellish to
+          # downgrade. contains('-') is the semver rule for a pre-release.
+          prerelease: ${{ contains(github.ref_name, '-') }}
 
   npm:
     name: publish to npm (needs NPM_TOKEN)
