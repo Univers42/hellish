@@ -58,7 +58,7 @@ static void	expand_brace_result(t_shell *state, t_vec *results, t_vec *args)
 		tmp.start = fs;
 		tmp.len = (int)ft_strlen(fs);
 		tmp.tt = TT_WORD;
-		w = reparse_word(tmp);
+		w = reparse_word(tmp, false);
 		expand_word(state, &w, args, false);
 		xfree(fs);
 	}
