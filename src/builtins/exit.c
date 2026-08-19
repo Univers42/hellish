@@ -28,3 +28,23 @@ void	exit_clean(t_shell *state, int code)
 		(manage_history(state), free_all_state(state));
 	(xfree(pid_s), exit(code));
 }
+
+/* The status a FATAL shell error exits with.  bash uses 127 only when the
+   top-level shell built from a -c string dies; a script, piped stdin, or
+   any forked child (a subshell, a command substitution) uses 1.  Measured
+   on bash 5.3.9 for all three fatal families that share this: ${p:?w},
+   `set -u` on an unset name, and assignment to a read-only variable.
+   The pid comparison is the same one exit_clean uses to tell the original
+   process from a subshell copy of t_shell. */
+int	shell_fatal_status(t_shell *state)
+{
+	char	*pid_s;
+	bool	original;
+
+	pid_s = ft_itoa((int)getpid());
+	original = (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0);
+	xfree(pid_s);
+	if (state->metinp == INP_ARG && original)
+		return (127);
+	return (1);
+}
