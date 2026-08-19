@@ -98,24 +98,3 @@ char	strip_surrounding_quotes(char **val)
 	}
 	return (0);
 }
-
-/* Handle the two-word `export NAME value` form. If *val is empty and the
-   next word does not contain '=', treat it as the value and advance *i.
-   This lets `export FOO bar` work like `export FOO=bar` — a bash extension
-   that some scripts rely on inadvertently. */
-void	consume_following_value(t_vec av, int *i, char **val)
-{
-	int		idx;
-	char	*next;
-
-	idx = *i;
-	if ((!*val || (*val)[0] == '\0') && idx + 1 < (int)av.len)
-	{
-		next = ((char **)av.ctx)[idx + 1];
-		if (next && !ft_strchr(next, '='))
-		{
-			*val = ft_strdup(next);
-			*i = idx + 1;
-		}
-	}
-}

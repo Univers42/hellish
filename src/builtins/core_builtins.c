@@ -19,9 +19,10 @@
    `export` alone (or `export -p`) prints the current export list in a form
    that can be fed back to the shell. When arguments are given, -p is treated
    as a signal to skip the first arg and start processing from argv[2]. Each
-   argument goes through process_arg(), which handles NAME, NAME=val, and the
-   `export NAME value` two-word form. Accumulates errors but keeps going — a
-   single bad identifier should not stop the valid ones. */
+   operand goes through process_arg(), which handles NAME and NAME=val — and
+   nothing else: operands are never read pairwise, so `export A B C` marks
+   three variables and rewrites none of them. Accumulates errors but keeps
+   going — a single bad identifier should not stop the valid ones. */
 /* Consume export's leading option words (-p/-n/-f, combos, and the bare
    "--" terminator).  Returns the index of the first operand; on an
    unrecognised option prints the error and sets *err = 2 so the builtin can
@@ -52,7 +53,6 @@ int	builtin_export(t_shell *st, t_vec av)
 {
 	size_t	i;
 	int		status;
-	int		idx;
 
 	i = export_skip_opts(st, av, &status);
 	if (status)
@@ -62,9 +62,8 @@ int	builtin_export(t_shell *st, t_vec av)
 	status = 0;
 	while (i < av.len)
 	{
-		idx = (int)i;
-		status = process_arg(st, av, &idx) || status;
-		i = (size_t)idx + 1;
+		status = process_arg(st, av, (int)i) || status;
+		i++;
 	}
 	if (status)
 		return (1);

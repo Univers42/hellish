@@ -18,6 +18,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "pipes" "redirects" "extras" "echo_edge_cases" "advanced_edge_cases"
         "regress_hellish" "regress_combos" "cd_posix" "torture"
         "alias_posix" "builtins_posix"
+        "issue12_export"
     )
 fi
 
