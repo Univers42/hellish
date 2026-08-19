@@ -11,12 +11,18 @@
 /* ************************************************************************** */
 
 #include "glob_private.h"
+#include <string.h>
 
-/* In-place quicksort on an array of char* using ft_strcmp (byte order).
-   POSIX requires that glob results be sorted by the current collation; in the
-   C/POSIX locale (and C.UTF-8) that is straight byte order, which is what
-   ft_strcmp gives. The old ft_strcoll did a case-insensitive, non-alnum-
-   skipping sort that diverged from bash's output -- it was replaced here.
+/* In-place quicksort on an array of char* using strcoll.
+   POSIX requires that glob results be sorted by the CURRENT COLLATION, which
+   is byte order only in the C/POSIX locale. main() already does
+   setlocale(LC_ALL, ""), so under a locale like en_US.UTF-8 bash interleaves
+   case (backlog.md bench build CLAUDE.md ...) while plain byte order puts
+   every capital first (CLAUDE.md ... backlog.md). Sorting with ft_strcmp
+   diverged from bash in any mixed-case directory; the earlier home-grown
+   ft_strcoll was worse still (a case-insensitive, non-alnum-skipping
+   "natural" sort), which is presumably why it was dropped for ft_strcmp
+   rather than fixed. libc's strcoll is the one that matches.
    Pivot is the middle element (median of three would be safer but the inputs
    are typically short and mostly pre-sorted, so centre pivot is fine). */
 void	glob_sort_inner(char **arr, int low, int high)
@@ -32,9 +38,9 @@ void	glob_sort_inner(char **arr, int low, int high)
 	j = high;
 	while (i <= j)
 	{
-		while (ft_strcmp(arr[i], pivot) < 0)
+		while (strcoll(arr[i], pivot) < 0)
 			i++;
-		while (ft_strcmp(arr[j], pivot) > 0)
+		while (strcoll(arr[j], pivot) > 0)
 			j--;
 		if (i <= j)
 			ft_swap(&arr[i++], &arr[j--], sizeof(char *));
