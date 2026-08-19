@@ -141,6 +141,19 @@ pass counts in `bench/baseline/`). Performance claims come from
 - [ ] Job polish: bash prints "Terminated"/"Killed" per signal where we
       print "Done" (interactive-only path, no golden coverage); wait
       %jobspec; wait -n.
+- [ ] `set -o` roster: the full bash option list is now ACCEPTED, listed
+      and reported in `$-` (issue #8), and `braceexpand` is genuinely
+      wired.  Still tracked-only, i.e. the flag is remembered but nothing
+      reads it yet: `hashall`, `physical`, `monitor`, `notify`,
+      `keyword`, `onecmd`, `errtrace`, `functrace`, `histexpand`,
+      `history`, `ignoreeof`, `interactive-comments`, `nolog`,
+      `privileged`.  Wire them one at a time, each with golden cases;
+      `hashall` (gate src/builtins/builtin_hash*.c) and `physical`
+      (gate cd's default -L/-P) are the two cheapest.
+- [ ] `set -r` (restricted) stays a DELIBERATE divergence: bash accepts
+      it, hellish returns 2.  Recording a security flag we do not
+      enforce would be worse than failing loudly.  Implement restricted
+      mode or leave it rejected -- do not "fix" it by accepting it.
 
 ## Done (continued 4)
 
