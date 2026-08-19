@@ -17,84 +17,54 @@
 #include <unistd.h>
 #include <time.h>
 
-/* Build "$HOME/.cache/hellish/latest" into buf. Returns 1 on success. */
-int	hellish_cache_path(char *buf, size_t n)
-{
-	char	*home;
-
-	home = getenv("HOME");
-	if (!home || !*home || ft_strlen(home) + 24 >= n)
-		return (0);
-	ft_strlcpy(buf, home, n);
-	ft_strlcat(buf, "/.cache/hellish/latest", n);
-	return (1);
-}
-
-/* Load the tag the last background check cached, trimming trailing space. */
+/* The latest version the last background check found, for callers that only
+   want the string (the banner). 0 when nothing has been checked yet. */
 int	read_cached_latest(char *out, size_t n)
 {
-	char	path[512];
-	int		fd;
-	ssize_t	r;
+	t_upd_state	s;
 
-	if (!hellish_cache_path(path, sizeof(path)))
+	if (!update_state_load(&s))
 		return (0);
-	fd = open(path, O_RDONLY);
-	if (fd < 0)
-		return (0);
-	r = read(fd, out, n - 1);
-	close(fd);
-	if (r <= 0)
-		return (0);
-	out[r] = '\0';
-	while (r > 0 && (out[r - 1] == '\n' || out[r - 1] == '\r'
-			|| out[r - 1] == ' '))
-		out[--r] = '\0';
+	ft_strlcpy(out, s.latest, n);
 	return (out[0] != '\0');
 }
 
-/* Persist the latest tag, creating ~/.cache/hellish first. 1 on success. */
-int	hellish_write_cache(const char *tag)
+/* How long ago the last successful check ran, in seconds; -1 if never. */
+long	update_last_check_age(void)
 {
-	char	path[512];
-	char	*home;
-	int		fd;
-	int		ret;
+	t_upd_state	s;
 
-	home = getenv("HOME");
-	if (!home || ft_strlen(home) + 24 >= sizeof(path))
-		return (0);
-	ft_strlcpy(path, home, sizeof(path));
-	ft_strlcat(path, "/.cache", sizeof(path));
-	mkdir(path, 0755);
-	ft_strlcat(path, "/hellish", sizeof(path));
-	mkdir(path, 0755);
-	ft_strlcat(path, "/latest", sizeof(path));
-	fd = open(path, O_CREAT | O_TRUNC | O_WRONLY, 0644);
-	if (fd < 0)
-		return (0);
-	ret = (write(fd, tag, ft_strlen(tag)) > 0);
-	close(fd);
-	return (ret);
+	update_state_load(&s);
+	if (s.checked <= 0)
+		return (-1);
+	return ((long)time(NULL) - s.checked);
 }
 
-/* True if the cache exists and is younger than a day (so we skip re-checking).
-   A missing cache is "stale" so the first interactive run kicks off a check. */
+/* True when the last check is recent enough to skip a new one. A missing
+   record is "stale", so the very first interactive run starts a check.
+   HELLISH_UPDATE_TTL overrides the interval (seconds) -- the test suite
+   uses it to force a re-check without waiting a day. */
 static int	cache_is_fresh(void)
 {
-	char		path[512];
-	struct stat	st;
+	long		age;
+	const char	*ttl;
+	long		limit;
 
-	if (!hellish_cache_path(path, sizeof(path)))
-		return (1);
-	if (stat(path, &st) != 0)
+	age = update_last_check_age();
+	if (age < 0)
 		return (0);
-	return (time(NULL) - st.st_mtime <= 86400);
+	limit = 86400;
+	ttl = getenv("HELLISH_UPDATE_TTL");
+	if (ttl && *ttl)
+		limit = ft_atoi(ttl);
+	return (age <= limit);
 }
 
-/* Interactive only: if the cached tag is stale, fork a fully detached child
+/* Interactive only: if the last check is stale, fork a fully detached child
    (double-fork) to refresh it in the background. Returns at once; the prompt
-   is never delayed by the network. Opt out with HELLISH_NO_UPDATE_CHECK. */
+   is never delayed by the network, which is the hard requirement in issue
+   #20 -- a slow or dead update server must cost the shell nothing at all.
+   Opt out entirely with HELLISH_NO_UPDATE_CHECK. */
 void	maybe_spawn_update_check(t_shell *state)
 {
 	pid_t	pid;
