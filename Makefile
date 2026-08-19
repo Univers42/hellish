@@ -546,14 +546,19 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
+# line that starts with a two-byte, one-column character, plus an edit made
+# at its start -- the shape reported in issue #2). Both render the pty output
+# through a terminal model and compare it against what should be on screen.
+widechar-test: all
+	@python3 $(TEST_DIR)/widechar_prompt_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@python3 $(TEST_DIR)/widechar_input_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Every libreadline entry point hellish uses, driven through a real pty. The
 # golden suite cannot reach ANY of it -- every category runs `hellish -c`,
 # which never enters the readline path -- so this is the only gate protecting
 # completion, history recall and vi/emacs switching. Required before touching
 # the readline linkage (see backlog: dlopen readline). tests/readline_paths_test.py
-widechar-test: all
-	@python3 $(TEST_DIR)/widechar_prompt_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
-
 readline-test: all
 	@python3 $(TEST_DIR)/readline_paths_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
