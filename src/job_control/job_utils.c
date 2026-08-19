@@ -22,26 +22,14 @@
 #include "libft.h"
 #include <stdio.h>
 
-/* Translate a t_job_status enum to the human string that `jobs` shows. */
-static const char	*job_status_str(t_job_status s)
-{
-	if (s == JOB_RUNNING)
-		return ("Running");
-	if (s == JOB_STOPPED)
-		return ("Stopped");
-	if (s == JOB_DONE)
-		return ("Done");
-	if (s == JOB_KILLED)
-		return ("Killed");
-	return ("Unknown");
-}
-
 /* Print one job in `jobs` format.  current/prev are the job IDs (not
    slot indices) that get '+'/'-' markers.  show_pid adds the pgid column,
    which `jobs -l` requests but the async notification doesn't need.
    Field width and the trailing " &" on running background jobs match
    bash byte-for-byte (measured, not guessed): status is padded to 27
-   and only Running lines carry the ampersand. */
+   and only Running lines carry the ampersand.  A signalled job puts the
+   signal's own name in that column and "(core dumped) " after it, which
+   is why the text comes from job_status_desc rather than the enum. */
 void	job_print(t_job *job, int current, int prev, bool show_pid)
 {
 	char	mark;
@@ -52,11 +40,11 @@ void	job_print(t_job *job, int current, int prev, bool show_pid)
 	else if (job->id == prev)
 		mark = '-';
 	if (show_pid)
-		ft_printf("[%d]%c  %d %-27s%s",
-			job->id, mark, job->pgid, job_status_str(job->status), job->cmd);
+		ft_printf("[%d]%c  %d %-27s%s%s", job->id, mark, job->pgid,
+			job_status_desc(job), job_core_suffix(job), job->cmd);
 	else
-		ft_printf("[%d]%c  %-27s%s",
-			job->id, mark, job_status_str(job->status), job->cmd);
+		ft_printf("[%d]%c  %-27s%s%s", job->id, mark,
+			job_status_desc(job), job_core_suffix(job), job->cmd);
 	if (job->bg && job->status == JOB_RUNNING)
 		ft_printf(" &");
 	ft_printf("\n");
@@ -80,7 +68,7 @@ void	job_notify(t_shell *state)
 	i = 0;
 	while (i < JOB_MAX)
 	{
-		if (jt->jobs[i].pgid && jt->jobs[i].status == JOB_DONE
+		if (jt->jobs[i].pgid && job_finished(&jt->jobs[i])
 			&& !jt->jobs[i].notified)
 		{
 			job_print(&jt->jobs[i], jt->current, jt->previous, false);
@@ -111,7 +99,7 @@ void	job_purge_done(t_job_table *jt)
 	i = 0;
 	while (i < JOB_MAX)
 	{
-		if (jt->jobs[i].pgid && jt->jobs[i].status == JOB_DONE)
+		if (jt->jobs[i].pgid && job_finished(&jt->jobs[i]))
 			job_remove(jt, jt->jobs[i].id);
 		i++;
 	}
