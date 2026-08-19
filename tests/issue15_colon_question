@@ -1,0 +1,34 @@
+# GitHub issue #15 -- ${var:?} with no word printed an empty diagnostic. Fixing
+# it exposed two more defects in the same statement: the word was printed RAW,
+# so it was neither expanded nor quote-removed.
+# stderr text is not diffed by this harness, so each case captures stderr into
+# a variable and strips the "<shell>: line N: name: " prefix with ${msg##*: },
+# leaving only the message -- which must match bash byte for byte.
+msg=$( { echo ${undef:?}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef?}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { : ${undef:?}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef:?custom message}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef?custom message}; } 2>&1 ); echo "${msg##*: }"
+W=hi; msg=$( { echo ${undef:?$W}; } 2>&1 ); echo "${msg##*: }"
+W=hi; msg=$( { echo ${undef?$W}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef:?"a b"}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef:?'q w'}; } 2>&1 ); echo "${msg##*: }"
+W=x; msg=$( { echo ${undef:?pre-${W}-post}; } 2>&1 ); echo "${msg##*: }"
+msg=$( { echo ${undef:?$(echo sub)}; } 2>&1 ); echo "${msg##*: }"
+e=; msg=$( { echo ${e:?}; } 2>&1 ); echo "${msg##*: }"
+set --; msg=$( { echo ${1:?}; } 2>&1 ); echo "${msg##*: }"
+# the message must name the offending parameter
+msg=$( { echo ${MYVAR:?}; } 2>&1 ); case $msg in *MYVAR*) echo names-it;; *) echo LOST;; esac
+# ${var?} on a SET-but-empty var must not fire at all
+e=; echo "[${e?}]"
+e=; echo "[${e?w}]"
+v=ok; echo "[${v:?}] [${v?}]"
+# nothing on stdout, and the shell aborts: the harness diffs the exit status
+# too, so these pin both. (A forked subshell's status is a separate contract
+# and is deliberately not asserted here.)
+echo ${undef:?} 2>/dev/null
+{ echo ${undef:?}; echo NOTREACHED; } 2>/dev/null
+echo ${undef?} 2>/dev/null
+# the working operator neighbours must be untouched
+echo "${u1:-def}"; echo "${u2:+alt}"; u3=; echo "${u3:=asg}" ; echo "$u3"
+W=hi; echo "${u4:-$W}"; echo ${u5:-"a b"}; echo "${u6:-'q w'}"

@@ -32,15 +32,30 @@ static int	pf_fatal_status(t_shell *state)
    to stderr and abort a non-interactive shell with the bash-parity status;
    interactively just set $? and return empty so the user keeps typing.
    Callers pass val=NULL to force the error branch (the @ and * path
-   decides set-ness itself). */
+   decides set-ness itself).
+
+   The word is an ordinary operator word, so it goes through
+   expand_param_word() exactly like the - = + forms do: `${u:?$W}` reports
+   W's value and `${u:?"a b"}` drops the quotes. Printing o.word raw meant
+   neither happened. When the word is OMITTED entirely, POSIX leaves the
+   text unspecified and bash supplies one; we use bash's two strings
+   verbatim, which differ by the colon -- with it the parameter may be
+   merely null, without it it is definitely unset (issue #15). */
 char	*pf_err_word(t_shell *state, char *val, t_pe_op o)
 {
-	int	st;
+	int		st;
+	char	*msg;
 
 	if (val && (!o.colon || *val != '\0'))
 		return (ft_strdup(val));
-	ft_eprintf("%s: %.*s: %.*s\n", state->ctx, o.name_len, o.name,
-		o.wlen, o.word);
+	if (o.wlen > 0)
+		msg = expand_param_word(state, o.word, o.wlen, o.dq);
+	else if (o.colon)
+		msg = ft_strdup("parameter null or not set");
+	else
+		msg = ft_strdup("parameter not set");
+	ft_eprintf("%s: %.*s: %s\n", state->ctx, o.name_len, o.name, msg);
+	xfree(msg);
 	st = pf_fatal_status(state);
 	state->last_cmd_st_exe = create_exec_state(st, false);
 	set_cmd_status(state, state->last_cmd_st_exe);
