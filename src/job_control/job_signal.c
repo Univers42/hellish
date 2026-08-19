@@ -34,9 +34,13 @@
    a status for a later `wait` (bg_done_record) -- and they used to decode
    it separately, which is exactly how one of them could learn the signal
    and the other could not.  exit_code keeps bash's 128+signal convention
-   either way; term_sig is what tells the display which voice to use. */
+   either way; term_sig is what tells the display which voice to use.  The
+   raw word is kept as well: retiring a job hands it to the bg_done ring so
+   a later `wait` can still answer, which is the only reason `jobs` is
+   allowed to drop the entry at all. */
 void	job_record_exit(t_job *job, int status)
 {
+	job->raw_status = status;
 	if (WIFSTOPPED(status))
 		return ((void)(job->status = JOB_STOPPED));
 	if (!WIFEXITED(status) && !WIFSIGNALED(status))

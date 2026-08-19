@@ -52,6 +52,7 @@ typedef struct s_job
 	bool			notified; /* true once the "Done" line was printed */
 	bool			bg; /* true if started with & (not fg'd yet) */
 	int				term_sig; /* signal that killed it, 0 if it exited */
+	int				raw_status; /* the waitpid() word, kept for `wait` */
 	bool			core_dumped; /* that signal also dumped core */
 }	t_job;
 

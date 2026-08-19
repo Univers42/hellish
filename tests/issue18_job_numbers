@@ -22,3 +22,13 @@ i=0; while [ $i -lt 3 ]; do sleep 0.05 & wait; i=$((i+1)); done; sleep 0.3 & job
 sleep 0.3 & sleep 0.3 & kill %1 2>/dev/null; wait 2>/dev/null; sleep 0.3 & jobs; wait
 sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs | head -1; wait
 sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs | tail -1; wait
+sleep 0.2 & sleep 0.5; jobs; sleep 0.2 & sleep 0.5; jobs
+sleep 0.2 & sleep 0.5; jobs; sleep 0.2 & sleep 0.5; jobs; sleep 0.2 & sleep 0.5; jobs
+sleep 0.2 & p=$!; sleep 0.5; jobs; wait $p; echo "st=$?"
+sleep 5 & p=$!; sleep 0.3; kill -9 $p; sleep 0.4; jobs; wait $p; echo "st=$?"; sleep 5 & q=$!; sleep 0.3; kill -9 $q; sleep 0.4; jobs; wait 2>/dev/null
+sleep 0.2 & sleep 0.5; jobs; jobs; sleep 0.2 & sleep 0.5; jobs
+sleep 0.2 & sleep 0.5; jobs >/dev/null; sleep 0.2 & sleep 0.5; jobs
+sleep 5 & sleep 0.2 & sleep 0.5; jobs; kill -9 %1 2>/dev/null; wait 2>/dev/null
+sleep 0.2 & sleep 0.5; jobs -p >/dev/null; sleep 0.2 & sleep 0.5; jobs > jp1; cut -c1-3 < jp1; rm -f jp1
+sleep 0.2 & p=$!; sleep 0.5; jobs; jobs; wait $p; echo "st=$?"
+sleep 0.2 & sleep 0.5; jobs; sleep 5 & sleep 0.3; jobs; kill -9 %1 2>/dev/null; wait 2>/dev/null

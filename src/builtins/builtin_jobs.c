@@ -32,16 +32,36 @@ static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
 	}
 }
 
+/* A finished job that has just been listed is over as far as the table is
+   concerned: park its exit status in the bg_done ring so `wait` can still
+   answer for it, then drop the entry so its NUMBER goes back into use. */
+static void	retire_reported(t_shell *state, t_job *job)
+{
+	job->notified = true;
+	bg_done_record(state, job->pgid, job->raw_status);
+	job_remove(&state->job_table, job->id);
+}
+
 /* jobs [-l] [-p]: list background (and stopped) jobs. We update statuses
    first via job_update_status (which reaps any that have finished since the
    last check) so the listing is accurate. -p prints only the process-group
-   ID, useful for `kill $(jobs -p)`. -l adds the PID column. Listing a Done
-   job counts as reporting it: the notified flag hides it from the next
-   listing, but — matching bash, verified empirically — the entry itself
-   stays so a later `wait $!` can still recover its exit status. Only wait
-   purges for real. We walk job NUMBERS (job_next_after) rather than table
-   slots: a reaped job frees its slot, a later job reuses that slot, and
-   slot order then prints [1] [4] [3] where bash prints [1] [3] [4]. */
+   ID, useful for `kill $(jobs -p)`. -l adds the PID column.
+
+   Listing a finished job's STATUS retires it, and that is what frees its
+   number:
+   bash is back at [1] for the next job where hellish used to climb to [2].
+   The comment that stood here claimed bash keeps the entry so a later
+   `wait $!` can still answer -- half right. bash keeps the STATUS, not the
+   job; retire_reported hands the raw waitpid word to the bg_done ring on
+   the way out, which is the same trick and is why dropping the entry is
+   safe.
+
+   -p is the exception: it prints pgids, never a status, so bash does not
+   count it as having reported anything and the job stays.
+
+   We walk job NUMBERS (job_next_after) rather than table slots: a reaped
+   job frees its slot, a later job reuses that slot, and slot order then
+   prints [1] [4] [3] where bash prints [1] [3] [4]. */
 int	builtin_jobs(t_shell *state, t_vec argv)
 {
 	t_job_table	*jt;
@@ -57,16 +77,15 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	while (i)
 	{
 		job = job_find_id(jt, i);
-		if (!(job_finished(job) && job->notified))
-		{
-			if (show_pid)
-				ft_printf("%d\n", job->pgid);
-			else
-				job_print(job, jt->current, jt->previous, long_fmt);
-			if (job_finished(job))
-				job->notified = true;
-		}
 		i = job_next_after(jt, i);
+		if (job_finished(job) && job->notified)
+			continue ;
+		if (show_pid)
+			ft_printf("%d\n", job->pgid);
+		else
+			job_print(job, jt->current, jt->previous, long_fmt);
+		if (job_finished(job) && !show_pid)
+			retire_reported(state, job);
 	}
 	return (0);
 }
