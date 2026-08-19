@@ -131,6 +131,22 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] `history` does not list itself. bash records an entry BEFORE running
+      it, so `history` shows the `history` command as its own last line;
+      hellish records in manage_history AFTER execution, so the listing
+      always stops one short. Found measuring issue #6 against bash 5.3.9
+      in a pty; separate contract from the multi-line joining fixed there.
+- [ ] Prompt render window: the fix for #5/#10/#19 makes the prefix write
+      atomic, so an echoed keystroke can no longer split an escape or a
+      multibyte glyph -- but it is still ECHOED at whatever point of the
+      prompt it arrives, and readline does not know it is on screen. The
+      screen can therefore still look off by one keystroke after fast
+      type-ahead, even though nothing is corrupted. Closing the window
+      entirely means turning echo off around the prefix write, which is
+      delicate: readline saves the termios it finds and restores it on
+      return, so modifying it before readline preps would leave the
+      terminal without echo after the line is read.
+
 - [ ] Conformance gate for `2a7c5c1`+prompt running (expect possible
       Oils `background` cluster gains). Norminette NOT INSTALLED on
       this host — norm gate unverified since the audit commits; run
