@@ -29,22 +29,17 @@ static t_sym	pick_syms(void)
    background check ran. "never" when the cache has not been written yet. */
 static void	cache_age(char *buf, size_t n)
 {
-	char		path[512];
-	struct stat	st;
-	long		d;
+	long	age;
 
-	ft_strlcpy(buf, "never", n);
-	if (!hellish_cache_path(path, sizeof(path)) || stat(path, &st) != 0)
-		return ;
-	d = (long)(time(NULL) - st.st_mtime);
-	if (d < 60)
-		ft_strlcpy(buf, "just now", n);
-	else if (d < 3600)
-		ft_snprintf(buf, n, "%ldm ago", d / 60);
-	else if (d < 86400)
-		ft_snprintf(buf, n, "%ldh ago", d / 3600);
+	age = update_last_check_age();
+	if (age < 0)
+		return ((void)ft_strlcpy(buf, "never", n));
+	if (age < 3600)
+		ft_snprintf(buf, n, "%dm ago", (int)(age / 60));
+	else if (age < 86400)
+		ft_snprintf(buf, n, "%dh ago", (int)(age / 3600));
 	else
-		ft_snprintf(buf, n, "%ldd ago", d / 86400);
+		ft_snprintf(buf, n, "%dd ago", (int)(age / 86400));
 }
 
 /* The "all good" footer: version, how this copy was installed, last check. */

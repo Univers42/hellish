@@ -131,6 +131,14 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] libft's ft_snprintf has no length modifiers: "%ld" is copied through
+      LITERALLY rather than formatted. It silently wrote an update-state
+      file full of format strings, which made the lazy-header gate think it
+      had never run. Worked around with (int) casts (2038-capped, and these
+      are cache timestamps), but the fix belongs in the submodule -- add
+      %ld/%lu to ft_printf, then drop the casts in update_state2.c and
+      banner3.c.
+
 - [ ] Job labels for `{ }` and for the keyword compounds still differ from
       bash, and cannot match without a pretty-printer: hellish labels a
       background job with a SLICE of the source the user typed, bash

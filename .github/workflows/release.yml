@@ -23,12 +23,17 @@ jobs:
         run: make OPT=1 all
       - name: Smoke test
         run: echo 'echo ok $((20 + 22))' | ./build/bin/hellish
-      - name: Stage release binary
-        run: cp build/bin/hellish hellish-linux-x86_64
+      - name: Stage release binary + checksum
+        run: |
+          cp build/bin/hellish hellish-linux-x86_64
+          sha256sum hellish-linux-x86_64 > hellish-linux-x86_64.sha256
+          cat hellish-linux-x86_64.sha256
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          files: hellish-linux-x86_64
+          files: |
+            hellish-linux-x86_64
+            hellish-linux-x86_64.sha256
           generate_release_notes: true
 
   npm:
