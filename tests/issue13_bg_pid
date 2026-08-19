@@ -1,0 +1,36 @@
+sleep 3 & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+sleep 3 >/dev/null & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+sleep 3 </dev/null & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+sleep 3 2>/dev/null & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+sleep 3 >/dev/null 2>&1 & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+A=1 sleep 3 & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+env sleep 3 & p=$!; sleep 0.4; ps -o comm= -p $p | tr -d ' '; kill $p 2>/dev/null; wait 2>/dev/null
+sleep 3 & p=$!; sleep 0.4; kill -STOP $p; sleep 0.3; ps -o stat= -p $p | cut -c1; kill -CONT $p 2>/dev/null; kill -9 $p 2>/dev/null; wait 2>/dev/null
+sleep 3 & p=$!; sleep 0.4; kill -9 $p; wait $p; echo "k9=$?"
+sleep 3 & p=$!; sleep 0.4; kill -TERM $p; wait $p; echo "term=$?"
+sleep 3 & p=$!; sleep 0.4; kill -INT $p; wait $p; echo "int=$?"
+rm -f leak13a; sh -c 'sleep 0.9; echo leaked > leak13a' & p=$!; sleep 0.4; kill -9 $p 2>/dev/null; sleep 1.2; cat leak13a 2>/dev/null; echo end
+rm -f leak13b; sh -c 'sleep 0.9; echo leaked > leak13b' & p=$!; sleep 0.4; kill -TERM $p 2>/dev/null; sleep 1.2; cat leak13b 2>/dev/null; echo end
+sh -c 'exit 7' & wait $!; echo "st=$?"
+sh -c 'exit 0' & wait $!; echo "st=$?"
+true & wait $!; echo "st=$?"
+false & wait $!; echo "st=$?"
+sleep 0.1 & p=$!; wait $p; echo "st=$?"
+sleep 0.1 & case $! in *[!0-9]*) echo bad;; "") echo empty;; *) echo numeric;; esac; wait
+sleep 3 & a=$!; sleep 3 & b=$!; [ "$a" != "$b" ] && echo distinct; kill $a $b 2>/dev/null; wait 2>/dev/null
+sleep 0.1 & jobs; wait
+sleep 0.1 & echo "$(jobs | wc -l)"; wait
+{ sleep 0.1; } & wait $!; echo "brace=$?"
+( sleep 0.1 ) & wait $!; echo "sub=$?"
+sleep 0.1 | cat & wait $!; echo "pipe=$?"
+sleep 0.1 && echo chained & wait $!; echo "andor=$?"
+if true; then sleep 0.1; fi & wait $!; echo "ifjob=$?"
+for i in 1 2; do sleep 0.05 & wait $!; done; echo "loop=$?"
+sleep 3 & kill %1 2>/dev/null; wait 2>/dev/null; echo "jobspec=ok"
+cd /tmp & wait $!; echo "cdbg=$?"
+echo hi & wait $!; echo "echobg=$?"
+printf 'x\n' & wait $!; echo "printfbg=$?"
+nosuchcmd12345 & wait $!; echo "missing=$?"
+/nonexistent/path & wait $!; echo "nopath=$?"
+sleep 0.1 & p1=$!; sleep 0.1 & p2=$!; wait $p1; r1=$?; wait $p2; echo "$r1 $?"
+sleep 3 & p=$!; sleep 0.4; kill -0 $p; echo "alive=$?"; kill -9 $p 2>/dev/null; wait 2>/dev/null
