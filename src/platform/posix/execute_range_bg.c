@@ -13,6 +13,21 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
+/* The signal disposition POSIX requires of an ASYNCHRONOUS child when job
+   control is off: SIGINT and SIGQUIT ignored, so a ^C aimed at the
+   foreground job -- or an explicit `kill -INT "$!"` -- does not take the
+   background command down with it.  bash does the same, which is why
+   `sleep 3 & kill -INT $!; wait $!` returns 0 there and not 130.
+
+   This has to be re-applied after default_signal_handlers() in the
+   exec-in-place path (that call resets everything to SIG_DFL, which is
+   right for a $( ) body and wrong for an async one). */
+void	async_child_signals(void)
+{
+	signal(SIGINT, SIG_IGN);
+	signal(SIGQUIT, SIG_IGN);
+}
+
 /* Child body for a background command group (& operator).  We move into
    our own process group (setpgid) so job-control signals from the terminal
    don't reach us.  stdin is redirected from /dev/null (POSIX: background
@@ -21,8 +36,42 @@
    async child (reset_traps_child) -- a signal aimed at this child must not
    run the parent's handler string, and the parent's EXIT trap is not ours
    to fire.  The reset comes first so the explicit SIG_IGNs below still win:
-   SIGINT/SIGQUIT/SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the user can
-   keep typing without accidentally killing the background job. */
+   SIGINT/SIGQUIT (POSIX) plus SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the
+   user can keep typing without accidentally killing the background job. */
+
+/* The one AST shape a background child may execve in place: the range is a
+   single pipeline, that pipeline is a single command, and that command is a
+   lone AST_SIMPLE_COMMAND.  Anything else -- a real pipeline, a subshell, a
+   brace group, if/for/while, `!` negation, or several &&-joined commands --
+   still has work to do after the command returns, and exec is irreversible,
+   so the scan errs toward the extra fork exactly like cs_single_cmd does.
+
+   The negate check is not paranoia: `! cmd &` must invert the status, which
+   only happens after the command returns.
+
+   A builtin or function needs no permission from us -- dispatch_cmd routes
+   those away from execute_cmd_bg before the node is ever consulted. */
+static t_ast_node	*bg_lone_command(t_ast_node *list, size_t start,
+						size_t end)
+{
+	t_ast_node	*pipe;
+	t_ast_node	*cmd;
+
+	if (end - start != 1)
+		return (NULL);
+	pipe = &((t_ast_node *)list->children.ctx)[start];
+	if (pipe->node_type != AST_COMMAND_PIPELINE || pipe->children.len != 1
+		|| pipe->negate)
+		return (NULL);
+	cmd = &((t_ast_node *)pipe->children.ctx)[0];
+	if (cmd->node_type != AST_COMMAND || cmd->children.len != 1)
+		return (NULL);
+	cmd = &((t_ast_node *)cmd->children.ctx)[0];
+	if (cmd->node_type != AST_SIMPLE_COMMAND)
+		return (NULL);
+	return (cmd);
+}
+
 static void	bg_child_body(t_shell *state, t_executable_node *exe,
 				size_t start, size_t end)
 {
@@ -30,6 +79,7 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 	t_execution_state	res;
 
 	setpgid(0, 0);
+	state->bg_exec_node = bg_lone_command(exe->node, start, end);
 	null_fd = open("/dev/null", O_RDONLY);
 	if (null_fd >= 0)
 	{
@@ -37,8 +87,7 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 		close(null_fd);
 	}
 	reset_traps_child(state);
-	signal(SIGINT, SIG_IGN);
-	signal(SIGQUIT, SIG_IGN);
+	async_child_signals();
 	signal(SIGTSTP, SIG_IGN);
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
