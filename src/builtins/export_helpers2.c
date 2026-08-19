@@ -14,49 +14,42 @@
 #include "helpers.h"
 
 /* Full processing for one export argument: parse name=value, strip quotes,
-   optionally consume the next word as a value, expand (unless single-quoted),
-   then delegate to handle_identifier to set or mark-export the variable. */
+   expand (unless single-quoted), then delegate to handle_identifier to set
+   or mark-export the variable.
+
+   Each operand stands alone. There is deliberately no `export NAME value`
+   two-word form: bash has none, and inventing one made `export A B C` read
+   its operands pairwise -- assigning B as A's value and never exporting B
+   at all (GitHub issue #12). A bare NAME must leave the value untouched. */
 static int	handle_parsed_export_arg(t_shell *st,
 				t_vec av,
-				int *ip,
+				int i,
 				const char *argv0)
 {
-	int		i;
-	char	*cur;
 	char	*id;
 	char	*val;
 	char	quote;
 
-	i = *ip;
-	cur = ((char **)av.ctx)[i];
 	id = NULL;
 	val = NULL;
-	parse_export_arg(cur, &id, &val);
+	parse_export_arg(((char **)av.ctx)[i], &id, &val);
 	quote = strip_surrounding_quotes(&val);
-	consume_following_value(av, &i, &val);
-	*ip = i;
 	if (val)
 		val = expand_export_value(st, val, quote != '\'');
 	return (handle_identifier(st, id, val, argv0));
 }
 
 /* Process one element of the export argv. Bounds-checks `i` first so we
-   never read past the end of av. The (void)cur suppresses the unused-variable
-   warning for the local we extract before the early-return dispatch. */
-int	process_arg(t_shell *st, t_vec av, int *ip)
+   never read past the end of av. */
+int	process_arg(t_shell *st, t_vec av, int i)
 {
-	int			i;
-	char		*cur;
 	const char	*arg0;
 
-	i = *ip;
 	arg0 = ((char **)av.ctx)[0];
 	if (!av.ctx || i >= (int)av.len)
 		return (verbose(CLAP_ERROR, ":[DEBUG export] missing "
 				"argv element at index %d\n", i), 1);
-	cur = ((char **)av.ctx)[i];
-	return (handle_parsed_export_arg(st, av, ip, arg0));
-	(void)cur;
+	return (handle_parsed_export_arg(st, av, i, arg0));
 }
 
 /* Do the actual env work for one export argument. If `id` is a valid POSIX

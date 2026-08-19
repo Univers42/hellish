@@ -1,0 +1,29 @@
+# GitHub issue #12 -- `export A B C` (multiple bare-name operands) overwrote the
+# first variable with the second operand's NAME and skipped the second entirely.
+# Root cause: a fabricated `export NAME value` two-word form that bash does not
+# have. These cases pin the POSIX contract: `export name...` marks each named
+# variable for export and changes NO values.
+A=1; B=2; C=3; export A B C; echo "A=$A B=$B C=$C"
+A=1; B=2; C=3; export A B C; env | grep -E "^(A|B|C)=" | sort
+export FOO BAR; echo "FOO=[$FOO] BAR=[$BAR]"
+export FOO bar; echo "FOO=[$FOO] bar=[$bar]"
+A=1; B=2; C=3; D=4; export A B C D; echo "$A$B$C$D"
+TEST_DIR=t; PROJECT_DIR=p; BIN=b; IRC_HOST=h; export TEST_DIR PROJECT_DIR BIN IRC_HOST; echo "$TEST_DIR/$PROJECT_DIR/$BIN/$IRC_HOST"
+A=1; B=2; export A B; sh -c 'echo "$A-$B"'
+A=1; B=2; C=3; export A B C; echo $?
+# neighbouring forms that already worked -- they must keep working
+A=1; export A; echo "A=$A"
+export A=1 B=2; echo "A=$A B=$B"
+X=9; export X Y=7 Z; echo "X=$X Y=$Y Z=[$Z]"
+export A=1; export A+=2; echo "$A"
+A=1; B=2; export A B=22 C; echo "A=$A B=$B C=[$C]"
+export -- A B; echo "rc=$?"
+A=1; export -n A; echo "A=$A"
+# an invalid identifier must not corrupt its neighbouring operands. Run in a
+# subshell: bash aborts the shell on a special-builtin error under --posix, and
+# that abort is a separate contract from the operand handling tested here.
+A=1; ( export A 1BAD ) 2>/dev/null; echo "A=$A"
+A=1; B=2; ( export 1BAD B ) 2>/dev/null; echo "A=$A B=$B"
+V=; export V W; echo "V=[$V] W=[$W]"
+A=1; B=2; export A B; env | grep -c "^A=1$"
+a=x; b=y; export a b; sh -c 'echo "$a$b"'
