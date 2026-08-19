@@ -21,23 +21,35 @@ void	setup_emacs_mode(void);
    \001/\002 width markers (they must not reach the terminal). Returns the final
    line. readline only ever sees a single-line prompt, which avoids the cursor
    drift and heavy full-line redraws that a multi-line prompt (embedded \n)
-   causes during ↑/↓ history navigation. */
+   causes during ↑/↓ history navigation.
+   The whole prefix goes out in ONE write(). It used to stream through
+   unbuffered fputc on stderr -- a write() syscall PER BYTE -- and the tty
+   line discipline echoes type-ahead between two user-space writes. A key
+   pressed here therefore landed inside a colour escape, and since every
+   letter is a valid CSI final byte the sequence ended early and its tail
+   printed as literal text (`38;2;112`, `;79;87m`). Same reason
+   mascot_redraw composes its frame in memory first. */
 static char	*split_prompt(char *prompt)
 {
-	char	*nl;
-	size_t	i;
+	t_string	f;
+	char		*nl;
+	size_t		i;
 
 	nl = ft_strrchr(prompt, '\n');
 	if (!nl)
 		return (prompt);
+	vec_init(&f);
+	f.elem_size = 1;
 	i = 0;
 	while (prompt + i <= nl)
 	{
 		if (prompt[i] != '\001' && prompt[i] != '\002')
-			fputc((unsigned char)prompt[i], rl_outstream);
+			vec_push_char(&f, prompt[i]);
 		i++;
 	}
-	fflush(rl_outstream);
+	if (write(fileno(rl_outstream), f.ctx, f.len) < 0)
+		f.len = 0;
+	xfree(f.ctx);
 	return (nl + 1);
 }
 
