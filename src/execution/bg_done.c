@@ -29,13 +29,7 @@ void	bg_done_record(t_shell *state, pid_t pid, int status)
 	state->bg_done_next = (state->bg_done_next + 1) % BG_DONE_MAX;
 	job = job_find_pgid(&state->job_table, pid);
 	if (job)
-	{
-		job->status = JOB_DONE;
-		if (WIFEXITED(status))
-			job->exit_code = WEXITSTATUS(status);
-		else if (WIFSIGNALED(status))
-			job->exit_code = 128 + WTERMSIG(status);
-	}
+		job_record_exit(job, status);
 }
 
 /* Find and CONSUME a remembered status for `pid`. Returns 1 and fills *status

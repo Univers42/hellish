@@ -182,6 +182,29 @@ pass counts in `bench/baseline/`). Performance claims come from
       SIG_IGN.  The exec-in-place path was fixed for #13
       (async_child_signals); the forked path still needs an
       "I am inside an async child" signal so it can re-apply them.
+- [ ] `exec` with MORE THAN ONE redirection is broken and silently does
+      the wrong thing.  `exec 3>&2 2>file` applies neither; `exec 4>a 2>b`
+      pointed fd 2 at *a*, i.e. it paired the last fd with the first
+      target.  Single-redirection `exec` is fine, which is why this hid
+      for so long -- and it is why 17_bg_signal_report.sh spells its
+      stderr capture as two `exec` lines.  Found while writing that test.
+- [ ] Script line numbers in diagnostics are the END OF THE INPUT BATCH,
+      not the running command: a 4-line script reports every error as
+      "line 5".  update_ctx (src/infrastructure/rl_helpers.c) formats
+      state->rl.line, which points past the batch; the correct value is
+      tok_lineno(), which $LINENO already uses and which does match bash.
+      Not a one-liner: tok_lineno lives behind execution_private.h, and
+      update_ctx runs once per input CYCLE, so it would also have to move
+      to per-command.  Affects every message, including the new #17 one.
+- [ ] A finished job is not reaped until something ASKS: `jobs` inside a
+      pipeline (`jobs | cat`) or a command substitution (`$(jobs)`) runs
+      in a forked child whose waitpid cannot reap the parent's children,
+      so it reports "Running" where bash reports "Done"/"Killed".  bash
+      reaps asynchronously on SIGCHLD; hellish only polls in `jobs` and
+      `wait`.  Architectural, not a display bug.
+- [ ] `kill -STOP` on a background job: hellish's `jobs` says "Stopped",
+      bash says "Running" when job control is off (`-c`, scripts).  bash
+      only tracks stops when it has job control.
 
 ## Done (continued 4)
 

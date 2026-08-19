@@ -21,23 +21,6 @@
 #include <stdlib.h>
 #include <sys/wait.h>
 
-/* Decode a raw waitpid() status word and update the job's status/code.
-   Stopped (^Z) transitions to JOB_STOPPED; exited or killed = JOB_DONE
-   with the appropriate exit code. */
-static void	job_update_entry(t_job *job, int status)
-{
-	if (WIFSTOPPED(status))
-		job->status = JOB_STOPPED;
-	else if (WIFEXITED(status) || WIFSIGNALED(status))
-	{
-		job->status = JOB_DONE;
-		if (WIFEXITED(status))
-			job->exit_code = WEXITSTATUS(status);
-		else
-			job->exit_code = 128 + WTERMSIG(status);
-	}
-}
-
 /* Poll every running job with waitpid(WNOHANG|WUNTRACED).  We poll by
    process GROUP (-pgid) so that every process in the pipeline is reaped,
    not just the leader.  Called before printing the prompt so the user
@@ -55,7 +38,7 @@ void	job_update_status(t_job_table *jt)
 		{
 			pid = waitpid(-jt->jobs[i].pgid, &status, WNOHANG | WUNTRACED);
 			if (pid > 0)
-				job_update_entry(&jt->jobs[i], status);
+				job_record_exit(&jt->jobs[i], status);
 		}
 		i++;
 	}
