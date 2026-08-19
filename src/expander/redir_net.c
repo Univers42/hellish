@@ -118,13 +118,8 @@ int	net_redir_open(char *fname, t_redir *ret)
 	ret->fd = net_connect(host, serv, socktype);
 	if (ret->fd < 0)
 		return (0);
-	if (ret->fd == ret->src_fd)
-	{
-		ret->fd = fcntl(ret->src_fd, F_DUPFD, 10);
-		close(ret->src_fd);
-		if (ret->fd < 0)
-			return (0);
-	}
+	if (!redir_park_fd(ret))
+		return (0);
 	ret->should_delete = false;
 	return (1);
 }
