@@ -58,15 +58,8 @@ static bool	open_file_redir(t_tt tt, t_redir *ret)
 		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0666);
 	else
 		ret->fd = -1;
-	if (ret->fd < 0)
+	if (!redir_park_fd(ret))
 		return (false);
-	if (ret->fd == ret->src_fd)
-	{
-		ret->fd = fcntl(ret->src_fd, F_DUPFD, 10);
-		close(ret->src_fd);
-		if (ret->fd < 0)
-			return (false);
-	}
 	ret->should_delete = false;
 	return (true);
 }
@@ -79,13 +72,10 @@ static bool	handle_devfd_redir(char *fname, t_redir *ret)
 	if (orig_fd < 0)
 		return (false);
 	ret->fd = dup(orig_fd);
-	if (ret->fd == ret->src_fd)
-	{
-		ret->fd = fcntl(ret->src_fd, F_DUPFD, 10);
-		close(ret->src_fd);
-	}
+	if (!redir_park_fd(ret))
+		return (false);
 	ret->should_delete = false;
-	return (ret->fd >= 0);
+	return (true);
 }
 
 /* Build a t_redir from a redirect token type, filename, and source fd.
