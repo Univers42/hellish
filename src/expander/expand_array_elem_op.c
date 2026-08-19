@@ -18,7 +18,7 @@
 #define AEOP_VAR "__hellish_aeop"
 
 bool	is_valid_ident(char *s, int len);
-void	try_unset(t_shell *state, char *key);
+int		try_unset(t_shell *state, char *key);
 
 /* ${name[sub]OP} for a single element (sub is not the @ or star form),
    OP any parameter operator (default/alt/trim/subst/case). The element
