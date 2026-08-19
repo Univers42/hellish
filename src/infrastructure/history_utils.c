@@ -15,11 +15,24 @@
 /* Push a new entry both into readline's in-memory list and into our own
    hist_cmds vector, then append the encoded form to the history file via the
    long-lived append_fd. The fd approach is O(1) per command; we never rewrite
-   the whole file mid-session (cap_history handles that at startup only). */
+   the whole file mid-session (cap_history handles that at startup only).
+   The entry is joined FIRST so all three consumers agree: readline's recall
+   buffer, `history` / `fc -l`, and the file. Joining only for readline left
+   `history` listing the raw lines of a multi-line command -- a for-loop
+   printed as three entryless rows where bash prints one joined line. The
+   join is idempotent (an already-joined line has no boundary newlines
+   left), so replaying an old raw file through here is safe. */
 static void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
+	char	*joined;
 
+	joined = hist_join_line(hist_entry);
+	if (joined)
+	{
+		xfree(hist_entry);
+		hist_entry = joined;
+	}
 	add_history_line(hist_entry);
 	vec_push(&state->hist.hist_cmds, &hist_entry);
 	if (state->hist.append_fd < 0)
