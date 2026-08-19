@@ -8,7 +8,7 @@ const path = require('path');
 const https = require('https');
 const { version } = require('../package.json');
 
-const REPO = 'Univers42/42sh';
+const REPO = 'Univers42/hellish';
 const plat = process.platform;
 const arch = process.arch;
 
