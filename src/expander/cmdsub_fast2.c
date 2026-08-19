@@ -16,9 +16,12 @@
    set errs on the side of forking: anything not provably side-effect-free
    is rejected.  Quoted spans hide metacharacters; a nested $( ) is fine
    (its own capture isolates it — recursively via this same fast path); a
-   ${...} is fine unless it contains '=' (the ${v=w}/${v:=w} assignment
-   forms would leak into the parent); $((...)) is rejected outright since
-   arithmetic can assign; every control/redirect operator forks. */
+   ${...} is fine unless it contains '=' or '?' -- the ${v=w}/${v:=w}
+   assignment forms would leak into the parent, and ${v?w}/${v:?w} is
+   FATAL: running it in-process took the whole shell down, where bash only
+   kills the substitution's child and carries on with an empty result;
+   $((...)) is rejected outright since arithmetic can assign; every
+   control/redirect operator forks. */
 
 /* The command word must be one of the builtins that cannot touch shell
    state and cannot legitimately fail the whole shell. */
@@ -58,13 +61,14 @@ int	csf_skip_csub(const char *s, int i)
 	return (i);
 }
 
-/* Scan one ${...}: reject when it contains '=' (assignment forms). */
+/* Scan one ${...}: reject the assignment forms ('=') and the error form
+   ('?'), which exits the shell it runs in. */
 int	csf_skip_param(const char *s, int i)
 {
 	i += 2;
 	while (s[i] && s[i] != '}')
 	{
-		if (s[i] == '=')
+		if (s[i] == '=' || s[i] == '?')
 			return (-1);
 		i++;
 	}
