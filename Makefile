@@ -577,6 +577,10 @@ git-prompt-test: all
 # invalid-option status, $-, mode-dependent nounset) vs bash --posix. These
 # exercise how the shell parses its own argv, which the golden -c harness
 # cannot reach. Host-side, no docker. See tests/cli_opts_compare.sh.
+net-redir-test: all
+	@chmod +x $(TEST_DIR)/net_redir_test.py
+	@python3 $(TEST_DIR)/net_redir_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 cli-opts-test: all
 	@chmod +x $(TEST_DIR)/cli_opts_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cli_opts_compare.sh
@@ -629,5 +633,5 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test conformance perf rss \
-	charts cli-opts-test login-test geoman oracle docker-suite docker widechar-test \
+	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
 	user-install user-uninstall

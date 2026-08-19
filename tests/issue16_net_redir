@@ -1,0 +1,30 @@
+(exec 3<>/dev/tcp/127.0.0.1/1) 2>/dev/null; echo "st=$?"
+(exec 3</dev/tcp/127.0.0.1/1) 2>/dev/null; echo "st=$?"
+(exec 3>/dev/tcp/127.0.0.1/1) 2>/dev/null; echo "st=$?"
+(exec 3<>/dev/udp/127.0.0.1/1) 2>/dev/null; echo "st=$?"
+(exec 3<>/dev/tcp/127.0.0.1/1) 2>/dev/null && echo UP || echo DOWN
+true </dev/tcp/127.0.0.1/1 2>/dev/null; echo "cmd=$?"
+true >/dev/tcp/127.0.0.1/1 2>/dev/null; echo "cmd=$?"
+true <>/dev/tcp/127.0.0.1/1 2>/dev/null; echo "cmd=$?"
+true </dev/tcp/127.0.0.1 2>/dev/null; echo "few=$?"
+true </dev/tcp/127.0.0.1/1/x 2>/dev/null; echo "many=$?"
+true <>/dev/tcp//1 2>/dev/null; echo "emptyhost=$?"
+true <>/dev/tcp/127.0.0.1/nosuchsvcname 2>/dev/null; echo "badsvc=$?"
+true <>/dev/udp/127.0.0.1/nosuchsvcname 2>/dev/null; echo "badsvc=$?"
+true <>/dev/tcp/ 2>/dev/null; echo "bare=$?"
+true <>/dev/tcp 2>/dev/null; echo "noslash=$?"
+true <>/dev/udp 2>/dev/null; echo "noslash=$?"
+true <>/dev/tcp/host 2>/dev/null; echo "hostonly=$?"
+echo /dev/tcp/127.0.0.1/80
+echo "/dev/udp/host/port"
+v=/dev/tcp/127.0.0.1/1; echo "$v"
+case /dev/tcp/1.2.3.4/80 in /dev/tcp/*) echo matched;; *) echo no;; esac
+cat /dev/tcp/127.0.0.1/1 2>/dev/null; echo "cat=$?"
+echo x >/dev/tcp/127.0.0.1/1 2>/dev/null; echo "echo=$?"
+true <>/dev/tcpx/127.0.0.1/1 2>/dev/null; echo "notnet=$?"
+true <>/dev/tc/127.0.0.1/1 2>/dev/null; echo "notnet=$?"
+true <>/dev/udpx/1/1 2>/dev/null; echo "notnet=$?"
+true <>/dev/tcp/127.0.0.1/0 2>/dev/null; echo "port0=$?"
+if (exec 3<>/dev/tcp/127.0.0.1/1) 2>/dev/null; then echo yes; else echo no; fi
+for h in 127.0.0.1 localhost; do true </dev/tcp/$h/1 2>/dev/null; echo "$h=$?"; done
+x=$( (exec 3<>/dev/tcp/127.0.0.1/1) 2>/dev/null && echo UP || echo DOWN ); echo "$x"
