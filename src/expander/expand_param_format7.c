@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "env.h"
+#include "decomposer.h"
 
 /* Thin wrapper: look up `name[0..len)` in the environment.  Returns NULL if
    the variable is unset (distinct from set-but-empty, which returns "").
@@ -59,7 +60,38 @@ char	*expand_param_word_dq(t_shell *state, const char *word, int wlen)
 	ft_memcpy(buf + 1, word, (size_t)wlen);
 	buf[wlen + 1] = '"';
 	buf[wlen + 2] = '\0';
-	ret = expand_param_word(state, buf, wlen + 2, false);
+	ret = pf_word_pipeline(state, buf, wlen + 2, true);
 	xfree(buf);
+	return (ret);
+}
+
+/* Reparse one operator word and run the expansions it may contain, then
+   flatten it back to a string.  no_sq asks the reparser to leave single
+   quotes alone; the dq wrapper above needs that because a ' inside
+   "${...}" is an ordinary character even where the word's own quotes have
+   toggled the quoting back off, and a lone one used to run the scan off
+   the end of the word and trip the reparser's closing-quote assertion. */
+char	*pf_word_pipeline(t_shell *state, const char *word, int wlen,
+			bool no_sq)
+{
+	t_ast_node	w;
+	t_token		t;
+	t_string	s;
+	char		*ret;
+
+	t.start = (char *)word;
+	t.len = wlen;
+	t.tt = TT_WORD;
+	w = reparse_word(t, no_sq);
+	expand_tilde_word(state, &w);
+	expand_cmd_substitutions(state, &w);
+	expand_env_vars(state, &w, false);
+	s = word_to_string(w);
+	if (!s.ctx)
+		ret = ft_strdup("");
+	else
+		ret = ft_strndup((char *)s.ctx, s.len);
+	xfree(s.ctx);
+	free_ast(&w);
 	return (ret);
 }
