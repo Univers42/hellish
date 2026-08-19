@@ -27,6 +27,19 @@
 #  Usage:  cd tests && ./verify_alloc.sh
 # ============================================================================
 set -u
+# Same oracle pin as tests/tester: bash changes POSIX-visible behaviour between
+# minor releases, and this script grades output parity against `bash --posix`.
+# Without the pin a 5.1 box reports version differences as allocator diffs --
+# which is exactly the wrong conclusion for a script whose whole job is to
+# prove the two heaps behave identically.
+ORACLE_HOME="${HELLISH_ORACLE:-$HOME/bash-5.3.9}"
+if [ -x "$ORACLE_HOME/bin/bash" ]; then
+	PATH="$ORACLE_HOME/bin:$PATH"; export PATH
+fi
+case "$(bash --version 2>/dev/null | head -1)" in
+	*"version 5.3"*) ;;
+	*) echo "warning: grading against non-5.3 bash; run 'make oracle' for the pin" ;;
+esac
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TESTS="$ROOT/tests"
 BIN="$ROOT/build/bin/hellish"
