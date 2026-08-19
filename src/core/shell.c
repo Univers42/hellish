@@ -104,6 +104,7 @@ static void	open_cycle(t_shell *state)
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	get_g_sig()->should_unwind = 0;
+	update_notify_prompt(state);
 	if (state->metinp != INP_RL)
 		return ;
 	pc = env_expand(state, "PROMPT_COMMAND");

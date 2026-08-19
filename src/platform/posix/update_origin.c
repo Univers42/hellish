@@ -51,6 +51,8 @@ t_origin	detect_origin(char *repo, size_t n)
 	}
 	if (access("/.dockerenv", F_OK) == 0)
 		return (ORIGIN_DOCKER);
+	if (update_needs_sudo(path))
+		return (ORIGIN_BINARY_SYSTEM);
 	return (ORIGIN_BINARY);
 }
 
@@ -65,7 +67,9 @@ const char	*origin_label(t_origin o)
 		return ("docker");
 	if (o == ORIGIN_SOURCE)
 		return ("source checkout");
-	return ("standalone binary");
+	if (o == ORIGIN_BINARY_SYSTEM)
+		return ("system binary");
+	return ("user binary");
 }
 
 /* Build the upgrade command for this origin into out. */
@@ -84,34 +88,42 @@ void	origin_command(t_origin o, const char *repo, char *out, size_t n)
 		ft_strlcat(out, "' && git pull --ff-only && make OPT=1 all", n);
 	}
 	else
-		ft_strlcpy(out, "curl -fsSL https://raw.githubusercontent.com/"
-			HELLISH_REPO "/main/install.sh | sh", n);
+		ft_strlcpy(out, "update --now  (downloads and installs the release "
+			"binary in place)", n);
 }
 
-/* Execute the origin's upgrade. Inside a container we can only advise the
-   host to re-pull, so we print rather than exec. */
-int	run_origin_update(t_origin o, const char *repo)
+/* Execute the origin's upgrade.
+
+   A package-managed install delegates to whatever manages it -- that is
+   the rule issue #20 lays down, and replacing an npm-owned file behind
+   npm's back would only break the next `npm update`. Inside a container we
+   cannot help at all, so we print what the host should run.
+
+   A plain release binary is the case we own: update_apply downloads,
+   verifies and atomically replaces it. The exit status is the command's
+   real status; it used to be a hardcoded 0, so a failed upgrade reported
+   success. */
+int	run_origin_update(t_origin o, const char *repo, const char *tag)
 {
 	char		cmd[1024];
 	char *const	av[] = {"sh", "-c", cmd, NULL};
 	pid_t		pid;
 	int			st;
 
+	if (o == ORIGIN_BINARY || o == ORIGIN_BINARY_SYSTEM)
+		return (update_selfupdate(o, tag));
 	origin_command(o, repo, cmd, sizeof(cmd));
 	if (o == ORIGIN_DOCKER)
-	{
-		ft_printf("hellish: run this on the host:\n  %s\n", cmd);
-		return (0);
-	}
+		return ((void)ft_printf("hellish: run this on the host:\n  %s\n",
+				cmd), 0);
 	ft_eprintf("hellish: %s\n", cmd);
 	pid = fork();
 	if (pid < 0)
 		return (1);
 	if (pid == 0)
-	{
-		execvp(av[0], av);
-		_exit(127);
-	}
+		(execvp(av[0], av), _exit(127));
 	waitpid(pid, &st, 0);
-	return (0);
+	if (WIFEXITED(st))
+		return (WEXITSTATUS(st));
+	return (1);
 }
