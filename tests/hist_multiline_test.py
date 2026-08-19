@@ -7,11 +7,25 @@ Guards the bash-cmdhist joining of history_join.c. The old flattening
 -> space) or shell-wedging (a here-doc joined onto one line waits for a
 terminator that never comes).
 
+Every entry is joined ONCE, at the point it is recorded, so readline's
+recall buffer, `history` / `fc -l` and the history file all show the same
+text -- which is what bash does. Joining only for readline (issue #6) left
+`history` printing the raw lines of a multi-line command: a for-loop came
+out as three rows, only the first of them numbered.
+
+Expectations below are measured against bash 5.3.9 in the same pty, not
+assumed: a boundary newline becomes "; " (or a bare space where a ";"
+would not parse, e.g. after `do`/`then` or a trailing `|`), a top-level
+\\<newline> continuation disappears entirely, and newlines inside quotes
+or a here-doc body stay literal.
+
 Checks, in a real pty:
-  1. `history` shows the original multi-line text (as it was typed).
-  2. The history file round-trips the original (escaped \\<newline> form).
-  3. Up-arrow recall of a here-doc re-executes correctly (no hang).
-  4. A NEW session loads the file and recall of the for-loop still runs.
+  1. `history` shows the bash-joined single-line form of a compound.
+  2. Quoted and here-doc newlines survive the join.
+  3. The history file round-trips the same joined text.
+  4. Up-arrow recall of a here-doc re-executes correctly (no hang).
+  5. A NEW session loads the file and recall of the for-loop still runs.
+  6. while / pipe-continuation / case join the way bash joins them.
 
 Usage: python3 hist_multiline_test.py /path/to/hellish
 """
@@ -114,6 +128,29 @@ def decode_hist_file(path):
     return entries
 
 
+# Kept in its own session so the up-arrow arithmetic in main() stays put.
+# Each expectation is the exact string bash 5.3.9 records for that input.
+SHAPES = [
+    ("while", "while false\ndo echo W\ndone", "while false; do echo W; done"),
+    ("pipe cont", "echo hi |\ncat", "echo hi | cat"),
+    ("case", "case x in\nx) echo M ;;\nesac", "case x in x) echo M ;; esac"),
+    ("brace group", "{ echo B\n}", "{ echo B; }"),
+]
+
+
+def more_shapes():
+    home = tempfile.mkdtemp(prefix="hellish_shape_")
+    s = Session(home)
+    for _, cmd, _ in SHAPES:
+        for line in cmd.split("\n"):
+            s.send(line + "\n", 0.4)
+    out = plain(s.send("history %d\n" % len(SHAPES), 0.9))
+    for name, _, want in SHAPES:
+        check("%s joins as bash does" % name, want in out,
+              "want %r in %r" % (want, out[-400:]))
+    check("shape session exits cleanly", s.close())
+
+
 def main():
     home = tempfile.mkdtemp(prefix="hellish_hist_")
     cmds = [
@@ -129,8 +166,11 @@ def main():
         for line in cmd.split("\n"):
             s.send(line + "\n", 0.4)
     hist_out = plain(s.send("history 5\n", 0.9))
-    check("history shows multiline loop", "for i in 1 2 3\r\ndo echo LOOP$i"
-          in hist_out or "for i in 1 2 3\ndo echo LOOP$i" in hist_out,
+    check("history joins the loop the way bash does",
+          "for i in 1 2 3; do echo LOOP$i; done" in hist_out,
+          repr(hist_out[-500:]))
+    check("history keeps the quoted newline literal",
+          'echo "A' in hist_out and "B\"" in hist_out,
           repr(hist_out[-500:]))
     # recall the here-doc entry (2 ups: history-cmd, if-entry, -> 3 ups total
     # from history5; entries after 'history 5': ^=history5,1=if,2=heredoc)
@@ -140,10 +180,12 @@ def main():
     check("session exits cleanly (no heredoc wedge)", s.close())
 
     entries = decode_hist_file(os.path.join(home, ".minishell_history"))
-    check("file keeps loop multiline", cmds[0] in entries, repr(entries))
+    check("file keeps the joined loop",
+          "for i in 1 2 3; do echo LOOP$i; done" in entries, repr(entries))
     check("file keeps quoted newline", cmds[1] in entries)
-    check("file keeps continuation", cmds[2] in entries)
+    check("file drops the \\<newline> continuation", "echo CD" in entries)
     check("file keeps heredoc", cmds[3] in entries)
+    check("file joins if/subshell", "if true; then (echo SUB); fi" in entries)
 
     # fresh session: loaded-from-file entries must recall correctly too.
     # Over-shoot the up-arrows: readline pins at the OLDEST entry, which is
@@ -154,6 +196,7 @@ def main():
     out = plain(s2.send("\n", 1.0))
     check("reloaded loop recall runs", out.count("LOOP") >= 3, repr(out[:400]))
     check("second session exits cleanly", s2.close())
+    more_shapes()
 
     print("== %s ==" % ("ALL PASSED" if not FAILS else
                         "%d FAILURES: %s" % (len(FAILS), ", ".join(FAILS))))
