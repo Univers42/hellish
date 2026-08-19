@@ -1,0 +1,31 @@
+exec 4>a 2>b; echo TO4 >&4; echo TO2 >&2; cat a; cat b
+exec 2>b 4>a; echo TO4 >&4; echo TO2 >&2; cat a; cat b
+exec 3>a 1>b; echo OUT; echo T3 >&3; cat a b
+exec 3>&2 2>b; echo E >&2; echo T3 >&3; cat b
+exec 5>a 6>b; echo A >&5; echo B >&6; cat a b
+exec 9>a 8>b; echo A >&9; echo B >&8; cat a b
+exec 4>a 5>b 6>c; echo A >&4; echo B >&5; echo C >&6; cat a b c
+exec 6>c 5>b 4>a; echo A >&4; echo B >&5; echo C >&6; cat a b c
+exec >a 2>b; echo OUT; echo ERR >&2; exec 1>&- 2>&-; true
+exec 4>a; echo TO4 >&4; cat a
+{ echo TO4 >&4; echo TO2 >&2; } 4>a 2>b; cat a; cat b
+{ echo A >&5; echo B >&6; } 5>a 6>b; cat a b
+{ echo A >&3; } 3>a 4>b; cat a; echo "b=[$(cat b)]"
+echo X 4>a 2>b; cat a; echo "b=[$(cat b)]"
+printf 'p\n' >a 4>b; cat a; echo "b=[$(cat b)]"
+exec 4<in 2>b; cat <&4; echo E >&2; cat b
+exec 4<in 5<in2; cat <&4; cat <&5
+exec 5<in 4>a; cat <&5 >&4; cat a
+cat <in 4>a; echo A >&4; cat a
+: >a; : >b; exec 4>>a 5>>b; echo A >&4; echo B >&5; echo A2 >&4; cat a b
+exec 4<>a 5>b; echo A >&4; echo B >&5; cat a b
+exec 3>a; exec 4>b; echo A >&3; echo B >&4; cat a b
+exec 4>a 2>b 4>&-; echo E >&2; cat b
+( exec 4>a 2>b; echo A >&4; echo E >&2 ); cat a; cat b
+exec 4>a 2>b; ( echo A >&4; echo E >&2 ); cat a; cat b
+for i in 1 2; do echo $i >&4; done 4>a; cat a
+while read l <&4; do echo "got $l"; done 4<in
+exec 4>a 2>b; echo A >&4 5>c; echo E >&2; cat a; cat b; echo "c=[$(cat c)]"
+exec 7>a 2>b 1>c; echo OUT; echo E >&2; echo S >&7; exec 1>&- 2>&- 7>&-; true
+exec 4>a 2>b; exec 4>&- 2>&-; echo done
+exec 10>a 4>b; echo A >&10; echo B >&4; cat a b
