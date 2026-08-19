@@ -49,6 +49,18 @@ void	update_notify_prompt(t_shell *state)
 		HELLISH_VERSION, s.latest);
 	ft_eprintf("   \033[1;38;5;203m[Update]\033[0m run \033[1mupdate\033[0m"
 		"    \033[2m[Later]\033[0m ignore this, nothing breaks\n\n");
+	update_mark_notified();
+}
+
+/* Stop announcing the version we already know about. Called both after the
+   notice is shown and after an install succeeds: once the new binary is on
+   disk, the running process is still the old one, and re-announcing an
+   update the user has just performed reads as if it had failed. */
+void	update_mark_notified(void)
+{
+	t_upd_state	s;
+
+	update_state_load(&s);
 	s.notified = (long)time(NULL);
 	update_state_save(&s);
 }

@@ -157,6 +157,14 @@ def main():
           "got %s want %s" % (version_of(binary, pub.env(home)), newer))
     check("no temp file left behind",
           not os.path.exists(binary + ".hellish-update"))
+    # a session that just installed the update must stop announcing it:
+    # the running process is still the old build, and re-offering an
+    # update the user has already performed reads as if it had failed
+    st = dict(l.rstrip("\n").split("=", 1)
+              for l in open(os.path.join(home, ".cache", "hellish", "state"))
+              if "=" in l)
+    check("installing marks the update as announced",
+          st.get("notified", "0") != "0", repr(st))
     pub.stop()
 
     # 7 -- the checksum does not match what was downloaded.
