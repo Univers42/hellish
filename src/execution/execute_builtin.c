@@ -13,6 +13,8 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
+void	exit_clean(t_shell *state, int code);
+
 /* `exec` with no command word just applies its redirections; POSIX keeps them
    in effect for the rest of the shell, so those fds must NOT be restored. */
 static int	is_bare_exec(t_executable_cmd *cmd)
@@ -45,6 +47,25 @@ void	restore_backup_fds(int *bak, int persist)
 	close(bak[2]);
 }
 
+/* Release the command, then honour POSIX's rule that a failing SPECIAL
+   builtin aborts a non-interactive shell.  The verdict has to be taken
+   while argv is still alive, so it happens before the frees and the exit
+   after them -- exit_clean tears down the session and must not run with
+   this command's memory still outstanding. */
+static t_execution_state	finish_builtin(t_shell *state,
+		t_executable_cmd *cmd, t_executable_node *exe, int status)
+{
+	bool	fatal;
+
+	fatal = strict_builtin_failed(state, cmd, status);
+	procsub_close_fds_parent(state);
+	free_executable_cmd(state, *cmd);
+	free_executable_node(exe);
+	if (fatal)
+		exit_clean(state, status);
+	return (res_status(status));
+}
+
 /* Run a builtin IN THE PARENT process (the only way its side effects --
    cd, export, read, set -- reach the caller).  The redirection dance is:
    save 0/1/2, redirect, run, restore.  The persist flag skips both save
@@ -71,8 +92,5 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	restore_temp_assigns(state, &saves);
 	if (need)
 		restore_backup_fds(bak, persist);
-	procsub_close_fds_parent(state);
-	free_executable_cmd(state, *cmd);
-	free_executable_node(exe);
-	return (res_status(status));
+	return (finish_builtin(state, cmd, exe, status));
 }
