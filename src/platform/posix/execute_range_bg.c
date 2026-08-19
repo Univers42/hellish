@@ -95,27 +95,50 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 	exit(res.status);
 }
 
-/* Build a short human label for the jobs table from the range's first
-   simple command: walk down to the first node carrying a source token
-   and take up to 48 bytes from its start — token slices are contiguous
-   source text, so this shows "sleep 5" for `sleep 5 &` without any
-   reconstruction machinery. Falls back to "job" for tokenless trees. */
-static void	bg_job_label(t_ast_node *node, char *buf, size_t n)
+/* Build a short human label for the jobs table from the range's source
+   text. Token slices point into the input buffer, so the label is a slice
+   of what the user typed rather than a reconstruction.
+
+   Descending to the first token is not enough on its own: a compound has
+   no token of its own, so the walk lands on the first token INSIDE it and
+   the opening delimiter is lost -- `( sleep 1 ) &` was labelled
+   "sleep 1 )" and `for i in 1; do ... done &` became "i in 1; do ...".
+   So once the leftmost token is found we walk BACK to the byte after the
+   nearest command separator, which recovers the `(`, `{`, `for`, `if` or
+   `while` that started it. The backward scan only runs when the token is
+   known to point inside state->input, so it can never wander off a
+   heredoc, function-body or eval buffer.
+
+   The forward scan ends at the `&` that backgrounds the job, but has to
+   step over a `&&` -- stopping at its first byte turned
+   `echo a && sleep 1 &` into the label "echo a". */
+static void	bg_job_label(t_shell *state, t_ast_node *node, char *buf,
+			size_t n)
 {
-	size_t	len;
+	const char	*base;
+	const char	*p;
+	size_t		len;
 
 	while (node && !node->token.start && node->children.len > 0)
 		node = (t_ast_node *)node->children.ctx;
 	if (!node || !node->token.start)
 		return ((void)ft_strlcpy(buf, "job", n));
+	p = node->token.start;
+	base = (const char *)state->input.ctx;
+	if (base && p >= base && p < base + state->input.len)
+	{
+		while (p > base && !ft_strchr(";&|\n", p[-1]))
+			p--;
+		while (*p == ' ' || *p == '\t')
+			p++;
+	}
 	len = 0;
-	while (node->token.start[len] && node->token.start[len] != '\n'
-		&& node->token.start[len] != '&' && len < n - 1)
-		len++;
-	while (len > 0 && (node->token.start[len - 1] == ' '
-			|| node->token.start[len - 1] == '\t'))
+	while (p[len] && p[len] != '\n' && len < n - 1
+		&& (p[len] != '&' || p[len + 1] == '&'))
+		len += 1 + (p[len] == '&');
+	while (len > 0 && (p[len - 1] == ' ' || p[len - 1] == '\t'))
 		len--;
-	ft_memcpy(buf, node->token.start, len);
+	ft_memcpy(buf, p, len);
 	buf[len] = '\0';
 }
 
@@ -141,7 +164,7 @@ t_execution_state	execute_range_background(t_shell *state,
 	state->bg_job_count++;
 	xfree(state->last_bg_pid);
 	state->last_bg_pid = ft_itoa(pid);
-	bg_job_label((t_ast_node *)exe->node->children.ctx + start,
+	bg_job_label(state, (t_ast_node *)exe->node->children.ctx + start,
 		label, sizeof(label));
 	job = job_add(&state->job_table, pid, label, true);
 	if (state->metinp == INP_RL && job)
