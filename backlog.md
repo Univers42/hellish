@@ -131,15 +131,10 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
-- [ ] `readonly` reports success where bash reports an error, so the
-      special-builtin abort cannot fire for it:
-        readonly 1BAD          hellish rc=0, bash rc=1 (and bash aborts)
-        readonly -Z            hellish rc=0, bash rc=2 (and bash aborts)
-        readonly R=1; unset R  hellish rc=0, bash rc=1 (and bash aborts)
-      The abort machinery is already in place (strict_builtin_failed
-      covers export/readonly/unset); it is readonly's own status that is
-      wrong, and unset does not refuse to remove a readonly variable.
-      Fix the statuses and these three start aborting for free.
+- [ ] Assigning to a read-only variable in a SUBSHELL exits 127 where
+      bash exits 1: `(R=2)` after `readonly R=1`. At top level both
+      shells agree (the assignment error aborts the shell), so this is
+      only the status the subshell reports.
 - [ ] The special-builtin abort rule is implemented for the two error
       classes that could be pinned down against bash 5.3.9: a redirection
       error on a special builtin, and a non-zero return from export /

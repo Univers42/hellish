@@ -66,3 +66,27 @@ bool	is_redir_operator(char *s)
 		return (true);
 	return (false);
 }
+
+/* The operand half of `unset`, split out of builtin_unset to keep it
+   inside the line budget.  Walks the names left to right and ORs their
+   statuses together: a read-only variable makes try_unset report and
+   return 1, and unset being a special builtin that then aborts a
+   non-interactive shell, the status has to survive the rest of the list
+   rather than the loop stopping at the first refusal. */
+int	unset_operands(t_shell *state, t_vec argv, size_t i, int fmode)
+{
+	char	**av;
+	int		rc;
+
+	av = (char **)argv.ctx;
+	rc = 0;
+	while (i < argv.len)
+	{
+		if (fmode)
+			unset_function(state, av[i]);
+		else
+			rc |= try_unset(state, av[i]);
+		i++;
+	}
+	return (rc);
+}
