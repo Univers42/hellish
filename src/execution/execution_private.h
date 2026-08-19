@@ -145,6 +145,10 @@ int					save_fd(int fd);
 void				take_backup_fds(int *bak, int persist);
 void				restore_backup_fds(int *bak, int persist);
 void				restore_fds(int *bak);
+bool				redir_err_is_fatal(t_shell *state,
+						t_executable_cmd *cmd);
+bool				strict_builtin_failed(t_shell *state,
+						t_executable_cmd *cmd, int status);
 int					prep_redir(t_shell *state, t_executable_node *exe,
 						int *bak, int persist);
 void				apply_redirs_from_vec(t_shell *state,

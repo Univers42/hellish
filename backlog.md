@@ -131,6 +131,24 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] `readonly` reports success where bash reports an error, so the
+      special-builtin abort cannot fire for it:
+        readonly 1BAD          hellish rc=0, bash rc=1 (and bash aborts)
+        readonly -Z            hellish rc=0, bash rc=2 (and bash aborts)
+        readonly R=1; unset R  hellish rc=0, bash rc=1 (and bash aborts)
+      The abort machinery is already in place (strict_builtin_failed
+      covers export/readonly/unset); it is readonly's own status that is
+      wrong, and unset does not refuse to remove a readonly variable.
+      Fix the statuses and these three start aborting for free.
+- [ ] The special-builtin abort rule is implemented for the two error
+      classes that could be pinned down against bash 5.3.9: a redirection
+      error on a special builtin, and a non-zero return from export /
+      readonly / unset. bash's real rule is per-error-site -- `shift 99`
+      and `trap "" BADSIG` both return 1 without aborting, so status alone
+      cannot decide it. Other special builtins with usage errors (`. `
+      with a missing file already aborts via its own path; `times x`,
+      `trap` with a bad action) were not audited one by one.
+
 - [ ] A locale change made INSIDE a running script does not reach the glob
       sort. Every startup form is right now (LC_ALL=C hellish -c 'echo *',
       LC_COLLATE=C, and the prefix assignment LC_ALL=C echo *), but:
