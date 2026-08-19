@@ -586,6 +586,16 @@ git-prompt-test: all
 update-config-test:
 	@bash $(TEST_DIR)/update_config_check.sh
 
+# The update path end to end against a LOCAL fake release server: discovery,
+# download, sha256, atomic replace, and every rejection path (bad checksum,
+# truncated asset, unreachable source). Nothing is installed system-wide and
+# no network is touched. update_ui_test drives a pty for the two interactive
+# requirements: the header must be lazy, and a discovered update must never
+# disturb a line the user is typing.
+update-test: all
+	@python3 $(TEST_DIR)/update_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@python3 $(TEST_DIR)/update_ui_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # The prompt prefix must reach the tty in ONE write (real pty). Streaming it
 # byte by byte let the line discipline echo type-ahead INTO a colour escape;
 # a letter is a valid CSI final byte, so the sequence ended early and its
@@ -656,7 +666,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	update-config-test \
+	update-config-test update-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
 	user-install user-uninstall
