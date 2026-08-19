@@ -49,18 +49,34 @@ t_trim_ctx	pf_make_ctx(const char *s, int slen, const char *op, int nlen)
    reparser then applies exactly the "..." semantics — \$ \" \\ \` stay
    active escapes, any other backslash is kept literally ("${u-\z}" prints
    \z), tilde stays literal, and embedded quotes behave as they do in bash
-   ("${u-'a b'}" keeps the single quotes). */
+   ("${u-'a b'}" keeps the single quotes).
+
+   One escape has to be handled here rather than by the wrap: \} .  Inside
+   ${...} a backslash before the closing brace is ACTIVE -- it is the only
+   way to put a literal } in an operator word -- so bash prints } for
+   "${u-\}}" while the plain dq rule would keep the slash.  \{ is not
+   special and stays, and \\ is left alone so "${u-\\}" still prints one
+   backslash. */
 char	*expand_param_word_dq(t_shell *state, const char *word, int wlen)
 {
 	char	*buf;
 	char	*ret;
+	int		i;
+	int		n;
 
 	buf = xmalloc((size_t)wlen + 3);
 	buf[0] = '"';
-	ft_memcpy(buf + 1, word, (size_t)wlen);
-	buf[wlen + 1] = '"';
-	buf[wlen + 2] = '\0';
-	ret = pf_word_pipeline(state, buf, wlen + 2, true);
+	i = 0;
+	n = 1;
+	while (i < wlen)
+	{
+		if (word[i] == '\\' && i + 1 < wlen && word[i + 1] == '}')
+			i++;
+		buf[n++] = word[i++];
+	}
+	buf[n++] = '"';
+	buf[n] = '\0';
+	ret = pf_word_pipeline(state, buf, n, true);
 	xfree(buf);
 	return (ret);
 }
