@@ -87,10 +87,8 @@ int			run_origin_update(t_origin o, const char *repo, const char *tag);
    discovered version. */
 void		update_notify_prompt(t_shell *state);
 
-/* One-line "an update is waiting" notice, emitted between commands so it
-   can never land in the middle of a line the user is typing. Once per
-   discovered version. */
-void		update_notify_prompt(t_shell *state);
+/* Mark the known update as already announced. */
+void		update_mark_notified(void);
 
 /* Download one URL to a local path; 1 on success. */
 int			update_download(const char *url, const char *dest, long min);
