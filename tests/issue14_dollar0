@@ -1,0 +1,23 @@
+# GitHub issue #14 -- $0 expanded to the empty string for `-c` with no
+# command_name operand (and, found while fixing it, for piped stdin too).
+# bash sets $0 to argv[0] verbatim, so the literal value necessarily differs
+# between the two shells; these cases pin the properties that must agree.
+test -n "$0" && echo nonempty
+case "$0" in "") echo EMPTY;; *) echo SET;; esac
+echo "${0:+set}"
+echo "${0:-fallback}" > /dev/null; echo rc=$?
+x=$0; test -n "$x" && echo copied
+test -n "${0##*/}" && echo basename-nonempty
+f() { test -n "$0" && echo in-function; }; f
+( test -n "$0" && echo in-subshell )
+echo "$(test -n "$0" && echo in-cmdsub)"
+test -n "$0" && test "$0" = "$0" && echo stable
+set -- a b c; test -n "$0" && echo "survives-set $#"
+shift 0 2>/dev/null; test -n "$0" && echo survives-shift
+# $0 is NOT a positional parameter: it must not appear in $@ / $* / $#
+set -- x y; echo "$# [$*]"
+set --; echo "empty=$# [$*]"
+# with no operands $# is 0 and $1 is unset, independent of $0
+echo "n=$# one=[$1]"
+# $0 is not exported to children
+export -p > /dev/null; sh -c 'echo "child0=[${0##*/}]"' | sed 's/[0-9]//g' > /dev/null; echo child-ok
