@@ -131,6 +131,30 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] Redirections are RESOLVED (all of them) and only then APPLIED, where
+      bash interleaves resolve+apply left to right. Parking every opened
+      scratch fd at >= 10 fixes the common collisions (fixed, see
+      redir_fd.c), but two shapes still need the interleave and are the
+      only cases dropped from `tests/redir_multi_fd`:
+        exec 3>a 4>&3   -- `4>&3` is resolved before `3>a` is installed,
+        exec 4>a 3>&4      so the dup sees a closed fd and errors
+        exec 4>a 5>&4
+        exec 11>a 2>b   -- a target fd >= 10 can collide with the parking
+                           range itself
+      The lazy AST path (apply_redirs_from_ast) ALREADY interleaves and is
+      correct; only the pre-resolved vec path needs it.
+- [ ] Glob results are sorted in ASCII order; bash sorts by locale
+      collation. In any mixed-case directory the two disagree:
+        $ hellish --posix -c 'echo *'   ->  CLAUDE.md CODE_OF_CONDUCT.md ...
+        $ bash    --posix -c 'echo *'   ->  backlog.md bench build CLAUDE.md ...
+      True with LANG=en_US.UTF-8 and with LC_ALL=en_US.UTF-8 set
+      explicitly, so it is not an unset-locale artefact. src/glob has an
+      ft_strcoll.c already; either it is not wired into glob_sort or it
+      does not consult the locale. Found because tests/hard/03_rpn_calc.sh
+      globs `**` against the cwd and picks a different first file in each
+      shell -- that hard test is cwd-sensitive by construction and will
+      keep failing from the repo root until this is fixed.
+
 - [ ] `history` does not list itself. bash records an entry BEFORE running
       it, so `history` shows the `history` command as its own last line;
       hellish records in manage_history AFTER execution, so the listing
