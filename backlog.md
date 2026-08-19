@@ -131,6 +131,16 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
+- [ ] Job labels for `{ }` and for the keyword compounds still differ from
+      bash, and cannot match without a pretty-printer: hellish labels a
+      background job with a SLICE of the source the user typed, bash
+      re-prints the parsed command. So bash normalises `{ sleep 1 ; }` to
+      `{ sleep 1; }`, `sleep 1 >/dev/null` to `sleep 1 > /dev/null`, and
+      spreads `for i in 1; do sleep 1; done` over four lines. The
+      subshell, simple-command and pipeline forms ARE byte-exact now and
+      are pinned in tests/job_label; the others are close but not equal,
+      which is why they are not in that file.
+
 - [ ] The special-builtin abort rule is implemented for the two error
       classes that could be pinned down against bash 5.3.9: a redirection
       error on a special builtin, and a non-zero return from export /
