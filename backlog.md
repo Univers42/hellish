@@ -154,6 +154,20 @@ pass counts in `bench/baseline/`). Performance claims come from
       it, hellish returns 2.  Recording a security flag we do not
       enforce would be worse than failing loudly.  Implement restricted
       mode or leave it rejected -- do not "fix" it by accepting it.
+- [ ] Job label for a COMPOUND background job drops its opening
+      delimiter: `( sleep 1 ) &` and `{ sleep 1; } &` show up in `jobs`
+      as `sleep 1 ) &` / `sleep 1; } &`.  bg_job_label
+      (src/platform/posix/execute_range_bg.c) descends past the
+      compound node because that node carries no token.start, and
+      starts copying at the first child's token instead.  Needs the
+      parser to record the compound's own span; found while fixing #18,
+      deliberately left out of that branch.  Simple commands and
+      pipelines are correct.
+- [ ] `job_notify` (the interactive Done announcer) still walks table
+      SLOTS, so with a reused slot it can announce out of job-number
+      order.  `jobs` was fixed for #18 (job_next_after); do the same
+      there.  Interactive-only, so no golden coverage -- needs a pty
+      test.
 
 ## Done (continued 4)
 
