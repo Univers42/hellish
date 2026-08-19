@@ -21,6 +21,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue12_export" "issue14_dollar0"
         "issue15_colon_question" "issue11_cmdsub_brace"
         "issue8_set_options"
+        "issue18_job_numbers"
     )
 fi
 
