@@ -8,6 +8,51 @@ shows you how to drive the shell.
 
 ---
 
+## v2.4.0 — *the update release*
+
+**New**
+
+- **`update` actually works.** The updater had been pointed at
+  `Univers42/42sh` — a repository that does not exist — for its whole
+  life, so every check 404'd and reported itself as "could not reach
+  GitHub (offline?)". It now names the real repository, and so do
+  `install.sh`, the npm installer and the Dockerfile.
+- **An update button.** A background check (detached, 24h TTL, never on
+  the startup path) discovers new releases. The next prompt carries
+  `[Update] / [Later]`; `update --now` installs. The notice is printed
+  between commands, never into a line you are typing.
+- **Verified, atomic installs.** Download → sha256 against the checksum
+  published beside the asset → run the binary and require it to report the
+  version it was advertised as → `rename(2)` into place. Any failure
+  leaves the installed binary untouched. Releases now ship a `.sha256`.
+- **No-sudo by default.** A user-local install (`~/.local/bin`) updates
+  with no elevation at all; a system-wide one asks first and says exactly
+  which command will run as root. Package-managed installs (npm, pnpm,
+  docker) still delegate to their package manager.
+- **The banner is lazy.** It appears once a day, or when it has something
+  new to say (new version, new header revision, an unannounced update) —
+  not on every single shell. It also stopped wiping your screen and
+  scrollback on startup.
+- **`/dev/tcp` and `/dev/udp`** redirections, bash-style.
+
+**Fixed** — a long list this cycle, all diffed against bash 5.3.9:
+
+- `"${u:-"a b"}"` used to **crash** the shell; the whole `${...}` operator
+  family mishandled nested quotes, escapes and single quotes.
+- `exec 4>a 2>b` pointed fd 2 at the wrong file and closed fd 4.
+- Globs sorted in ASCII order instead of locale collation, so `echo *`
+  disagreed with bash in any mixed-case directory.
+- A failing POSIX special builtin now aborts a non-interactive shell.
+- `readonly` reported success on every error; `unset` removed read-only
+  variables.
+- A fatal error inside a subshell exited 127 instead of 1.
+- The prompt is written in one syscall, so type-ahead can no longer be
+  echoed into the middle of a colour escape (the `38;2;112` garbage).
+- `history` shows multi-line commands the way bash does.
+- Background job labels keep their opening `(`, `{`, `for`, `if`.
+
+---
+
 ## v2.2.0 — *the friendly release*
 
 **New**
