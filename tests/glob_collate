@@ -1,0 +1,20 @@
+cd test_files/collate && echo *
+cd test_files/collate && echo [a-z]*
+cd test_files/collate && echo [A-Z]*
+cd test_files/collate && echo *.txt
+cd test_files/collate && echo ?.txt
+cd test_files/collate && echo [ab]*
+cd test_files/collate && echo *a*
+cd test_files/collate && for f in *; do echo "<$f>"; done
+cd test_files/collate && set -- *; echo "$# $1 $2 $3"
+cd test_files/collate && printf '%s\n' *
+cd test_files/collate && echo [!a-z]*
+cd test_files/collate && echo *[0-9]*
+cd test_files/collate && LC_ALL=C echo *
+cd test_files/collate && echo [[:upper:]]*
+cd test_files/collate && echo [[:lower:]]*
+cd test_files/collate && echo M*
+cd test_files/collate && echo m*
+cd test_files/collate && echo "$(echo *)"
+cd test_files/collate && echo *e*
+cd test_files/collate && echo [b-y]*

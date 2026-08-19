@@ -27,6 +27,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue16_net_redir"
         "redir_multi_fd"
         "dquote_brace_nest"
+        "glob_collate"
     )
 fi
 
