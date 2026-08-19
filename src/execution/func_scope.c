@@ -13,7 +13,7 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
-void	try_unset(t_shell *state, char *key);
+int		try_unset(t_shell *state, char *key);
 
 /* Remember `key`'s current value so it can be restored when the current
    function returns (used for `local` and for the positional params $1..). */

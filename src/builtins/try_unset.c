@@ -69,19 +69,26 @@ static void	env_drop_entry(t_shell *state, t_env *e)
 	env_index_mark_dirty();
 }
 
-void	try_unset(t_shell *state, char *key)
+/* Remove one variable.  Returns 1 when the name is read-only: POSIX says
+   unset shall not remove such a variable, and bash reports it and returns
+   1 (which, unset being a special builtin, then aborts a non-interactive
+   shell).  Unsetting a name that simply does not exist is not an error. */
+int	try_unset(t_shell *state, char *key)
 {
 	t_env	*e;
 	char	*br;
 
 	if (!state || state->env.ctx == NULL)
-		return ;
+		return (0);
+	if (is_readonly_var(state, key))
+		return (ft_eprintf("%s: unset: %s: cannot unset: readonly "
+				"variable\n", state->ctx, key), 1);
 	br = ft_strchr(key, '[');
 	if (br && key[ft_strlen(key) - 1] == ']'
 		&& unset_array_elem(state, key, br))
-		return ;
+		return (0);
 	e = env_get(&state->env, key);
 	if (!e)
-		return ;
-	env_drop_entry(state, e);
+		return (0);
+	return (env_drop_entry(state, e), 0);
 }

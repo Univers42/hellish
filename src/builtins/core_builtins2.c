@@ -38,15 +38,7 @@ int	builtin_unset(t_shell *state, t_vec argv)
 		fmode = (ft_strchr(av[i], 'f') != NULL);
 	}
 	i += (i < argv.len && !ft_strcmp(av[i], "--"));
-	while (i < argv.len)
-	{
-		if (fmode)
-			unset_function(state, av[i]);
-		else
-			try_unset(state, av[i]);
-		i++;
-	}
-	return (0);
+	return (unset_operands(state, argv, i, fmode));
 }
 
 /* pwd: print the shell's cached current working directory. We use the cached
