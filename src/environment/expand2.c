@@ -23,6 +23,7 @@
 
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
+int		shell_fatal_status(t_shell *state);
 char	*lineno_str(t_shell *state);
 
 int		tok_lineno(t_shell *state);
@@ -75,8 +76,10 @@ char	*lineno_str(t_shell *state)
 }
 
 /* Emit the POSIX-mandated error, then discard both key and value so the
-   caller can't accidentally apply a partial assignment.  In script mode
-   (not readline) a readonly violation is fatal (exit 127). */
+   caller can't accidentally apply a partial assignment.  Outside an
+   interactive shell a readonly violation is fatal; the status is 127 only
+   for the top-level shell of a -c string, 1 for a script or a subshell
+   (shell_fatal_status), which is what bash reports. */
 static void	handle_readonly_assign(t_shell *state, t_env *el)
 {
 	ft_eprintf("%s: %s: readonly variable\n", state->ctx, el->key);
@@ -85,7 +88,7 @@ static void	handle_readonly_assign(t_shell *state, t_env *el)
 	el->key = NULL;
 	el->value = NULL;
 	if (state->metinp != INP_RL)
-		exit_clean(state, 127);
+		exit_clean(state, shell_fatal_status(state));
 	state->last_cmd_st_exe = (t_execution_state){.status = 1};
 }
 
