@@ -242,6 +242,13 @@ typedef struct s_shell
 	bool				cmdsub_in_place; /* this process IS a disposable $( )
 										body whose single external command
 										may execve without forking again */
+	/* Same trick for a background child (`cmd &`): the ONE simple command
+	   this process was forked to run may execve in place, so $! names the
+	   command and not a wrapper (issue #13).  Stored as the AST node's
+	   address rather than a bool so a nested fork -- a $( ) or <( ) inside
+	   the command's own words -- can never mistake itself for the
+	   authorised command; a different node simply does not match. */
+	t_ast_node			*bg_exec_node;
 	/* --- set -o options (each maps to one POSIX flag) --- */
 	bool				opt_errexit; /* -e: exit on first error */
 	bool				opt_nounset; /* -u: error on unset variable use */

@@ -168,6 +168,20 @@ pass counts in `bench/baseline/`). Performance claims come from
       order.  `jobs` was fixed for #18 (job_next_after); do the same
       there.  Interactive-only, so no golden coverage -- needs a pty
       test.
+- [ ] `! cmd &` exit status: bash does NOT negate an async child's
+      status -- `! false & wait $!` is 1 there and 0 here, `! true &`
+      is 0 there and 1 here.  execute_pipeline applies node->negate
+      inside the background child; bash applies it only to the
+      synchronous return value (and an async list returns 0 anyway).
+      Found while fixing #13, deliberately left out of that branch --
+      `!` is why bg_lone_command refuses the exec-in-place path, so the
+      two are independent.
+- [ ] A background job's real command has SIGINT/SIGQUIT at SIG_DFL when
+      it goes through the FORKED path (compounds, pipelines): the
+      grandchild's default_signal_handlers() undoes the wrapper's
+      SIG_IGN.  The exec-in-place path was fixed for #13
+      (async_child_signals); the forked path still needs an
+      "I am inside an async child" signal so it can re-apply them.
 
 ## Done (continued 4)
 

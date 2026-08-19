@@ -96,6 +96,7 @@ size_t				find_next_separator(t_ast_node *node,
 						size_t start, bool *found_amp);
 t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 						size_t start, size_t end);
+void				async_child_signals(void);
 t_execution_state	execute_range_background(t_shell *state,
 						t_executable_node *exe,
 						size_t start, size_t end);
