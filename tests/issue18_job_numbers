@@ -1,0 +1,24 @@
+sleep 0.05 & jobs; wait; sleep 0.05 & jobs; wait; echo done
+sleep 0.05 & wait; sleep 0.05 & jobs
+sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.05 & jobs; wait
+sleep 0.3 & sleep 0.3 & jobs; wait
+sleep 0.3 & sleep 0.3 & sleep 0.3 & jobs; wait
+sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs; wait
+sleep 0.3 & sleep 0.05 & jobs; wait %2; jobs; wait
+sleep 0.3 & sleep 0.05 & sleep 0.3 & jobs; wait %2; jobs; wait
+sleep 0.3 & sleep 0.05 & sleep 0.3 & wait %2; sleep 0.3 & jobs; wait
+sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs; wait
+sleep 0.05 | cat & jobs; wait; sleep 0.05 | cat & jobs; wait
+sleep 0.05 & p=$!; wait; sleep 0.05 & jobs; wait; echo ok
+sleep 0.3 & jobs %1; wait
+sleep 0.05 & wait; sleep 0.3 & jobs %1; wait
+true & wait; sleep 0.3 & jobs; wait
+sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.3 & jobs; wait
+sleep 0.05 & sleep 0.5 & wait %1; jobs; wait
+sleep 0.3 & sleep 0.05 & sleep 0.5 & wait %1; jobs; wait
+sleep 0.05 & echo "$(jobs | wc -l)"; wait; sleep 0.05 & echo "$(jobs | wc -l)"; wait
+for i in 1 2 3; do sleep 0.05 & wait; done; sleep 0.3 & jobs; wait
+i=0; while [ $i -lt 3 ]; do sleep 0.05 & wait; i=$((i+1)); done; sleep 0.3 & jobs; wait
+sleep 0.3 & sleep 0.3 & kill %1 2>/dev/null; wait 2>/dev/null; sleep 0.3 & jobs; wait
+sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs | head -1; wait
+sleep 0.05 & wait; sleep 0.3 & sleep 0.3 & jobs | tail -1; wait

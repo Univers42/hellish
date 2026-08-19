@@ -13,8 +13,9 @@
 /* Job control public types and API.
    A "job" is a background pipeline identified by a process group (pgid).
    The table is a flat array of JOB_MAX slots; a zero pgid means free.
-   Job IDs are monotonically increasing and never recycled within a session,
-   which matches bash behaviour and prevents the "stale $!" bug. */
+   A job ID is (highest live ID) + 1, so a number is released as soon as its
+   job leaves the table and an idle shell is back at [1] -- see job_next_id
+   in src/job_control/job_id.c for why that is bash's rule. */
 
 #ifndef JOB_CONTROL_H
 # define JOB_CONTROL_H
@@ -57,7 +58,6 @@ typedef struct s_job_table
 {
 	t_job	jobs[JOB_MAX]; /* flat array of job slots */
 	int		count; /* number of occupied slots */
-	int		next_id; /* next job ID to assign (monotonic) */
 	int		current; /* ID of the most-recently-backgrounded job */
 	int		previous; /* ID of the job before current */
 }	t_job_table;
@@ -66,6 +66,10 @@ struct	s_shell;
 
 void	job_table_init(t_job_table *jt);
 t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg);
+int		job_next_id(t_job_table *jt);
+int		job_highest_id(t_job_table *jt, int except);
+int		job_next_after(t_job_table *jt, int after);
+void	job_reelect(t_job_table *jt, int gone);
 t_job	*job_find_id(t_job_table *jt, int id);
 t_job	*job_find_pgid(t_job_table *jt, pid_t pgid);
 void	job_remove(t_job_table *jt, int id);
