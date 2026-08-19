@@ -47,6 +47,12 @@ int				builtin_update(t_shell *state, t_vec argv);
 void			unset_function(t_shell *state, const char *name);
 t_shell_func	*func_lookup(t_shell *state, const char *name);
 int				apply_set_flags(t_shell *state, t_vec argv);
+const t_setopt	*setopt_table(void);
+const t_setopt	*setopt_find(const char *name, char letter);
+bool			setopt_get(t_shell *st, const t_setopt *e);
+void			setopt_put(t_shell *st, const t_setopt *e, bool on);
+void			set_opt_edit_mode(t_shell *st, const char *name, bool on);
+bool			apply_flag_letters(t_shell *st, const char *w, bool *want_o);
 int				set_long_option(t_shell *state, char sign,
 					const char *name);
 void			xtrace_print(t_shell *state, t_vec *argv);

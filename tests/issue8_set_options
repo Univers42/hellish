@@ -1,0 +1,73 @@
+set -euo pipefail; echo strictmode
+set -eu -o pipefail; echo split
+set -o pipefail -o errexit -o nounset; echo longonly
+set -euxo pipefail 2>/dev/null; echo cluster_x
+set -uo pipefail; echo uo
+set -eo pipefail; echo eo
+set -o pipefail; echo $?
+f() { set -euo pipefail; echo infunc; }; f
+set -euo pipefail; echo "flags=$-"
+set -ao pipefail; echo "a=$-"
+set -euo nounset; echo "nounset_via_o=$-"
+set -euo noglob; echo "noglob_via_o=$-"
+set -euo bogusname 2>/dev/null; echo "rc=$?"
+set +euo pipefail; echo "off=$-"
+set -e +o errexit; echo "toggled=$-"
+set -b; echo notify=$?
+set -m; echo monitor=$?
+set -h; echo hashall=$?
+set -P; echo physical=$?
+set -B; echo braceexpand=$?
+set -E; echo errtrace=$?
+set -T; echo functrace=$?
+set -k; echo keyword_ok$?
+set -t; echo onecmd=$?
+set -p; echo privileged=$?
+set -H; echo histexpand=$?
+set -bm; echo cluster_bm=$?
+set -o monitor; echo lo_monitor=$?
+set -o notify; echo lo_notify=$?
+set -o hashall; echo lo_hashall=$?
+set -o physical; echo lo_physical=$?
+set -o braceexpand; echo lo_brace=$?
+set -o errtrace; echo lo_errtrace=$?
+set -o functrace; echo lo_functrace=$?
+set -o keyword; echo lo_keyword_ok$?
+set -o onecmd; echo lo_onecmd=$?
+set -o privileged; echo lo_priv=$?
+set -o histexpand; echo lo_histexpand=$?
+set -o history; echo lo_history=$?
+set -o ignoreeof; echo lo_ignoreeof=$?
+set -o interactive-comments; echo lo_icomments=$?
+set -o nolog; echo lo_nolog=$?
+set -c 2>/dev/null; echo bad_c=$?
+set -d 2>/dev/null; echo bad_d=$?
+set -g 2>/dev/null; echo bad_g=$?
+set -j 2>/dev/null; echo bad_j=$?
+set -q 2>/dev/null; echo bad_q=$?
+set -Z 2>/dev/null; echo bad_Z=$?
+set -euZ 2>/dev/null; echo bad_cluster=$?
+set -eu; echo "still=$-"
+set -o | grep -v '^posix'
+set -o | wc -l
+set -o | grep -v '^posix' | grep -c '	on$'
+set -B; echo {a,b}
+set +B; echo {a,b}
+set -B; echo {1..3}
+set -o braceexpand; echo {x,y}z
+set +o braceexpand; echo {x,y}z
+set -B; echo pre{a,b}post
+set -b -- one two three; echo "$# $1 $3"
+set -m x y; echo "$# $2"
+set -o monitor a b; echo "$# $1"
+set -euo pipefail -- p q; echo "$# $1 $2"
+set -bmh; echo "$-"
+set -o notify; set -o | grep notify
+set -o monitor; set -o | grep monitor
+set +o hashall; set -o | grep hashall
+set -o physical; set -o | grep physical
+set +o braceexpand; set -o | grep braceexpand
+false; set -o pipefail; echo "keeps_status=$?"
+set -u; unset nope; echo "${nope:-fallback}"
+set -euo pipefail; true | true; echo pipe_ok=$?
+set -o pipefail; false | true; echo pipe_fail=$?

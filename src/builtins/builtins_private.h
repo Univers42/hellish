@@ -186,7 +186,7 @@ int		fc_list(t_shell *state, char **av, int ac, bool reverse);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);
 int		fc_run_editor(t_shell *state, const char *editor, char *tmpf);
 int		fc_edit_run(t_shell *state, const char *editor, int first, int last);
-int		set_o_word(t_shell *state, char sign, char **w, size_t remaining);
+
 int		kill_sig_from_name(const char *name);
 int		kill_list_sigs(void);
 int		kill_one_target(t_shell *state, const char *target, int sig);
@@ -212,7 +212,7 @@ struct s_sh
 	const char		*name;
 	unsigned int	bit;
 };
-bool	apply_flag_word(t_shell *state, const char *w);
+bool	apply_flag_letters(t_shell *state, const char *w, bool *want_o);
 t_ulim	*ulim_table(void);
 void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);

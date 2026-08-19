@@ -22,21 +22,19 @@ static void	print_set_opt(const char *name, int on)
 		ft_printf("%-15s\toff\n", name);
 }
 
-/* set -o (no option name): list every shell option with its current state. */
+/* set -o (no option name): list every shell option with its current state,
+   in the roster's own order -- which is bash's alphabetical listing order,
+   so the two outputs are byte-identical. */
 int	list_set_options(t_shell *state)
 {
-	print_set_opt("allexport", state->opt_allexport);
-	print_set_opt("errexit", state->opt_errexit);
-	print_set_opt("noclobber", state->opt_noclobber);
-	print_set_opt("noexec", state->opt_noexec);
-	print_set_opt("noglob", state->opt_noglob);
-	print_set_opt("nounset", state->opt_nounset);
-	print_set_opt("verbose", state->opt_verbose);
-	print_set_opt("xtrace", state->opt_xtrace);
-	print_set_opt("pipefail", state->opt_pipefail);
-	print_set_opt("posix", state->opt_posix);
-	print_set_opt("emacs", state->edit_mode == 1);
-	print_set_opt("vi", state->edit_mode == 0);
+	const t_setopt	*e;
+
+	e = setopt_table();
+	while (e->name)
+	{
+		print_set_opt(e->name, setopt_get(state, e));
+		e++;
+	}
 	return (0);
 }
 
@@ -54,24 +52,29 @@ static int	set_lone_dash(t_shell *state, t_vec argv, size_t from)
 	return (0);
 }
 
-/* Consume one option word: `-o`/`+o` (plus the name that may follow, via
-   set_o_word), a ±letter cluster, or the lone `+` no-op.  Advances *i past
-   what was eaten; returns 2 on an unimplemented letter so the caller can
-   emit bash's "invalid option" error, 0 otherwise. */
-static int	set_flag_arg(t_shell *state, char **av, size_t len, size_t *i)
+/* Consume one flag word and whatever it drags in with it.  Returns the number
+   of argv words eaten (1, or 2 when an `o` took the following word as a long
+   option name), or -1 after reporting a usage error.
+
+   The `o` handling is the subtle part and is bash's, not an invention: `o`
+   may sit anywhere in a cluster and always takes its NAME from the next word
+   -- so `set -euo pipefail` sets errexit, nounset and pipefail and consumes
+   two words, while `set -eo errexit x y` leaves x and y as positionals.  With
+   no word left to take, `-o` lists the options instead of erroring. */
+static int	set_flag_word(t_shell *state, char **w, size_t remaining)
 {
-	if (!ft_strcmp(av[*i], "-o") || !ft_strcmp(av[*i], "+o"))
-		*i += set_o_word(state, av[*i][0], av + *i, len - *i);
-	else if (av[*i][1])
-	{
-		if (!apply_flag_word(state, av[*i]))
-			return (ft_eprintf("%s: set: invalid option\n",
-					state->ctx), 2);
-		(*i)++;
-	}
-	else
-		(*i)++;
-	return (0);
+	bool	want_o;
+
+	want_o = false;
+	if (!apply_flag_letters(state, w[0], &want_o))
+		return (ft_eprintf("%s: set: invalid option\n", state->ctx), -1);
+	if (!want_o)
+		return (1);
+	if (remaining < 2)
+		return (list_set_options(state), 1);
+	if (set_long_option(state, w[0][0], w[1]))
+		return (ft_eprintf("%s: set: invalid option name\n", state->ctx), -1);
+	return (2);
 }
 
 /* POSIX `set` argument scan: flag words are consumed left to right until
@@ -96,12 +99,12 @@ int	apply_set_flags(t_shell *state, t_vec argv)
 					argv.len - i - 1));
 		if (ft_strcmp(av[i], "-") == 0)
 			return (set_lone_dash(state, argv, i + 1));
-		if (av[i][0] == '+' || (av[i][0] == '-' && av[i][1]))
-			rc = set_flag_arg(state, av, argv.len, &i);
-		else
+		if (av[i][0] != '+' && (av[i][0] != '-' || !av[i][1]))
 			return (set_positional_args(state, av + i, argv.len - i));
-		if (rc)
-			return (rc);
+		rc = set_flag_word(state, av + i, argv.len - i);
+		if (rc < 0)
+			return (2);
+		i += (size_t)rc;
 	}
 	return (0);
 }

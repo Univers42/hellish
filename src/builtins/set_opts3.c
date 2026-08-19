@@ -13,79 +13,74 @@
 #include "builtins_private.h"
 #include "sh_input.h"
 
-/* Set one of set's short-option letters to `on`. The caller has already
-   vetted the letter against the supported set, so anything unknown is
-   simply ignored here. */
-static void	set_flag_char(t_shell *state, char c, bool on)
+/* Apply one of set's short-option letters.  The roster in set_opts4.c is the
+   single source of truth for which letters exist, so this is a lookup rather
+   than a chain that has to be kept in sync by hand.  false = no such letter. */
+static bool	set_flag_char(t_shell *state, char c, bool on)
 {
-	if (c == 'e')
-		state->opt_errexit = on;
-	else if (c == 'u')
-		state->opt_nounset = on;
-	else if (c == 'x')
-		state->opt_xtrace = on;
-	else if (c == 'f')
-		state->opt_noglob = on;
-	else if (c == 'C')
-		state->opt_noclobber = on;
-	else if (c == 'a')
-		state->opt_allexport = on;
-	else if (c == 'n')
-		state->opt_noexec = on;
-	else if (c == 'v')
-		state->opt_verbose = on;
+	const t_setopt	*e;
+
+	e = setopt_find(NULL, c);
+	if (!e)
+		return (false);
+	setopt_put(state, e, on);
+	return (true);
 }
 
-/* Apply one flag word like "-e", "+e", "-eux". Returns false when the
-   word contains a letter this shell does not implement, so the caller
-   can emit bash's "invalid option" error + status 2 instead of silently
-   swallowing it (a lie about what the shell honours). */
-bool	apply_flag_word(t_shell *state, const char *w)
-{
-	char	sign;
-	int		j;
+/* Apply the letters of one flag word like "-e", "+e", "-eux" or "-euo".
+   Letters take effect left to right and an unknown one stops the scan with
+   false, so the caller can emit bash's "invalid option" error + status 2 --
+   the ones already applied stay applied, which is what bash does too.
 
-	sign = w[0];
+   `o` is not a flag of its own: it asks for a long option NAME, which lives
+   in the next argument word.  We only record that here (*want_o) because
+   this function cannot see the rest of argv; set_flag_word() consumes it.
+   That indirection is the whole reason `set -euo pipefail` used to abort. */
+bool	apply_flag_letters(t_shell *state, const char *w, bool *want_o)
+{
+	int	j;
+
 	j = 1;
 	while (w[j])
 	{
-		if (!ft_strchr("euxfCanv", w[j]))
+		if (w[j] == 'o')
+			*want_o = true;
+		else if (!set_flag_char(state, w[j], w[0] == '-'))
 			return (false);
-		set_flag_char(state, w[j], sign == '-');
 		j++;
 	}
 	return (true);
 }
 
-/* Build the value of $- (the flag string): append one letter for each
-   currently-enabled option. The 'i' flag appears when the shell is running
-   interactively (INP_RL), not as a separately toggled option — POSIX says
-   $- must include 'i' for interactive shells. We write into state->flagbuf
-   (a fixed-size field in t_shell) so the returned pointer stays valid until
-   the next call. env_expand("−") calls this to get the current value. */
+/* Build the value of $- : one letter per enabled option, in bash's own order
+   (lowercase alphabetical, then uppercase alphabetical), then the invocation
+   letter -- 'c' for -c, 's' for a piped stdin, nothing for a script file.
+   'i' is not a settable option: it reports interactivity, so it has no table
+   entry and is tested directly.  We write into state->flagbuf (a fixed field
+   in t_shell) so the returned pointer stays valid until the next call;
+   env_expand("-") calls this to get the current value. */
 char	*build_flagstr(t_shell *state)
 {
-	int	k;
+	static const char	ord[] = "abefhikmnptuvxBCEHPT";
+	const t_setopt		*e;
+	int					i;
+	int					k;
 
+	i = -1;
 	k = 0;
-	if (state->opt_allexport)
-		state->flagbuf[k++] = 'a';
-	if (state->opt_errexit)
-		state->flagbuf[k++] = 'e';
-	if (state->opt_noglob)
-		state->flagbuf[k++] = 'f';
-	if (state->metinp == INP_RL || state->opt_interactive)
-		state->flagbuf[k++] = 'i';
-	if (state->opt_noexec)
-		state->flagbuf[k++] = 'n';
-	if (state->opt_nounset)
-		state->flagbuf[k++] = 'u';
-	if (state->opt_verbose)
-		state->flagbuf[k++] = 'v';
-	if (state->opt_xtrace)
-		state->flagbuf[k++] = 'x';
-	if (state->opt_noclobber)
-		state->flagbuf[k++] = 'C';
+	while (ord[++i])
+	{
+		e = setopt_find(NULL, ord[i]);
+		if (e && setopt_get(state, e))
+			state->flagbuf[k++] = ord[i];
+		else if (ord[i] == 'i' && (state->metinp == INP_RL
+				|| state->opt_interactive))
+			state->flagbuf[k++] = 'i';
+	}
+	if (state->metinp == INP_ARG)
+		state->flagbuf[k++] = 'c';
+	else if (state->metinp == INP_NOTTY)
+		state->flagbuf[k++] = 's';
 	state->flagbuf[k] = '\0';
 	return (state->flagbuf);
 }
