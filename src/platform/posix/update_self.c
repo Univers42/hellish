@@ -78,6 +78,7 @@ int	update_selfupdate(t_origin o, const char *tag)
 		return (ft_eprintf("hellish: update failed — %s\n"
 				"  the installed binary is unchanged.\n",
 				apply_error(rc)), 1);
+	update_mark_notified();
 	ft_printf("\033[32m✓\033[0m updated %s → %s\n", HELLISH_VERSION, tag);
 	ft_printf("  restart hellish (or open a new shell) to run it.\n");
 	return (0);
