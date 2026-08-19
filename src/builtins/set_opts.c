@@ -41,8 +41,8 @@ void	xtrace_print(t_shell *state, t_vec *argv)
    Non-interactively POSIX requires the shell to exit, and the STATUS bash
    uses depends on the mode, so we mirror it exactly (harnesses diff $?):
      - errexit active    => 1 (errexit reaches the exit first)
-     - -c string (INP_ARG) => 127
-     - script / piped stdin => 1
+     - -c string (INP_ARG), top-level shell => 127
+     - script, piped stdin, or any forked child => 1
    Interactively we report the error but keep the REPL alive with $?=1 --
    killing the session on every mistyped variable would be unbearable. */
 void	nounset_abort(t_shell *state, const char *name, int len)
@@ -55,9 +55,7 @@ void	nounset_abort(t_shell *state, const char *name, int len)
 	}
 	if (state->opt_errexit)
 		exit_clean(state, 1);
-	if (state->metinp == INP_ARG)
-		exit_clean(state, 127);
-	exit_clean(state, 1);
+	exit_clean(state, shell_fatal_status(state));
 }
 
 /* Switch the line-editor mode.  vi and emacs are mutually exclusive in bash,

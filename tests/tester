@@ -30,6 +30,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "glob_collate"
         "special_builtin_abort"
         "readonly_status"
+        "fatal_status"
     )
 fi
 

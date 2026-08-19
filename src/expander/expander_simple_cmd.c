@@ -15,6 +15,7 @@
 
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
+int		shell_fatal_status(t_shell *state);
 
 /* Prepare an executable_cmd for a new simple command.  pre_assigns holds
    VAR=val assignments that precede the command name; argv borrows its
@@ -49,7 +50,7 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 				xfree(tmp.key);
 				xfree(tmp.value);
 				if (state->metinp != INP_RL)
-					exit_clean(state, 127);
+					exit_clean(state, shell_fatal_status(state));
 				state->last_cmd_st_exe = (t_execution_state){.status = 1};
 			}
 			else
