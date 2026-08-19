@@ -82,6 +82,55 @@ jobs:
           fi
           test -x build/bin/hellish && echo "✓ built ${{ matrix.label }}"
 
+  # ── Oldest supported toolchain ───────────────────────────────────────────
+  # ubuntu-latest tracks a recent gcc, and a warning that only the OLD
+  # compiler emits therefore never reaches CI. That is exactly how issue #9
+  # shipped: gcc 11's -Wstringop-overflow rejected a va_list forwarded
+  # between functions, so `make` failed outright on Ubuntu 22.04 -- the
+  # default WSL distribution -- while gcc 13 and gcc 14 compiled it in
+  # silence and every job here stayed green.
+  #
+  # This job pins the oldest toolchain we claim to support and builds the
+  # full matrix with it. `make docker-test` covers the same ground locally
+  # through the `ubuntu2204` compose service.
+  toolchain:
+    name: Oldest toolchain · ${{ matrix.cc }} ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cc: gcc,    label: "debug SAFE=1",  flags: "" }
+          - { cc: gcc,    label: "opt SAFE=0",    flags: "OPT=1" }
+          - { cc: gcc,    label: "opt SAFE=1",    flags: "OPT=1 SAFE=1" }
+          - { cc: gcc-12, label: "opt SAFE=1",    flags: "OPT=1 SAFE=1" }
+          - { cc: clang,  label: "opt SAFE=1",    flags: "OPT=1 SAFE=1" }
+    steps:
+      # git has to exist before checkout, otherwise the action falls back to
+      # a tarball download and the submodules never arrive.
+      - name: Install toolchain
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential libreadline-dev git ca-certificates ${{ matrix.cc }}
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Compile with ${{ matrix.cc }}
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          $CC --version | head -1
+          if ! make re ${{ matrix.flags }} CC=$CC > build.log 2>&1; then
+            echo "::error::Build failed with $CC (${{ matrix.label }})"
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1bc//g; s/\r/\n/g' build.log | tail -120
+            exit 1
+          fi
+          test -x build/bin/hellish
+          ./build/bin/hellish -c 'printf "%s|%*d|%.*s\n" ok 5 42 2 abcdef'
+
   # ── 42 Norm ──────────────────────────────────────────────────────────────
   norm:
     name: 42 Norm (norminette)

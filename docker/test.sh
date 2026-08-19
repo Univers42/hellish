@@ -18,7 +18,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 distros=("$@")
-[ ${#distros[@]} -eq 0 ] && distros=(alpine debian ubuntu arch)
+[ ${#distros[@]} -eq 0 ] && distros=(alpine debian ubuntu ubuntu2204 arch)
 
 # A small but representative workout: externals, arithmetic, a pipeline, a
 # heredoc nested in a compound, and command hashing -- if these match, the

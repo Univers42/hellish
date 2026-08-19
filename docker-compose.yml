@@ -42,6 +42,22 @@ services:
     tty: true
     stdin_open: true
 
+  # Ubuntu 22.04 LTS pins gcc 11, and gcc 11 is the ONLY compiler in this
+  # matrix whose -Wstringop-overflow fires on a va_list forwarded between
+  # functions (issue #9). gcc 13 on 24.04 and gcc 14 on Debian stable both
+  # stay quiet, so without this rung the whole matrix went green while
+  # `make` failed outright for anyone on 22.04 -- which is what WSL installs
+  # by default. Keep it: it is the oldest toolchain we claim to support.
+  ubuntu2204:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "ubuntu:22.04"
+    image: hellish:ubuntu2204
+    tty: true
+    stdin_open: true
+
   arch:
     build:
       context: .
