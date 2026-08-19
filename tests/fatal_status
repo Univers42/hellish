@@ -1,0 +1,28 @@
+( echo ${undef:?} ) 2>/dev/null; echo "rc=$?"
+( echo ${undef?} ) 2>/dev/null; echo "rc=$?"
+( echo ${undef:?msg} ) 2>/dev/null; echo "rc=$?"
+( readonly R=1; R=2 ) 2>/dev/null; echo "rc=$?"
+( set -u; echo $nope ) 2>/dev/null; echo "rc=$?"
+( set -u; echo ${nope} ) 2>/dev/null; echo "rc=$?"
+x=$( echo ${undef:?} ) 2>/dev/null; echo "rc=$? [$x]"
+echo "$( echo ${undef:?} )" 2>/dev/null; echo "rc=$?"
+x=$( printf %s ${undef:?} ) 2>/dev/null; echo "rc=$?"
+x=$( true; echo ${undef:?} ) 2>/dev/null; echo "rc=$?"
+x=$( cat </dev/null; echo ${undef:?} ) 2>/dev/null; echo "rc=$?"
+( ( echo ${undef:?} ) ) 2>/dev/null; echo "rc=$?"
+{ ( echo ${undef:?} ) ; } 2>/dev/null; echo "rc=$?"
+( echo ${undef:?} ) 2>/dev/null | cat; echo "rc=$?"
+v=ok; echo "$( echo ${v:?} )"
+v=ok; ( echo ${v:?} ); echo "rc=$?"
+echo "$( echo hi )"
+v=1; echo "$( echo ${v:-d} )"
+v=1; echo "$( echo ${v:=d} )"; echo "[$v]"
+echo ${undef:?}; echo unreachable
+echo ${undef?}; echo unreachable
+readonly R=1; R=2; echo unreachable
+set -u; echo $nope; echo unreachable
+( exit 5 ); echo "rc=$?"
+( false ); echo "rc=$?"
+( set -u; v=1; echo $v ); echo "rc=$?"
+( readonly R=1; echo "[$R]" ); echo "rc=$?"
+f(){ echo ${undef:?}; }; ( f ) 2>/dev/null; echo "rc=$?"

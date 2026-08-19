@@ -131,10 +131,6 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## In flight
 
-- [ ] Assigning to a read-only variable in a SUBSHELL exits 127 where
-      bash exits 1: `(R=2)` after `readonly R=1`. At top level both
-      shells agree (the assignment error aborts the shell), so this is
-      only the status the subshell reports.
 - [ ] The special-builtin abort rule is implemented for the two error
       classes that could be pinned down against bash 5.3.9: a redirection
       error on a special builtin, and a non-zero return from export /
