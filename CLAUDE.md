@@ -47,6 +47,8 @@ make perf           # dimension-split hyperfine bench (startup/parse/loops/forks
                     #   → bench/results.md; needs performance CPU governor, or BENCH_LAX=1
 make geoman         # external 42 "minishell tester" as an independent cross-check (GEOMAN_URL=…)
 make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash --posix
+make net-redir-test # /dev/tcp and /dev/udp redirections vs bash --posix; brings up its
+                    #   own TCP+UDP peer, so it needs python3 but no network access
 make login-test     # login shell sources /etc/profile then ~/.profile; non-login sources neither
 make norm           # 42 norminette over src/ incs/ tests/ — REPORTS ONLY, always exits 0
 make docker-test    # build + smoke-test from source on Alpine/Debian/Ubuntu/Arch

@@ -91,10 +91,15 @@ static bool	handle_devfd_redir(char *fname, t_redir *ret)
 /* Build a t_redir from a redirect token type, filename, and source fd.
    Dispatch: &fd (dup) → create_dup_redir; /dev/fd/N (process subst result)
    → handle_devfd_redir (dup the existing fd rather than re-opening it);
-   everything else → open_file_redir.  Heredocs are asserted out here since
-   they follow a completely different path (materialize_heredoc). */
+   /dev/tcp/host/port and /dev/udp/host/port → net_redir_open, which
+   answers -1 when the path only LOOKS like one of those and should still
+   be opened as a file; everything else → open_file_redir.  Heredocs are
+   asserted out here since they follow a completely different path
+   (materialize_heredoc). */
 bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 {
+	int	net_rc;
+
 	ft_assert(tt != TT_HEREDOC && "HEREDOCS are handled separately");
 	ret->fname = fname;
 	ret->direction_in = (tt == TT_REDIRECT_LEFT || tt == TT_DUP_IN
@@ -108,6 +113,9 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 		return (create_dup_redir(tt, fname, ret, src_fd));
 	if (ft_strncmp(fname, "/dev/fd/", 8) == 0)
 		return (handle_devfd_redir(fname, ret));
+	net_rc = net_redir_open(fname, ret);
+	if (net_rc >= 0)
+		return (net_rc == 1);
 	return (open_file_redir(tt, ret));
 }
 

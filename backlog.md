@@ -216,12 +216,17 @@ pass counts in `bench/baseline/`). Performance claims come from
       CURRENT job is itself dead.  '+' is unaffected: a dead job keeps
       it in both shells.  Needs bash's set_current_job() semantics read
       properly rather than another guess.
-- [ ] tests/level01.sh diffs intermittently in verify_alloc.sh -- twice
-      in a row, then clean on the next two full runs.  The script is
-      nothing but `echo`s and one `pwd`, so `pwd` is the only candidate:
-      logical PWD vs physical getcwd under the automounted /sgoinfre
-      path.  It costs an investigation every time it shows up; either
-      pin it down or make the script not depend on `pwd`.
+- [ ] tests/level01.sh diffs INTERMITTENTLY in verify_alloc.sh -- seen
+      three times across a session, never reproducible on demand.  Not
+      for want of trying: 70 direct back-to-back invocations (including
+      verify_alloc's exact two-run crash-probe-then-output sequence) and
+      six full verify_alloc suites with the mismatch dumped to a file
+      all came back clean, so the failing pair was never captured.  The
+      script is nothing but `echo`s and one `pwd`, which makes `pwd` the
+      only candidate: logical PWD vs physical getcwd under the
+      automounted /sgoinfre path.  It costs an investigation every time
+      it appears.  Next step is probably to have verify_alloc keep the
+      mismatching output permanently rather than to keep guessing.
 
 ## Done (continued 4)
 
