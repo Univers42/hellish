@@ -11,8 +11,9 @@
 /* ************************************************************************** */
 
 /* Job table CRUD.  A job is a pipeline (or single command) started in
-   the background.  Each slot is identified by a monotonically-increasing
-   job ID (not recycled) and the process group ID (pgid) of the pipeline.
+   the background.  Each slot is identified by a job ID (allocated by
+   job_next_id, which reuses numbers the way bash does -- see job_id.c)
+   and the process group ID (pgid) of the pipeline.
    pgid==0 means the slot is free.  current/previous track the '+'/'-'
    markers shown by `jobs`.  JOB_MAX is 256 -- more than enough for any
    sane interactive session. */
@@ -22,12 +23,12 @@
 #include <stdlib.h>
 #include "pal_wait.h"
 
-/* Zero the whole table and set sentinel values: IDs start at 1,
-   current/previous at -1 (meaning "no current job yet"). */
+/* Zero the whole table and set sentinel values: current/previous at -1
+   (meaning "no current job yet").  There is no id counter to seed -- job
+   numbers are derived from the live slots by job_next_id. */
 void	job_table_init(t_job_table *jt)
 {
 	ft_memset(jt, 0, sizeof(t_job_table));
-	jt->next_id = 1;
 	jt->current = -1;
 	jt->previous = -1;
 }
@@ -44,7 +45,7 @@ t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg)
 	{
 		if (jt->jobs[i].pgid == 0)
 		{
-			jt->jobs[i].id = jt->next_id++;
+			jt->jobs[i].id = job_next_id(jt);
 			jt->jobs[i].pgid = pgid;
 			jt->jobs[i].status = JOB_RUNNING;
 			jt->jobs[i].cmd = ft_strdup(cmd);
@@ -93,9 +94,10 @@ t_job	*job_find_pgid(t_job_table *jt, pid_t pgid)
 	return (NULL);
 }
 
-/* Free the cmd string and zero the slot so it's available for the next
-   job.  Does NOT update current/previous -- callers do that when needed
-   (e.g. after job_notify prints the "Done" line). */
+/* Free the cmd string and zero the slot so it's available for the next job,
+   then hand the '+'/'-' markers on to whoever is left (job_reelect).  Doing
+   the re-election HERE rather than in each caller is what stops a reaped
+   current job from taking the '+' marker to the grave with it. */
 void	job_remove(t_job_table *jt, int id)
 {
 	int	i;
@@ -108,7 +110,7 @@ void	job_remove(t_job_table *jt, int id)
 			xfree(jt->jobs[i].cmd);
 			ft_memset(&jt->jobs[i], 0, sizeof(t_job));
 			jt->count--;
-			return ;
+			return (job_reelect(jt, id));
 		}
 		i++;
 	}
