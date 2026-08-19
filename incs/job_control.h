@@ -29,8 +29,9 @@
 # define JOB_MAX 256
 
 /* Lifecycle states for a background job. RUNNING -> STOPPED (SIGSTOP / ^Z);
-   RUNNING -> DONE (normal exit); RUNNING -> KILLED (signal death, kept distinct
-   from DONE for display). Keep comments OFF the enumerator lines below --
+   RUNNING -> DONE (normal exit); RUNNING -> KILLED (signal death, kept
+   distinct from DONE because bash names the SIGNAL where it would otherwise
+   say "Done" -- see job_status_desc). Comments stay OFF the enumerators --
    norminette mis-parses an inline comment on an enum value. */
 typedef enum e_job_status
 {
@@ -50,6 +51,8 @@ typedef struct s_job
 	char			*cmd; /* command text for display (owned, heap) */
 	bool			notified; /* true once the "Done" line was printed */
 	bool			bg; /* true if started with & (not fg'd yet) */
+	int				term_sig; /* signal that killed it, 0 if it exited */
+	bool			core_dumped; /* that signal also dumped core */
 }	t_job;
 
 /* The job table embedded in t_shell.  current/previous are job IDs
@@ -74,11 +77,16 @@ t_job	*job_find_id(t_job_table *jt, int id);
 t_job	*job_find_pgid(t_job_table *jt, pid_t pgid);
 void	job_remove(t_job_table *jt, int id);
 void	job_purge_done(t_job_table *jt);
+void	job_record_exit(t_job *job, int status);
+bool	job_finished(const t_job *job);
+void	job_notify_async(struct s_shell *state);
 void	job_update_status(t_job_table *jt);
 void	job_notify(struct s_shell *state);
 t_job	*job_by_spec(t_job_table *jt, const char *spec);
 void	job_set_current(t_job_table *jt, int id);
 void	job_print(t_job *job, int current, int prev, bool show_pid);
 void	job_table_free(t_job_table *jt);
+char	*job_status_desc(const t_job *job);
+char	*job_core_suffix(const t_job *job);
 
 #endif

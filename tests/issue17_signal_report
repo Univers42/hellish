@@ -1,0 +1,28 @@
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -KILL $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -TERM $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -HUP $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -USR1 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -USR2 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -ALRM $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -PIPE $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -1 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -15 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -13 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -14 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs -l >/dev/null; echo "l=$?"; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs; jobs; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; wait $p; echo "st=$?"
+sleep 5 & p=$!; sleep 0.4; kill -TERM $p; wait $p; echo "st=$?"
+sleep 5 & p=$!; sleep 0.4; kill -HUP $p; wait $p; echo "st=$?"
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs; wait 2>/dev/null; jobs; echo "after"
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs | wc -l; wait 2>/dev/null
+sleep 0.1 & sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs; wait 2>/dev/null
+sleep 5 & a=$!; sleep 5 & b=$!; sleep 0.3; kill -9 $a; kill -TERM $b; sleep 0.4; jobs; wait 2>/dev/null
+sleep 0.2 & sleep 0.5; jobs; echo "normal=$?"; wait
+sleep 5 & p=$!; sleep 0.4; kill -INT $p 2>/dev/null; sleep 0.3; jobs; kill -9 $p 2>/dev/null; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -9 $p; sleep 0.4; jobs > jf1; tr ' ' '.' < jf1; rm -f jf1; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -QUIT $p 2>/dev/null; sleep 0.3; jobs; kill -9 $p 2>/dev/null; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -TERM $p; sleep 0.4; jobs > jf2; tr ' ' '.' < jf2; rm -f jf2; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -HUP $p; sleep 0.4; jobs > jf3; tr ' ' '.' < jf3; rm -f jf3; wait 2>/dev/null
+sleep 5 & p=$!; sleep 0.4; kill -USR1 $p; sleep 0.4; jobs > jf4; tr ' ' '.' < jf4; rm -f jf4; wait 2>/dev/null

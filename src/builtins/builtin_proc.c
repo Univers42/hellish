@@ -89,7 +89,7 @@ int	reaped_job_status(t_shell *state, pid_t pid)
 			return (128 + WTERMSIG(status));
 		return (127);
 	}
-	if (job && job->status == JOB_DONE)
+	if (job && job_finished(job))
 	{
 		code = job->exit_code;
 		job_remove(&state->job_table, job->id);

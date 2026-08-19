@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "job_control.h"
 
 void	run_pending_traps(t_shell *state);
 
@@ -84,7 +85,12 @@ static void	gather_range_heredocs(t_shell *state, t_ast_node *node,
 /* One separator-delimited range of the list: find where it ends and
    whether that separator is &, gather its deferred heredocs just in
    time, run it as a foreground or background group, then advance *i
-   past the separator token. */
+   past the separator token.
+
+   job_notify_async runs FIRST because this is bash's moment for it: a
+   script learns a background job was killed just before the next command
+   runs, not at the end of the script.  It costs one integer compare when
+   no background job exists, which is the overwhelmingly common case. */
 static t_execution_state	run_list_range(t_shell *state,
 								t_executable_node *exe, size_t *i, bool defer)
 {
@@ -92,6 +98,7 @@ static t_execution_state	run_list_range(t_shell *state,
 	size_t				sep_idx;
 	bool				is_background;
 
+	job_notify_async(state);
 	sep_idx = find_next_separator(exe->node, *i, &is_background);
 	if (defer)
 		gather_range_heredocs(state, exe->node, *i, sep_idx);

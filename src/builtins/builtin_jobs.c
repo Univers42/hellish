@@ -57,13 +57,13 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	while (i)
 	{
 		job = job_find_id(jt, i);
-		if (!(job->status == JOB_DONE && job->notified))
+		if (!(job_finished(job) && job->notified))
 		{
 			if (show_pid)
 				ft_printf("%d\n", job->pgid);
 			else
 				job_print(job, jt->current, jt->previous, long_fmt);
-			if (job->status == JOB_DONE)
+			if (job_finished(job))
 				job->notified = true;
 		}
 		i = job_next_after(jt, i);
