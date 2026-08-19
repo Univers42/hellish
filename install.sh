@@ -1,19 +1,19 @@
 #!/bin/sh
 # hellish installer — fetch the latest prebuilt binary from GitHub Releases.
 #
-#   curl -fsSL https://raw.githubusercontent.com/Univers42/42sh/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
 #
 # Honours $PREFIX (default: /usr/local/bin, or ~/.local/bin without write access).
 set -eu
 
-REPO="Univers42/42sh"
+REPO="Univers42/hellish"
 ASSET="hellish-linux-x86_64"
 OS="$(uname -s)"
 ARCH="$(uname -m)"
 
 if [ "$OS" != "Linux" ] || [ "$ARCH" != "x86_64" ]; then
 	echo "hellish: no prebuilt binary for $OS/$ARCH yet — build from source:" >&2
-	echo "  git clone https://github.com/$REPO && cd 42sh && make OPT=1 all" >&2
+	echo "  git clone https://github.com/$REPO && cd hellish && make OPT=1 all" >&2
 	exit 1
 fi
 
