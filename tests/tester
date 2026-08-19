@@ -31,6 +31,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "special_builtin_abort"
         "readonly_status"
         "fatal_status"
+        "job_label"
     )
 fi
 
