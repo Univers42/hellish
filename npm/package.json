@@ -24,11 +24,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Univers42/42sh.git"
+    "url": "git+https://github.com/Univers42/hellish.git"
   },
-  "homepage": "https://github.com/Univers42/42sh#readme",
+  "homepage": "https://github.com/Univers42/hellish#readme",
   "bugs": {
-    "url": "https://github.com/Univers42/42sh/issues"
+    "url": "https://github.com/Univers42/hellish/issues"
   },
   "license": "MIT",
   "author": "LESdylan",

@@ -38,7 +38,7 @@ tests, conformance vs `bash --posix`, ASan/leak-clean, norm). See
 
 **One-liner (Linux x86-64):**
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Univers42/42sh/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
 ```
 
 **npm / pnpm / yarn:**
@@ -53,7 +53,7 @@ docker run --rm -it dlesieur/hellish-shell
 
 **From source:**
 ```sh
-git clone --recursive https://github.com/Univers42/42sh && cd 42sh
+git clone --recursive https://github.com/Univers42/hellish && cd hellish
 make OPT=1 all && ./build/bin/hellish
 ```
 

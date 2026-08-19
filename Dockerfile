@@ -11,7 +11,7 @@ FROM ubuntu:24.04
 
 LABEL org.opencontainers.image.title="hellish" \
       org.opencontainers.image.description="A fast, POSIX-compliant shell, with horns." \
-      org.opencontainers.image.source="https://github.com/Univers42/42sh" \
+      org.opencontainers.image.source="https://github.com/Univers42/hellish" \
       org.opencontainers.image.licenses="MIT"
 
 # libreadline8 + libtinfo6 (line editing), ca-certificates + curl (so the

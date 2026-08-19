@@ -50,6 +50,9 @@ make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash
 make net-redir-test # /dev/tcp and /dev/udp redirections vs bash --posix; brings up its
                     #   own TCP+UDP peer, so it needs python3 but no network access
 make login-test     # login shell sources /etc/profile then ~/.profile; non-login sources neither
+make update-config-test # offline gate on the release/update config: the GitHub slug in
+                    #   version.h must match the git remote, install.sh/npm/Dockerfile/docs
+                    #   must agree with it, npm version must track HELLISH_VERSION
 make norm           # 42 norminette over src/ incs/ tests/ — REPORTS ONLY, always exits 0
 make docker-test    # build + smoke-test from source on Alpine/Debian/Ubuntu/Arch
 make docker-alpine  # (also -debian/-ubuntu/-arch) interactive hellish in that container
