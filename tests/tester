@@ -28,6 +28,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "redir_multi_fd"
         "dquote_brace_nest"
         "glob_collate"
+        "special_builtin_abort"
     )
 fi
 

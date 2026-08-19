@@ -1,0 +1,38 @@
+exec 3</no_such_file_zz; echo after
+exec 3>/no_such_dir_zz/f; echo after
+: 3</no_such_file_zz; echo after
+: </no_such_file_zz; echo after
+export A=1 3</no_such_file_zz; echo after
+shift 3</no_such_file_zz; echo after
+times 3</no_such_file_zz; echo after
+trap 3</no_such_file_zz; echo after
+eval 3</no_such_file_zz; echo after
+unset X 3</no_such_file_zz; echo after
+set 3</no_such_file_zz; echo after
+true 3</no_such_file_zz; echo after
+echo hi 3</no_such_file_zz; echo after
+cd /tmp 3</no_such_file_zz; echo after
+cat 3</no_such_file_zz </dev/null; echo after
+echo hi >/no_such_dir_zz/f; echo after
+{ echo a; } >/no_such_dir_zz/f; echo after
+( : 3</no_such_file_zz ); echo after
+export 1BAD; echo after
+export -Z; echo after
+unset -Z; echo after
+unset 1BAD; echo after
+export A=1; echo after; echo "[$A]"
+shift 99; echo after
+trap "" BADSIG; echo after
+eval false; echo after
+: ; echo after
+exec 3>ok3; echo A >&3; echo after; cat ok3
+export A=1 B=2; echo "[$A][$B]"; echo after
+readonly R=1; echo "[$R]"; echo after
+exec 3</no_such_file_zz
+: 3</no_such_file_zz
+export 1BAD
+exporter 3</no_such_file_zz; echo after
+setx 3</no_such_file_zz; echo after
+unsetenv 3</no_such_file_zz; echo after
+evaluate 3</no_such_file_zz; echo after
+exec1 3</no_such_file_zz; echo after
