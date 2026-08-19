@@ -95,7 +95,10 @@ void	reparse_backtick(t_ast_node *ret, int *i, t_token t)
 }
 
 /* Dispatch loop: walk the token character by character and call the right
-   sub-parser for each quoting/expansion context. Spaces inside a plain
+   sub-parser for each quoting/expansion context. no_squote disables the
+   single-quote branch: inside "${...}" a ' is an ordinary character all
+   the way through, even in a nested "..." section that toggles the quoting
+   back off -- bash prints a'b for "${u:-"a'b"}". Spaces inside a plain
    (unquoted) word are emitted as TT_WORD subtokens -- the expander later
    uses them as IFS split boundaries. Unknown characters fall through to
    reparse_norm_word, which absorbs them as a literal run. */
@@ -107,7 +110,8 @@ void	loop_node_rp(t_reparser *rp)
 			reparse_dquote(&rp->current_node, &rp->i, rp->current_token);
 		else if (rp->current_token.start[rp->i] == '\\')
 			reparse_bs(&rp->current_node, &rp->i, rp->current_token);
-		else if (rp->current_token.start[rp->i] == '\'')
+		else if (rp->current_token.start[rp->i] == '\''
+			&& !rp->no_squote)
 			reparse_squote(&rp->current_node, &rp->i, rp->current_token);
 		else if (rp->current_token.start[rp->i] == '$')
 			reparse_envvar(&rp->current_node, &rp->i,

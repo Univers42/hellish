@@ -28,30 +28,11 @@ void	exit_clean(t_shell *state, int code);
    reparse below which strips the escape. */
 char	*expand_param_word(t_shell *state, const char *word, int wlen, bool dq)
 {
-	t_ast_node	w;
-	t_token		t;
-	t_string	s;
-	char		*ret;
-
 	if (wlen <= 0)
 		return (ft_strdup(""));
 	if (dq)
 		return (expand_param_word_dq(state, word, wlen));
-	t.start = (char *)word;
-	t.len = wlen;
-	t.tt = TT_WORD;
-	w = reparse_word(t);
-	expand_tilde_word(state, &w);
-	expand_cmd_substitutions(state, &w);
-	expand_env_vars(state, &w, false);
-	s = word_to_string(w);
-	if (!s.ctx)
-		ret = ft_strdup("");
-	else
-		ret = ft_strndup((char *)s.ctx, s.len);
-	xfree(s.ctx);
-	free_ast(&w);
-	return (ret);
+	return (pf_word_pipeline(state, word, wlen, false));
 }
 
 static bool	is_unset_or_null(const char *val)
