@@ -59,6 +59,9 @@ make hist-test      # pty-driven check of cmdhist multiline history joining
 make readline-test  # pty gate over every libreadline entry point (completion,
                     #   history recall, vi/emacs) — run before touching readline linkage
 make anim-test      # pty-driven check that the prompt animation never clobbers pasted input
+make prompt-atomic-test # pty gate: the prompt prefix must reach the tty in ONE write.
+                    #   Byte-at-a-time let kernel echo of type-ahead split a colour
+                    #   escape or a box-drawing glyph — run after touching rl.c
 make git-prompt-test # pty gate: the prompt's git dirty check never blocks a render — cd
                     #   into a slow-scanning repo must prompt instantly, star arrives async
 make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
