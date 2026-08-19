@@ -205,6 +205,23 @@ pass counts in `bench/baseline/`). Performance claims come from
 - [ ] `kill -STOP` on a background job: hellish's `jobs` says "Stopped",
       bash says "Running" when job control is off (`-c`, scripts).  bash
       only tracks stops when it has job control.
+- [ ] The '-' marker on a FINISHED job follows a rule I could not pin
+      down, and hellish gets one of the two shapes wrong.  Measured:
+        `sleep 0.2 & sleep 0.5; sleep 0.2 & sleep 0.5; jobs`
+            bash "[1]  Done" (bare) -- hellish "[1]-  Done"
+        `sleep 0.3 & sleep 0.05 & sleep 0.5 & wait %1; jobs`
+            bash "[2]-  Done" -- hellish agrees
+      So "a dead job never wears '-'" is NOT the rule; it was tried and
+      the second case disproves it.  The difference may be whether the
+      CURRENT job is itself dead.  '+' is unaffected: a dead job keeps
+      it in both shells.  Needs bash's set_current_job() semantics read
+      properly rather than another guess.
+- [ ] tests/level01.sh diffs intermittently in verify_alloc.sh -- twice
+      in a row, then clean on the next two full runs.  The script is
+      nothing but `echo`s and one `pwd`, so `pwd` is the only candidate:
+      logical PWD vs physical getcwd under the automounted /sgoinfre
+      path.  It costs an investigation every time it shows up; either
+      pin it down or make the script not depend on `pwd`.
 
 ## Done (continued 4)
 
