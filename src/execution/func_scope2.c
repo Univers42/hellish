@@ -13,7 +13,7 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
-void	try_unset(t_shell *state, char *key);
+int		try_unset(t_shell *state, char *key);
 
 /* Roll back temporary NAME=val assignments after a builtin or function
    returns.  We iterate in reverse (LIFO) so nested saves unwind in the
