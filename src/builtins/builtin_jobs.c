@@ -39,10 +39,13 @@ static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
    job counts as reporting it: the notified flag hides it from the next
    listing, but — matching bash, verified empirically — the entry itself
    stays so a later `wait $!` can still recover its exit status. Only wait
-   purges for real. */
+   purges for real. We walk job NUMBERS (job_next_after) rather than table
+   slots: a reaped job frees its slot, a later job reuses that slot, and
+   slot order then prints [1] [4] [3] where bash prints [1] [3] [4]. */
 int	builtin_jobs(t_shell *state, t_vec argv)
 {
 	t_job_table	*jt;
+	t_job		*job;
 	bool		show_pid;
 	bool		long_fmt;
 	int			i;
@@ -50,21 +53,20 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	jt = &state->job_table;
 	parse_jobs_flags((char **)argv.ctx, (int)argv.len, &show_pid, &long_fmt);
 	job_update_status(jt);
-	i = 0;
-	while (i < JOB_MAX)
+	i = job_next_after(jt, 0);
+	while (i)
 	{
-		if (jt->jobs[i].pgid && !(jt->jobs[i].status == JOB_DONE
-				&& jt->jobs[i].notified))
+		job = job_find_id(jt, i);
+		if (!(job->status == JOB_DONE && job->notified))
 		{
 			if (show_pid)
-				ft_printf("%d\n", jt->jobs[i].pgid);
+				ft_printf("%d\n", job->pgid);
 			else
-				job_print(&jt->jobs[i], jt->current,
-					jt->previous, long_fmt);
-			if (jt->jobs[i].status == JOB_DONE)
-				jt->jobs[i].notified = true;
+				job_print(job, jt->current, jt->previous, long_fmt);
+			if (job->status == JOB_DONE)
+				job->notified = true;
 		}
-		i++;
+		i = job_next_after(jt, i);
 	}
 	return (0);
 }
