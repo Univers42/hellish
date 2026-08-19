@@ -18,7 +18,7 @@
 # define HELLISH_VERSION "2.3.2"
 
 /* Where releases live; used by the `update` builtin and the daily check. */
-# define HELLISH_REPO "Univers42/42sh"
+# define HELLISH_REPO "Univers42/hellish"
 # define HELLISH_PKG "hellish-shell"
 
 #endif
