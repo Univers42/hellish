@@ -99,7 +99,13 @@ static void	init_rl_buffer(t_shell *state)
    source. The PRNG is seeded from pid^time like bash seeds $RANDOM: two
    shells started in the same second must not share a sequence (that also
    de-collides the PRNG-named heredoc tmp files). bg_job_count starts at
-   0 -- it is the counter for the unique job IDs we hand out. */
+   0 -- it is the counter for the unique job IDs we hand out.
+
+   $0 defaults to argv[0] verbatim, exactly as bash does -- not the basename
+   used for diagnostics. It has to be seeded here, before cli_dispatch(),
+   because only two of the four input modes assign it themselves: a script
+   overrides it with its path and `-c cmd NAME` with NAME. Leaving it to
+   those two left $0 empty for plain `-c` and for piped stdin (issue #14). */
 void	on(t_shell *state, char **argv, char **envp)
 {
 	t_cli	cli;
@@ -118,6 +124,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	init_cwd(state);
 	state->env = env_to_vec_env(state, envp);
 	ensure_essential_env_vars(state);
+	env_set(&state->env, env_create(ft_strdup("0"),
+			ft_strdup(argv[0]), false));
 	init_tables(state);
 	state->edit_mode = 1;
 	cli_dispatch(state, &cli);
