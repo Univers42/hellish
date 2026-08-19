@@ -13,55 +13,20 @@
 #include "expander_private.h"
 #include "brace_expand.h"
 
-/* Determine if the brace body contains a top-level comma (depth 0), which
-   distinguishes comma-alternation from a bare {word} that should NOT expand.
-   Inner braces are tracked so {a,{b,c}} is correctly seen as having one
-   top-level comma between 'a' and the inner group. */
-static bool	has_top_comma(const char *s, int open, int close)
-{
-	int	depth;
-	int	i;
-
-	depth = 0;
-	i = open + 1;
-	while (i < close)
-	{
-		if (s[i] == '{')
-			depth++;
-		else if (s[i] == '}')
-			depth--;
-		else if (s[i] == ',' && depth == 0)
-			return (true);
-		i++;
-	}
-	return (false);
-}
-
-/* Find the leftmost '{' that forms an expandable group (contains a top-level
-   comma or is a valid sequence). Sets *close to its matching '}'. */
+/* Find the leftmost '{' that forms an expandable group. Sets *close to its
+   matching '}'.  Stepping with brace_next is what keeps the scan out of
+   command substitutions and quoted spans: `$(cmd "{a,b}")` has no brace
+   group of its own, so this returns -1 and the word is left alone. */
 int	brace_find_expandable(const char *s, int *close)
 {
-	int		i;
-	int		c;
-	char	*body;
-	bool	seq;
+	int	i;
 
 	i = 0;
 	while (s[i])
 	{
-		if (s[i] == '{')
-		{
-			c = brace_match(s, i);
-			if (c > i + 1)
-			{
-				body = ft_substr(s, i + 1, c - i - 1);
-				seq = brace_gen_sequence(body, NULL);
-				xfree(body);
-				if (seq || has_top_comma(s, i, c))
-					return (*close = c, i);
-			}
-		}
-		i++;
+		if (brace_group_opens_at(s, i, close))
+			return (i);
+		i = brace_next(s, i);
 	}
 	return (-1);
 }
@@ -101,7 +66,7 @@ static void	split_commas(const char *s, int open, int close, t_vec *out)
 			start = i + 1;
 		}
 		depth += (s[i] == '{') - (s[i] == '}');
-		i++;
+		i = brace_next(s, i);
 	}
 }
 
