@@ -15,17 +15,20 @@
 #include "sh_input.h"
 
 void	exit_clean(t_shell *state, int code);
+int		shell_fatal_status(t_shell *state);
 bool	opword_no_split(const char *w, int wlen);
 
 /* The fatal expansion-error status bash uses depends on how input arrived:
    a -c command string exits 127, a script or piped stdin exits 1 (verified
    against bash --posix in both modes), and an interactive shell keeps
-   running with $? = 1.  Shared by the ${p?w} error path below. */
+   running with $? = 1.  Shared by the ${p?w} error path below.
+
+   The 127 belongs to the TOP-LEVEL shell exiting, not to a forked child:
+   `bash --posix -c '( echo ${undef:?} )'` reports 1.  shell_fatal_status
+   makes that call, shared with the -u and read-only paths. */
 static int	pf_fatal_status(t_shell *state)
 {
-	if (state->metinp == INP_ARG)
-		return (127);
-	return (1);
+	return (shell_fatal_status(state));
 }
 
 /* ${p?w} / ${p:?w}: if p is unset (or null with the colon), print the word
