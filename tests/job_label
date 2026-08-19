@@ -1,0 +1,11 @@
+( sleep 0.4 ) & sleep 0.15; jobs; wait
+echo x; ( sleep 0.4 ) & sleep 0.15; jobs; wait
+( sleep 0.4; true ) & sleep 0.15; jobs; wait
+( sleep 0.4 | cat ) & sleep 0.15; jobs; wait
+sleep 0.4 & sleep 0.15; jobs; wait
+sleep 0.4 | cat & sleep 0.15; jobs; wait
+true; sleep 0.4 & sleep 0.15; jobs; wait
+sleep 0.4 & sleep 0.5 & sleep 0.15; jobs; wait
+( sleep 0.4 ) & ( sleep 0.5 ) & sleep 0.15; jobs; wait
+echo a && sleep 0.4 & sleep 0.15; jobs; wait
+( cd /tmp && sleep 0.4 ) & sleep 0.15; jobs; wait
