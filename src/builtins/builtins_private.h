@@ -82,7 +82,8 @@ typedef struct s_rdbuf
 	bool	seekable;
 }	t_rdbuf;
 
-void	try_unset(t_shell *state, char *key);
+int		try_unset(t_shell *state, char *key);
+int		unset_operands(t_shell *state, t_vec argv, size_t i, int fmode);
 int		builtin_unset(t_shell *state, t_vec argv);
 int		parse_flags(t_vec argv, int *n, int *e);
 int		print_args(t_vec *out, int e, t_vec argv, size_t i);

@@ -29,6 +29,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "dquote_brace_nest"
         "glob_collate"
         "special_builtin_abort"
+        "readonly_status"
     )
 fi
 

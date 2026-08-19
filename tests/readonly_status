@@ -1,0 +1,25 @@
+readonly 1BAD; echo after
+readonly -Z; echo after
+readonly R=1; unset R; echo after
+readonly R=1; readonly R=2; echo after
+readonly R=1; echo "[$R]"; echo after
+readonly R=1; readonly R; echo "[$R]"; echo after
+R=1; readonly R; echo "[$R]"; echo after
+readonly A=1 B=2; echo "[$A][$B]"; echo after
+readonly -- A=1; echo "[$A]"; echo after
+readonly -p >/dev/null; echo after
+unset NOPE; echo "rc=$?"
+unset NOPE1 NOPE2; echo "rc=$?"
+unset 1BAD; echo "rc=$?"
+unset -f nofunc; echo "rc=$?"
+A=1; unset A; echo "rc=$? [$A]"
+f(){ echo F; }; unset -f f; echo "rc=$?"
+f(){ echo F; }; unset -v f; f; echo "rc=$?"
+readonly R=1; R=2; echo unreachable
+A=1 B=2; readonly A B; echo "[$A][$B]"; echo after
+readonly A=1; A=2; echo unreachable
+readonly ""; echo after
+readonly =v; echo after
+readonly A=; echo "[$A]"; echo after
+readonly A=1 A=2; echo after
+unset -v; echo "rc=$?"

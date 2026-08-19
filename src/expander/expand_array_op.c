@@ -15,7 +15,7 @@
 #include "parena.h"
 
 bool	is_valid_ident(char *s, int len);
-void	try_unset(t_shell *state, char *key);
+int		try_unset(t_shell *state, char *key);
 
 #define AOP_VAR "__hellish_aop"
 
