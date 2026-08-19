@@ -578,6 +578,14 @@ anim-test: all
 git-prompt-test: all
 	@python3 $(TEST_DIR)/git_prompt_stall_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Release/update configuration, checked offline: the GitHub slug baked into
+# version.h must match the repository we actually push to, every
+# distribution channel (install.sh, npm, Dockerfile, docs) must agree with
+# it, and npm's version must track HELLISH_VERSION. No runtime test can
+# reach any of this -- a wrong slug only shows up as a 404 at update time.
+update-config-test:
+	@bash $(TEST_DIR)/update_config_check.sh
+
 # The prompt prefix must reach the tty in ONE write (real pty). Streaming it
 # byte by byte let the line discipline echo type-ahead INTO a colour escape;
 # a letter is a valid CSI final byte, so the sequence ended early and its
@@ -648,6 +656,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
+	update-config-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
 	user-install user-uninstall
