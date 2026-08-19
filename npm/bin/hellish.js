@@ -10,7 +10,7 @@ const bin = path.join(__dirname, 'hellish');
 
 if (!fs.existsSync(bin)) {
   console.error('hellish: binary missing — reinstall with `npm rebuild ' +
-    'hellish-shell` or grab it from https://github.com/Univers42/42sh/releases');
+    'hellish-shell` or grab it from https://github.com/Univers42/hellish/releases');
   process.exit(1);
 }
 
