@@ -13,6 +13,23 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+# The bash in PATH is the SPECIFICATION for these cases, not an environment
+# detail, and it changes POSIX-visible behaviour between minor releases --
+# cd's status on too many operands is exit 1 up to bash 5.2 and exit 2 from
+# 5.3. Grading against whatever bash the host ships reports that drift as a
+# hellish bug. Prefer the pinned oracle `make oracle` builds, and say plainly
+# when we are grading against something else.
+ORACLE_HOME="${HELLISH_ORACLE:-$HOME/bash-5.3.9}"
+if [ -x "$ORACLE_HOME/bin/bash" ]; then
+	PATH="$ORACLE_HOME/bin:$PATH"
+	export PATH
+fi
+case "$(bash --version 2>/dev/null | head -1)" in
+	*"version 5.3"*) ;;
+	*) printf '\033[33m!  grading against bash %s, not the pinned 5.3.9 -- run `make oracle`\033[0m\n' \
+		"$(bash --version 2>/dev/null | head -1 | sed 's/.*version \([0-9.]*\).*/\1/')" >&2 ;;
+esac
+
 HELLISH="${HELLISH:-$HERE/../build/bin/hellish}"
 HELLISH="$(cd "$(dirname "$HELLISH")" 2>/dev/null && pwd)/$(basename "$HELLISH")"
 export HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1
@@ -99,6 +116,26 @@ if [ "$gi" = 1 ] && [ "$gn" = 0 ]; then
 else
   fail=$((fail+1)); printf '  \033[31mFAIL\033[0m -i=%s plain=%s (want 1/0)\n' "$gi" "$gn"
 fi
+
+# --version: exit 0, one greppable first line carrying the version, and it
+# must NOT read stdin or run a startup file (package managers and CI probe
+# with it). The version it prints has to be the one baked into version.h,
+# otherwise a release can ship a binary that misreports itself.
+printf '\n\033[1m== --version ==\033[0m\n'
+want=$(grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' "$HERE/../incs/version.h" | head -1 | tr -d '"')
+vout=$(printf 'echo SHOULD_NOT_RUN\n' | "$HELLISH" --version 2>&1); vrc=$?
+vfirst=$(printf '%s\n' "$vout" | head -1)
+for c in "exit status 0:$vrc:0" \
+         "reports version.h version:$(printf '%s' "$vfirst" | grep -c "$want"):1" \
+         "first line names the shell:$(printf '%s' "$vfirst" | grep -c '^hellish'):1" \
+         "does not execute stdin:$(printf '%s' "$vout" | grep -c SHOULD_NOT_RUN):0"; do
+  name=${c%%:*}; rest=${c#*:}; got=${rest%%:*}; exp=${rest#*:}
+  if [ "$got" = "$exp" ]; then
+    pass=$((pass+1)); printf '  \033[32mOK\033[0m   %s\n' "$name"
+  else
+    fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s (got %s want %s)\n' "$name" "$got" "$exp"
+  fi
+done
 
 printf '\n\033[1m== %d pass, %d fail (bash %s) ==\033[0m\n' \
   "$pass" "$fail" "$(bash --version 2>/dev/null | head -1)"

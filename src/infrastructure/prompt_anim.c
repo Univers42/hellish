@@ -51,8 +51,13 @@ t_panim	*anim_cells(void)
 	return (&a);
 }
 
-/* 0 = off/unset/unknown, 1 = spinner, 2 = pulse, 3 = ember. */
-static int	anim_style(t_shell *state)
+/* 0 = off/unset/unknown, 1 = spinner, 2 = pulse, 3 = ember.
+   UNSET means OFF: animation is opt-in. It used to be that only the \A
+   escape consulted this, while the built-in prompt animated no matter
+   what -- so a user who set HELLISH_ANIM=off, or never set it at all,
+   still got a prompt whose mascot changed on every render and no way to
+   stop it short of writing a whole custom PS1. */
+int	anim_style(t_shell *state)
 {
 	char	*s;
 

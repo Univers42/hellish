@@ -1,0 +1,38 @@
+name: Pinned bash oracle
+description: >
+  Build (or restore from cache) the bash 5.3.9 the golden suite is defined
+  against, and put it first on PATH. The suite diffs byte-for-byte against
+  `bash --posix`, and bash changes POSIX-visible behaviour between minor
+  releases -- cd's status on too many operands is exit 1 through 5.2 and
+  exit 2 from 5.3, printf's status on numeric overflow moved too. Grading
+  against whatever bash the runner image ships reports that drift as shell
+  bugs, so the oracle is pinned rather than inherited.
+runs:
+  using: composite
+  steps:
+    - name: Restore pinned bash 5.3.9
+      id: bashcache
+      uses: actions/cache@v4
+      with:
+        path: ~/bash-5.3.9
+        key: bash-5.3.9-${{ runner.os }}-${{ runner.arch }}
+    - name: Build pinned bash 5.3.9
+      if: steps.bashcache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -e
+        curl -sLO https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
+        tar xzf bash-5.3.tar.gz
+        cd bash-5.3
+        for i in $(seq 1 9); do
+          p=$(printf 'bash53-%03d' "$i")
+          curl -sL "https://ftp.gnu.org/gnu/bash/bash-5.3-patches/$p" | patch -p0
+        done
+        ./configure --prefix="$HOME/bash-5.3.9" > configure.log 2>&1
+        make -j"$(nproc)" > make.log 2>&1
+        make install > install.log 2>&1
+    - name: Use pinned bash as the golden oracle
+      shell: bash
+      run: |
+        echo "$HOME/bash-5.3.9/bin" >> "$GITHUB_PATH"
+        "$HOME/bash-5.3.9/bin/bash" --version | head -1
