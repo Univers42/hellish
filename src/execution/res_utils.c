@@ -43,8 +43,10 @@ void	exe_res_set_status(t_shell *st, t_execution_state *res)
 		return ;
 	ft_assert(res->pid != -1);
 	while (1)
-		if (pal_waitpid(st, res->pid, &status, 0) != -1)
+		if (pal_waitpid(st, res->pid, &status, WUNTRACED) != -1)
 			break ;
+	if (WIFSTOPPED(status))
+		return (fg_job_stopped(st, res, status));
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
 		res->ctrl_c = true;
 	res->status = WEXITSTATUS(status)

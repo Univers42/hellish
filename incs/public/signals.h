@@ -24,13 +24,43 @@
 # include <signal.h>
 # include <stdint.h>
 
-/* Restore both SIGINT and SIGQUIT to default kernel action.  Called in
-   the child just before execve so the new program starts with clean
-   signal dispositions (its own handlers, not ours). */
+/* Restore the job-control and interrupt signals to their default kernel
+   action.  Called in the child just before execve so the new program starts
+   with clean dispositions (its own handlers, not ours).
+
+   SIGTSTP/SIGTTIN/SIGTTOU matter here because the interactive shell now
+   ignores them (see interactive_job_signals): SIG_IGN survives execve, so
+   without this reset every command the shell launched would inherit "^Z
+   does nothing" and could never be suspended.  A background child re-ignores
+   them right after calling us -- see bg_child_body. */
 static inline void	default_signal_handlers(void)
 {
 	signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_DFL);
+	signal(SIGTSTP, SIG_DFL);
+	signal(SIGTTIN, SIG_DFL);
+	signal(SIGTTOU, SIG_DFL);
+}
+
+/* Job-control signals for the SHELL PROCESS, interactive only.  A shell must
+   not stop when the user hits ^Z: the terminal sends SIGTSTP to the whole
+   foreground process group, which contains the shell as well as the command
+   it is waiting on, so a shell at SIG_DFL suspends itself along with the job.
+   That is what hellish did -- ^Z froze the shell instead of the command, and
+   with no outer shell to return to the terminal simply went dead while the
+   kernel kept echoing whatever was typed (issue #25).
+
+   SIGTTIN/SIGTTOU likewise: the shell reads and writes the terminal from a
+   process group that is not always the foreground one, and stopping there
+   would wedge it in the same way.  Scripts and -c keep the defaults, so a
+   non-interactive shell stays killable exactly as before. */
+static inline void	interactive_job_signals(int interactive)
+{
+	if (!interactive)
+		return ;
+	signal(SIGTSTP, SIG_IGN);
+	signal(SIGTTIN, SIG_IGN);
+	signal(SIGTTOU, SIG_IGN);
 }
 
 /* Signal setup for the readline read loop: SIGINT propagates to children

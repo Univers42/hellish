@@ -103,15 +103,17 @@ typedef struct s_gitloc
 }	t_gitloc;
 
 /* State of the async dirty check: the cached answer for `root` (valid for
-   `ttl` seconds past `at`) plus the in-flight `git status` child, if any
-   (pid > 0, `fd` its non-blocking read end, forked at `spawned`). */
+   `ttl` seconds past `at`) plus the in-flight `git status` scan, if any
+   (`busy`, `fd` its non-blocking read end, started at `spawned`).  The
+   scanner is deliberately NOT our child -- see prompt_git3.c -- so there
+   is no pid here to wait for; `fd` closing is the only completion signal. */
 typedef struct s_dcache
 {
 	char	root[PATH_MAX];
 	time_t	at;
 	time_t	ttl;
 	time_t	spawned;
-	pid_t	pid;
+	int		busy;
 	int		fd;
 	int		dirty;
 	int		init;

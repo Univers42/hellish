@@ -55,7 +55,9 @@ static void	cli_early_exit(t_shell *state, char **argv, t_cli *cli)
 /* Zero-initialise every table that survives across commands: redirect list,
    process-sub tracking, shell-function list, job table, alias table, and the
    command-hash cache. All use a consistent "zero-length vec" starting point
-   so any early-exit path can safely call free/cleanup on them. */
+   so any early-exit path can safely call free/cleanup on them. The line
+   editor's default mode rides along: it is the same kind of "state that
+   outlives one command", and on() is at its 25-line ceiling. */
 static void	init_tables(t_shell *state)
 {
 	vec_init(&state->redirects);
@@ -67,6 +69,7 @@ static void	init_tables(t_shell *state)
 	job_table_init(&state->job_table);
 	alias_table_init(&state->aliases);
 	cmd_hash_init(&state->cmd_cache);
+	state->edit_mode = 1;
 }
 
 /* The name the shell reports in diagnostics: the basename of argv[0]
@@ -127,8 +130,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	env_set(&state->env, env_create(ft_strdup("0"),
 			ft_strdup(argv[0]), false));
 	init_tables(state);
-	state->edit_mode = 1;
 	cli_dispatch(state, &cli);
+	interactive_job_signals(state->metinp == INP_RL);
 	prng_initialize_state(&state->prng,
 		(uint32_t)(getpid() * 2654435761u ^ time(NULL)));
 	state->start_sec = (long long)time(NULL);
