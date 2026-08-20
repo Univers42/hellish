@@ -8,6 +8,35 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.0 — *the it-tells-you release*
+
+**New**
+
+- **A pending update stays visible in the prompt.** The "update available"
+  notice is said once and then never again — deliberately, because a banner
+  on every prompt is how people learn to stop reading banners. But miss it
+  once and nothing brought it back. Now a quiet badge persists for as long
+  as the update is actually waiting:
+
+  ```
+  ╭─ you in ~/project ⬆2.7.1 ──────────────────── 15:04 ─╮
+  ╰─❯
+  ```
+
+  Self-spacing (invisible when there is nothing to say), dropped on a narrow
+  row like the other badges, gone by itself once you update, and silenced by
+  `HELLISH_NO_UPDATE_CHECK`. Custom prompts get `\U`.
+
+**Fixed**
+
+- **Releases stop reporting themselves as failed.** Every tag showed
+  `release -> failure` while shipping perfectly good artifacts: the Docker
+  Hub push (a secondary channel — GHCR publishes the same image) was failing
+  on an expired token and taking the whole run's status with it. A
+  permanently red release run makes the next genuine failure invisible.
+
+---
+
 ## v2.6.0 — *the ask-it-what-it-is release*
 
 **New**
