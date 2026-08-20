@@ -208,6 +208,8 @@ typedef struct s_shell
 	t_string			cwd; /* current working directory string */
 	t_ast_node			tree; /* parsed AST for current input */
 	int					metinp; /* input method: INP_RL / FILE / ARG */
+	char				upd_tag[32]; /* pending update version, "" if none */
+	long				upd_seen; /* when upd_tag was last refreshed */
 	char				*dft_ctx; /* default shell name for error msgs */
 	char				*ctx; /* active error context (argv[0]) */
 	/* --- special variables (borrowed ptrs or small buffers, not freed) --- */

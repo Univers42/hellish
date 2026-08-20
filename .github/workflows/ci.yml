@@ -258,6 +258,8 @@ jobs:
         run: make bg-tty-test
       - name: prompt integrity (idle silence + no cut escapes)
         run: make prompt-integrity-test
+      - name: pending-update badge stays visible in the prompt
+        run: make update-badge-test
 
   # ── Update path and network-shaped redirections ──────────────────────────
   # Both bring up their own local peer; neither touches the network. The

@@ -15,6 +15,11 @@
 #   \S  " ✘N" after a failing command, empty after success
 #   \p  " took N.Ns" once a command ran 2s or longer
 #   \J  " ⚙N" while background jobs exist
+#   \U  " ⬆X.Y.Z" while a newer release is waiting, empty otherwise. The
+#       "update available" notice is said ONCE and then never again; this
+#       is the quiet marker that stays until you actually update. The
+#       built-in prompt shows it already -- add \U to a custom PS1 to keep
+#       it. Silenced by HELLISH_NO_UPDATE_CHECK like the rest.
 #   \A  an ANIMATED glyph (see HELLISH_ANIM below) — OPT-IN, off by
 #       default. (Shadows bash's \A 24h-clock escape; use \t for time.)
 # Live $VAR / ${VAR} expansion happens at every render.

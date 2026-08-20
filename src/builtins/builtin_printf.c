@@ -32,14 +32,14 @@ void	pf_err_num(t_pf *pf, const char *arg)
 }
 
 /* Render one snprintf-delegated conversion into `buf` (4096 bytes). The
-   conversion char is the spec's last byte. Integer values go through the
-   strict pf_num check; floats get the same trailing-junk treatment via
-   strtod — bash prints the converted prefix but still exits 1. */
+   conversion char is the spec's last byte. Signed integers go through
+   pf_num, UNSIGNED ones through pf_unum -- routing %u/%o/%x/%X through the
+   signed parser clamped every value above LLONG_MAX (issue #28). Floats
+   get the same trailing-junk treatment via strtod in pf_conv_float — bash
+   prints the converted prefix but still exits 1. */
 static void	pf_conv_str(t_pf *pf, char *fmt, const char *arg, char *buf)
 {
 	char	conv;
-	char	*end;
-	double	d;
 
 	conv = fmt[ft_strlen(fmt) - 1];
 	if (conv == 's')
@@ -48,19 +48,12 @@ static void	pf_conv_str(t_pf *pf, char *fmt, const char *arg, char *buf)
 			arg = "";
 		snprintf(buf, 4096, fmt, arg);
 	}
-	else if (ft_strchr("diouxX", conv))
+	else if (ft_strchr("ouxX", conv))
+		snprintf(buf, 4096, fmt, pf_unum(pf, arg));
+	else if (ft_strchr("di", conv))
 		snprintf(buf, 4096, fmt, pf_num(pf, arg));
 	else
-	{
-		d = 0.0;
-		errno = 0;
-		end = (char *)arg;
-		if (arg)
-			d = strtod(arg, &end);
-		if (arg && (end == arg || *end != '\0' || errno == ERANGE))
-			pf_err_num(pf, arg);
-		snprintf(buf, 4096, fmt, d);
-	}
+		pf_conv_float(pf, fmt, arg, buf);
 }
 
 /* %c prints the first byte of its argument — bash emits a real NUL byte
