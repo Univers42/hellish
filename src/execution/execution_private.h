@@ -97,6 +97,8 @@ size_t				find_next_separator(t_ast_node *node,
 t_execution_state	execute_range(t_shell *state, t_executable_node *exe,
 						size_t start, size_t end);
 void				async_child_signals(void);
+void				fg_job_stopped(t_shell *st, t_execution_state *res,
+						int status);
 t_execution_state	execute_range_background(t_shell *state,
 						t_executable_node *exe,
 						size_t start, size_t end);

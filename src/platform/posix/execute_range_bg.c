@@ -30,14 +30,28 @@ void	async_child_signals(void)
 
 /* Child body for a background command group (& operator).  We move into
    our own process group (setpgid) so job-control signals from the terminal
-   don't reach us.  stdin is redirected from /dev/null (POSIX: background
-   commands that try to read stdin get EOF, not a blocking read from the
-   tty).  POSIX also resets the parent's traps to default on entry to an
-   async child (reset_traps_child) -- a signal aimed at this child must not
-   run the parent's handler string, and the parent's EXIT trap is not ours
-   to fire.  The reset comes first so the explicit SIG_IGNs below still win:
-   SIGINT/SIGQUIT (POSIX) plus SIGTSTP/SIGTTIN/SIGTTOU are all ignored so the
-   user can keep typing without accidentally killing the background job. */
+   don't reach us.  POSIX also resets the parent's traps to default on entry
+   to an async child (reset_traps_child) -- a signal aimed at this child must
+   not run the parent's handler string, and the parent's EXIT trap is not
+   ours to fire.  The reset comes first so the explicit SIG_IGNs below still
+   win: SIGINT/SIGQUIT (POSIX) plus SIGTSTP/SIGTTIN/SIGTTOU are ignored so
+   the user can keep typing without accidentally killing the background job.
+
+   Both the /dev/null stdin and the SIGTSTP/SIGTTIN/SIGTTOU ignores below are
+   for NON-interactive shells only.  POSIX puts the redirection under "if job
+   control is disabled" (XCU 2.9.3.1) and both used to be done here
+   unconditionally.  Interactively that broke any background job that looks at
+   the terminal: `top &` called tcgetattr on stdin, got /dev/null, and died
+   with "top: failed tty get" (issue #25).  bash instead keeps the tty
+   attached, lets the job touch it from a background process group, and lets
+   the kernel stop it -- `[1]+ Stopped`.  Ignoring SIGTTIN/SIGTTOU would
+   defeat exactly that, since an ignored SIGTTOU makes the offending
+   tcsetattr succeed instead of stopping the job.
+
+   Scripts and -c keep the old behaviour on both counts, so a background
+   `read` there still sees EOF rather than blocking on a terminal the script
+   may not even have, and nothing there can be stopped by a tty it does not
+   own. */
 
 /* The one AST shape a background child may execve in place: the range is a
    single pipeline, that pipeline is a single command, and that command is a
@@ -80,7 +94,9 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 
 	setpgid(0, 0);
 	state->bg_exec_node = bg_lone_command(exe->node, start, end);
-	null_fd = open("/dev/null", O_RDONLY);
+	null_fd = -1;
+	if (state->metinp != INP_RL)
+		null_fd = open("/dev/null", O_RDONLY);
 	if (null_fd >= 0)
 	{
 		dup2(null_fd, STDIN_FILENO);
@@ -88,9 +104,12 @@ static void	bg_child_body(t_shell *state, t_executable_node *exe,
 	}
 	reset_traps_child(state);
 	async_child_signals();
-	signal(SIGTSTP, SIG_IGN);
-	signal(SIGTTIN, SIG_IGN);
-	signal(SIGTTOU, SIG_IGN);
+	if (state->metinp != INP_RL)
+	{
+		signal(SIGTSTP, SIG_IGN);
+		signal(SIGTTIN, SIG_IGN);
+		signal(SIGTTOU, SIG_IGN);
+	}
 	res = execute_range(state, exe, start, end);
 	exit(res.status);
 }
