@@ -578,6 +578,14 @@ anim-test: all
 git-prompt-test: all
 	@python3 $(TEST_DIR)/git_prompt_stall_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Background jobs and the controlling terminal. POSIX only redirects an
+# async list's stdin to /dev/null when job control is DISABLED; doing it
+# unconditionally broke `top &` interactively ("top: failed tty get")
+# instead of letting it stop on SIGTTOU the way bash does. Compares
+# against bash directly, so it also notices if bash changes its mind.
+bg-tty-test: all
+	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Release/update configuration, checked offline: the GitHub slug baked into
 # version.h must match the repository we actually push to, every
 # distribution channel (install.sh, npm, Dockerfile, docs) must agree with
@@ -673,6 +681,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
+	bg-tty-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
