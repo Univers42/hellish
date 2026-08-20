@@ -18,6 +18,23 @@
 set -u
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
+# The bash in PATH is the SPECIFICATION for these cases, not an environment
+# detail, and it changes POSIX-visible behaviour between minor releases --
+# cd's status on too many operands is exit 1 up to bash 5.2 and exit 2 from
+# 5.3. Grading against whatever bash the host ships reports that drift as a
+# hellish bug. Prefer the pinned oracle `make oracle` builds, and say plainly
+# when we are grading against something else.
+ORACLE_HOME="${HELLISH_ORACLE:-$HOME/bash-5.3.9}"
+if [ -x "$ORACLE_HOME/bin/bash" ]; then
+	PATH="$ORACLE_HOME/bin:$PATH"
+	export PATH
+fi
+case "$(bash --version 2>/dev/null | head -1)" in
+	*"version 5.3"*) ;;
+	*) printf '\033[33m!  grading against bash %s, not the pinned 5.3.9 -- run `make oracle`\033[0m\n' \
+		"$(bash --version 2>/dev/null | head -1 | sed 's/.*version \([0-9.]*\).*/\1/')" >&2 ;;
+esac
+
 HELLISH="${HELLISH:-$HERE/../build/bin/hellish}"
 # Absolutise: the cases cd into sandbox dirs before invoking hellish, so a
 # relative path (e.g. from `make`) would stop resolving.

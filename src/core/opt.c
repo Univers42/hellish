@@ -12,7 +12,8 @@
 
 #include "core.h"
 
-/* A "--name" startup option: --posix, --verbose, --help, --debug=<x>.  Any
+/* A "--name" startup option: --posix, --verbose, --help, --version,
+   --debug=<x>.  Any
    other "--" word is unrecognised and, like bash and dash, aborts startup
    with usage status 2 (recorded in cli->err). */
 void	cli_long_word(t_shell *state, t_cli *cli, const char *w)
@@ -31,6 +32,8 @@ void	cli_long_word(t_shell *state, t_cli *cli, const char *w)
 		state->option_flags |= OPT_FLAG_DEBUG_AST;
 	else if (!ft_strcmp(w, "--login"))
 		state->option_flags |= OPT_FLAG_LOGIN;
+	else if (!ft_strcmp(w, "--version"))
+		state->option_flags |= OPT_FLAG_VERSION;
 	else
 		cli->err = 2;
 }

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "update.h"
+#include "version.h"
 
 /* Read one dotted version component, advancing past a trailing '.'. */
 static int	next_num(const char **s)
@@ -49,4 +50,20 @@ int	hellish_version_cmp(const char *a, const char *b)
 			return (x - y);
 	}
 	return (0);
+}
+
+/* `hellish --version`, shaped like `bash --version`: a first line a human
+   or a script can grep, then where the build came from. The repo slug and
+   the asset name are printed too because they are what the updater will
+   actually contact -- a build whose slug points somewhere unexpected is
+   worth seeing before it downloads anything.
+
+   Exits 0 without running any startup file or reading stdin, so it stays
+   usable from a package manager, a Dockerfile or a CI probe. */
+void	print_version(void)
+{
+	ft_printf("hellish, version %s (%s)\n", HELLISH_VERSION, HELLISH_ASSET);
+	ft_printf("Release channel: https://github.com/%s\n", HELLISH_REPO);
+	ft_printf("An almost-POSIX shell, diffed byte-for-byte "
+		"against bash --posix.\n");
 }
