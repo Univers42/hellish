@@ -50,6 +50,8 @@ make cli-opts-test  # shell's own argv parsing (-e, -o name, +c, --, $-) vs bash
 make net-redir-test # /dev/tcp and /dev/udp redirections vs bash --posix; brings up its
                     #   own TCP+UDP peer, so it needs python3 but no network access
 make login-test     # login shell sources /etc/profile then ~/.profile; non-login sources neither
+make help-test      # the `help` builtin; asserts every builtin in the dispatch
+                    #   table has a help entry, so the docs cannot rot by omission
 make update-test    # the whole update path against a LOCAL fake release server
                     #   (discovery, download, sha256, atomic replace, every rejection
                     #   path) plus a pty gate for the lazy header and for a discovered
@@ -141,7 +143,7 @@ Every allocation goes through the `xmalloc` / `xcalloc` / `xfree` macro family (
 
 ### Builtins
 
-Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wiring a new builtin: (1) implement `int builtin_x(t_shell *, t_vec argv)`, (2) prototype it in `incs/ft_builtins.h`, (3) add one `hash_set` line in `fill_builtin_hash1/2`. A builtin runs in-process only when it may mutate the parent shell (`modify_parent_ctx`); inside a pipeline it runs in the forked child. Lookup precedence: assignment-only → function → builtin → external.
+Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wiring a new builtin: (1) implement `int builtin_x(t_shell *, t_vec argv)`, (2) prototype it in `incs/ft_builtins.h`, (3) add one `hash_set` line in `fill_builtin_hash1/2`, (4) add an entry to `src/builtins/help_data*.c` — `make help-test` fails if you don't. A builtin runs in-process only when it may mutate the parent shell (`modify_parent_ctx`); inside a pipeline it runs in the forked child. Lookup precedence: assignment-only → function → builtin → external.
 
 ### Cleanup discipline (ASan is a gate)
 
