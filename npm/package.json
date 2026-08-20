@@ -1,6 +1,6 @@
 {
   "name": "hellish-shell",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "hellish — a fast, POSIX-compliant shell, with horns",
   "bin": {
     "hellish": "bin/hellish.js"
