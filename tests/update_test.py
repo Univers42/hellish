@@ -116,6 +116,19 @@ def version_of(binary, env):
     return out.strip().split()[-1]
 
 
+def flag_version(binary, env):
+    """The version reported by the top-level `--version` flag.
+
+    Deliberately a different code path from version_of(): that one asks the
+    `update` builtin, this one is the flag a user, a package manager or a
+    Dockerfile actually types. They read the same constant, so they must
+    never disagree -- and if they ever do, the one people trust is this one.
+    """
+    _, out = run(binary, env, ["--version"])
+    first = out.strip().splitlines()[0] if out.strip() else ""
+    return first.rstrip(")").split()[-2] if "(" in first else ""
+
+
 def main():
     home = tempfile.mkdtemp(prefix="hellish_upd_")
     binary = installed_copy(home)
@@ -157,6 +170,13 @@ def main():
           "got %s want %s" % (version_of(binary, pub.env(home)), newer))
     check("no temp file left behind",
           not os.path.exists(binary + ".hellish-update"))
+    # The flag a human types must agree with what the updater believes it
+    # installed. A binary that misreports its own version turns every later
+    # "did the update work?" into guesswork.
+    check("--version agrees with the updater after installing",
+          flag_version(binary, pub.env(home)) == newer,
+          "--version says %r, updater says %r"
+          % (flag_version(binary, pub.env(home)), newer))
     # a session that just installed the update must stop announcing it:
     # the running process is still the old build, and re-offering an
     # update the user has already performed reads as if it had failed
