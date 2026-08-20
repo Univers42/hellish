@@ -586,6 +586,13 @@ git-prompt-test: all
 update-config-test:
 	@bash $(TEST_DIR)/update_config_check.sh
 
+# The `help` builtin. The load-bearing check is that EVERY builtin in the
+# dispatch table has a help entry -- documentation rots by omission, and
+# deriving the expected set from hash_builtins_dispatch.c makes that
+# impossible to do quietly.
+help-test: all
+	@bash $(TEST_DIR)/help_test.sh $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # The update path end to end against a LOCAL fake release server: discovery,
 # download, sha256, atomic replace, and every rejection path (bad checksum,
 # truncated asset, unreachable source). Nothing is installed system-wide and
@@ -666,7 +673,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	update-config-test update-test \
+	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
 	user-install user-uninstall

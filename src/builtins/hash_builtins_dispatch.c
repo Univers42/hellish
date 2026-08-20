@@ -78,6 +78,7 @@ static void	fill_builtin_hash2(t_hash *h)
 	hash_set(h, "printf", (void *)builtin_printf);
 	hash_set(h, "ulimit", (void *)builtin_ulimit);
 	hash_set(h, "update", (void *)builtin_update);
+	hash_set(h, "help", (void *)builtin_help);
 }
 
 /* Registration overflow: fill_builtin_hash2 hit the 25-line ceiling, so
