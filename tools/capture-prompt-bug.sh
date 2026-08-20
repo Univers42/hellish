@@ -41,5 +41,10 @@ script -q -f -c "$bin" "$out.raw"
 } > "$out.analysis" 2>&1
 
 echo
-echo "analysis : $out.analysis"
+echo "analysis : $out.analysis      <- send this one"
 echo "raw      : $out.raw"
+echo
+echo "NOTE: do NOT 'cat' the .raw file. It contains every escape byte the"
+echo "      terminal received, including all the recorded prompts, so cat"
+echo "      replays the whole session and looks like fresh corruption."
+echo "      Read it with:  less -R $out.raw   (or just send it)"

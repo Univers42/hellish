@@ -15,15 +15,25 @@
 #   \S  " ✘N" after a failing command, empty after success
 #   \p  " took N.Ns" once a command ran 2s or longer
 #   \J  " ⚙N" while background jobs exist
-#   \A  an ANIMATED glyph (see HELLISH_ANIM below) — live while the
-#       shell waits at the prompt, repainted in place ~10x/second.
-#       (Shadows bash's \A 24h-clock escape; use \t for time instead.)
+#   \A  an ANIMATED glyph (see HELLISH_ANIM below) — OPT-IN, off by
+#       default. (Shadows bash's \A 24h-clock escape; use \t for time.)
 # Live $VAR / ${VAR} expansion happens at every render.
 
-# Prompt animation style for \A:
+# ── ANIMATION: OFF BY DEFAULT, AND THAT IS DELIBERATE ──────────────────
+# A live style makes \A repaint the prompt rows in place ~10x/second
+# while the shell sits idle. That repaint is the one part of the prompt
+# that writes to your terminal when you are NOT typing, and it has been
+# reported to corrupt the prompt on some terminals — an escape sequence
+# arriving without its introducer prints its body as text
+# (`8;2;90;96;106m`), or a multibyte glyph gets cut and shows as U+FFFD.
+# It is not reproducible on demand, so it is shipped OFF rather than
+# shipped broken. Everything else in this file works exactly the same
+# with animation off; \A simply renders nothing.
+#
+# Styles, if you want to opt in anyway:
 #   spinner  braille spinner in blue        pulse  a ✦ breathing magenta
-#   ember    a ▲ flickering through fire    off    freeze/hide \A
-HELLISH_ANIM=pulse
+#   ember    a ▲ flickering through fire    off    hide \A (default)
+HELLISH_ANIM=off
 
 # Theme: "pure" (default) — a blank line for breathing room, then one
 # calm info line (bold blue path, grey branch, red failure badge, amber

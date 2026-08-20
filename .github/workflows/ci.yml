@@ -174,29 +174,7 @@ jobs:
           submodules: recursive
       - name: Install deps
         run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev
-      - name: Restore pinned bash 5.3.9
-        id: bashcache
-        uses: actions/cache@v4
-        with:
-          path: ~/bash-5.3.9
-          key: bash-5.3.9-${{ runner.os }}-${{ runner.arch }}
-      - name: Build pinned bash 5.3.9
-        if: steps.bashcache.outputs.cache-hit != 'true'
-        run: |
-          curl -sLO https://ftp.gnu.org/gnu/bash/bash-5.3.tar.gz
-          tar xzf bash-5.3.tar.gz
-          cd bash-5.3
-          for i in $(seq 1 9); do
-            p=$(printf 'bash53-%03d' "$i")
-            curl -sL "https://ftp.gnu.org/gnu/bash/bash-5.3-patches/$p" | patch -p0
-          done
-          ./configure --prefix="$HOME/bash-5.3.9" > configure.log 2>&1
-          make -j"$(nproc)" > make.log 2>&1
-          make install > install.log 2>&1
-      - name: Use pinned bash as the golden oracle
-        run: |
-          echo "$HOME/bash-5.3.9/bin" >> "$GITHUB_PATH"
-          "$HOME/bash-5.3.9/bin/bash" --version | head -1
+      - uses: ./.github/actions/oracle
       - name: Build debug (SAFE=1, ASan)
         run: |
           if ! make re > build.log 2>&1; then
@@ -218,3 +196,140 @@ jobs:
           if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
+
+  # ── Everything the golden suite cannot express ───────────────────────────
+  # The golden suite diffs stdout+status of one-line cases. A lot of this
+  # shell's behaviour is not shaped like that: startup argv parsing, the
+  # login-shell file order, the help table, the release/update config. These
+  # ran only on developer machines before, which is exactly how they rot.
+  gates:
+    name: Gates · cli + login + help + cd + update-config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev
+      - uses: ./.github/actions/oracle
+      - name: Build
+        run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+      - name: Startup argv parsing (-e, -o name, +c, --, $-, --version)
+        run: make cli-opts-test
+      - name: Login shell startup file order
+        run: make login-test
+      - name: help builtin covers every dispatched builtin
+        run: make help-test
+      - name: cd POSIX-mode operand handling
+        run: make cd-posix-test
+      - name: Release/update configuration agrees across channels
+        run: make update-config-test
+
+  # ── pty-driven behaviour ─────────────────────────────────────────────────
+  # Interactive behaviour only exists in front of a terminal: readline, the
+  # prompt, history joining, job control's use of the tty. Each of these
+  # drives a real pty. They are the gates most likely to catch a regression
+  # a user would actually notice, and the least likely to be run by hand.
+  interactive:
+    name: Interactive · pty gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3
+      - uses: ./.github/actions/oracle
+      - name: Build
+        run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+      - name: readline entry points (completion, history, vi/emacs)
+        run: make readline-test
+      - name: cmdhist multiline history joining
+        run: make hist-test
+      - name: prompt reaches the tty in one write
+        run: make prompt-atomic-test
+      - name: prompt animation never clobbers pasted input
+        run: make anim-test
+      - name: git dirty check never blocks a render, and leaves no zombie
+        run: make git-prompt-test
+      - name: non-ASCII prompt and wrapping input
+        run: make widechar-test
+      - name: background jobs and the controlling terminal
+        run: make bg-tty-test
+      - name: prompt integrity (idle silence + no cut escapes)
+        run: make prompt-integrity-test
+
+  # ── Update path and network-shaped redirections ──────────────────────────
+  # Both bring up their own local peer; neither touches the network. The
+  # update suite is the one that matters most to users -- it is the code
+  # that replaces the binary on their machine.
+  update:
+    name: Update path + /dev/tcp
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3
+      - uses: ./.github/actions/oracle
+      - name: Build
+        run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+      - name: Update path against a local fake release server
+        run: make update-test
+      - name: /dev/tcp and /dev/udp redirections
+        run: make net-redir-test
+
+  # ── Whole-program corpus and allocator parity ────────────────────────────
+  # tests/hard/ holds programs too large for a one-line golden case, and has
+  # its own runner that `make test` does not invoke. verify_alloc proves the
+  # two compile-time heaps produce identical output and leak nothing --
+  # ft_malloc is invisible to ASan, so this is the only oracle it has.
+  corpus:
+    name: Hard corpus + allocator parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3
+      - uses: ./.github/actions/oracle
+      - name: Build
+        run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+      - name: Whole-program corpus vs bash --posix
+        run: bash tests/hard/run.sh
+      - name: Both heaps agree, and neither leaks
+        run: cd tests && ./verify_alloc.sh
+
+  # ── Benchmarks: measured, reported, never a gate ─────────────────────────
+  # Shared CI runners are noisy neighbours; timings there cannot decide
+  # pass/fail without producing flaky red builds. So this job measures and
+  # publishes the numbers as an artifact for tracking, and is allowed to
+  # fail without blocking the merge. Trend, not threshold.
+  bench:
+    name: Benchmarks (informational)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3 hyperfine || true
+      - uses: ./.github/actions/oracle
+      - name: Speed vs bash --posix
+        run: make bench ROUNDS=3 2>&1 | tee bench-out.txt | tail -40
+      - name: Upload benchmark output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-results
+          path: |
+            bench-out.txt
+            bench/results.md
+            bench/conformance.md
+          if-no-files-found: ignore
+          retention-days: 30

@@ -107,6 +107,7 @@ int			update_selfupdate(t_origin o, const char *tag);
 /* Compare two dotted versions ("2.1.0", optionally "v"-prefixed).
    Returns >0 if a is newer than b, 0 if equal, <0 if older. */
 int			hellish_version_cmp(const char *a, const char *b);
+void		print_version(void);
 
 /* Read the latest release tag cached by the last background check into `out`
    (NUL-terminated, no leading 'v'). Returns 1 on success, 0 if no cache. */

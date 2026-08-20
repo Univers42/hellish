@@ -122,6 +122,7 @@ typedef struct s_dcache
 
 void		vec_push_ansi(t_string *v, const char *seq);
 void		tty_write_all(int fd, const char *buf, size_t len);
+int			anim_style(t_shell *state);
 int			get_cols(void);
 int			measure_width(const char *str);
 char		*shorten_path(const char *path, int maxlen);
