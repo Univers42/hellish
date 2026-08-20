@@ -1,0 +1,32 @@
+printf "%ld\n" 9999999999
+printf "%lld\n" -9999999999
+printf "%zu\n" 123
+printf "%zd\n" -123
+printf "%hd\n" 70000
+printf "%hhd\n" 300
+printf "%jd\n" 42
+printf "%td\n" 42
+printf "%Lf\n" 1.5
+printf "%lf\n" 2.25
+printf "%lx\n" 4886718345
+printf "%lX\n" 4886718345
+printf "%lo\n" 8
+printf "%li\n" 77
+printf "%ls\n" abc
+printf "%lc\n" a
+printf "%5ld|\n" 42
+printf "%-8ld|\n" 42
+printf "%08ld\n" 42
+printf "%+ld\n" 42
+printf "%.3ld\n" 4
+printf "%ld %zu %hd\n" 1 2 3
+printf "a%ldb%zuc\n" 1 2
+printf "%ld\n" 1 2 3
+printf "%s=%ld\n" x 5
+printf "%ld%%\n" 7
+echo "st=$?"
+printf "%ld\n" 9999999999; echo "st=$?"
+printf "%zu-%zu\n" 10 20; echo "st=$?"
+printf "%hhu\n" 5
+printf "%llx\n" 255
+printf "%lu\n" 4294967296
