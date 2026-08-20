@@ -20,6 +20,10 @@ Checks, in a real pty, default two-row prompt (PS1 unset):
   4. After the TTL expires there, the refresh keeps the prompt fast
      and keeps showing the last known star while it re-checks.
   5. A clean repo shows its branch and no star.
+  6. The scan leaves no zombie behind while a foreground command runs
+     (issue #24): the checker is double-forked onto init, so a `git
+     <defunct>` can never sit in ps for the lifetime of whatever the
+     user is running -- a nested shell used to park one there.
 
 Usage: python3 git_prompt_stall_test.py /path/to/hellish
 """
@@ -108,6 +112,22 @@ class Session:
         os.waitpid(self.pid, 0)
 
 
+def zombie_children(pid):
+    """PIDs of processes that are zombies AND direct children of `pid`."""
+    out = []
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            st = open("/proc/%s/stat" % d).read()
+            f = st[st.rindex(")") + 2:].split()
+            if f[0] == "Z" and int(f[1]) == pid:
+                out.append(d)
+        except (OSError, ValueError, IndexError):
+            pass
+    return out
+
+
 def make_repo(base, name, dirty):
     d = os.path.join(base, name)
     os.makedirs(d)
@@ -183,6 +203,28 @@ def main():
     win = s.raw[n0:]
     check("clean repo shows branch", b"on\x1b[0m" in win and b"main" in win)
     check("clean repo shows no star", b"*" not in win)
+    s.close()
+
+    # 6: no zombie while a foreground command runs. The slow shim keeps the
+    # scan alive past the prompt, so it finishes *during* `sleep`, which is
+    # exactly the window where the old code had nobody to reap it: the only
+    # harvest point was the next render, and no render happens while a
+    # foreground command owns the terminal.
+    s = Session(base, work, shim + ":" + os.environ["PATH"])
+    s.prompt_latency(b"")
+    s.drain(0.4)
+    s.prompt_latency(("cd %s\n" % slow).encode())
+    s.drain(0.3)
+    os.write(s.fd, b"sleep 5\n")
+    s.drain(0.3)
+    seen = []
+    for _ in range(8):
+        time.sleep(0.5)
+        seen = zombie_children(s.pid)
+        if seen:
+            break
+    check("no zombie git while a foreground command runs",
+          not seen, "zombie pids=%s" % seen)
     s.close()
 
     shutil.rmtree(base, ignore_errors=True)

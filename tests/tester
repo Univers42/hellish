@@ -33,6 +33,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "fatal_status"
         "job_label"
         "help_builtin"
+        "printf_length"
     )
 fi
 
