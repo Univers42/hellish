@@ -127,8 +127,10 @@ static void	maybe_bench(void)
 /* Build the primary prompt for an interactive read. A user-set PS1 (from
    ~/.hellishrc or the environment) takes over completely, rendered with
    the bash escape set — the built-in two-row prompt is simply the theme
-   you get when PS1 is unset. Otherwise: the frame counter is advanced so
-   each readline call shows the next blink frame, and the status is
+   you get when PS1 is unset. Otherwise: the frame counter advances only
+   when HELLISH_ANIM selects a live style, so the default prompt is
+   perfectly still and each readline call redraws the SAME glyph; the
+   status is
    snapshotted before rendering so the arrow colour reflects the command
    that just finished, not a half-updated value. */
 t_string	prompt_normal(t_shell *state)
@@ -146,7 +148,8 @@ t_string	prompt_normal(t_shell *state)
 	vec_init(&ret);
 	ret.elem_size = 1;
 	status = state->last_cmd_st_exe.status;
-	(*anim_frame())++;
+	if (anim_style(state) != 0)
+		(*anim_frame())++;
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
