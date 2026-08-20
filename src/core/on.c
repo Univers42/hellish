@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "core.h"
+#include "update.h"
 #include "shell.h"
 #include "helpers.h"
 #include "env.h"
@@ -32,6 +33,12 @@ static char	*shell_basename(char *arg0);
    tolerates. */
 static void	cli_early_exit(t_shell *state, char **argv, t_cli *cli)
 {
+	if (state->option_flags & OPT_FLAG_VERSION)
+	{
+		print_version();
+		free_all_state(state);
+		exit(0);
+	}
 	if (!(state->option_flags & OPT_FLAG_HELP))
 	{
 		if (!cli->err)
@@ -42,6 +49,7 @@ static void	cli_early_exit(t_shell *state, char **argv, t_cli *cli)
 	}
 	ft_printf("Usage: %s [options] [file]\n", argv[0]);
 	ft_printf("  --help           Show this help\n");
+	ft_printf("  --version        Print the version and exit\n");
 	ft_printf("  -c <script>      Execute script string\n");
 	ft_printf("  --verbose        Verbose mode\n");
 	ft_printf("  --posix          POSIX mode (disable non-POSIX extensions)\n");
