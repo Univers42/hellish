@@ -35,6 +35,15 @@ SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else "../build/bin/hellish")
 FAILS = []
 
+ENV = {
+    "HOME": os.environ.get("HOME", "/tmp"),
+    "PATH": os.environ["PATH"],
+    "TERM": "xterm-256color", "LANG": "C.UTF-8",
+    "COLORTERM": "truecolor",
+    "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
+    "ASAN_OPTIONS": "detect_leaks=0",
+}
+
 # An SGR body that reached the screen without its ESC[ introducer: digits and
 # semicolons ending in 'm', sitting next to prompt text rather than after ESC.
 ORPHAN_SGR = re.compile(r'(?<!\x1b\[)(?<![\x1b\[0-9;])\b\d{1,3}(?:;\d{1,3}){2,}m')
@@ -48,14 +57,7 @@ def check(name, ok, detail=""):
 
 def run(cols=200, rounds=14):
     """Drive the shell with a laggy reader so the tty output queue fills."""
-    env = {
-        "HOME": os.environ.get("HOME", "/tmp"),
-        "PATH": os.environ["PATH"],
-        "TERM": "xterm-256color", "LANG": "C.UTF-8",
-        "COLORTERM": "truecolor",
-        "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
-        "ASAN_OPTIONS": "detect_leaks=0",
-    }
+    env = dict(ENV)
     pid, fd = pty.fork()
     if pid == 0:
         os.environ.clear()
@@ -99,7 +101,57 @@ def run(cols=200, rounds=14):
     return raw
 
 
+def idle_bytes(anim, seconds=2.0):
+    """Bytes the shell writes to the terminal while sitting idle."""
+    env = dict(ENV)
+    if anim is not None:
+        env["HELLISH_ANIM"] = anim
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.environ.clear()
+        os.environ.update(env)
+        os.execvp(SHELL, [SHELL])
+        os._exit(127)
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 120, 0, 0))
+    time.sleep(1.0)
+    end = time.time() + 0.8          # drain the first prompt
+    while time.time() < end:
+        r, _, _ = select.select([fd], [], [], 0.05)
+        if r:
+            try:
+                os.read(fd, 65536)
+            except OSError:
+                break
+    n = 0
+    end = time.time() + seconds      # now measure: nobody is typing
+    while time.time() < end:
+        r, _, _ = select.select([fd], [], [], 0.05)
+        if r:
+            try:
+                n += len(os.read(fd, 65536))
+            except OSError:
+                break
+    try:
+        os.kill(pid, 9)
+        os.waitpid(pid, 0)
+    except OSError:
+        pass
+    return n
+
+
 def main():
+    # An idle prompt must be silent by default. The animation repaint is the
+    # only thing that writes to the terminal when the user is not typing, and
+    # it is opt-in precisely because that traffic is what corrupts prompts on
+    # some terminals. If someone makes a live style the default again, this
+    # is the check that catches it.
+    n = idle_bytes(None)
+    check("idle prompt writes nothing by default", n == 0,
+          "wrote %d bytes while idle" % n)
+    n = idle_bytes("off")
+    check("HELLISH_ANIM=off keeps the prompt silent", n == 0,
+          "wrote %d bytes while idle" % n)
+
     raw = run()
     text = raw.decode("utf-8", errors="replace")
 
