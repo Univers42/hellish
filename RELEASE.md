@@ -8,6 +8,24 @@ shows you how to drive the shell.
 
 ---
 
+## v2.5.0 — *the help release*
+
+**New**
+
+- **`help`.** `help` lists what the shell can do, grouped by what you want
+  to do with it rather than alphabetically; `help NAME` explains one thing;
+  `help -s NAME` prints just the form.
+- **Syntax topics.** `help for`, `help case`, `help function`,
+  `help redirection`, `help pipeline`, `help $((` — because knowing that
+  `for` is a keyword does not tell you how to write one.
+
+Its exit status matches bash exactly (0 when at least one topic matched),
+and a test derives the expected topic list from the builtin dispatch table,
+so a builtin added without a help entry fails the build rather than
+quietly going undocumented.
+
+---
+
 ## v2.4.1
 
 **Fixed**
