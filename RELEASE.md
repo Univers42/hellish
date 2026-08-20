@@ -8,6 +8,26 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.1
+
+**Fixed**
+
+- **`printf` renders the full unsigned range.** `%u`, `%o`, `%x` and `%X`
+  went through the signed parser, so every value above `LLONG_MAX`
+  saturated before the conversion ever ran:
+
+  ```
+  printf "%u\n" 18446744073709551615
+    bash     18446744073709551615
+    hellish   9223372036854775807     (before)
+  ```
+
+  The printed spec was never at fault — the value handed to it had already
+  been clamped. `printf %u -1` gives `18446744073709551615` like bash, and
+  genuine overflow still exits 1 while emitting the clamped prefix.
+
+---
+
 ## v2.7.0 — *the it-tells-you release*
 
 **New**
