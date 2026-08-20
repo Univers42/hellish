@@ -8,6 +8,19 @@ shows you how to drive the shell.
 
 ---
 
+## v2.4.1
+
+**Fixed**
+
+- The session that had just installed an update immediately re-announced
+  it. True — replacing the file cannot change the process already
+  executing, so the running shell is still the old build — but it read as
+  if the install had failed. Installing now marks the version as
+  announced, and the shell just waits to be restarted, as it already
+  said it would.
+
+---
+
 ## v2.4.0 — *the update release*
 
 **New**
