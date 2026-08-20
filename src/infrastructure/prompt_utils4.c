@@ -54,7 +54,8 @@ static void	fmt_duration(long long ms, char *buf, size_t n)
 		snprintf(buf, n, "%lldh%02lldm", s / 3600, (s % 3600) / 60);
 }
 
-/* Optional top-row segments after the venv: a background-jobs badge
+/* Optional top-row segments after the venv: a pending-update badge (⬆X.Y.Z)
+   for as long as a newer release is waiting, a background-jobs badge
    (⚙N) whenever jobs exist, and "took N.Ns" once the last foreground
    command crossed 2 seconds — long enough to skip the noise of instant
    commands, short enough to catch anything you actually waited on.
@@ -66,6 +67,7 @@ void	render_extras(t_string *ret, t_prompt *p)
 {
 	char	buf[24];
 
+	render_update_badge(ret, p);
 	if (*anim_jobs() > 0 && p->cols - p->vis_w > 22)
 	{
 		snprintf(buf, sizeof(buf), "\xe2\x9a\x99%d", *anim_jobs());
