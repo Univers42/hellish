@@ -594,6 +594,12 @@ bg-tty-test: all
 prompt-integrity-test: all
 	@python3 $(TEST_DIR)/prompt_shortwrite_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The pending-update badge. The loud notice is one-shot by design; this is
+# the quiet marker that persists while an update is actually waiting, so a
+# user who missed the notice still finds out. Also covers the \U escape.
+update-badge-test: all
+	@python3 $(TEST_DIR)/update_badge_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Release/update configuration, checked offline: the GitHub slug baked into
 # version.h must match the repository we actually push to, every
 # distribution channel (install.sh, npm, Dockerfile, docs) must agree with
@@ -689,7 +695,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	bg-tty-test prompt-integrity-test \
+	bg-tty-test prompt-integrity-test update-badge-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
