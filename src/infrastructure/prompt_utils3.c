@@ -120,3 +120,34 @@ void	prompt_arrow_row(t_string *ret, t_prompt *p)
 	vec_push_str(ret, G_ARR " ");
 	vec_push_ansi(ret, C_RST);
 }
+
+/* Write the WHOLE buffer, however many syscalls that takes.
+   write(2) is allowed to transfer fewer bytes than asked and report that
+   count as success -- on a terminal it happens whenever the line
+   discipline's output queue is full and a signal (SIGCHLD from a finished
+   background job, SIGWINCH from a resize) interrupts the blocked call.
+   Every prompt writer here composes the whole frame in memory and pushed
+   it out with a single unchecked write(), so those runt writes silently
+   dropped the tail of the frame. What reached the screen was a prompt cut
+   at an arbitrary byte -- mid escape sequence, so the rest of it printed
+   as literal text (`8;2;90;96;106m`), or mid UTF-8 character, so the glyph
+   came out as U+FFFD. Rare, load-dependent, and maddening to chase, which
+   is exactly why it has to be handled here rather than at each call site.
+   EINTR before any progress is a retry, not a failure. A genuine error
+   (the tty went away) just stops: there is nowhere to report it from a
+   redraw path. */
+void	tty_write_all(int fd, const char *buf, size_t len)
+{
+	ssize_t	n;
+	size_t	off;
+
+	off = 0;
+	while (off < len)
+	{
+		n = write(fd, buf + off, len - off);
+		if (n > 0)
+			off += (size_t)n;
+		else if (!(n < 0 && errno == EINTR))
+			return ;
+	}
+}
