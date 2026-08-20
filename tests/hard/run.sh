@@ -31,6 +31,15 @@ pass=0; fail=0
 for s in $scripts; do
   name=$(basename "$s")
   ho=$("$H" "$s" 2>&1); hc=$?
+  # rc 126 immediately after a build is ETXTBSY ("text file busy"): some
+  # linkers briefly keep the output open, so exec'ing it races. Retry
+  # before calling it a failure -- it cost three phantom FAILs once.
+  tries=0
+  while [ "$hc" -eq 126 ] && [ $tries -lt 5 ]; do
+    sleep 0.2
+    ho=$("$H" "$s" 2>&1); hc=$?
+    tries=$((tries + 1))
+  done
   bo=$(bash --posix "$s" 2>&1); bc=$?
   if [ "$ho" = "$bo" ] && [ "$hc" = "$bc" ]; then
     # timing best-of-3
@@ -50,3 +59,8 @@ for s in $scripts; do
   fi
 done
 printf -- "---- %d PASS / %d FAIL ----\n" "$pass" "$fail"
+
+# Exit non-zero when anything failed. This runner used to fall off the end
+# and exit 0 no matter what, so any caller that trusted its status -- a CI
+# job, a pre-PR script -- saw green while the summary above said FAIL.
+[ "$fail" -eq 0 ]
