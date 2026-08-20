@@ -28,6 +28,7 @@
 # include <stdlib.h>
 # include <string.h>
 # include <time.h>
+# include <errno.h>
 # include <wchar.h>
 # include <wctype.h>
 
@@ -120,6 +121,7 @@ typedef struct s_dcache
 }	t_dcache;
 
 void		vec_push_ansi(t_string *v, const char *seq);
+void		tty_write_all(int fd, const char *buf, size_t len);
 int			get_cols(void);
 int			measure_width(const char *str);
 char		*shorten_path(const char *path, int maxlen);
