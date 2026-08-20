@@ -586,6 +586,14 @@ git-prompt-test: all
 bg-tty-test: all
 	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Canary (NOT a regression gate for a specific fix): drives the shell the way
+# the field reports of intermittent prompt corruption describe, and asserts no
+# escape sequence reached the screen without its ESC[ and no UTF-8 character
+# was cut. It has never reproduced that corruption -- read its docstring
+# before trusting a pass.
+prompt-integrity-test: all
+	@python3 $(TEST_DIR)/prompt_shortwrite_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Release/update configuration, checked offline: the GitHub slug baked into
 # version.h must match the repository we actually push to, every
 # distribution channel (install.sh, npm, Dockerfile, docs) must agree with
@@ -681,7 +689,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	bg-tty-test \
+	bg-tty-test prompt-integrity-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \

@@ -47,8 +47,7 @@ static char	*split_prompt(char *prompt)
 			vec_push_char(&f, prompt[i]);
 		i++;
 	}
-	if (write(fileno(rl_outstream), f.ctx, f.len) < 0)
-		f.len = 0;
+	tty_write_all(fileno(rl_outstream), f.ctx, f.len);
 	xfree(f.ctx);
 	return (nl + 1);
 }
