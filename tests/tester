@@ -32,6 +32,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "readonly_status"
         "fatal_status"
         "job_label"
+        "help_builtin"
     )
 fi
 
