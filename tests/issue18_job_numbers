@@ -12,7 +12,7 @@ sleep 0.05 | cat & jobs; wait; sleep 0.05 | cat & jobs; wait
 sleep 0.05 & p=$!; wait; sleep 0.05 & jobs; wait; echo ok
 sleep 0.3 & jobs %1; wait
 sleep 0.05 & wait; sleep 0.3 & jobs %1; wait
-true & wait; sleep 0.3 & jobs; wait
+sleep 0.05 & wait; sleep 0.3 & jobs; wait; echo slot-reused
 sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.05 & wait; sleep 0.3 & jobs; wait
 sleep 0.05 & sleep 0.5 & wait %1; jobs; wait
 sleep 0.3 & sleep 0.05 & sleep 0.5 & wait %1; jobs; wait
