@@ -32,7 +32,16 @@ static void	pf_bad_fmt(t_pf *pf, char c)
 /* Single pass through the format string: handle backslash escapes (passed
    to pf_escape with no stop channel — bash honours \c only inside %b
    arguments), % conversions (parse spec, then pf_conv), and literal
-   characters. pf->stop aborts both this pass and the outer loop in
+   characters.
+
+   Length modifiers (l, ll, h, hh, j, z, t, L) are skipped and discarded
+   between the spec and the conversion byte. bash accepts them and ignores
+   them -- it renders every integer through intmax_t, so `printf %hd 70000`
+   prints 70000 there rather than truncating to a short. We used to stop at
+   the modifier instead and report "`%l': invalid format character", which
+   broke every C-habit format string a user brought with them.
+
+   pf->stop aborts both this pass and the outer loop in
    builtin_printf immediately: it is set by \c inside a %b argument, or by
    a bad directive (which also sets err so the builtin exits 1). */
 static void	run_format(t_pf *pf, const char *fmt)
@@ -49,6 +58,8 @@ static void	run_format(t_pf *pf, const char *fmt)
 		{
 			i++;
 			pf_parse_spec(pf, fmt, &i, &sp);
+			while (fmt[i] && ft_strchr("lhjztL", fmt[i]))
+				i++;
 			if (!fmt[i] || !ft_strchr("diouxXeEfgGaAcsb%", fmt[i]))
 				return (pf_bad_fmt(pf, fmt[i]));
 			pf_conv(pf, &sp, fmt[i]);
