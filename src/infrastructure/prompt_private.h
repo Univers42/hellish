@@ -46,6 +46,7 @@ typedef struct s_prompt
 	int		branch_dirty;
 	int		exit_status;
 	char	time_buf[32];
+	char	*upd;
 }	t_prompt;
 
 /* Palette slot ids for pal(): every colour the prompt uses, resolved at
@@ -123,6 +124,16 @@ typedef struct s_dcache
 void		vec_push_ansi(t_string *v, const char *seq);
 void		tty_write_all(int fd, const char *buf, size_t len);
 int			anim_style(t_shell *state);
+
+/* Seconds the pending-update badge trusts its cached read of the update
+   state file. The prompt is on the hot path; this is not re-read per
+   render. */
+# define UPD_TAG_TTL 5
+
+const char	*prompt_update_tag(t_shell *state);
+const char	*upd_tag_or_null(t_shell *state);
+void		ps1_update(t_shell *state, t_string *out);
+void		render_update_badge(t_string *ret, t_prompt *p);
 int			get_cols(void);
 int			measure_width(const char *str);
 char		*shorten_path(const char *path, int maxlen);
@@ -162,7 +173,8 @@ void		prompt_time_and_pad(t_string *ret, t_prompt *p);
 
 /* the blinking devil mascot + its readline-idle animation */
 int			push_mascot(t_string *ret, size_t frame, int status);
-void		render_prompt(t_string *ret, size_t frame, int status);
+void		render_prompt(t_shell *state, t_string *ret, size_t frame,
+				int status);
 size_t		*anim_frame(void);
 long long	*anim_dur_ms(void);
 int			*anim_jobs(void);
