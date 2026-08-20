@@ -62,10 +62,26 @@ jobs:
           npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
           npm publish --access public
 
+  # Docker Hub is a SECONDARY channel: GHCR already publishes the image from
+  # its own workflow using GITHUB_TOKEN, and the GitHub release asset is what
+  # the shell's own updater fetches. So a Docker Hub problem must not paint
+  # the release red -- v2.6.0 shipped its binary, its checksum and its GHCR
+  # image correctly and still reported failure, because the Docker Hub
+  # personal access token had expired:
+  #
+  #   unauthorized: personal access token is expired
+  #
+  # A release run that is permanently red is worse than no signal at all:
+  # the next genuine failure looks identical to this one and gets shrugged
+  # off. continue-on-error keeps the failure visible as a warning on the job
+  # while the run's conclusion reflects the channels that actually matter.
+  # (The token still needs rotating -- this makes the breakage legible, it
+  # does not fix it.)
   docker:
-    name: build + push image (needs DOCKERHUB_* secrets)
+    name: build + push image (Docker Hub, optional)
     needs: binary
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
