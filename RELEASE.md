@@ -8,6 +8,58 @@ shows you how to drive the shell.
 
 ---
 
+## v2.6.0 — *the ask-it-what-it-is release*
+
+**New**
+
+- **`hellish --version`.** It used to answer "invalid option". Now it prints
+  the version, the asset the updater will fetch, and the repo it will fetch
+  it from — because a build pointing somewhere unexpected is worth seeing
+  *before* it downloads anything. Exits 0 without sourcing a startup file or
+  reading stdin, so package managers and CI can probe it safely.
+
+**Fixed**
+
+- **`printf` accepts length modifiers.** `printf "%ld\n" 9999999999` failed
+  with `` `%l': invalid format character ``. Every C-habit format string hit
+  this: `%ld %lld %zu %hd %jd %td %Lf`. bash accepts and ignores them; so do
+  we now, measured against it rather than guessed.
+- **No more `git <defunct>`.** The prompt's async git check was reaped only
+  during a prompt render, so any scan finishing while a foreground command
+  ran left a zombie for that command's whole life — one per nested shell.
+  It is double-forked onto init now; there is no child to reap.
+- **`top &` works, and `^Z` no longer wedges the terminal.** Background jobs
+  keep the tty in an interactive shell (POSIX only redirects stdin to
+  `/dev/null` when job control is *off*), and the foreground wait passes
+  `WUNTRACED` — without it a stopped child never satisfied the wait, so the
+  shell blocked in `waitpid` forever while the kernel echoed keystrokes that
+  nothing ran.
+- **Whole prompt frames.** The prompt writers used a single unchecked
+  `write()`. `write(2)` may transfer fewer bytes than asked and report that
+  as success, so the tail was silently dropped.
+
+**Changed**
+
+- **The prompt animation ships off.** It was the only thing that wrote to
+  your terminal while you were not typing — 6.4KB of escape traffic every
+  2.5 seconds at an idle prompt. Set `HELLISH_ANIM=spinner|pulse|ember` to
+  opt back in. Nothing else about prompt customisation changes.
+- `HELLISH_ANIM` now means what it says. It only ever governed `\A` in a
+  custom `PS1`; the built-in prompt animated regardless, with no way to stop
+  it short of writing a whole custom prompt.
+
+**Under the hood**
+
+- CI runs the suites that previously only ran when somebody remembered:
+  the pty gates, startup argv parsing, login file order, the help table,
+  the update path, the whole-program corpus, allocator parity across both
+  heaps, and benchmarks (published, never a gate).
+- `vendor/libft` gained `%ld`-family support and the 64-bit correctness
+  fixes that exposed, and its own CI is green across ubuntu 22.04/24.04 ×
+  gcc/clang for the first time.
+
+---
+
 ## v2.5.0 — *the help release*
 
 **New**

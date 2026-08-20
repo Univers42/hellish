@@ -49,6 +49,7 @@ enum e_opt_flag
 	OPT_FLAG_VERBOSE = 1u << 1,
 	OPT_FLAG_POSIX = 1u << 2,
 	OPT_FLAG_LOGIN = 1u << 3,
+	OPT_FLAG_VERSION = 1u << 4,
 	OPT_FLAG_DEBUG_LEXER = 1u << 8,
 	OPT_FLAG_DEBUG_PARSER = 1u << 9,
 	OPT_FLAG_DEBUG_AST = 1u << 10
