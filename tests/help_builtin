@@ -1,0 +1,11 @@
+help >/dev/null; echo "rc=$?"
+help cd >/dev/null; echo "rc=$?"
+help -s cd >/dev/null; echo "rc=$?"
+help nosuchtopic_zz 2>/dev/null; echo "rc=$?"
+help nosuch1_zz nosuch2_zz 2>/dev/null; echo "rc=$?"
+help cd nosuchtopic_zz >/dev/null 2>&1; echo "rc=$?"
+help nosuchtopic_zz cd >/dev/null 2>&1; echo "rc=$?"
+help cd pwd >/dev/null; echo "rc=$?"
+type help
+command -v help
+help nosuchtopic_zz 2>/dev/null | wc -c
