@@ -74,12 +74,14 @@ t_string	prompt_more_input(t_shell *state, t_parser *parser)
    blinking mascot, the box (user/cwd/branch/venv), the clock, and the arrow.
    Called both by prompt_normal and, with an advancing frame, by the readline
    idle hook -- so the mascot keeps blinking even while a command is typed. */
-void	render_prompt(t_string *ret, size_t frame, int status)
+void	render_prompt(t_shell *state, t_string *ret, size_t frame,
+			int status)
 {
 	t_prompt	p;
 	int			mascot_w;
 
 	p.exit_status = status;
+	p.upd = (char *)prompt_update_tag(state);
 	mascot_w = push_mascot(ret, frame, status);
 	prompt_user_and_cwd(ret, &p);
 	p.vis_w += mascot_w;
@@ -115,7 +117,7 @@ static void	maybe_bench(void)
 			clock_gettime(CLOCK_MONOTONIC, &ts[0]);
 		vec_init(&r);
 		r.elem_size = 1;
-		render_prompt(&r, (size_t)i, 0);
+		render_prompt(NULL, &r, (size_t)i, 0);
 		xfree(r.ctx);
 	}
 	clock_gettime(CLOCK_MONOTONIC, &ts[1]);
@@ -153,6 +155,6 @@ t_string	prompt_normal(t_shell *state)
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
-	render_prompt(&ret, *anim_frame(), status);
+	render_prompt(state, &ret, *anim_frame(), status);
 	return (ret);
 }
