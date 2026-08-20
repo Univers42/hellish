@@ -30,3 +30,17 @@ printf "%zu-%zu\n" 10 20; echo "st=$?"
 printf "%hhu\n" 5
 printf "%llx\n" 255
 printf "%lu\n" 4294967296
+printf "%u\n" 18446744073709551615
+printf "%x\n" 18446744073709551615
+printf "%X\n" 18446744073709551615
+printf "%o\n" 18446744073709551615
+printf "%lu\n" 18446744073709551615
+printf "%llu\n" 18446744073709551615
+printf "%u\n" -1
+printf "%x\n" -1
+printf "%u\n" 0
+printf "%u %u\n" 4294967296 9223372036854775808
+printf "%#x\n" 18446744073709551615
+printf "%020u\n" 18446744073709551615
+printf "%u\n" 18446744073709551615; echo "st=$?"
+printf "%d\n" -9223372036854775808

@@ -50,10 +50,18 @@ typedef struct s_spec
 }	t_spec;
 
 const char	*pf_arg(t_pf *pf);
+/* printf renders unsigned conversions through the full 64-bit range;
+   spelled as a typedef so the declarations below keep one alignment
+   column (`unsigned long long` is too wide for it). */
+typedef unsigned long long	t_ull;
+
 void		pf_err_num(t_pf *pf, const char *arg);
 char		pf_escape(const char *s, int *i, bool *stop);
 long long	pf_num(t_pf *pf, const char *arg);
+void		pf_conv_float(t_pf *pf, char *fmt, const char *arg,
+				char *buf);
 void		pf_emit_b(t_string *out, const char *arg, bool *stop);
+t_ull		pf_unum(t_pf *pf, const char *arg);
 void		pf_conv(t_pf *pf, t_spec *sp, char conv);
 void		pf_parse_spec(t_pf *pf, const char *fmt, int *i, t_spec *sp);
 void		pf_build_spec(char *dst, t_spec *sp, char conv);
