@@ -21,6 +21,32 @@
 #include <unistd.h>
 #include <signal.h>
 
+/* Render "Done(N)" into buf without allocating: job_status_desc hands back
+   a BORROWED string, so an ft_itoa there would leak on every `jobs`.  The
+   digits are built back-to-front in a scratch tail, then copied in, which
+   keeps the whole thing to the one buffer the caller owns.  Lives here
+   rather than next to its only caller because job_signal.c is at the
+   norm's 5-function ceiling. */
+char	*done_with_code(char *buf, size_t size, int code)
+{
+	char	num[12];
+	int		i;
+
+	i = 11;
+	num[i] = '\0';
+	if (code == 0)
+		num[--i] = '0';
+	while (code > 0 && i > 0)
+	{
+		num[--i] = (char)('0' + code % 10);
+		code /= 10;
+	}
+	ft_strlcpy(buf, "Done(", size);
+	ft_strlcat(buf, num + i, size);
+	ft_strlcat(buf, ")", size);
+	return (buf);
+}
+
 /* Signals bash refuses to announce.  Measured against bash 5.3.9, not
    guessed, because the set is not the obvious one: SIGTERM is silent even
    though `jobs` will happily print "Terminated" for the same job later.
