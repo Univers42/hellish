@@ -335,6 +335,11 @@ typedef struct s_shell
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
 # define SHOPT_LITHIST 0x400
+/* progcomp is KNOWN but off, and stays off: hellish has no `complete`
+   builtin, so there is no programmable completion to switch on. It is
+   here so /etc/profile.d/bash_completion.sh's `shopt -q progcomp` gets a
+   truthful "no" instead of an error on every login -- issue #51. */
+# define SHOPT_PROGCOMP 0x800
 
 /* Directory matcher ctx for glob expansion */
 typedef struct s_dir_matcher
