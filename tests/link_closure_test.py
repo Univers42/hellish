@@ -38,11 +38,13 @@ hole stayed hidden. Whole-archive is also what a dylib build does.
 This is a portability test that needs no Mac. It fails on the commit that
 introduced the hole and passes on the one that filled it.
 
-Only the archives are checked, not build/obj: the shell is an EXECUTABLE,
-so its own objects already have to resolve every symbol at every build or
-there is no binary. The archives are the blind spot, and the reason is
-worth keeping in mind when adding to this file -- a check that repeats
-what `make` already proves is a check nobody learns anything from.
+The archives are checked for undefined symbols, and the shell's own
+objects for a subtler thing: a WEAK reference that nothing defines. The
+shell is an executable, so an ordinary missing symbol already fails its
+own build -- but a weak one does not. It is legal on ELF, resolves to
+NULL, and is a link error on Mach-O. Both checks exist to ask a question
+`make` does not ask here; a check that repeats what `make` already proves
+is a check nobody learns anything from.
 
 Usage: python3 link_closure_test.py /path/to/hellish
 """
@@ -129,6 +131,102 @@ def test_archives():
         report("%s has no undefined symbols" % label, ok, err)
 
 
+def nm_symbols(path):
+    """(defined, undefined_weak) for one object or archive, or None.
+
+    None means nm could not read it -- an LTO build stores bitcode, not
+    ELF, and plain nm says "file format not recognized". Skipping those is
+    correct rather than lenient: the non-LTO object tree carries the same
+    references and IS readable, so nothing goes unchecked.
+    """
+    p = subprocess.run(["nm", path], capture_output=True)
+    if p.returncode != 0:
+        return None
+    defined = set()
+    weak_undef = set()
+    for line in p.stdout.decode(errors="replace").split("\n"):
+        f = line.split()
+        if len(f) == 2 and f[0] == "w":
+            weak_undef.add(f[1])
+        elif len(f) == 3 and f[1] not in ("U", "w", "v"):
+            defined.add(f[2])
+    return (defined, weak_undef)
+
+
+def object_tree():
+    """The shell's own objects, from whichever build ran most recently."""
+    for d in ("obj", "obj-opt", "obj-debug"):
+        base = os.path.join(ROOT, "build", d)
+        if not os.path.isdir(base):
+            continue
+        objs = []
+        for root, _, files in os.walk(base):
+            objs += [os.path.join(root, f) for f in files
+                     if f.endswith(".o")]
+        if objs:
+            return (d, sorted(objs))
+    return (None, [])
+
+
+def test_no_dangling_weak_refs():
+    """A weak reference nothing defines is an ELF-only trick.
+
+    On ELF an undefined WEAK symbol is legal and resolves to NULL, so code
+    can ask "was this backend linked in?" with `if (!sym)`. Mach-O has no
+    such thing: __attribute__((weak)) on a DECLARATION is a weak
+    *definition*, not a weak import, so Apple's linker demands a body. That
+    is the whole of the second macOS failure --
+
+        Undefined symbols for architecture arm64:
+          "_malloc_live_bytes", referenced from: _free_all_state in lto.o
+
+    -- from alloc_stats.c probing for ft_malloc's leak oracle that way on a
+    SAFE=1 build, where nothing defines it. The fix was to let the Makefile
+    decide at compile time, since it already knows which heap it builds.
+
+    So: no object may carry an undefined weak symbol that the object tree
+    does not itself define. Deliberately NOT "defined anywhere in the
+    link" -- if a LIBRARY has the definition, a weak reference is still
+    the wrong way to reach it (use a strong one, which also pulls the
+    archive member), and it still fails on Darwin. Measuring against the
+    archives instead made this check pass while broken, because a SAFE=0
+    libft.a left over from an earlier build defined the very symbol a
+    SAFE=1 link cannot see.
+
+    There is no allowlist here because the tree needs none: across ~490
+    objects this is the only weak undefined symbol that has ever appeared.
+    If a toolchain starts emitting its own, the failure names it and the
+    decision can be made then, with the name in hand.
+    """
+    d, objs = object_tree()
+    check("the shell's objects exist to check", bool(objs),
+          "no build/obj*/**/*.o -- run make")
+    if not objs:
+        return
+    defined = set()
+    dangling = {}
+    unreadable = 0
+    for o in objs:
+        got = nm_symbols(o)
+        if got is None:
+            unreadable += 1
+            continue
+        defined |= got[0]
+        for sym in got[1]:
+            dangling.setdefault(sym, os.path.relpath(o, ROOT))
+    left = {s: o for s, o in dangling.items() if s not in defined}
+    detail = ""
+    if left:
+        detail = "\n        " + "\n        ".join(
+            "%s (referenced from %s)" % (s, o) for s, o in
+            sorted(left.items())[:8])
+    check("build/%s has no weak reference that nothing defines" % d,
+          not left, detail)
+    if unreadable:
+        print("     (%d LTO object(s) skipped -- not ELF; the non-LTO tree "
+              "covers the same code)" % unreadable)
+
+
 def main():
     if platform.system() != "Linux":
         # --no-undefined is a GNU ld spelling, and on Darwin the real
@@ -140,6 +238,7 @@ def main():
         print("skipped: this toolchain does not accept -Wl,--no-undefined")
         sys.exit(0)
     test_archives()
+    test_no_dangling_weak_refs()
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 
