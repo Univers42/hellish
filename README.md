@@ -277,7 +277,7 @@ active allocator so it's never a surprise.
 
 | Command | Optimization | Allocator | Sanitizers | Use it for |
 |---|---|---|---|---|
-| `make` | `-O0 -g3` | libc (`SAFE=1`) | ASan + LeakSanitizer | dev, debugging, leak hunts |
+| `make all` | `-O0 -g3` | libc (`SAFE=1`) | ASan + LeakSanitizer | dev, debugging, leak hunts |
 | `make OPT=1` | `-O3 -flto` | **`ft_malloc`** (`SAFE=0`) | none | speed, benchmarks, daily driving |
 | `make SAFE=0` | `-O0 -g3` | `ft_malloc` | ASan | the custom heap under a debugger |
 | `make OPT=1 SAFE=1` | `-O3 -flto` | libc | none | optimized build on the battle-tested heap |
@@ -287,7 +287,8 @@ An explicit `SAFE=…` on the command line always wins. libft compiles into a
 share objects — flip `SAFE`, get the right archive, not a stale one.
 
 ```sh
-make            # debug build  -> build/bin/hellish
+make            # what you can ask for — the self-documenting help page
+make all        # debug build  -> build/bin/hellish
 make OPT=1      # optimized build
 make re         # fclean + rebuild
 make test       # full suite: thousands of golden-diff cases vs bash --posix

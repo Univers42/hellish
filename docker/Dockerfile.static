@@ -38,7 +38,7 @@ ARG BUILD_FLAGS="OPT=1 SAFE=1"
 # readline's own DT_NEEDED, a static one does not). EXTRA_* append to the
 # Makefile's computed flags instead of replacing them.
 RUN make fclean >/dev/null 2>&1 || true; \
-	make ${BUILD_FLAGS} EXTRA_LDFLAGS="-static" EXTRA_LDLIBS="-lncursesw"
+	make all ${BUILD_FLAGS} EXTRA_LDFLAGS="-static" EXTRA_LDLIBS="-lncursesw"
 
 # Prove it is actually static and actually works, in the image that built it,
 # so a dynamic binary fails the BUILD instead of failing on the user's machine.
