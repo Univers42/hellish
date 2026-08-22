@@ -17,3 +17,8 @@ sleep 0.3 & p=$!; kill $p; wait $p 2>/dev/null; echo "sig=$?"
 { (exit 8) & } ; p=$!; sleep 0.1; wait $p; echo "brace=$?"
 (true | false) & p=$!; wait $p; echo "pipe_rc=$?"
 (false | true) & p=$!; wait $p; echo "pipe_rc2=$?"
+( exit 7 ) & sleep 0.1; jobs | awk '{print $2}'; wait
+( exit 0 ) & sleep 0.1; jobs | awk '{print $2}'; wait
+( exit 3 ) & sleep 0.1; jobs | grep -c Done; wait
+( exit 5 ) & sleep 0.1; jobs | cat | awk '{print $2}'; wait
+sleep 0.3 & jobs | awk '{print $2}'; wait

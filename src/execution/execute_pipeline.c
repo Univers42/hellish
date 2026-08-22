@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "job_control.h"
 
 /* Wire up pipe fds for one element of a pipeline.  Non-last elements get a
    fresh pipe: write end goes to curr_exe->outfd (child will dup2 it to
@@ -86,7 +87,19 @@ static void	finalize_child_parent(t_exec_child_ctx *c)
    child is prepared (pipe wiring), dispatched via execute_command (which
    may fork or run inline if modify_parent_ctx), then finalized in the
    parent (fd cleanup, prev_infd advance).  Results (pid or immediate
-   status) accumulate in `results` for pipeline_status to harvest. */
+   status) accumulate in `results` for pipeline_status to harvest.
+
+   Job statuses are refreshed BEFORE the first fork because every stage
+   inherits a COPY of the job table, and a child cannot fix it up for
+   itself: waitpid(-pgid) in the child fails on a process that is not its
+   own child, so a stale RUNNING stays RUNNING forever.  That is what made
+
+       ( exit 7 ) & sleep 0.1; jobs | awk '{print $2}'
+
+   print "Running" where bash prints "Done(7)" -- `jobs` alone was right,
+   and `jobs` in a pipeline was wrong.  The count guard keeps this off the
+   hot path: with no background jobs, which is every pipeline the
+   benchmarks run, it costs one integer test and no syscall. */
 void	execute_pipeline_children(t_shell *state,
 								t_executable_node *exe,
 								t_vec_exe_res *results)
@@ -99,6 +112,8 @@ void	execute_pipeline_children(t_shell *state,
 	ctx = (t_exec_child_ctx){.state = state, .exe = exe,
 		.curr_exe = &curr_exe, .pp = &pp, .results = results,
 		.prev_infd = exe->infd, .idx = 0, .last_index = 0};
+	if (state->job_table.count > 0)
+		job_update_status(state);
 	if (exe->infd != STDIN_FILENO)
 		ctx.prev_infd = dup(exe->infd);
 	if (exe->node->children.len > 0)
