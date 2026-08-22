@@ -26,6 +26,7 @@ Two things run, and they answer different questions.
 |---|---|---|
 | `docker/smoke.sh` | 40 checks: the shell starts, forks, pipes, redirects, here-docs, globs, does arithmetic, handles signals and job control, and reports the right exit statuses | every platform rung |
 | the golden suite | ~3800 cases diffed byte-for-byte against a pinned bash 5.3.9 | x86_64 and arm64 Linux |
+| `tests/link_closure_test.py` | every symbol the archives reference is defined — *asking GNU ld the question Apple's linker asks by default* | anywhere, via `make pty-test` |
 
 The smoke is not a weaker suite — it is a *different* one. It targets the
 class of bug that only appears when the C code meets a different libc,
@@ -120,8 +121,45 @@ so the workflow does that on a `windows-latest` runner.
 Informational because the runner-side WSL setup is the flakiest step in the
 file, not because the platform does not matter.
 
+**Do not build on `/mnt/`.** `$GITHUB_WORKSPACE` is on `D:`, which WSL
+reaches through drvfs — a bridge out of the VM to the Windows filesystem.
+Every `open`, `stat` and `write` is a round trip, and a build is ~970
+compiler invocations doing thousands of them. The first run of this job was
+still compiling when the 60-minute timeout killed it, and because the
+cancellation lands on the `cmd.exe` wrapper the log ends in
+`Terminate batch job (Y/N)?` with nothing useful above it. The job now
+copies the tree onto the distro's own ext4 first (one `tar | tar` pass) and
+builds there.
+
+What that gives up is drvfs coverage of the *build*, which was never the
+point; what it keeps is a separate step that runs the shell against a drvfs
+directory — glob it, read from it, `pwd` in it. Deliberately not the
+permission checks: `chmod 000` on drvfs without metadata support is a no-op,
+so a red there would be Windows telling the truth rather than hellish
+getting it wrong.
+
 ## Things the matrix has already caught
 
+- **A function declared, called, and never defined.**
+  `get_original_tty_job_signals()` was in libft's `trap.h` and called by
+  `initialize_traps()`, and no translation unit defined it. Every Linux job
+  stayed green for months, because GNU ld lets a *shared library* keep
+  undefined symbols and hope the loader finds them later; Apple's linker
+  does not, so `libft.so` on arm64 macOS stopped at
+  `Undefined symbols for architecture arm64`. This was never a macOS bug —
+  it was a library shipping a contract it could not honour, and a runtime
+  crash waiting for the first caller. Fixed by defining it (bash's
+  semantics: fetch SIGTSTP/SIGTTIN/SIGTTOU once, non-destructively, and
+  record SIG_DFL when non-interactive), and pinned by
+  `tests/link_closure_test.py`, which reproduces the exact failure on Linux
+  in about a second with `-Wl,--no-undefined -Wl,--whole-archive`.
+- **`MB_CUR_MAX` is `size_t` on glibc and `int` on Darwin.**
+  `mascot_anim.c` tested `mbrtowc`'s result with `n > MB_CUR_MAX` — correct
+  on Linux, a `-Werror=sign-compare` build failure on macOS. The rest of the
+  tree already spelled the error returns out as `(size_t) - 1` /
+  `(size_t) - 2`; now this does too. No behaviour change on any platform,
+  which is the point: the two spellings are the same test, and only one of
+  them compiles everywhere.
 - **openSUSE Tumbleweed ships no `find`.** The Makefile discovers its
   sources with `$(shell find src ...)`, so the source list came back empty,
   make built nothing, and the link stopped at `cc: fatal error: no input

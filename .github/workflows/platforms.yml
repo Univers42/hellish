@@ -268,21 +268,67 @@ jobs:
           cat /etc/os-release | head -2
           gcc --version | head -1
           echo "WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-unset}"
-      - name: Build
+      # $GITHUB_WORKSPACE lives on D:, which WSL sees through drvfs -- a
+      # 9p/virtio bridge to the Windows filesystem. Every open(), stat() and
+      # write() on it is a round trip out of the VM, and a build here is ~970
+      # compiler invocations doing thousands of them. The first run of this
+      # job was still building when the 60-minute timeout killed it, which is
+      # why the log ends in `Terminate batch job (Y/N)?` with nothing useful
+      # above it: the batch wrapper being Ctrl-C'd by the cancellation.
+      #
+      # So the tree is copied onto the distro's own ext4 first. One bulk read
+      # off drvfs is cheap; ~970 compiles against it are not. The copy is a
+      # `tar | tar` rather than `cp -a` because it is a single pass in each
+      # direction instead of one syscall storm per file.
+      - name: Stage the tree on the WSL filesystem
         shell: wsl-bash {0}
         env:
           WSLENV: GITHUB_WORKSPACE/p
         run: |
-          cd "$GITHUB_WORKSPACE"
-          make OPT=1 SAFE=1 2>&1 | tail -60
+          set -e
+          rm -rf ~/hellish && mkdir -p ~/hellish
+          time tar -C "$GITHUB_WORKSPACE" -cf - . | tar -C ~/hellish -xf -
+          df -h ~/hellish | tail -1
+      - name: Build
+        shell: wsl-bash {0}
+        run: |
+          cd ~/hellish
+          # An explicit timeout, well under the job's 60 minutes, so a stall
+          # ends in a message we can read instead of a cancelled batch job.
+          if ! timeout 2400 make OPT=1 SAFE=1 2>&1 | tail -60; then
+            echo "::error::build did not finish within 40 minutes inside WSL"
+            exit 1
+          fi
           test -x build/bin/hellish
       - name: Portability smoke
         shell: wsl-bash {0}
+        run: |
+          cd ~/hellish
+          bash docker/smoke.sh ./build/bin/hellish
+      # The one thing no Linux container covers: the Windows filesystem seen
+      # from inside the VM. Kept to what is honestly about the SHELL -- can it
+      # enter a drvfs directory, glob it, and read a file back. Deliberately
+      # not the permission checks: `chmod 000` on drvfs without metadata
+      # support is a no-op, so a failure there would be Windows telling the
+      # truth, not hellish getting it wrong.
+      - name: Windows filesystem (drvfs) reachability
+        shell: wsl-bash {0}
         env:
           WSLENV: GITHUB_WORKSPACE/p
         run: |
-          cd "$GITHUB_WORKSPACE"
-          bash docker/smoke.sh ./build/bin/hellish
+          set -e
+          sh="$HOME/hellish/build/bin/hellish"
+          d="$GITHUB_WORKSPACE/.wsl-drvfs-probe"
+          rm -rf "$d" && mkdir -p "$d"
+          : > "$d/a.t"; : > "$d/b.t"; echo hello > "$d/read.me"
+          got=$("$sh" -c "cd '$d' && echo *.t")
+          [ "$got" = "a.t b.t" ] || { echo "glob on drvfs: got '$got'"; exit 1; }
+          got=$("$sh" -c "cat '$d/read.me'")
+          [ "$got" = "hello" ] || { echo "read on drvfs: got '$got'"; exit 1; }
+          got=$("$sh" -c "cd '$d' && pwd")
+          [ "$got" = "$d" ] || { echo "pwd on drvfs: got '$got'"; exit 1; }
+          rm -rf "$d"
+          echo "drvfs: glob, read and pwd all agree"
       - name: Say what failed
         if: failure()
         shell: pwsh
