@@ -40,9 +40,6 @@ getcwd() failed: No such file or directory\n"
 # define MINISHELL "./minishell"
 # define EQ '='
 # define FB_SH "/bin/sh"
-//# define PATH_HELLISH "/usr/bin/hellish"
-# define PATH_HELLISH "/proc/self/exe"
-# define PROC_SELF_EXE "/proc/self/exe"
 # define BLACK_HOLE "/dev/null"
 # define CMD_OPT "-c"
 # define EXIT_CMD_NOT_EXEC 126
@@ -110,5 +107,9 @@ getcwd() failed: No such file or directory\n"
 # ifndef TRACE_DEBUG
 #  define TRACE_DEBUG 0
 # endif
+
+/* Path of the running binary, resolved once. NULL when the kernel will not
+   say. Read-only, and never freed by the caller. */
+char	*self_exe_path(void);
 
 #endif

@@ -76,16 +76,28 @@ int	eval_four(char **av)
 	return (-1);
 }
 
+/* The nanosecond mtime field is spelled differently per platform: POSIX
+   2008 and glibc/musl call it st_mtim, Darwin calls it st_mtimespec. Same
+   struct timespec either way, so the FIELD NAME is the macro and the
+   comparison below reads identically on both. (The BSDs also use
+   st_mtimespec; add them here if a BSD rung is ever added to CI -- they
+   are not in the matrix today, so this stays a claim I have tested.) */
+#ifdef __APPLE__
+# define ST_MTIM st_mtimespec
+#else
+# define ST_MTIM st_mtim
+#endif
+
 /* Three-way mtime comparison at nanosecond resolution (bash and dash both
-   compare st_mtim, not just st_mtime — two files touched within the same
-   second must not read as "newer"). Returns <0, 0, >0 like strcmp. */
+   compare the timespec, not just st_mtime — two files touched within the
+   same second must not read as "newer"). Returns <0, 0, >0 like strcmp. */
 static int	mtime_cmp(struct stat *a, struct stat *b)
 {
-	if (a->st_mtim.tv_sec != b->st_mtim.tv_sec)
-		return ((a->st_mtim.tv_sec > b->st_mtim.tv_sec) * 2 - 1);
-	if (a->st_mtim.tv_nsec == b->st_mtim.tv_nsec)
+	if (a->ST_MTIM.tv_sec != b->ST_MTIM.tv_sec)
+		return ((a->ST_MTIM.tv_sec > b->ST_MTIM.tv_sec) * 2 - 1);
+	if (a->ST_MTIM.tv_nsec == b->ST_MTIM.tv_nsec)
 		return (0);
-	return ((a->st_mtim.tv_nsec > b->st_mtim.tv_nsec) * 2 - 1);
+	return ((a->ST_MTIM.tv_nsec > b->ST_MTIM.tv_nsec) * 2 - 1);
 }
 
 /* -nt / -ot / -ef, matching bash's filecomp(): -ef is true only when both
