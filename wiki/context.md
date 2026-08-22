@@ -20,6 +20,8 @@ branch, merged fast-forward into `develop`:
 | `65a14f2` | #32 | `shopt -s lithist` — multi-line history recall |
 | `e6a5153` | #27 | `jobs` reports `Done(N)`; 19 golden cases |
 | `a575c12` | #34 | prompt frames dropped on a non-blocking tty |
+| `c4b35d1` | — | stop asserting the flaky job marker in a golden case |
+| `810a476` | — | `jobs` reports live status inside a pipeline |
 
 Earlier in the same session (already on `develop` before these): #41, #40,
 #39, #28, #37, #2, #3.
@@ -142,7 +144,7 @@ suspect oracle drift first. `make oracle` builds the pinned bash.
 ## Verification state (all green on `develop` @ `a575c12`)
 
 ```
-make test                 3737 / 3737   vs pinned bash 5.3.9
+make test                 3742 / 3742   vs pinned bash 5.3.9
 tests/run_scripts.sh       109 / 109
 tests/verify_alloc.sh       78 / 78     on BOTH heaps, 0 leaks
 make bg-tty-test            23 checks, 0 failed
@@ -190,24 +192,7 @@ Read this section before assuming something is done.
    A test line for this was written and then removed rather than assert
    the wrong behaviour.
 
-4. **`jobs` inside a PIPELINE reports stale status.** Found while writing
-   the golden cases, and not fixed:
-
-   ```
-   $ ( exit 7 ) & sleep 0.1; jobs | awk '{print $2}'
-   bash      Done(7)
-   hellish   Running        <-- stale
-   ```
-
-   A pipeline stage forks, so `jobs` runs in a child holding a *copy* of
-   the job table, and the child's `waitpid(-pgid)` cannot reap a process
-   that is not its own child — so the status never advances past RUNNING.
-   bash's parent has already updated the table before the fork. Fixing it
-   means updating job status in the parent before forking a pipeline.
-   The golden cases work around it with `jobs > file` (a redirect, which
-   runs in-process) rather than a pipe.
-
-5. **The `+`/`-` current-job marker is environment-sensitive.** Do not
+4. **The `+`/`-` current-job marker is environment-sensitive.** Do not
    assert it in a golden case. `( exit 0 ) & sleep 0.1; jobs` prints
    `[1]+  Done` under the pinned bash locally and `[1]   Done` under the
    same pinned bash on a CI runner. My first version of
@@ -261,6 +246,22 @@ In rough priority order:
    (gap 2) — it is the last visible `jobs` divergence from bash.
 4. Set the two Docker Hub secrets, or drop that channel from the release
    workflow.
+
+### A note on method
+
+Three of the bugs in this session were found by *writing the test first
+and watching it disagree with bash*, not by reading code: `Done(N)`,
+`jobs` in a pipeline, and both `shopt` exit-status rules all surfaced
+that way. The golden suite is the cheapest bug-finder in this repo —
+when adding coverage for one thing, it is worth writing the neighbouring
+cases too and reading every diff rather than only the one you expected.
+
+Equally: **every new gate here was checked by deliberately reverting the
+fix and confirming the gate fails.** Two of them passed while broken on
+the first attempt (the `nonblock-tty-test` queue-full check needed a
+real 400KB flood before it had teeth; a `venv` check earlier in the
+session passed against a shell that had died). A green test you have not
+seen fail is not yet evidence.
 
 ### On cutting the release
 
