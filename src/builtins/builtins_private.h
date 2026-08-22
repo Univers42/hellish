@@ -242,7 +242,18 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);
 
 int		list_set_options(t_shell *state);
-size_t	shopt_flags(t_vec argv, char *act, int *quiet);
+/* shopt's action ('s' set, 'u' unset, 'p' print reusable, 0 print plain)
+   travelling with its -q modifier. Bundled because -o handling needs both
+   alongside state, argv and the argument index, and the norm allows a
+   function four parameters. */
+typedef struct s_shopt_act
+{
+	char	act;
+	int		quiet;
+}	t_shopt_act;
+
+size_t	shopt_flags(t_vec argv, char *act, int *quiet, int *use_o);
+int		shopt_setopt(t_shell *state, t_vec argv, size_t i, t_shopt_act a);
 
 /* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
 int		reaped_job_status(t_shell *state, pid_t pid);
