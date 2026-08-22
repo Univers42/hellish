@@ -199,14 +199,10 @@ mv -f "$DEST.new" "$DEST"
 grn "installed $DEST"
 
 # ── 2. seed ~/.hellishrc ──────────────────────────────────────────────────
-if [ -e "$HOME/.hellishrc" ]; then
-	inf "~/.hellishrc already exists — left untouched"
-elif [ -f "$REPO_ROOT/hellishrc.example" ]; then
-	cp "$REPO_ROOT/hellishrc.example" "$HOME/.hellishrc"
-	grn "seeded ~/.hellishrc from hellishrc.example"
-else
-	warn "hellishrc.example not found — skipping ~/.hellishrc"
-fi
+# Delegated, not inlined. This is the copy `make my_shell` did not have, so
+# the sudo route installed a shell with no config at all (issue #51); one
+# seeder called by both routes is what keeps them from drifting again.
+"$REPO_ROOT/tools/seed_hellishrc.sh" --example "$REPO_ROOT/hellishrc.example"
 
 # ── 3. prove the binary works BEFORE anything execs it ────────────────────
 #
