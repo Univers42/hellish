@@ -57,6 +57,9 @@ jobs:
     timeout-minutes: 40
     strategy:
       fail-fast: false
+      # Cap the fan-out so this workflow cannot eat every runner the account
+      # has and starve ci.yml, which is the one gating the merge.
+      max-parallel: 6
       matrix:
         include:
           # glibc, the two Ubuntus people actually run
@@ -157,6 +160,14 @@ jobs:
   # continue-on-error off once it is green; do not flip it off before.
   macos:
     name: macOS ${{ matrix.arch }} (informational)
+    # NOT on pull requests, and this is operational rather than aesthetic.
+    # Apple runners are scarce: the first run of this workflow had `macos-13`
+    # sit QUEUED indefinitely, which kept the whole run open, consumed the
+    # account's concurrency, and starved later pushes of runs entirely -- a
+    # matrix that stops other CI from running is worse than no matrix. On
+    # push/schedule/dispatch a long queue costs nothing; on a PR it blocks
+    # the thing you are waiting for.
+    if: github.event_name != 'pull_request'
     runs-on: ${{ matrix.runner }}
     continue-on-error: true
     timeout-minutes: 40
@@ -198,6 +209,9 @@ jobs:
   # file, and a green merge should not depend on it.
   wsl:
     name: WSL (Ubuntu 22.04, informational)
+    # Same reasoning as the macOS job: a Windows runner plus a WSL install is
+    # the slowest rung here, and nothing on a PR should wait behind it.
+    if: github.event_name != 'pull_request'
     runs-on: windows-latest
     continue-on-error: true
     timeout-minutes: 60

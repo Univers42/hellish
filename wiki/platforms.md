@@ -63,6 +63,21 @@ smoke. A warning is a build failure.
 | Void Linux | glibc | gcc | xbps, a fifth package manager |
 | Linux arm64 | glibc | gcc, clang | a **native** runner, not emulation: alignment, `char` signedness, register width |
 
+### A note on runner scarcity
+
+macOS and WSL run on **push, schedule and manual dispatch — not on pull
+requests**, and the distro matrix is capped at `max-parallel: 6`.
+
+That is not tuning for its own sake. On this workflow's first run, the
+`macos-13` job sat **queued indefinitely** waiting for an Apple runner. A
+queued job keeps its run open, the open run consumes the account's
+concurrency, and later pushes got no runs at all — the portability matrix
+starved the CI that actually gates the merge. A matrix that stops other CI
+from running is worse than no matrix.
+
+On push and schedule a long queue costs nothing. On a PR it blocks the
+thing you are waiting for. So the scarce runners live off the PR path.
+
 ### macOS — informational
 
 There is no Docker route to macOS. Apple's kernel is not distributable in a
