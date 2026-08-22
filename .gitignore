@@ -44,3 +44,7 @@ tests/glob-zoo/tab	file
 
 # Host-runnable static binaries produced by `make static`.
 dist/
+.claude/*
+.claude
+.CLAUDE
+*CLAUDE*
