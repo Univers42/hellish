@@ -73,7 +73,8 @@ static int	set_flag_word(t_shell *state, char **w, size_t remaining)
 	if (remaining < 2)
 		return (list_set_options(state), 1);
 	if (set_long_option(state, w[0][0], w[1]))
-		return (ft_eprintf("%s: set: invalid option name\n", state->ctx), -1);
+		return (ft_eprintf("%s: set: %s: invalid option name\n",
+				state->ctx, w[1]), -1);
 	return (2);
 }
 
