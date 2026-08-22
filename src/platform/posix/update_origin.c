@@ -11,19 +11,25 @@
 /* ************************************************************************** */
 
 #include "update.h"
+#include "sys.h"
 #include "version.h"
 #include <sys/wait.h>
 #include <unistd.h>
 
-/* Resolve the path of the running executable. 1 on success. */
+/* Resolve the path of the running executable. 1 on success.
+
+   Via self_exe_path() rather than readlink("/proc/self/exe") directly:
+   that file is Linux-only, so off Linux this always failed and every
+   install was classified ORIGIN_BINARY -- meaning `update` would offer
+   to replace a source checkout as if it were a downloaded binary. */
 static int	exe_path(char *buf, size_t n)
 {
-	ssize_t	r;
+	char	*self;
 
-	r = readlink("/proc/self/exe", buf, n - 1);
-	if (r <= 0)
+	self = self_exe_path();
+	if (!self)
 		return (0);
-	buf[r] = '\0';
+	ft_strlcpy(buf, self, n);
 	return (1);
 }
 
