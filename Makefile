@@ -658,6 +658,17 @@ prompt-atomic-test: all
 	@chmod +x $(TEST_DIR)/prompt_atomic_test.py
 	@python3 $(TEST_DIR)/prompt_atomic_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The prompt against a NON-BLOCKING terminal (issue #34). O_NONBLOCK lives on
+# the open file description the shell shares with every program it launches,
+# so one tool that sets it and never restores it leaves the shell writing to
+# a non-blocking tty. tty_write_all used to treat the resulting EAGAIN as a
+# hard error and drop the WHOLE frame. The last two checks fill the output
+# queue for real before the shell draws, so they fail outright if the EAGAIN
+# wait is removed. See tests/nonblock_tty_test.py.
+nonblock-tty-test: all
+	@chmod +x $(TEST_DIR)/nonblock_tty_test.py
+	@python3 $(TEST_DIR)/nonblock_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # /dev/tcp and /dev/udp redirections vs bash --posix. Brings up its own TCP
 # and UDP peer, so it needs python3 but no network access.
 net-redir-test: all
@@ -720,7 +731,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	bg-tty-test prompt-integrity-test update-badge-test \
+	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \

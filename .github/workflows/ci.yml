@@ -262,6 +262,8 @@ jobs:
         run: make bg-tty-test
       - name: prompt integrity (idle silence + no cut escapes)
         run: make prompt-integrity-test
+      - name: prompt survives a non-blocking terminal (EAGAIN)
+        run: make nonblock-tty-test
       - name: pending-update badge stays visible in the prompt
         run: make update-badge-test
 
