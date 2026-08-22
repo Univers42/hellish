@@ -35,7 +35,7 @@ WORKDIR /hellish
 COPY . .
 
 ARG BUILD_FLAGS="OPT=1 SAFE=1"
-RUN make fclean >/dev/null 2>&1 || true; make ${BUILD_FLAGS}
+RUN make fclean >/dev/null 2>&1 || true; make all ${BUILD_FLAGS}
 
 ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
 

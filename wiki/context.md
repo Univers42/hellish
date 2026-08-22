@@ -5,7 +5,7 @@ later session. The repo history is authoritative; this file records the
 things history cannot tell you — why a thing was done, what was measured,
 what was deliberately *not* done, and what is still open.
 
-Branch to resume from: **`develop`**. Released version: **2.8.1**.
+Branch to resume from: **`develop`**. Released version: **2.7.2**.
 
 The previous note on this file covered the issue-fixing session (#27, #32,
 #34, #42 and friends). All of those are closed; the tracker is empty. This
@@ -210,10 +210,12 @@ This keeps happening and is worth naming as a class.
    smoke reached 39/40; the last gap is fixed but has not yet been confirmed
    green on a real runner. Do not flip the flag until it has — a red required
    check that everyone learns to ignore is worse than an informational one.
-2. **`v2.8.1` is not tagged.** The version is bumped, the notes are written,
-   `make update-config-test` is green. Tagging fires `release.yml` and
-   `ghcr.yml` — GitHub Releases, npm, GHCR — and is the one step here that
-   cannot be walked back. It was deliberately left for a human.
+2. **The version line is 2.7.x, not 2.8.x.** `2.8.0` and `2.8.1` exist in
+   git history and were never tagged, so nothing ever shipped under those
+   numbers; both were folded into a single **`v2.7.2`** release. Worth
+   knowing if you find the old numbers in a commit message — they are not
+   releases anyone can have installed. (Strict semver would have called the
+   `pretty` builtin a minor bump; the owner chose to continue the 2.7 line.)
 3. **Docker Hub secrets** are still unset; that channel of `release.yml`
    will no-op or fail. Set them or drop the channel.
 4. **`tests/test_files/invalid_permission`** shows as permanently modified
