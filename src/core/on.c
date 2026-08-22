@@ -74,6 +74,8 @@ static void	init_tables(t_shell *state)
 	state->proc_subs.elem_size = sizeof(t_procsub_entry);
 	vec_init(&state->functions);
 	state->functions.elem_size = sizeof(t_shell_func);
+	vec_init(&state->dead_funcs);
+	state->dead_funcs.elem_size = sizeof(t_ast_node);
 	job_table_init(&state->job_table);
 	alias_table_init(&state->aliases);
 	cmd_hash_init(&state->cmd_cache);
