@@ -38,7 +38,13 @@ int	*anim_status(void)
    or a line already wide enough to wrap means the cursor row is not
    ours to predict -- report unsafe and let the caller skip the tick.
    Getting this wrong is not cosmetic: an undershoot lands the repaint
-   ON the input row and ESC[2K eats the user's paste. */
+   ON the input row and ESC[2K eats the user's paste.
+
+   mbrtowc's error returns are spelled out as (size_t)-1 / (size_t)-2
+   rather than tested with `n > MB_CUR_MAX`. The short form is the same
+   test on glibc, where MB_CUR_MAX is size_t -- and a -Werror=sign-compare
+   build failure on Darwin, where it is an int. That is the whole of the
+   macOS bug; the long form is also what the rest of the tree uses. */
 static int	anim_line_fits(void)
 {
 	mbstate_t	st;
@@ -55,7 +61,7 @@ static int	anim_line_fits(void)
 		if ((unsigned char)rl_line_buffer[i] < ' ')
 			return (0);
 		n = mbrtowc(&wc, rl_line_buffer + i, MB_CUR_MAX, &st);
-		if (n == 0 || n > MB_CUR_MAX)
+		if (n == (size_t) - 1 || n == (size_t) - 2 || n == 0)
 			return (0);
 		if (wcwidth(wc) < 0)
 			return (0);

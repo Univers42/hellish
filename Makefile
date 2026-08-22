@@ -132,10 +132,19 @@ SAFE ?= 1
 endif
 ifeq ($(SAFE),0)
 SAFE_TAG := ft
-# Force-pull ft_malloc's leak oracle from libft.a so the weakly-referenced
-# malloc_live_bytes in alloc_stats.c binds (a weak ref alone won't pull an
-# archive member). At SAFE=1 there is no -u, so the weak ref resolves to NULL.
-LDFLAGS += -Wl,-u,malloc_live_bytes
+# ft_malloc's leak oracle exists only on this backend, so say so at COMPILE
+# time. alloc_stats.c used to work it out at LINK time instead, with a weak
+# undefined reference and a -Wl,-u to force the archive member -- an ELF-only
+# trick. Mach-O reads __attribute__((weak)) on a declaration as a weak
+# DEFINITION rather than a weak import, so Apple's linker demanded a body and
+# the macOS arm64 build died on "Undefined symbols: _malloc_live_bytes".
+# A plain strong reference pulls the archive member by itself, which is why
+# the -u is gone with the weak ref rather than kept alongside this.
+#
+# CFLAGS, not CFLAGS_BASE: CFLAGS is expanded with := about forty lines above
+# this block, so appending to the base here would land after the expansion and
+# do nothing at all.
+CFLAGS += -DHAVE_ALLOC_ORACLE
 else
 SAFE_TAG := libc
 endif
