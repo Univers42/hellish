@@ -137,13 +137,31 @@ jobs:
       - name: Portability smoke
         run: bash docker/smoke.sh ./build/bin/hellish
       - uses: ./.github/actions/oracle
+      # `tail -3` on a green run is all anyone wants to read; on a RED one it
+      # is useless -- it shows the "N FAILED" line and nothing about which
+      # case, so an arm64-only divergence arrives with no evidence attached.
+      # Print the failing cases on failure, and keep the log as an artifact.
       - name: Golden suite vs pinned bash 5.3.9
         run: |
           make re CC=${{ matrix.cc }} > build.log 2>&1 || {
             sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
           cd tests
-          ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../suite.log | tail -3
-          grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log
+          ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' > ../suite.log \
+            || true
+          tail -3 ../suite.log
+          if ! grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log; then
+            echo "::error::golden suite failed on arm64/${{ matrix.cc }}"
+            echo "--- failing cases ---"
+            sed -n '/SUMMARY/,$p' ../suite.log | head -120
+            exit 1
+          fi
+      - name: Upload the suite log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-${{ matrix.cc }}-suite-log
+          path: suite.log
+          if-no-files-found: ignore
 
   # ── Apple ────────────────────────────────────────────────────────────────
   # There is no Docker route to macOS: the kernel is not distributable in a
