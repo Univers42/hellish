@@ -103,6 +103,7 @@ int		builtin_pwd(t_shell *state, t_vec argv);
 int		builtin_read(t_shell *state, t_vec argv);
 
 void	print_exit_if_readline(t_shell *state);
+bool	exit_stopped_guard(t_shell *state);
 int		handle_no_args(t_shell *state, t_vec argv);
 size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
 int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);

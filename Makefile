@@ -586,6 +586,14 @@ git-prompt-test: all
 bg-tty-test: all
 	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# PS1 rendering, and the login chain that exposed it. Because hellish sets
+# BASH_VERSION, Debian/Ubuntu's stock ~/.profile sources ~/.bashrc and hands
+# us bash's default PS1 -- which the renderer then printed as visible text
+# (":+()}\033[01;32m...") because \nnn was not an escape and ${v:+w} was read
+# as a bare name. Renders that exact PS1 in a pty and checks the bytes.
+ps1-render-test: all
+	@python3 $(TEST_DIR)/ps1_render_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Canary (NOT a regression gate for a specific fix): drives the shell the way
 # the field reports of intermittent prompt corruption describe, and asserts no
 # escape sequence reached the screen without its ESC[ and no UTF-8 character

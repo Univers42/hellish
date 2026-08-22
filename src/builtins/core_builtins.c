@@ -76,12 +76,17 @@ int	builtin_export(t_shell *st, t_vec av)
    `exit 9223372036854775807` exits 255). Error handling is mode-dependent,
    matching bash exactly: under -c (INP_ARG) a bad operand EXITS the shell
    (too many => 1, non-numeric/overflow => 2); reading a script/pipe/tty it
-   only prints the error and returns 2 so the shell keeps running. */
+   only prints the error and returns 2 so the shell keeps running.
+   An interactive shell with a stopped job refuses the first exit and says
+   so (exit_stopped_guard), so a suspended job cannot be orphaned by one
+   absent-minded ^D -- issue #41. */
 int	builtin_exit(t_shell *state, t_vec argv)
 {
 	long long	code;
 	size_t		i;
 
+	if (exit_stopped_guard(state))
+		return (1);
 	print_exit_if_readline(state);
 	if (handle_no_args(state, argv))
 		return (0);
