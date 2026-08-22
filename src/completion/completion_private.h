@@ -25,11 +25,15 @@
 
 /* One TAB press worth of command-generator state: PATH split into dirs
    (cache owns the bytes they point into), how far the builtin list and
-   the dir list have been walked, and the directory currently open. */
+   the dir list have been walked, the directory currently open, and the
+   path it was opened from -- cmd_entry_runnable needs that path to build
+   the candidate it stats, so keeping it here is cheaper and clearer than
+   recovering it from idx (which has already moved on by then). */
 typedef struct s_cmd_gen
 {
 	char	**dirs;
 	char	*cache;
+	char	*cur;
 	int		bidx;
 	int		idx;
 	DIR		*dh;
@@ -41,7 +45,8 @@ extern char		*g_builtins[];
 void	free_split(char **arr);
 void	cmd_gen_cleanup(t_cmd_gen *g);
 void	cmd_gen_init(t_cmd_gen *g);
-char	*cmd_gen_scan_dir(DIR *d, const char *text, size_t tlen);
+int		cmd_entry_runnable(const char *dir, const char *name);
+char	*cmd_gen_scan_dir(t_cmd_gen *g, const char *text, size_t tlen);
 char	*cmd_gen_dirs(t_cmd_gen *g, size_t tlen, const char *text);
 char	*rl_dup(const char *s);
 char	*rl_dup_dollar(const char *name, size_t len);
