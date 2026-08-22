@@ -31,8 +31,26 @@ endif
 # Includes (must be defined before CPPFLAGS assignment)
 INCLUDES := -I./incs -I./incs/platform/$(TARGET) -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public -I./vendor/libft/srcs/memory/memalloc/slab
 
-# Base compile flags
+# macOS: two things differ and both stop the build dead at the system headers
+# rather than anywhere interesting.
+#
+#  1. Apple ships libedit under the name libreadline. It answers -lreadline
+#     and then does not have most of the GNU API this shell uses. The real
+#     one comes from Homebrew and is keg-only, so its prefix has to be asked
+#     for explicitly -- it is never on the default search path.
+#  2. _XOPEN_SOURCE=700 pins the POSIX.1-2008 surface on glibc and musl. On
+#     Apple's libc it does the opposite and HIDES the BSD extensions the
+#     <sys/*.h> headers themselves depend on. _DARWIN_C_SOURCE is the
+#     documented way to ask for "POSIX plus the extensions" there.
+ifeq ($(UNAME_S),Darwin)
+BREW_PREFIX_RL := $(shell brew --prefix readline 2>/dev/null)
+ifneq ($(BREW_PREFIX_RL),)
+INCLUDES += -I$(BREW_PREFIX_RL)/include
+endif
+CFLAGS_BASE := -Wall -Wextra -Werror -D_DARWIN_C_SOURCE -DVERBOSE
+else
 CFLAGS_BASE := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
+endif
 
 # Debug / sanitize flags
 DEBFLAGS    := -g3 -ggdb -O0
@@ -53,8 +71,13 @@ LDFLAGS_BASE :=
 ifeq ($(UNAME_S),Linux)
 LDFLAGS_BASE += -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed
 else
-# macOS/BSD ld does not support --gc-sections/--as-needed
-LDFLAGS_BASE +=
+# macOS/BSD ld does not support --gc-sections/--as-needed. What macOS does
+# need is the Homebrew readline it cannot find on its own (see above).
+ifeq ($(UNAME_S),Darwin)
+ifneq ($(BREW_PREFIX_RL),)
+LDFLAGS_BASE += -L$(BREW_PREFIX_RL)/lib
+endif
+endif
 endif
 
 # The shell links against libreadline for its interactive line editor. Kept in
@@ -140,6 +163,15 @@ LIBFTPRINTF_A = $(LIBFT_DIR)/libftprintf.a
 SRCS := $(shell find $(SRC_DIR) -path $(SRC_DIR)/platform -prune -o \
 	-name '*.c' -print | sort) \
 	$(shell find $(SRC_DIR)/platform/$(TARGET) -name '*.c' 2>/dev/null | sort)
+
+# An empty SRCS is never legitimate, and the failure it produces otherwise is
+# actively misleading: make happily builds an empty object list and the link
+# stops at "cc: fatal error: no input files", which points nowhere near the
+# cause. openSUSE Tumbleweed's base image is the real case -- it ships no
+# `find` at all, so the two $(shell ...) calls above return nothing. Say so.
+ifeq ($(strip $(SRCS)),)
+$(error no sources found under $(SRC_DIR)/. Is `find` installed? (openSUSE and some minimal images ship without findutils.) Is the checkout complete?)
+endif
 
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
@@ -493,12 +525,18 @@ docker-suite:
 
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
-# `docker-test` builds + smoke-tests all four distros; `docker-<distro>` drops
-# you into an interactive hellish there. See docker/ and docker-compose.yml.
+# `docker-test` builds every distro and runs docker/smoke.sh (the same 40-check
+# portability workout the Platforms workflow runs) in each; `docker-<distro>`
+# drops you into an interactive hellish there. See docker/ and
+# docker-compose.yml for the full list -- glibc and musl, gcc and clang, five
+# package managers, plus a musl+ft_malloc rung.
+#
+#   make docker-test                       # everything
+#   docker/test.sh fedora alpine-clang     # just these two
 docker-build:
 	docker compose build
 docker-test:
-	@chmod +x docker/test.sh && docker/test.sh
+	@chmod +x docker/test.sh docker/smoke.sh && docker/test.sh
 docker-alpine:
 	docker compose run --rm alpine
 docker-debian:
@@ -509,8 +547,22 @@ docker-ubuntu2204:
 	docker compose run --rm ubuntu2204
 docker-arch:
 	docker compose run --rm arch
+docker-fedora:
+	docker compose run --rm fedora
+docker-rocky:
+	docker compose run --rm rocky
+docker-opensuse:
+	docker compose run --rm opensuse
+docker-void:
+	docker compose run --rm void
 docker-clean:
 	docker compose down --rmi local 2>/dev/null || true
+
+# The portability workout on its own, against whatever binary is built. Same
+# script the distro containers and every Platforms CI rung run, so a failure
+# reads the same everywhere.
+smoke: all
+	@chmod +x docker/smoke.sh && docker/smoke.sh $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Cross-shell speed matrix. Build hellish + a zoo of other shells (bash, dash,
 # zsh, mksh, ksh, yash, busybox ash, fish) in ONE self-contained image, then
@@ -737,7 +789,8 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
+	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
+	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
 	hist-test history-opts-test readline-test anim-test git-prompt-test \
 	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
