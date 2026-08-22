@@ -15,7 +15,7 @@
 
 /* The single source of truth for the running shell's version. Bumped in step
    with the git tag / GitHub release / npm package / docker image. */
-# define HELLISH_VERSION "2.7.2"
+# define HELLISH_VERSION "2.7.3"
 
 /* Where releases live; used by the `update` builtin and the daily check. */
 # define HELLISH_REPO "Univers42/hellish"
