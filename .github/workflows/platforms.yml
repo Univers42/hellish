@@ -193,8 +193,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Apple Silicon only. macos-13 (the last Intel image) is being
+          # retired and its queue never drains -- the job sat QUEUED for the
+          # whole run, which is worse than not running it: a queued job
+          # keeps its run open and holds concurrency. If Intel coverage is
+          # wanted back it needs a runner that actually exists.
           - { runner: macos-14, arch: "arm64" }
-          - { runner: macos-13, arch: "x86_64" }
     steps:
       - uses: actions/checkout@v4
         with:
@@ -242,6 +246,14 @@ jobs:
         with:
           distribution: Ubuntu-22.04
           additional-packages: build-essential libreadline-dev git python3 ca-certificates
+        env:
+          # WSL does not inherit the runner's Windows environment. Without
+          # this, $GITHUB_WORKSPACE is unset inside wsl-bash and every step
+          # below died on "GITHUB_WORKSPACE: unbound variable" before doing
+          # anything at all. WSLENV is the documented Windows<->WSL bridge;
+          # the /p suffix also translates D:\a\... into /mnt/d/a/..., which
+          # is the form a Linux `cd` can actually use.
+          WSLENV: GITHUB_WORKSPACE/p
       # The shell is set PER STEP, not as a job-level default. `wsl-bash` does
       # not exist until the action above registers it, and a job-level default
       # applies to the whole job -- which made the first run here die before
@@ -249,6 +261,8 @@ jobs:
       # the failure attached to the step that caused it.
       - name: Show the environment
         shell: wsl-bash {0}
+        env:
+          WSLENV: GITHUB_WORKSPACE/p
         run: |
           uname -a
           cat /etc/os-release | head -2
@@ -256,12 +270,16 @@ jobs:
           echo "WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-unset}"
       - name: Build
         shell: wsl-bash {0}
+        env:
+          WSLENV: GITHUB_WORKSPACE/p
         run: |
           cd "$GITHUB_WORKSPACE"
           make OPT=1 SAFE=1 2>&1 | tail -60
           test -x build/bin/hellish
       - name: Portability smoke
         shell: wsl-bash {0}
+        env:
+          WSLENV: GITHUB_WORKSPACE/p
         run: |
           cd "$GITHUB_WORKSPACE"
           bash docker/smoke.sh ./build/bin/hellish
