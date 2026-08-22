@@ -23,6 +23,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue8_set_options"
         "issue18_job_numbers"
         "issue27_job_pgrp"
+        "issue42_history_opts"
         "issue13_bg_pid"
         "issue17_signal_report"
         "issue16_net_redir"
