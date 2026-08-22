@@ -586,6 +586,16 @@ git-prompt-test: all
 bg-tty-test: all
 	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Tab completion, built SAFE=0 ON PURPOSE. readline frees every match it is
+# handed with libc free(), so a match allocated by ft_malloc is a cross-heap
+# free -- and that is invisible on SAFE=1, where xmalloc IS libc malloc and
+# there is no mismatch to find. Only a SAFE=0 binary can fail this gate, so
+# it builds one (ASan there reports "bad-free ... not malloc()-ed"). It also
+# covers the PATH scan that stopped at the first match per directory. (#40)
+completion-test:
+	@$(MAKE) --no-print-directory SAFE=0
+	@python3 $(TEST_DIR)/completion_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # PS1 rendering, and the login chain that exposed it. Because hellish sets
 # BASH_VERSION, Debian/Ubuntu's stock ~/.profile sources ~/.bashrc and hands
 # us bash's default PS1 -- which the renderer then printed as visible text
