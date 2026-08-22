@@ -14,21 +14,35 @@
 #include "sys.h"
 #include "libft.h"
 
+/* Our own script extensions, run under this shell rather than /bin/sh. */
+static int	is_hellish_script(char *path, size_t len)
+{
+	if (len >= 8 && ft_strcmp(path + len - 8, ".hellish") == 0)
+		return (1);
+	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
+		return (1);
+	if (len >= 3 && ft_strcmp(path + len - 3, ".sh") == 0)
+		return (1);
+	return (0);
+}
+
 /* Pick an interpreter for a file that failed execve with ENOEXEC.  We
-   recognise our own script extensions (.sh, .hell, .hellish) and run them
-   under the hellish binary; everything else falls back to /bin/sh (FB_SH).
-   This mirrors what bash does for the "#!" shebang-less case. */
+   recognise our own script extensions and run them under the running
+   binary; everything else falls back to /bin/sh (FB_SH).  This mirrors
+   what bash does for the "#!" shebang-less case.
+
+   self_exe_path() rather than a literal "/proc/self/exe": that path is
+   Linux-only, so on any other kernel this handed execve something that
+   does not exist and the script simply failed.  When the kernel will not
+   say where we are, /bin/sh is a better answer than a made-up path -- it
+   is a POSIX shell, and these are POSIX scripts. */
 static char	*select_fallback_shell(char *path)
 {
-	size_t	len;
+	char	*self;
 
-	len = ft_strlen(path);
-	if (len >= 8 && ft_strcmp(path + len - 8, ".hellish") == 0)
-		return (PATH_HELLISH);
-	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
-		return (PATH_HELLISH);
-	if (len >= 3 && ft_strcmp(path + len - 3, ".sh") == 0)
-		return (PATH_HELLISH);
+	self = self_exe_path();
+	if (self && is_hellish_script(path, ft_strlen(path)))
+		return (self);
 	return (FB_SH);
 }
 

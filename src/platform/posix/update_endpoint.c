@@ -12,6 +12,7 @@
 
 #include "update.h"
 #include "version.h"
+#include "sys.h"
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <libgen.h>
@@ -77,12 +78,12 @@ int	update_asset_url(const char *tag, const char *asset, char *out, size_t n)
    what to replace. */
 int	update_exe_path(char *buf, size_t n)
 {
-	ssize_t	r;
+	char	*self;
 
-	r = readlink("/proc/self/exe", buf, n - 1);
-	if (r <= 0)
+	self = self_exe_path();
+	if (!self)
 		return (0);
-	buf[r] = '\0';
+	ft_strlcpy(buf, self, n);
 	return (1);
 }
 

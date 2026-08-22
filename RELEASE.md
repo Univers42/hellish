@@ -33,18 +33,30 @@ not, and about CI being able to tell you when it does not.
   macOS. Which heap is being built is now a compile-time fact, which is
   what it always was.
 
+- **Process substitution works off Linux.** `<(cmd)` and `>(cmd)` re-exec
+  the shell, and did it through the literal `/proc/self/exe` — a path that
+  exists on Linux and nowhere else, so on macOS both produced nothing at
+  all. Now resolved at runtime (`_NSGetExecutablePath` on Darwin). The
+  same assumption was in three more places: the ENOEXEC script-interpreter
+  fallback, and the update machinery's idea of where it lives — which had
+  been classifying every non-Linux install as a downloaded binary, so
+  `update` would have offered to overwrite a source checkout.
+
 - **Windows checkouts no longer break the scripts.** `.gitattributes`
   pins everything with a shebang to LF, so `core.autocrlf` cannot turn
   `set -u` into `set -u\r`.
 
 **Testing**
 
-- Two new gates reproduce the macOS and Windows failures **on Linux**, in
-  about a second each: `link_closure_test.py` asks GNU ld the question
-  Apple's linker asks by default, and `crlf_hygiene_test.py` checks both
-  that no executed file is stored with CRLF and that every one of them is
+- Three new gates reproduce the macOS and Windows failures **on Linux**, in
+  about a second each. `link_closure_test.py` asks GNU ld the question
+  Apple's linker asks by default. `crlf_hygiene_test.py` checks both that
+  no executed file is stored with CRLF and that every one of them is
   covered by a rule — the second being the half that catches the next file
-  someone adds.
+  someone adds. `linux_only_apis_test.py` asserts that `/proc/self/exe`
+  is named in exactly one file, which is the property that actually broke:
+  the knowledge had been copied into four, so porting meant finding all
+  four.
 
 - The WSL rung builds on the distro's own filesystem rather than through
   the Windows bridge, where the same build could not finish inside an hour.
