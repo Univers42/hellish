@@ -65,10 +65,12 @@ t_string	parse_single_cmd(t_string hist, size_t *cur)
    where a ";" would be illegal) and keeps quoted / here-doc newlines
    literal, so a recalled entry re-executes with the same meaning as the
    multi-line original. hist_cmds and the history file keep the raw text. */
-void	add_history_line(const char *cmd)
+void	add_history_line(t_shell *state, const char *cmd)
 {
 	char	*joined;
 
+	if (state->shopt & SHOPT_LITHIST)
+		return (add_history(cmd));
 	joined = hist_join_line(cmd);
 	if (!joined)
 		return (add_history(cmd));

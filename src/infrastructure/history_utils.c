@@ -21,19 +21,29 @@
    `history` listing the raw lines of a multi-line command -- a for-loop
    printed as three entryless rows where bash prints one joined line. The
    join is idempotent (an already-joined line has no boundary newlines
-   left), so replaying an old raw file through here is safe. */
+   left), so replaying an old raw file through here is safe.
+
+   `shopt -s lithist` turns the join off, which is bash's own name for
+   "keep the newlines". Recalling an if/for/while then gives back the
+   multi-line buffer that was typed instead of a flattened one-liner
+   (issue #32). The file format already escapes embedded newlines, so a
+   literal entry round-trips across sessions with no format change.
+   add_history is called directly rather than add_history_line because
+   the entry is already in its final shape by this point. */
 static void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
 	char	*joined;
 
-	joined = hist_join_line(hist_entry);
+	joined = NULL;
+	if (!(state->shopt & SHOPT_LITHIST))
+		joined = hist_join_line(hist_entry);
 	if (joined)
 	{
 		xfree(hist_entry);
 		hist_entry = joined;
 	}
-	add_history_line(hist_entry);
+	add_history(hist_entry);
 	vec_push(&state->hist.hist_cmds, &hist_entry);
 	if (state->hist.append_fd < 0)
 		return ;

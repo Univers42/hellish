@@ -27,6 +27,32 @@ Full GNU-readline-backed editing, so every muscle-memory binding you already hav
 - `history`, `fc`, and history expansion.
 - Reverse search via the readline binding you expect.
 
+A compound command (`if`, `for`, `while`, `case`, `{ }`) is stored as **one**
+history entry. By default it is joined onto a single line the way bash's
+`cmdhist` does — a boundary newline becomes `; `, or a bare space where a `;`
+would not parse:
+
+```sh
+if true; then    # typed over three lines
+echo hi
+fi
+# recalled as:   if true; then echo hi; fi
+```
+
+`shopt -s lithist` keeps the newlines instead, so recall gives back the
+multi-line buffer you actually typed:
+
+```sh
+shopt -s lithist
+# recalled as:   if true; then
+#                echo hi
+#                fi
+```
+
+Both forms re-execute identically, and either survives a restart — the history
+file escapes embedded newlines. Put `shopt -s lithist` in `~/.hellishrc` to
+make it the default.
+
 ## Completion ✅
 
 Readline-driven completion with context-aware generators:

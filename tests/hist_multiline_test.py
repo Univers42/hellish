@@ -151,6 +151,44 @@ def more_shapes():
     check("shape session exits cleanly", s.close())
 
 
+def lithist_shapes():
+    """`shopt -s lithist`: keep the newlines instead of joining (issue #32).
+
+    Recalling a multi-line if/for gave back a flattened one-liner, because
+    hellish only ever implemented bash's cmdhist half. lithist is bash's
+    own name for the other half, and the expectations here were measured
+    against bash 5.3.9 in this same pty: default recall ends "; fi",
+    lithist recall ends "<newline>fi".
+    """
+    home = tempfile.mkdtemp(prefix="hellish_lith_")
+    s = Session(home)
+    out = plain(s.send("shopt lithist\n", 0.5))
+    check("lithist is off by default (as in bash)", "off" in out,
+          "got %r" % out[-120:])
+
+    s.send("shopt -s lithist\n", 0.5)
+    for line in ("if true; then", "echo LIT", "fi"):
+        s.send(line + "\n", 0.4)
+    # The pty renders each newline as CR/LF plus readline's own CR, so the
+    # carriage returns are stripped before looking for the line break.
+    recalled = plain(s.send("\x1b[A", 0.9)).replace("\r", "")
+    check("lithist recall keeps the newline",
+          "\nfi" in recalled and "; fi" not in recalled,
+          "recalled %r" % recalled[-120:])
+
+    # ...and the recalled multi-line buffer must still RUN.
+    out = plain(s.send("\n", 1.0))
+    check("the recalled multi-line buffer re-executes",
+          "LIT" in out, "got %r" % out[-200:])
+    check("lithist session exits cleanly", s.close())
+
+    # the file must round-trip the literal newlines across sessions
+    entries = decode_hist_file(os.path.join(home, ".minishell_history"))
+    check("history file keeps the literal newlines",
+          any("if true; then\necho LIT\nfi" == e for e in entries),
+          "entries=%r" % entries[-4:])
+
+
 def main():
     home = tempfile.mkdtemp(prefix="hellish_hist_")
     cmds = [
@@ -197,6 +235,7 @@ def main():
     check("reloaded loop recall runs", out.count("LOOP") >= 3, repr(out[:400]))
     check("second session exits cleanly", s2.close())
     more_shapes()
+    lithist_shapes()
 
     print("== %s ==" % ("ALL PASSED" if not FAILS else
                         "%d FAILURES: %s" % (len(FAILS), ", ".join(FAILS))))

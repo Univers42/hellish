@@ -67,7 +67,7 @@ char		*hj_finish(t_hjoin *h);
 
 t_string	parse_single_cmd(t_string hist, size_t *cur);
 t_vec		parse_hist_file(t_string hist);
-void		add_history_line(const char *cmd);
+void		add_history_line(t_shell *state, const char *cmd);
 void		parse_history_file(t_shell *state);
 t_string	encode_cmd_hist(char *cmd);
 void		manage_history(t_shell *state);
