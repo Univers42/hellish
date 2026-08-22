@@ -25,24 +25,25 @@
 #include <unistd.h>
 
 /* readline generator: yields one matching command name per call.
-   First exhausts the built-ins list, then scans each PATH directory. */
+   First exhausts the built-ins list, then scans each PATH directory.
+   Matches are libc-allocated (rl_dup) because readline frees them --
+   handing it ft_malloc memory aborted the shell on SAFE=0 builds. */
 static char	*cmd_generator(const char *text, int state_gen)
 {
-	static char	**path_dirs;
-	static int	dir_idx;
-	size_t		tlen;
-	char		*name;
+	static t_cmd_gen	g;
+	size_t				tlen;
+	char				*name;
 
 	tlen = ft_strlen(text);
 	if (!state_gen)
-		cmd_gen_init(&path_dirs, &dir_idx);
-	while (g_builtins[g_cmd_idx])
+		cmd_gen_init(&g);
+	while (g_builtins[g.bidx])
 	{
-		name = g_builtins[g_cmd_idx++];
+		name = g_builtins[g.bidx++];
 		if (ft_strncmp(name, text, tlen) == 0)
-			return (ft_strdup(name));
+			return (rl_dup(name));
 	}
-	return (cmd_gen_dirs(&path_dirs, &dir_idx, tlen, text));
+	return (cmd_gen_dirs(&g, tlen, text));
 }
 
 char	**complete_commands(const char *text, int start, int end)
