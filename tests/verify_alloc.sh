@@ -47,7 +47,7 @@ SCRIPTS=("$TESTS"/scripts/*.sh "$TESTS"/hard/[0-9]*.sh "$TESTS"/level*.sh)
 strip() { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | grep -vE '^[[:space:]]*❯' | grep -v '^exit$'; }
 
 build() { # $1=SAFE  $2=make-args
-	( cd "$ROOT" && rm -f build/bin/hellish && make $2 SAFE="$1" >/dev/null 2>&1 )
+	( cd "$ROOT" && rm -f build/bin/hellish && make all $2 SAFE="$1" >/dev/null 2>&1 )
 	[ -f "$BIN" ] || { echo "  BUILD FAILED (SAFE=$1 $2)"; exit 1; }
 }
 

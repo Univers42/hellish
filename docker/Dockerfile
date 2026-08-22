@@ -71,7 +71,7 @@ ARG BUILD_FLAGS="OPT=1 SAFE=1"
 RUN make fclean >/dev/null 2>&1 || true; \
 	printf '\n=== building with %s on %s ===\n' "$CC" "$(uname -sm)"; \
 	$CC --version | head -1; \
-	make ${BUILD_FLAGS} CC=$CC; \
+	make all ${BUILD_FLAGS} CC=$CC; \
 	./build/bin/hellish -c 'echo "hellish built OK on $(uname -s) $(uname -m)"'
 
 ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1

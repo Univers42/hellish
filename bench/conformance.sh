@@ -9,7 +9,7 @@ set -eu
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-make --no-print-directory OPT=1 >/dev/null
+make --no-print-directory all OPT=1 >/dev/null
 mkdir -p bench/.bin bench/.artifacts
 cp build/bin/hellish bench/.bin/hellish
 
