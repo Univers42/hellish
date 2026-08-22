@@ -85,6 +85,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      # libft declares the nested ft_malloc submodule `update = none`, so
+      # `submodules: recursive` above deliberately skips it -- and the
+      # Makefile's fallback fetch cannot rescue a Docker build, because the
+      # build context has no .git in it (see docker/*.dockerignore). The
+      # SAFE=0 rung then hit "fatal: not a git repository" inside the
+      # container. Materialize it on the HOST, before the context is sent.
+      - name: Materialize ft_malloc into the build context
+        run: |
+          git -C vendor/libft submodule update --init --checkout \
+            srcs/memory/ft_malloc
+          test -f vendor/libft/srcs/memory/ft_malloc/Makefile \
+            || { echo "::error::ft_malloc did not materialize"; exit 1; }
       - name: Build from source in ${{ matrix.base }}
         run: |
           docker build -f docker/Dockerfile -t hellish-probe \
@@ -189,32 +201,48 @@ jobs:
     runs-on: windows-latest
     continue-on-error: true
     timeout-minutes: 60
-    defaults:
-      run:
-        shell: wsl-bash {0}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - uses: Vampire/setup-wsl@v6
+        id: wsl
         with:
           distribution: Ubuntu-22.04
           additional-packages: build-essential libreadline-dev git python3 ca-certificates
+      # The shell is set PER STEP, not as a job-level default. `wsl-bash` does
+      # not exist until the action above registers it, and a job-level default
+      # applies to the whole job -- which made the first run here die before
+      # any step produced a log, so there was nothing to read. Per-step keeps
+      # the failure attached to the step that caused it.
       - name: Show the environment
+        shell: wsl-bash {0}
         run: |
           uname -a
           cat /etc/os-release | head -2
           gcc --version | head -1
           echo "WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-unset}"
       - name: Build
+        shell: wsl-bash {0}
         run: |
           cd "$GITHUB_WORKSPACE"
           make OPT=1 SAFE=1 2>&1 | tail -60
           test -x build/bin/hellish
       - name: Portability smoke
+        shell: wsl-bash {0}
         run: |
           cd "$GITHUB_WORKSPACE"
           bash docker/smoke.sh ./build/bin/hellish
+      - name: Say what failed
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "::warning::The WSL rung failed. If no step above produced"
+          Write-Host "output, setup-wsl itself did not come up -- that is a"
+          Write-Host "runner/action problem, not a hellish one. The gcc-11 half"
+          Write-Host "of what this covers also runs as 'ubuntu 22.04 · gcc-11'"
+          Write-Host "in the distros matrix; only the Windows filesystem and"
+          Write-Host "interop bridge are unique to this job."
 
   # ── Summary ──────────────────────────────────────────────────────────────
   # One place to read the matrix from. The informational rungs are reported,
