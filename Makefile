@@ -633,6 +633,15 @@ history-matrix-test: all
 	@python3 $(TEST_DIR)/history_multiline_matrix.py \
 		$(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The git dirty star must not outlive the state it describes: a `git status`
+# that took a second armed a 30-second TTL, and the prompt then asserted
+# "dirty" for half a minute after a `git checkout` in the same shell had made
+# the tree clean. Makes the slow scan deterministic with a `git` shim rather
+# than needing a big repo, so it reproduces on any machine.
+git-star-test: all
+	@python3 $(TEST_DIR)/git_star_freshness_test.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # ── Every pty/regression test in tests/*.py, by DISCOVERY ────────────────────
 # Not a list: a list drifts, and this one had. completion_posix_test.py lived
 # in tests/ with no target and no CI job, so the POSIX command-search fix it
@@ -839,7 +848,7 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test history-opts-test history-matrix-test pty-test \
+	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
 	prompt-atomic-test \

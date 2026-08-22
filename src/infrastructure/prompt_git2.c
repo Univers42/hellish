@@ -73,3 +73,26 @@ t_gitloc	*repo_locate(void)
 	walk_root(&loc);
 	return (&loc);
 }
+
+/* Bumped once per command the REPL actually executes.
+
+   The dirty cache below throttles how often `git status` is RE-RUN while
+   nothing is happening, which is right: a prompt redrawn on an idle
+   terminal has no reason to rescan. What it must never do is outlive an
+   actual change to the working tree -- and the only moment the tree can
+   change under this shell is a command running in it.
+
+   Without this, a scan that took a second armed a 30-second TTL and the
+   prompt then asserted "dirty" for half a minute after `git checkout`,
+   `git commit` or `git stash` had made it clean. The star said one thing
+   and `git status` on the line above said the other.
+
+   A counter rather than a flag: it makes "has anything happened since
+   this answer was computed?" a comparison, so a scan that completes late
+   is still attributed to the generation it was started for. */
+int	*git_scan_gen(void)
+{
+	static int	gen;
+
+	return (&gen);
+}
