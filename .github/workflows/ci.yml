@@ -306,6 +306,10 @@ jobs:
         run: bash tests/hard/run.sh
       - name: Both heaps agree, and neither leaks
         run: cd tests && ./verify_alloc.sh
+      # Builds SAFE=0 itself: a cross-heap free cannot exist on SAFE=1,
+      # where xmalloc and readline's free() are the same allocator.
+      - name: Tab completion on the ft_malloc heap
+        run: make completion-test
 
   # ── Benchmarks: measured, reported, never a gate ─────────────────────────
   # Shared CI runners are noisy neighbours; timings there cannot decide
