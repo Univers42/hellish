@@ -75,15 +75,26 @@ bool	job_finished(const t_job *job)
    same libc -- which is what keeps the two agreeing on a platform whose
    wording differs (musl and glibc do not spell every signal alike).
    The result is BORROWED and read-only; it is char * rather than const
-   char * only so the declaration aligns with the rest of the header. */
+   char * only so the declaration aligns with the rest of the header.
+
+   A job that exited NON-ZERO reads "Done(7)", not "Done": bash puts the
+   status in the column so `jobs` can tell a failed background job from a
+   successful one, and hellish said a flat "Done" for both.  The buffer is
+   static because the caller only ever formats one job at a time (job_print
+   consumes the string inside a single ft_printf), which is the same
+   contract strsignal already has on the line below. */
 char	*job_status_desc(const t_job *job)
 {
+	static char	done[16];
+
 	if (job->status == JOB_RUNNING)
 		return ((char *)"Running");
 	if (job->status == JOB_STOPPED)
 		return ((char *)"Stopped");
-	if (job->status == JOB_DONE)
+	if (job->status == JOB_DONE && job->exit_code == 0)
 		return ((char *)"Done");
+	if (job->status == JOB_DONE)
+		return (done_with_code(done, sizeof(done), job->exit_code));
 	if (job->status == JOB_KILLED && job->term_sig > 0)
 		return (strsignal(job->term_sig));
 	return ((char *)"Unknown");

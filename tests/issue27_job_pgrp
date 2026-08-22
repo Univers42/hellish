@@ -1,0 +1,19 @@
+(exit 1) & p1=$!; (exit 2) & p2=$!; (exit 3) & p3=$!; wait $p1; echo "r1=$?"; wait $p2; echo "r2=$?"; wait $p3; echo "r3=$?"
+(exit 5) & p=$!; sleep 0.1; jobs > /dev/null; wait $p; echo "after_jobs=$?"
+(exit 6) & p=$!; sleep 0.1; wait $p; echo "a=$?"; wait $p 2>/dev/null; echo "rewait=$?"
+(sleep 0.2; exit 4) & p1=$!; (exit 9) & p2=$!; sleep 0.1; wait $p1; echo "slow=$?"; wait $p2; echo "fast=$?"
+(exit 0) & (exit 1) & (exit 2) & wait; echo "waitall=$?"
+sleep 0.05 & p=$!; wait $p; echo "sleep_rc=$?"; jobs
+( exit 7 ) & p=$!; sleep 0.1; jobs; wait $p; echo "rc=$?"; jobs
+( exit 0 ) & sleep 0.1; jobs; wait
+( exit 1 ) & sleep 0.1; jobs; wait
+( exit 130 ) & sleep 0.1; jobs; wait
+i=0; while [ $i -lt 4 ]; do (exit $i) & eval "q$i=\$!"; i=$((i+1)); done; wait $q1; echo "q1=$?"; wait $q3; echo "q3=$?"
+( exit 3 ) & p=$!; sleep 0.1; wait $p; echo "rc=$?"; jobs
+sleep 0.3 & kill %1; wait 2>/dev/null; jobs; echo "done=$?"
+sleep 0.3 & kill -TERM %1; wait 2>/dev/null; echo "term=$?"
+sleep 0.3 & p=$!; kill $p; wait $p 2>/dev/null; echo "sig=$?"
+(exit 2) & p=$!; sleep 0.1; jobs > /dev/null; jobs > /dev/null; wait $p; echo "twice=$?"
+{ (exit 8) & } ; p=$!; sleep 0.1; wait $p; echo "brace=$?"
+(true | false) & p=$!; wait $p; echo "pipe_rc=$?"
+(false | true) & p=$!; wait $p; echo "pipe_rc2=$?"
