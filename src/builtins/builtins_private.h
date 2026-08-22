@@ -221,6 +221,7 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);
 
 int		list_set_options(t_shell *state);
+size_t	shopt_flags(t_vec argv, char *act, int *quiet);
 
 /* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
 int		reaped_job_status(t_shell *state, pid_t pid);
