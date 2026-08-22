@@ -102,11 +102,17 @@ bool	worthy_of_being_remembered(t_shell *state)
 }
 
 /* First-time history setup: zero the struct, open the file, load and cap the
-   entries, and leave append_fd open for incremental writes. */
+   entries, and leave append_fd open for incremental writes.
+
+   readmark/appended start at what was just loaded: those entries are
+   already both read and on disk, so a later `history -n` must not import
+   them a second time and `history -a` must not re-append them. */
 void	init_history(t_shell *state)
 {
 	state->hist = (t_history){.append_fd = -1, .hist_active = true};
 	parse_history_file(state);
+	state->hist.readmark = state->hist.hist_cmds.len;
+	state->hist.appended = state->hist.hist_cmds.len;
 }
 
 /* Release the heap strings in hist_cmds and their backing vector. The

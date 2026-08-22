@@ -40,6 +40,8 @@ char	*quick_sub(t_shell *state, const char *input)
 	if (!res)
 		return (ft_eprintf("%s: :s: substitution failed\n", state->ctx),
 			ft_strdup(""));
+	if (state->hist.quiet_expand)
+		return (res);
 	return (ft_printf("%s\n", res), res);
 }
 
@@ -81,12 +83,14 @@ static int	is_bang_expand(const char *input, size_t i)
 
 /* NUL-terminate and return the expansion result. If it differs from the
    original input, echo it to stdout (bash does the same to let the user see
-   what was expanded before running it). */
-static char	*finish_expand(t_string *result, const char *input)
+   what was expanded before running it) -- unless the caller asked for
+   silence, which `history -p` does because it prints the result itself and
+   prints it even when the expansion changed nothing. */
+static char	*finish_expand(t_shell *state, t_string *result, const char *in)
 {
 	vec_ensure_space_n(result, 1);
 	((char *)result->ctx)[result->len] = '\0';
-	if (ft_strcmp((char *)result->ctx, input) != 0)
+	if (!state->hist.quiet_expand && ft_strcmp((char *)result->ctx, in) != 0)
 		ft_printf("%s\n", (char *)result->ctx);
 	return ((char *)result->ctx);
 }
@@ -120,5 +124,5 @@ char	*expand_history(t_shell *state, const char *input)
 		else
 			vec_push(&result, (void *)&input[i++]);
 	}
-	return (finish_expand(&result, input));
+	return (finish_expand(state, &result, input));
 }

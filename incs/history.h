@@ -15,10 +15,21 @@
 
 # include "shell.h"
 
+/* hist_cmds is the truth; readline's own list is a mirror kept in step so
+   the arrow keys agree with what `history` prints.
+
+   appended / readmark exist only for `history -a` and `history -n`, which
+   are defined against "what this session has already written / already
+   read" rather than against the whole list. quiet_expand suppresses the
+   echo expand_history() normally does, so `history -p` prints each result
+   exactly once -- including one that expanded to itself. */
 typedef struct s_history
 {
 	bool		hist_active;
+	bool		quiet_expand;
 	int			append_fd;
+	size_t		appended;
+	size_t		readmark;
 	t_vec		hist_cmds;
 }	t_history;
 
@@ -34,5 +45,6 @@ void		parse_history_file(t_shell *state);
 t_string	encode_cmd_hist(char *cmd);
 void		manage_history(t_shell *state);
 bool		worthy_of_being_remembered(t_shell *state);
+void		add_history_line(t_shell *state, const char *cmd);
 
 #endif

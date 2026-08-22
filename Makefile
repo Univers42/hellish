@@ -546,6 +546,14 @@ cd-posix-test: all
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The `history` builtin's OPTIONS, in a live session (issue #42). The golden
+# category issue42_history_opts covers what each one does under `-c`; this
+# covers the shape the bug actually had -- an interactive shell, a populated
+# history file, and PROMPT_COMMAND='history -a' dumping the whole list before
+# every prompt. Run it after touching builtin_history*.c.
+history-opts-test: all
+	@python3 $(TEST_DIR)/history_opts_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made
 # at its start -- the shape reported in issue #2). Both render the pty output
@@ -730,7 +738,8 @@ geoman: all
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
+	hist-test history-opts-test readline-test anim-test git-prompt-test \
+	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
