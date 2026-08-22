@@ -19,6 +19,17 @@ PATH directory after its FIRST match, and readline asks for one match per
 call, so every other command in that directory was silently dropped. An
 empty TAB listed roughly one command per PATH entry instead of all of them.
 
+A note on driving readline from a test, learned the hard way in CI: never
+let a keystroke this test types survive to become a command. The empty-line
+TAB case answers readline's "Display all N possibilities?" with `n`, and if
+that question did not appear (one TAB only dings; it takes two), the `n`
+lands on the command line instead. On a GitHub runner `n` is the node
+version manager, which switches to the alternate screen and eats every
+byte the test sends afterwards -- so `make completion-test` failed there
+and passed on every developer machine, where `n` is not installed. Two
+TABs to make the question deterministic, and a Ctrl-U before Enter so a
+stray character is discarded either way.
+
 Usage: python3 completion_test.py /path/to/hellish
 """
 import fcntl
@@ -55,6 +66,9 @@ def run(sends, path_extra=None, settle=1.4):
         "TERM": "xterm-256color", "LANG": "C.UTF-8", "PS1": "$ ",
         "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
         "HELLISH_NO_ANIM": "1",
+        # the host's (or the user's) inputrc must not decide whether a TAB
+        # dings, lists, or completes -- that is the thing under test.
+        "INPUTRC": "/dev/null",
         # leaks are checked by verify_alloc; here we want heap ERRORS loud
         "ASAN_OPTIONS": "detect_leaks=0",
     }
@@ -94,16 +108,33 @@ def no_crash(out):
     return [m for m in CRASH_MARKERS if m in out]
 
 
+def launched_something(out):
+    """True if a full-screen program took the terminal over.
+
+    The alternate-screen switch is the fingerprint of a keystroke escaping
+    to the command line and running a real host program (see the module
+    docstring). It makes every later assertion in the case meaningless, so
+    it is checked for explicitly instead of being diagnosed from a
+    confusing tail= dump the next time CI goes red.
+    """
+    return "\x1b[?1049h" in out or "\x1b[?47h" in out
+
+
 def main():
-    # 1: the exact report -- TAB on an empty line. 'n' declines readline's
-    # "display all N possibilities?", which only appears now that the scan
-    # actually reaches every command in PATH.
-    out = run([b"\t", b"n", b"\n", b"echo STILL_ALIVE\n"])
+    # 1: the exact report -- TAB on an empty line. The second TAB is what
+    # makes readline ask "Display all N possibilities?" (the first only
+    # dings); 'n' declines it, and Ctrl-U throws the line away so that 'n'
+    # can never be run as a command if the question did not appear.
+    out = run([b"\t\t", b"n", b"\x15", b"\n", b"echo STILL_ALIVE\n"])
     hits = no_crash(out)
     check("TAB on an empty line does not corrupt the heap", not hits,
           "saw %s" % hits)
+    check("readline offers the whole PATH, not a handful",
+          "possibilities?" in out, "tail=%r" % out[-200:])
     check("the shell still runs commands after that TAB",
           out.count("STILL_ALIVE") >= 2, "tail=%r" % out[-200:])
+    check("no keystroke this test typed launched a program",
+          not launched_something(out), "tail=%r" % out[-200:])
 
     # 2: completing a builtin still works (the matches are libc-owned now,
     # so this is the path that would abort if rl_dup were reverted).
@@ -135,6 +166,26 @@ def main():
         check("all matches in one PATH dir are offered, not just the first",
               len(found) == 3,
               "only %r survived the scan; tail=%r" % (found, out[-300:]))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+
+    # 5: the CI failure this file caused, made reproducible anywhere.
+    # Shadow the decline key with a real, full-screen program on PATH --
+    # which is exactly the runner's `n` -- and prove the drive sequence
+    # never hands it to the shell. Without the Ctrl-U (or with a single
+    # TAB, which only dings) this hangs and STILL_ALIVE never arrives.
+    d = tempfile.mkdtemp(prefix="hellish_shadow_")
+    try:
+        p = os.path.join(d, "n")
+        with open(p, "w") as f:
+            f.write("#!/bin/sh\nprintf '\\033[?1049hTOOK-THE-SCREEN\\n'"
+                    "\nsleep 30\n")
+        os.chmod(p, 0o755)
+        out = run([b"\t\t", b"n", b"\x15", b"\n", b"echo STILL_ALIVE\n"],
+                  path_extra=d, settle=1.8)
+        check("a one-letter program on PATH cannot hijack this test",
+              not launched_something(out)
+              and out.count("STILL_ALIVE") >= 2, "tail=%r" % out[-300:])
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
