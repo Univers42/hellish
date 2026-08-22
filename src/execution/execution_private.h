@@ -113,6 +113,8 @@ void				coproc_store(t_shell *state, char *name, int *fds,
 void				execute_top_level(t_shell *state);
 t_execution_state	execute_tree_node(t_shell *state, t_executable_node *exe);
 t_shell_func		*func_lookup(t_shell *state, const char *name);
+void				retire_body(t_shell *state, t_ast_node *body);
+void				drain_dead_funcs(t_shell *state);
 t_execution_state	execute_if(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_while(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for(t_shell *state, t_executable_node *exe);
