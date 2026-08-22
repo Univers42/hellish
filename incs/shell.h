@@ -302,6 +302,7 @@ typedef struct s_shell
 	int					bg_done_next; /* next write slot in bg_done ring */
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
+	t_vec				dead_funcs; /* bodies retired during their own call */
 	t_job_table			job_table; /* background job list */
 	bool				exit_warned; /* stopped-job exit warning given */
 	t_pal_procs			pal_procs; /* platform process registry (win32) */
