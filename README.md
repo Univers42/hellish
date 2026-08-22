@@ -241,13 +241,27 @@ compile:
 docker run --rm -it dlesieur/hellish-shell        # latest
 ```
 
-Prefer to **build from source in a clean container** across four distros
-(Alpine/musl, Debian, Ubuntu, Arch)?
+Prefer to **build from source in a clean container**? Every supported
+platform has a rung — glibc and musl, gcc and clang, five package managers:
 
 ```sh
-docker compose run --rm alpine     # interactive hellish on Alpine (or: debian, ubuntu, arch)
-make docker-test                   # build + smoke-test on ALL four distros
+docker compose run --rm alpine     # interactive hellish on Alpine/musl
+make docker-test                   # build + run the portability smoke on ALL of them
+make smoke                         # ... or just run that smoke against a local build
 ```
+
+| | rungs |
+|---|---|
+| glibc | `ubuntu` (24.04), `ubuntu2204`, `debian`, `arch`, `fedora`, `rocky`, `opensuse`, `void` |
+| musl | `alpine`, `alpine-clang`, `alpine-ftmalloc` |
+| compilers | gcc (11 → current) and clang, on both libcs, `-Werror` throughout |
+| architectures | x86_64 and arm64 (native runner in CI) |
+
+macOS and WSL are covered by the `Platforms` workflow rather than Docker —
+Apple's kernel cannot legally or practically run in a container, and WSL's
+whole point is the Windows bridge a container does not have. Both are
+**informational** today; see [wiki/platforms.md](wiki/platforms.md) for what
+works and what does not.
 
 Once installed, hellish checks for newer releases in the background (once a day,
 never blocking the prompt). `update` checks on demand, `update --now`
