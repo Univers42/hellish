@@ -14,7 +14,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 COPY . .
-RUN make fclean >/dev/null 2>&1 || true; make OPT=1 SAFE=1
+RUN make fclean >/dev/null 2>&1 || true; make all OPT=1 SAFE=1
 
 FROM debian:stable-slim
 LABEL org.opencontainers.image.title="hellish" \

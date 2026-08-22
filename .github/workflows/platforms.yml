@@ -210,7 +210,7 @@ jobs:
       - name: Build
         run: |
           cc --version | head -1
-          make OPT=1 SAFE=1 2>&1 | tail -60
+          make all OPT=1 SAFE=1 2>&1 | tail -60
           test -x build/bin/hellish
       - name: Portability smoke
         run: bash docker/smoke.sh ./build/bin/hellish
@@ -300,7 +300,7 @@ jobs:
           cd ~/hellish
           # An explicit timeout, well under the job's 60 minutes, so a stall
           # ends in a message we can read instead of a cancelled batch job.
-          if ! timeout 2400 make OPT=1 SAFE=1 2>&1 | tail -60; then
+          if ! timeout 2400 make all OPT=1 SAFE=1 2>&1 | tail -60; then
             echo "::error::build did not finish within 40 minutes inside WSL"
             exit 1
           fi
