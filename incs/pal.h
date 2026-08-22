@@ -29,4 +29,13 @@ void	pal_trap_arm(t_shell *st, int sig, void (*handler)(int));
 void	pal_trap_dfl(t_shell *st, int sig);
 void	pal_trap_ign(t_shell *st, int sig);
 
+/* Per-job process groups (src/platform/posix/job_pgrp.c).  Interactive-only
+   and self-disabling in forked children; the file header explains why ^Z
+   cannot work at all without them. */
+void	jc_init(t_shell *st);
+void	jc_begin(t_shell *st);
+void	jc_child(t_shell *st);
+void	jc_parent(t_shell *st, pid_t pid);
+void	jc_end(t_shell *st);
+
 #endif

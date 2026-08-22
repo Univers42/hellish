@@ -126,6 +126,7 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 	t_vec_exe_res		results;
 	t_execution_state	res;
 
+	jc_begin(state);
 	if (exe->node->children.len == 1 && !exe->node->negate)
 		return (execute_pipeline_one(state, exe));
 	results = (t_vec_exe_res){0};
@@ -137,6 +138,7 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 		res = pipeline_status(state, &results);
 	else
 		res = res_status(0);
+	jc_end(state);
 	if (exe->node->negate)
 	{
 		res.status = !res.status;

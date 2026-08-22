@@ -72,7 +72,7 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 
 	jt = &state->job_table;
 	parse_jobs_flags((char **)argv.ctx, (int)argv.len, &show_pid, &long_fmt);
-	job_update_status(jt);
+	job_update_status(state);
 	i = job_next_after(jt, 0);
 	while (i)
 	{
