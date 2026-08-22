@@ -15,8 +15,25 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdlib.h>
+/* _NSGetExecutablePath is declared here rather than by including
+   <mach-o/dyld.h>, and that is not laziness.
+
+   That header contains `enum DYLD_BOOL { FALSE, TRUE };`, and libft's
+   ft_stddef.h already has `typedef enum e_bool { FALSE, TRUE } t_bool;`.
+   Two enums cannot define the same enumerator names in one translation
+   unit, so including both is a hard error whichever order they come in:
+
+     dyld.h:153:20: error: redefinition of enumerator 'FALSE'
+     ft_stddef.h:203:2: note: previous definition is here
+
+   Neither header is ours to change and the collision is symmetric, so the
+   only fix that does not spread is to not include the header. One stable,
+   documented ABI symbol is a cheaper thing to declare than an enum
+   namespace is to negotiate. */
 #ifdef __APPLE__
-# include <mach-o/dyld.h>
+
+int	_NSGetExecutablePath(char *buf, uint32_t *bufsize);
+
 #endif
 
 /* Deliberately here and not in a shared header: this file is the one place
