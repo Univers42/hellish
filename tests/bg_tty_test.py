@@ -29,6 +29,10 @@ two are supposed to agree:
      echoed everything typed afterwards while nothing ran it -- the shell
      looked alive and was not. It must now announce `[1]+ Stopped`, prompt
      again, run the next command, and let `fg` resume the job. (issue #25)
+  5. Exiting with a job still stopped is refused once, the way bash does
+     it, so a suspended job cannot be orphaned by one absent-minded exit.
+  6. The very next exit is honoured, so that warning can never trap a user
+     in a shell they cannot leave. (issue #41)
 
 Usage: python3 bg_tty_test.py /path/to/hellish
 """
@@ -193,6 +197,27 @@ def main():
     check("jobs lists the stopped foreground job", "top" in out)
     check("fg resumes it and the shell survives",
           out.count("AFTER_FG") >= 2, "tail=%r" % out[-200:])
+
+    # 5: leaving with a stopped job. bash refuses the first exit and says
+    # "There are stopped jobs.", then honours the next one. hellish used to
+    # walk straight out, orphaning whatever was suspended -- which is how a
+    # session full of backgrounded `top`s vanished in issue #41.
+    seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
+           (b"echo STILL_HERE\n", 1.2)]
+    out = pty_run_seq([SHELL], seq)
+    check("exit with a stopped job is refused once",
+          "There are stopped jobs." in out, "tail=%r" % out[-200:])
+    check("the shell survives the refused exit",
+          out.count("STILL_HERE") >= 2, "tail=%r" % out[-200:])
+
+    # 6: ...and the immediately following exit is honoured, so the warning
+    # can never become a trap the user cannot get out of.
+    seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
+           (b"exit\n", 1.5), (b"echo NOT_REACHED\n", 1.2)]
+    out = pty_run_seq([SHELL], seq)
+    check("a second, immediate exit leaves anyway",
+          out.count("NOT_REACHED") < 2, "shell would not exit; tail=%r"
+          % out[-200:])
 
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
