@@ -7,6 +7,8 @@
 #   make docker-test            # all distros
 #   docker/test.sh alpine arch  # just these
 #
+# Services live in docker-compose.yml; the list below is every one of them.
+#
 # Requires docker + the compose plugin (docker compose).
 # ============================================================================
 set -u
@@ -18,21 +20,17 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 distros=("$@")
-[ ${#distros[@]} -eq 0 ] && distros=(alpine debian ubuntu ubuntu2204 arch)
-
-# A small but representative workout: externals, arithmetic, a pipeline, a
-# heredoc nested in a compound, and command hashing -- if these match, the
-# build and the core shell work in that environment.
-smoke='echo "uname: $(uname -sm)"; printf "%s\n" "arith=$((6*7))"; echo a b c | tr a-z A-Z; if true; then cat <<EOF
-nested-heredoc ok
-EOF
-fi; ls >/dev/null; type ls'
+[ ${#distros[@]} -eq 0 ] && distros=(alpine debian ubuntu ubuntu2204 arch
+	fedora rocky opensuse void alpine-clang debian-clang alpine-ftmalloc)
 
 pass=0; fail=0; summary=""
 for d in "${distros[@]}"; do
 	printf '\n\033[1;36m═══ %s : build from source ═══\033[0m\n' "$d"
+	# docker/smoke.sh is the same 40-check portability workout every CI
+	# platform job runs, so a distro failure here and a CI failure there
+	# mean the same thing and are read the same way.
 	if docker compose build "$d" \
-		&& docker compose run --rm "$d" ./build/bin/hellish -c "$smoke"; then
+		&& docker compose run --rm "$d" bash docker/smoke.sh; then
 		printf '\033[1;32m✓ %s OK\033[0m\n' "$d"; pass=$((pass + 1)); summary="$summary  $d:OK"
 	else
 		printf '\033[1;31m✗ %s FAILED\033[0m\n' "$d"; fail=$((fail + 1)); summary="$summary  $d:FAIL"

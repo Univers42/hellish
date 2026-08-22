@@ -89,6 +89,8 @@ t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 	update_underscore_var(state, cmd);
 	saves = apply_temp_assigns(state, &cmd->pre_assigns);
 	status = builtin_func(((char **)(cmd->argv.ctx))[0])(state, cmd->argv);
+	state->exit_warned = state->exit_warned
+		&& ft_strcmp(((char **)(cmd->argv.ctx))[0], "exit") == 0;
 	restore_temp_assigns(state, &saves);
 	if (need)
 		restore_backup_fds(bak, persist);

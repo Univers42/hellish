@@ -41,7 +41,7 @@ static void	load_and_persist(t_shell *state, const char *path, bool trimmed)
 
 	i = 0;
 	while (i < state->hist.hist_cmds.len)
-		add_history_line(((char **)state->hist.hist_cmds.ctx)[i++]);
+		add_history_line(state, ((char **)state->hist.hist_cmds.ctx)[i++]);
 	if (!trimmed)
 		return ;
 	fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0600);
@@ -60,7 +60,7 @@ static void	load_and_persist(t_shell *state, const char *path, bool trimmed)
 	close(fd);
 }
 
-/* Load $HOME/.hellish_history, feed the entries to readline, and rewrite the
+/* Load the history file, feed the entries to readline, and rewrite the
    file if it was trimmed. We open the file with O_CREAT so the first run
    creates it silently instead of erroring. The append_fd stays open for the
    whole session so manage_history() can add each new command atomically. */

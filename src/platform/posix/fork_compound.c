@@ -25,10 +25,12 @@ t_execution_state	fork_compound(t_shell *state, t_executable_node *exe)
 	pid = fork();
 	if (pid == 0)
 	{
+		jc_child(state);
 		default_signal_handlers();
 		set_up_redirection(state, exe);
 		exe->modify_parent_ctx = true;
 		exit(run_compound(state, exe).status);
 	}
+	jc_parent(state, pid);
 	return (res_pid(pid));
 }

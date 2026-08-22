@@ -67,3 +67,87 @@ services:
     image: hellish:arch
     tty: true
     stdin_open: true
+
+  # Arch is the family the CachyOS report in issue #42 came from, and Fedora
+  # is the other big non-Debian desktop. Neither ships the same readline,
+  # the same gcc, or the same /etc defaults as Ubuntu, and a bug that only
+  # appears on one of them is the whole reason this list is long.
+  fedora:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "fedora:41"
+    image: hellish:fedora
+    tty: true
+    stdin_open: true
+
+  # The enterprise rung: an old glibc and an old gcc, the combination people
+  # actually run servers on.
+  rocky:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "rockylinux:9"
+    image: hellish:rocky
+    tty: true
+    stdin_open: true
+
+  opensuse:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "opensuse/tumbleweed"
+    image: hellish:opensuse
+    tty: true
+    stdin_open: true
+
+  void:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "ghcr.io/void-linux/void-linux:latest-full-x86_64"
+    image: hellish:void
+    tty: true
+    stdin_open: true
+
+  # Same Alpine, built with clang instead of gcc. musl AND a second front end
+  # in one rung: clang warns about things gcc does not, and -Werror means a
+  # warning is a build failure.
+  alpine-clang:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "alpine:3.20"
+        CC: "clang"
+    image: hellish:alpine-clang
+    tty: true
+    stdin_open: true
+
+  debian-clang:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "debian:stable-slim"
+        CC: "clang"
+    image: hellish:debian-clang
+    tty: true
+    stdin_open: true
+
+  # The custom ft_malloc heap, on musl. The allocator is the part of this
+  # code base least likely to survive a different libc unexamined.
+  alpine-ftmalloc:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: "alpine:3.20"
+        BUILD_FLAGS: "OPT=1 SAFE=0"
+    image: hellish:alpine-ftmalloc
+    tty: true
+    stdin_open: true

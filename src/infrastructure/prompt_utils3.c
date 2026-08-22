@@ -135,18 +135,38 @@ void	prompt_arrow_row(t_string *ret, t_prompt *p)
    is exactly why it has to be handled here rather than at each call site.
    EINTR before any progress is a retry, not a failure. A genuine error
    (the tty went away) just stops: there is nowhere to report it from a
-   redraw path. */
+   redraw path.
+
+   EAGAIN is the same bug wearing a different hat, and it is worse: it can
+   lose the WHOLE frame rather than just a tail. O_NONBLOCK lives on the
+   open file DESCRIPTION, which the shell shares with every program it
+   launches, so one tool that sets it on the terminal and does not put it
+   back leaves the shell writing to a non-blocking tty for the rest of the
+   session. With the output queue full, write() then returns -1/EAGAIN
+   having transferred nothing, and treating that as a hard error dropped
+   everything. Measured against a full 64K buffer: the EINTR-only loop
+   wrote 0 of a 65-byte prompt frame; waiting for writability wrote 65.
+
+   The stall counter bounds the wait at ~10s of a terminal that never
+   drains, so a wedged tty cannot hang the shell forever. */
 void	tty_write_all(int fd, const char *buf, size_t len)
 {
-	ssize_t	n;
-	size_t	off;
+	ssize_t			n;
+	size_t			off;
+	struct pollfd	pfd;
+	int				stalls;
 
 	off = 0;
-	while (off < len)
+	stalls = 0;
+	pfd.fd = fd;
+	pfd.events = POLLOUT;
+	while (off < len && stalls < 100)
 	{
 		n = write(fd, buf + off, len - off);
 		if (n > 0)
 			off += (size_t)n;
+		else if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+			stalls += (poll(&pfd, 1, 100) == 0);
 		else if (!(n < 0 && errno == EINTR))
 			return ;
 	}

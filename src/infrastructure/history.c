@@ -60,16 +60,22 @@ t_string	parse_single_cmd(t_string hist, size_t *cur)
 	return (cmd);
 }
 
-/* Feed a command to readline's history in its bash-style single-line form:
-   hist_join_line rewrites command-boundary newlines as "; " (or a space
-   where a ";" would be illegal) and keeps quoted / here-doc newlines
-   literal, so a recalled entry re-executes with the same meaning as the
-   multi-line original. hist_cmds and the history file keep the raw text. */
-void	add_history_line(const char *cmd)
+/* Feed a command to readline's history.
+
+   Default (bash cmdhist): hist_join_line rewrites command-boundary
+   newlines as "; " -- or a space where a ";" would be a syntax error,
+   which is not a nicety: `f()` followed by ";" stops defining a function.
+   With `shopt -s lithist` the boundaries stay newlines instead.
+
+   Both modes run the SAME scanner, so both keep quoted and here-doc
+   newlines literal and both splice out a top-level \<newline>, exactly as
+   bash does -- lithist means "keep the layout", not "store the raw bytes".
+   hist_cmds and the history file keep the raw text either way. */
+void	add_history_line(t_shell *state, const char *cmd)
 {
 	char	*joined;
 
-	joined = hist_join_line(cmd);
+	joined = hist_join_line(cmd, (state->shopt & SHOPT_LITHIST) != 0);
 	if (!joined)
 		return (add_history(cmd));
 	add_history(joined);

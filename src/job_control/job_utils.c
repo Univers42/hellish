@@ -64,7 +64,7 @@ void	job_notify(t_shell *state)
 	if (state->metinp != INP_RL)
 		return ;
 	jt = &state->job_table;
-	job_update_status(jt);
+	job_update_status(state);
 	i = 0;
 	while (i < JOB_MAX)
 	{
