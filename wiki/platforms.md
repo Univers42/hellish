@@ -89,9 +89,14 @@ container and the licence does not permit running it off Apple hardware, so
 (x86_64) and `macos-14` (arm64) runners are the honest equivalent, and both
 are in the `Platforms` workflow.
 
-The job is `continue-on-error` on purpose, and the honest state is: as of
-2.8.1 the build succeeds and the smoke was **39 ok / 1 failed**, the one
-failure being `/proc/self/exe`, now fixed. Both known gaps are closed:
+The job is `continue-on-error` on purpose. macOS bring-up has been
+strictly iterative — **six** defects so far, each one only visible once the
+one before it was fixed, and every round trip costs a CI queue. In order:
+`st_mtim`, `SIGPWR`/`SIGRTMIN`, `bcopy`, `MB_CUR_MAX`, then a link hole
+that had nothing to do with Darwin, then `/proc/self/exe`, then this
+header collision. As of 2.8.1 the build succeeds and the smoke reached
+**39 ok / 1 failed**, that one being `/proc/self/exe`. All known gaps are
+now closed:
 
 1. **readline.** Apple ships libedit under the name `libreadline`. It
    answers `-lreadline` and then does not have most of the GNU API this
@@ -112,6 +117,15 @@ failure being `/proc/self/exe`, now fixed. Both known gaps are closed:
    Linux, where it always worked. It asserts that `/proc/self/exe` is
    named in exactly one file. That is the property that actually failed:
    the knowledge was in four places, so porting meant finding all four.
+
+3. **`<mach-o/dyld.h>` cannot be included in this tree.** It declares
+   `enum DYLD_BOOL { FALSE, TRUE };`, and libft's `ft_stddef.h` already has
+   `enum e_bool { FALSE, TRUE }`. Two enums cannot define the same
+   enumerator names in one translation unit, so including both is a hard
+   error in either order — and it is *invisible* on Linux, where no
+   toolchain ships that header at all. `_NSGetExecutablePath` is declared
+   by hand instead; one stable ABI symbol is cheaper to declare than an
+   enum namespace is to negotiate. Gated in the same test file.
 
 Do not flip `continue-on-error` off until a full run is green on a real
 runner. A red required check that everyone learns to ignore is worse than

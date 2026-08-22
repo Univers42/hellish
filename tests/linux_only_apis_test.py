@@ -47,6 +47,19 @@ GATED = {
     "/proc/self/exe": ("src/platform/posix/self_exe.c", "self_exe_path()"),
 }
 
+# System headers that cannot be included ANYWHERE in this tree, and why.
+# These are not style rules -- each one is a compile error we have already
+# paid for, on a platform most of us cannot build locally.
+FORBIDDEN_INCLUDES = {
+    "mach-o/dyld.h":
+        "it declares `enum DYLD_BOOL { FALSE, TRUE };` and libft's\n"
+        "        ft_stddef.h already has `enum e_bool { FALSE, TRUE }`.\n"
+        "        Two enums cannot define the same enumerator names in one\n"
+        "        translation unit, so including both is a hard error in\n"
+        "        either order. Declare the one symbol you need instead:\n"
+        "        `int _NSGetExecutablePath(char *buf, uint32_t *bufsize);`",
+}
+
 # Comments may discuss these freely -- that is where the reasoning lives,
 # and a rule that forbids explaining itself is a rule people route around.
 # Block comments are tracked properly rather than matched line by line: the
@@ -103,6 +116,25 @@ def code_hits(path, needle):
     return hits
 
 
+def test_forbidden_includes(files):
+    """Headers that do not collide on Linux and do on the target.
+
+    This one cost a CI round trip to find, which is the argument for the
+    check: the collision is invisible here -- no Linux toolchain ships
+    mach-o/dyld.h, so nothing locally can even attempt it -- and the only
+    machine that can see it is the one we get to consult every twenty
+    minutes. A grep is a poor substitute for a compiler and a very good
+    substitute for a queue.
+    """
+    for header, why in FORBIDDEN_INCLUDES.items():
+        stray = []
+        for f in files:
+            stray += code_hits(f, "<%s>" % header)
+        check("%s is never included" % header, not stray,
+              "\n        " + why + "\n        offending: "
+              + ", ".join(stray[:6]))
+
+
 def main():
     files = sources()
     check("there are sources to scan", len(files) > 100,
@@ -121,6 +153,7 @@ def main():
         check("%s still lives in %s" % (needle, owner),
               bool(code_hits(owner, needle)),
               "the owner no longer mentions it -- is the GATED table stale?")
+    test_forbidden_includes(files)
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 
