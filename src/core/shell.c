@@ -32,6 +32,7 @@ static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
 char		*read_file(const char *path);
 void		source_profile(t_shell *state);
+void		set_default_ps1(t_shell *state);
 
 /* Interactive startup only: source the user's ~/.hellishrc (aliases, exports,
    functions, set-options, prompt tweaks) right in this shell -- our .bashrc
@@ -82,6 +83,7 @@ int	main(int argc, char **argv, char **envp)
 	on(&state, argv, envp);
 	if (is_login_shell)
 		state.option_flags |= OPT_FLAG_LOGIN;
+	set_default_ps1(&state);
 	source_profile(&state);
 	source_hellishrc(&state);
 	show_welcome(&state);
