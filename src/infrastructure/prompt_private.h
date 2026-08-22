@@ -155,6 +155,8 @@ t_string	prompt_normal(t_shell *state);
 t_string	ps1_render(t_shell *state, const char *fmt);
 void		ps1_host(t_string *out, char kind);
 void		ps1_dollar(t_shell *state, t_string *out, const char *f, int *i);
+void		ps1_brace(t_shell *state, t_string *out, const char *f, int *i);
+void		ps1_octal(t_string *out, const char *f, int *i);
 void		ps1_user(t_shell *state, t_string *out);
 void		ps1_git(t_string *out);
 void		ps1_status(t_shell *state, t_string *out);

@@ -254,6 +254,8 @@ jobs:
         run: make git-prompt-test
       - name: non-ASCII prompt and wrapping input
         run: make widechar-test
+      - name: PS1 escapes and ${...} render, not print as text
+        run: make ps1-render-test
       - name: background jobs and the controlling terminal
         run: make bg-tty-test
       - name: prompt integrity (idle silence + no cut escapes)

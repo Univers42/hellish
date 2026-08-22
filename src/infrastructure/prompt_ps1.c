@@ -17,9 +17,10 @@
 /* User-configurable prompts, bash syntax. Setting PS1 in ~/.hellishrc (or
    exporting it) replaces the built-in two-row prompt entirely; unset PS1
    keeps the rich default as the "hellish theme". Escapes supported:
-   \u \h \H \w \W \$ \n \t \d \e \a \\ \j \s \v \[ \] — unknown escapes
-   pass through literally, exactly like bash. $NAME and ${NAME} expand
-   from the live environment on every render (prompt_ps1b.c). */
+   \u \h \H \w \W \$ \n \t \d \e \a \\ \j \s \v \[ \] \nnn — unknown
+   escapes pass through literally, exactly like bash. $NAME expands from
+   the live environment on every render (prompt_ps1b.c); ${...} goes
+   through the shell's own parameter expander (prompt_ps1d.c). */
 
 /* \w and \W: the cwd with $HOME collapsed to ~; \W keeps only the last
    component (but a bare ~ stays ~, matching bash). */
@@ -106,6 +107,8 @@ static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 	char	c;
 
 	c = f[*i + 1];
+	if (c >= '0' && c <= '7')
+		return (ps1_octal(out, f, i));
 	*i += 2;
 	if (c == 'u')
 		return (ps1_user(state, out));
