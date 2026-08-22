@@ -240,3 +240,10 @@ shopt -s nosuchopt_xyz 2>/dev/null; echo "bad=$?"
 shopt -u cdspell; echo "u=$?"; shopt -s cdspell; echo "s=$?"; shopt -u cdspell; echo "u2=$?"
 shopt -s extglob; if shopt extglob >/dev/null; then echo IS_ON; else echo IS_OFF; fi
 shopt -u extglob; if shopt extglob >/dev/null; then echo IS_ON; else echo IS_OFF; fi
+shopt -qs extglob; echo "qs=$?"; shopt -qu extglob; echo "qu=$?"; shopt -q extglob; echo "q=$?"
+shopt -s lithist; shopt -p lithist; shopt -u lithist; shopt -p lithist
+shopt -p extglob nullglob
+shopt -o | head -3
+shopt -o | wc -l; set -o | wc -l
+shopt -qs lithist cdspell; echo "rc=$?"; shopt -q lithist; echo "l=$?"; shopt -q cdspell; echo "c=$?"
+shopt -sq nocaseglob; echo "sq=$?"; shopt nocaseglob
