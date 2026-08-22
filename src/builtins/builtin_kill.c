@@ -91,7 +91,7 @@ int	kill_one_target(t_shell *state, const char *target, int sig)
 		if (!job)
 			return (ft_eprintf("%s: kill: %s: no such job\n",
 					state->ctx, target), 1);
-		if (pal_kill_pgid(state, job->pgid, sig) == -1)
+		if (job_kill_group(state, job, sig) == -1)
 			return (ft_eprintf("%s: kill: (%d): %s\n", state->ctx,
 					job->pgid, strerror(errno)), 1);
 		return (0);
