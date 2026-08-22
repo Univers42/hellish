@@ -41,7 +41,7 @@ static void	load_and_persist(t_shell *state, const char *path, bool trimmed)
 
 	i = 0;
 	while (i < state->hist.hist_cmds.len)
-		add_history_line(((char **)state->hist.hist_cmds.ctx)[i++]);
+		add_history_line(state, ((char **)state->hist.hist_cmds.ctx)[i++]);
 	if (!trimmed)
 		return ;
 	fd = open(path, O_WRONLY | O_TRUNC | O_CREAT, 0600);

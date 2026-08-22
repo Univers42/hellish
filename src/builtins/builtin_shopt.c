@@ -29,7 +29,8 @@ static unsigned int	shopt_bit(const char *name)
 	{"globstar", SHOPT_GLOBSTAR}, {"nocaseglob", SHOPT_NOCASEGLOB},
 	{"extglob", SHOPT_EXTGLOB}, {"lastpipe", SHOPT_LASTPIPE},
 	{"histappend", SHOPT_HISTAPPEND}, {"checkwinsize", SHOPT_CHECKWINSIZE},
-	{"autocd", SHOPT_AUTOCD}, {"cdspell", SHOPT_CDSPELL}, {NULL, 0}};
+	{"autocd", SHOPT_AUTOCD}, {"cdspell", SHOPT_CDSPELL},
+	{"lithist", SHOPT_LITHIST}, {NULL, 0}};
 	int							i;
 
 	i = 0;
@@ -50,7 +51,15 @@ static void	shopt_sync(t_shell *state)
 }
 
 /* Apply/query one name under mode ('s' set, 'u' unset, 'q' query,
-   0 print). Returns the per-name status for -q/print accumulation. */
+   0 print). Returns the per-name status for -q/print accumulation.
+
+   The two status rules are bash's and they are NOT the same rule: -s and
+   -u report whether the CHANGE succeeded, so a successful `shopt -u x`
+   is 0 even though x ends up off; -q and the bare print form report the
+   SETTING, so `shopt x` on an unset option is 1. hellish had both
+   backwards -- `shopt -u extglob` returned 1, and `shopt extglob`
+   returned 0 whatever the setting -- which made either one useless in an
+   `if`. */
 static int	shopt_one(t_shell *state, const char *name, char mode)
 {
 	unsigned int	bit;
@@ -60,11 +69,15 @@ static int	shopt_one(t_shell *state, const char *name, char mode)
 	if (bit == 0)
 		return (ft_eprintf("%s: shopt: %s: invalid shell option name\n",
 				state->ctx, name), 1);
-	if (mode == 's')
-		state->shopt |= bit;
-	else if (mode == 'u')
-		state->shopt &= ~bit;
-	else if (mode == 0)
+	if (mode == 's' || mode == 'u')
+	{
+		if (mode == 's')
+			state->shopt |= bit;
+		else
+			state->shopt &= ~bit;
+		return (0);
+	}
+	if (mode == 0)
 	{
 		st = "off";
 		if (state->shopt & bit)
@@ -83,7 +96,7 @@ static int	shopt_print_all(t_shell *state)
 {
 	static const char *const	names[] = {"autocd", "cdspell",
 		"checkwinsize", "dotglob", "extglob", "globstar", "histappend",
-		"lastpipe", "nocaseglob", "nullglob", NULL};
+		"lastpipe", "lithist", "nocaseglob", "nullglob", NULL};
 	int							i;
 
 	i = 0;
@@ -115,7 +128,7 @@ int	builtin_shopt(t_shell *state, t_vec argv)
 		return (shopt_print_all(state));
 	rc = 0;
 	while (i < argv.len)
-		if (shopt_one(state, ((char **)argv.ctx)[i++], mode) && mode != 0)
+		if (shopt_one(state, ((char **)argv.ctx)[i++], mode))
 			rc = 1;
 	return (shopt_sync(state), rc);
 }
