@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "prompt_private.h"
 #include "parena.h"
 
 /* Initialise the parser, token deque, and prompt string for one command cycle.
@@ -53,6 +54,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 	if (parser->res == RES_OK && !state->cycle_streamed)
 	{
 		execute_top_level(state);
+		(*git_scan_gen())++;
 		if (parena()->attached)
 			free_ast(&state->tree);
 		else
