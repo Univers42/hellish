@@ -30,7 +30,8 @@ static unsigned int	shopt_bit(const char *name)
 	{"extglob", SHOPT_EXTGLOB}, {"lastpipe", SHOPT_LASTPIPE},
 	{"histappend", SHOPT_HISTAPPEND}, {"checkwinsize", SHOPT_CHECKWINSIZE},
 	{"autocd", SHOPT_AUTOCD}, {"cdspell", SHOPT_CDSPELL},
-	{"lithist", SHOPT_LITHIST}, {NULL, 0}};
+	{"lithist", SHOPT_LITHIST}, {"progcomp", SHOPT_PROGCOMP},
+	{NULL, 0}};
 	int							i;
 
 	i = 0;
@@ -98,7 +99,7 @@ static int	shopt_print_all(t_shell *state, char act, int quiet)
 {
 	static const char *const	names[] = {"autocd", "cdspell",
 		"checkwinsize", "dotglob", "extglob", "globstar", "histappend",
-		"lastpipe", "lithist", "nocaseglob", "nullglob", NULL};
+		"lastpipe", "lithist", "nocaseglob", "nullglob", "progcomp", NULL};
 	int							i;
 
 	i = 0;
@@ -109,22 +110,34 @@ static int	shopt_print_all(t_shell *state, char act, int quiet)
 
 /* `shopt -o` addresses the `set -o` options, not shopt's own -- bash
    documents it as "restrict to option names defined for set -o", which is
-   why `shopt -o` and `set -o` print the same table. hellish listed its
-   shopt names there instead, so a script asking about `allexport` got an
-   answer about `autocd`. list_set_options already renders that table for
-   `set -o`, so this is a delegation, not a second copy. */
+   why bare `shopt -o` and bare `set -o` print the same table. hellish
+   listed its shopt names there instead, so a script asking about
+   `allexport` got an answer about `autocd`.
+
+   -o is a SCOPE, not an action, and that distinction is the bug behind
+   issue #51. It used to be parsed as one of the actions, so it lost every
+   argument that came with it: `shopt -oq posix` -- which is how Ubuntu's
+   stock ~/.bashrc asks whether posix mode is on -- dumped all 27 option
+   lines to the screen at login and returned 0 no matter the setting, and
+   `shopt -op posix` was read as a bare -p that then rejected "posix" as an
+   unknown shopt name. It now rides alongside act and quiet, and
+   shopt_setopt() applies the same action rules to the set -o roster. */
 int	builtin_shopt(t_shell *state, t_vec argv)
 {
 	char	act;
 	int		quiet;
+	int		use_o;
 	size_t	i;
 	int		rc;
 
 	act = 0;
 	quiet = 0;
-	i = shopt_flags(argv, &act, &quiet);
-	if (act == 'o')
+	use_o = 0;
+	i = shopt_flags(argv, &act, &quiet, &use_o);
+	if (use_o && i >= argv.len)
 		return (list_set_options(state));
+	if (use_o)
+		return (shopt_setopt(state, argv, i, (t_shopt_act){act, quiet}));
 	if (i >= argv.len)
 		return (shopt_print_all(state, act, quiet));
 	rc = 0;

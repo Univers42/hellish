@@ -497,7 +497,14 @@ norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 
 
 # Install as the login shell. This is the binary you live in, so it is rebuilt
-# optimized AND safe (OPT=1 SAFE=1 -> libc allocator) by default. You may force
+# optimized AND safe (OPT=1 SAFE=1 -> libc allocator) by default.
+#
+# It also seeds ~/.hellishrc, which it used not to: the seeding lived inside
+# user-install.sh, so this route installed a binary and stopped, and the
+# first thing you met was a shell with no config -- no EDITOR, no aliases,
+# no PS1 (issue #51). Both routes now call tools/seed_hellishrc.sh, which
+# never touches an rc you already have. It runs BEFORE chsh: the config
+# should be in place before anything can log you into the new shell. You may force
 # the custom heap with `make my_shell SAFE=0`, but then stability is on you.
 # Which binary gets installed. STATIC=1 takes the container-built static one
 # from dist/ instead of compiling here -- the "build it in docker, then run it
@@ -515,6 +522,8 @@ my_shell:  ## sudo-install to /usr/bin and register as a login shell
 	fi
 	@echo "Installing hellish shell from $(MY_SHELL_BIN)..."
 	sudo install -m 755 $(MY_SHELL_BIN) /usr/bin/hellish
+	@echo "Seeding your config..."
+	@./tools/seed_hellishrc.sh
 	@echo "Registering shell..."
 	./vendor/scripts/register_shell.sh
 	@echo "Done. Log out and log back in to use hellish as your default shell."
