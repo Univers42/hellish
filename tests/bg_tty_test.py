@@ -29,6 +29,10 @@ two are supposed to agree:
      echoed everything typed afterwards while nothing ran it -- the shell
      looked alive and was not. It must now announce `[1]+ Stopped`, prompt
      again, run the next command, and let `fg` resume the job. (issue #25)
+  5. Exiting with a job still stopped is refused once, the way bash does
+     it, so a suspended job cannot be orphaned by one absent-minded exit.
+  6. The very next exit is honoured, so that warning can never trap a user
+     in a shell they cannot leave. (issue #41)
 
 Usage: python3 bg_tty_test.py /path/to/hellish
 """
@@ -148,6 +152,45 @@ def bg_stdin_verdict(argv):
             pass
 
 
+def _pgrp_tpgid(path):
+    """(pgrp, tpgid) out of a /proc/<pid>/stat dump.
+
+    Split after the LAST ')' -- the comm field is parenthesised and may
+    itself contain spaces, so a plain .split() mis-aligns every field.
+    Past comm the order is state, ppid, pgrp, session, tty_nr, tpgid.
+    """
+    with open(path) as f:
+        s = f.read()
+    fields = s[s.rindex(")") + 1:].split()
+    return int(fields[2]), int(fields[5])
+
+
+def fg_pgrps(argv):
+    """Run a foreground command that reports its own process group.
+
+    Returns (child_pgrp, child_tpgid, shell_pgrp).  Both dumps go through
+    FILES for the reason documented on bg_stdin_verdict: the pty echoes
+    the command line back, so anything grepped out of the transcript can
+    match the echo instead of the result.
+    """
+    fc = tempfile.mktemp(prefix="hellish_fgpg_")
+    fs = tempfile.mktemp(prefix="hellish_shpg_")
+    pty_run(argv, [("cat /proc/self/stat > %s\n" % fc).encode(),
+                   ("cat /proc/$$/stat > %s\n" % fs).encode()])
+    try:
+        child_pg, child_tpgid = _pgrp_tpgid(fc)
+        shell_pg, _ = _pgrp_tpgid(fs)
+        return child_pg, child_tpgid, shell_pg
+    except (OSError, ValueError, IndexError):
+        return None, None, None
+    finally:
+        for p in (fc, fs):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+
 def main():
     # 1: interactive keeps the terminal, and bash agrees
     bash = bg_stdin_verdict([BASH, "-i"])
@@ -172,15 +215,12 @@ def main():
     check("top & becomes a stopped job", "Stopped" in out,
           "no Stopped line; output tail=%r" % out[-160:])
 
-    # 4: ^Z on a foreground command. `top` rather than `sleep` on purpose.
-    # This test drives the shell straight from pty.fork(), which makes it a
-    # session leader, and a session leader's process group is orphaned by
-    # POSIX's definition -- the kernel silently DISCARDS SIGTSTP sent to an
-    # orphaned group. `sleep` would never stop here no matter what the shell
-    # does. `top` raises SIGSTOP on itself, which cannot be discarded, so it
-    # exercises the shell's side of the contract regardless. Under a real
-    # terminal (a shell inside another shell) `sleep` stops too; that is
-    # verified by hand and tracked in the per-job process-group issue.
+    # 4: ^Z on a foreground command, driven through `top`.
+    # `top` raises SIGSTOP on itself, which no rule can discard, so this
+    # check exercises the shell's side of the contract (WUNTRACED, the
+    # Stopped notice, `fg`) independently of process groups. Check 8 below
+    # covers the same ground with a command that does NOT self-stop, which
+    # is the part that needs per-job process groups to work at all.
     seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"jobs\n", 1.2),
            (b"echo AFTER_STOP\n", 1.2), (b"fg\n", 2.0), (b"q", 1.2),
            (b"echo AFTER_FG\n", 1.2)]
@@ -193,6 +233,81 @@ def main():
     check("jobs lists the stopped foreground job", "top" in out)
     check("fg resumes it and the shell survives",
           out.count("AFTER_FG") >= 2, "tail=%r" % out[-200:])
+
+    # 5: leaving with a stopped job. bash refuses the first exit and says
+    # "There are stopped jobs.", then honours the next one. hellish used to
+    # walk straight out, orphaning whatever was suspended -- which is how a
+    # session full of backgrounded `top`s vanished in issue #41.
+    seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
+           (b"echo STILL_HERE\n", 1.2)]
+    out = pty_run_seq([SHELL], seq)
+    check("exit with a stopped job is refused once",
+          "There are stopped jobs." in out, "tail=%r" % out[-200:])
+    check("the shell survives the refused exit",
+          out.count("STILL_HERE") >= 2, "tail=%r" % out[-200:])
+
+    # 6: ...and the immediately following exit is honoured, so the warning
+    # can never become a trap the user cannot get out of.
+    seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
+           (b"exit\n", 1.5), (b"echo NOT_REACHED\n", 1.2)]
+    out = pty_run_seq([SHELL], seq)
+    check("a second, immediate exit leaves anyway",
+          out.count("NOT_REACHED") < 2, "shell would not exit; tail=%r"
+          % out[-200:])
+
+    # 7: a foreground command must run in a process group of its OWN, and
+    # the terminal must be handed to that group. Without this the shell's
+    # group is orphaned by POSIX's definition (no member has a parent in a
+    # different group of the same session, once the shell is a session
+    # leader), and the kernel DISCARDS every SIGTSTP/SIGTTIN/SIGTTOU sent
+    # to it -- so ^Z did not merely aim badly, it did nothing at all and
+    # the command kept eating the keystrokes meant for the shell. (#27)
+    for name, argv in (("bash", [BASH, "-i"]), ("hellish", [SHELL])):
+        cpg, ctpgid, spg = fg_pgrps(argv)
+        check("%s: foreground command gets its own process group" % name,
+              cpg is not None and spg is not None and cpg != spg,
+              "child pgrp=%s shell pgrp=%s" % (cpg, spg))
+        check("%s: the terminal is handed to the foreground job" % name,
+              cpg is not None and cpg == ctpgid,
+              "child pgrp=%s tpgid=%s" % (cpg, ctpgid))
+
+    # 8: the case check 4 cannot reach. `cat` has no self-STOP to fall back
+    # on, so it stops only if the signal is really delivered -- which is
+    # true only once the job has a process group of its own.
+    seq = [(b"cat\n", 1.2), (b"\x1a", 1.5), (b"echo AFTER_TSTP\n", 1.3),
+           (b"jobs\n", 1.3)]
+    out = pty_run_seq([SHELL], seq)
+    check("^Z stops a command that does not stop itself",
+          "Stopped" in out, "tail=%r" % out[-200:])
+    check("the shell runs the next command after that ^Z",
+          out.count("AFTER_TSTP") >= 2, "tail=%r" % out[-200:])
+
+    # 9: `kill %1` on a STOPPED job. The signal stays pending until
+    # something resumes the process, so this looked like a no-op: the job
+    # sat there as "Stopped" for the rest of the session. bash follows the
+    # signal with SIGCONT; and job_update_status has to keep polling a
+    # stopped job or the shell can never notice it died.
+    seq = [(b"cat\n", 1.2), (b"\x1a", 1.5), (b"kill %1\n", 1.5),
+           (b"echo AFTER_KILL\n", 1.3), (b"jobs\n", 1.5)]
+    out = pty_run_seq([SHELL], seq)
+    check("kill %1 terminates a stopped job", "Terminated" in out,
+          "tail=%r" % out[-240:])
+    check("the killed job then leaves the jobs table",
+          "Stopped" not in out.rsplit("AFTER_KILL", 1)[-1],
+          "still listed; tail=%r" % out[-240:])
+
+    # 10: none of this may leak into a non-interactive shell. Scripts and
+    # -c have job control disabled, so a foreground command shares the
+    # shell's group there -- in bash too. This is the guard that keeps the
+    # fix off the hot path the benchmarks measure.
+    probe = "cat /proc/self/stat; cat /proc/$$/stat"
+    for name, sh in (("hellish", SHELL), ("bash", BASH)):
+        r = subprocess.run([sh, "-c", probe], capture_output=True, text=True,
+                           env=dict(os.environ, **ENV))
+        lines = [l for l in r.stdout.splitlines() if ")" in l]
+        pgs = [int(l[l.rindex(")") + 1:].split()[2]) for l in lines]
+        check("-c (%s): no process groups are created" % name,
+              len(pgs) == 2 and pgs[0] == pgs[1], "pgrps=%s" % pgs)
 
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)

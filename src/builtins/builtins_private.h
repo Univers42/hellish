@@ -32,6 +32,27 @@
 # define OLDPWD_NAME "OLDPWD"
 # define PWD_NAME "PWD"
 
+/* One parsed `history` invocation. bash lets the modifiers be bundled
+   (`history -cd 1`) but treats -a/-n/-r/-w as mutually exclusive, so the
+   file operation gets its own slot rather than sharing `act`. `first` is
+   the index of the first operand left in argv once options are consumed. */
+/* One `pretty` feature: the curated name a user types, the SHOPT_* bit it
+   IS (no separate state -- see builtin_pretty.c), and one line of help. */
+typedef struct s_pret
+{
+	const char		*name;
+	unsigned int	bit;
+	const char		*desc;
+}	t_pret;
+
+typedef struct s_histopt
+{
+	char	fileop;
+	char	act;
+	bool	clear;
+	int		first;
+}	t_histopt;
+
 typedef struct s_rdopt
 {
 	char	*ifs;
@@ -103,6 +124,7 @@ int		builtin_pwd(t_shell *state, t_vec argv);
 int		builtin_read(t_shell *state, t_vec argv);
 
 void	print_exit_if_readline(t_shell *state);
+bool	exit_stopped_guard(t_shell *state);
 int		handle_no_args(t_shell *state, t_vec argv);
 size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
 int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);
@@ -220,9 +242,29 @@ void	ulimit_show(const t_ulim *u, int hard, int with_label);
 int		ulimit_set(t_shell *st, const t_ulim *u, char *v, int hard);
 
 int		list_set_options(t_shell *state);
+size_t	shopt_flags(t_vec argv, char *act, int *quiet);
 
 /* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
 int		reaped_job_status(t_shell *state, pid_t pid);
 int		wait_one(t_shell *state, const char *arg);
 int		wait_n(t_shell *state);
+
+/* history builtin internals (builtin_history*.c). */
+void	hist_list_init(t_shell *state);
+void	hist_push(t_shell *state, char *owned);
+void	hist_rl_remove(t_shell *state, int idx);
+int		hist_clear(t_shell *state);
+int		hist_delete(t_shell *state, t_vec argv, int first);
+int		hist_store(t_shell *state, t_vec argv, int first);
+int		hist_expand_args(t_shell *state, t_vec argv, int first);
+int		hist_fileop(t_shell *state, t_vec argv, t_histopt *o);
+char	*expand_history(t_shell *state, const char *input);
+
+/* pretty builtin internals (builtin_pretty*.c). */
+t_pret	*pretty_table(void);
+int		pretty_mode(t_shell *state, t_vec argv, int first);
+int		pretty_show(t_shell *state, bool reusable);
+int		pretty_list(t_shell *state);
+void	pretty_sync(t_shell *state);
+
 #endif

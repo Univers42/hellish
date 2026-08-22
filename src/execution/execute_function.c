@@ -47,7 +47,7 @@ void	unset_function(t_shell *state, const char *name)
 		if (ft_strcmp(arr[i].name, name) == 0)
 		{
 			xfree(arr[i].name);
-			free_ast(&arr[i].body);
+			retire_body(state, &arr[i].body);
 			while (i + 1 < state->functions.len)
 			{
 				arr[i] = arr[i + 1];
@@ -73,7 +73,7 @@ static void	store_function(t_shell *state, char *name, t_ast_node *body)
 	existing = func_lookup(state, name);
 	if (existing)
 	{
-		free_ast(&existing->body);
+		retire_body(state, &existing->body);
 		existing->body = deep_clone_ast(body);
 		return ;
 	}
@@ -135,5 +135,6 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	scope_leave(state);
 	pos_free(&state->pos);
 	state->pos = saved;
+	drain_dead_funcs(state);
 	return (status);
 }

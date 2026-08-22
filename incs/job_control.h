@@ -80,14 +80,16 @@ void	job_remove(t_job_table *jt, int id);
 void	job_purge_done(t_job_table *jt);
 void	job_record_exit(t_job *job, int status);
 bool	job_finished(const t_job *job);
+int		job_kill_group(struct s_shell *st, t_job *job, int sig);
 void	job_notify_async(struct s_shell *state);
-void	job_update_status(t_job_table *jt);
+void	job_update_status(struct s_shell *st);
 void	job_notify(struct s_shell *state);
 t_job	*job_by_spec(t_job_table *jt, const char *spec);
 void	job_set_current(t_job_table *jt, int id);
 void	job_print(t_job *job, int current, int prev, bool show_pid);
 void	job_table_free(t_job_table *jt);
 char	*job_status_desc(const t_job *job);
+char	*done_with_code(char *buf, size_t size, int code);
 char	*job_core_suffix(const t_job *job);
 
 #endif

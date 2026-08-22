@@ -24,16 +24,26 @@
 #include <dirent.h>
 #include <unistd.h>
 
-/* Built-in names offered before PATH scan.  Checked first so the user
-   gets `echo` immediately even if /bin/echo appears much later. */
+/* Built-in names offered before the PATH scan.  Checked first so the user
+   gets `echo` immediately even if /bin/echo appears much later.
+
+   This must stay the set registered in hash_builtins_dispatch.c: the old
+   list held 18 of the 52, so `histor<TAB>` or `printf<TAB>` completed to
+   nothing at all -- and it listed `env`, which that table's own comment
+   says is NOT a builtin here (real env execs its argument, so we let
+   /usr/bin/env be found by the PATH scan like any other program).
+   completion_posix_test.py reads the dispatch table and fails if the two
+   ever drift apart again. */
 char	*g_builtins[] = {
-	"echo", "export", "cd", "exit", "pwd", "env", "unset", "type", "set",
-	"read", "test", "alias", "unalias", "hash", "jobs", "fg", "bg", "fc",
+	"echo", "export", "cd", "pushd", "popd", "[[", "exit", "pwd", "unset",
+	"type", "set", "shift", ":", "break", "continue", "eval", ".",
+	"source", "true", "false", "umask", "command", "return", "getopts",
+	"exec", "wait", "times", "trap", "readonly", "read", "test", "[",
+	"alias", "unalias", "hash", "jobs", "fg", "bg", "fc", "history",
+	"let", "local", "kill", "printf", "ulimit", "update", "help",
+	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	NULL
 };
-
-int		g_cmd_idx;
-char	*g_path_dirs_cache;
 
 /* Free a NULL-terminated array of strings (result of ft_split). */
 void	free_split(char **arr)
@@ -51,71 +61,93 @@ void	free_split(char **arr)
 	xfree(arr);
 }
 
-/* Release the split PATH array and the cached PATH string.  Called both
-   when the generator is done and at init to reset from a prior session. */
-void	cmd_gen_cleanup(char ***path_dirs)
+/* Release the split PATH array, the cached PATH string, and any directory
+   still open.  Called both when the generator is done and at init to reset
+   from a prior session -- readline abandons a generator the moment it has
+   what it needs, so without closing dh here an unfinished TAB would leak
+   its open DIR into the next one. */
+void	cmd_gen_cleanup(t_cmd_gen *g)
 {
-	free_split(*path_dirs);
-	*path_dirs = NULL;
-	xfree(g_path_dirs_cache);
-	g_path_dirs_cache = NULL;
+	free_split(g->dirs);
+	g->dirs = NULL;
+	xfree(g->cache);
+	g->cache = NULL;
+	if (g->dh)
+		closedir(g->dh);
+	g->dh = NULL;
+	g->cur = NULL;
 }
 
 /* Reset the generator: re-read PATH from the environment (not from our
    internal env vec -- readline completion runs without a t_shell pointer)
-   and split on ':'.  g_cmd_idx rewinds to 0 so builtins are offered
-   again before the PATH scan. */
-void	cmd_gen_init(char ***path_dirs, int *dir_idx)
+   and split on ':'.  Both cursors rewind so builtins are offered again
+   before the PATH scan. */
+void	cmd_gen_init(t_cmd_gen *g)
 {
-	g_cmd_idx = 0;
-	cmd_gen_cleanup(path_dirs);
+	cmd_gen_cleanup(g);
+	g->bidx = 0;
+	g->idx = 0;
 	if (getenv("PATH"))
-		g_path_dirs_cache = ft_strdup(getenv("PATH"));
-	if (g_path_dirs_cache)
-		*path_dirs = ft_split(g_path_dirs_cache, ':');
-	else
-		*path_dirs = NULL;
-	*dir_idx = 0;
+		g->cache = ft_strdup(getenv("PATH"));
+	if (g->cache)
+		g->dirs = ft_split(g->cache, ':');
 }
 
-/* Return the next directory entry whose name starts with `text`, or NULL
-   when the directory is exhausted.  The caller opens and closes `d`. */
-char	*cmd_gen_scan_dir(DIR *d, const char *text, size_t tlen)
+/* Return the next entry of the open directory that is both a prefix match
+   for `text` and something this shell could actually execute, or NULL when
+   the directory is exhausted.  The match is libc-allocated because readline
+   frees it (see rl_dup in completion.c).  g->dh stays open: the caller
+   resumes this scan on the next generator call.
+
+   The cmd_entry_runnable() call is the fix for the reported bug.  This used
+   to accept every readdir() result whose NAME matched, which is not what a
+   PATH element means: POSIX searches it for an executable file, so a 0644
+   document, a subdirectory, and the "." and ".." that every directory
+   carries are not commands and never were.  Anyone whose PATH held a
+   directory that also held data -- ~/bin, ~/.local/bin, ./scripts -- got
+   those documents offered by name on the very first TAB. */
+char	*cmd_gen_scan_dir(t_cmd_gen *g, const char *text, size_t tlen)
 {
 	struct dirent	*ent;
 
 	while (1)
 	{
-		ent = readdir(d);
+		ent = readdir(g->dh);
 		if (!ent)
 			break ;
-		if (ft_strncmp(ent->d_name, text, tlen) == 0)
-			return (ft_strdup(ent->d_name));
+		if (ft_strncmp(ent->d_name, text, tlen) == 0
+			&& cmd_entry_runnable(g->cur, ent->d_name))
+			return (rl_dup(ent->d_name));
 	}
 	return (NULL);
 }
 
-/* Iterate PATH directories one at a time, advancing dir_idx on each
-   call.  Opens the directory, scans for a match, then closes it and
-   returns.  If no match in a given dir, tries the next.  When all dirs
-   are exhausted it cleans up and returns NULL to signal "done". */
-char	*cmd_gen_dirs(char ***path_dirs, int *dir_idx, size_t tlen,
-	const char *text)
+/* Walk PATH, yielding EVERY match in a directory before moving to the
+   next.  The handle is held open in the generator state across calls;
+   closing it after the first hit -- which is what this used to do, since
+   readline gets exactly one match per call -- silently dropped every
+   other command in that directory.  An empty TAB then listed about one
+   command per PATH entry instead of all of them.  An unopenable
+   directory just leaves dh NULL and the loop moves on. */
+char	*cmd_gen_dirs(t_cmd_gen *g, size_t tlen, const char *text)
 {
-	DIR		*d;
 	char	*name;
 
-	while (*path_dirs && (*path_dirs)[*dir_idx])
+	while (1)
 	{
-		d = opendir((*path_dirs)[*dir_idx]);
-		(*dir_idx)++;
-		if (!d)
-			continue ;
-		name = cmd_gen_scan_dir(d, text, tlen);
-		closedir(d);
-		if (name)
-			return (name);
+		if (g->dh)
+		{
+			name = cmd_gen_scan_dir(g, text, tlen);
+			if (name)
+				return (name);
+			closedir(g->dh);
+			g->dh = NULL;
+		}
+		if (!g->dirs || !g->dirs[g->idx])
+			break ;
+		g->cur = g->dirs[g->idx];
+		g->dh = opendir(g->cur);
+		g->idx++;
 	}
-	cmd_gen_cleanup(path_dirs);
-	return (NULL);
+	return (cmd_gen_cleanup(g), NULL);
 }

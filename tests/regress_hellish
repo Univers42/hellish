@@ -224,3 +224,26 @@ f() { /bin/echo one; /bin/echo two; }; x=$(f); echo "[$x]"
 x=$(eval "/bin/echo a; /bin/echo b"); echo "[$x]"
 x=$(command /bin/echo c); echo "[$x]"
 g() { /bin/echo p; /bin/echo q; }; echo "[$(g)][$(/bin/echo r)]"
+f() { unset -f f; }; f; echo DONE
+f() { if true; then unset -f f; fi; }; f; echo DONE
+f() { if true; then unset -f f; fi; echo after; }; f; echo DONE
+f() { unset -f f; echo tail; }; f; echo "rc=$?"
+f() { if true; then f() { echo new; }; fi; }; f; f; echo DONE
+g() { unset -f g; }; f() { g; echo back; }; f; echo DONE
+f() { if true; then unset -f f; fi; }; f; type f 2>/dev/null; echo "rc=$?"
+_OLD=x; d() { if [ -n "${_OLD:-}" ]; then unset _OLD; fi; unset -f d; }; d; echo "[${_OLD:-gone}]"
+shopt lithist; shopt -s lithist; shopt lithist; shopt -u lithist; shopt lithist
+shopt -q lithist; echo "q=$?"; shopt -s lithist; shopt -q lithist; echo "q=$?"
+shopt | grep -c lithist
+shopt -s lithist cdspell; shopt lithist; shopt cdspell
+shopt -s nosuchopt_xyz 2>/dev/null; echo "bad=$?"
+shopt -u cdspell; echo "u=$?"; shopt -s cdspell; echo "s=$?"; shopt -u cdspell; echo "u2=$?"
+shopt -s extglob; if shopt extglob >/dev/null; then echo IS_ON; else echo IS_OFF; fi
+shopt -u extglob; if shopt extglob >/dev/null; then echo IS_ON; else echo IS_OFF; fi
+shopt -qs extglob; echo "qs=$?"; shopt -qu extglob; echo "qu=$?"; shopt -q extglob; echo "q=$?"
+shopt -s lithist; shopt -p lithist; shopt -u lithist; shopt -p lithist
+shopt -p extglob nullglob
+shopt -o | head -3
+shopt -o | wc -l; set -o | wc -l
+shopt -qs lithist cdspell; echo "rc=$?"; shopt -q lithist; echo "l=$?"; shopt -q cdspell; echo "c=$?"
+shopt -sq nocaseglob; echo "sq=$?"; shopt nocaseglob

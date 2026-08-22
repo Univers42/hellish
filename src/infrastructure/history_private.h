@@ -35,13 +35,20 @@
 
 /* Scanner state for hist_join_line (history_join*.c): input cursor, the
    joined output, quote/substitution context, and the queue of pending
-   here-doc tags (each stored with a leading '-' for <<- or '+' for <<). */
+   here-doc tags (each stored with a leading '-' for <<- or '+' for <<).
+
+   `lit` selects bash's lithist instead of cmdhist: every command-boundary
+   newline stays a newline rather than becoming "; ". Everything else --
+   quote state, here-doc bodies, and the top-level \<newline> splice --
+   is IDENTICAL in both modes, which is exactly why the two share one
+   scanner instead of lithist getting a hand-rolled shortcut. */
 typedef struct s_hjoin
 {
 	const char	*s;
 	size_t		i;
 	t_string	out;
 	t_vec		tags;
+	bool		lit;
 	bool		sq;
 	bool		dq;
 	bool		btick;
@@ -53,7 +60,7 @@ typedef struct s_hjoin
 	int			dpar;
 }	t_hjoin;
 
-char		*hist_join_line(const char *cmd);
+char		*hist_join_line(const char *cmd, bool lit);
 void		hj_init(t_hjoin *h, const char *cmd);
 bool		hj_at_heredoc(t_hjoin *h);
 bool		hj_dollar(t_hjoin *h);
@@ -63,11 +70,12 @@ void		hj_heredoc_body(t_hjoin *h);
 void		hj_copy_escaped(t_hjoin *h);
 void		hj_depth_step(t_hjoin *h, int d);
 bool		hj_last_word_kw(const char *s, size_t n);
+bool		hj_func_header(const char *s, size_t n);
 char		*hj_finish(t_hjoin *h);
 
 t_string	parse_single_cmd(t_string hist, size_t *cur);
 t_vec		parse_hist_file(t_string hist);
-void		add_history_line(const char *cmd);
+void		add_history_line(t_shell *state, const char *cmd);
 void		parse_history_file(t_shell *state);
 t_string	encode_cmd_hist(char *cmd);
 void		manage_history(t_shell *state);

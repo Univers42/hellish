@@ -86,6 +86,29 @@ cd tests && ./tester <file>  # just your category
 
 A green suite on **both** allocator backends is required (see below).
 
+### Behaviour the golden suite cannot express
+
+The golden suite diffs `stdout` + status of `hellish -c`. Anything that only
+exists in front of a terminal — readline, the prompt, history recall, job
+control's use of the tty — needs a pty, and those live in `tests/*.py`.
+
+**Drop the file in `tests/` and you are done.** `make pty-test` globs the
+directory, so a new regression test runs in CI the moment it exists:
+
+```sh
+make pty-test                          # every tests/*.py
+tests/pty_suite.sh -- history_opts     # just the ones matching a pattern
+```
+
+That discovery is deliberate. The runner used to be a hand-written list in
+two places (a Makefile target and a CI step), and
+`completion_posix_test.py` was in neither — it sat in `tests/` running
+nowhere from the day it landed, guarding nothing. A list you have to
+remember to update is a list that drifts.
+
+Each file takes the shell path as `argv[1]` and nothing else. Keep it that
+way; the uniformity is what makes discovery possible.
+
 ---
 
 ## The pre-PR checklist
@@ -101,6 +124,18 @@ Run all of these from a clean tree. Every one must pass before you open a PR.
   ```sh
   make test                       # libc (SAFE=1)
   cd tests && ./verify_alloc.sh   # builds + diffs SAFE=1 AND SAFE=0 vs bash
+  ```
+- [ ] **The pty gates are green.** These catch what the golden suite cannot
+  see, and they are the ones a user actually notices.
+  ```sh
+  make pty-test                   # every tests/*.py, discovered
+  ```
+- [ ] **It still builds and runs off this machine.** A warning your compiler
+  does not emit and a libc yours does not have are how issues #9 and #42
+  reached users.
+  ```sh
+  make smoke                      # 40-check portability workout, local build
+  docker/test.sh alpine fedora    # ... or in a clean container
   ```
 - [ ] **No leaks.** The debug build runs under AddressSanitizer + LeakSanitizer
   — run your new cases and read the report. ASan/LSan are only valid on the

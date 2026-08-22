@@ -22,6 +22,7 @@
 
 #include "job_control.h"
 #include "shell.h"
+#include "pal.h"
 #include "sh_input.h"
 #include "libft.h"
 #include <string.h>
@@ -43,6 +44,8 @@ void	job_record_exit(t_job *job, int status)
 	job->raw_status = status;
 	if (WIFSTOPPED(status))
 		return ((void)(job->status = JOB_STOPPED));
+	if (WIFCONTINUED(status))
+		return ((void)(job->status = JOB_RUNNING));
 	if (!WIFEXITED(status) && !WIFSIGNALED(status))
 		return ;
 	if (WIFEXITED(status))
@@ -72,15 +75,26 @@ bool	job_finished(const t_job *job)
    same libc -- which is what keeps the two agreeing on a platform whose
    wording differs (musl and glibc do not spell every signal alike).
    The result is BORROWED and read-only; it is char * rather than const
-   char * only so the declaration aligns with the rest of the header. */
+   char * only so the declaration aligns with the rest of the header.
+
+   A job that exited NON-ZERO reads "Done(7)", not "Done": bash puts the
+   status in the column so `jobs` can tell a failed background job from a
+   successful one, and hellish said a flat "Done" for both.  The buffer is
+   static because the caller only ever formats one job at a time (job_print
+   consumes the string inside a single ft_printf), which is the same
+   contract strsignal already has on the line below. */
 char	*job_status_desc(const t_job *job)
 {
+	static char	done[16];
+
 	if (job->status == JOB_RUNNING)
 		return ((char *)"Running");
 	if (job->status == JOB_STOPPED)
 		return ((char *)"Stopped");
-	if (job->status == JOB_DONE)
+	if (job->status == JOB_DONE && job->exit_code == 0)
 		return ((char *)"Done");
+	if (job->status == JOB_DONE)
+		return (done_with_code(done, sizeof(done), job->exit_code));
 	if (job->status == JOB_KILLED && job->term_sig > 0)
 		return (strsignal(job->term_sig));
 	return ((char *)"Unknown");
@@ -94,4 +108,22 @@ char	*job_core_suffix(const t_job *job)
 	if (job->status == JOB_KILLED && job->core_dumped)
 		return ((char *)"(core dumped) ");
 	return ((char *)"");
+}
+
+/* Send `sig` to a whole job's process group.  A STOPPED job cannot act on
+   most signals: the kernel leaves them pending until something resumes the
+   process, so `kill %1` on a ^Z'd job looked like it had done nothing at
+   all -- the SIGTERM sat there unhandled and `jobs` still said "Stopped".
+   bash follows the signal with a SIGCONT so the job wakes up and dies,
+   which is what the user meant.  The stop signals are exempt: resuming a
+   job the user just asked to stop would defeat the request. */
+int	job_kill_group(struct s_shell *st, t_job *job, int sig)
+{
+	if (pal_kill_pgid(st, job->pgid, sig) == -1)
+		return (-1);
+	if (job->status != JOB_STOPPED || sig == SIGCONT || sig == SIGSTOP
+		|| sig == SIGTSTP || sig == SIGTTIN || sig == SIGTTOU)
+		return (0);
+	pal_kill_pgid(st, job->pgid, SIGCONT);
+	return (0);
 }

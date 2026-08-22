@@ -13,3 +13,12 @@ tests/outfiles/
 tests/mini_outfiles/
 tests/bash_outfiles/
 *.log
+
+# Never ship developer secrets into an image: these Dockerfiles COPY the
+# whole context, and a .env sitting in a working tree is exactly the kind of
+# file that ends up in a published layer.
+.env
+.env.*
+*.pem
+*.key
+id_rsa*
