@@ -89,6 +89,7 @@ void	job_set_current(t_job_table *jt, int id);
 void	job_print(t_job *job, int current, int prev, bool show_pid);
 void	job_table_free(t_job_table *jt);
 char	*job_status_desc(const t_job *job);
+char	*done_with_code(char *buf, size_t size, int code);
 char	*job_core_suffix(const t_job *job);
 
 #endif
