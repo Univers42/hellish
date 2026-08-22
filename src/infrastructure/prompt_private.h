@@ -109,17 +109,22 @@ typedef struct s_gitloc
    `ttl` seconds past `at`) plus the in-flight `git status` scan, if any
    (`busy`, `fd` its non-blocking read end, started at `spawned`).  The
    scanner is deliberately NOT our child -- see prompt_git3.c -- so there
-   is no pid here to wait for; `fd` closing is the only completion signal. */
+   is no pid here to wait for; `fd` closing is the only completion signal.
+   `gen` is the value of *git_scan_gen() when this answer was computed: the
+   TTL only throttles rescanning while NOTHING has happened, so a command
+   running in the tree retires the cached answer regardless of how much of
+   the TTL is left. */
 typedef struct s_dcache
 {
-	char	root[PATH_MAX];
-	time_t	at;
-	time_t	ttl;
-	time_t	spawned;
-	int		busy;
-	int		fd;
-	int		dirty;
-	int		init;
+	char			root[PATH_MAX];
+	int				gen;
+	time_t			at;
+	time_t			ttl;
+	time_t			spawned;
+	int				busy;
+	int				fd;
+	int				dirty;
+	int				init;
 }	t_dcache;
 
 void		vec_push_ansi(t_string *v, const char *seq);
@@ -170,6 +175,7 @@ void		ps1_anim(t_shell *state, t_string *out);
 t_string	ps1_animated(t_shell *state, char *ps1);
 int			visible_width_cstr(const char *s);
 void		get_git_info(char **branch, int *dirty);
+int			*git_scan_gen(void);
 void		prompt_user_and_cwd(t_string *ret, t_prompt *p);
 void		prompt_branch(t_string *ret, t_prompt *p);
 void		prompt_venv(t_string *ret, t_prompt *p);
