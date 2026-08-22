@@ -82,21 +82,24 @@ void	ps1_status(t_shell *state, t_string *out)
 	xfree(n);
 }
 
-/* $NAME / ${NAME} inside PS1: expanded from the live environment at every
+/* $NAME / ${...} inside PS1: expanded from the live environment at every
    render, so `PS1='${VIRTUAL_ENV} \w> '` tracks changes without re-sourcing
    the rc file. Special single-char parameters ($?, $$, ...) are left to
    the shell proper — a prompt string wants variables, and bash's promptvars
    behaviour for plain names is what users expect. Invalid syntax keeps the
-   dollar literal. */
+   dollar literal.
+
+   A braced form is handed to ps1_brace (prompt_ps1d.c) rather than read
+   here: this reader only ever understood a bare name, so an operator like
+   ${v:+w} left its own tail on the screen (issue #41). */
 void	ps1_dollar(t_shell *state, t_string *out, const char *f, int *i)
 {
 	int		j;
-	int		brace;
 	char	*val;
 
+	if (f[*i + 1] == '{')
+		return (ps1_brace(state, out, f, i));
 	j = *i + 1;
-	brace = (f[j] == '{');
-	j += brace;
 	if (!is_var_name_p1(f[j]))
 		return (vec_push_char(out, '$'), (void)(*i += 1));
 	*i = j;
@@ -105,7 +108,5 @@ void	ps1_dollar(t_shell *state, t_string *out, const char *f, int *i)
 	val = env_expand_n(state, (char *)f + *i, j - *i);
 	if (val)
 		vec_push_str(out, val);
-	if (brace && f[j] == '}')
-		j++;
 	*i = j;
 }
