@@ -13,20 +13,46 @@
 #include "expander_private.h"
 #include "sys.h"
 
+/* Re-exec THIS shell to run `cmd`, in an already-forked child.  Never
+   returns: it execs, or exits 127 the way any failed exec would.
+
+   Both halves of process substitution used to exec the literal
+   "/proc/self/exe" -- twice, under two names that expanded to the same
+   string, so the second attempt was dead code -- and that path exists on
+   Linux and nowhere else.  On macOS every <(cmd) and >(cmd) exec'd
+   something that was not there and produced nothing.  self_exe_path()
+   asks the kernel, and has an answer on Darwin too.
+
+   A NULL from it means the kernel will not say where we are.  There is
+   nothing sensible to exec at that point, and inventing a path would run
+   the WRONG shell rather than fail, so the child just exits. */
+void	procsub_exec_self(t_shell *state, const char *cmd)
+{
+	char	*self;
+	char	*argv[4];
+	char	**envp;
+
+	self = self_exe_path();
+	if (self)
+	{
+		argv[0] = self;
+		argv[1] = (char *)CMD_OPT;
+		argv[2] = (char *)cmd;
+		argv[3] = NULL;
+		envp = get_envp_all(state, self);
+		execve(self, argv, envp);
+		if (envp)
+			free_tab(envp);
+	}
+	exit(127);
+}
+
 /* Fork a child for a <(cmd) process substitution.  The child connects its
-   stdout to pipefd[1] and exec's the preferred shell binary.  Two exec
-   attempts are made: PATH_HELLISH first (the installed shell), then
-   PROC_SELF_EXE (the currently running binary via /proc/self/exe) as a
-   fallback when running from the build tree.  exit(127) if both fail. */
+   stdout to pipefd[1] and re-execs the shell. */
 static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 						const char *cmd)
 {
-	pid_t		pid;
-	char *const	argv_ms[] = {(char *)PROC_SELF_EXE, (char *)CMD_OPT,
-		(char *)cmd, NULL};
-	char *const	argv_sh[] = {(char *)PATH_HELLISH, (char *)CMD_OPT,
-		(char *)cmd, NULL};
-	char		**envp;
+	pid_t	pid;
 
 	pid = fork();
 	if (pid == -1)
@@ -36,13 +62,7 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		envp = get_envp_all(state, PATH_HELLISH);
-		execve(PATH_HELLISH, argv_sh, envp);
-		envp = get_envp_all(state, PROC_SELF_EXE);
-		execve(PROC_SELF_EXE, argv_ms, envp);
-		if (envp)
-			free_tab(envp);
-		exit(127);
+		procsub_exec_self(state, cmd);
 	}
 	return (pid);
 }

@@ -26,6 +26,9 @@ Two things run, and they answer different questions.
 |---|---|---|
 | `docker/smoke.sh` | 40 checks: the shell starts, forks, pipes, redirects, here-docs, globs, does arithmetic, handles signals and job control, and reports the right exit statuses | every platform rung |
 | the golden suite | ~3800 cases diffed byte-for-byte against a pinned bash 5.3.9 | x86_64 and arm64 Linux |
+| `tests/link_closure_test.py` | every symbol the archives reference is defined — *asking GNU ld the question Apple's linker asks by default* | anywhere, via `make pty-test` |
+| `tests/linux_only_apis_test.py` | Linux-only kernel interfaces are named in one file, not copied into four | anywhere, via `make pty-test` |
+| `tests/crlf_hygiene_test.py` | nothing executed is stored with CRLF, *and* every such file is covered by a rule | anywhere, via `make pty-test` |
 
 The smoke is not a weaker suite — it is a *different* one. It targets the
 class of bug that only appears when the C code meets a different libc,
@@ -86,27 +89,52 @@ container and the licence does not permit running it off Apple hardware, so
 (x86_64) and `macos-14` (arm64) runners are the honest equivalent, and both
 are in the `Platforms` workflow.
 
-The job is `continue-on-error` on purpose. The shell is written to POSIX but
-has never been built on Darwin, and two gaps are already known:
+The job is `continue-on-error` on purpose. macOS bring-up has been
+strictly iterative — **six** defects so far, each one only visible once the
+one before it was fixed, and every round trip costs a CI queue. In order:
+`st_mtim`, `SIGPWR`/`SIGRTMIN`, `bcopy`, `MB_CUR_MAX`, then a link hole
+that had nothing to do with Darwin, then `/proc/self/exe`, then this
+header collision. As of 2.8.1 the build succeeds and the smoke reached
+**39 ok / 1 failed**, that one being `/proc/self/exe`. All known gaps are
+now closed:
 
 1. **readline.** Apple ships libedit under the name `libreadline`. It
    answers `-lreadline` and then does not have most of the GNU API this
-   shell uses. The Makefile now asks `brew --prefix readline` and adds that
-   include/lib pair on Darwin — untested on a real Mac.
-2. **`/proc/self/exe`.** Process substitution re-execs the shell through
-   that path (`incs/sys.h`), and it does not exist on Darwin. `<(cmd)` and
-   `>(cmd)` will not work there until it is replaced with a runtime lookup
-   (`_NSGetExecutablePath` on Darwin, `/proc/curproc/file` on FreeBSD).
-   Note `/dev/fd/N` is already used for the resulting path, which *is*
-   portable — only the self-exec path is not.
+   shell uses. The Makefile asks `brew --prefix readline` and adds that
+   include/lib pair on Darwin. The build and all 40 smoke checks reached
+   readline-dependent code without complaint, so this appears settled.
+2. **`/proc/self/exe`.** Process substitution re-exec'd the shell through
+   that path, so `<(cmd)` and `>(cmd)` produced nothing on Darwin. It is
+   now `self_exe_path()` (`src/platform/posix/self_exe.c`) —
+   `/proc/self/exe` on Linux, `_NSGetExecutablePath` on Darwin — and the
+   ENOEXEC interpreter fallback plus both halves of the update machinery
+   went the same way; all four had copied the same Linux-only assumption.
+   `/dev/fd/N` for the resulting path was always portable; only the
+   self-exec path was not.
+
+   `tests/linux_only_apis_test.py` keeps it that way. It does not test
+   process substitution — the golden suite and the smoke already do, on
+   Linux, where it always worked. It asserts that `/proc/self/exe` is
+   named in exactly one file. That is the property that actually failed:
+   the knowledge was in four places, so porting meant finding all four.
+
+3. **`<mach-o/dyld.h>` cannot be included in this tree.** It declares
+   `enum DYLD_BOOL { FALSE, TRUE };`, and libft's `ft_stddef.h` already has
+   `enum e_bool { FALSE, TRUE }`. Two enums cannot define the same
+   enumerator names in one translation unit, so including both is a hard
+   error in either order — and it is *invisible* on Linux, where no
+   toolchain ships that header at all. `_NSGetExecutablePath` is declared
+   by hand instead; one stable ABI symbol is cheaper to declare than an
+   enum namespace is to negotiate. Gated in the same test file.
+
+Do not flip `continue-on-error` off until a full run is green on a real
+runner. A red required check that everyone learns to ignore is worse than
+an informational one.
 
 `-D_XOPEN_SOURCE=700` is also wrong on Darwin: it pins the POSIX.1-2008
 surface on glibc and musl, but on Apple's libc it *hides* the BSD extensions
 the system headers themselves need. The Makefile uses `-D_DARWIN_C_SOURCE`
 there instead.
-
-Do not flip `continue-on-error` off until the job is green. A red required
-check that everyone learns to ignore is worse than an informational one.
 
 ### WSL — informational
 
@@ -120,8 +148,65 @@ so the workflow does that on a `windows-latest` runner.
 Informational because the runner-side WSL setup is the flakiest step in the
 file, not because the platform does not matter.
 
+**Do not build on `/mnt/`.** `$GITHUB_WORKSPACE` is on `D:`, which WSL
+reaches through drvfs — a bridge out of the VM to the Windows filesystem.
+Every `open`, `stat` and `write` is a round trip, and a build is ~970
+compiler invocations doing thousands of them. The first run of this job was
+still compiling when the 60-minute timeout killed it, and because the
+cancellation lands on the `cmd.exe` wrapper the log ends in
+`Terminate batch job (Y/N)?` with nothing useful above it. The job now
+copies the tree onto the distro's own ext4 first (one `tar | tar` pass) and
+builds there.
+
+What that gives up is drvfs coverage of the *build*, which was never the
+point; what it keeps is a separate step that runs the shell against a drvfs
+directory — glob it, read from it, `pwd` in it. Deliberately not the
+permission checks: `chmod 000` on drvfs without metadata support is a no-op,
+so a red there would be Windows telling the truth rather than hellish
+getting it wrong.
+
 ## Things the matrix has already caught
 
+- **A function declared, called, and never defined.**
+  `get_original_tty_job_signals()` was in libft's `trap.h` and called by
+  `initialize_traps()`, and no translation unit defined it. Every Linux job
+  stayed green for months, because GNU ld lets a *shared library* keep
+  undefined symbols and hope the loader finds them later; Apple's linker
+  does not, so `libft.so` on arm64 macOS stopped at
+  `Undefined symbols for architecture arm64`. This was never a macOS bug —
+  it was a library shipping a contract it could not honour, and a runtime
+  crash waiting for the first caller. Fixed by defining it (bash's
+  semantics: fetch SIGTSTP/SIGTTIN/SIGTTOU once, non-destructively, and
+  record SIG_DFL when non-interactive), and pinned by
+  `tests/link_closure_test.py`, which reproduces the exact failure on Linux
+  in about a second with `-Wl,--no-undefined -Wl,--whole-archive`.
+- **`MB_CUR_MAX` is `size_t` on glibc and `int` on Darwin.**
+  `mascot_anim.c` tested `mbrtowc`'s result with `n > MB_CUR_MAX` — correct
+  on Linux, a `-Werror=sign-compare` build failure on macOS. The rest of the
+  tree already spelled the error returns out as `(size_t) - 1` /
+  `(size_t) - 2`; now this does too. No behaviour change on any platform,
+  which is the point: the two spellings are the same test, and only one of
+  them compiles everywhere.
+- **`__attribute__((weak))` on a declaration means something else on Mach-O.**
+  `alloc_stats.c` probed for ft_malloc's leak oracle with a weak undefined
+  reference and a `-Wl,-u` to drag the archive member in, so the file needed
+  no `-D`. On ELF an undefined weak symbol is legal and resolves to NULL; on
+  Mach-O the same attribute on a *declaration* is a weak **definition**, so
+  Apple's linker demanded a body and the SAFE=1 arm64 build stopped at
+  `Undefined symbols: _malloc_live_bytes`. Decided at compile time now
+  (`-DHAVE_ALLOC_ORACLE`, from the Makefile, which already knows the heap);
+  the `-Wl,-u` went with the weak ref, because a *strong* reference pulls an
+  archive member by itself. Pinned by `link_closure_test.py`, which fails on
+  any weak reference the object tree does not itself define.
+- **Windows checkouts rewrite LF to CRLF, and bash cannot read that.**
+  `core.autocrlf=true` on the Windows runner turned `set -u` into `set -u\r`
+  and `expect() {` into `expect() {\r`, so the WSL rung died inside
+  `docker/smoke.sh` with `set: - : invalid option` and a syntax error on a
+  brace. `.gitattributes` now pins every executed file type to `eol=lf`, and
+  `tests/crlf_hygiene_test.py` gates both halves: nothing executed is stored
+  with CRLF, *and* every such file is covered by a rule — the second is what
+  catches the next file someone adds, since the first passes on a repo with
+  no `.gitattributes` at all.
 - **openSUSE Tumbleweed ships no `find`.** The Makefile discovers its
   sources with `$(shell find src ...)`, so the source list came back empty,
   make built nothing, and the link stopped at `cc: fatal error: no input

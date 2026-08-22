@@ -1,275 +1,221 @@
-# Session context — 2026-08-22
+# Session context — 2026-08-22 (portability)
 
 Working notes for whoever picks this up next, from another workspace or a
 later session. The repo history is authoritative; this file records the
 things history cannot tell you — why a thing was done, what was measured,
 what was deliberately *not* done, and what is still open.
 
-Branch to resume from: **`develop`**.
+Branch to resume from: **`develop`**. Released version: **2.8.1**.
+
+The previous note on this file covered the issue-fixing session (#27, #32,
+#34, #42 and friends). All of those are closed; the tracker is empty. This
+note replaces it and covers the cross-platform work.
 
 ---
 
-## What shipped in this session
+## What this session was
 
-Every issue on the tracker is now closed. Four commits, each on its own
-branch, merged fast-forward into `develop`:
+One request, repeated: make the CI failures reproducible, gate them, fix
+them, then merge and release. The failures were on the two rungs nobody can
+build locally — macOS arm64 and WSL — which changes the method more than it
+sounds like it should.
 
-| Commit | Issue | What |
+**You cannot iterate on a platform you cannot compile for.** Every macOS
+defect costs one CI round trip of roughly twenty minutes, and they arrive
+strictly one at a time, each invisible until the one before it is fixed. So
+the discipline that paid off was: after each fix, ask *what else in the tree
+makes the same assumption* — and gate the assumption, not the symptom.
+
+---
+
+## The macOS list, in the order they appeared
+
+Six, each hidden behind the last. The shape of this list is the argument for
+the rung existing at all.
+
+| # | Symptom | Actual cause |
 |---|---|---|
-| `8568479` | #27 | per-job process groups — `^Z` did nothing at all |
-| `65a14f2` | #32 | `shopt -s lithist` — multi-line history recall |
-| `e6a5153` | #27 | `jobs` reports `Done(N)`; 19 golden cases |
-| `a575c12` | #34 | prompt frames dropped on a non-blocking tty |
-| `c4b35d1` | — | stop asserting the flaky job marker in a golden case |
-| `810a476` | — | `jobs` reports live status inside a pipeline |
+| 1 | `no member named 'st_mtim'` | Darwin spells it `st_mtimespec` |
+| 2 | `undeclared identifier 'SIGPWR'` / `SIGRTMAX` | Linux-only signals; realtime signals are optional in POSIX |
+| 3 | `bcopy` conflict | it is a fortified *macro* on Darwin, not a function |
+| 4 | `-Werror=sign-compare` in `mascot_anim.c` | `MB_CUR_MAX` is `size_t` on glibc and `int` on Darwin |
+| 5 | `Undefined symbols: _get_original_tty_job_signals` | declared and called, **never defined**, for months |
+| 6 | `Undefined symbols: _malloc_live_bytes` | weak undefined ref — legal on ELF, a link error on Mach-O |
+| 7 | `process substitution` produced `''` | `/proc/self/exe` exec'd literally; no procfs on Darwin |
+| 8 | `redefinition of enumerator 'FALSE'` | `<mach-o/dyld.h>` vs libft's `enum e_bool` |
 
-Earlier in the same session (already on `develop` before these): #41, #40,
-#39, #28, #37, #2, #3.
+(#5 and #6 are the interesting ones. Neither is a macOS bug.)
 
----
+### #5 was a real bug everywhere
 
-## The four fixes, and the evidence behind them
+`get_original_tty_job_signals()` was in libft's `trap.h`, called by
+`initialize_traps()`, and defined by no translation unit. It stayed green on
+Linux for months because **GNU ld defaults to `--allow-shlib-undefined`**: a
+shared library may keep undefined symbols and hope the loader finds them.
+Apple's linker does not. So Darwin was simply the first linker that told us
+we were shipping a library whose contract was a lie — a crash waiting for
+the first caller.
 
-### #27 — foreground commands had no process group of their own
+Implemented in libft with bash's semantics. Two details worth keeping:
 
-The issue described this as a signal-aiming problem. It was worse than
-that: **`^Z` did nothing at all.**
+- The fetch is **non-destructive**. `get_orig_sig()` reads a disposition by
+  installing `SIG_DFL` and keeping what came back — fine for SIGQUIT and
+  SIGTERM, which are re-armed immediately, and wrong for the tty signals: a
+  shell left with `SIGTSTP` at `SIG_DFL` suspends itself the moment a child
+  touches the terminal. So: swap, look, swap back.
+- Non-interactive shells do not ask the kernel at all. Nobody installed
+  these on our behalf, so reading them records whatever the parent left
+  behind and propagates it into every child. `SIG_DFL` is both what bash
+  records and what a child expects.
 
-POSIX XSH 2.4.3 — `SIGTSTP`/`SIGTTIN`/`SIGTTOU` delivered to a member of an
-**orphaned** process group are *discarded*. A group is orphaned when no
-member has a parent in a different group of the same session, which is
-exactly the shell's own group once the shell is a session leader (every
-terminal emulator makes it one) and its children stay inside it. The
-terminal sent SIGTSTP, the kernel dropped it, the command kept running and
-kept eating keystrokes meant for the shell.
+### #6 was ELF-only cleverness
 
-Proven with no shell involved: a child left in a session leader's group
-never stops under `^Z`; the same child given its own group stops every time.
+`alloc_stats.c` asked "was ft_malloc linked in?" at *link* time — a weak
+undefined reference plus `-Wl,-u` to drag the archive member in — so the
+file needed no `-D`. On ELF an undefined weak symbol resolves to NULL; on
+Mach-O, `__attribute__((weak))` on a **declaration** is a weak *definition*,
+so Apple's linker wanted a body.
 
-Fix lives in `src/platform/posix/job_pgrp.c` — `jc_init` / `jc_begin` /
-`jc_child` / `jc_parent` / `jc_end`. `setpgid` runs on **both** sides of the
-fork so neither side can lose the race, and `tcsetpgrp` hands the terminal
-over and takes it back around the wait.
+Now `-DHAVE_ALLOC_ORACLE`, from the Makefile, which already knew the answer.
+The `-Wl,-u` went **with** the weak ref rather than staying beside it: a
+*strong* reference pulls an archive member on its own; only a weak one does
+not.
 
-**Interactive-only, and that is load-bearing for performance.** `jc_begin`
-decides once per pipeline with a `getpid()` check, so background bodies,
-subshells and `$( )` captures all fail the test and cannot move a group or
-grab the tty. Verified: `strace -c -e trace=setpgid` shows **zero**
-`setpgid` calls across 100 forked commands under `-c`. `make bench` after
-the change: **geomean 1.312× faster than bash**, 74% of tasks faster.
+### #7 was in four places, and only one of them failed
 
-Two adjacent defects fell out of testing it:
+`<(cmd)` / `>(cmd)` re-exec the shell and did it through the literal
+`/proc/self/exe` — twice, under two names (`PATH_HELLISH`, `PROC_SELF_EXE`)
+that expanded to the same string, so the second attempt had always been dead
+code. The same assumption was also in the ENOEXEC script-interpreter
+fallback and **both halves of the update machinery's "where am I?"** — which
+meant every non-Linux install classified as `ORIGIN_BINARY`, so `update`
+would have offered to overwrite a source checkout as though it were a
+downloaded binary.
 
-- `job_update_status` only polled `JOB_RUNNING` jobs, so once a job stopped
-  the shell stopped asking about it *forever* — a `^Z`'d job later killed
-  stayed listed as `Stopped` for the rest of the session.
-- `kill` on a stopped job left the signal pending forever, so `kill %1`
-  looked like a no-op. bash follows it with `SIGCONT`; `job_kill_group`
-  now does too, exempting the stop signals themselves.
+`self_exe_path()` (`src/platform/posix/self_exe.c`) is the one door now.
 
-### #32 — multi-line history recall
-
-hellish had implemented only bash's `cmdhist` half: a compound is stored as
-one entry with boundary newlines rewritten to `; `. That is the correct
-*default* and stays the default. bash's other half is `lithist`, which keeps
-the newlines, and hellish had no way to ask for it.
-
-Both modes now match bash 5.3.9 byte for byte in a pty: default recall ends
-`; fi`, `lithist` recall ends `<newline>fi`. No history-file format change
-was needed — `encode_cmd_hist` already escapes embedded newlines.
-
-Two pre-existing `shopt` exit-status bugs surfaced, and they are **not the
-same rule**: `-s`/`-u` report whether the *change* succeeded (so a
-successful `shopt -u x` is 0), while a bare `shopt name` reports the
-*setting* (so it is 1 when off). Both were wrong; both fixed.
-
-### #34 — prompt corruption on a non-blocking terminal
-
-An earlier repair routed prompt writers through `tty_write_all`, which loops
-over short writes. That loop retried `EINTR` and **returned on every other
-error** — and `EAGAIN` is an error. Same class of bug, worse consequence: a
-short write loses a tail, `EAGAIN` loses the *whole frame*.
-
-It is reachable in ordinary use because `O_NONBLOCK` lives on the open file
-**description**, which the shell shares with every program it launches. One
-tool that sets it on the terminal and does not restore it leaves the shell
-writing to a non-blocking tty for the rest of the session.
-
-Measured, real 65-byte prompt frame against a full 64K buffer:
-
-```
-EINTR-only loop (before)   wrote  0 / 65   <- entire frame lost
-with the EAGAIN wait       wrote 65 / 65
-```
-
-**This is a strong candidate for #34's report, not a confirmed diagnosis.**
-The original corruption was never reproduced. Two independent holes in the
-same write path are now closed; that is all the evidence supports, and the
-issue comment says so plainly.
+**`_NSGetExecutablePath` has two traps.** It takes its buffer size *by
+pointer* (rewritten with the size needed on overflow), so passing by value
+compiles and corrupts the stack. And it does **not** promise an absolute,
+resolved path — it returns the path the process was exec'd *through*, which
+may be relative. Caching a relative one is a bug with a long fuse: correct
+until the first `cd`. Apple's docs say to `realpath()` it; we do.
 
 ---
 
 ## Tests added, and how to trust them
 
-Every fix ships with a gate, and **each new gate was verified non-vacuous**
-by deliberately reverting the fix and confirming the gate fails:
+Every gate here was verified non-vacuous by deliberately reverting the fix
+and confirming it fails. Two of them **passed while broken on the first
+attempt**, which is the whole reason that step is not optional:
 
-| Gate | Checks | Sabotage result |
+| Gate | What it asks | First attempt |
 |---|---|---|
-| `make bg-tty-test` | 13 → 23 | — |
-| `make nonblock-tty-test` (new) | 10 | queue-full check FAILS without the EAGAIN wait |
-| `make hist-test` | +5 lithist | both lithist checks FAIL with the join forced on |
-| `tests/issue27_job_pgrp` (new) | 19 golden | — |
-| `tests/regress_hellish` | +8 shopt/lithist | — |
+| `tests/link_closure_test.py` | GNU ld the question Apple's ld asks by default (`--no-undefined --whole-archive`) | measured against the **archives** and passed while broken — a leftover SAFE=0 `libft.a` defined the very symbol a SAFE=1 link cannot see. Now measured against the objects alone. |
+| `tests/crlf_hygiene_test.py` | nothing executed is stored CRLF, **and** every such file is covered by a rule | the first half alone passes on a repo with *no* `.gitattributes` — it would have passed on the commit that broke WSL. The coverage half is the one with teeth. |
+| `tests/linux_only_apis_test.py` | `/proc/self/exe` named in exactly one file; `<mach-o/dyld.h>` never included | its comment filter matched `^\s*(/\*\|\*\|//)` and flagged five prose lines — the interesting mentions are on **continuation** lines of a `/* */` paragraph, which start with plain spaces and match no comment pattern at all. |
 
-`tests/issue27_job_pgrp` is wired into `test_lists=(…)` at the top of
-`tests/tester` — a new category file that is *not* added there silently
-never runs in `make test`. `nonblock-tty-test` is wired into the Makefile
-`.PHONY` list and into CI's `interactive` job.
+All three are discovered automatically by `tests/pty_suite.sh` (it globs
+`tests/*.py`), so they need no Makefile or CI wiring.
 
-### A harness bug worth knowing about
-
-`tests/run_scripts.sh` was grading against **whatever bash was in `PATH`**,
-not the pinned 5.3.9 that `tests/tester` uses. bash 5.2 and 5.3 disagree on
-the `jobs` status-column width, which is why `17_bg_signal_report.sh`
-"failed" there while passing under the pinned oracle — **oracle drift
-reported as a hellish bug**, and it had been sitting in the corpus as a
-known failure. Fixed in `8568479`; the corpus is now 109/109.
-
-If a batch of failures ever appears without a matching source change,
-suspect oracle drift first. `make oracle` builds the pinned bash.
+**The reproduce-on-Linux trick is the point.** Each of these fails on the
+unfixed code, on this machine, in about a second, with no Mac and no Windows
+runner. A grep is a poor substitute for a compiler and a very good
+substitute for a twenty-minute queue.
 
 ---
 
-## Verification state (all green on `develop` @ `a575c12`)
+## WSL
 
-```
-make test                 3742 / 3742   vs pinned bash 5.3.9
-tests/run_scripts.sh       109 / 109
-tests/verify_alloc.sh       78 / 78     on BOTH heaps, 0 leaks
-make bg-tty-test            23 checks, 0 failed
-make nonblock-tty-test      10 checks, 0 failed
-make hist-test              ALL PASSED
-make prompt-atomic-test      4 / 4      (1.1 MB over 9366 writes)
-make re / make re OPT=1     clean, -Wall -Wextra -Werror
-norminette                  clean on every touched file
-make bench                  geomean 1.312× faster than bash
-```
+Two separate things, and the first masked the second.
+
+1. **CRLF.** GitHub's Windows runners check out with `core.autocrlf=true`,
+   so `set -u` arrived as `set -u\r` and bash reported
+   `set: - : invalid option` and a syntax error on a brace. `.gitattributes`
+   now pins executed file types to `eol=lf`.
+
+   Deliberately **not** `* text=auto eol=lf`: ~100 files here are stored with
+   CRLF already, including fixtures under `tests/` whose bytes the golden
+   suite compares exactly. `git add --renormalize .` was run to confirm the
+   rule changes zero stored bytes.
+
+2. **drvfs.** `$GITHUB_WORKSPACE` is on `D:`, which WSL reaches through a
+   bridge out of the VM. A build is ~970 compiler invocations doing thousands
+   of round trips; the job was still compiling when the 60-minute timeout
+   killed it, and because the cancellation lands on the `cmd.exe` wrapper the
+   log ends in `Terminate batch job (Y/N)?` with nothing above it. The tree
+   is now copied to the distro's own ext4 first (one `tar | tar`, `.git`
+   excluded) and built there, with an explicit in-step timeout so a stall
+   produces a message instead of a cancelled batch job.
+
+   A separate step keeps what is actually WSL-specific: running the shell
+   against a drvfs directory (glob, read, `pwd`). Deliberately *not* the
+   permission checks — `chmod 000` on drvfs without metadata support is a
+   no-op, so a red there would be Windows telling the truth.
 
 ---
 
-## Known gaps — NOT fixed, deliberately
+## Two golden cases removed for being environment-dependent
 
-Read this section before assuming something is done.
+This keeps happening and is worth naming as a class.
 
-1. **`tests/hard/12_job_control.sh` is intermittently flaky (~1–2%,
-   load-dependent).** `wait $p3` occasionally reports `127`. I investigated
-   this at length and want the next person to have the honest state:
-   - It is **pre-existing** — reproduced at the same rate with the
-     job-control changes reverted.
-   - I identified a real durability gap (the status poll recorded a reaped
-     child only into the job table, and `job_purge_done` from an unrelated
-     `wait` discards that entry, losing the status from both lookups) and
-     fixed it, because `builtin_jobs` already followed the ring rule and
-     the poll had simply not been taught it.
-   - **That fix is NOT proven to be the cause.** After it: 0 failures in
-     120 runs. But with the fix reverted: 0 failures in 80 runs. The rate
-     is too low and too load-sensitive for those samples to distinguish.
-     Do not record this as diagnosed.
-   - A deterministic reproducer was attempted twice and failed both times;
-     the window needs `wait $p1` to succeed on a live child while `p3` has
-     already been reaped by the poll.
+- `sleep 0.01 & wait; jobs; echo end` — the arm64 runner's bash printed a
+  `Done` line; the pinned bash on x86 printed it **0 / 65 times**. The
+  *oracle* was architecture-dependent, so there was no right answer to pin.
+  Replaced with `sleep 0.3 & jobs | grep -c Running; wait; echo end`.
+- `issue13_bg_pid`: twelve cases racing `sleep 0.4` in the parent against a
+  3-second child. One full-suite run in five failed 7/3790 on exactly these,
+  with `sleep <defunct>` — the child had exited, so ~3s had passed where the
+  script asked for 0.4s.
 
-2. **`jobs` command text is a raw source slice, not a re-render.** bash
-   prints `( exit 7 )` for input `(exit 7)`; hellish prints `(exit 7)`.
-   Matching bash means pretty-printing the AST. The golden cases in
-   `issue27_job_pgrp` are written with bash-canonical spacing to sidestep
-   this — that is deliberate, and it means those cases do *not* cover the
-   label renderer.
-
-3. **`kill -0 $pid` on a finished background job** returns 0 in hellish and
-   1 in bash: bash reaps eagerly, hellish leaves the zombie a moment longer.
-   A test line for this was written and then removed rather than assert
-   the wrong behaviour.
-
-4. **The `+`/`-` current-job marker is environment-sensitive.** Do not
-   assert it in a golden case. `( exit 0 ) & sleep 0.1; jobs` prints
-   `[1]+  Done` under the pinned bash locally and `[1]   Done` under the
-   same pinned bash on a CI runner. My first version of
-   `issue27_job_pgrp` asserted it, passed locally 5/5, and failed in CI —
-   the cases now normalise the marker away with sed and assert only the
-   status column, which is the thing actually under test.
-
-4. **Docker Hub release channel is still unpublished** (#37). The workflow
-   guard is in and correct — an unconfigured repo now *skips* rather than
-   fails — but `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` are not set. GHCR
-   carries the image. Setting the two secrets is all that is left.
-
-5. **`vendor/libft` has an uncommitted submodule pointer change** in the
-   working tree that predates this session. I did not commit or touch it.
-   Check what it is before assuming it is intentional.
+  **Not reproduced in isolation**: 25/25 clean under CPU saturation, 192/192
+  under 64-way concurrency, four other full runs green. So the child's
+  nominal life went 3s → 30s as a *widened margin* against the only
+  mechanism the evidence fits, not as a diagnosis anyone can claim. Every one
+  of the twelve was re-checked against pinned bash individually. Cases with
+  no parent sleep were left alone — they have no wall-clock dependency.
 
 ---
 
 ## Conventions that bit me, recorded so they do not bite again
 
-- **`make norm` always exits 0** — it only *reports*. Read its output; do
-  not trust the exit status. It caught `TOO_MANY_FUNCS` and `SPC_AFTER_PAR`
-  on files that "built fine" twice this session.
-- **The 5-function-per-file ceiling forces helper placement.**
-  `done_with_code` lives in `job_signal2.c` rather than beside its only
-  caller for exactly this reason; `subshell_child` and `cmd_child_body`
-  were extracted to keep their callers under 25 lines.
-- **`ft_snprintf` does not exist.** libft has `ft_strlcpy`/`ft_strlcat` and
-  an allocating `ft_itoa`. A borrowed-string return contract rules out
-  `ft_itoa`, hence the hand-rolled digit loop in `done_with_code`.
-- **`cd tests && …` persists across Bash tool calls.** Several `make`
-  invocations silently failed with "No rule to make target" because of it.
-  Use absolute paths.
-- **The pty renders a newline as `\r\n\r`.** A test asserting `"\nfi"` on
-  raw pty output will fail even when the shell is correct; strip `\r` first.
-- **The history file is `~/.minishell_history`**, not `.hellish_history`.
+- **Do not rebuild while a pty suite is running.** I did it three times and
+  each run reported failures that were mine, not the shell's. Finish source
+  changes, *then* run `make pty-test`.
+- **`make norm` always exits 0** — it only reports. Read the output.
+- **Norminette rejects `(uint32_t)sizeof(x)`** (`SPC_AFTER_PAR`) and
+  `(size_t)-1` (`SPC_BFR_OPERATOR`). The accepted spellings are a named
+  constant and `(size_t) - 1` respectively — the latter is already the
+  tree-wide idiom for `mbrtowc` error returns, and is what made #4 above a
+  one-line fix.
+- **A preprocessor block inside a function body** needs a blank line after
+  the directive (`NL_AFTER_PREPROC`).
+- **Python rewrites of `.c` files silently convert CRLF → LF.**
+  `procsub_input.c` and `create_procsub_output.c` flipped this way; the real
+  change is ~40 lines and the diff reads as ~170. Left as LF (the right
+  direction for C sources) rather than churning them a second time.
+- **`cd tests && …` persists across Bash tool calls.** Use absolute paths.
+- **GitHub only honours `Closes #N` when a PR merges into the DEFAULT
+  branch.** PRs into `develop` do not auto-close anything, which is why
+  issues sat open in the previous session. Close them by hand.
+- **`concurrency: cancel-in-progress` means every push kills the run you
+  were watching.** Several "failures" this session were cancellations. Check
+  the conclusion string before believing a red.
 
 ---
 
-## Suggested next steps
+## Still open
 
-In rough priority order:
-
-1. **Decide the release.** `develop` is four commits ahead of the last tag
-   (2.7.1) with one feature (`lithist`) and three fixes, one of them a
-   real correctness fix to job control. That is a **2.8.0**. I did not cut
-   it — see the note below.
-2. Chase the `12_job_control.sh` flake properly, with a deterministic
-   harness rather than statistics (gap 1 above).
-3. Decide whether `jobs` should re-render its command text from the AST
-   (gap 2) — it is the last visible `jobs` divergence from bash.
-4. Set the two Docker Hub secrets, or drop that channel from the release
-   workflow.
-
-### A note on method
-
-Three of the bugs in this session were found by *writing the test first
-and watching it disagree with bash*, not by reading code: `Done(N)`,
-`jobs` in a pipeline, and both `shopt` exit-status rules all surfaced
-that way. The golden suite is the cheapest bug-finder in this repo —
-when adding coverage for one thing, it is worth writing the neighbouring
-cases too and reading every diff rather than only the one you expected.
-
-Equally: **every new gate here was checked by deliberately reverting the
-fix and confirming the gate fails.** Two of them passed while broken on
-the first attempt (the `nonblock-tty-test` queue-full check needed a
-real 400KB flood before it had teeth; a `venv` check earlier in the
-session passed against a shell that had died). A green test you have not
-seen fail is not yet evidence.
-
-### On cutting the release
-
-The user asked for a new version once main is clean and CI is green. I have
-**not** bumped `HELLISH_VERSION` (still `2.7.1`). Reason: a release retags,
-publishes to npm and GHCR, and is the one action here that is genuinely hard
-to walk back — and I could not watch CI go green on `main` end to end within
-this session. The version bump plus `make update-config-test` (which checks
-the version, the GitHub slug, `install.sh`, npm and the Dockerfile all
-agree) should be one deliberate commit, made once CI on `main` is confirmed
-green.
+1. **macOS is still `continue-on-error`.** The build now succeeds and the
+   smoke reached 39/40; the last gap is fixed but has not yet been confirmed
+   green on a real runner. Do not flip the flag until it has — a red required
+   check that everyone learns to ignore is worse than an informational one.
+2. **`v2.8.1` is not tagged.** The version is bumped, the notes are written,
+   `make update-config-test` is green. Tagging fires `release.yml` and
+   `ghcr.yml` — GitHub Releases, npm, GHCR — and is the one step here that
+   cannot be walked back. It was deliberately left for a human.
+3. **Docker Hub secrets** are still unset; that channel of `release.yml`
+   will no-op or fail. Set them or drop the channel.
+4. **`tests/test_files/invalid_permission`** shows as permanently modified
+   and `git` cannot even hash it (mode 000 by design). Pre-existing; ignore
+   it in `git status`, and never `git add -A`.
