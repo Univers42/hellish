@@ -14,6 +14,19 @@
 #include "executor.h"
 #include <signal.h>
 
+/* SIGSTKFLT and SIGPWR are Linux-only; Darwin and the BSDs have neither.
+   The table is a fixed 1..31 layout, so the entries stay put and carry -1
+   where the platform has no such signal -- sig_from_name already rejects
+   -1, so `trap - PWR` on a Mac reports an unknown signal instead of the
+   whole file failing to compile. Keeping the rows means the numbering and
+   `trap -l` output do not silently shift per platform. */
+#ifndef SIGSTKFLT
+# define SIGSTKFLT -1
+#endif
+#ifndef SIGPWR
+# define SIGPWR -1
+#endif
+
 /* The signal name table is stored in a static local so it is initialised
    exactly once and shared between every call (no heap allocation needed).
    The sentinel `{NULL, -1}` lets callers iterate without knowing the count.
