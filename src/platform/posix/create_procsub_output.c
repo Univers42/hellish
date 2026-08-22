@@ -13,16 +13,14 @@
 #include "expander_private.h"
 #include "sys.h"
 
+/* Fork a child for a >(cmd) process substitution.  The child reads from
+   pipefd[0] and re-execs the shell; see procsub_exec_self for why that is
+   not "/proc/self/exe" any more. */
 static pid_t	fork_and_exec_procsub(t_shell *state,
 								int pipefd[2],
 								const char *cmd)
 {
-	pid_t		pid;
-	char *const	argv_ms[]
-		= {(char *)PROC_SELF_EXE, (char *)CMD_OPT, (char *)cmd, NULL};
-	char *const	argv_sh[]
-		= {(char *)PATH_HELLISH, (char *)CMD_OPT, (char *)cmd, NULL};
-	char		**envp;
+	pid_t	pid;
 
 	pid = fork();
 	if (pid == -1)
@@ -32,13 +30,7 @@ static pid_t	fork_and_exec_procsub(t_shell *state,
 		close(pipefd[1]);
 		dup2(pipefd[0], STDIN_FILENO);
 		close(pipefd[0]);
-		envp = get_envp_all(state, PATH_HELLISH);
-		execve(PATH_HELLISH, argv_sh, envp);
-		envp = get_envp_all(state, PROC_SELF_EXE);
-		execve(PROC_SELF_EXE, argv_ms, envp);
-		if (envp)
-			free_tab(envp);
-		exit(127);
+		procsub_exec_self(state, cmd);
 	}
 	return (pid);
 }

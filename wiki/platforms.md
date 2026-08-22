@@ -27,6 +27,8 @@ Two things run, and they answer different questions.
 | `docker/smoke.sh` | 40 checks: the shell starts, forks, pipes, redirects, here-docs, globs, does arithmetic, handles signals and job control, and reports the right exit statuses | every platform rung |
 | the golden suite | ~3800 cases diffed byte-for-byte against a pinned bash 5.3.9 | x86_64 and arm64 Linux |
 | `tests/link_closure_test.py` | every symbol the archives reference is defined — *asking GNU ld the question Apple's linker asks by default* | anywhere, via `make pty-test` |
+| `tests/linux_only_apis_test.py` | Linux-only kernel interfaces are named in one file, not copied into four | anywhere, via `make pty-test` |
+| `tests/crlf_hygiene_test.py` | nothing executed is stored with CRLF, *and* every such file is covered by a rule | anywhere, via `make pty-test` |
 
 The smoke is not a weaker suite — it is a *different* one. It targets the
 class of bug that only appears when the C code meets a different libc,
@@ -87,27 +89,38 @@ container and the licence does not permit running it off Apple hardware, so
 (x86_64) and `macos-14` (arm64) runners are the honest equivalent, and both
 are in the `Platforms` workflow.
 
-The job is `continue-on-error` on purpose. The shell is written to POSIX but
-has never been built on Darwin, and two gaps are already known:
+The job is `continue-on-error` on purpose, and the honest state is: as of
+2.8.1 the build succeeds and the smoke was **39 ok / 1 failed**, the one
+failure being `/proc/self/exe`, now fixed. Both known gaps are closed:
 
 1. **readline.** Apple ships libedit under the name `libreadline`. It
    answers `-lreadline` and then does not have most of the GNU API this
-   shell uses. The Makefile now asks `brew --prefix readline` and adds that
-   include/lib pair on Darwin — untested on a real Mac.
-2. **`/proc/self/exe`.** Process substitution re-execs the shell through
-   that path (`incs/sys.h`), and it does not exist on Darwin. `<(cmd)` and
-   `>(cmd)` will not work there until it is replaced with a runtime lookup
-   (`_NSGetExecutablePath` on Darwin, `/proc/curproc/file` on FreeBSD).
-   Note `/dev/fd/N` is already used for the resulting path, which *is*
-   portable — only the self-exec path is not.
+   shell uses. The Makefile asks `brew --prefix readline` and adds that
+   include/lib pair on Darwin. The build and all 40 smoke checks reached
+   readline-dependent code without complaint, so this appears settled.
+2. **`/proc/self/exe`.** Process substitution re-exec'd the shell through
+   that path, so `<(cmd)` and `>(cmd)` produced nothing on Darwin. It is
+   now `self_exe_path()` (`src/platform/posix/self_exe.c`) —
+   `/proc/self/exe` on Linux, `_NSGetExecutablePath` on Darwin — and the
+   ENOEXEC interpreter fallback plus both halves of the update machinery
+   went the same way; all four had copied the same Linux-only assumption.
+   `/dev/fd/N` for the resulting path was always portable; only the
+   self-exec path was not.
+
+   `tests/linux_only_apis_test.py` keeps it that way. It does not test
+   process substitution — the golden suite and the smoke already do, on
+   Linux, where it always worked. It asserts that `/proc/self/exe` is
+   named in exactly one file. That is the property that actually failed:
+   the knowledge was in four places, so porting meant finding all four.
+
+Do not flip `continue-on-error` off until a full run is green on a real
+runner. A red required check that everyone learns to ignore is worse than
+an informational one.
 
 `-D_XOPEN_SOURCE=700` is also wrong on Darwin: it pins the POSIX.1-2008
 surface on glibc and musl, but on Apple's libc it *hides* the BSD extensions
 the system headers themselves need. The Makefile uses `-D_DARWIN_C_SOURCE`
 there instead.
-
-Do not flip `continue-on-error` off until the job is green. A red required
-check that everyone learns to ignore is worse than an informational one.
 
 ### WSL — informational
 
