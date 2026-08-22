@@ -11,8 +11,10 @@
 /* ************************************************************************** */
 
 #include "sys.h"
+#include "libft.h"
 #include <unistd.h>
 #include <stdint.h>
+#include <stdlib.h>
 #ifdef __APPLE__
 # include <mach-o/dyld.h>
 #endif
@@ -22,6 +24,11 @@
    procfs is one edit rather than a search. tests/linux_only_apis_test.py
    enforces that. */
 #define PROC_SELF_EXE "/proc/self/exe"
+
+/* Comfortably over PATH_MAX on every target here (Darwin says 1024,
+   Linux 4096), so the "buffer too small" arm of either lookup is
+   unreachable rather than merely unlikely. */
+#define SELF_EXE_MAX 4096
 
 /* Where the running binary lives, asked of the kernel.
 
@@ -34,17 +41,28 @@
    buffer and takes the size BY POINTER: on success it is left alone, and
    on overflow it is rewritten with the size actually needed. Passing the
    size by value would compile and corrupt the stack, so it is a uint32_t
-   local rather than a cast in the call. */
+   local rather than a cast in the call.
+
+   It also does NOT promise an absolute, resolved path -- it hands back
+   the path the process was exec'd through, which may be relative and may
+   be a symlink. Caching a relative one would be a bug with a long fuse:
+   correct until the shell cd's somewhere else, and then exec'ing a
+   sibling of the wrong directory. Apple's own documentation says to run
+   realpath() on it, so that is what happens here. /proc/self/exe needs
+   none of this -- the kernel already resolves it. */
 #ifdef __APPLE__
 
 static int	self_exe_fill(char *buf, size_t n)
 {
 	uint32_t	sz;
+	char		raw[SELF_EXE_MAX];
 
-	sz = (uint32_t)n;
-	if (_NSGetExecutablePath(buf, &sz) != 0)
+	sz = (uint32_t)SELF_EXE_MAX;
+	if (_NSGetExecutablePath(raw, &sz) != 0)
 		return (0);
-	buf[n - 1] = '\0';
+	raw[SELF_EXE_MAX - 1] = '\0';
+	if (!realpath(raw, buf))
+		ft_strlcpy(buf, raw, n);
 	return (1);
 }
 
@@ -74,7 +92,7 @@ static int	self_exe_fill(char *buf, size_t n)
    is better off failing on a NULL check than on a path it invented. */
 char	*self_exe_path(void)
 {
-	static char	buf[4096];
+	static char	buf[SELF_EXE_MAX];
 	static int	state;
 
 	if (state == 0)
