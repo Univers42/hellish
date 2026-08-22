@@ -1,0 +1,235 @@
+name: Platforms
+
+# Cross-platform coverage. ci.yml answers "does this change work?" on one
+# Ubuntu; this workflow answers "does it work anywhere else?".
+#
+# It exists because of a specific, repeated failure mode: bugs that reach
+# users on a distro nobody in CI was running. Issue #9 was gcc 11 on Ubuntu
+# 22.04 -- the default WSL install -- failing to compile while every job
+# stayed green. Issue #42 arrived from CachyOS. In both cases the matrix was
+# the thing missing, not the diagnosis.
+#
+# Three axes, because failures cluster on each of them independently:
+#   libc          glibc (old and new) / musl
+#   compiler      gcc and clang, several versions, -Werror on both
+#   OS personality Linux distros, arm64, macOS, WSL
+#
+# Cost control: the distro rungs are Docker builds on ubuntu-latest and run
+# docker/smoke.sh, a 40-check portability workout -- NOT the 3700-case golden
+# suite, which needs a pinned bash 5.3.9 built from source and would make
+# this matrix cost hours. ci.yml keeps running the golden suite where it is
+# cheap. The one exception is the arm64 rung, which is a native runner and
+# cheap enough to run the real thing.
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'incs/**'
+      - 'Makefile'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/platforms.yml'
+  schedule:
+    # Distro images move under us; a weekly run catches a base image that
+    # started shipping a compiler we do not survive, before a user does.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: platforms-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HELLISH_NO_BANNER: "1"
+  HELLISH_NO_UPDATE_CHECK: "1"
+  HELLISH_NO_ANIM: "1"
+
+jobs:
+  # ── Linux distributions × libc × compiler ────────────────────────────────
+  # Each rung is a clean container that installs its own toolchain, builds
+  # from source with -Werror, and runs the portability smoke. `label` is what
+  # shows up as the status check, so make it read like a machine.
+  distros:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # glibc, the two Ubuntus people actually run
+          - { label: "ubuntu 24.04 · gcc",     base: "ubuntu:24.04",        cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "ubuntu 24.04 · clang",   base: "ubuntu:24.04",        cc: clang, flags: "OPT=1 SAFE=1" }
+          # 22.04 is the default WSL distro and pins gcc 11 -- the only
+          # compiler here whose -Wstringop-overflow fired on issue #9.
+          - { label: "ubuntu 22.04 · gcc-11",  base: "ubuntu:22.04",        cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "debian stable · gcc",    base: "debian:stable-slim",  cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "debian stable · clang",  base: "debian:stable-slim",  cc: clang, flags: "OPT=1 SAFE=1" }
+          # musl. A different libc is where "works on my machine" goes to die.
+          - { label: "alpine musl · gcc",      base: "alpine:3.20",         cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "alpine musl · clang",    base: "alpine:3.20",         cc: clang, flags: "OPT=1 SAFE=1" }
+          # ... and musl with the custom heap, the least portable thing here.
+          - { label: "alpine musl · ft_malloc", base: "alpine:3.20",        cc: gcc,   flags: "OPT=1 SAFE=0" }
+          # Arch is the family issue #42 came from; Fedora is the other big
+          # non-Debian desktop, and both ship a newer gcc than Ubuntu.
+          - { label: "arch · gcc",             base: "archlinux:base-devel", cc: gcc,  flags: "OPT=1 SAFE=1" }
+          - { label: "fedora 41 · gcc",        base: "fedora:41",           cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "fedora 41 · clang",      base: "fedora:41",           cc: clang, flags: "OPT=1 SAFE=1" }
+          # The enterprise rung: old glibc, old gcc, the servers people run.
+          - { label: "rocky 9 · gcc",          base: "rockylinux:9",        cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "opensuse tumbleweed",    base: "opensuse/tumbleweed", cc: gcc,   flags: "OPT=1 SAFE=1" }
+          - { label: "void linux · gcc",       base: "ghcr.io/void-linux/void-linux:latest-full-x86_64", cc: gcc, flags: "OPT=1 SAFE=1" }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build from source in ${{ matrix.base }}
+        run: |
+          docker build -f docker/Dockerfile -t hellish-probe \
+            --build-arg BASE='${{ matrix.base }}' \
+            --build-arg CC='${{ matrix.cc }}' \
+            --build-arg BUILD_FLAGS='${{ matrix.flags }}' .
+      - name: Portability smoke (40 checks)
+        run: docker run --rm hellish-probe bash docker/smoke.sh
+
+  # ── Native arm64 ─────────────────────────────────────────────────────────
+  # Not an emulation rung: a real arm64 runner, so alignment, `char`
+  # signedness and any assumption about pointer/register width get exercised
+  # for real. Cheap enough to run the whole golden suite, so it does.
+  arm64:
+    name: linux arm64 · ${{ matrix.cc }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential clang libreadline-dev python3
+      - name: Build
+        env:
+          CC: ${{ matrix.cc }}
+        run: |
+          $CC --version | head -1
+          make re OPT=1 SAFE=1 CC=$CC > build.log 2>&1 || {
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\r/\n/g' build.log | tail -80; exit 1; }
+      - name: Portability smoke
+        run: bash docker/smoke.sh ./build/bin/hellish
+      - uses: ./.github/actions/oracle
+      - name: Golden suite vs pinned bash 5.3.9
+        run: |
+          make re CC=${{ matrix.cc }} > build.log 2>&1 || {
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+          cd tests
+          ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../suite.log | tail -3
+          grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log
+
+  # ── Apple ────────────────────────────────────────────────────────────────
+  # There is no Docker route to macOS: the kernel is not distributable in a
+  # container and Apple's licence does not allow it off Apple hardware. The
+  # honest equivalent is GitHub's own macOS runners, and both architectures
+  # are here because arm64 and x86_64 macOS differ in more than speed.
+  #
+  # INFORMATIONAL for now (continue-on-error). The shell is written to POSIX
+  # but has never been built on Darwin, and two things are already known to
+  # need work: Apple ships libedit as libreadline (so Homebrew's real one is
+  # required, which the Makefile now looks up), and /proc/self/exe -- how the
+  # shell re-execs itself for process substitution -- does not exist there.
+  # The job is here to make that visible with a log instead of a guess. Flip
+  # continue-on-error off once it is green; do not flip it off before.
+  macos:
+    name: macOS ${{ matrix.arch }} (informational)
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-14, arch: "arm64" }
+          - { runner: macos-13, arch: "x86_64" }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install GNU readline
+        run: |
+          brew install readline || true
+          echo "readline prefix: $(brew --prefix readline)"
+      - name: Build
+        run: |
+          cc --version | head -1
+          make OPT=1 SAFE=1 2>&1 | tail -60
+          test -x build/bin/hellish
+      - name: Portability smoke
+        run: bash docker/smoke.sh ./build/bin/hellish
+      - name: Report what is still missing
+        if: failure()
+        run: |
+          echo "::warning::macOS build or smoke failed -- see the log above."
+          echo "Known gaps: Homebrew readline linkage, /proc/self/exe."
+
+  # ── WSL ──────────────────────────────────────────────────────────────────
+  # WSL is not "Linux in Docker": the difference that matters is the Windows
+  # filesystem bridge (drvfs on /mnt/c has different permission and case
+  # semantics), interop with Windows executables on PATH, and the fact that
+  # the default install is Ubuntu 22.04 with gcc 11 -- the toolchain issue #9
+  # broke on. Building inside WSL is the only way to see any of that.
+  #
+  # INFORMATIONAL: the runner-side WSL setup is the flakiest thing in this
+  # file, and a green merge should not depend on it.
+  wsl:
+    name: WSL (Ubuntu 22.04, informational)
+    runs-on: windows-latest
+    continue-on-error: true
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: wsl-bash {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: Vampire/setup-wsl@v6
+        with:
+          distribution: Ubuntu-22.04
+          additional-packages: build-essential libreadline-dev git python3 ca-certificates
+      - name: Show the environment
+        run: |
+          uname -a
+          cat /etc/os-release | head -2
+          gcc --version | head -1
+          echo "WSL_DISTRO_NAME=${WSL_DISTRO_NAME:-unset}"
+      - name: Build
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          make OPT=1 SAFE=1 2>&1 | tail -60
+          test -x build/bin/hellish
+      - name: Portability smoke
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          bash docker/smoke.sh ./build/bin/hellish
+
+  # ── Summary ──────────────────────────────────────────────────────────────
+  # One place to read the matrix from. The informational rungs are reported,
+  # not gated: this step fails only if a rung that is supposed to be solid
+  # went red.
+  summary:
+    name: Platform matrix result
+    runs-on: ubuntu-latest
+    needs: [distros, arm64]
+    if: always()
+    steps:
+      - name: Gate on the required rungs
+        run: |
+          echo "distros: ${{ needs.distros.result }}"
+          echo "arm64:   ${{ needs.arm64.result }}"
+          [ "${{ needs.distros.result }}" = "success" ] || exit 1
+          [ "${{ needs.arm64.result }}" = "success" ] || exit 1
+          echo "every required platform rung is green"

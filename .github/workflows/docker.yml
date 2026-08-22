@@ -1,10 +1,15 @@
 name: Docker distros
 
-# Build hellish FROM SOURCE in a clean container on four distros to prove it
-# compiles + runs without depending on the host's packages. This is heavy
-# (a full build per distro), so it runs on pushes to the long-lived branches,
-# on PRs that touch the Docker setup, and on demand -- NOT on every code PR
-# (the fast `build` matrix in ci.yml already covers compilation on ubuntu).
+# Proves the CONTRIBUTOR path works: `docker compose build <distro>` and
+# `make docker-test`, exactly as documented in the README, with no host
+# packages involved.
+#
+# This is not the portability matrix -- platforms.yml owns that, and covers
+# far more (glibc and musl, gcc and clang, five package managers, arm64,
+# macOS, WSL). What is checked here is that docker-compose.yml and
+# docker/test.sh themselves still work, which is a different failure mode
+# and one that only ever breaks when someone edits those two files.
+# Heavy, so: long-lived branches, Docker-touching PRs, and on demand.
 on:
   push:
     branches: [main, develop]
@@ -27,12 +32,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        distro: [alpine, debian, ubuntu, arch]
+        # A representative slice, one per package manager family. The full
+        # list lives in docker-compose.yml and runs in platforms.yml.
+        distro: [alpine, debian, arch, fedora]
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build + smoke-test hellish in ${{ matrix.distro }}
         run: |
-          chmod +x docker/test.sh
+          chmod +x docker/test.sh docker/smoke.sh
           docker/test.sh ${{ matrix.distro }}
