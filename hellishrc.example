@@ -118,10 +118,51 @@ up() {
 }
 
 # ── 6. HISTORY ────────────────────────────────────────────────────────
-# Kept in ~/.hellish_history; multiline commands are joined into one
-# entry (bash cmdhist behaviour) so arrow-up recalls whole constructs.
+# Kept in ~/.hellish_history. By DEFAULT a multi-line command is stored as
+# one joined entry -- `for i in 1 2\ndo\n...` comes back as
+# `for i in 1 2; do ...` -- which is what bash does.
+#
+# If you would rather get the layout back exactly as you typed it,
+# newlines and indentation intact, that is one line (see section 7):
+#
+#   pretty on multiline-history
 
-# ── 7. HELLISH DIAGNOSTIC TOGGLES (for the curious) ───────────────────
+# ── 7. PRETTY: NAMED PRESETS FOR HOW THE SHELL FEELS ──────────────────
+# `pretty` is a curated front-end over the behaviour knobs that change how
+# the shell FEELS rather than what it computes. Every feature it names IS
+# a `shopt` option underneath -- there is no second set of state, so the
+# two can never disagree -- but `pretty` gives them readable names, one
+# line of help each, and presets that bundle them.
+#
+#   pretty list          every feature and mode, with descriptions
+#   pretty               what is on right now
+#   pretty -p            the same, as lines you can paste back in HERE
+#
+# That last one is the point: `pretty -p` prints a configuration you can
+# copy to another machine, instead of one you have to remember.
+#
+# Modes are one-shot assignments, so a toggle after a mode wins:
+#
+#   plain      everything off -- bash-identical behaviour
+#   friendly   multiline-history, cd-spell, resize-aware
+#   full       every feature
+#
+# Uncomment whichever line you want. `friendly` is a good starting point,
+# and it is the one that gives you multi-line history recall.
+
+# pretty mode friendly
+
+# ... or pick features individually:
+# pretty on multiline-history   # recall keeps newlines and indentation
+# pretty on cd-spell            # cd fixes a small typo in a directory name
+# pretty on auto-cd             # a bare directory name changes to it
+# pretty on resize-aware        # track terminal size after every command
+# pretty on deep-glob           # ** matches across directory levels
+# pretty on extended-glob       # ?() *() +() @() !() pattern operators
+# pretty on case-blind-glob     # globs ignore case
+# pretty on hidden-glob         # * also matches dot-files
+
+# ── 8. HELLISH DIAGNOSTIC TOGGLES (for the curious) ───────────────────
 # HELLISH_ALLOC_STATS=1 hellish script.sh   # live heap bytes at exit
 # HELLISH_PROMPT_BENCH=1 hellish            # ns per prompt render
 # hellish --debug=lexer --debug=parser --debug=ast  # pipeline views
