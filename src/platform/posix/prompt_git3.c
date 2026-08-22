@@ -146,7 +146,12 @@ static int	poll_done(t_dcache *c, int wait_ms)
 /* Non-blocking dirty flag for the repo rooted at `root`. A change of root
    abandons any in-flight check (its answer is for a repo we left). Only a
    freshly entered root gets a bounded wait — TTL refreshes poll with a
-   zero budget, so a render never stalls once the shell is inside a repo. */
+   zero budget, so a render never stalls once the shell is inside a repo.
+
+   A generation change (a command ran, so the tree may differ) retires the
+   cached answer whatever the TTL says. Without that, the 30-second arm
+   taken by a slow scan kept asserting "dirty" long after a `git checkout`
+   in the same shell had made the tree clean. */
 int	git_dirty_cached(const char *root)
 {
 	static t_dcache	c;
@@ -157,6 +162,7 @@ int	git_dirty_cached(const char *root)
 	if (c.busy)
 		return (poll_done(&c, 0), c.dirty);
 	if (c.init && ft_strcmp(c.root, root) == 0
+		&& c.gen == *git_scan_gen()
 		&& time(NULL) - c.at < c.ttl)
 		return (c.dirty);
 	wait_ms = 0;
@@ -166,6 +172,7 @@ int	git_dirty_cached(const char *root)
 		c.dirty = 0;
 	}
 	c.init = 1;
+	c.gen = *git_scan_gen();
 	ft_strlcpy(c.root, root, sizeof(c.root));
 	spawn_check(&c);
 	if (c.busy)
