@@ -94,7 +94,7 @@ strictly iterative — **six** defects so far, each one only visible once the
 one before it was fixed, and every round trip costs a CI queue. In order:
 `st_mtim`, `SIGPWR`/`SIGRTMIN`, `bcopy`, `MB_CUR_MAX`, then a link hole
 that had nothing to do with Darwin, then `/proc/self/exe`, then this
-header collision. As of 2.8.1 the build succeeds and the smoke reached
+header collision. As of 2.7.2 the build succeeds and the smoke reached
 **39 ok / 1 failed**, that one being `/proc/self/exe`. All known gaps are
 now closed:
 
