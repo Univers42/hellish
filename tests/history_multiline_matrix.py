@@ -110,11 +110,20 @@ def drive(shell, keys, lithist, ask):
         os.execvp(shell, [shell])
         os._exit(127)
 
-    def read(t):
+    def read(quiet=0.35, cap=15.0):
+        """Read until the terminal has been SILENT for `quiet` seconds.
+
+        Not a fixed budget. A flat per-keystroke stopwatch passes on an
+        idle machine and fails on a busy one, which makes the test report
+        load as a shell bug -- `completion_posix_test.py` did exactly that
+        and cost a diagnosis. `cap` is the backstop so a wedged shell still
+        fails instead of hanging.
+        """
         out = b""
-        end = time.time() + t
+        last = time.time()
+        end = last + cap
         while time.time() < end:
-            r, _, _ = select.select([fd], [], [], 0.06)
+            r, _, _ = select.select([fd], [], [], 0.05)
             if r:
                 try:
                     c = os.read(fd, 65536)
@@ -123,18 +132,21 @@ def drive(shell, keys, lithist, ask):
                 if not c:
                     break
                 out += c
+                last = time.time()
+            elif time.time() - last >= quiet:
+                break
         return out
 
-    read(0.9)
+    read(quiet=0.4)
     out = b""
     try:
         if lithist:
             os.write(fd, b"shopt -s lithist\n")
-            read(0.4)
+            read()
         os.write(fd, keys.encode())
-        read(0.5)
+        read()
         os.write(fd, ask)
-        out = read(0.9)
+        out = read(quiet=0.5)
     except OSError:
         pass
     try:
