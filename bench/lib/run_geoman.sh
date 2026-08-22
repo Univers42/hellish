@@ -20,7 +20,7 @@ DEST="$ROOT/bench/suites/geoman"
 URL="${GEOMAN_URL:-https://github.com/zstenger93/42_minishell_tester}"
 
 if [ ! -x "$BIN" ]; then
-    echo "error: build hellish first (make OPT=1 or make)" >&2
+    echo "error: build hellish first (make all OPT=1, or make all)" >&2
     exit 2
 fi
 

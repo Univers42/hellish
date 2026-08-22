@@ -20,7 +20,7 @@ COPY . .
 
 # Optimised, libc-allocator binary: the most portable combination.
 RUN make fclean >/dev/null 2>&1 || true; \
-	make OPT=1 SAFE=1; \
+	make all OPT=1 SAFE=1; \
 	./build/bin/hellish -c 'echo "hellish built OK for zsh-compare"'
 
 ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1
