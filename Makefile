@@ -177,11 +177,26 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
-# Job count. `nproc` is coreutils, so it is absent on macOS/BSD -- and a bare
-# `-j` with an empty argument means UNLIMITED jobs, which forks one compiler per
-# source file and thrashes the machine. Fall back to sysctl, then to a safe 4.
-NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# Job count. `nproc` is coreutils, so it is absent on macOS/BSD and on the
+# leaner Linux images; sysctl covers macOS/BSD and getconf is POSIX.
+NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null \
+	|| getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
 
+# The `||` chain above only fires when a probe FAILS. A probe that succeeds
+# and prints nothing -- which is what a sandboxed or cgroup-restricted
+# `nproc` can do -- leaves NPROC empty, and `-j` with an empty argument
+# means UNLIMITED jobs: one compiler process per source file, 487 of them,
+# which is the runaway build reported in issue #43.
+#
+# So the emptiness is checked in pure make, with no external command. A tool
+# that might be missing cannot be what guards against a missing tool -- and
+# this is the same class of gap as openSUSE shipping no `find`.
+#
+# A non-numeric value needs no guard: make rejects `-jfoo` outright, which
+# is loud and harmless. Empty is the only value that is silently dangerous.
+ifeq ($(strip $(NPROC)),)
+NPROC := 4
+endif
 
 # Every mode builds in parallel. The debug tree used to be pinned to -j1, which
 # cost ~6x on a 6-core box for no benefit: the compile rule creates its output
