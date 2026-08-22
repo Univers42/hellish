@@ -126,15 +126,32 @@ static void	maybe_bench(void)
 	fprintf(stderr, "[prompt-bench] %lld ns/render\n", i / 1000);
 }
 
-/* Build the primary prompt for an interactive read. A user-set PS1 (from
+/* Snapshot the process state the prompt reports on: the last command's
+   status, how long it ran, and how many background jobs are alive. The
+   built-in prompt reads these mirrors rather than the shell state -- the
+   animation repaints its rows between commands, from a timer, with no
+   t_shell in hand -- so they have to be refreshed on EVERY route into the
+   prompt, not just one of them.
+
+   That is the bug this function had. The refresh used to sit below the
+   `if (ps1 && *ps1)` early return, on the PS1-is-unset path, which was
+   fine until 5b6d3d4 gave interactive shells a default PS1 of "\B" (so a
+   virtualenv could restore it, issue #39). From that release the early
+   return was always taken, the mirrors stayed frozen at zero, and the
+   built-in prompt lost the two badges that read them: the background-jobs
+   tracker " \u2699N" and "took N.Ns" -- issue #50. \B renders the same prompt
+   through the same render_extras(), so hoisting the refresh above the
+   branch is what makes both routes agree.
+
+   Build the primary prompt for an interactive read. A user-set PS1 (from
    ~/.hellishrc or the environment) takes over completely, rendered with
    the bash escape set — the built-in two-row prompt is simply the theme
-   you get when PS1 is unset. Otherwise: the frame counter advances only
-   when HELLISH_ANIM selects a live style, so the default prompt is
-   perfectly still and each readline call redraws the SAME glyph; the
-   status is
-   snapshotted before rendering so the arrow colour reflects the command
-   that just finished, not a half-updated value. */
+   you get when PS1 is unset, and "\B" asks for it by name. Otherwise: the
+   frame counter advances only when HELLISH_ANIM selects a live style, so
+   the default prompt is perfectly still and each readline call redraws the
+   SAME glyph; the status is snapshotted before rendering so the arrow
+   colour reflects the command that just finished, not a half-updated
+   value. */
 t_string	prompt_normal(t_shell *state)
 {
 	t_string	ret;
@@ -144,17 +161,17 @@ t_string	prompt_normal(t_shell *state)
 	ensure_locale();
 	maybe_bench();
 	anim_cells()->count = 0;
+	status = state->last_cmd_st_exe.status;
+	*anim_status() = status;
+	*anim_dur_ms() = state->last_cmd_ms;
+	*anim_jobs() = state->job_table.count;
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
 		return (ps1_animated(state, ps1));
 	vec_init(&ret);
 	ret.elem_size = 1;
-	status = state->last_cmd_st_exe.status;
 	if (anim_style(state) != 0)
 		(*anim_frame())++;
-	*anim_status() = status;
-	*anim_dur_ms() = state->last_cmd_ms;
-	*anim_jobs() = state->job_table.count;
 	render_prompt(state, &ret, *anim_frame(), status);
 	return (ret);
 }
