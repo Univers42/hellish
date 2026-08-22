@@ -24,11 +24,24 @@
 #include <dirent.h>
 #include <unistd.h>
 
-/* Built-in names offered before PATH scan.  Checked first so the user
-   gets `echo` immediately even if /bin/echo appears much later. */
+/* Built-in names offered before the PATH scan.  Checked first so the user
+   gets `echo` immediately even if /bin/echo appears much later.
+
+   This must stay the set registered in hash_builtins_dispatch.c: the old
+   list held 18 of the 52, so `histor<TAB>` or `printf<TAB>` completed to
+   nothing at all -- and it listed `env`, which that table's own comment
+   says is NOT a builtin here (real env execs its argument, so we let
+   /usr/bin/env be found by the PATH scan like any other program).
+   completion_posix_test.py reads the dispatch table and fails if the two
+   ever drift apart again. */
 char	*g_builtins[] = {
-	"echo", "export", "cd", "exit", "pwd", "env", "unset", "type", "set",
-	"read", "test", "alias", "unalias", "hash", "jobs", "fg", "bg", "fc",
+	"echo", "export", "cd", "pushd", "popd", "[[", "exit", "pwd", "unset",
+	"type", "set", "shift", ":", "break", "continue", "eval", ".",
+	"source", "true", "false", "umask", "command", "return", "getopts",
+	"exec", "wait", "times", "trap", "readonly", "read", "test", "[",
+	"alias", "unalias", "hash", "jobs", "fg", "bg", "fc", "history",
+	"let", "local", "kill", "printf", "ulimit", "update", "help",
+	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	NULL
 };
 
@@ -62,6 +75,7 @@ void	cmd_gen_cleanup(t_cmd_gen *g)
 	if (g->dh)
 		closedir(g->dh);
 	g->dh = NULL;
+	g->cur = NULL;
 }
 
 /* Reset the generator: re-read PATH from the environment (not from our
@@ -79,20 +93,30 @@ void	cmd_gen_init(t_cmd_gen *g)
 		g->dirs = ft_split(g->cache, ':');
 }
 
-/* Return the next directory entry whose name starts with `text`, or NULL
-   when the directory is exhausted.  The match is libc-allocated because
-   readline frees it (see rl_dup in completion.c).  `d` stays open: the
-   caller resumes this scan on the next generator call. */
-char	*cmd_gen_scan_dir(DIR *d, const char *text, size_t tlen)
+/* Return the next entry of the open directory that is both a prefix match
+   for `text` and something this shell could actually execute, or NULL when
+   the directory is exhausted.  The match is libc-allocated because readline
+   frees it (see rl_dup in completion.c).  g->dh stays open: the caller
+   resumes this scan on the next generator call.
+
+   The cmd_entry_runnable() call is the fix for the reported bug.  This used
+   to accept every readdir() result whose NAME matched, which is not what a
+   PATH element means: POSIX searches it for an executable file, so a 0644
+   document, a subdirectory, and the "." and ".." that every directory
+   carries are not commands and never were.  Anyone whose PATH held a
+   directory that also held data -- ~/bin, ~/.local/bin, ./scripts -- got
+   those documents offered by name on the very first TAB. */
+char	*cmd_gen_scan_dir(t_cmd_gen *g, const char *text, size_t tlen)
 {
 	struct dirent	*ent;
 
 	while (1)
 	{
-		ent = readdir(d);
+		ent = readdir(g->dh);
 		if (!ent)
 			break ;
-		if (ft_strncmp(ent->d_name, text, tlen) == 0)
+		if (ft_strncmp(ent->d_name, text, tlen) == 0
+			&& cmd_entry_runnable(g->cur, ent->d_name))
 			return (rl_dup(ent->d_name));
 	}
 	return (NULL);
@@ -113,7 +137,7 @@ char	*cmd_gen_dirs(t_cmd_gen *g, size_t tlen, const char *text)
 	{
 		if (g->dh)
 		{
-			name = cmd_gen_scan_dir(g->dh, text, tlen);
+			name = cmd_gen_scan_dir(g, text, tlen);
 			if (name)
 				return (name);
 			closedir(g->dh);
@@ -121,7 +145,8 @@ char	*cmd_gen_dirs(t_cmd_gen *g, size_t tlen, const char *text)
 		}
 		if (!g->dirs || !g->dirs[g->idx])
 			break ;
-		g->dh = opendir(g->dirs[g->idx]);
+		g->cur = g->dirs[g->idx];
+		g->dh = opendir(g->cur);
 		g->idx++;
 	}
 	return (cmd_gen_cleanup(g), NULL);

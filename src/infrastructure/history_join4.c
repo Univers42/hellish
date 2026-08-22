@@ -58,3 +58,29 @@ bool	hj_dollar(t_hjoin *h)
 	h->i += 2;
 	return (true);
 }
+
+/* True when the joined text ends with a function-definition header --
+   `name()`, or `name ()`. bash joins the newline after one with a plain
+   SPACE, and it has to: `f()` followed by `;` is a syntax error, so the
+   recalled entry would no longer define the function at all. hellish
+   produced exactly that, `f(); { echo hi; }` (issue #32).
+
+   The test is deliberately narrow: an EMPTY paren pair with a word in
+   front of it. `(echo s)` has a non-empty body and keeps its `;`, and a
+   case pattern `a)` is a single paren that hj_paren already flags. */
+bool	hj_func_header(const char *s, size_t n)
+{
+	if (n < 3 || s[n - 1] != ')')
+		return (false);
+	n--;
+	while (n > 0 && (s[n - 1] == ' ' || s[n - 1] == '\t'))
+		n--;
+	if (n == 0 || s[n - 1] != '(')
+		return (false);
+	n--;
+	while (n > 0 && (s[n - 1] == ' ' || s[n - 1] == '\t'))
+		n--;
+	if (n == 0)
+		return (false);
+	return (!ft_strchr(" \t;&|(){}<>", s[n - 1]));
+}

@@ -23,21 +23,27 @@
    join is idempotent (an already-joined line has no boundary newlines
    left), so replaying an old raw file through here is safe.
 
-   `shopt -s lithist` turns the join off, which is bash's own name for
-   "keep the newlines". Recalling an if/for/while then gives back the
-   multi-line buffer that was typed instead of a flattened one-liner
-   (issue #32). The file format already escapes embedded newlines, so a
-   literal entry round-trips across sessions with no format change.
-   add_history is called directly rather than add_history_line because
-   the entry is already in its final shape by this point. */
+   `shopt -s lithist` does NOT skip the scanner -- it changes what the
+   scanner does with a command-boundary newline (keep it, instead of
+   rewriting it as "; "). That distinction is the fix for issue #32:
+   skipping the scanner also skipped the top-level \<newline> splice, so
+   `echo one \` + newline + `rest` came back as two lines with a dangling
+   backslash where bash gives one line, `echo one rest`. Everything else
+   -- quote state, here-doc bodies -- is shared, which is the point.
+
+   Recalling an if/for/while under lithist gives back the multi-line
+   buffer that was typed instead of a flattened one-liner. The file format
+   already escapes embedded newlines, so a literal entry round-trips
+   across sessions with no format change. add_history is called directly
+   rather than add_history_line because the entry is already in its final
+   shape by this point. */
 static void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
 	char	*joined;
 
-	joined = NULL;
-	if (!(state->shopt & SHOPT_LITHIST))
-		joined = hist_join_line(hist_entry);
+	joined = hist_join_line(hist_entry,
+			(state->shopt & SHOPT_LITHIST) != 0);
 	if (joined)
 	{
 		xfree(hist_entry);
