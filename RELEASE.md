@@ -8,6 +8,98 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.0
+
+**Added**
+
+- **`pretty` — named presets for how the shell feels.** The multi-line
+  history recall people kept asking for was one `shopt` bit, `lithist`.
+  That is fine if you already know the name; `shopt` lists eleven options
+  with no hint which are cosmetic and which one you actually wanted.
+
+  ```
+  pretty                 what is on right now
+  pretty -p              the same, as ~/.hellishrc lines
+  pretty list            every feature and mode, with descriptions
+  pretty on|off NAME...  toggle features
+  pretty mode NAME       plain | friendly | full
+  ```
+
+  Every feature *is* a `SHOPT_*` bit rather than a copy of one, so `pretty`
+  and `shopt` can never disagree. `pretty -p` prints lines that reproduce
+  your configuration when pasted into `~/.hellishrc` — a setup you can copy
+  between machines instead of remember. Defaults are unchanged
+  (bash-identical); `pretty mode friendly` is the line that turns on
+  multi-line recall.
+
+- **`shopt -s lithist`.** Recall keeps a compound's newlines and
+  indentation instead of joining it onto one line.
+
+**Fixed**
+
+- **`history` parsed its options instead of printing everything.**
+  `ft_atoi("-a")` is `0`, a count of `0` meant "no count given", and no
+  count meant *print the whole list* — so every option word dumped your
+  history. With `PROMPT_COMMAND='history -a'` inherited from the
+  environment (a stock bashrc line), that fired before every prompt with
+  nothing typed. All of bash's options work now; an unknown option and a
+  non-numeric count are both status 2.
+
+- **A recalled function definition stopped defining a function.** `f()`
+  followed by a newline joined to `f(); { … }`, which is a syntax error.
+  The joiner knew a `;` is illegal after `then`/`do`/`in` and after a case
+  pattern, but not after a function header.
+
+- **`lithist` skipped the history scanner instead of changing it**, so it
+  also skipped the top-level `\`-newline splice that bash performs in both
+  modes.
+
+- **TAB in command position offers commands, not documents.** The PATH scan
+  matched on the directory entry name alone, so every `readdir()` result
+  was offered — data files, subdirectories, and `.`/`..` from every PATH
+  element. POSIX (XCU 2.9.1.1) uses a PATH prefix only when it names an
+  *executable file*. Also: the word after `;` `&&` `||` `|` `&`, inside
+  `$( )`, or after leading blanks is a command word; and the builtin list
+  offered before the scan held 18 of 52 names.
+
+- **The git dirty star no longer outlives the tree it describes.** A
+  `git status` that took a second armed a 30-second cache, and the prompt
+  then asserted "dirty" for half a minute after a `git checkout` in the
+  same shell had made it clean. A command running in the tree now retires
+  the cached answer whatever the throttle says; idle prompts still hit the
+  cache, so git is not re-run for nothing.
+
+- **An empty job count is no longer a fork bomb.** `nproc` succeeding with
+  empty output — which a sandboxed or cgroup-restricted one can do — left
+  `-j` with no argument, meaning *unlimited* jobs: one compiler per source
+  file. Guarded in pure make, since a tool that might be missing cannot be
+  what guards against a missing tool.
+
+- **The build works on distros that ship no `find`.** openSUSE Tumbleweed
+  is one. Sources are discovered with `find`, so the source list came back
+  empty and the link died on `cc: fatal error: no input files` — an error
+  nowhere near its cause. It now refuses to run with an empty source list
+  and says why.
+
+- **Non-x86 builds compile again.** `libft.h` included `<immintrin.h>`
+  unconditionally — an x86-only header — so every arm64 and Apple Silicon
+  build died at the first source file.
+
+**Testing & CI**
+
+- **A `Platforms` matrix.** 14 distro/compiler rungs — Ubuntu 22.04/24.04,
+  Debian, Alpine (musl), Arch, Fedora, Rocky, openSUSE, Void; gcc and
+  clang; plus a musl + `ft_malloc` rung — each running a 40-check
+  portability workout, plus a native arm64 runner and informational macOS
+  and WSL jobs. Two of the bugs above were found by it within the hour.
+
+- **Regression tests run by discovery.** Every `tests/*.py` was wired in by
+  hand, twice, and the list had drifted: one test sat in `tests/` with no
+  target and no CI job, guarding nothing. `make pty-test` globs the
+  directory instead, so a new test is covered the moment it is written.
+
+---
+
 ## v2.7.1
 
 **Fixed**
