@@ -29,6 +29,7 @@
 # include <string.h>
 # include <time.h>
 # include <errno.h>
+# include <poll.h>
 # include <wchar.h>
 # include <wctype.h>
 
