@@ -287,7 +287,12 @@ jobs:
         run: |
           set -e
           rm -rf ~/hellish && mkdir -p ~/hellish
-          time tar -C "$GITHUB_WORKSPACE" -cf - . | tar -C ~/hellish -xf -
+          # .git is excluded because it is the largest thing in the tree and
+          # the build never reads it: this rung is SAFE=1, so the Makefile's
+          # one `git submodule update` fallback (the SAFE=0 ft_malloc fetch)
+          # is not on the path, and the version is a compile-time #define.
+          time tar -C "$GITHUB_WORKSPACE" --exclude=./.git -cf - . \
+            | tar -C ~/hellish -xf -
           df -h ~/hellish | tail -1
       - name: Build
         shell: wsl-bash {0}
