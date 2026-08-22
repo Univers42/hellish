@@ -29,7 +29,8 @@ static unsigned int	shopt_bit(const char *name)
 	{"globstar", SHOPT_GLOBSTAR}, {"nocaseglob", SHOPT_NOCASEGLOB},
 	{"extglob", SHOPT_EXTGLOB}, {"lastpipe", SHOPT_LASTPIPE},
 	{"histappend", SHOPT_HISTAPPEND}, {"checkwinsize", SHOPT_CHECKWINSIZE},
-	{"autocd", SHOPT_AUTOCD}, {"cdspell", SHOPT_CDSPELL}, {NULL, 0}};
+	{"autocd", SHOPT_AUTOCD}, {"cdspell", SHOPT_CDSPELL},
+	{"lithist", SHOPT_LITHIST}, {NULL, 0}};
 	int							i;
 
 	i = 0;
@@ -49,73 +50,86 @@ static void	shopt_sync(t_shell *state)
 	*glob_dotglob_cell() = (state->shopt & SHOPT_DOTGLOB) != 0;
 }
 
-/* Apply/query one name under mode ('s' set, 'u' unset, 'q' query,
-   0 print). Returns the per-name status for -q/print accumulation. */
-static int	shopt_one(t_shell *state, const char *name, char mode)
+/* Apply/query one name under act ('s' set, 'u' unset, 'p' print in
+   reusable form, 0 print as "name<TAB>on|off"). `quiet` is the -q
+   modifier and suppresses output; it is ORTHOGONAL to act, which is why
+   the two are separate parameters -- see the flag loop for why that
+   matters. Returns the per-name status.
+
+   The two status rules are bash's and they are NOT the same rule: -s and
+   -u report whether the CHANGE succeeded, so a successful `shopt -u x`
+   is 0 even though x ends up off; -q and the print forms report the
+   SETTING, so `shopt x` on an unset option is 1. hellish had both
+   backwards -- `shopt -u extglob` returned 1, and `shopt extglob`
+   returned 0 whatever the setting -- which made either one useless in an
+   `if`. */
+static int	shopt_one(t_shell *state, const char *name, char act, int quiet)
 {
 	unsigned int	bit;
-	const char		*st;
 
 	bit = shopt_bit(name);
 	if (bit == 0)
 		return (ft_eprintf("%s: shopt: %s: invalid shell option name\n",
 				state->ctx, name), 1);
-	if (mode == 's')
-		state->shopt |= bit;
-	else if (mode == 'u')
-		state->shopt &= ~bit;
-	else if (mode == 0)
+	if (act == 's' || act == 'u')
 	{
-		st = "off";
-		if (state->shopt & bit)
-			st = "on";
-		ft_printf("%-20s\t%s\n", name, st);
+		if (act == 's')
+			state->shopt |= bit;
+		else
+			state->shopt &= ~bit;
+		return (0);
 	}
+	if (!quiet && act == 'p' && (state->shopt & bit))
+		ft_printf("shopt -s %s\n", name);
+	else if (!quiet && act == 'p')
+		ft_printf("shopt -u %s\n", name);
+	else if (!quiet && (state->shopt & bit))
+		ft_printf("%-20s\ton\n", name);
+	else if (!quiet)
+		ft_printf("%-20s\toff\n", name);
 	if (state->shopt & bit)
 		return (0);
 	return (1);
 }
 
-/* Print every known option as "name<TAB>on|off" (the no-argument form).
-   Each line goes through shopt_one's print mode so the output format
-   lives in exactly one place. */
-static int	shopt_print_all(t_shell *state)
+/* Print every known option. Each line goes through shopt_one so the two
+   output formats (plain and the -p reusable form) live in one place. */
+static int	shopt_print_all(t_shell *state, char act, int quiet)
 {
 	static const char *const	names[] = {"autocd", "cdspell",
 		"checkwinsize", "dotglob", "extglob", "globstar", "histappend",
-		"lastpipe", "nocaseglob", "nullglob", NULL};
+		"lastpipe", "lithist", "nocaseglob", "nullglob", NULL};
 	int							i;
 
 	i = 0;
 	while (names[i])
-		shopt_one(state, names[i++], 0);
+		shopt_one(state, names[i++], act, quiet);
 	return (0);
 }
 
+/* `shopt -o` addresses the `set -o` options, not shopt's own -- bash
+   documents it as "restrict to option names defined for set -o", which is
+   why `shopt -o` and `set -o` print the same table. hellish listed its
+   shopt names there instead, so a script asking about `allexport` got an
+   answer about `autocd`. list_set_options already renders that table for
+   `set -o`, so this is a delegation, not a second copy. */
 int	builtin_shopt(t_shell *state, t_vec argv)
 {
-	char	mode;
+	char	act;
+	int		quiet;
 	size_t	i;
 	int		rc;
 
-	mode = 0;
-	i = 1;
-	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
-		&& ((char **)argv.ctx)[i][1])
-	{
-		if (((char **)argv.ctx)[i][1] == 's')
-			mode = 's';
-		else if (((char **)argv.ctx)[i][1] == 'u')
-			mode = 'u';
-		else if (((char **)argv.ctx)[i][1] == 'q')
-			mode = 'q';
-		i++;
-	}
+	act = 0;
+	quiet = 0;
+	i = shopt_flags(argv, &act, &quiet);
+	if (act == 'o')
+		return (list_set_options(state));
 	if (i >= argv.len)
-		return (shopt_print_all(state));
+		return (shopt_print_all(state, act, quiet));
 	rc = 0;
 	while (i < argv.len)
-		if (shopt_one(state, ((char **)argv.ctx)[i++], mode) && mode != 0)
+		if (shopt_one(state, ((char **)argv.ctx)[i++], act, quiet))
 			rc = 1;
 	return (shopt_sync(state), rc);
 }

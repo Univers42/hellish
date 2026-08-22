@@ -25,6 +25,30 @@ if [ ! -x "$H" ]; then
 	exit 2
 fi
 
+# Grade against the SAME pinned oracle tests/tester uses. Without this the
+# corpus was diffed against whatever bash happened to be in PATH, and bash
+# changes POSIX-visible behaviour between minor releases: 5.2 pads the `jobs`
+# status column to 24 columns where 5.3 pads to 27, and the two disagree on
+# when a SIGTERM'd background job is announced. That made
+# tests/hard/17_bg_signal_report.sh fail here while passing against the
+# pinned 5.3.9 -- a bash-version difference reported as a hellish bug, which
+# is exactly the trap `make oracle` exists to close.
+ORACLE_HOME="${HELLISH_ORACLE:-$HOME/bash-5.3.9}"
+if [ -x "$ORACLE_HOME/bin/bash" ]; then
+	PATH="$ORACLE_HOME/bin:$PATH"
+	export PATH
+fi
+ORACLE_VERSION="$(bash --version 2>/dev/null | head -1 \
+	| sed 's/.*version \([0-9.]*\).*/\1/')"
+case "$ORACLE_VERSION" in
+	5.3*) ;;
+	*)
+		echo "⚠  oracle drift: grading against bash ${ORACLE_VERSION:-unknown}," \
+			"not the pinned 5.3.x." >&2
+		echo "   Expect phantom failures. Build it once:  make oracle" >&2
+		;;
+esac
+
 OUT="$(mktemp -d)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$OUT" "$WORK"' EXIT

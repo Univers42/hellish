@@ -13,6 +13,7 @@
 #include "core.h"
 #include "update.h"
 #include "shell.h"
+#include "pal.h"
 #include "helpers.h"
 #include "env.h"
 #include <string.h>
@@ -65,15 +66,20 @@ static void	cli_early_exit(t_shell *state, char **argv, t_cli *cli)
    command-hash cache. All use a consistent "zero-length vec" starting point
    so any early-exit path can safely call free/cleanup on them. The line
    editor's default mode rides along: it is the same kind of "state that
-   outlives one command", and on() is at its 25-line ceiling. */
+   outlives one command", and on() is at its 25-line ceiling. So does
+   jc_init, which records the pid/group the job-control code compares
+   against for the rest of the session. */
 static void	init_tables(t_shell *state)
 {
+	jc_init(state);
 	vec_init(&state->redirects);
 	state->redirects.elem_size = sizeof(t_redir);
 	vec_init(&state->proc_subs);
 	state->proc_subs.elem_size = sizeof(t_procsub_entry);
 	vec_init(&state->functions);
 	state->functions.elem_size = sizeof(t_shell_func);
+	vec_init(&state->dead_funcs);
+	state->dead_funcs.elem_size = sizeof(t_ast_node);
 	job_table_init(&state->job_table);
 	alias_table_init(&state->aliases);
 	cmd_hash_init(&state->cmd_cache);

@@ -1,0 +1,41 @@
+history -p abc
+history -p one two
+history -p '$HOME'; echo st=$?
+history -s a b c; history
+history -s x; history -s y; history
+history -s "a b"; history
+history -s dup; history -s dup; history
+history -s a; history -s b; history 1
+history -s a; history -s b; history -s c; history 2
+history -s a; history 99
+history -s a; history -s b; history -d 1; history
+history -s a; history -c; history; echo end
+history -c; history; echo cleared
+history 0; echo st=$?
+history -p; echo st=$?
+history -s; echo st=$?
+history -s one; history -s two; history -w outfiles/hf42a; cat outfiles/hf42a
+history -s one; history -w outfiles/hf42b; history -c; history -r outfiles/hf42b; history
+history -s keep; history -w outfiles/hf42c; history -c; history -n outfiles/hf42c; history
+history -s only; history -a outfiles/hf42d; cat outfiles/hf42d
+history -s a; history -s b; history -w outfiles/hf42e; echo done
+HISTFILE=outfiles/hf42f; history -s q; history -w; cat outfiles/hf42f
+HISTFILE=outfiles/hf42g; history -s q; history -w; history -c; history -r; history
+history -x; echo st=$?
+history abc; echo st=$?
+history -anrw; echo st=$?
+history -d 1; echo st=$?
+history -d 0; echo st=$?
+history -s a; history -d 99; echo st=$?
+history -r /nonexistent/hellish42; echo st=$?
+history -w /nonexistent/dir42/x; echo st=$?
+history -s a; history -s b; history -a outfiles/hf42h; echo silent
+history -s a; history -s b; history -n outfiles/hf42i; echo silent
+history -s a; history -s b; history -r /dev/null; echo silent
+history -s a b; history -p '!!'
+history -s echo hi; history -p '!!'; history
+history -p 'plain text' 'no bang here'
+history -s a; history -s b; history -p '!1' '!2'
+history -- 1; echo st=$?
+history -c -c; echo st=$?
+history -s x; history -cd 1; history; echo st=$?

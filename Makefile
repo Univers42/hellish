@@ -31,8 +31,26 @@ endif
 # Includes (must be defined before CPPFLAGS assignment)
 INCLUDES := -I./incs -I./incs/platform/$(TARGET) -I./vendor/libft/include -I./vendor/libft -I./vendor/libft/include/internals -I./incs/public -I./vendor/libft/srcs/memory/memalloc/slab
 
-# Base compile flags
+# macOS: two things differ and both stop the build dead at the system headers
+# rather than anywhere interesting.
+#
+#  1. Apple ships libedit under the name libreadline. It answers -lreadline
+#     and then does not have most of the GNU API this shell uses. The real
+#     one comes from Homebrew and is keg-only, so its prefix has to be asked
+#     for explicitly -- it is never on the default search path.
+#  2. _XOPEN_SOURCE=700 pins the POSIX.1-2008 surface on glibc and musl. On
+#     Apple's libc it does the opposite and HIDES the BSD extensions the
+#     <sys/*.h> headers themselves depend on. _DARWIN_C_SOURCE is the
+#     documented way to ask for "POSIX plus the extensions" there.
+ifeq ($(UNAME_S),Darwin)
+BREW_PREFIX_RL := $(shell brew --prefix readline 2>/dev/null)
+ifneq ($(BREW_PREFIX_RL),)
+INCLUDES += -I$(BREW_PREFIX_RL)/include
+endif
+CFLAGS_BASE := -Wall -Wextra -Werror -D_DARWIN_C_SOURCE -DVERBOSE
+else
 CFLAGS_BASE := -Wall -Wextra -Werror -D_XOPEN_SOURCE=700 -DVERBOSE
+endif
 
 # Debug / sanitize flags
 DEBFLAGS    := -g3 -ggdb -O0
@@ -53,8 +71,13 @@ LDFLAGS_BASE :=
 ifeq ($(UNAME_S),Linux)
 LDFLAGS_BASE += -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed
 else
-# macOS/BSD ld does not support --gc-sections/--as-needed
-LDFLAGS_BASE +=
+# macOS/BSD ld does not support --gc-sections/--as-needed. What macOS does
+# need is the Homebrew readline it cannot find on its own (see above).
+ifeq ($(UNAME_S),Darwin)
+ifneq ($(BREW_PREFIX_RL),)
+LDFLAGS_BASE += -L$(BREW_PREFIX_RL)/lib
+endif
+endif
 endif
 
 # The shell links against libreadline for its interactive line editor. Kept in
@@ -141,14 +164,39 @@ SRCS := $(shell find $(SRC_DIR) -path $(SRC_DIR)/platform -prune -o \
 	-name '*.c' -print | sort) \
 	$(shell find $(SRC_DIR)/platform/$(TARGET) -name '*.c' 2>/dev/null | sort)
 
+# An empty SRCS is never legitimate, and the failure it produces otherwise is
+# actively misleading: make happily builds an empty object list and the link
+# stops at "cc: fatal error: no input files", which points nowhere near the
+# cause. openSUSE Tumbleweed's base image is the real case -- it ships no
+# `find` at all, so the two $(shell ...) calls above return nothing. Say so.
+ifeq ($(strip $(SRCS)),)
+$(error no sources found under $(SRC_DIR)/. Is `find` installed? (openSUSE and some minimal images ship without findutils.) Is the checkout complete?)
+endif
+
 OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
-# Job count. `nproc` is coreutils, so it is absent on macOS/BSD -- and a bare
-# `-j` with an empty argument means UNLIMITED jobs, which forks one compiler per
-# source file and thrashes the machine. Fall back to sysctl, then to a safe 4.
-NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# Job count. `nproc` is coreutils, so it is absent on macOS/BSD and on the
+# leaner Linux images; sysctl covers macOS/BSD and getconf is POSIX.
+NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null \
+	|| getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
+
+# The `||` chain above only fires when a probe FAILS. A probe that succeeds
+# and prints nothing -- which is what a sandboxed or cgroup-restricted
+# `nproc` can do -- leaves NPROC empty, and `-j` with an empty argument
+# means UNLIMITED jobs: one compiler process per source file, 487 of them,
+# which is the runaway build reported in issue #43.
+#
+# So the emptiness is checked in pure make, with no external command. A tool
+# that might be missing cannot be what guards against a missing tool -- and
+# this is the same class of gap as openSUSE shipping no `find`.
+#
+# A non-numeric value needs no guard: make rejects `-jfoo` outright, which
+# is loud and harmless. Empty is the only value that is silently dangerous.
+ifeq ($(strip $(NPROC)),)
+NPROC := 4
+endif
 
 # Every mode builds in parallel. The debug tree used to be pinned to -j1, which
 # cost ~6x on a 6-core box for no benefit: the compile rule creates its output
@@ -493,12 +541,18 @@ docker-suite:
 
 # Docker: build + run hellish FROM SOURCE in clean per-distro containers, so
 # anyone can try it without chasing readline/toolchain deps on their own host.
-# `docker-test` builds + smoke-tests all four distros; `docker-<distro>` drops
-# you into an interactive hellish there. See docker/ and docker-compose.yml.
+# `docker-test` builds every distro and runs docker/smoke.sh (the same 40-check
+# portability workout the Platforms workflow runs) in each; `docker-<distro>`
+# drops you into an interactive hellish there. See docker/ and
+# docker-compose.yml for the full list -- glibc and musl, gcc and clang, five
+# package managers, plus a musl+ft_malloc rung.
+#
+#   make docker-test                       # everything
+#   docker/test.sh fedora alpine-clang     # just these two
 docker-build:
 	docker compose build
 docker-test:
-	@chmod +x docker/test.sh && docker/test.sh
+	@chmod +x docker/test.sh docker/smoke.sh && docker/test.sh
 docker-alpine:
 	docker compose run --rm alpine
 docker-debian:
@@ -509,8 +563,22 @@ docker-ubuntu2204:
 	docker compose run --rm ubuntu2204
 docker-arch:
 	docker compose run --rm arch
+docker-fedora:
+	docker compose run --rm fedora
+docker-rocky:
+	docker compose run --rm rocky
+docker-opensuse:
+	docker compose run --rm opensuse
+docker-void:
+	docker compose run --rm void
 docker-clean:
 	docker compose down --rmi local 2>/dev/null || true
+
+# The portability workout on its own, against whatever binary is built. Same
+# script the distro containers and every Platforms CI rung run, so a failure
+# reads the same everywhere.
+smoke: all
+	@chmod +x docker/smoke.sh && docker/smoke.sh $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Cross-shell speed matrix. Build hellish + a zoo of other shells (bash, dash,
 # zsh, mksh, ksh, yash, busybox ash, fish) in ONE self-contained image, then
@@ -545,6 +613,43 @@ cd-posix-test: all
 # broken space-joined flattening. See tests/hist_multiline_test.py.
 hist-test: all
 	@python3 $(TEST_DIR)/hist_multiline_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# The `history` builtin's OPTIONS, in a live session (issue #42). The golden
+# category issue42_history_opts covers what each one does under `-c`; this
+# covers the shape the bug actually had -- an interactive shell, a populated
+# history file, and PROMPT_COMMAND='history -a' dumping the whole list before
+# every prompt. Run it after touching builtin_history*.c.
+history-opts-test: all
+	@python3 $(TEST_DIR)/history_opts_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# Every multi-line construct, in BOTH history modes, diffed against the pinned
+# bash 5.3.9 driving the SAME keystrokes in the same pty (issue #32):
+# backslash-continuation, if/elif/else, for, while, until, case, function
+# definitions, brace groups, subshells, unterminated ' " and `, $( ), $(( )),
+# here-docs, and a trailing | && ||. Checks the listing AND what the up-arrow
+# puts back, because those are two different code paths in hellish.
+# Needs the oracle: `make oracle`.
+history-matrix-test: all
+	@python3 $(TEST_DIR)/history_multiline_matrix.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# The git dirty star must not outlive the state it describes: a `git status`
+# that took a second armed a 30-second TTL, and the prompt then asserted
+# "dirty" for half a minute after a `git checkout` in the same shell had made
+# the tree clean. Makes the slow scan deterministic with a `git` shim rather
+# than needing a big repo, so it reproduces on any machine.
+git-star-test: all
+	@python3 $(TEST_DIR)/git_star_freshness_test.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# ── Every pty/regression test in tests/*.py, by DISCOVERY ────────────────────
+# Not a list: a list drifts, and this one had. completion_posix_test.py lived
+# in tests/ with no target and no CI job, so the POSIX command-search fix it
+# guards ran nowhere from the day it landed. tests/pty_suite.sh globs the
+# directory instead, so a new regression test is covered the moment it exists.
+# This is what CI runs; the individual targets above stay for working on one.
+pty-test: all
+	@chmod +x $(TEST_DIR)/pty_suite.sh && $(TEST_DIR)/pty_suite.sh
 
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made
@@ -585,6 +690,43 @@ git-prompt-test: all
 # against bash directly, so it also notices if bash changes its mind.
 bg-tty-test: all
 	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# A virtualenv prompt surviving its own deactivate. venv's activate saves
+# ${PS1:-} and restores it only `if [ -n "$$_OLD_VIRTUAL_PS1" ]`, so a shell
+# with no default PS1 saved "" and stayed "(venv) " forever. Runs the PS1
+# handshake verbatim, then the real python3 -m venv round trip. (#39)
+venv-prompt-test: all
+	@python3 $(TEST_DIR)/venv_prompt_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# Tab completion, built SAFE=0 ON PURPOSE. readline frees every match it is
+# handed with libc free(), so a match allocated by ft_malloc is a cross-heap
+# free -- and that is invisible on SAFE=1, where xmalloc IS libc malloc and
+# there is no mismatch to find. Only a SAFE=0 binary can fail this gate, so
+# it builds one (ASan there reports "bad-free ... not malloc()-ed"). It also
+# covers the PATH scan that stopped at the first match per directory. (#40)
+completion-test:
+	@$(MAKE) --no-print-directory SAFE=0
+	@python3 $(TEST_DIR)/completion_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# What TAB is ALLOWED to offer. A PATH element is searched for an EXECUTABLE
+# FILE (POSIX XCU 2.9.1.1), but the scan matched on the directory entry name
+# alone -- so a 0644 document, a subdirectory, and the "." and ".." every
+# directory carries were all offered as commands, and anyone whose PATH held
+# a directory that also held data had those documents listed on the first
+# TAB. Same file covers the command POSITION (`ls | <TAB>` is a command in
+# bash, and was a filename here) and the no-match fallback that let the cwd's
+# files back in. Hermetic: PATH is one fixture directory, so the offered set
+# is a closed set the test can compare exactly.
+completion-posix-test: all
+	@python3 $(TEST_DIR)/completion_posix_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# PS1 rendering, and the login chain that exposed it. Because hellish sets
+# BASH_VERSION, Debian/Ubuntu's stock ~/.profile sources ~/.bashrc and hands
+# us bash's default PS1 -- which the renderer then printed as visible text
+# (":+()}\033[01;32m...") because \nnn was not an escape and ${v:+w} was read
+# as a bare name. Renders that exact PS1 in a pty and checks the bytes.
+ps1-render-test: all
+	@python3 $(TEST_DIR)/ps1_render_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Canary (NOT a regression gate for a specific fix): drives the shell the way
 # the field reports of intermittent prompt corruption describe, and asserts no
@@ -632,6 +774,17 @@ update-test: all
 prompt-atomic-test: all
 	@chmod +x $(TEST_DIR)/prompt_atomic_test.py
 	@python3 $(TEST_DIR)/prompt_atomic_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# The prompt against a NON-BLOCKING terminal (issue #34). O_NONBLOCK lives on
+# the open file description the shell shares with every program it launches,
+# so one tool that sets it and never restores it leaves the shell writing to
+# a non-blocking tty. tty_write_all used to treat the resulting EAGAIN as a
+# hard error and drop the WHOLE frame. The last two checks fill the output
+# queue for real before the shell draws, so they fail outright if the EAGAIN
+# wait is removed. See tests/nonblock_tty_test.py.
+nonblock-tty-test: all
+	@chmod +x $(TEST_DIR)/nonblock_tty_test.py
+	@python3 $(TEST_DIR)/nonblock_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # /dev/tcp and /dev/udp redirections vs bash --posix. Brings up its own TCP
 # and UDP peer, so it needs python3 but no network access.
@@ -693,9 +846,13 @@ geoman: all
 .PHONY: test bench re all clean fclean norm my_shell help safe_banner \
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
-	docker-arch docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test readline-test anim-test git-prompt-test prompt-atomic-test \
-	bg-tty-test prompt-integrity-test update-badge-test \
+	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
+	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
+	hist-test history-opts-test history-matrix-test pty-test git-star-test \
+	completion-test completion-posix-test \
+	readline-test anim-test git-prompt-test \
+	prompt-atomic-test \
+	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \

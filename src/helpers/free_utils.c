@@ -52,23 +52,29 @@ void	free_redirects(t_vec_redir *v)
 }
 
 /* Walk the function table and release each entry: the name string and the
-   whole body AST. The vec's backing array itself is freed last, same pattern
-   as every other vec-of-structs we own. Called once at shutdown from
-   free_all_state. */
-static void	free_functions(t_vec *fns)
+   whole body AST. Then the bodies unset mid-call and parked by retire_body
+   (func_retire.c) -- at shutdown no call can still be walking one, so those
+   are dropped unconditionally rather than through drain_dead_funcs'
+   func_depth guard, which a shell exiting from inside a function would
+   never satisfy. Each vec's backing array is freed last, same pattern as
+   every other vec-of-structs we own. Called once from free_all_state. */
+static void	free_functions(t_shell *state)
 {
 	size_t			i;
 	t_shell_func	*fn;
 
 	i = 0;
-	while (i < fns->len)
+	while (i < state->functions.len)
 	{
-		fn = vec_idx(fns, i);
+		fn = vec_idx(&state->functions, i++);
 		xfree(fn->name);
 		free_ast(&fn->body);
-		i++;
 	}
-	xfree(fns->ctx);
+	xfree(state->functions.ctx);
+	i = 0;
+	while (i < state->dead_funcs.len)
+		free_ast((t_ast_node *)vec_idx(&state->dead_funcs, i++));
+	xfree(state->dead_funcs.ctx);
 }
 
 /* Session-lifetime strings and caches, in the exact order free_all_state
@@ -133,7 +139,7 @@ static void	free_session_data(t_shell *state)
    builds and a canary for the slab backend. */
 void	free_all_state(t_shell *state)
 {
-	free_functions(&state->functions);
+	free_functions(state);
 	free_session_strings(state);
 	free_redirects(&state->redirects);
 	cleanup_proc_subs(state);

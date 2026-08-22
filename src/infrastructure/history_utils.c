@@ -21,19 +21,35 @@
    `history` listing the raw lines of a multi-line command -- a for-loop
    printed as three entryless rows where bash prints one joined line. The
    join is idempotent (an already-joined line has no boundary newlines
-   left), so replaying an old raw file through here is safe. */
+   left), so replaying an old raw file through here is safe.
+
+   `shopt -s lithist` does NOT skip the scanner -- it changes what the
+   scanner does with a command-boundary newline (keep it, instead of
+   rewriting it as "; "). That distinction is the fix for issue #32:
+   skipping the scanner also skipped the top-level \<newline> splice, so
+   `echo one \` + newline + `rest` came back as two lines with a dangling
+   backslash where bash gives one line, `echo one rest`. Everything else
+   -- quote state, here-doc bodies -- is shared, which is the point.
+
+   Recalling an if/for/while under lithist gives back the multi-line
+   buffer that was typed instead of a flattened one-liner. The file format
+   already escapes embedded newlines, so a literal entry round-trips
+   across sessions with no format change. add_history is called directly
+   rather than add_history_line because the entry is already in its final
+   shape by this point. */
 static void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
 	char	*joined;
 
-	joined = hist_join_line(hist_entry);
+	joined = hist_join_line(hist_entry,
+			(state->shopt & SHOPT_LITHIST) != 0);
 	if (joined)
 	{
 		xfree(hist_entry);
 		hist_entry = joined;
 	}
-	add_history_line(hist_entry);
+	add_history(hist_entry);
 	vec_push(&state->hist.hist_cmds, &hist_entry);
 	if (state->hist.append_fd < 0)
 		return ;
@@ -92,11 +108,17 @@ bool	worthy_of_being_remembered(t_shell *state)
 }
 
 /* First-time history setup: zero the struct, open the file, load and cap the
-   entries, and leave append_fd open for incremental writes. */
+   entries, and leave append_fd open for incremental writes.
+
+   readmark/appended start at what was just loaded: those entries are
+   already both read and on disk, so a later `history -n` must not import
+   them a second time and `history -a` must not re-append them. */
 void	init_history(t_shell *state)
 {
 	state->hist = (t_history){.append_fd = -1, .hist_active = true};
 	parse_history_file(state);
+	state->hist.readmark = state->hist.hist_cmds.len;
+	state->hist.appended = state->hist.hist_cmds.len;
 }
 
 /* Release the heap strings in hist_cmds and their backing vector. The

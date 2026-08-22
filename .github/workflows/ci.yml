@@ -242,24 +242,15 @@ jobs:
       - uses: ./.github/actions/oracle
       - name: Build
         run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
-      - name: readline entry points (completion, history, vi/emacs)
-        run: make readline-test
-      - name: cmdhist multiline history joining
-        run: make hist-test
-      - name: prompt reaches the tty in one write
-        run: make prompt-atomic-test
-      - name: prompt animation never clobbers pasted input
-        run: make anim-test
-      - name: git dirty check never blocks a render, and leaves no zombie
-        run: make git-prompt-test
-      - name: non-ASCII prompt and wrapping input
-        run: make widechar-test
-      - name: background jobs and the controlling terminal
-        run: make bg-tty-test
-      - name: prompt integrity (idle silence + no cut escapes)
-        run: make prompt-integrity-test
-      - name: pending-update badge stays visible in the prompt
-        run: make update-badge-test
+      # ONE step, by discovery. This job used to name each tests/*.py file in
+      # its own step, and a file nobody remembered to add here simply never
+      # ran in CI -- which is what happened to completion_posix_test.py. The
+      # runner globs the directory, so a new regression test is covered the
+      # moment it is written, with no second place to remember.
+      - name: Every pty regression test (tests/*.py, discovered)
+        run: make pty-test
+      - name: Multi-line history, both modes, vs the pinned bash
+        run: make history-matrix-test
 
   # ── Update path and network-shaped redirections ──────────────────────────
   # Both bring up their own local peer; neither touches the network. The
@@ -304,6 +295,10 @@ jobs:
         run: bash tests/hard/run.sh
       - name: Both heaps agree, and neither leaks
         run: cd tests && ./verify_alloc.sh
+      # Builds SAFE=0 itself: a cross-heap free cannot exist on SAFE=1,
+      # where xmalloc and readline's free() are the same allocator.
+      - name: Tab completion on the ft_malloc heap
+        run: make completion-test
 
   # ── Benchmarks: measured, reported, never a gate ─────────────────────────
   # Shared CI runners are noisy neighbours; timings there cannot decide
