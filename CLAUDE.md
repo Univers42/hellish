@@ -31,8 +31,11 @@ make OPT=1          # optimized build (ft_malloc heap)
 make re             # fclean + rebuild, race-safe ordering (OPT/SAFE propagate)
 make oracle         # build the PINNED bash 5.3.9 the suite is defined against
                     #   (cached in ~/bash-5.3.9; tests/tester auto-uses it)
-make test           # full suite: ~3000 golden-diff cases vs bash --posix
+make test           # full suite: ~3500 golden-diff cases vs bash --posix
 make docker-suite   # same suite, hermetic: shell AND oracle from the image
+tests/run_scripts.sh # whole-script corpus (tests/scripts, tests/hard, tests/stress)
+                    #   vs bash --posix + ASan/LSan scrape; no make target — this is
+                    #   what CI's "Tests" job actually runs, run it locally pre-PR too
 make static         # static musl binary via docker -> dist/hellish-linux-<arch>
 make static-verify  #   ... and prove it runs on THIS host
 cd tests && ./tester redir pipe   # run only specific category files
@@ -75,6 +78,9 @@ make widechar-test  # pty gate for non-ASCII: the shortened cwd in the prompt, a
                     #   wrapping TYPED line starting with a 2-byte/1-column character
 make git-prompt-test # pty gate: the prompt's git dirty check never blocks a render — cd
                     #   into a slow-scanning repo must prompt instantly, star arrives async
+make bg-tty-test    # pty gate: background/stopped jobs never wedge the controlling terminal
+make prompt-integrity-test # pty gate: prompt stays silent when idle, never leaks a stray escape
+make update-badge-test # pty gate: a pending-update badge stays visible across re-renders
 make charts         # regenerate bench/charts/*.svg from whatever harness output is on disk
                     #   (never re-measures — charting and measuring stay separate)
 make rss            # peak-RSS dimension alone (needs a prior `make perf` build)
@@ -110,6 +116,7 @@ Interactive shells (and only interactive shells) source `~/.hellishrc` — never
 - Adding a test = append a line to the right category file (or a new file), then `cd tests && ./tester <file>`. Cases too big for one line go in `tests/hard/*.sh` as whole programs.
 - Gotcha: `make test` runs the default category list **hardcoded in the `test_lists=(…)` array at the top of `tests/tester`** — a brand-new category file must be added there or it silently never runs in the full suite.
 - `tests/hard/` has its **own** runner, not wired into `make test`: `tests/hard/run.sh [script.sh …]` diffs each script vs `bash --posix` (output + exit status) and prints a best-of-3 timing next to each PASS. Run it explicitly after touching the executor or expander.
+- `tests/run_scripts.sh` is a third, separate layer: whole self-contained scripts under `tests/scripts`, `tests/hard`, and `tests/stress`, run through both shells and scanned for ASan/LSan reports. It has no Makefile wrapper but is what CI's `tests` job actually gates on (`tests/hard/run.sh` is gated separately, in CI's `corpus` job) — don't assume a green `make test` is enough before opening a PR.
 - The harness runs 16 cases in parallel (`xargs -P 16`) in a scratch copy of `tests/test_files` — a test that depends on cwd state left by an earlier line will not behave the way it reads.
 - Every fix ships with a test — non-negotiable (CONTRIBUTING.md). Cover the neighbouring cases too.
 - Leak checking: ASan/LSan is only meaningful on `SAFE=1`. On `SAFE=0` use the allocator's own oracle: `HELLISH_ALLOC_STATS=1 ./build/bin/hellish script.sh` (prints live bytes at exit).
@@ -135,7 +142,7 @@ Conceptual pipeline: `input → lexer → parser (AST) → word reparser → her
 
 **Command substitution has two paths.** `capture_subshell_output.c` first tries the forkless fast path `cmdsub_fast()` (`src/expander/cmdsub_fast.c`), which runs the body in-process when it is provably side-effect-free: a single whitelisted builtin (`echo`/`printf`/`pwd`/`true`/`:`), no redirects or control operators, no `${v=…}`, no `$((…))`. NULL means "not eligible" and the caller falls back to the normal fork. A cmdsub bug can live in either path; the eligibility scan (`cmdsub_fast2.c`) deliberately errs toward forking.
 
-Other modules: `builtins` (51 builtin names, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
+Other modules: `builtins` (52 builtin names, O(1) hash dispatch), `environment` (`t_vec_env` is the truth; `get_envp()` materializes `char **` for execve on demand), `arith` (self-contained arithmetic lexer/parser/eval serving `$((…))` plus the `(( ))` command and `for ((;;))` — those two are AST nodes run by `src/execution/execute_arith.c`), `glob` (called by the expander), `alias`, `job_control` (`state->job_table` behind `jobs`/`fg`/`bg`/`wait`), `completion` + `editing` (readline tab-completion, vi/emacs modes), `helpers` (the canonical free routines), `infrastructure` (input driver, prompt, history — including the bash-`cmdhist` multiline joiner in `history_join.c` — AST debug printers, centralized `error.c` messages).
 
 ### Allocator discipline
 
@@ -160,8 +167,8 @@ Dispatch is `builtin_func(name)` in `src/builtins/hash_builtins_dispatch.c`. Wir
 
 - Branch from `develop`; PRs target `develop` (`main` and `develop` are protected). Branch names: `type/short-description`, e.g. `fix/heredoc-eof`, `perf/cmdsub-fast-path`.
 - Conventional Commits, enforced by the commit-msg hook (`./vendor/scripts/install-hooks.sh`): `type(scope): imperative subject` with type ∈ feat/fix/refactor/perf/test/docs/chore/style and scope = the module (lexer, parser, expander, executor, builtins, alloc, glob, heredoc, job-control, …). **No AI co-author trailers.**
-- Pre-PR gates, all green from a clean tree: `make re` AND `make re OPT=1` build clean; `make test` green; `cd tests && ./verify_alloc.sh` green on both heaps; no ASan/LSan reports on your cases; `make norm` clean.
-- CI (`.github/workflows/ci.yml`) re-runs these gates: submodule hygiene, the build matrix, norminette (**enforced there**, unlike the local always-exit-0 `make norm`), and the full suite with leak checks. Releases ship via `release.yml`/`ghcr.yml` and an npm package (`npm/`, published as `hellish-shell`).
+- Pre-PR gates, all green from a clean tree: `make re` AND `make re OPT=1` build clean; `make test` green; `tests/run_scripts.sh` and `tests/hard/run.sh` green; `cd tests && ./verify_alloc.sh` green on both heaps; no ASan/LSan reports on your cases; `make norm` clean.
+- CI (`.github/workflows/ci.yml`) is 10 separate required jobs, each its own PR status check: submodule hygiene; the 3-way `OPT`×`SAFE` build matrix; the oldest-supported toolchain (gcc/gcc-12/clang on Ubuntu 22.04, catches warnings a newer compiler stays quiet on); norminette (**enforced there**, unlike the local always-exit-0 `make norm`); `tests` (golden suite + `tests/run_scripts.sh`); `gates` (`cli-opts-test`/`login-test`/`help-test`/`cd-posix-test`/`update-config-test`); `interactive` (every pty gate); `update` (`update-test` + `net-redir-test`); `corpus` (`tests/hard/run.sh` + `verify_alloc.sh`); and `bench`, which is informational only (`continue-on-error`, never blocks a merge). Releases ship via `release.yml`/`ghcr.yml` and an npm package (`npm/`, published as `hellish-shell`).
 
 ## Where the prose lives
 
