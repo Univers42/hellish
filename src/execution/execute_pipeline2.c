@@ -46,6 +46,7 @@ t_execution_state	execute_pipeline_one(t_shell *state,
 	procsub_close_fds_parent(state);
 	if (res.pid != -1)
 		exe_res_set_status(state, &res);
+	jc_end(state);
 	set_pipestatus_one(state, res.status);
 	return (res);
 }

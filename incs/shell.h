@@ -305,6 +305,10 @@ typedef struct s_shell
 	t_vec				dead_funcs; /* bodies retired during their own call */
 	t_job_table			job_table; /* background job list */
 	bool				exit_warned; /* stopped-job exit warning given */
+	pid_t				shell_pid; /* the REPL's own pid (fork detector) */
+	pid_t				shell_pgid; /* shell's group, 0 if it owns no tty */
+	pid_t				fg_pgid; /* group of the running foreground job */
+	bool				jobctl; /* this process may drive job control */
 	t_pal_procs			pal_procs; /* platform process registry (win32) */
 	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				var_attrs; /* declare -i/-n attribute table */
@@ -330,6 +334,7 @@ typedef struct s_shell
 # define SHOPT_CHECKWINSIZE 0x080
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
+# define SHOPT_LITHIST 0x400
 
 /* Directory matcher ctx for glob expansion */
 typedef struct s_dir_matcher

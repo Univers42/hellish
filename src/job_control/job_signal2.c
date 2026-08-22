@@ -61,7 +61,7 @@ void	job_notify_async(t_shell *state)
 		return ;
 	if (!state->pid || ft_atoi(state->pid) != (int)getpid())
 		return ;
-	job_update_status(jt);
+	job_update_status(state);
 	i = job_next_after(jt, 0);
 	while (i)
 	{

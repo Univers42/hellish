@@ -66,6 +66,20 @@ int	run_external_sync(t_shell *state, t_vec *args)
 	return (res.status);
 }
 
+/* The forked child's whole job, in order.  jc_child comes FIRST: it has to
+   move us into the job's process group and take the terminal while SIGTTOU
+   is still inherited as SIG_IGN, which default_signal_handlers is about to
+   reset to SIG_DFL.  Never returns -- actually_run execve's or exits. */
+static void	cmd_child_body(t_shell *state, t_executable_node *exe,
+					t_executable_cmd *cmd)
+{
+	jc_child(state);
+	default_signal_handlers();
+	set_up_redirection(state, exe);
+	env_extend(&state->env, &cmd->pre_assigns, true);
+	_exit(actually_run(state, &cmd->argv));
+}
+
 t_execution_state	execute_cmd_bg(t_shell *state,
 						t_executable_node *exe, t_executable_cmd *cmd)
 {
@@ -85,12 +99,8 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 		run_cmd_in_place(state, exe, cmd, true);
 	pid = fork();
 	if (pid == 0)
-	{
-		default_signal_handlers();
-		set_up_redirection(state, exe);
-		env_extend(&state->env, &cmd->pre_assigns, true);
-		_exit(actually_run(state, &cmd->argv));
-	}
+		cmd_child_body(state, exe, cmd);
+	jc_parent(state, pid);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
 	return (free_executable_node(exe), res_pid(pid));

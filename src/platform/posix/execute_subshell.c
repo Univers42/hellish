@@ -13,7 +13,11 @@
 #include "execution_private.h"
 #include "ft_builtins.h"
 
-/* Run a ( compound-list ) in a forked child.  Key points:
+/* The child half of a ( compound-list ).  Split out of execute_subshell so
+   both halves stay inside the line ceiling once job control is wired in.
+   Key points:
+   - jc_child comes first: it must move us into the job's process group and
+     take the terminal while SIGTTOU is still inherited as SIG_IGN.
    - set_unwind_sig installs the child's SIGTERM handler so a kill to the
      child group unwinds cleanly without a double-free.
    - The EXIT trap (traps[0]) is cleared: it belongs to the parent shell,
@@ -23,30 +27,37 @@
      (next_infd etc.) have already been closed; then we reset infd/outfd so
      set_up_redirection does not try to dup2 the now-closed values.
    - forward_exit_status encodes the child's exit code via _exit so the
-     parent's waitpid gets the right WEXITSTATUS. */
-t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
+     parent's waitpid gets the right WEXITSTATUS.  Never returns. */
+static void	subshell_child(t_shell *state, t_executable_node *exe)
 {
 	t_execution_state	res;
-	int					pid;
+
+	jc_child(state);
+	set_unwind_sig();
+	xfree(state->traps[0]);
+	state->traps[0] = NULL;
+	trap_restore(state, (char *[3]){0});
+	set_up_redirection(state, exe);
+	exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
+	free_executable_node(exe);
+	exe->outfd = 1;
+	exe->infd = 0;
+	res = execute_tree_node(state, exe);
+	run_exit_trap(state);
+	forward_exit_status(res);
+}
+
+/* Run a ( compound-list ) in a forked child and hand back its pid. */
+t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
+{
+	int	pid;
 
 	pid = fork();
 	if (pid == 0)
-	{
-		set_unwind_sig();
-		xfree(state->traps[0]);
-		state->traps[0] = NULL;
-		trap_restore(state, (char *[3]){0});
-		set_up_redirection(state, exe);
-		exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
-		free_executable_node(exe);
-		exe->outfd = 1;
-		exe->infd = 0;
-		res = execute_tree_node(state, exe);
-		run_exit_trap(state);
-		forward_exit_status(res);
-	}
+		subshell_child(state, exe);
 	if (pid < 0)
 		critical_error_errno_ctx("fork");
+	jc_parent(state, pid);
 	procsub_close_fds_parent(state);
 	free_executable_node(exe);
 	return (res_pid(pid));

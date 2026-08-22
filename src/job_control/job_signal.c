@@ -22,6 +22,7 @@
 
 #include "job_control.h"
 #include "shell.h"
+#include "pal.h"
 #include "sh_input.h"
 #include "libft.h"
 #include <string.h>
@@ -43,6 +44,8 @@ void	job_record_exit(t_job *job, int status)
 	job->raw_status = status;
 	if (WIFSTOPPED(status))
 		return ((void)(job->status = JOB_STOPPED));
+	if (WIFCONTINUED(status))
+		return ((void)(job->status = JOB_RUNNING));
 	if (!WIFEXITED(status) && !WIFSIGNALED(status))
 		return ;
 	if (WIFEXITED(status))
@@ -94,4 +97,22 @@ char	*job_core_suffix(const t_job *job)
 	if (job->status == JOB_KILLED && job->core_dumped)
 		return ((char *)"(core dumped) ");
 	return ((char *)"");
+}
+
+/* Send `sig` to a whole job's process group.  A STOPPED job cannot act on
+   most signals: the kernel leaves them pending until something resumes the
+   process, so `kill %1` on a ^Z'd job looked like it had done nothing at
+   all -- the SIGTERM sat there unhandled and `jobs` still said "Stopped".
+   bash follows the signal with a SIGCONT so the job wakes up and dies,
+   which is what the user meant.  The stop signals are exempt: resuming a
+   job the user just asked to stop would defeat the request. */
+int	job_kill_group(struct s_shell *st, t_job *job, int sig)
+{
+	if (pal_kill_pgid(st, job->pgid, sig) == -1)
+		return (-1);
+	if (job->status != JOB_STOPPED || sig == SIGCONT || sig == SIGSTOP
+		|| sig == SIGTSTP || sig == SIGTTIN || sig == SIGTTOU)
+		return (0);
+	pal_kill_pgid(st, job->pgid, SIGCONT);
+	return (0);
 }
