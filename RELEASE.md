@@ -8,6 +8,49 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.1
+
+A portability release. No behaviour changes on Linux — every fix here is
+about hellish building and running correctly somewhere it previously did
+not, and about CI being able to tell you when it does not.
+
+**Fixed**
+
+- **macOS (Apple Silicon) builds again.** Four separate defects, each
+  hidden behind the last: `st_mtim` is `st_mtimespec` on Darwin, `SIGPWR`
+  and the realtime signals do not exist there, `bcopy` is a fortified
+  macro, and `MB_CUR_MAX` is an `int` rather than a `size_t` — which made a
+  correct-on-Linux comparison a `-Werror=sign-compare` failure.
+
+- **A library function that was declared, called, and never defined.**
+  `get_original_tty_job_signals()` had been missing a body for months.
+  GNU ld lets a shared library keep undefined symbols and hope; Apple's
+  does not, which is the only reason anyone found out. It is a real bug
+  everywhere: a crash waiting for the first caller.
+
+- **The allocator-backend probe no longer relies on ELF semantics.** An
+  undefined *weak* symbol resolves to NULL on Linux and is a link error on
+  macOS. Which heap is being built is now a compile-time fact, which is
+  what it always was.
+
+- **Windows checkouts no longer break the scripts.** `.gitattributes`
+  pins everything with a shebang to LF, so `core.autocrlf` cannot turn
+  `set -u` into `set -u\r`.
+
+**Testing**
+
+- Two new gates reproduce the macOS and Windows failures **on Linux**, in
+  about a second each: `link_closure_test.py` asks GNU ld the question
+  Apple's linker asks by default, and `crlf_hygiene_test.py` checks both
+  that no executed file is stored with CRLF and that every one of them is
+  covered by a rule — the second being the half that catches the next file
+  someone adds.
+
+- The WSL rung builds on the distro's own filesystem rather than through
+  the Windows bridge, where the same build could not finish inside an hour.
+
+---
+
 ## v2.8.0
 
 **Added**
