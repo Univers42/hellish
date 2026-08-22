@@ -8,11 +8,15 @@ shows you how to drive the shell.
 
 ---
 
-## v2.8.1
+## v2.7.2
 
-A portability release. No behaviour changes on Linux — every fix here is
-about hellish building and running correctly somewhere it previously did
-not, and about CI being able to tell you when it does not.
+Everything since v2.7.1, in one release. The bulk of it is portability:
+hellish now builds and runs on macOS (Apple Silicon) and inside WSL, both
+of which are covered by CI. On Linux nothing about the shell's behaviour
+changes.
+
+It also carries the `pretty` builtin and `shopt -s lithist`, which were
+finished earlier and never shipped on their own — see below.
 
 **Fixed**
 
@@ -61,9 +65,7 @@ not, and about CI being able to tell you when it does not.
 - The WSL rung builds on the distro's own filesystem rather than through
   the Windows bridge, where the same build could not finish inside an hour.
 
----
-
-## v2.8.0
+### Also here, from the issue-fixing work before it
 
 **Added**
 
