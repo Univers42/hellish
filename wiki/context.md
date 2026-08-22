@@ -190,6 +190,31 @@ Read this section before assuming something is done.
    A test line for this was written and then removed rather than assert
    the wrong behaviour.
 
+4. **`jobs` inside a PIPELINE reports stale status.** Found while writing
+   the golden cases, and not fixed:
+
+   ```
+   $ ( exit 7 ) & sleep 0.1; jobs | awk '{print $2}'
+   bash      Done(7)
+   hellish   Running        <-- stale
+   ```
+
+   A pipeline stage forks, so `jobs` runs in a child holding a *copy* of
+   the job table, and the child's `waitpid(-pgid)` cannot reap a process
+   that is not its own child — so the status never advances past RUNNING.
+   bash's parent has already updated the table before the fork. Fixing it
+   means updating job status in the parent before forking a pipeline.
+   The golden cases work around it with `jobs > file` (a redirect, which
+   runs in-process) rather than a pipe.
+
+5. **The `+`/`-` current-job marker is environment-sensitive.** Do not
+   assert it in a golden case. `( exit 0 ) & sleep 0.1; jobs` prints
+   `[1]+  Done` under the pinned bash locally and `[1]   Done` under the
+   same pinned bash on a CI runner. My first version of
+   `issue27_job_pgrp` asserted it, passed locally 5/5, and failed in CI —
+   the cases now normalise the marker away with sed and assert only the
+   status column, which is the thing actually under test.
+
 4. **Docker Hub release channel is still unpublished** (#37). The workflow
    guard is in and correct — an unconfigured repo now *skips* rather than
    fails — but `DOCKERHUB_USERNAME`/`DOCKERHUB_TOKEN` are not set. GHCR
