@@ -586,6 +586,13 @@ git-prompt-test: all
 bg-tty-test: all
 	@python3 $(TEST_DIR)/bg_tty_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# A virtualenv prompt surviving its own deactivate. venv's activate saves
+# ${PS1:-} and restores it only `if [ -n "$$_OLD_VIRTUAL_PS1" ]`, so a shell
+# with no default PS1 saved "" and stayed "(venv) " forever. Runs the PS1
+# handshake verbatim, then the real python3 -m venv round trip. (#39)
+venv-prompt-test: all
+	@python3 $(TEST_DIR)/venv_prompt_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Tab completion, built SAFE=0 ON PURPOSE. readline frees every match it is
 # handed with libc free(), so a match allocated by ft_malloc is a cross-heap
 # free -- and that is invisible on SAFE=1, where xmalloc IS libc malloc and

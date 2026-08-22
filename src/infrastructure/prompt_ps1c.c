@@ -51,12 +51,32 @@ void	ps1_jobs(t_shell *state, t_string *out)
 	xfree(n);
 }
 
+/* \B: the whole built-in two-row prompt, as one escape.
+
+   This exists so the default prompt can BE a PS1 value instead of the
+   absence of one. Python's venv activate does
+
+       _OLD_VIRTUAL_PS1="${PS1:-}" ; PS1="(venv) ${PS1:-}"
+
+   and deactivate restores it only `if [ -n "$_OLD_VIRTUAL_PS1" ]`. With
+   PS1 unset that saved value is the empty string, the guard is false, and
+   the prompt stays "(venv) " for the rest of the session -- issue #39.
+   Every shell that ships a default PS1 round-trips this correctly, so now
+   we ship one too: "\B", which renders exactly what an unset PS1 used to. */
+void	ps1_builtin(t_shell *state, t_string *out)
+{
+	render_prompt(state, out, *anim_frame(),
+		state->last_cmd_st_exe.status);
+}
+
 /* Extension dispatch, tried after the bash-compatible set: \g branch,
    \S failure badge, \p duration, \J jobs, \A animation frame, \U pending
-   update. Returns
+   update, \B the built-in prompt. Returns
    false so unknown escapes still fall through to literal passthrough. */
 bool	ps1_escape_ext(t_shell *state, t_string *out, char c)
 {
+	if (c == 'B')
+		return (ps1_builtin(state, out), true);
 	if (c == 'g')
 		return (ps1_git(out), true);
 	if (c == 'S')
