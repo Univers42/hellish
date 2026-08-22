@@ -36,6 +36,15 @@
    (`history -cd 1`) but treats -a/-n/-r/-w as mutually exclusive, so the
    file operation gets its own slot rather than sharing `act`. `first` is
    the index of the first operand left in argv once options are consumed. */
+/* One `pretty` feature: the curated name a user types, the SHOPT_* bit it
+   IS (no separate state -- see builtin_pretty.c), and one line of help. */
+typedef struct s_pret
+{
+	const char		*name;
+	unsigned int	bit;
+	const char		*desc;
+}	t_pret;
+
 typedef struct s_histopt
 {
 	char	fileop;
@@ -250,5 +259,12 @@ int		hist_store(t_shell *state, t_vec argv, int first);
 int		hist_expand_args(t_shell *state, t_vec argv, int first);
 int		hist_fileop(t_shell *state, t_vec argv, t_histopt *o);
 char	*expand_history(t_shell *state, const char *input);
+
+/* pretty builtin internals (builtin_pretty*.c). */
+t_pret	*pretty_table(void);
+int		pretty_mode(t_shell *state, t_vec argv, int first);
+int		pretty_show(t_shell *state, bool reusable);
+int		pretty_list(t_shell *state);
+void	pretty_sync(t_shell *state);
 
 #endif

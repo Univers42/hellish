@@ -177,10 +177,26 @@ OBJS := $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 TOTAL := $(words $(SRCS))
 
-# Job count. `nproc` is coreutils, so it is absent on macOS/BSD -- and a bare
-# `-j` with an empty argument means UNLIMITED jobs, which forks one compiler per
-# source file and thrashes the machine. Fall back to sysctl, then to a safe 4.
-NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
+# Job count. `nproc` is coreutils, so it is absent on macOS/BSD and on the
+# leaner Linux images; sysctl covers macOS/BSD and getconf is POSIX.
+NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null \
+	|| getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)
+
+# The `||` chain above only fires when a probe FAILS. A probe that succeeds
+# and prints nothing -- which is what a sandboxed or cgroup-restricted
+# `nproc` can do -- leaves NPROC empty, and `-j` with an empty argument
+# means UNLIMITED jobs: one compiler process per source file, 487 of them,
+# which is the runaway build reported in issue #43.
+#
+# So the emptiness is checked in pure make, with no external command. A tool
+# that might be missing cannot be what guards against a missing tool -- and
+# this is the same class of gap as openSUSE shipping no `find`.
+#
+# A non-numeric value needs no guard: make rejects `-jfoo` outright, which
+# is loud and harmless. Empty is the only value that is silently dangerous.
+ifeq ($(strip $(NPROC)),)
+NPROC := 4
+endif
 
 # Every mode builds in parallel. The debug tree used to be pinned to -j1, which
 # cost ~6x on a 6-core box for no benefit: the compile rule creates its output
@@ -606,6 +622,26 @@ hist-test: all
 history-opts-test: all
 	@python3 $(TEST_DIR)/history_opts_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# Every multi-line construct, in BOTH history modes, diffed against the pinned
+# bash 5.3.9 driving the SAME keystrokes in the same pty (issue #32):
+# backslash-continuation, if/elif/else, for, while, until, case, function
+# definitions, brace groups, subshells, unterminated ' " and `, $( ), $(( )),
+# here-docs, and a trailing | && ||. Checks the listing AND what the up-arrow
+# puts back, because those are two different code paths in hellish.
+# Needs the oracle: `make oracle`.
+history-matrix-test: all
+	@python3 $(TEST_DIR)/history_multiline_matrix.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# ── Every pty/regression test in tests/*.py, by DISCOVERY ────────────────────
+# Not a list: a list drifts, and this one had. completion_posix_test.py lived
+# in tests/ with no target and no CI job, so the POSIX command-search fix it
+# guards ran nowhere from the day it landed. tests/pty_suite.sh globs the
+# directory instead, so a new regression test is covered the moment it exists.
+# This is what CI runs; the individual targets above stay for working on one.
+pty-test: all
+	@chmod +x $(TEST_DIR)/pty_suite.sh && $(TEST_DIR)/pty_suite.sh
+
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made
 # at its start -- the shape reported in issue #2). Both render the pty output
@@ -662,6 +698,18 @@ venv-prompt-test: all
 completion-test:
 	@$(MAKE) --no-print-directory SAFE=0
 	@python3 $(TEST_DIR)/completion_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# What TAB is ALLOWED to offer. A PATH element is searched for an EXECUTABLE
+# FILE (POSIX XCU 2.9.1.1), but the scan matched on the directory entry name
+# alone -- so a 0644 document, a subdirectory, and the "." and ".." every
+# directory carries were all offered as commands, and anyone whose PATH held
+# a directory that also held data had those documents listed on the first
+# TAB. Same file covers the command POSITION (`ls | <TAB>` is a command in
+# bash, and was a filename here) and the no-match fallback that let the cwd's
+# files back in. Hermetic: PATH is one fixture directory, so the offered set
+# is a closed set the test can compare exactly.
+completion-posix-test: all
+	@python3 $(TEST_DIR)/completion_posix_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # PS1 rendering, and the login chain that exposed it. Because hellish sets
 # BASH_VERSION, Debian/Ubuntu's stock ~/.profile sources ~/.bashrc and hands
@@ -791,7 +839,9 @@ geoman: all
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
-	hist-test history-opts-test readline-test anim-test git-prompt-test \
+	hist-test history-opts-test history-matrix-test pty-test \
+	completion-test completion-posix-test \
+	readline-test anim-test git-prompt-test \
 	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test \

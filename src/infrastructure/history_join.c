@@ -41,7 +41,7 @@ static void	hj_emit_delim(t_hjoin *h)
 	if (n == 0)
 		return (vec_push_char(&h->out, ' '));
 	c = ((char *)h->out.ctx)[n - 1];
-	if (c == ')' && h->cpat)
+	if (c == ')' && (h->cpat || hj_func_header((char *)h->out.ctx, n)))
 		vec_push_char(&h->out, ' ');
 	else if (c != ')' && (ft_strchr(";&|({<>", c)
 			|| hj_last_word_kw((char *)h->out.ctx, n)))
@@ -81,6 +81,8 @@ static void	hj_newline(t_hjoin *h)
 		vec_push_char(&h->out, '\n');
 		h->body = true;
 	}
+	else if (h->lit)
+		vec_push_char(&h->out, '\n');
 	else
 		hj_emit_delim(h);
 	h->i++;
@@ -118,13 +120,14 @@ static void	hj_track(t_hjoin *h)
 
 /* Build the single-line readline form of cmd. Returns a heap string the
    caller must xfree, or NULL when cmd is NULL. */
-char	*hist_join_line(const char *cmd)
+char	*hist_join_line(const char *cmd, bool lit)
 {
 	t_hjoin	h;
 
 	if (!cmd)
 		return (NULL);
 	hj_init(&h, cmd);
+	h.lit = lit;
 	while (h.s[h.i])
 	{
 		if (h.body)
