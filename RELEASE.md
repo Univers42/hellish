@@ -8,6 +8,78 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.3
+
+A bug-fix release: two issues reported from real machines, both on the path
+between installing hellish and getting a usable prompt. Nothing else changes.
+
+**Fixed**
+
+- **The prompt's process tracker is back** (#50). The built-in prompt shows
+  a background-jobs badge — ` ⚙N` — on its info row, next to `took N.Ns`
+  after a slow command. Both silently disappeared in 2.7.0 and neither was
+  coming back on its own.
+
+  The prompt keeps mirrors of the process state, because it is also
+  repainted from a timer between commands with no shell state in hand. The
+  refresh sat below an early return that only became reachable-from-nowhere
+  when 2.7.0 gave interactive shells a default `PS1` of `\B` (so a Python
+  virtualenv could restore it, #39). From that release every shell took the
+  early return, the mirrors stayed frozen at zero, and both badges rendered
+  as nothing at all. If you never set your own `PS1`, this is the release
+  that gives them back.
+
+- **`make my_shell` now creates `~/.hellishrc`** (#51). It never did. The
+  seeding lived inside `user-install.sh`, so only the no-sudo route ever ran
+  it, and anyone who installed with `make my_shell` met a shell with no
+  config at all — no `EDITOR`, no aliases, no prompt theme — and no hint one
+  was meant to exist. Both routes now call `tools/seed_hellishrc.sh`, which
+  still never touches an rc you already have.
+
+- **`shopt -o` stopped ignoring its arguments** (#51). `-o` selects the
+  `set -o` roster; it was being parsed as an *action*, so the names, the
+  `-q` and the `-p` were all discarded. Ubuntu's stock `~/.bashrc` asks
+
+      if ! shopt -oq posix; then ... fi
+
+  which dumped all 27 option lines onto the screen at every login **and**
+  returned success regardless of the setting — so the branch was decided
+  wrongly, not merely loudly. `shopt -o NAME`, `-op`, `-oq`, `-so` and
+  `-uo` now match bash byte for byte, including its distinct
+  "invalid option name" rejection.
+
+- **`shopt -q progcomp` no longer errors on every login** (#51).
+  `/etc/profile.d/bash_completion.sh` probes it, and hellish did not know
+  the name, so each login opened with
+  `hellish: shopt: progcomp: invalid shell option name`. It is now a known
+  option that is **off** — hellish has no `complete` builtin, so there is no
+  programmable completion to enable, and reporting it honestly is also what
+  makes bash-completion correctly skip itself instead of feeding hellish a
+  2500-line bash script.
+
+**Changed**
+
+- **`hellishrc.example` no longer edits `PATH`.** It shipped an active
+  `case ":$PATH:" ... esac` prepend of `~/.local/bin` that the login chain
+  had already done moments earlier — a login hellish sources `/etc/profile`
+  and then `~/.profile`, and on Debian/Ubuntu `~/.profile` is exactly what
+  adds `~/.local/bin` and `~/bin`. Redundant, and it read as the pattern you
+  were meant to copy. It is now a commented example with the reasoning
+  attached. Your own `~/.hellishrc` is never rewritten, so nothing changes
+  under you; this only affects a freshly seeded one.
+
+**Tests**
+
+Four new regression files, all picked up automatically by the pty suite:
+`prompt_jobs_badge_test.py` (the badge on all three prompt routes),
+`shopt_setopt_test.py` (every `-o` form against bash),
+`login_chain_test.py` (a real login against Ubuntu's stock dotfiles, in a
+sandbox so CI runners without those files agree), and
+`hellishrc_seed_test.py` (seeds when absent, never clobbers, and both
+install routes still call the seeder).
+
+---
+
 ## v2.7.2
 
 Everything since v2.7.1, in one release. The bulk of it is portability:
