@@ -160,6 +160,26 @@ getting it wrong.
   `(size_t) - 2`; now this does too. No behaviour change on any platform,
   which is the point: the two spellings are the same test, and only one of
   them compiles everywhere.
+- **`__attribute__((weak))` on a declaration means something else on Mach-O.**
+  `alloc_stats.c` probed for ft_malloc's leak oracle with a weak undefined
+  reference and a `-Wl,-u` to drag the archive member in, so the file needed
+  no `-D`. On ELF an undefined weak symbol is legal and resolves to NULL; on
+  Mach-O the same attribute on a *declaration* is a weak **definition**, so
+  Apple's linker demanded a body and the SAFE=1 arm64 build stopped at
+  `Undefined symbols: _malloc_live_bytes`. Decided at compile time now
+  (`-DHAVE_ALLOC_ORACLE`, from the Makefile, which already knows the heap);
+  the `-Wl,-u` went with the weak ref, because a *strong* reference pulls an
+  archive member by itself. Pinned by `link_closure_test.py`, which fails on
+  any weak reference the object tree does not itself define.
+- **Windows checkouts rewrite LF to CRLF, and bash cannot read that.**
+  `core.autocrlf=true` on the Windows runner turned `set -u` into `set -u\r`
+  and `expect() {` into `expect() {\r`, so the WSL rung died inside
+  `docker/smoke.sh` with `set: - : invalid option` and a syntax error on a
+  brace. `.gitattributes` now pins every executed file type to `eol=lf`, and
+  `tests/crlf_hygiene_test.py` gates both halves: nothing executed is stored
+  with CRLF, *and* every such file is covered by a rule — the second is what
+  catches the next file someone adds, since the first passes on a repo with
+  no `.gitattributes` at all.
 - **openSUSE Tumbleweed ships no `find`.** The Makefile discovers its
   sources with `$(shell find src ...)`, so the source list came back empty,
   make built nothing, and the link stopped at `cc: fatal error: no input

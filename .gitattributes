@@ -1,0 +1,36 @@
+# Line endings.
+#
+# GitHub's Windows runners check out with core.autocrlf=true, which rewrites
+# LF to CRLF on the way to the working tree. That is harmless for C, and fatal
+# for anything with a shebang: the WSL rung died on
+#
+#   docker/smoke.sh: line 19: set: -
+#   : invalid option
+#   docker/smoke.sh: line 28: syntax error near unexpected token `$'{\r''
+#
+# because bash read the trailing CR as part of each token. So the files that
+# are EXECUTED are pinned to LF here, where the rule travels with the repo and
+# protects anyone cloning on Windows -- not just CI.
+#
+# Deliberately not `* text=auto eol=lf`. Around a hundred files in this tree
+# are already stored with CRLF (mostly older headers, and a handful of golden
+# fixtures under tests/ whose bytes the suite compares exactly). A blanket rule
+# would renormalize all of them in one unreviewable commit and could quietly
+# change what the golden suite asserts. Every pattern below was checked to be
+# LF in the index today, so none of them changes a single stored byte.
+*.sh        text eol=lf
+*.py        text eol=lf
+*.bash      text eol=lf
+*.zsh       text eol=lf
+Makefile    text eol=lf
+*.mk        text eol=lf
+tests/tester text eol=lf
+
+# Dockerfiles break the same way, one layer down: a CR rides along on every
+# RUN line and lands inside the command the shell in the image runs.
+Dockerfile   text eol=lf
+Dockerfile.* text eol=lf
+
+# Binary, so no end-of-line handling is attempted at all.
+*.png       binary
+*.pdf       binary
