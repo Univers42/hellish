@@ -41,7 +41,7 @@ char	*g_builtins[] = {
 	"exec", "wait", "times", "trap", "readonly", "read", "test", "[",
 	"alias", "unalias", "hash", "jobs", "fg", "bg", "fc", "history",
 	"let", "local", "kill", "printf", "ulimit", "update", "help",
-	"mapfile", "readarray", "declare", "typeset", "shopt",
+	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	NULL
 };
 
