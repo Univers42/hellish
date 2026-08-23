@@ -305,6 +305,7 @@ typedef struct s_shell
 	t_vec				dead_funcs; /* bodies retired during their own call */
 	t_job_table			job_table; /* background job list */
 	bool				exit_warned; /* stopped-job exit warning given */
+	bool				exit_attempt; /* this turn tried to leave */
 	pid_t				shell_pid; /* the REPL's own pid (fork detector) */
 	pid_t				shell_pgid; /* shell's group, 0 if it owns no tty */
 	pid_t				fg_pgid; /* group of the running foreground job */
