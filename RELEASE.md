@@ -412,8 +412,9 @@ quietly going undocumented.
 
 - **A welcome panel.** A full‑width, two‑column box: a greeting
   and the **42 logo in salmon** on the left; getting‑started tips and a
-  "What's new" block on the right. Shown once per session.
-  (`HELLISH_NO_BANNER=1` to silence.)
+  "What's new" block on the right. Shown when it has something new to say —
+  a new day, a new release waiting, or a hellish you have just upgraded.
+  (`HELLISH_BANNER=0` to silence, `HELLISH_BANNER=1` to force.)
 - **A one‑time entrance animation.** On the very first run the logo draws in,
   row by row, like the GitHub Copilot CLI banner; every later startup is
   instant. (`HELLISH_ANIM=1` to replay it, `HELLISH_NO_ANIM=1` to skip.)
@@ -466,7 +467,9 @@ it's sourced on interactive startup, the `.bashrc` analogue. A starter lives in
 
 | variable | effect |
 |---|---|
-| `HELLISH_NO_BANNER=1` | hide the welcome panel entirely |
+| `HELLISH_BANNER=0` / `=1` | force the welcome panel off / on |
+| `HELLISH_NO_BANNER=1` | hide the welcome panel entirely (older name for `=0`) |
+| `HELLISH_ALWAYS_BANNER=1` | draw it every startup (older name for `=1`) |
 | `HELLISH_ANIM=1` | replay the entrance animation on this startup |
 | `HELLISH_NO_ANIM=1` | never play the entrance animation |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates in the background |

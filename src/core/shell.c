@@ -86,8 +86,8 @@ int	main(int argc, char **argv, char **envp)
 	set_default_ps1(&state);
 	source_profile(&state);
 	source_hellishrc(&state);
-	show_welcome(&state);
 	maybe_spawn_update_check(&state);
+	show_welcome(&state);
 	repl_shell(&state);
 	off(&state);
 }
