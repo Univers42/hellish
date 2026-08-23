@@ -112,4 +112,7 @@ getcwd() failed: No such file or directory\n"
    say. Read-only, and never freed by the caller. */
 char	*self_exe_path(void);
 
+void	tty_snapshot_save(void);
+void	tty_snapshot_restore(void);
+
 #endif

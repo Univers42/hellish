@@ -34,6 +34,7 @@ typedef struct s_rl
 	int			cycle_line0; /* line number of the cycle's first line */
 	bool		line_exact; /* consumer needs one line per call (heredoc) */
 	bool		batched; /* this cycle got a multi-line batch delivery */
+	bool		eof_refused; /* this turn's EOF was spent on a warning */
 	size_t		exact_until; /* serve single lines below this cursor pos */
 	bool		tok_line; /* non-tty cycle: $LINENO from token offset */
 	const char	*ln_tok; /* first token of the executing command */
@@ -60,6 +61,7 @@ int			attach_input_readline(t_rl *l, int pp[2], int pid);
 t_string	prompt_normal(t_shell *state);
 t_string	prompt_more_input(t_shell *state, struct s_parser *parser);
 void		buff_readline_init(t_rl *ret);
+bool		rl_eof_exit_ok(t_shell *state);
 void		update_ctx(t_shell *state);
 
 #endif

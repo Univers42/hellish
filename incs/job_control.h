@@ -86,6 +86,18 @@ void	job_update_status(struct s_shell *st);
 void	job_notify(struct s_shell *state);
 t_job	*job_by_spec(t_job_table *jt, const char *spec);
 void	job_set_current(t_job_table *jt, int id);
+
+/* True when an interactive shell must NOT leave yet because a stopped job
+   is still on the table -- prints "There are stopped jobs." and remembers
+   that it warned, so the next attempt goes through. Lives here rather than
+   in the builtins' private header because BOTH ways out of a shell have to
+   ask it: the `exit` builtin and end-of-input (Ctrl-D). */
+bool	exit_stopped_guard(struct s_shell *state);
+
+/* Hang up this shell's background jobs and WAIT for them, so their dying
+   output reaches the terminal before the shell hands it back. Interactive
+   only; see job_hangup.c. */
+void	jobs_hangup_on_exit(struct s_shell *st);
 void	job_print(t_job *job, int current, int prev, bool show_pid);
 void	job_table_free(t_job_table *jt);
 char	*job_status_desc(const t_job *job);
