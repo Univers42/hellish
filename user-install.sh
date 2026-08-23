@@ -28,7 +28,9 @@
 # WHAT IT TOUCHES
 # ---------------
 #   1. $PREFIX/bin/hellish        the binary                 (default ~/.local)
-#   2. ~/.hellishrc               seeded from hellishrc.example, NEVER clobbered
+#   2. ~/.hellishrc               seeded from hellishrc.example, NEVER clobbered,
+#                                 plus one marker-delimited block that puts
+#                                 $PREFIX/bin on PATH
 #   3. <your login shell's rc>    one marker-delimited block, appended at the end
 #
 # Nothing else. Re-running replaces the block in place rather than stacking a
@@ -180,6 +182,8 @@ if [ "$ACTION" = "uninstall" ]; then
 		rm -f "$DEST"
 		grn "removed $DEST"
 	fi
+	# The rc file is the user's; only the block THIS script wrote comes out.
+	"$REPO_ROOT/tools/seed_hellishrc.sh" --strip-path >&2 || true
 	inf "~/.hellishrc left in place (it is yours; delete it by hand if you want)"
 	printf '\n  Open a NEW terminal and you are back in %s.\n\n' "$LOGIN_SHELL" >&2
 	exit 0
@@ -202,7 +206,11 @@ grn "installed $DEST"
 # Delegated, not inlined. This is the copy `make my_shell` did not have, so
 # the sudo route installed a shell with no config at all (issue #51); one
 # seeder called by both routes is what keeps them from drifting again.
-"$REPO_ROOT/tools/seed_hellishrc.sh" --example "$REPO_ROOT/hellishrc.example"
+# --path-dir is the other half of "install it and it works": $DEST_DIR is
+# NOT necessarily on PATH (see the block the seeder writes), so without it
+# the shell starts but its own name does not resolve.
+"$REPO_ROOT/tools/seed_hellishrc.sh" --example "$REPO_ROOT/hellishrc.example" \
+	--path-dir "$DEST_DIR"
 
 # ── 3. prove the binary works BEFORE anything execs it ────────────────────
 #
@@ -259,6 +267,19 @@ $BEGIN_MARK
 #   make user-uninstall             remove this block for good
 # And from another machine, since your passwd shell is untouched:
 #   ssh $(id -un)@\$(hostname) 'touch ~/.hellish-disable'
+
+# The binary lives in a directory your login chain may not have on PATH:
+# ~/.profile adds ~/.local/bin only when it already exists at login, and on a
+# first install this run is what created it. The exec below uses an absolute
+# path, so the shell starts either way — but without this, \`hellish\` as a
+# COMMAND ("hellish update", "command -v hellish", any tool that looks the
+# shell up by name) is not found, here or inside hellish. Guarded, because
+# an rc gets re-sourced and an unguarded prepend stacks duplicates.
+case ":\$PATH:" in
+	*":$DEST_DIR:"*) ;;
+	*) PATH="$DEST_DIR:\$PATH"; export PATH ;;
+esac
+
 if [ -z "\${HELLISH_NO_EXEC-}" ] && [ -z "\${HELLISH_EXECD-}" ] \\
 	&& [ ! -e "\$HOME/.hellish-disable" ] && [ -x "$DEST" ]; then
 	case \$- in
