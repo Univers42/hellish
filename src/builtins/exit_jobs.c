@@ -26,13 +26,32 @@
    the flag on any other BUILTIN (execute_builtin_cmd_fg) but not after an
    external command, so `exit; ls; exit` leaves on the second exit where
    bash would warn again. Erring toward letting the user out is the right
-   side to be wrong on -- the warning has already been shown once. */
+   side to be wrong on -- the warning has already been shown once.
+
+   job_update_status() FIRST, and that call is the whole bug fix. A job
+   stopped by SIGTTIN/SIGTTOU -- which is what happens the moment `top &`
+   or `cat &` reaches for the terminal -- is only recorded when the shell
+   next reaps, at the top of a later REPL turn. Scanning the table without
+   reaping meant `cat &` followed immediately by `exit` read JOB_RUNNING and
+   let the user out, while the same pair with any command in between read
+   JOB_STOPPED and warned. That is the "sometimes it works, sometimes it
+   does not" of issue #58: a race, not a flake. Reaping here makes the
+   answer depend on the jobs, not on how fast the user types.
+
+   Deliberately stricter than bash in one case. bash's `jobs` builtin marks
+   what it lists as notified and bash then leaves without a word, so running
+   `jobs` and pressing Ctrl-D silently abandons your stopped jobs. hellish
+   warns anyway. bash can afford that leniency because it is normally the
+   session leader and the kernel hangs the jobs up when the terminal goes;
+   a nested hellish is not, and a job left stopped there holds a raw
+   terminal forever -- which is the damage this is fixing. */
 bool	exit_stopped_guard(t_shell *state)
 {
 	int	i;
 
 	if (state->metinp != INP_RL || state->exit_warned)
 		return (false);
+	job_update_status(state);
 	i = -1;
 	while (++i < JOB_MAX)
 	{
@@ -41,6 +60,7 @@ bool	exit_stopped_guard(t_shell *state)
 		{
 			ft_eprintf("There are stopped jobs.\n");
 			state->exit_warned = true;
+			state->exit_attempt = true;
 			return (true);
 		}
 	}

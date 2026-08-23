@@ -57,7 +57,8 @@ int	handle_eof(int s, t_shell *state)
 {
 	if (s == 1)
 	{
-		state->should_exit = true;
+		if (rl_eof_exit_ok(state))
+			state->should_exit = true;
 		return (1);
 	}
 	return (0);
