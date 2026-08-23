@@ -85,8 +85,11 @@ static void	build_left(const char **l)
    single startup AND wipe the screen and scrollback first, which is what
    made it something to opt out of rather than something to read. Spans the full
    width. The right column reads the cached release check (no network here, so
-   startup stays instant) and flags a newer release. Opt out: HELLISH_NO_BANNER.
-*/
+   startup stays instant) and flags a newer release. Whether it is drawn at
+   all is banner_should_show()'s call, knob included -- this function used to
+   read HELLISH_NO_BANNER itself as well, which meant the "should it show"
+   rule lived in two places and only one of them learned about
+   HELLISH_BANNER. */
 void	show_welcome(t_shell *state)
 {
 	const char	*l[16];
@@ -95,7 +98,7 @@ void	show_welcome(t_shell *state)
 
 	if (state->metinp != INP_RL || !isatty(STDERR_FILENO))
 		return ;
-	if (getenv("HELLISH_NO_BANNER") || !banner_should_show())
+	if (!banner_should_show())
 		return ;
 	p.title = "hellish " HELLISH_VERSION;
 	p.logo_color = "\033[38;5;209m";
