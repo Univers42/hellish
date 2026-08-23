@@ -82,6 +82,8 @@ static void	state_set(t_upd_state *s, char *key, char *val)
 		ft_strlcpy(s->header_ver, val, sizeof(s->header_ver));
 	else if (!ft_strcmp(key, "announced"))
 		ft_strlcpy(s->announced, val, sizeof(s->announced));
+	else if (!ft_strcmp(key, "attempted"))
+		s->attempted = ft_atoi(val);
 }
 
 /* Split the file into lines and feed each key=value pair to state_set. */
