@@ -46,6 +46,7 @@ typedef struct s_upd_state
 	long	header_shown;
 	long	header_rev;
 	char	header_ver[64];
+	char	announced[64];
 }	t_upd_state;
 
 /* Load the persisted update state; zeroes `s` and returns 0 when absent. */

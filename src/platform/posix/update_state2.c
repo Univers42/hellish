@@ -31,7 +31,7 @@ int	update_state_save(const t_upd_state *s)
 {
 	char	path[512];
 	char	tmp[544];
-	char	buf[512];
+	char	buf[640];
 	int		fd;
 	int		len;
 
@@ -45,9 +45,9 @@ int	update_state_save(const t_upd_state *s)
 		return (0);
 	len = ft_snprintf(buf, sizeof(buf), "latest=%s\nchecked=%d\n"
 			"notified=%d\nheader_shown=%d\nheader_rev=%d\n"
-			"header_ver=%s\n", s->latest, (int)s->checked,
+			"header_ver=%s\nannounced=%s\n", s->latest, (int)s->checked,
 			(int)s->notified, (int)s->header_shown, (int)s->header_rev,
-			s->header_ver);
+			s->header_ver, s->announced);
 	if (len <= 0 || write(fd, buf, (size_t)len) != len)
 		return (close(fd), unlink(tmp), 0);
 	close(fd);

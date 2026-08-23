@@ -16,6 +16,7 @@
 #include "sh_input.h"
 #include "job_control.h"
 #include "update.h"
+#include "sys.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <locale.h>
@@ -81,13 +82,14 @@ int	main(int argc, char **argv, char **envp)
 	(void)argc;
 	setlocale(LC_ALL, "");
 	on(&state, argv, envp);
+	tty_snapshot_save();
 	if (is_login_shell)
 		state.option_flags |= OPT_FLAG_LOGIN;
 	set_default_ps1(&state);
 	source_profile(&state);
 	source_hellishrc(&state);
-	show_welcome(&state);
 	maybe_spawn_update_check(&state);
+	show_welcome(&state);
 	repl_shell(&state);
 	off(&state);
 }
@@ -97,7 +99,16 @@ int	main(int argc, char **argv, char **envp)
    right before each interactive primary prompt (bash behaviour).
    Non-interactive shells never touch it. The last command's status is
    preserved so the prompt's $? badge reflects the user's command, not
-   PROMPT_COMMAND's. */
+   PROMPT_COMMAND's.
+
+   The two exit flags are also aged here, and that is what makes "ask me
+   twice" mean twice IN A ROW. exit_warned used to be cleared only when a
+   BUILTIN ran, so an external command in between left it set -- warn once,
+   run `ps`, press Ctrl-D, and the shell walked out over a stopped job it
+   had already been told about (issue #58). Carrying exit_attempt forward
+   for exactly one turn expresses bash's actual rule: the warning stands
+   only while the previous turn was itself an attempt to leave. Anything
+   else you do re-arms it. */
 static void	open_cycle(t_shell *state)
 {
 	t_execution_state	saved;
@@ -105,6 +116,9 @@ static void	open_cycle(t_shell *state)
 
 	vec_init(&state->input);
 	state->input.elem_size = 1;
+	state->rl.eof_refused = false;
+	state->exit_warned = state->exit_attempt;
+	state->exit_attempt = false;
 	get_g_sig()->should_unwind = 0;
 	update_notify_prompt(state);
 	if (state->metinp != INP_RL)
@@ -167,6 +181,8 @@ static void	off(t_shell *state)
 
 	final = state->last_cmd_st_exe;
 	run_exit_trap(state);
+	jobs_hangup_on_exit(state);
+	tty_snapshot_restore();
 	free_env(&state->env);
 	free_all_state(state);
 	forward_exit_status(final);

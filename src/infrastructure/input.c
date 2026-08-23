@@ -13,15 +13,41 @@
 #include "input_private.h"
 #include "helpers.h"
 #include "redir.h"
+#include "job_control.h"
 
 bool	heredoc_incomplete(const char *str);
 
 /* Report EOF or truncated input with the right error to match bash's wording.
    If the tokenizer was waiting for a closing `, do:  or fi when EOF arrived,
    it says "looking for `X'"; otherwise "unexpected end of file". The "exit"
-   echoed for interactive mode mirrors what bash prints when you hit ^D. */
+   echoed for interactive mode mirrors what bash prints when you hit ^D.
+
+   Ctrl-D is a way OUT of the shell, so it owes the same duty the `exit`
+   builtin does: refuse once while a stopped job is still on the table.
+   This path used to set should_exit directly, so exit_stopped_guard
+   protected only the builtin -- and every report of a terminal left
+   unusable by `top &` came in through Ctrl-D (issue #58). An EMPTY buffer
+   is the real "I am done" gesture; a partial line is a syntax error and
+   still falls through below.
+
+   When the guard refuses, the Ctrl-D has been SPENT on the warning and the
+   shell has to go back to reading -- so rl_eof_rearm() clears the latch.
+   state->rl.has_finished is sticky by design (buff_readline returns EOF
+   immediately forever once it is set, which is what makes a closed stdin
+   terminate a script promptly). Leaving it set here meant the warning
+   printed and the very next REPL turn saw EOF again with exit_warned
+   already true, so the shell left anyway -- warned and gone in one
+   keypress, which is not what "ask me twice" means. */
 static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 {
+	if (!state->input.len && state->metinp == INP_RL)
+	{
+		ft_eprintf("exit\n");
+		if (!rl_eof_exit_ok(state))
+			return ;
+		state->should_exit = true;
+		return ;
+	}
 	if (tt->looking_for && state->input.len)
 		ft_eprintf("%s: unexpected EOF while looking for "
 			"matching `%c'\n",
