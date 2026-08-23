@@ -8,6 +8,57 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.5
+
+**Fixed**
+
+- **The shell notices a release published since its last check** (#62). The
+  report was a screenshot:
+
+      hellish 2.7.3 ...
+      ✓ 2.7.3 up to date · via user binary · 50m ago
+
+  2.7.4 was out. The shell had checked 50 minutes earlier, when 2.7.3 really
+  was the newest thing there was — and the check interval was a flat 24
+  hours, so it would not look again until the next day. Every session in
+  between reported "up to date" with complete confidence, and the only way
+  to find out was typing `update` by hand: the exact chore a background
+  check exists to remove.
+
+  The interval is now adaptive, because the two states are not the same
+  question. When an update is **already known pending** there is nothing
+  left to learn — the badge is on your prompt and the banner has said so —
+  and it keeps the long interval. When the shell **believes it is current**,
+  that is the only state in which a release can exist without it knowing, so
+  it looks again every quarter of an hour instead.
+
+  The asymmetry is what keeps it cheap: the frequent interval applies only
+  while there is genuinely something to find, and stops the moment it is
+  found. If you have an update pending, this changes nothing — still one
+  request a day.
+
+  Two guards came with it, because "check more often" must not become
+  "check on every shell". A failed check now backs off like a successful
+  one, instead of re-firing on every startup forever on a machine that
+  cannot reach the release server. And the attempt is claimed before the
+  fork, so twenty terminals opened at once make one request rather than
+  twenty.
+
+  Unchanged: the check is a detached child and the prompt never waits on the
+  network. A dead release server still costs the shell nothing.
+
+**Tests**
+
+`update_freshness_test.py` drives real ptys against a counting local release
+server — no network, so it is deterministic anywhere. It pins the report
+itself, the discovering session announcing the release without a restart,
+the badge on the next one, the absence of a re-check when an update is
+already known, six concurrent shells making at most two requests, a failed
+check recording the attempt but not claiming a success, and startup timing
+against a black-holed endpoint.
+
+---
+
 ## v2.7.4
 
 Two bug reports from real sessions. One of them could leave your terminal
