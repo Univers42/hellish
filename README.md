@@ -264,8 +264,15 @@ whole point is the Windows bridge a container does not have. Both are
 works and what does not.
 
 Once installed, hellish checks for newer releases in the background (once a day,
-never blocking the prompt). `update` checks on demand, `update --now`
-self-updates. Opt out with `HELLISH_NO_UPDATE_CHECK=1` / `HELLISH_NO_BANNER=1`.
+never blocking the prompt — the check is a detached child, so a slow or dead
+release server costs your shell nothing). When one is waiting you are told twice
+and unprompted: the welcome panel announces it once, and the prompt carries a
+quiet `⬆2.7.4` badge until you actually update. `update` checks on demand,
+`update --now` self-updates.
+
+Knobs: `HELLISH_BANNER=0|1` forces the welcome panel off or on
+(`HELLISH_NO_BANNER=1` and `HELLISH_ALWAYS_BANNER=1` are the older names and
+still work); `HELLISH_NO_UPDATE_CHECK=1` disables the check and the badge.
 
 ---
 
