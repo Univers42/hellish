@@ -8,6 +8,85 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.4
+
+Two bug reports from real sessions. One of them could leave your terminal
+unusable, so if you are on 2.7.x, take this one.
+
+**Fixed**
+
+- **Leaving a shell that still holds a stopped job no longer wrecks the
+  terminal** (#58). `top &` and then Ctrl-D, and the terminal you came back
+  to had no echo and spliced your next command into garbage — sometimes.
+  Four defects, stacked, each hiding the next:
+
+  1. **Ctrl-D never asked.** The stopped-jobs guard existed and worked, but
+     only the `exit` *builtin* called it. Both end-of-input paths set "time
+     to leave" themselves, and every report came in through Ctrl-D.
+
+  2. **The guard read a stale answer.** A job the kernel stops the moment it
+     touches the terminal is only recorded when the shell next reaps — on a
+     *later* prompt. So `top &` followed immediately by an exit saw a
+     running job and let you out, while the same pair with any command in
+     between saw a stopped one and warned. That is the entire "sometimes it
+     works, sometimes it doesn't": a race, not a flake.
+
+  3. **The warning never came back.** It was forgotten only when a builtin
+     ran, so an external command in between left it standing: warn once, run
+     `ps`, press Ctrl-D, and the shell walked out over a job it had already
+     been told about. The warning now stands only while the previous thing
+     you did was itself an attempt to leave — which is bash's rule.
+
+  4. **And the damage itself, which survived all three.** On the exit you
+     actually meant, the shell handed the terminal back and left *while the
+     jobs it had just hung up were still dying*. A full-screen program does
+     not die quietly: it repaints, restores its own idea of the terminal and
+     prints a farewell. With a screenful of stopped `top`s that is dozens of
+     processes writing to the terminal after the shell let go of it. The
+     shell now hangs them up, **waits for them**, and only then puts the
+     terminal back — and it restores the settings it started with, because a
+     background job stopped halfway through raw mode never can.
+
+  hellish keeps bash's semantics — the first exit is refused, the second is
+  obeyed — and is deliberately stricter in one place: bash's `jobs` marks
+  what it lists as already mentioned and then leaves without a word, so
+  running `jobs` and pressing Ctrl-D silently abandons your stopped jobs.
+  hellish warns anyway. bash can afford that leniency because it is usually
+  the session leader and the kernel cleans up after it; a nested hellish is
+  not, and a job left stopped there holds a raw terminal forever.
+
+- **The shell tells you about a new release by itself** (#56). It did not.
+  A new version stayed invisible until you typed `update`, and only then did
+  the prompt badge appear. The banner's "X available — run `update --now`"
+  line renders perfectly well and was simply unreachable: it asked a flag
+  owned by the prompt's one-shot notice, and whichever spoke first silenced
+  the other. The prompt always won. The banner now keeps its own record,
+  announces each new release once, and leaves the standing reminder to the
+  prompt badge. The check was also started *after* the banner that reports
+  it, so the session that discovered a release was guaranteed to draw a
+  stale panel; that order is swapped.
+
+  Unchanged and now guarded by a test: the check is a detached child and the
+  prompt never waits on the network. A dead release server costs the shell
+  nothing.
+
+- **`HELLISH_BANNER=0|1`** (#56). There was no such knob — only
+  `HELLISH_NO_BANNER` and `HELLISH_ALWAYS_BANNER`, two names for the two
+  ends of one tri-state, neither of them the one anybody guesses. Both old
+  names still work.
+
+**Tests**
+
+Two new pty regression files, both discovered automatically by the suite:
+`exit_stopped_jobs_test.py` (27 checks, bash as the oracle for the damaging
+cases — the race, both exit paths, the warning re-arming, many stopped jobs,
+raw-mode jobs, the terminal coming back usable, nothing left behind) and
+`banner_update_test.py` (16 checks — the knob, the banner announcing a
+release unprompted and only once per version, the badge persisting, and
+startup timing against a black-holed endpoint).
+
+---
+
 ## v2.7.3
 
 A bug-fix release: two issues reported from real machines, both on the path
