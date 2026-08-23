@@ -56,7 +56,8 @@ endif
 HELP_AWK := mk/help.awk
 
 ##@ Configuration
-##! OPT=1  -O3 + LTO and the ft_malloc heap; default is -O0 -g3 + ASan
+##! MODE=release  Build config: debug (default) | release | relwithdebinfo
+##! OPT=1  Older spelling of MODE=release; still supported
 ##! SAFE=1  libc malloc (ASan can see it). SAFE=0 uses ft_malloc
 ##! CC=clang  Compiler to build with (default cc)
 ##! ROUNDS=7  Benchmark repetitions for `make bench`
@@ -133,6 +134,12 @@ endif
 DEBFLAGS    := -g3 -ggdb -O0
 SANFLAGS    := -fsanitize=address,leak
 
+# Optimized-but-debuggable. -O2 rather than -O3 and no LTO, both so the code
+# a debugger shows you still resembles the code you wrote. -DNDEBUG matches
+# release, because a bug that only appears with assertions compiled out is
+# precisely the kind this configuration is for.
+RELDEBFLAGS := -O2 -g -DNDEBUG
+
 # Optimization flags (portable-ish)
 OPTFLAGS_COMMON := -O3 -ffast-math -funroll-loops -finline-functions -fomit-frame-pointer -DNDEBUG -pipe
 # GCC-only / Clang-only extras
@@ -168,18 +175,56 @@ LDLIBS      := -lreadline
 # there is nothing to do, and exits 0 without compiling a single file.
 BAPTIZE_SHELL ?= hellish
 
-# Choose flags: default = debug; pass OPT=1 when calling make to enable optimizations
+# ── Build configurations ────────────────────────────────────────────────────
+#
+# Three, named, chosen with MODE=. They exist because "make it smaller" and
+# "keep it debuggable" are different jobs and a single set of flags cannot do
+# both -- and because the answer to a Release-only bug must not be "rebuild
+# with symbols and hope it still reproduces".
+#
+#   MODE=debug           -O0 -g3 + ASan/LSan.  The DEFAULT, and the one you
+#                        develop against. Big on purpose: the sanitizer
+#                        runtime and full DWARF are most of it. Never
+#                        shipped.
+#   MODE=release         -O3 + LTO, -DNDEBUG, NO -g, no sanitizer. What is
+#                        installed and what the release artifacts are built
+#                        from. ~620 KB.
+#   MODE=relwithdebinfo  -O2 -g, -DNDEBUG, no sanitizer, no LTO. Optimized
+#                        code you can still put a debugger on -- for the
+#                        bugs that only show up with optimization. LTO is
+#                        deliberately off here: it is what turns a stack
+#                        trace into a list of inlined addresses.
+#
+# Nothing is stripped after the fact. Release simply never compiles -g in,
+# which is why `strip` finds only ~1 KB left to remove: the handful of DWARF
+# stubs the C runtime brings with it, not our code.
+#
+# OPT=1 is the older spelling of MODE=release and stays working -- CI, the
+# install targets, the docker build and `make bench` all pass it, and those
+# are exactly the callers you do not want to break to rename a flag.
 ifdef OPT
+MODE ?= release
+endif
+MODE ?= debug
+
 CPPFLAGS := $(INCLUDES)
+
+ifeq ($(MODE),release)
 CFLAGS   := $(CFLAGS_BASE) $(OPTFLAGS_COMMON) \
             $(if $(CC_IS_GCC),$(OPTFLAGS_GCC),) \
             $(if $(CC_IS_CLANG),$(OPTFLAGS_CLANG),) \
             $(LTO_CFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(LTO_LDFLAGS)
-else
-CPPFLAGS := $(INCLUDES)
+else ifeq ($(MODE),relwithdebinfo)
+CFLAGS   := $(CFLAGS_BASE) $(RELDEBFLAGS) \
+            $(if $(CC_IS_GCC),$(OPTFLAGS_GCC),) \
+            $(if $(CC_IS_CLANG),$(OPTFLAGS_CLANG),)
+LDFLAGS  := $(LDFLAGS_BASE)
+else ifeq ($(MODE),debug)
 CFLAGS   := $(CFLAGS_BASE) $(DEBFLAGS) $(SANFLAGS)
 LDFLAGS  := $(LDFLAGS_BASE) $(SANFLAGS)
+else
+$(error MODE must be debug, release or relwithdebinfo -- got '$(MODE)')
 endif
 
 # Append-only escape hatches for callers that must add flags without rewriting
@@ -202,10 +247,16 @@ LDLIBS  += $(EXTRA_LDLIBS)
 # the debug/ASan build is SAFE, the optimized build exercises ft_malloc. An
 # explicit `SAFE=...` on the command line always wins; `make my_shell` forces 1.
 # libft is built into a per-SAFE tree so the two backends never share objects.
-ifdef OPT
-SAFE ?= 0
-else
+#
+# Keyed off MODE, not OPT. It used to read `ifdef OPT`, which meant OPT=1 and
+# MODE=release -- the same configuration under two names -- disagreed about the
+# allocator and so produced different binaries. Both optimized modes exercise
+# ft_malloc; debug stays on libc so AddressSanitizer can still see every
+# allocation, which is the entire reason the debug build exists.
+ifeq ($(MODE),debug)
 SAFE ?= 1
+else
+SAFE ?= 0
 endif
 ifeq ($(SAFE),0)
 SAFE_TAG := ft
@@ -226,15 +277,17 @@ else
 SAFE_TAG := libc
 endif
 
-# Directories. Object trees are per build mode so the OPT benchmark build
-# never silently reuses stale debug/ASan objects (make won't rebuild on a
-# flag change alone). The binary path is shared and relinked for each mode,
-# so `make bench` always times a true OPT build.
-ifdef OPT
-OBJ_DIR := build/obj-opt
-else
-OBJ_DIR := build/obj
-endif
+# Directories. The object tree is keyed on the build mode AND the allocator
+# backend, because make rebuilds on a changed prerequisite and never on a
+# changed flag: a tree filled by MODE=debug and then reused by MODE=release
+# hands the linker ASan-instrumented objects while the link line carries no
+# -fsanitize at all, and the build dies on "undefined reference to
+# `__asan_report_load4'". SAFE is in the key too -- it decides
+# -DHAVE_ALLOC_ORACLE, a compile-time define. This used to key on `ifdef OPT`,
+# which covered only the OPT benchmark build and left MODE=release and
+# MODE=relwithdebinfo sharing the debug tree. The binary path stays shared and
+# is relinked per mode, so `make bench` still times a true optimized build.
+OBJ_DIR := build/obj-$(MODE)-$(SAFE_TAG)
 BIN_DIR := build/bin
 LIBFT_DIR := vendor/libft/build-$(SAFE_TAG)/lib
 SRC_DIR := src
@@ -511,6 +564,21 @@ norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 # on my machine" flow. Recursively expanded (`=`, not `:=`) because STATIC_OUT
 # is defined further down the file.
 MY_SHELL_BIN = $(if $(filter 1,$(STATIC)),$(STATIC_OUT),$(BIN_DIR)/$(BAPTIZE_SHELL))
+
+##@ Build info
+# Print the configuration a given MODE actually resolves to, without building
+# anything. This is how you check what you are about to ship -- and what the
+# build-config test asserts against, so the three modes cannot quietly drift
+# into each other.
+#
+#   make flags                     the default (debug)
+#   make flags MODE=release        what the release artifacts are built with
+flags:  ## Show the compiler/linker flags for this MODE
+	@printf 'MODE=%s\n' '$(MODE)'
+	@printf 'CFLAGS=%s\n' '$(CFLAGS)'
+	@printf 'LDFLAGS=%s\n' '$(LDFLAGS)'
+	@printf 'LDLIBS=%s\n' '$(LDLIBS)'
+	@printf 'OBJ_DIR=%s\n' '$(OBJ_DIR)'
 
 ##@ Install
 my_shell:  ## sudo-install to /usr/bin and register as a login shell
@@ -957,7 +1025,7 @@ charts:  ## Regenerate bench/charts/*.svg from harness output on disk
 geoman: all  ## External 42 minishell tester, as an independent cross-check
 	@/bin/bash bench/lib/run_geoman.sh
 
-.PHONY: test bench re all clean fclean norm my_shell help help-targets safe_banner \
+.PHONY: test bench re all clean fclean norm my_shell help help-targets safe_banner flags \
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \

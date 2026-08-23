@@ -48,6 +48,7 @@ is a check nobody learns anything from.
 
 Usage: python3 link_closure_test.py /path/to/hellish
 """
+import glob
 import os
 import platform
 import re
@@ -154,9 +155,17 @@ def nm_symbols(path):
 
 
 def object_tree():
-    """The shell's own objects, from whichever build ran most recently."""
-    for d in ("obj", "obj-opt", "obj-debug"):
-        base = os.path.join(ROOT, "build", d)
+    """The shell's own objects, from whichever build ran most recently.
+
+    Globbed rather than spelled out: the tree is named for the build mode
+    and the allocator backend (build/obj-release-ft, build/obj-debug-libc,
+    ...), so a fixed list goes stale the moment a mode is added. Picking
+    the newest tree is what the one-line summary always claimed to do --
+    the old fixed list returned the first name that happened to exist,
+    which silently checked a stale tree whenever two modes were built.
+    """
+    trees = []
+    for base in glob.glob(os.path.join(ROOT, "build", "obj*")):
         if not os.path.isdir(base):
             continue
         objs = []
@@ -164,8 +173,12 @@ def object_tree():
             objs += [os.path.join(root, f) for f in files
                      if f.endswith(".o")]
         if objs:
-            return (d, sorted(objs))
-    return (None, [])
+            newest = max(os.path.getmtime(o) for o in objs)
+            trees.append((newest, os.path.basename(base), sorted(objs)))
+    if not trees:
+        return (None, [])
+    _, name, objs = max(trees)
+    return (name, objs)
 
 
 def test_no_dangling_weak_refs():

@@ -8,11 +8,93 @@ shows you how to drive the shell.
 
 ---
 
+## v2.7.6
+
+The 2.7.5 fix taken through the full CI gate, plus a proper split between the
+build you develop against and the build you ship.
+
+**Changed**
+
+- **Three named build configurations.** `make` now takes
+  `MODE=debug|release|relwithdebinfo`, and each one is a deliberate answer
+  rather than a side effect of which flags happened to be set:
+
+  | MODE | flags | for |
+  |---|---|---|
+  | `debug` *(default)* | `-O0 -g3 -ggdb`, ASan + LSan, libc malloc | developing |
+  | `release` | `-O3 -DNDEBUG`, LTO, `--gc-sections`, no `-g`, no sanitizer | shipping |
+  | `relwithdebinfo` | `-O2 -g -DNDEBUG`, no sanitizer, no LTO | bugs that only appear optimized |
+
+  Sizes on this machine: **462 KB** release, 3.0 MB relwithdebinfo, 5.6 MB
+  debug.
+
+  This did not change what gets shipped. `OPT=1` — which the release
+  workflow, the platform matrix, both install targets, the Docker build and
+  `make bench` all pass — still means exactly `MODE=release`, byte for byte,
+  and there is a test pinning that. What was missing was the middle
+  configuration and any way to name the other two.
+
+  Nothing is stripped after the fact. Release carries no debug information
+  because release never compiles `-g` in, which is also why `strip` recovers
+  only about a kilobyte from it: that last 807 bytes is libgcc's
+  `crtfastmath.c`, pulled in by `-ffast-math` and shipped by the distro
+  already compiled with `-g`. None of it is ours.
+
+  If you have been reading a 5.6 MB `build/bin/hellish` as the shipped
+  binary, it never was — that is the debug build, and it is large on purpose.
+
+**Fixed**
+
+- **`make user-install` now leaves `hellish` on your PATH**, not just on your
+  disk. The installer put the binary in `$PREFIX/bin` (default
+  `~/.local/bin`) and added an `exec` hook to your login rc — so the shell
+  came up, and the gap was invisible from the outside. What was missing was
+  the *name*:
+
+      $ hellish update
+      hellish: command not found
+
+  on a machine that had just installed it. Nothing on either route ever put
+  that directory on PATH, and the two reasons it looked covered both fail
+  here: a user-install hellish is exec'd from an *interactive* rc, so it is
+  not a login shell and reads neither `/etc/profile` nor `~/.profile`; and
+  Debian/Ubuntu's `~/.profile` adds `~/.local/bin` only `if [ -d ]` — on a
+  first install, this install is what creates that directory.
+
+  The seeder now maintains one marker-delimited, case-guarded PATH block in
+  `~/.hellishrc`, and the login-rc hook prepends the same directory before
+  the `exec` so bash finds it too. Re-sourcing cannot stack duplicates,
+  `--uninstall` removes only that block, and a hand-written `~/.hellishrc`
+  is still never clobbered. `make my_shell`, which installs to `/usr/bin`,
+  is unchanged.
+
+- **Build modes no longer share an object tree.** The object directory keyed
+  on `ifdef OPT`, which covered the `OPT=1` benchmark build and nothing else,
+  so a tree filled by a debug build and then reused by an optimized one
+  handed the linker ASan-instrumented objects under a link line carrying no
+  `-fsanitize`:
+
+      func_retire.o: undefined reference to `__asan_report_load4'
+
+  `make re` hid this; a plain `make MODE=release` after a debug build did
+  not. Objects now live in `build/obj-<mode>-<allocator>`, so the three modes
+  and the two allocator backends coexist and none of them can poison another.
+
+- Release notes and code comments now point at the issue the update fix
+  addressed (#64). 2.7.5 referenced a number that had been handed to the pull
+  request instead, so the trail led back to the fix rather than the report.
+
+If you installed with `make user-install` and have been typing the full path
+to reach the shell, this is the release that fixes it. Otherwise nothing in
+the shell's own behaviour differs from 2.7.5.
+
+---
+
 ## v2.7.5
 
 **Fixed**
 
-- **The shell notices a release published since its last check** (#62). The
+- **The shell notices a release published since its last check** (#64). The
   report was a screenshot:
 
       hellish 2.7.3 ...
