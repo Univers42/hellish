@@ -203,7 +203,7 @@ jobs:
   # login-shell file order, the help table, the release/update config. These
   # ran only on developer machines before, which is exactly how they rot.
   gates:
-    name: Gates · cli + login + help + cd + update-config
+    name: Gates · cli + login + install + help + cd + update-config
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -218,6 +218,14 @@ jobs:
         run: make cli-opts-test
       - name: Login shell startup file order
         run: make login-test
+      # The no-sudo install route, against a temporary $HOME. It installed the
+      # binary and exec'd it by absolute path, so the shell came up while its
+      # own NAME resolved nowhere: `hellish update` and `command -v hellish`
+      # answered "command not found" on a machine that had just installed it.
+      # Also runs inside `make pty-test` by discovery; named here because it
+      # gates the INSTALLER, which no shell-behaviour job would ever reach.
+      - name: user-install leaves `hellish` on PATH
+        run: make user-install-test
       - name: help builtin covers every dispatched builtin
         run: make help-test
       - name: cd POSIX-mode operand handling
