@@ -26,7 +26,7 @@
 
    BELIEVED CURRENT: this is the ONLY state in which a release can exist
    without us knowing, so it is the only one where asking buys anything.
-   A flat day here is what produced issue #62 -- checked at noon, 2.7.4
+   A flat day here is what produced issue #64 -- checked at noon, 2.7.4
    published at half past, and every session until the next day reported
    "up to date" with total confidence. A quarter of an hour instead.
 

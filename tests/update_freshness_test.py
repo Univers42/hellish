@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression test: a release published AFTER the last check -- issue #62.
+"""Regression test: a release published AFTER the last check -- issue #64.
 
 Reported twice, and the second time with a screenshot that says it all:
 
