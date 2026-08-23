@@ -73,9 +73,14 @@ correct width accounting so segments and colors line up.
 
 ## Update channel ✅
 
-hellish checks for newer releases in the background (once a day, never blocking the prompt) and
-flags one in the welcome banner. `update` checks on demand; `update --now` self-updates the binary.
-Opt out with `HELLISH_NO_UPDATE_CHECK=1` (banner: `HELLISH_NO_BANNER=1`).
+hellish checks for newer releases in the background (once a day, never blocking the prompt — the
+check runs in a detached child, so a slow or dead release server costs the shell nothing). You are
+told twice, and without asking: the welcome banner announces each new release once, and the prompt
+carries a quiet `⬆<version>` badge for as long as the update is actually pending. `update` checks on
+demand; `update --now` self-updates the binary.
+
+Opt out with `HELLISH_NO_UPDATE_CHECK=1`. The banner has one knob, `HELLISH_BANNER=0|1`, to force it
+off or on; `HELLISH_NO_BANNER=1` and `HELLISH_ALWAYS_BANNER=1` are the older names and still work.
 
 ---
 
