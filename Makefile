@@ -910,6 +910,18 @@ login-test: all  ## Login shells source /etc/profile then ~/.profile; others nei
 	@chmod +x $(TEST_DIR)/login_profile_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/login_profile_compare.sh
 
+# The no-sudo install route, end to end against a TEMPORARY $$HOME. It put the
+# binary in $$PREFIX/bin and exec'd it by absolute path from your login rc --
+# so the shell came up, and nobody noticed that neither route ever put that
+# directory on PATH. `hellish update`, `command -v hellish`, anything that
+# looks the shell up by NAME: command not found, on a machine that had just
+# installed it. Covers the PATH block in ~/.hellishrc and in the rc hook, the
+# re-source guard, a custom PREFIX, an existing ~/.hellishrc being left alone,
+# re-install idempotence and uninstall. CI runs it through `make pty-test`
+# (tests/*.py is discovered) as well as by name in the gates job.
+user-install-test: all  ## user-install leaves `hellish` on PATH, not just on disk
+	@python3 $(TEST_DIR)/user_install_path_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Third-party conformance sweep: Oils spec tests + mksh check.t, run against
 # hellish, bash --posix and dash; report in bench/conformance.md; the gate
 # fails if hellish's pass count drops vs bench/baseline/. Suites are fetched
@@ -957,5 +969,6 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test \
 	conformance perf rss \
-	charts cli-opts-test net-redir-test login-test geoman oracle docker-suite docker widechar-test \
+	charts cli-opts-test net-redir-test login-test user-install-test \
+	geoman oracle docker-suite docker widechar-test \
 	user-install user-uninstall

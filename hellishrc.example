@@ -73,25 +73,36 @@ export EDITOR=vim
 export PAGER=less
 export LESS='-R'        # let pagers pass ANSI colors through
 
-# PATH — deliberately NOT set here, and that is the whole point.
+# PATH — this TEMPLATE sets none, and the installer appends exactly one
+# block. Both halves matter, and they used to be one over-general rule.
 #
 # A LOGIN hellish (chsh, or --login) sources /etc/profile — and so the .sh
 # snippets in /etc/profile.d, which is where your distro adds things like
 # /snap/bin — and then ~/.profile, which on Debian/Ubuntu is what puts
-# ~/.local/bin and ~/bin on PATH. All of that runs BEFORE this file. The
-# PATH you had under bash carries over whole; there is nothing to rebuild.
+# ~/.local/bin and ~/bin on PATH. All of that runs BEFORE this file. On
+# that route the PATH you had under bash carries over whole; there is
+# nothing to rebuild, and a prepend here would only duplicate what the
+# login chain did a moment earlier. Worse, it read as the pattern you were
+# meant to follow, so PATH edits got copy-pasted in over and over (issue
+# #51). That is why the template ships none.
 #
-# This file used to ship an active prepend of ~/.local/bin anyway, which
-# the login chain had already done a moment earlier. Redundant, and worse:
-# it read as the pattern you were meant to follow, so PATH edits got
-# copy-pasted in over and over (issue #51). Your ~/.bashrc does not need a
-# block like this to work, and neither does this file.
+# `make user-install` is the case that reasoning did NOT cover, and the
+# installer now fixes it at the end of this file instead. Hellish is exec'd
+# there from an INTERACTIVE rc, so it is not a login shell and reads
+# neither /etc/profile nor ~/.profile — and ~/.profile would not have
+# helped anyway, because it adds ~/.local/bin only when that directory
+# already exists at login and the install is what created it. The shell
+# started fine (the hook execs an absolute path) while its own NAME
+# resolved nowhere. So user-install appends a marked block for the
+# directory it really installed into; it is regenerated on re-install and
+# removed by `make user-uninstall`. Leave the markers alone and it will
+# never fight your edits.
 #
-# You only need a line here for a directory your login chain does NOT
-# already cover, or one you want under hellish and nowhere else. If you do
-# add one, keep the case guard: this file is re-sourced by every nested
-# interactive hellish, and an unguarded prepend stacks a fresh copy each
-# time until PATH is mostly duplicates.
+# You need a line of your own here only for a directory neither of those
+# covers, or one you want under hellish and nowhere else. If you add one,
+# keep the case guard: this file is re-sourced by every nested interactive
+# hellish, and an unguarded prepend stacks a fresh copy each time until
+# PATH is mostly duplicates.
 #
 # case ":$PATH:" in
 #	*":$HOME/.cargo/bin:"*) ;;

@@ -315,11 +315,14 @@ make user-uninstall   # put everything back
 ```
 
 `user-install` installs into `~/.local/bin`, seeds `~/.hellishrc` from
-`hellishrc.example` (never overwriting one you already have), and appends a
-marker-delimited block to your login shell's rc file that `exec`s hellish for
-interactive sessions. `exec` *replaces* the process, so this is a real login
-shell and not an alias or a wrapper: `ps` shows hellish, `$$` is hellish, and
-closing it closes the tab.
+`hellishrc.example` (never overwriting one you already have), puts the
+directory it installed into on `PATH` — from a marker-delimited block in
+`~/.hellishrc` and from the hook itself, so `hellish update` and
+`command -v hellish` work on a machine whose login chain never added
+`~/.local/bin` — and appends a marker-delimited block to your login shell's rc
+file that `exec`s hellish for interactive sessions. `exec` *replaces* the
+process, so this is a real login shell and not an alias or a wrapper: `ps`
+shows hellish, `$$` is hellish, and closing it closes the tab.
 
 Your passwd entry is never touched, which keeps `ssh host 'cmd'` working and
 leaves you a guaranteed way back in. The installed binary is smoke-tested
