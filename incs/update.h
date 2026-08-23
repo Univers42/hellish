@@ -47,6 +47,7 @@ typedef struct s_upd_state
 	long	header_rev;
 	char	header_ver[64];
 	char	announced[64];
+	long	attempted;
 }	t_upd_state;
 
 /* Load the persisted update state; zeroes `s` and returns 0 when absent. */
@@ -117,6 +118,14 @@ int			read_cached_latest(char *out, size_t n);
 /* If interactive and the cache is stale (>24h), fork a detached child that
    fetches the latest tag from GitHub and rewrites the cache. Never blocks. */
 void		maybe_spawn_update_check(t_shell *state);
+
+/* Should we ask the release server again, and may we? See update_gate.c:
+   the interval is short while we believe we are current and long once an
+   update is already known, and the attempt is claimed before forking so
+   many shells starting at once make one request. */
+long		check_interval(const t_upd_state *s);
+int			cache_is_fresh(void);
+void		claim_attempt(void);
 
 /* The background worker: fetch the latest tag and write it to the cache. */
 void		run_bg_update_check(void);

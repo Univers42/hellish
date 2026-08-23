@@ -27,6 +27,18 @@
    and a foreground `update` can run at the same time, and a half-written
    record read by the prompt would announce a version that does not exist;
    rename is atomic, so a reader sees either the old record or the new one. */
+/* The record itself, one key=value per line. Split out only because the
+   norm caps a function at 25 lines and the field list keeps growing. */
+static int	format_record(const t_upd_state *s, char *buf, size_t n)
+{
+	return (ft_snprintf(buf, n, "latest=%s\nchecked=%d\n"
+			"notified=%d\nheader_shown=%d\nheader_rev=%d\n"
+			"header_ver=%s\nannounced=%s\nattempted=%d\n", s->latest,
+			(int)s->checked, (int)s->notified, (int)s->header_shown,
+			(int)s->header_rev, s->header_ver, s->announced,
+			(int)s->attempted));
+}
+
 int	update_state_save(const t_upd_state *s)
 {
 	char	path[512];
@@ -43,11 +55,7 @@ int	update_state_save(const t_upd_state *s)
 	fd = open(tmp, O_CREAT | O_TRUNC | O_WRONLY, 0644);
 	if (fd < 0)
 		return (0);
-	len = ft_snprintf(buf, sizeof(buf), "latest=%s\nchecked=%d\n"
-			"notified=%d\nheader_shown=%d\nheader_rev=%d\n"
-			"header_ver=%s\nannounced=%s\n", s->latest, (int)s->checked,
-			(int)s->notified, (int)s->header_shown, (int)s->header_rev,
-			s->header_ver, s->announced);
+	len = format_record(s, buf, sizeof(buf));
 	if (len <= 0 || write(fd, buf, (size_t)len) != len)
 		return (close(fd), unlink(tmp), 0);
 	close(fd);
