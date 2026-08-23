@@ -5,7 +5,7 @@ later session. The repo history is authoritative; this file records the
 things history cannot tell you — why a thing was done, what was measured,
 what was deliberately *not* done, and what is still open.
 
-Branch to resume from: **`develop`**. Released version: **2.7.5**.
+Branch to resume from: **`develop`**. Released version: **2.7.6**.
 
 The previous note on this file covered the issue-fixing session (#27, #32,
 #34, #42 and friends). All of those are closed; the tracker is empty. This
