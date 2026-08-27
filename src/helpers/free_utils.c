@@ -68,13 +68,23 @@ static void	free_functions(t_shell *state)
 	{
 		fn = vec_idx(&state->functions, i++);
 		xfree(fn->name);
+		xfree(fn->src);
+		xfree(fn->text);
 		free_ast(&fn->body);
 	}
+	hash_destroy(&state->func_index, NULL);
 	xfree(state->functions.ctx);
 	i = 0;
 	while (i < state->dead_funcs.len)
 		free_ast((t_ast_node *)vec_idx(&state->dead_funcs, i++));
 	xfree(state->dead_funcs.ctx);
+	i = 0;
+	while (i < state->call_frames.len)
+	{
+		xfree(((t_call_frame *)vec_idx(&state->call_frames, i))->func);
+		xfree(((t_call_frame *)vec_idx(&state->call_frames, i++))->src);
+	}
+	xfree(state->call_frames.ctx);
 }
 
 /* Session-lifetime strings and caches, in the exact order free_all_state

@@ -38,8 +38,11 @@ static void	ds_refresh(t_shell *state)
 	update_pwd_vars(state);
 }
 
-/* Print the stack bash-style: current dir first, then the saved dirs. */
-static void	ds_print(t_shell *state)
+/* Print the stack bash-style: current dir first, then the saved dirs.
+   Not static: `dirs` (builtin_dirs.c) is exactly this, and pushd/popd have
+   been printing through it all along -- so exposing it costs nothing and
+   guarantees the three stay byte-identical. */
+void	dirstack_print(t_shell *state)
 {
 	char	*cwd;
 	int		i;
@@ -79,7 +82,7 @@ int	builtin_pushd(t_shell *state, t_vec argv)
 				((char **)argv.ctx)[1], strerror(errno)), 1);
 	if (old)
 		vec_push(&state->dirstack, &old);
-	return (ds_refresh(state), ds_print(state), 0);
+	return (ds_refresh(state), dirstack_print(state), 0);
 }
 
 /* popd: pop the top of the directory stack and cd back to it. We remove the
@@ -103,7 +106,7 @@ int	builtin_popd(t_shell *state, t_vec argv)
 	}
 	xfree(top);
 	ds_refresh(state);
-	ds_print(state);
+	dirstack_print(state);
 	if (state->dirstack.len == 0)
 		(xfree(state->dirstack.ctx), state->dirstack = (t_vec){0});
 	return (0);

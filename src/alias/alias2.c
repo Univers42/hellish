@@ -36,9 +36,13 @@ int	alias_remove(t_hash *aliases, const char *name)
 
 /* Print every defined alias, one per line.  We walk the raw bucket array
    because there is no iterator API; empty slots have key==NULL.  No
-   "alias " prefix: the shell diffs byte-for-byte against bash --posix,
-   which (like dash) prints the bare name='value' form. */
-void	alias_print_all(t_hash *aliases)
+   "alias " prefix when `reusable` is false: the shell diffs byte-for-byte
+   against bash --posix, which (like dash) prints the bare name='value' form
+   for a plain `alias`.  `alias -p` is the other half of that pair -- bash
+   DOES prefix there, because -p's whole job is output you can paste back
+   into an rc file (issue #71 item 2). Both forms verified against the
+   pinned bash 5.3.9 oracle. */
+void	alias_print_all(t_hash *aliases, bool reusable)
 {
 	size_t			i;
 	t_hash_entry	*entries;
@@ -49,7 +53,7 @@ void	alias_print_all(t_hash *aliases)
 	{
 		if (entries[i].key && entries[i].value)
 		{
-			ft_printf("%s='%s'\n",
+			ft_printf("%s%s='%s'\n", reusable ? "alias " : "",
 				((t_alias_entry *)entries[i].value)->name,
 				((t_alias_entry *)entries[i].value)->value);
 		}
