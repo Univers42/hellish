@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_builtins.h"
 #include "shell.h"
 #include "helpers.h"
 #include "env.h"
@@ -56,10 +57,12 @@ static void	source_hellishrc(t_shell *state)
 	if (!path)
 		return ;
 	content = read_file(path);
-	xfree(path);
 	if (!content)
-		return ;
+		return (xfree(path));
+	frame_push(state, NULL, path);
 	exec_string(state, content);
+	frame_pop(state);
+	xfree(path);
 	xfree(content);
 }
 

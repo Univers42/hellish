@@ -89,10 +89,13 @@ static void	declare_assign(t_shell *state, const char *word, int export)
 }
 
 /* Scan declare's leading option words into a p/x/A bitmask (1/2/4).
-   -n and -i are terminal: everything from that word on goes to the
-   nameref/integer routine, so we stop at the word carrying one and
-   report it through *term ('n' outranks 'i' inside one cluster, as
-   before). Returns the index of the first unconsumed word. */
+   -F, -f, -n and -i are terminal: everything from that word on goes to the
+   matching routine, so we stop at the word carrying one and report it
+   through *term ('F' outranks 'f' the way bash's -F suppresses bodies;
+   'n' outranks 'i' inside one cluster, as before). -F/-f used to match
+   nothing here and were silently eaten as no-op options, which is why
+   `declare -F` printed nothing and still exited 0 (issue #71 item 2).
+   Returns the index of the first unconsumed word. */
 static size_t	declare_scan(t_vec argv, int *flags, char *term)
 {
 	size_t	i;
@@ -109,7 +112,11 @@ static size_t	declare_scan(t_vec argv, int *flags, char *term)
 			*flags |= 2;
 		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
 			*flags |= 4;
-		if (ft_strchr(((char **)argv.ctx)[i], 'n'))
+		if (ft_strchr(((char **)argv.ctx)[i], 'F'))
+			*term = 'F';
+		else if (ft_strchr(((char **)argv.ctx)[i], 'f'))
+			*term = 'f';
+		else if (ft_strchr(((char **)argv.ctx)[i], 'n'))
 			*term = 'n';
 		else if (ft_strchr(((char **)argv.ctx)[i], 'i'))
 			*term = 'i';
@@ -127,6 +134,8 @@ int	builtin_declare(t_shell *state, t_vec argv)
 	char	term;
 
 	i = declare_scan(argv, &flags, &term);
+	if (term == 'F' || term == 'f')
+		return (declare_functions(state, argv, i + 1, term == 'f'));
 	if (term == 'n')
 		return (declare_nameref(state, argv, i));
 	if (term == 'i')

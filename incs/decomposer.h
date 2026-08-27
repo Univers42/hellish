@@ -22,6 +22,7 @@ void		reparse_assignment_words(t_ast_node *node);
 void		reparse_subscript_assigns(t_ast_node *node);
 void		reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt);
 void		reparse_words(t_ast_node *node);
+void		reparse_all(t_ast_node *node);
 t_ast_node	reparse_word(t_token t, bool no_squote);
 
 #endif
