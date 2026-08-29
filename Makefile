@@ -880,6 +880,35 @@ git-star-test: all  ## pty: the git dirty star never outlives the state it descr
 pty-test: all  ## EVERY tests/*.py regression test, by discovery — what CI runs
 	@chmod +x $(TEST_DIR)/pty_suite.sh && $(TEST_DIR)/pty_suite.sh
 
+# The prompt WIDTH model, linked directly. Not a pty case and not by choice:
+# the width is what the line editor uses to place the cursor, it is never
+# printed, and no shell command reveals it -- so the only shell-level
+# observable is where a line wraps. The pty case that inferred it that way
+# PASSED against a binary with the bug still in it, which is the one outcome
+# a test may never have. See tests/prompt_width_test.c.
+prompt-width-test: all  ## unit: visible_width_cstr (CSI, OSC, guards, wide glyphs)
+	@chmod +x $(TEST_DIR)/prompt_width_test.sh && $(TEST_DIR)/prompt_width_test.sh
+
+# Twelve real third-party plugins, each with a declared expectation. Runs
+# against BOTH builds because that is how it earns its keep: the git-prompt.sh
+# segfault existed only in release while the golden suite passed 3790/3790 in
+# debug, and the 18 KB alias leak is invisible to ASan (still-reachable) and
+# only shows on the ft_malloc oracle. A corpus that ran one build would have
+# missed one of them.
+#
+# Vendors nothing and skips cleanly offline, so a CI box with no network
+# still passes rather than pretending to have checked.
+plugin-corpus: ## Real plugins vs release AND ASan — the compatibility matrix
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory MODE=release all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: release\033[0m\n" >&2
+	@python3 $(TEST_DIR)/plugin_corpus_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: debug + ASan\033[0m\n" >&2
+	@ASAN_OPTIONS=detect_leaks=1 python3 $(TEST_DIR)/plugin_corpus_test.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made
 # at its start -- the shape reported in issue #2). Both render the pty output
