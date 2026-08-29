@@ -108,13 +108,27 @@ CASES = [
     ("unset-value", r"""unset x; echo "[${(U)x}]" """),
     ("count-of-f", r"""x=$'a\nb\nc'; echo "${#${(f)x}}" """),
     ("no-flags", r"""x=abc; echo "${()x}" """),
+    # ---- (A) is a read-context no-op, and subscripts on a nested form ----
+    ("A-is-a-noop", r"""x="git version 2.4.5"; echo "[${(As: :)x}]" """),
+    ("A-same-as-s", r"""x="a b"; echo "[${(As: :)x}]" "[${(s: :)x}]" """),
+    ("sub-nth", r"""x="git version 2.4.5"; echo "[${${(s: :)x}[3]}]" """),
+    ("sub-first", r"""x="a b c"; echo "[${${(s: :)x}[1]}]" """),
+    ("sub-negative", r"""x="a b c"; echo "[${${(s: :)x}[-1]}]" """),
+    ("sub-out-of-range", r"""x="a b"; echo "[${${(s: :)x}[9]}]" """),
+    ("sub-zero", r"""x="a b"; echo "[${${(s: :)x}[0]}]" """),
+    ("sub-on-scalar-is-a-char", r"""z=hello; echo "[${${(U)z}[1]}]" """),
+    ("sub-at-forces-sort", r"""y=$'c\na\nb'; echo "[${${(o)${(f)y}[@]}[1]}]" """),
 ]
 
+# (A) is NOT in this list, and that is oracle-checked below rather than
+# assumed: in a READ context zsh ignores it -- ${(As: :)x} and ${(s: :)x} are
+# the same expansion -- and its real meaning, "assign as an array", only
+# exists in ${(A)name=value}, a form that is a bad substitution here anyway.
 # Flags we deliberately do not implement. There is no zsh comparison here:
 # the contract is that hellish REFUSES, loudly, rather than falling through
 # to the unflagged value -- a wrong answer that looks right is the failure
 # mode this whole file exists to prevent.
-LOUD = ["M", "A", "b", "e", "t", "V", "w", "W", "X", "~", "#"]
+LOUD = ["M", "b", "e", "t", "V", "w", "W", "X", "~", "#"]
 
 
 def check(name, ok, detail=""):

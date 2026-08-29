@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "sh_error.h"
 #include "parena.h"
 
 /* Streamed execution of a fully-buffered batch: parse ONE newline-delimited
@@ -46,7 +47,7 @@ static bool	stream_eligible(t_shell *state)
    parse; both cases end a non-interactive shell (we are never interactive
    on this path). No replay: ranges before the error have already run,
    which is exactly what the line-exact replay used to reconstruct. */
-static void	stream_finish(t_shell *state, t_parser *parser)
+static void	stream_finish(t_shell *state, t_parser *parser, t_deque_tok *tt)
 {
 	if (parser->res == RES_GETMOREINPUT)
 	{
@@ -54,6 +55,8 @@ static void	stream_finish(t_shell *state, t_parser *parser)
 			state->ctx);
 		parser->res = RES_ERR;
 	}
+	else if (parser->res == RES_ERR && !parser->reported)
+		unexpected(state, parser, (t_ast_node){0}, tt);
 	if (parser->res == RES_ERR)
 	{
 		set_cmd_status(state, (t_execution_state){.status = SYNTAX_ERR});
@@ -92,5 +95,5 @@ bool	stream_try(t_shell *state, t_parser *parser, t_deque_tok *tt)
 		free_redirects(&state->redirects);
 		parena_reset();
 	}
-	return (stream_finish(state, parser), true);
+	return (stream_finish(state, parser, tt), true);
 }

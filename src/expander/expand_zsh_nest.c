@@ -57,7 +57,7 @@ static bool	spans_whole(const char *s, int slen)
    both wrong and silent. */
 bool	zf_is_nested(const char *s, int slen)
 {
-	slen -= zn_at_len(s, slen);
+	slen -= zn_sub_len(s, slen);
 	return (slen > 4 && s[0] == '$' && s[1] == '{' && s[2] == '('
 		&& spans_whole(s, slen));
 }
@@ -109,12 +109,12 @@ char	*zf_nested(t_shell *state, t_token *tt, const char *s, int slen)
 
 	f = (t_zflags){0};
 	f.array = (zn_at_len(s, slen) != 0) || tt->tt != TT_DQENVVAR;
-	slen -= zn_at_len(s, slen) + 3;
+	slen -= zn_sub_len(s, slen) + 3;
 	s += 2;
 	end = zf_parse(s, slen, &f);
 	if (end < 0 || !zf_check(state, &f, tt))
 		return (zf_free(&f), NULL);
-	f.array = f.array || zf_has(&f, '@');
+	f.array = f.array || zf_arrayness(&f, tt, s + end, slen - end);
 	zf_unesc(&f);
 	enc = zf_inner(state, tt, s + end, slen - end);
 	l = zl_from(state, &f, enc);

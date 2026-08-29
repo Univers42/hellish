@@ -20,7 +20,7 @@
 typedef int	(*t_builtin_fn)(t_shell *state, t_vec argv);
 
 void			parse_numeric_escape(t_vec *out, char **str);
-int				e_parser(t_vec *out, char *str);
+int				e_parser(t_vec *out, char *str, bool drop_unknown);
 int				parse_flags(t_vec argv, int *n, int *e);
 int				print_args(t_vec *out, int e, t_vec argv, size_t i);
 int				try_unset(t_shell *state, char *key);
@@ -116,6 +116,16 @@ int				builtin_bg(t_shell *state, t_vec argv);
 int				builtin_fc(t_shell *state, t_vec argv);
 int				builtin_history(t_shell *state, t_vec argv);
 int				builtin_pretty(t_shell *state, t_vec argv);
+/* zsh dialect builtins (src/builtins/builtin_zsh_*.c) */
+int				builtin_setopt(t_shell *state, t_vec argv);
+int				builtin_unsetopt(t_shell *state, t_vec argv);
+int				builtin_emulate(t_shell *state, t_vec argv);
+int				builtin_print(t_shell *state, t_vec argv);
+int				builtin_autoload(t_shell *state, t_vec argv);
+int				builtin_zunsupported(t_shell *state, t_vec argv);
+bool			zopt_bare(const char *n);
+bool			zopt_inert(const char *n);
+bool			zopt_apply(t_shell *state, const char *n, bool on);
 int				builtin_let(t_shell *state, t_vec argv);
 int				builtin_kill(t_shell *state, t_vec argv);
 int				builtin_printf(t_shell *state, t_vec argv);

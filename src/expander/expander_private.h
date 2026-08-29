@@ -389,6 +389,8 @@ typedef struct s_zflags
 }	t_zflags;
 
 bool		expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx);
+bool		zsh_bare_nested(t_shell *state, t_token *tt, bool split_ctx);
+bool		zf_arrayness(t_zflags *f, t_token *tt, const char *s, int slen);
 bool		zf_has(const t_zflags *f, char c);
 int			zf_count(const t_zflags *f, char c);
 char		zq_style(const t_zflags *f);
@@ -396,6 +398,8 @@ void		zf_free(t_zflags *f);
 char		*zf_inner(t_shell *state, t_token *tt, const char *s, int slen);
 bool		zf_is_nested(const char *s, int slen);
 int			zn_at_len(const char *s, int slen);
+int			zn_sub_len(const char *s, int slen);
+char		*zn_subscript(t_shell *state, char *enc, const char *s, int slen);
 char		*zsh_strlen(t_shell *state, const char *s, int slen);
 char		*zf_nested(t_shell *state, t_token *tt, const char *s, int slen);
 int			zf_parse(const char *s, int slen, t_zflags *f);
