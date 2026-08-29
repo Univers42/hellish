@@ -58,8 +58,21 @@ HELLISH_ANIM=off
 #
 #     ~/Documents/hellish feat/rc-theming* ✘1 took 3.2s ⚙1
 #     ❯
-PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
-PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
+# The prompt now lives in its own file, not here:
+#
+#     ~/.config/hellish/rc.d/30-prompt.hsh
+#
+# That is issue #74 -- "this prompt should exist in configuration so we can
+# retouch it and not in binary only". rc.d is loaded BEFORE this file, so
+# anything you set here still wins; the split just means the default is
+# somewhere obvious and editable instead of compiled in.
+#
+# Uncomment either of these to override it from here. Note they are the
+# richer two-row themes -- the seeded default is deliberately plainer.
+#
+# Theme: "pure"
+# PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
+# PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
 
 # Theme: "powerline" — solid colour blocks, from issue #68. Reverse-video
 # segments in 24-bit colour, with the git/failure/duration/update badges in
