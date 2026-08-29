@@ -1,0 +1,5 @@
+# powerline -- 256-colour segments with reverse-video separators
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[48;5;24;38;5;255m\] \u \[\e[0m\]\[\e[38;5;24;48;5;60m\]\[\e[0m\]\[\e[48;5;60;38;5;255m\] \h \[\e[0m\]\[\e[38;5;60;48;5;238m\]\[\e[0m\]\[\e[48;5;238;38;5;252m\] \w \[\e[0m\]\[\e[38;5;238m\]\[\e[0m\] '

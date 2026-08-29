@@ -197,6 +197,9 @@ void		mascot_install(void);
 void		redraw_mascot(t_string *r);
 
 bool		ps1_is_special(char c);
+/* $((expr)) inside a prompt (prompt_arith.c). Arithmetic is rendered;
+   command substitution deliberately is not -- see the file comment. */
+bool		ps1_arith(t_shell *state, t_string *out, const char *f, int *i);
 t_string	zsh_to_ps1(const char *fmt);
 t_string	zsh_prompt(t_shell *state, char *fmt);
 

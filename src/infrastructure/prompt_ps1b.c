@@ -109,6 +109,8 @@ void	ps1_dollar(t_shell *state, t_string *out, const char *f, int *i)
 
 	if (f[*i + 1] == '{')
 		return (ps1_brace(state, out, f, i));
+	if (ps1_arith(state, out, f, i))
+		return ;
 	j = *i + 1;
 	if (ps1_is_special(f[j]))
 	{

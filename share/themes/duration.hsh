@@ -1,0 +1,5 @@
+# duration -- \p is empty under the threshold and a duration over it
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\w\[\e[38;5;242m\]\p\[\e[0m\] \$ '

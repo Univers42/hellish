@@ -352,6 +352,11 @@ typedef struct s_shell
 	/* --- traps and readonly vars --- */
 	char				*traps[SH_NTRAP]; /* trap strings, by signal num */
 	int					trap_depth; /* >0 while a trap body runs */
+	/* >0 while a prompt is being rendered. An error raised in there must
+	   never end the session: a prompt redraws on every keystroke, and a
+	   shell that exits because of a typo in PS1 gives the user no way back
+	   in to fix it. arith_fail reads this and reports without exiting. */
+	int					prompt_depth;
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */

@@ -1,0 +1,6 @@
+# zshpure -- the pure theme in zsh's % syntax; must render identically
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PROMPT='%F{242}%~%f
+%F{5}%#%f '

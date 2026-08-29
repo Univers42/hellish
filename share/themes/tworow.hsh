@@ -1,0 +1,5 @@
+# tworow -- two visible rows -- the column count resets at the newline
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;238m\]\[\e[0m\] \u@\h \[\e[38;5;238m\]in\[\e[0m\] \w\n\[\e[38;5;238m\]\[\e[0m\] \$ '

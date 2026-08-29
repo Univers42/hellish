@@ -146,7 +146,8 @@ t_string	ps1_render(t_shell *state, const char *fmt)
 		if (fmt[i] == '\\' && fmt[i + 1])
 			ps1_escape(state, &out, fmt, &i);
 		else if (fmt[i] == '$' && (is_var_name_p1(fmt[i + 1])
-				|| fmt[i + 1] == '{' || ps1_is_special(fmt[i + 1])))
+				|| fmt[i + 1] == '{' || ps1_is_special(fmt[i + 1])
+				|| (fmt[i + 1] == '(' && fmt[i + 2] == '(')))
 			ps1_dollar(state, &out, fmt, &i);
 		else
 			vec_push_char(&out, fmt[i++]);

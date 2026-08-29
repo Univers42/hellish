@@ -133,6 +133,46 @@ PROMPT_EOF
 	printf '  \033[1;32mok\033[0m  seeded %s\n' "$XDG/rc.d/30-prompt.hsh"
 }
 
+# ── the prompt themes and the `prompt` switcher ────────────────────────────
+#
+# 29 themes plus one rc.d file defining `prompt`. Copied, not symlinked: they
+# are yours once they are there, and an upgrade must not silently rewrite a
+# theme you edited.
+#
+# Per-file never-clobber, not all-or-nothing. A user who edited two themes
+# still gets the twenty-seven new ones on the next upgrade, and the two they
+# touched are left exactly as they are -- an all-or-nothing check would mean
+# one edit freezes the whole set forever.
+#
+# The switcher itself IS overwritten, and that is the one deliberate
+# exception: it is code rather than configuration, a stale copy would not
+# know about a new subcommand, and anyone who wants their own can define
+# `prompt` after it loads -- the last definition wins.
+seed_themes() {
+	_src="$(dirname "$0")/../share"
+	[ -d "$_src/themes" ] || return 0
+	mkdir -p "$XDG/themes" "$XDG/rc.d" 2>/dev/null || return 0
+	_new=0
+	_kept=0
+	for _f in "$_src"/themes/*.hsh "$_src"/themes/README.md; do
+		[ -e "$_f" ] || continue
+		if [ -e "$XDG/themes/$(basename "$_f")" ]; then
+			_kept=$((_kept + 1))
+		else
+			cp "$_f" "$XDG/themes/" 2>/dev/null && _new=$((_new + 1))
+		fi
+	done
+	cp "$_src/rc.d/40-prompt-switch.hsh" "$XDG/rc.d/" 2>/dev/null
+	if [ "$_kept" -gt 0 ]; then
+		printf '  \033[1;32mok\033[0m  %s themes (%s new, %s of yours left alone)\n' \
+			"$XDG/themes" "$_new" "$_kept"
+	else
+		printf '  \033[1;32mok\033[0m  seeded %s themes in %s\n' \
+			"$_new" "$XDG/themes"
+	fi
+	printf '        try:  prompt          (list)   prompt preview   (see them all)\n'
+}
+
 # ── the managed PATH block ─────────────────────────────────────────────────
 # Delete an existing block from stdin. A half-removed block (someone deleted
 # one marker by hand) degrades to "leave it alone" rather than eating the
@@ -217,6 +257,7 @@ fi
 
 seed_rc || exit 1
 seed_prompt || exit 1
+seed_themes || exit 1
 if [ -n "$PATH_DIR" ]; then
 	write_path_block "$PATH_DIR" || exit 1
 fi
