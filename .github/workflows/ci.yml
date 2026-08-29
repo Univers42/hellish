@@ -316,6 +316,62 @@ jobs:
       - name: Multi-line history, both modes, vs the pinned bash
         run: make history-matrix-test
 
+  # ── The other allocator, and the checks a pty cannot make ────────────────
+  # SAFE=0 links the custom ft_malloc heap. ASan and valgrind are BLIND to
+  # it, so HELLISH_ALLOC_STATS is the only leak detector that backend has --
+  # and it is not redundant with the ASan job: LeakSanitizer reports neither
+  # of the two unbounded leaks found on 2026-08-30 (the alias table and the
+  # command-hash cache), because both are still reachable through t_shell at
+  # exit and LSan classes that as "still reachable" rather than leaked. One
+  # allocator cannot stand in for the other, the same way debug cannot stand
+  # in for release.
+  allocator:
+    name: ft_malloc parity + prompt width
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3
+      - uses: ./.github/actions/oracle
+      - name: Build release on the ft_malloc heap
+        run: |
+          rm -f build/bin/hellish
+          make MODE=release SAFE=0 all > build.log 2>&1 \
+            || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
+      # A shell that runs a command and defines an alias must end where it
+      # started. Both of the leaks above scaled linearly with exactly these,
+      # so a fixed budget is enough to catch the shape.
+      - name: Nothing accumulates per alias or per external command
+        run: |
+          B=$(HELLISH_ALLOC_STATS=1 ./build/bin/hellish -c 'true' 2>&1 >/dev/null \
+                | grep -oE '[0-9]+$' | tail -1)
+          for n in 1 200; do
+            S=""; i=0
+            while [ $i -lt $n ]; do S="$S alias a$i='echo $i';"; i=$((i+1)); done
+            V=$(HELLISH_ALLOC_STATS=1 ./build/bin/hellish -c "$S true" 2>&1 >/dev/null \
+                  | grep -oE '[0-9]+$' | tail -1)
+            echo "aliases=$n live=$V baseline=$B"
+            [ "$V" = "$B" ] || { echo "::error::$n aliases leaked $((V-B)) bytes"; exit 1; }
+          done
+          V=$(HELLISH_ALLOC_STATS=1 ./build/bin/hellish -c \
+                'for c in $(ls /usr/bin | head -40); do command -v $c >/dev/null; done' \
+                2>&1 >/dev/null | grep -oE '[0-9]+$' | tail -1)
+          echo "40 externals live=$V baseline=$B"
+          [ "$V" = "$B" ] || { echo "::error::the command hash leaked $((V-B)) bytes"; exit 1; }
+      - name: Every pty regression test, on the ft_malloc heap
+        run: make pty-test
+      # Linked directly, because the prompt width is never printed and no
+      # shell command reveals it -- the pty case that inferred it from wrap
+      # behaviour passed against a binary that still had the bug.
+      - name: Prompt width model (CSI, OSC, guards, wide glyphs)
+        run: make prompt-width-test
+      # Twelve real plugins. Skips cleanly with no network, so this step is a
+      # bonus on a connected runner and never a flake on one without.
+      - name: Real third-party plugins
+        run: python3 tests/plugin_corpus_test.py build/bin/hellish
+
   # ── Update path and network-shaped redirections ──────────────────────────
   # Both bring up their own local peer; neither touches the network. The
   # update suite is the one that matters most to users -- it is the code
