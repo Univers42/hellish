@@ -28,6 +28,6 @@ void	fill_builtin_hash4(t_hash *h)
 	hash_set(h, "zmodload", (void *)builtin_zunsupported);
 	hash_set(h, "zstyle", (void *)builtin_zunsupported);
 	hash_set(h, "compdef", (void *)builtin_zunsupported);
-	hash_set(h, "zle", (void *)builtin_zunsupported);
-	hash_set(h, "bindkey", (void *)builtin_zunsupported);
+	hash_set(h, "zle", (void *)builtin_zle);
+	hash_set(h, "bindkey", (void *)builtin_bindkey);
 }
