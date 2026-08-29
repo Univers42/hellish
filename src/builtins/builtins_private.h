@@ -283,6 +283,7 @@ int		declare_functions(t_shell *state, t_vec argv, size_t i,
 
 void	dirstack_print(t_shell *state);
 
+char	scan_term(const char *w);
 int		declare_names(t_shell *state, t_vec argv, size_t i);
 int		list_all(t_shell *state);
 int		list_named(t_shell *state, t_vec argv, size_t i);
