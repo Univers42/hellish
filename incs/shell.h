@@ -142,19 +142,20 @@ typedef struct s_shell_func
 {
 	char		*name; /* heap-allocated function name */
 	t_ast_node	body; /* deep-cloned AST of the function body */
-	/* The file this function was DEFINED in (strdup'd, NULL at top level).
-	   BASH_SOURCE[0] must name the defining file, not whatever happens to be
-	   sourcing when the function is CALLED -- that is what lets a plugin
-	   locate its own directory from inside a helper. */
-	char				*src;
-	/* The definition's SOURCE TEXT, captured before the body was cloned
-	   (ast_span.c explains why that timing is the whole trick). NULL when
-	   the span could not be recovered -- declare -f says so rather than
-	   inventing a body. */
-	char				*text;
+	char		*src; /* file it was DEFINED in (see below) */
+	char		*text; /* its source text, for declare -f */
 }	t_shell_func;
 
-/* One entry per live function call or `source`, innermost last. This is the
+/* src: the file this function was DEFINED in (strdup'd, NULL at top level).
+   BASH_SOURCE[0] must name the defining file, not whatever happens to be
+   sourcing when the function is CALLED -- that is what lets a plugin locate
+   its own directory from inside a helper.
+   text: the definition's SOURCE TEXT, captured before the body was cloned
+   (ast_span.c explains why that timing is the whole trick); NULL when the
+   span could not be recovered, and declare -f says so rather than inventing
+   a body.
+
+   One entry per live function call or `source`, innermost last. This is the
    backing store for FUNCNAME and BASH_SOURCE, which had nowhere to come from
    before: the shell tracked only the two int counters func_depth and
    source_depth, so a sourced file could not name itself and $0 answered
@@ -184,6 +185,14 @@ typedef struct s_scope_save
 	char	*key;
 	char	*value;
 	bool	existed;
+	/* The var_attrs entry as it was on entry, so `local -n` unwinds like
+	   every other local. Saving only the VALUE was not enough: the nameref
+	   attribute lives in a separate table, so an inner `local -n r=w` used
+	   to leak past its own function's return and the caller's `r` silently
+	   started following the callee's target. kind 0 means "no attribute",
+	   which is also what restoring 0 through attr_set means. */
+	char	attr_kind;
+	char	*attr_target;
 }	t_scope_save;
 
 /* Positional parameters $1..$count, stored outside the env so function calls
@@ -260,7 +269,8 @@ typedef struct s_shell
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
 	int					source_depth; /* nesting depth of `.`/`source` runs */
-	t_vec				call_frames; /* t_call_frame stack: FUNCNAME/BASH_SOURCE */
+	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */
+	t_vec				call_frames;
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */

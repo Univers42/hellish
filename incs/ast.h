@@ -84,6 +84,7 @@ void		print_ast_dot(t_shell *state, t_ast_node node);
 /* Sanity ceiling on a recovered source span. Tokens from two different
    buffers would produce a nonsense distance; refuse rather than copy it. */
 # define AST_SPAN_MAX 1048576
+
 char		*ast_source_text(t_ast_node *node);
 char		*node_name(t_ast_type tn);
 void		print_node(t_ast_node node);
