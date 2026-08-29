@@ -112,14 +112,7 @@ static size_t	declare_scan(t_vec argv, int *flags, char *term)
 			*flags |= 2;
 		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
 			*flags |= 4;
-		if (ft_strchr(((char **)argv.ctx)[i], 'F'))
-			*term = 'F';
-		else if (ft_strchr(((char **)argv.ctx)[i], 'f'))
-			*term = 'f';
-		else if (ft_strchr(((char **)argv.ctx)[i], 'n'))
-			*term = 'n';
-		else if (ft_strchr(((char **)argv.ctx)[i], 'i'))
-			*term = 'i';
+		*term = scan_term(((char **)argv.ctx)[i]);
 		if (*term)
 			return (i);
 		i++;
