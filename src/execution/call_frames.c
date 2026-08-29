@@ -25,19 +25,22 @@
 **
 **     plugin_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 **
-** Both variables are published as real env arrays on push and pop rather
-** than synthesised at read time, because the read path (env_get) is far
-** hotter than the call path and must not grow a special case.
+** Both are published as real env arrays, but LAZILY: push and pop only mark
+** the stack dirty, and the arrays are rebuilt when something actually reads
+** them.
 **
-** ponytail: publishing eagerly costs two allocations per push and two per
-** pop -- measured at roughly 0.5-1 us per function call, which was invisible
-** while func_lookup was an O(n) scan and is now a visible share of a call
-** (2000 calls: 3.6 ms before this, 5.6 ms after, on an otherwise flat
-** curve). Upgrade path if it ever matters: keep the stack, set a dirty flag
-** here, and publish lazily on first read. That needs a read hook, and
-** env_get() takes a t_vec_env* with no t_shell* to hang the flag off, so it
-** is a signature change across a very hot path -- not worth it until a
-** profile says so.
+** Publishing eagerly cost two allocations per push and two per pop -- about
+** 0.5-1 us on every function call, whether or not anything ever looked at
+** FUNCNAME. That was invisible while func_lookup was an O(n) scan and became
+** a visible share of a call once it was not (2000 calls: 3.6 ms -> 5.6 ms).
+** Almost no shell code reads these variables at all, so almost all of that
+** work was pure waste.
+**
+** The read hook is env_expand_n(), which is the single choke point for BOTH
+** forms -- `$FUNCNAME` and `${BASH_SOURCE[0]}` alike, because
+** expand_array_token() resolves its base variable through it. It guards on a
+** bool, then a length, then one character, so a lookup of any other name
+** pays three comparisons and no allocation.
 **
 ** DIVERGENCE FROM BASH, deliberate: bash keeps BASH_SOURCE the same length
 ** as FUNCNAME plus a "main" entry. Here there is exactly one entry per live
@@ -71,8 +74,11 @@ static char	*frames_collect(t_shell *state, bool want_func)
 	return (arr_from_elems(elems, (int)n, NULL));
 }
 
-static void	frames_publish(t_shell *state)
+/* Rebuild both arrays from the stack. Called from env_expand_n on the first
+   read after a push or pop -- never from the call path itself. */
+void	frames_sync(t_shell *state)
 {
+	state->frames_dirty = false;
 	env_set(&state->env, env_create(ft_strdup("FUNCNAME"),
 			frames_collect(state, true), false));
 	env_set(&state->env, env_create(ft_strdup("BASH_SOURCE"),
@@ -94,7 +100,7 @@ void	frame_push(t_shell *state, const char *func, const char *src)
 	if (!state->call_frames.elem_size)
 		state->call_frames.elem_size = sizeof(t_call_frame);
 	vec_push(&state->call_frames, &f);
-	frames_publish(state);
+	state->frames_dirty = true;
 }
 
 void	frame_pop(t_shell *state)
@@ -109,7 +115,7 @@ void	frame_pop(t_shell *state)
 		xfree(f->src);
 		state->call_frames.len--;
 	}
-	frames_publish(state);
+	state->frames_dirty = true;
 }
 
 /* A fresh copy of the file the innermost frame belongs to -- what a function

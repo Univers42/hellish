@@ -274,6 +274,8 @@ typedef struct s_shell
 	char				*rcfile;
 	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */
 	t_vec				call_frames;
+	/* call_frames changed since the two env arrays were last rebuilt */
+	bool				frames_dirty;
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */
