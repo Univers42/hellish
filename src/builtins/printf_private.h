@@ -40,6 +40,21 @@ typedef struct s_pf
 /* One parsed %-directive, conversion character excluded. Width/precision are
    stored numerically because '*' sources them from positional arguments; the
    spec string handed to snprintf is rebuilt from these fields. */
+/* The stack render buffer, and the ceiling on a field width. The width cap
+   is a sanity bound against `printf "%99999999999999s"`, not a correctness
+   limit -- anything under it is rendered in full, on the heap if needed. */
+# define PF_STACK_BUF 4096
+# define PF_WIDTH_MAX 268435456
+
+/* Render target for one conversion: where to write and how much room there
+   is. Bundled because the 42 norm caps a function at four arguments and
+   pf_conv_str already needs the shell, the spec string and the argument. */
+typedef struct s_pfbuf
+{
+	char	*p;
+	size_t	cap;
+}	t_pfbuf;
+
 typedef struct s_spec
 {
 	char		flags[8];
@@ -50,6 +65,9 @@ typedef struct s_spec
 }	t_spec;
 
 const char	*pf_arg(t_pf *pf);
+size_t		pf_render_size(t_spec *sp);
+void		pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg);
+int			pf_conv_str(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b);
 /* printf renders unsigned conversions through the full 64-bit range;
    spelled as a typedef so the declarations below keep one alignment
    column (`unsigned long long` is too wide for it). */
