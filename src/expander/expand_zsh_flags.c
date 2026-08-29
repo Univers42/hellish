@@ -132,6 +132,8 @@ bool	expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx)
 	if (end < 0)
 		return (zf_free(&f), zf_bad(state, tt, '\0'), true);
 	f.array = zf_arrayness(&f, tt, tt->start + end, tt->len - end);
+	if (zf_hash_form(state, &f, tt, end))
+		return (zf_free(&f), true);
 	val = zf_inner(state, tt, tt->start + end, tt->len - end);
 	zf_finish(state, &f, tt, val);
 	zf_free(&f);

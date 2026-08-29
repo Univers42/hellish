@@ -74,12 +74,14 @@ int	builtin_eval(t_shell *state, t_vec argv)
 static int	run_source(t_shell *state, char *content, t_vec argv)
 {
 	t_pos	saved;
+	char	*zero;
 	int		status;
 
 	state->source_depth++;
 	frame_push(state, NULL, ((char **)argv.ctx)[1]);
 	if (zsh_path(((char **)argv.ctx)[1]))
 		zsh_mode_swap(state, true);
+	zero = zsh_zero_bind(state, ((char **)argv.ctx)[1]);
 	if (argv.len > 2)
 	{
 		saved = state->pos;
@@ -92,6 +94,7 @@ static int	run_source(t_shell *state, char *content, t_vec argv)
 	}
 	else
 		status = exec_string(state, content);
+	zsh_zero_restore(state, zero);
 	frame_pop(state);
 	state->source_depth--;
 	return (status);

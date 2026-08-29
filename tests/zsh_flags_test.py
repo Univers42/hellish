@@ -120,6 +120,9 @@ CASES = [
     ("sub-at-forces-sort", r"""y=$'c\na\nb'; echo "[${${(o)${(f)y}[@]}[1]}]" """),
 ]
 
+# (M) left this list when ${x:#pat} landed: it exists only to invert that
+# filter, so the two are one construct and are checked together in
+# tests/zsh_param_forms_test.py against a real zsh.
 # (A) is NOT in this list, and that is oracle-checked below rather than
 # assumed: in a READ context zsh ignores it -- ${(As: :)x} and ${(s: :)x} are
 # the same expansion -- and its real meaning, "assign as an array", only
@@ -128,7 +131,7 @@ CASES = [
 # the contract is that hellish REFUSES, loudly, rather than falling through
 # to the unflagged value -- a wrong answer that looks right is the failure
 # mode this whole file exists to prevent.
-LOUD = ["M", "b", "e", "t", "V", "w", "W", "X", "~", "#"]
+LOUD = ["b", "e", "t", "V", "w", "W", "X", "~", "#"]
 
 
 def check(name, ok, detail=""):
