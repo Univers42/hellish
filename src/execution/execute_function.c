@@ -19,18 +19,7 @@
 */
 t_shell_func	*func_lookup(t_shell *state, const char *name)
 {
-	size_t			i;
-	t_shell_func	*fn;
-
-	i = 0;
-	while (i < state->functions.len)
-	{
-		fn = (t_shell_func *)vec_idx(&state->functions, i);
-		if (ft_strcmp(fn->name, name) == 0)
-			return (fn);
-		i++;
-	}
-	return (NULL);
+	return (func_index_get(state, name));
 }
 
 /* unset -f name: remove a stored function definition (POSIX).
@@ -47,6 +36,8 @@ void	unset_function(t_shell *state, const char *name)
 		if (ft_strcmp(arr[i].name, name) == 0)
 		{
 			xfree(arr[i].name);
+			xfree(arr[i].src);
+			xfree(arr[i].text);
 			retire_body(state, &arr[i].body);
 			while (i + 1 < state->functions.len)
 			{
@@ -54,7 +45,7 @@ void	unset_function(t_shell *state, const char *name)
 				i++;
 			}
 			state->functions.len--;
-			return ;
+			return (func_index_rebuild(state));
 		}
 		i++;
 	}
@@ -65,7 +56,8 @@ void	unset_function(t_shell *state, const char *name)
    overwrite we free the old body first (free_ast) to avoid leaking the
    previous definition -- redefining a function many times should stay
    memory-flat. */
-static void	store_function(t_shell *state, char *name, t_ast_node *body)
+static void	store_function(t_shell *state, char *name, t_ast_node *body,
+				char *text)
 {
 	t_shell_func	*existing;
 	t_shell_func	new_fn;
@@ -75,18 +67,26 @@ static void	store_function(t_shell *state, char *name, t_ast_node *body)
 	{
 		retire_body(state, &existing->body);
 		existing->body = deep_clone_ast(body);
+		xfree(existing->src);
+		existing->src = frame_src_dup(state);
+		xfree(existing->text);
+		existing->text = text;
 		return ;
 	}
+	new_fn.src = frame_src_dup(state);
+	new_fn.text = text;
 	new_fn.name = ft_strdup(name);
 	new_fn.body = deep_clone_ast(body);
 	vec_push(&state->functions, &new_fn);
+	func_index_set(state, name, state->functions.len - 1);
 }
 
 /* Register a shell function.  The function name lives in the node's
    token; children[0] is the body compound-list.  The function table is a
-   flat vec of t_shell_func -- a linear scan is fine because the number of
-   functions is small.  Returns status 0 (defining a function always
-   succeeds unless OOM). */
+   flat vec of t_shell_func, with a name -> slot hash beside it so lookup is
+   O(1) (see func_index.c: the scan it replaced made defining n functions
+   O(n^2), which a plugin system would have walked straight into).  Returns
+   status 0 (defining a function always succeeds unless OOM). */
 t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 {
 	char		*name;
@@ -94,7 +94,7 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 
 	name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	body = vec_idx(&exe->node->children, 0);
-	store_function(state, name, body);
+	store_function(state, name, body, ast_source_text(body));
 	xfree(name);
 	return (res_status(0));
 }
@@ -123,6 +123,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	char				*tsave[3];
 
 	state->func_depth++;
+	frame_push(state, fn->name, fn->src);
 	saved = state->pos;
 	trap_save_reset(state, tsave);
 	pos_borrow(&state->pos, (char **)argv->ctx + 1, argv->len - 1);
@@ -135,6 +136,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	scope_leave(state);
 	pos_free(&state->pos);
 	state->pos = saved;
+	frame_pop(state);
 	drain_dead_funcs(state);
 	return (status);
 }

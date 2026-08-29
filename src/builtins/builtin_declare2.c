@@ -115,3 +115,19 @@ int	declare_assoc(t_shell *state, t_vec argv, size_t i)
 	}
 	return (0);
 }
+
+/* The terminal letters, in precedence order: everything from the word
+   carrying one goes to the matching routine. 'F' outranks 'f' the way bash's
+   -F suppresses bodies; 'n' outranks 'i' inside one cluster, as before. */
+char	scan_term(const char *w)
+{
+	if (ft_strchr(w, 'F'))
+		return ('F');
+	if (ft_strchr(w, 'f'))
+		return ('f');
+	if (ft_strchr(w, 'n'))
+		return ('n');
+	if (ft_strchr(w, 'i'))
+		return ('i');
+	return (0);
+}

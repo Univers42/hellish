@@ -42,6 +42,7 @@ char	*g_builtins[] = {
 	"alias", "unalias", "hash", "jobs", "fg", "bg", "fc", "history",
 	"let", "local", "kill", "printf", "ulimit", "update", "help",
 	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
+	"dirs",
 	NULL
 };
 

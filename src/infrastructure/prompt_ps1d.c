@@ -98,3 +98,29 @@ void	ps1_brace(t_shell *state, t_string *out, const char *f, int *i)
 	if (env)
 		vec_push_str(out, env);
 }
+
+/* Is `c` a single-character special parameter -- $?, $$, $!, $#, $1 ...?
+**
+** This lives here, and BOTH the loop below and ps1_dollar() ask it, because
+** they used to disagree. ps1_dollar was taught to read specials while this
+** loop still tested only is_var_name_p1(), so `$?` never reached the reader
+** at all and rendered as literal text anyway. Two guards for one question is
+** how that happens; one predicate is why it cannot happen again. */
+bool	ps1_is_special(char c)
+{
+	return (c && ft_strchr("?$!#-*@0123456789", c) != NULL);
+}
+
+/* PROMPT (zsh syntax) -> the backslash language -> the one renderer.
+   Kept here rather than in prompt_zsh.c so that file stays a pure translator
+   with no dependency on the animation layer. */
+t_string	zsh_prompt(t_shell *state, char *fmt)
+{
+	t_string	conv;
+	t_string	out;
+
+	conv = zsh_to_ps1(fmt);
+	out = ps1_animated(state, (char *)conv.ctx);
+	xfree(conv.ctx);
+	return (out);
+}
