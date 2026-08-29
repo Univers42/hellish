@@ -52,7 +52,8 @@ enum e_opt_flag
 	OPT_FLAG_VERSION = 1u << 4,
 	OPT_FLAG_DEBUG_LEXER = 1u << 8,
 	OPT_FLAG_DEBUG_PARSER = 1u << 9,
-	OPT_FLAG_DEBUG_AST = 1u << 10
+	OPT_FLAG_DEBUG_AST = 1u << 10,
+	OPT_FLAG_NORC = 1u << 11
 };
 
 /* The `set -o` options that do not own a dedicated opt_* bool.  bash accepts
@@ -269,6 +270,8 @@ typedef struct s_shell
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
 	int					source_depth; /* nesting depth of `.`/`source` runs */
+	/* --rcfile=FILE, else NULL (borrowed from argv) */
+	char				*rcfile;
 	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */
 	t_vec				call_frames;
 	/* --- positional parameters and local variable saves --- */
