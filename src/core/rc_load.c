@@ -45,6 +45,7 @@ int		exec_string(t_shell *state, char *content);
 static void	source_one(t_shell *state, const char *path)
 {
 	char	*content;
+	char	*zero;
 
 	content = read_file(path);
 	if (!content)
@@ -52,7 +53,9 @@ static void	source_one(t_shell *state, const char *path)
 	frame_push(state, NULL, path);
 	if (zsh_path(path))
 		zsh_mode_swap(state, true);
+	zero = zsh_zero_bind(state, path);
 	exec_string(state, content);
+	zsh_zero_restore(state, zero);
 	frame_pop(state);
 	xfree(content);
 }

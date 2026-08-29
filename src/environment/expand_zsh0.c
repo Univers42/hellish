@@ -18,15 +18,25 @@
 
 #include "shell.h"
 #include "ft_builtins.h"
+#include "env.h"
 
 char	*expand_special_dyn(t_shell *state, char *key, int len);
 char	*build_flagstr(t_shell *state);
 
-/* zsh's $0: inside a function it is the FUNCTION'S NAME, not the shell's.
-   bash keeps the shell name, so this answers NULL outside the dialect and
-   the caller falls through to whatever $0 already was. It is the mechanism
-   behind `function man dman debman { colored $0 "$@" }` -- one body, three
-   names, and $0 is how it tells which one ran. */
+/* zsh's $0 inside a FUNCTION is the function's own name -- the mechanism
+** behind `function man dman debman { colored $0 "$@" }`, where one body
+** serves three names and $0 is how it tells which one ran.
+**
+** Inside a sourced FILE, $0 is the file. That is NOT handled here: the file
+** case is a rebinding of the real parameter for the duration of the frame
+** (zsh_zero_bind, call_frames2.c), because $0 there is assignable and the
+** zsh plugin standard's preamble is three assignments that refine it. A
+** precedence rule here instead -- "frame unless assigned" -- cannot tell an
+** assignment from the shell's own startup value, and reading the parameter
+** to find out recursed through expand_special into a stack overflow.
+**
+** So: the function name if there is one, otherwise NULL and the ordinary
+** parameter answers. bash's $0 is untouched outside the dialect. */
 char	*zsh_arg_zero(t_shell *state)
 {
 	const char	*fn;
@@ -34,9 +44,9 @@ char	*zsh_arg_zero(t_shell *state)
 	if (!zsh_mode(state))
 		return (NULL);
 	fn = frame_func_name(state);
-	if (!fn)
-		return (NULL);
-	return ((char *)fn);
+	if (fn)
+		return ((char *)fn);
+	return (NULL);
 }
 
 /* The one-character specials that are not $? $$ $!: $- , $0 and $#.  Split

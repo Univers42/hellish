@@ -26,13 +26,16 @@ int	ansic_simple(char c);
    expansion, checked against 5.9 -- and its real meaning, "assign as an
    array", only exists in `${(A)name=value}`, a form that reaches
    pf_bad_subst here rather than this table.
-   Deliberately absent, so they fail loudly rather than lie: M (return the
-   match), b, e, t, V, w, W, X, ~, #.  Each needs
+   (M) is accepted only in its one real use, `${(M)x:#pat}`, where it
+   inverts the filter -- see zf_hash_form below. On its own it has no
+   meaning worth guessing at.
+   Deliberately absent, so they fail loudly rather than lie: b, e, t, V, w,
+   W, X, ~, #.  Each needs
    machinery this does not have, and every one of them has a plausible wrong
    answer available -- which is exactly why none may fall through. */
 static bool	zf_known(char c)
 {
-	return (ft_strchr("fszjFkv@oOnupULCq%PA-", c) != NULL);
+	return (ft_strchr("fszjFkv@oOnupULCq%PAM-", c) != NULL);
 }
 
 /* Reject the whole expansion on the first flag we do not implement. */

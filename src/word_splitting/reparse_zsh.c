@@ -95,3 +95,34 @@ bool	reparse_zsh_param(t_reparser *rp, int prev_start, t_tt tt)
 		create_interval(prev_start, rp->i), tt);
 	return (true);
 }
+
+/* `0=value` -- assignment to a POSITIONAL parameter.
+**
+** The zsh plugin standard opens with it:
+**
+**     0="${${ZERO:-${0:#$ZSH_ARGZERO}}:-${(%):-%N}}"
+**
+** which is a plugin working out its own path, and it is the first line of
+** several files in the corpus. bash has no such form -- `0=x` there is a
+** command whose name happens to be `0=x` -- so this is gated on the dialect
+** like everything else, and on a digit-only key, which no POSIX identifier
+** can be.
+**
+** Only the NAME side is claimed here; the value is assigned by the ordinary
+** assignment path, which is what makes `$0` afterwards read back through
+** the same machinery every other parameter uses. */
+bool	is_zsh_pos_key(char *s, int len)
+{
+	int	i;
+
+	if (!reparse_zsh() || len <= 0)
+		return (false);
+	i = 0;
+	while (i < len)
+	{
+		if (!ft_isdigit((unsigned char)s[i]))
+			return (false);
+		i++;
+	}
+	return (true);
+}
