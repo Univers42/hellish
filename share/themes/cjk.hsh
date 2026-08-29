@@ -1,0 +1,5 @@
+# cjk -- CJK is double-width too, and mixes with ASCII mid-line
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;203m\]你好\[\e[0m\] \w \$ '

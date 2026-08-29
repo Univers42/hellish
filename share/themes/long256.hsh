@@ -1,0 +1,5 @@
+# long256 -- a very long prompt: 256 visible columns of escapes
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[48;5;17m\] \[\e[48;5;18m\] \[\e[48;5;19m\] \[\e[48;5;20m\] \[\e[48;5;21m\] \[\e[0m\] \u@\h \w \[\e[48;5;21m\] \[\e[48;5;20m\] \[\e[48;5;19m\] \[\e[48;5;18m\] \[\e[48;5;17m\] \[\e[0m\] \$ '

@@ -91,12 +91,18 @@ char	*arith_lltoa(long long value)
    if we're not in interactive readline mode (scripts, -c, piped input). For
    interactive use we keep going -- the error is already reported and the
    prompt will reappear. Returns NULL so callers can write
-   `return (arith_fail(...))`. */
+   `return (arith_fail(...))`.
+
+   prompt_depth is the second exemption, and it is not a nicety: PS1 renders
+   on every redraw, so `PS1='$((1/0))'` in a -c script or an rc file would
+   exit the shell from inside the thing that draws the prompt -- leaving no
+   session in which to fix the typo. bash reports and carries on with the
+   text left literal, which is what the caller (ps1_arith) does with NULL. */
 char	*arith_fail(t_shell *state, const char *expr, int len)
 {
 	ft_eprintf("%s: %.*s: arithmetic error\n", state->ctx, len, expr);
 	state->last_cmd_st_exe = (t_execution_state){.status = 127};
-	if (state->metinp != INP_RL)
+	if (state->metinp != INP_RL && !state->prompt_depth)
 		exit_clean(state, 127);
 	return (NULL);
 }

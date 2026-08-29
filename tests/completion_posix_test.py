@@ -42,7 +42,7 @@ bash 5.1.16 with PATH set to one fixture directory.
 Reproducibility is the point of this file, so nothing here reads the host:
 PATH is replaced with a single fixture directory of known contents, HOME
 is a scratch directory with no ~/.hellishrc, and the expected builtin set
-is derived from src/builtins/hash_builtins_dispatch.c rather than typed
+is derived from src/builtins/hash_builtins*.c rather than typed
 out here (the same trick tests/help_test.sh uses -- a list typed twice is
 a list that rots). That makes the completion set a CLOSED set: this test
 asserts the offered names are EXACTLY the builtins plus the one executable
@@ -57,6 +57,7 @@ before every Enter is kept anyway.
 Usage: python3 completion_posix_test.py [/path/to/hellish]
 """
 import fcntl
+import glob
 import os
 import pty
 import re
@@ -73,7 +74,12 @@ VERBOSE = "-v" in sys.argv[1:]
 ARGS = [a for a in sys.argv[1:] if a != "-v"]
 SHELL = os.path.abspath(ARGS[0] if ARGS
                         else os.path.join(ROOT, "build/bin/hellish"))
-DISPATCH = os.path.join(ROOT, "src/builtins/hash_builtins_dispatch.c")
+# The dispatch table spans more than one file -- the zsh builtins live in
+# hash_builtins_zsh.c -- so this globs rather than naming one. A registration
+# file added without being listed here would make the expected set too small
+# and the test would report the shell offering "extra" builtins, which is a
+# harness bug wearing a shell bug's clothes.
+DISPATCH = glob.glob(os.path.join(ROOT, "src/builtins/hash_builtins*.c"))
 FAILS = []
 
 # The one executable in the fixture PATH directory. Everything else in
@@ -100,8 +106,10 @@ def builtin_names():
     reason: a builtin added without a completion entry should fail a test,
     not go unnoticed until someone types its name and TAB does nothing.
     """
-    with open(DISPATCH) as f:
-        src = f.read()
+    src = ""
+    for path in DISPATCH:
+        with open(path) as f:
+            src += f.read()
     return set(re.findall(r'hash_set\(h, "([^"]*)"', src))
 
 
