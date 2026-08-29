@@ -165,6 +165,9 @@ t_string	prompt_normal(t_shell *state)
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
+	ps1 = env_expand(state, "PROMPT");
+	if (ps1 && *ps1)
+		return (zsh_prompt(state, ps1));
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
 		return (ps1_animated(state, ps1));

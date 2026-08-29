@@ -110,3 +110,17 @@ bool	ps1_is_special(char c)
 {
 	return (c && ft_strchr("?$!#-*@0123456789", c) != NULL);
 }
+
+/* PROMPT (zsh syntax) -> the backslash language -> the one renderer.
+   Kept here rather than in prompt_zsh.c so that file stays a pure translator
+   with no dependency on the animation layer. */
+t_string	zsh_prompt(t_shell *state, char *fmt)
+{
+	t_string	conv;
+	t_string	out;
+
+	conv = zsh_to_ps1(fmt);
+	out = ps1_animated(state, (char *)conv.ctx);
+	xfree(conv.ctx);
+	return (out);
+}
