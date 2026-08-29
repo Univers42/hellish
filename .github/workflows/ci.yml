@@ -196,6 +196,19 @@ jobs:
           if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
+      # The same cases against what we SHIP. The job above builds debug+ASan,
+      # so until this existed nothing ran the golden suite against a release
+      # binary -- and a heap bug the sanitizer happened to render benign
+      # passed 3790/3790 while the optimised build segfaulted on `V=1 cmd`.
+      # Optimisation and the sanitizer disagree about uninitialised stack;
+      # one run cannot stand in for the other.
+      - name: Golden suite against the RELEASE build
+        run: |
+          make test-release 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' \
+            | tee release.log | grep -E 'PASSED|FAIL' | tail -3
+          grep -q 'ALL [0-9]* TESTS PASSED' release.log || {
+            echo "::error::The release build fails cases the debug build passes"
+            exit 1; }
       # The suite diffs hellish against bash byte-for-byte, so anything that
       # steers bash steers the verdict -- and the people most likely to run it
       # are the people whose rc exports the most. A ~/.hellishrc framework

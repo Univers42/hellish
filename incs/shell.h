@@ -196,6 +196,10 @@ typedef struct s_scope_save
 	char	*attr_target;
 }	t_scope_save;
 
+/* The ONLY way to fill one. Every field must be set; a partially built save
+   frees garbage in restore_one. */
+void	scope_save_capture(t_shell *state, const char *key, t_scope_save *s);
+
 /* Positional parameters $1..$count, stored outside the env so function calls
    swap them in O(1) (a struct copy) instead of mutating the env hash 10x per
    call. args[i] == $(i+1); args is NULL-terminated; cnt_str caches $#. */
