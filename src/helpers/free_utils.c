@@ -17,6 +17,7 @@
 #include "parena.h"
 #include "sh_alias.h"
 #include "cmd_hash.h"
+#include "zle.h"
 
 void	arr_marks_clear(t_shell *state);
 void	attr_clear(t_shell *state);
@@ -135,7 +136,13 @@ static void	free_session_strings(t_shell *state)
    cmd_hash_free was the same shape and found by the same run: a correct
    destructor that only `hash -r` ever called. It matters more than the alias
    one looks like it should, because prehash_external populates that cache
-   on every external command a session runs -- ~88 bytes each, forever. */
+   on every external command a session runs -- ~88 bytes each, forever.
+
+   The ZLE tables are here for the same reason and were caught the same way:
+   200 `zle -N` registrations put 17 KB on the ft_malloc oracle. They live in
+   function-local statics rather than in t_shell -- readline's callback takes
+   no context, so they have to be reachable without one -- which is exactly
+   the shape that gets forgotten at shutdown. */
 static void	free_session_data(t_shell *state)
 {
 	int	i;
@@ -143,6 +150,8 @@ static void	free_session_data(t_shell *state)
 	free_hist(state);
 	alias_table_free(&state->aliases);
 	cmd_hash_free(&state->cmd_cache);
+	zle_widgets_free();
+	zle_binds_free();
 	xfree(state->cwd.ctx);
 	pos_free(&state->pos);
 	free_argv_pool(state);
