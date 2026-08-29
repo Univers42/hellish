@@ -21,7 +21,6 @@ int		try_unset(t_shell *state, char *key);
 void	scope_save(t_shell *state, const char *key)
 {
 	t_scope_save	s;
-	t_env			*e;
 
 	if (state->local_saves.elem_size == 0)
 	{
@@ -29,18 +28,7 @@ void	scope_save(t_shell *state, const char *key)
 		state->local_saves.elem_size = sizeof(t_scope_save);
 	}
 	s.depth = state->func_depth;
-	s.key = ft_strdup(key);
-	s.attr_kind = attr_kind(state, key, (int)ft_strlen(key));
-	s.attr_target = NULL;
-	if (attr_target(state, key, (int)ft_strlen(key)))
-		s.attr_target = ft_strdup(attr_target(state, key,
-					(int)ft_strlen(key)));
-	e = env_get(&state->env, (char *)key);
-	s.existed = (e != NULL);
-	if (e && e->value)
-		s.value = ft_strdup(e->value);
-	else
-		s.value = NULL;
+	scope_save_capture(state, key, &s);
 	vec_push(&state->local_saves, &s);
 }
 
@@ -93,15 +81,9 @@ void	scope_leave(t_shell *state)
 static void	save_and_apply_one(t_shell *state, t_vec *saves, t_env *pa)
 {
 	t_scope_save	s;
-	t_env			*e;
 
-	e = env_get(&state->env, pa->key);
 	s.depth = 0;
-	s.key = ft_strdup(pa->key);
-	s.existed = (e != NULL);
-	s.value = NULL;
-	if (e && e->value)
-		s.value = ft_strdup(e->value);
+	scope_save_capture(state, pa->key, &s);
 	vec_push(saves, &s);
 	if (pa->value)
 		env_set(&state->env,

@@ -16,6 +16,36 @@
 
 int		try_unset(t_shell *state, char *key);
 
+/* Fill a scope save for `key`: its current value AND its var_attrs entry.
+**
+** This exists because there are TWO places that build a t_scope_save --
+** scope_save() for `local`, and save_and_apply_one() for a temporary
+** NAME=val prefix -- and they were filling it field by field. Adding
+** attr_kind/attr_target for `local -n` updated one of them, so the other
+** pushed an uninitialised pointer that restore_one() then freed:
+**
+**     malloc: failed assertion: free: unallocated block
+**
+** It took sourcing git's own git-prompt.sh to surface it, and only in an
+** optimised build -- the debug build left the stack slot benign. One
+** constructor is the fix; a second construction site is the bug. */
+void	scope_save_capture(t_shell *state, const char *key, t_scope_save *s)
+{
+	t_env	*e;
+
+	s->key = ft_strdup(key);
+	e = env_get(&state->env, (char *)key);
+	s->existed = (e != NULL);
+	s->value = NULL;
+	if (e && e->value)
+		s->value = ft_strdup(e->value);
+	s->attr_kind = attr_kind(state, key, (int)ft_strlen(key));
+	s->attr_target = NULL;
+	if (attr_target(state, key, (int)ft_strlen(key)))
+		s->attr_target = ft_strdup(attr_target(state, key,
+					(int)ft_strlen(key)));
+}
+
 /* Roll back temporary NAME=val assignments after a builtin or function
    returns.  We iterate in reverse (LIFO) so nested saves unwind in the
    correct order.  The saves vec backing is freed with xfree after the

@@ -545,6 +545,21 @@ test:  ## Golden suite: ~3800 cases diffed against bash --posix
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
+# The same suite against the RELEASE build.
+#
+# `test` above builds at the DEFAULT mode, which is debug+ASan, so until this
+# existed nothing ever ran the golden cases against what we actually ship. A
+# heap bug that ASan happened to render benign passed 3790/3790 while the
+# release binary segfaulted on `V=1 cmd` -- one of the most common constructs
+# there is, with nine cases in tests/var that all "passed". Optimisation and
+# the sanitizer disagree about uninitialised stack, so one run cannot stand
+# in for the other.
+test-release:  ## Golden suite against the RELEASE build (not debug+ASan)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all OPT=1 SAFE=1
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests (RELEASE build)\033[0m\n\n" >&2
+	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
+
 # Official speed verdict vs `bash --posix`. Always benchmarks the OPT build
 # (timing the default ASan/debug build would be meaningless). Override rounds /
 # scope:  make bench ROUNDS=7        make bench BENCH=micro
@@ -1072,7 +1087,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	readline-test anim-test git-prompt-test \
 	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
-	update-config-test update-test help-test \
+	update-config-test update-test help-test test-release \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test user-install-test \
 	geoman oracle docker-suite docker widechar-test \
