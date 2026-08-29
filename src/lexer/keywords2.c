@@ -52,6 +52,24 @@ static bool	step_token(t_ltoken *t, bool *cmd_pos,
    cmd_pos (are we at the start of a command?), after_redir (is the next
    word a redirect target?), and for_name (is the next word a for-variable?).
    `in` is handled separately by the parser, not here. */
+/* `function name { ... }` -- the brace has to stay a command opener.
+**
+** `{` is only promoted to TT_LBRACE while cmd_pos holds, and after
+** `function name` it does not: two plain WORDs in a row look like a command
+** and its argument. So the brace stayed TT_WORD and the parser reported
+** `syntax error near unexpected token '}'` even once the parser understood
+** the keyword. Same latch TT_COPROC already uses for the same reason -- the
+** token after the NAME is still a command position.
+**
+** Deliberately narrow: only the literal word `function` arms it, and only
+** the following word is affected, so `echo function` and a command actually
+** named `function` are untouched (both covered in the test). */
+static bool	is_function_kw(t_ltoken *t, const char *base)
+{
+	return (t->tt == TT_WORD && t->len == 8
+		&& ft_strncmp(base + t->off, "function", 8) == 0);
+}
+
 void	reclassify_keywords(t_deque_tok *tokens)
 {
 	size_t		i;
@@ -75,6 +93,6 @@ void	reclassify_keywords(t_deque_tok *tokens)
 		cmd_pos = is_cmd_position(t->tt);
 		if (flags[2] && t->tt == TT_WORD)
 			cmd_pos = true;
-		flags[2] = (t->tt == TT_COPROC);
+		flags[2] = (t->tt == TT_COPROC) || is_function_kw(t, tokens->base);
 	}
 }
