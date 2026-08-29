@@ -119,6 +119,9 @@ char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq)
 	op = zsh_param(state, s, slen);
 	if (op)
 		return ((char *)op);
+	op = zsh_dispatch(state, s, slen, false);
+	if (op)
+		return ((char *)op);
 	if (s[0] == '#' && slen > 1)
 		return (expand_strlen(state, s + 1, slen - 1));
 	if (s[0] == '!' && slen > 1 && pf_is_indirect(s + 1, slen - 1))

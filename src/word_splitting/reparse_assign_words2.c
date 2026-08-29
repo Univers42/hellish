@@ -42,7 +42,8 @@ void	reparse_assignment_word(t_ast_node *word)
 		return ;
 	if (!is_valid_ident(first_token->start, eq_pos)
 		&& !is_subscript_key(first_token->start, eq_pos)
-		&& !is_append_key(first_token->start, eq_pos))
+		&& !is_append_key(first_token->start, eq_pos)
+		&& !is_zsh_pos_key(first_token->start, eq_pos))
 		return ;
 	apply_assignment_split(word, first_token, eq_pos);
 }

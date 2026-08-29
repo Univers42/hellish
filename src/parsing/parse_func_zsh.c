@@ -40,11 +40,26 @@ void	zfunc_names(t_deque_tok *tokens, t_token *name)
 	t_ltoken	*peek;
 
 	peek = (t_ltoken *)deque_peek(&tokens->deqtok);
-	while (peek->tt == TT_WORD)
+	while (peek->tt == TT_WORD && !zfunc_is_cont(tokens->base, peek))
 	{
 		name->len = (int)(tokens->base + peek->off + peek->len
 				- name->start);
 		(void)deque_pop_start(&tokens->deqtok);
 		peek = (t_ltoken *)deque_peek(&tokens->deqtok);
 	}
+}
+
+/* A lone backslash: the line continuation in
+
+       function man \
+         dman \
+         debman {
+
+   survives as a WORD token, and collected as a name it defined a function
+   literally called `\` alongside the three real ones. Not fatal -- nothing
+   calls it -- which is exactly why it would have gone unnoticed; `declare
+   -F` listing a backslash is the only place it shows. */
+bool	zfunc_is_cont(const char *base, t_ltoken *t)
+{
+	return (t->len == 1 && base[t->off] == '\\');
 }

@@ -35,7 +35,14 @@ void	zf_free(t_zflags *f)
 	f->join = NULL;
 }
 
-/* The operand after the flags.  zsh reads a bare word there as a PARAMETER
+/* The operand after the flags.
+     `${(%):-%N}` is the shape to know: an EMPTY name with a `:-` default,
+   which always takes the default because an empty name is always unset. zsh
+   plugins use it as "apply these flags to this literal word" -- it is how
+   `${(%):-%N}` means "prompt-expand %N" and how the zsh plugin standard asks
+   a file for its own name. bash has no reading of it at all (`${:-x}` there
+   is a bad substitution), so claiming it costs nothing.
+     Otherwise zsh reads a bare word there as a PARAMETER
    NAME -- ${(U)path} is the value of $path uppercased -- but anything
    starting with $, a quote or a backtick is an expansion in its own right,
    which is what makes ${(f)$(cmd)} the idiom it is.  The second case runs
@@ -50,6 +57,8 @@ char	*zf_inner(t_shell *state, t_token *tt, const char *s, int slen)
 
 	if (slen <= 0)
 		return (ft_strdup(""));
+	if (slen > 1 && s[0] == ':' && (s[1] == '-' || s[1] == '+'))
+		return (pf_word_pipeline(state, s + 2, slen - 2, false));
 	if (zf_is_nested(s, slen))
 	{
 		v = zf_nested(state, tt, s, slen);
