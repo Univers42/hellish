@@ -90,7 +90,7 @@ static int	exec_string_inner(t_shell *state, char *str)
 	tt = (t_deque_tok){0};
 	deque_init(&tt.deqtok, 100, sizeof(t_ltoken));
 	tokenizer(str, &tt);
-	reclassify_keywords(&tt);
+	reclassify_keywords(&tt, zsh_mode(state));
 	status = 0;
 	stop = false;
 	skip_delimiters(&tt);

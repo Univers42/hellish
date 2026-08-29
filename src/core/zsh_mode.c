@@ -27,9 +27,15 @@
 ** The last is why plugins load without the user configuring anything: an
 ** oh-my-zsh plugin is `git.plugin.zsh`, and the extension is the only
 ** declaration of dialect that its author ever wrote down.  The mode is
-** restored when the file finishes, so a .zsh plugin sourcing a .sh helper
-** gets bash rules back for the helper, and a plugin cannot leave the
-** interactive shell in a dialect the user never chose.
+** restored when the file finishes, so a plugin cannot leave the interactive
+** shell in a dialect the user never chose.
+**
+** A .zsh file that sources a .sh helper KEEPS the zsh dialect for it: the
+** extension decides when to ARM the mode, never when to disarm it.  That is
+** what zsh itself does -- the dialect is a property of the shell, not of the
+** file -- and a plugin's own helper is written for the plugin's dialect, so
+** reverting on the way in would break the common case to honour a naming
+** convention the helper's author never opted into.
 **
 ** Nothing here is a heuristic on file CONTENT.  Guessing the dialect from
 ** what the text looks like would make the same file parse differently

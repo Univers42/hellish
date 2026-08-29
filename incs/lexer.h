@@ -100,7 +100,7 @@ void		dbracket_toggle(const char *str, int *in_db);
 int			emit_dbracket_word(char **str, t_deque_tok *ret);
 void		db_track_regex(t_deque_tok *ret, int *in_db);
 int			db_regex_word(char **str, t_deque_tok *ret, int *in_db);
-void		reclassify_keywords(t_deque_tok *tokens);
+void		reclassify_keywords(t_deque_tok *tokens, bool zsh);
 
 /* helpers used by debug/tables printing */
 size_t		visible_lexeme_len(t_token *t);
