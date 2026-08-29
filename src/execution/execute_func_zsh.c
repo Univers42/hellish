@@ -51,6 +51,23 @@ static void	zfunc_define(t_shell *state, const char *name, t_ast_node *body)
 	xfree(names.ctx);
 }
 
+/* Any whitespace separates two names -- NEWLINE included, because the names
+   are written one per line:
+
+       function man \
+         dman \
+         debman {
+
+   Splitting on space and tab alone left "\<newline> dman" as one piece.
+   The lone backslash a continuation leaves behind is dropped for the same
+   reason: collected as a name it defined a function literally called `\`
+   beside the three real ones. Nothing calls it, which is exactly why it
+   would have gone unnoticed -- `declare -F` is the only place it shows. */
+static bool	zf_space(char c)
+{
+	return (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+}
+
 /* Split the name span on whitespace and define each.  Returns the number
    defined, so the caller can tell this apart from the ordinary one-name
    case without re-scanning. */
@@ -65,17 +82,20 @@ int	zfunc_define_all(t_shell *state, t_token *tok, t_ast_node *body)
 	n = 0;
 	while (i < tok->len)
 	{
-		while (i < tok->len && (tok->start[i] == ' ' || tok->start[i] == '\t'))
+		while (i < tok->len && zf_space(tok->start[i]))
 			i++;
 		start = i;
-		while (i < tok->len && tok->start[i] != ' ' && tok->start[i] != '\t')
+		while (i < tok->len && !zf_space(tok->start[i]))
 			i++;
 		if (i == start)
 			continue ;
 		name = ft_strndup(tok->start + start, (size_t)(i - start));
-		zfunc_define(state, name, body);
+		if (ft_strcmp(name, "\\"))
+		{
+			zfunc_define(state, name, body);
+			n++;
+		}
 		xfree(name);
-		n++;
 	}
 	return (n);
 }

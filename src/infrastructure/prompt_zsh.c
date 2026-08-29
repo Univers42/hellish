@@ -29,7 +29,12 @@
 **
 ** Covered: %n user, %m short host, %M full host, %~ cwd (~), %d /%/ full cwd,
 ** %# $ or #, %? exit status, %j jobs, %B/%b bold, %F{c}/%f fg, %K{c}/%k bg,
-** %% a literal percent. hellish's own badges stay available by their
+** %N /%x the file being sourced, %% a literal percent.
+**
+** %N is not decoration: `${(%):-%N}` is how the zsh plugin standard asks
+** "what file am I?", and it is the first line of several plugins in the
+** corpus. It maps to \I, a hellish escape for the same thing, so the one
+** renderer answers both spellings. hellish's own badges stay available by their
 ** backslash names, because they have no zsh counterpart to borrow. */
 
 static const char	*zsh_simple(char c)
@@ -52,6 +57,8 @@ static const char	*zsh_simple(char c)
 		return ("\\j");
 	if (c == '%')
 		return ("%");
+	if (c == 'N' || c == 'x')
+		return ("\\I");
 	return (NULL);
 }
 

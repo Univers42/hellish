@@ -402,16 +402,45 @@ int			zn_sub_len(const char *s, int slen);
 char		*zn_subscript(t_shell *state, char *enc, const char *s, int slen);
 char		*zsh_strlen(t_shell *state, const char *s, int slen);
 char		*zsh_param(t_shell *state, const char *s, int slen);
+/* zsh modifiers ${x:h} ${x:t} ... (expand_zsh_mod*.c) and the :# filter
+   operator with its (M) partner (expand_zsh_hash.c). */
+char		*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr);
+char		*zf_inner_text(t_shell *state, const char *s, int n);
+char		*zsh_token_text(t_shell *state, const char *s, int slen);
+char		*zd_plain(t_shell *state, const char *name, int len);
+char		*zd_splice(const char *val, const char *rest, int rlen);
+char		*zd_bind_name(int depth);
+void		zd_unbind(t_shell *state, const char *name);
+char		*zsh_modifier(t_shell *state, const char *s, int slen);
+/* ${x:#pat}: `want` inverts it (the (M) flag), `as_array` says whether the
+   expansion is still an array at this point -- quoting joins first, which
+   changes the answer. */
+typedef struct s_zhash
+{
+	bool	want;
+	bool	as_array;
+}	t_zhash;
+
+char		*zsh_hash_op(t_shell *state, const char *s, int slen, t_zhash h);
+int			zh_find(const char *s, int slen, int *name_len);
+char		*zm_head(const char *v);
+char		*zm_tail(const char *v);
+char		*zm_root(const char *v);
+char		*zm_ext(const char *v);
+char		*zm_abs(t_shell *state, const char *v);
 bool		zsh_param_token(t_shell *state, t_token *tt);
+bool		zsh_hash_token(t_shell *state, t_token *tt);
 char		*zp_which(t_shell *state, char *name);
 char		*zf_nested(t_shell *state, t_token *tt, const char *s, int slen);
 int			zf_parse(const char *s, int slen, t_zflags *f);
 void		zf_bad(t_shell *state, t_token *tt, char flag);
 bool		zf_check(t_shell *state, t_zflags *f, t_token *tt);
+bool		zf_hash_form(t_shell *state, t_zflags *f, t_token *tt, int end);
 void		zf_unesc(t_zflags *f);
 void		zf_finish(t_shell *state, t_zflags *f, t_token *tt, char *val);
 void		zf_install(t_token *tt, char *owned);
 void		zf_emit(t_shell *state, t_zflags *f, t_token *tt, t_vec *l);
+void		zf_emit_value(t_shell *state, t_zflags *f, t_token *tt, char *val);
 char		*zl_join(t_vec *l, const char *sep);
 void		zl_push(t_vec *l, char *owned);
 void		zl_free(t_vec *l);
