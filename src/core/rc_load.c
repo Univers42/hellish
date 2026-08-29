@@ -50,6 +50,8 @@ static void	source_one(t_shell *state, const char *path)
 	if (!content)
 		return ;
 	frame_push(state, NULL, path);
+	if (zsh_path(path))
+		zsh_mode_swap(state, true);
 	exec_string(state, content);
 	frame_pop(state);
 	xfree(content);

@@ -71,9 +71,11 @@ static void	store_function(t_shell *state, char *name, t_ast_node *body,
 		existing->src = frame_src_dup(state);
 		xfree(existing->text);
 		existing->text = text;
+		existing->zsh = zsh_mode(state);
 		return ;
 	}
 	new_fn.src = frame_src_dup(state);
+	new_fn.zsh = zsh_mode(state);
 	new_fn.text = text;
 	new_fn.name = ft_strdup(name);
 	new_fn.body = deep_clone_ast(body);
@@ -124,6 +126,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 
 	state->func_depth++;
 	frame_push(state, fn->name, fn->src);
+	zsh_mode_swap(state, fn->zsh);
 	saved = state->pos;
 	trap_save_reset(state, tsave);
 	pos_borrow(&state->pos, (char **)argv->ctx + 1, argv->len - 1);

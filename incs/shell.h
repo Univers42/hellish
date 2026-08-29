@@ -83,6 +83,7 @@ enum e_setopt
 	SETOPT_PRIVILEGED = 1u << 14,
 	SETOPT_EMACS = 1u << 15,
 	SETOPT_VI = 1u << 16,
+	SETOPT_ZSH = 1u << 17,
 	SETOPT_DEFAULT = SETOPT_BRACEEXPAND | SETOPT_HASHALL | SETOPT_ICOMMENTS
 };
 
@@ -95,6 +96,13 @@ typedef struct s_setopt
 	char		letter;
 	uint32_t	bit;
 }	t_setopt;
+
+/* The zsh dialect gate (src/core/zsh_mode.c).  Every zsh-only construct in
+   the lexer, parser, expander and builtins asks zsh_mode() first, so the
+   default dialect stays exactly the bash the golden suite pins. */
+bool	zsh_mode(t_shell *state);
+bool	zsh_mode_swap(t_shell *state, bool on);
+bool	zsh_path(const char *path);
 
 void	parse_and_execute_input(t_shell *state);
 /* getcwd(NULL,0) onto the active fn_* heap; see helpers/x_getcwd.c */
@@ -145,6 +153,7 @@ typedef struct s_shell_func
 	t_ast_node	body; /* deep-cloned AST of the function body */
 	char		*src; /* file it was DEFINED in (see below) */
 	char		*text; /* its source text, for declare -f */
+	bool		zsh; /* defined under the zsh dialect (see t_call_frame) */
 }	t_shell_func;
 
 /* src: the file this function was DEFINED in (strdup'd, NULL at top level).
@@ -171,11 +180,23 @@ typedef struct s_shell_func
    which is not contrived, it is how every Python venv ends -- and the frame
    for that call is still on the stack, so the next publish would read freed
    memory. Two small strdups per call is the cheap way to make that
-   impossible; the publish already allocates, so it is not the hot cost. */
+   impossible; the publish already allocates, so it is not the hot cost.
+
+   zsh: the dialect that was in force when this frame was pushed, restored by
+   frame_pop.  The frame is already the exact bracket around a call or a
+   source, so it is the natural place to hang it -- and hanging it there is
+   what makes a .zsh plugin work at all.  Sourcing the plugin parses it in zsh
+   mode, but its functions are CALLED later from an interactive prompt where
+   the mode is off, and `${(f)x}` in a body has to keep meaning what its
+   author wrote.  So each function records the dialect it was defined in
+   (t_shell_func.zsh) and execute_func_call re-arms it for the call; the
+   frame puts back whatever the caller had.  Push sites declare the new
+   dialect right after pushing, so nesting composes without a second stack. */
 typedef struct s_call_frame
 {
 	char				*func;
 	char				*src;
+	bool				zsh;
 }	t_call_frame;
 
 /* One saved variable for function scope: its value at the moment it was made
