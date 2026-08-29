@@ -68,14 +68,15 @@ GIT = ("https://raw.githubusercontent.com/git/git/master/contrib/%s")
 CORPUS = [
     ("omz-git", OMZ % "git/git.plugin.zsh", "loads-noisy", 200,
      "compdef: no zsh completion system here"),
-    ("omz-sudo", OMZ % "sudo/sudo.plugin.zsh", "unsupported", 0,
-     "drives ZLE (zle/bindkey); readline has no widget model"),
+    ("omz-sudo", OMZ % "sudo/sudo.plugin.zsh", "loads", 2, ""),
     ("omz-extract", OMZ % "extract/extract.plugin.zsh", "loads", 1, ""),
     ("omz-web-search", OMZ % "web-search/web-search.plugin.zsh", "loads", 5,
      ""),
     ("omz-copypath", OMZ % "copypath/copypath.plugin.zsh", "loads", 1, ""),
     ("omz-dirhistory", OMZ % "dirhistory/dirhistory.plugin.zsh",
-     "unsupported", 0, "50 ZLE calls; also arr[i]=() element assignment"),
+     "unsupported", 0,
+     "arr[i]=() element assignment; its widgets also cd, which the forked "
+     "readline child cannot carry back"),
     ("omz-jsontools", OMZ % "jsontools/jsontools.plugin.zsh", "loads", 3, ""),
     ("omz-colored-man", OMZ % "colored-man-pages/colored-man-pages.plugin.zsh",
      "loads", 4, ""),

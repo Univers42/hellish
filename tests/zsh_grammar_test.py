@@ -213,18 +213,28 @@ def permissive_cases(d):
 
 
 def unsupported_cases():
-    """zle/bindkey/compdef are registered so a plugin that calls one still
-    LOADS. Left unregistered they produced `command not found` and made the
-    whole file exit 127, which reads as a broken plugin rather than one
-    missing feature."""
-    for name in ("zle", "bindkey", "compdef", "zstyle", "zmodload"):
+    """A zsh builtin we do not implement must still be KNOWN, so a plugin
+    that calls it loads. Left unregistered they produced `command not found`
+    and made the whole file exit 127 -- which reads as a broken plugin rather
+    than one missing feature.
+
+    zle and bindkey moved OFF this list when the widget layer landed
+    (tests/zle_test.py owns them now). compdef, zstyle and zmodload are
+    still stubs: they configure the zsh completion system and loadable
+    modules, neither of which exists here."""
+    for name in ("compdef", "zstyle", "zmodload"):
         rc, _, err = run([SHELL, "-c", "%s foo" % name])
         check("unsupported/%s-is-known" % name,
               b"command not found" not in err and b"not supported" in err,
               "err=%r" % err[:120])
-    _, _, err = run([SHELL, "-c", "zle a; zle b; zle c"])
+    _, _, err = run([SHELL, "-c", "zstyle a; zstyle b; zstyle c"])
     check("unsupported/says-it-once", err.count(b"not supported") == 1,
           "count=%d" % err.count(b"not supported"))
+    # ...and the two that are now real are NOT stubs.
+    for name in ("zle", "bindkey"):
+        _, _, err = run([SHELL, "-c", "%s" % name])
+        check("unsupported/%s-is-implemented-now" % name,
+              b"not supported" not in err, "still a stub: %r" % err[:100])
 
 
 def churn_cases(d):

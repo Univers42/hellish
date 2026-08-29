@@ -127,6 +127,8 @@ int				builtin_emulate(t_shell *state, t_vec argv);
 int				builtin_print(t_shell *state, t_vec argv);
 int				builtin_autoload(t_shell *state, t_vec argv);
 int				builtin_zunsupported(t_shell *state, t_vec argv);
+int				builtin_zle(t_shell *state, t_vec argv);
+int				builtin_bindkey(t_shell *state, t_vec argv);
 bool			zopt_bare(const char *n);
 bool			zopt_inert(const char *n);
 bool			zopt_apply(t_shell *state, const char *n, bool on);
