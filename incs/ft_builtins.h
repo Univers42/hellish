@@ -55,6 +55,7 @@ void			func_index_rebuild(t_shell *state);
 t_shell_func	*func_index_get(t_shell *state, const char *name);
 void			frame_push(t_shell *state, const char *func, const char *src);
 void			frame_pop(t_shell *state);
+void			frames_sync(t_shell *state);
 char			*frame_src_dup(t_shell *state);
 int				apply_set_flags(t_shell *state, t_vec argv);
 const t_setopt	*setopt_table(void);
