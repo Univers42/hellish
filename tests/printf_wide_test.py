@@ -63,29 +63,59 @@ def main():
         print("error: no shell at %s -- run make" % SHELL)
         sys.exit(2)
 
-    # The reported widths, plus the boundary where the old buffer gave up.
-    for w in (10, 4095, 4096, 4097, 20000, 100000, 10000000):
-        got = len(out_of(SHELL, "printf '%%%ds' c" % w))
-        check("printf '%%%ds' emits %d bytes" % (w, w), got == w,
-              "got %d -- 4095 means the render buffer is fixed again" % got)
+    # EVERY conversion, at every interesting width. This used to be a
+    # hand-picked list of %s/%d/%f -- and %c, %b and the float conversions
+    # each carried their OWN char[4096], so the list passed while
+    # `printf "%50000c"` still stopped at 4095. A list of conversions drifts
+    # exactly the way a list of test files drifts; enumerate them instead.
+    CONV = "csdioxXufeEgGb"
+    for w in (10, 4095, 4096, 4097, 20000, 100000):
+        for c in CONV:
+            spec = "%%%d%s" % (w, c)
+            got = out_of(SHELL, "printf '%s' 7" % spec)
+            # A field width is a MINIMUM, not a maximum: %10e is naturally
+            # 12 characters wide ("7.000000e+00") and must not be clipped to
+            # 10. So the assertion is ">= w", and exactness is covered by the
+            # byte-for-byte oracle comparison further down.
+            check("%s is not truncated" % spec, len(got) >= w,
+                  "got %d bytes, want at least %d%s" % (
+                      len(got), w,
+                      " -- 4095 means a private render buffer is back"
+                      if len(got) == 4095 else ""))
 
-    # Left-justified and precision take the same path.
-    check("a negative (left-justified) width is honoured",
-          len(out_of(SHELL, "printf '%-50000s' c")) == 50000,
-          "got %d" % len(out_of(SHELL, "printf '%-50000s' c")))
+    # Left-justification takes the same paths.
+    for c in CONV:
+        spec = "%%-20000%s" % c
+        check("%s is not truncated" % spec,
+              len(out_of(SHELL, "printf '%s' 7" % spec)) >= 20000,
+              "got %d" % len(out_of(SHELL, "printf '%s' 7" % spec)))
+
     check("a wide precision is honoured",
           len(out_of(SHELL, "printf '%.50000d' 7")) == 50000,
           "got %d" % len(out_of(SHELL, "printf '%.50000d' 7")))
-    check("a wide numeric width is honoured",
-          len(out_of(SHELL, "printf '%50000d' 7")) == 50000,
-          "got %d" % len(out_of(SHELL, "printf '%50000d' 7")))
+
+    # %b ignored the field width entirely -- it expanded escapes straight
+    # into the output, so the spec never reached it.
+    check("%b honours a field width",
+          out_of(SHELL, "printf '[%10b]' ab") == b"[        ab]",
+          "got %r" % out_of(SHELL, "printf '[%10b]' ab"))
+    check("%b still expands escapes",
+          out_of(SHELL, r"printf '%b' 'a\tb'") == b"a\tb",
+          "got %r" % out_of(SHELL, r"printf '%b' 'a\tb'"))
 
     # Ordinary widths must be untouched -- this is the allocation-free path.
     check("normal conversions are unchanged",
-          out_of(SHELL, "printf '[%5s][%-5s][%05d][%.2f]' ab cd 42 3.14159")
-          == b"[   ab][cd   ][00042][3.14]",
+          out_of(SHELL, "printf '[%5s][%-5s][%05d][%.2f][%c]' ab cd 42 3.14159 z")
+          == b"[   ab][cd   ][00042][3.14][z]",
           "got %r" % out_of(SHELL,
-                            "printf '[%5s][%-5s][%05d][%.2f]' ab cd 42 3.14159"))
+                            "printf '[%5s][%-5s][%05d][%.2f][%c]' ab cd 42 3.14159 z"))
+
+    # %c with no argument still emits a real NUL, which is why it is pushed
+    # by count and not by strlen.
+    check("%c with no argument still emits a NUL byte",
+          out_of(SHELL, "printf 'a%cb'") == b"a\x00b".replace(b"\x00", b"\0")
+          or out_of(SHELL, "printf 'a%cb'") == b"a\0b",
+          "got %r" % out_of(SHELL, "printf 'a%cb'"))
 
     # An invalid number must still report ONCE, not twice -- the reason the
     # size is computed from the spec rather than by formatting twice.
@@ -97,8 +127,10 @@ def main():
 
     # Byte-for-byte against the pinned oracle, which is the real contract.
     if os.path.exists(ORACLE):
-        for script in ("printf '%20000s' c", "printf '%-4096s|' x",
-                       "printf '%.9000d' 3"):
+        for script in ["printf '%20000s' c", "printf '%-4096s|' x",
+                       "printf '%.9000d' 3", "printf '[%10b]' ab"] + [
+                           "printf '%%%d%s' 7" % (w, c)
+                           for w in (4096, 50000) for c in "csdioxXufeEgGb"]:
             check("matches bash: %s" % script,
                   out_of(SHELL, script) == out_of(ORACLE, script),
                   "lengths %d vs %d" % (len(out_of(SHELL, script)),

@@ -66,6 +66,9 @@ typedef struct s_spec
 
 const char	*pf_arg(t_pf *pf);
 size_t		pf_render_size(t_spec *sp);
+void		pf_buf_open(t_spec *sp, t_pfbuf *b, char *stack);
+void		pf_buf_close(t_pfbuf *b, char *stack);
+void		pf_emit_b_padded(t_pf *pf, t_spec *sp, const char *arg);
 void		pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg);
 int			pf_conv_str(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b);
 /* printf renders unsigned conversions through the full 64-bit range;
@@ -77,7 +80,7 @@ void		pf_err_num(t_pf *pf, const char *arg);
 char		pf_escape(const char *s, int *i, bool *stop);
 long long	pf_num(t_pf *pf, const char *arg);
 void		pf_conv_float(t_pf *pf, char *fmt, const char *arg,
-				char *buf);
+				t_pfbuf *b);
 void		pf_emit_b(t_string *out, const char *arg, bool *stop);
 t_ull		pf_unum(t_pf *pf, const char *arg);
 void		pf_conv(t_pf *pf, t_spec *sp, char conv);

@@ -53,27 +53,73 @@ size_t	pf_render_size(t_spec *sp)
 	return ((size_t)n + PF_STACK_BUF);
 }
 
-/* Render into `stack` when it fits, onto the heap when it does not, and push
-   the result. Falling back to the stack buffer on a failed allocation keeps
-   a 2GB width from taking the shell down -- the output is truncated, which
-   is what happened before this existed anyway. */
+/* Point `b` at somewhere big enough for this spec: the caller's stack buffer
+   when it fits, the heap when it does not. Falling back to the stack on a
+   failed allocation keeps a 2GB width from taking the shell down -- the
+   output is truncated, which is what happened before any of this existed.
+**
+** Every conversion goes through this. It has to: %c, %b and the float
+** conversions each used to carry their OWN char[4096], so fixing only the
+** snprintf-delegated path left `printf "%50000c"` still stopping at 4095.
+** Four places owning one number is the actual defect; this is the one
+** number. */
+void	pf_buf_open(t_spec *sp, t_pfbuf *b, char *stack)
+{
+	b->cap = pf_render_size(sp);
+	b->p = stack;
+	if (b->cap > PF_STACK_BUF)
+		b->p = xmalloc(b->cap);
+	if (!b->p)
+	{
+		b->p = stack;
+		b->cap = PF_STACK_BUF;
+	}
+	b->p[0] = '\0';
+}
+
+void	pf_buf_close(t_pfbuf *b, char *stack)
+{
+	if (b->p != stack)
+		xfree(b->p);
+}
+
+/* Render one conversion and push it. */
 void	pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg)
 {
 	char		stack[PF_STACK_BUF];
 	t_pfbuf		b;
 
-	b.cap = pf_render_size(sp);
-	b.p = stack;
-	if (b.cap > PF_STACK_BUF)
-		b.p = xmalloc(b.cap);
-	if (!b.p)
-	{
-		b.p = stack;
-		b.cap = PF_STACK_BUF;
-	}
-	b.p[0] = '\0';
+	pf_buf_open(sp, &b, stack);
 	pf_conv_str(pf, fmt, arg, &b);
 	vec_push_str(pf->out, b.p);
-	if (b.p != stack)
-		xfree(b.p);
+	pf_buf_close(&b, stack);
+}
+
+/* %b with a field width. pf_emit_b expands backslash escapes straight into
+   the output, so the spec never reached it and `printf "%10b" ab` printed
+   "ab" where bash prints "        ab". Expand into a scratch string first,
+   then pad it exactly like every other conversion.
+**
+** \c inside the argument aborts the whole printf, so a stopped expansion is
+   emitted as-is and never padded -- padding output that was cut short would
+   invent characters the format asked to stop before. */
+void	pf_emit_b_padded(t_pf *pf, t_spec *sp, const char *arg)
+{
+	char		stack[PF_STACK_BUF];
+	char		fmt[80];
+	t_string	raw;
+	t_pfbuf		b;
+
+	vec_init(&raw);
+	raw.elem_size = 1;
+	pf_emit_b(&raw, arg, &pf->stop);
+	vec_push_char(&raw, '\0');
+	if (!sp->has_width || pf->stop)
+		return (vec_push_str(pf->out, (char *)raw.ctx), (void)xfree(raw.ctx));
+	pf_build_spec(fmt, sp, 's');
+	pf_buf_open(sp, &b, stack);
+	snprintf(b.p, b.cap, fmt, (char *)raw.ctx);
+	vec_push_str(pf->out, b.p);
+	pf_buf_close(&b, stack);
+	xfree(raw.ctx);
 }
