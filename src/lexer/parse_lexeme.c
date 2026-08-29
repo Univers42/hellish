@@ -17,6 +17,9 @@ char	*tokenize_subshell(t_deque_tok *tokens, char **str);
 char	*parse_quote(t_deque_tok *tokens, char **str, char q);
 
 bool	is_word_boundary(const char *s);
+int		glob_qual_ahead(const char *start, const char *at);
+int		glob_zsh(void);
+bool	zsh_eqsub_break(const char *start, const char *at);
 
 /* Advance one "generic" unit of a word: backslash-escaped char, bare
    non-special char, or a bare `$` not followed by `(` or `{` (those are
@@ -110,7 +113,12 @@ static int	handle_next_chunk(t_deque_tok *tokens,
 
 /* Consume one complete word lexeme starting at *str. A word can contain
    quoted spans, $(...) substitutions, ${...} expansions, and backticks --
-   all glued together without whitespace. When input ends inside any of those
+   all glued together without whitespace.
+     Two zsh-only breaks, both gated on the dialect. A trailing `(...)` of
+   glob-qualifier letters is swallowed INTO the word (glob_qual_ahead), so
+   the `(` does not open a subshell; and a SECOND `=` before a `(` ends the
+   word, so `f==(:)` lexes as `f=` plus the process-substitution operator
+   (zsh_eqsub_break). When input ends inside any of those
    the function returns a continuation-prompt string; otherwise NULL. The
    word token is pushed onto tokens before returning NULL. */
 char	*parse_lexeme(t_deque_tok *tokens, char **str)
@@ -122,6 +130,13 @@ char	*parse_lexeme(t_deque_tok *tokens, char **str)
 	start = *str;
 	while (**str)
 	{
+		if (glob_qual_ahead(start, *str))
+		{
+			*str += glob_qual_ahead(start, *str);
+			continue ;
+		}
+		if (zsh_eqsub_break(start, *str))
+			break ;
 		ret = handle_next_chunk(tokens, str, &res);
 		if (ret == -1)
 			return (res);

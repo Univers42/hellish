@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "ft_glob.h"
 
 /* Operator recognition used to walk a 21-entry table rebuilt on the stack
    at every call, with ~60 ft_strlen/ft_strncmp calls per operator token —
@@ -52,7 +53,11 @@ static int	op_right(const char *s, t_tt *t)
 	return (*t = TT_REDIRECT_RIGHT, 1);
 }
 
-/* Everything else: pipe/or, amp/and, semi/dsemi, parens/arith. Returns 0
+/* Everything else: pipe/or, amp/and, semi/dsemi, parens/arith, and zsh's
+   `=(cmd)` process substitution to a temp file. That last one is gated on
+   the dialect through the mirrored cell -- in bash a leading `=` is an
+   ordinary word character, and `=(x)` there is a word followed by a
+   subshell. Returns 0
    for a character that is no operator at all — the caller asserts, since
    is_word_boundary should never have routed such a byte here. */
 static int	op_other(const char *s, t_tt *t)
@@ -69,6 +74,8 @@ static int	op_other(const char *s, t_tt *t)
 		return (*t = TT_DSEMI, 2);
 	if (s[0] == ';')
 		return (*t = TT_SEMICOLON, 1);
+	if (s[0] == '=' && s[1] == '(' && glob_zsh())
+		return (*t = TT_PROC_SUB_FILE, 2);
 	if (s[0] == '(' && s[1] == '(')
 		return (*t = TT_ARITH_START, 2);
 	if (s[0] == '(')

@@ -23,15 +23,24 @@ int	match_literal(const char *name, t_glob *g)
 	return (g->len);
 }
 
-/* Match '?': exactly one non-NUL character. The leading-dot rule applies:
-   if this is the first character in the path component (is_first) and the
-   name starts with '.', reject -- POSIX requires hidden files to be excluded
-   from wildcards unless the pattern itself starts with a dot. */
+/* The leading-dot rule, in the three places a wildcard can meet one.
+**
+** POSIX excludes hidden files from wildcards unless the pattern itself
+** starts with a dot -- and `shopt -s dotglob` turns that off, which is what
+** glob_dotglob() answers.
+**
+** That check was MISSING: the cell was mirrored from state->shopt by the
+** shopt builtin and by `pretty`, and then nothing ever read it, so
+** `shopt -s dotglob; echo [*]` silently kept hiding dotfiles. A bash-parity
+** bug of its own, found because zsh's `(D)` qualifier needs the same switch
+** and there was nothing to switch. */
+
+/* Match '?': exactly one non-NUL character. */
 int	match_question(const char *name, bool is_first)
 {
 	if (*name == '\0')
 		return (-1);
-	if (is_first && *name == '.')
+	if (is_first && *name == '.' && !glob_dotglob())
 		return (-1);
 	return (1);
 }
@@ -44,7 +53,7 @@ int	match_bracket(const char *name, t_glob *g, bool is_first)
 {
 	if (*name == '\0')
 		return (-1);
-	if (is_first && *name == '.')
+	if (is_first && *name == '.' && !glob_dotglob())
 		return (-1);
 	if (!glob_char_in_class(*name, g))
 		return (-1);
@@ -61,7 +70,7 @@ int	match_bracket(const char *name, t_glob *g, bool is_first)
 bool	match_asterisk_recursive(const char *name, t_vec_glob *pattern,
 									size_t offset, bool is_first)
 {
-	if (is_first && *name == '.')
+	if (is_first && *name == '.' && !glob_dotglob())
 		return (false);
 	while (*name)
 	{

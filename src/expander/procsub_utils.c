@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <unistd.h>
 #include "expander_private.h"
 
 /* Close all open pipe fds on the parent side of registered process
@@ -59,7 +60,11 @@ void	procsub_detach_all(t_shell *state)
    Closes parent-side fds first (stops feeding >(cmd) children), then
    waitpid's for each child with pid > 0 (detached ones have pid == -1 and
    are skipped — the kernel will reap them at shell exit).  The proc_subs
-   vec is reset so state is clean for the next command. */
+   vec is reset so state is clean for the next command.
+     An entry with fd == -1 is zsh's `=(cmd)` form: a real file on disk
+   rather than a pipe, so it is UNLINKED here. That is the only place it
+   can be: the whole point of the form is that the path outlives the
+   command that produced it, so nothing earlier may remove it. */
 void	cleanup_proc_subs(t_shell *state)
 {
 	size_t			i;
@@ -78,6 +83,8 @@ void	cleanup_proc_subs(t_shell *state)
 			pal_waitpid(state, entry->pid, &status, 0);
 			entry->pid = -1;
 		}
+		if (entry->fd == -1 && entry->path)
+			unlink(entry->path);
 		xfree(entry->path);
 		i++;
 	}
