@@ -93,6 +93,7 @@ void	frame_push(t_shell *state, const char *func, const char *src)
 
 	f.func = NULL;
 	f.src = NULL;
+	f.zsh = zsh_mode(state);
 	if (func)
 		f.func = ft_strdup(func);
 	if (src)
@@ -111,6 +112,7 @@ void	frame_pop(t_shell *state)
 	{
 		f = (t_call_frame *)vec_idx(&state->call_frames,
 				state->call_frames.len - 1);
+		zsh_mode_swap(state, f->zsh);
 		xfree(f->func);
 		xfree(f->src);
 		state->call_frames.len--;

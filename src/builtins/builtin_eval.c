@@ -78,6 +78,8 @@ static int	run_source(t_shell *state, char *content, t_vec argv)
 
 	state->source_depth++;
 	frame_push(state, NULL, ((char **)argv.ctx)[1]);
+	if (zsh_path(((char **)argv.ctx)[1]))
+		zsh_mode_swap(state, true);
 	if (argv.len > 2)
 	{
 		saved = state->pos;

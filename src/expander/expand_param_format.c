@@ -73,6 +73,9 @@ char	*expand_strlen(t_shell *state, const char *s, int slen)
 	char	*val;
 	char	*result;
 
+	result = zsh_strlen(state, s, slen);
+	if (result)
+		return (result);
 	if (ft_strnchr((char *)s, '[', slen))
 	{
 		result = expand_strlen_arr(state, s, slen);

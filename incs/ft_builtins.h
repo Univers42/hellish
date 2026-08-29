@@ -60,6 +60,7 @@ char			*frame_src_dup(t_shell *state);
 int				apply_set_flags(t_shell *state, t_vec argv);
 const t_setopt	*setopt_table(void);
 const t_setopt	*setopt_find(const char *name, char letter);
+bool			setopt_hidden(const t_setopt *e);
 bool			setopt_get(t_shell *st, const t_setopt *e);
 void			setopt_put(t_shell *st, const t_setopt *e, bool on);
 void			set_opt_edit_mode(t_shell *st, const char *name, bool on);

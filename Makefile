@@ -527,6 +527,14 @@ re:  ## fclean + rebuild (OPT/SAFE propagate)
 ORACLE_PREFIX ?= $(HOME)/bash-5.3.9
 
 ##@ Test
+ZSH_ORACLE_PREFIX ?= $(HOME)/zsh-5.9
+
+# The zsh dialect's oracle, same arrangement as `oracle` below: the flag
+# semantics are not inferable from our source (see tests/build_zsh_oracle.sh),
+# so the tests diff against a real zsh or they skip and say so.
+zsh-oracle:  ## Build the zsh 5.9 the zsh-dialect tests are defined against
+	@/bin/bash tests/build_zsh_oracle.sh "$(ZSH_ORACLE_PREFIX)"
+
 oracle:  ## Build the PINNED bash 5.3.9 the suite is defined against
 	@if [ -x "$(ORACLE_PREFIX)/bin/bash" ]; then \
 		printf "\n  \033[1;32m✓\033[0m \033[1;37m%s\033[0m \033[90m(cached)\033[0m\n\n" \

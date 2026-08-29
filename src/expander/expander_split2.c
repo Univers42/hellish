@@ -22,7 +22,11 @@
    double-quoted vars) are appended to curr_node verbatim. */
 /* Deferred array tokens: the marker registry proves ownership by
    pointer, the marker text is the array name. Quoted @ emits verbatim
-   fields, everything else emits split fields. */
+   fields, everything else emits split fields.
+     Two prefixes make the marker text something other than a name, and
+   neither can collide with one: '!' is the ${!a[@]} keys form, and
+   ARR_MAGIC is a zsh flagged expansion that computed its fields and has no
+   name to park (expand_zsh_emit.c). */
 static bool	try_array_child(t_shell *state, t_token *curr_t,
 				t_ast_node *curr_node, t_vec_nd *ret)
 {
@@ -31,7 +35,9 @@ static bool	try_array_child(t_shell *state, t_token *curr_t,
 	name = arr_mark_name(state, curr_t->start);
 	if (!name)
 		return (false);
-	if (name[0] == '!')
+	if (name[0] == ARR_MAGIC)
+		emit_val_at(name, curr_node, ret);
+	else if (name[0] == '!')
 		emit_keys_fields(state, name, curr_node, ret);
 	else if (curr_t->tt == TT_DQENVVAR)
 		emit_array_at(state, name, curr_node, ret);

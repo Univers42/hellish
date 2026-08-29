@@ -370,6 +370,58 @@ void		handle_double_open_paren(int *depth, int *j);
 bool		is_double_close_paren_v1(int slen, const char *s, int j);
 bool		is_double_open_paren_v1(int slen, const char *s, int j);
 
+/* One parsed ${(flags)x} prefix -- the zsh dialect only, gated on zsh_mode()
+   at the single entry point (expand_zsh_flags).  `set` is the letters seen,
+   NUL-terminated, so zf_has() is a strchr over at most a dozen bytes: a flag
+   list is never long enough for anything cleverer to pay for itself.
+   `sep` and `join` hold the arguments of (s:x:) and (j:x:), already
+   unescaped when (p) asked for it. */
+# define ZF_MAX 23
+
+typedef struct s_zflags
+{
+	char	set[ZF_MAX + 1];
+	int		n;
+	char	*sep;
+	char	*join;
+	bool	split;
+	bool	array;
+}	t_zflags;
+
+bool		expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx);
+bool		zf_has(const t_zflags *f, char c);
+int			zf_count(const t_zflags *f, char c);
+char		zq_style(const t_zflags *f);
+void		zf_free(t_zflags *f);
+char		*zf_inner(t_shell *state, t_token *tt, const char *s, int slen);
+bool		zf_is_nested(const char *s, int slen);
+int			zn_at_len(const char *s, int slen);
+char		*zsh_strlen(t_shell *state, const char *s, int slen);
+char		*zf_nested(t_shell *state, t_token *tt, const char *s, int slen);
+int			zf_parse(const char *s, int slen, t_zflags *f);
+void		zf_bad(t_shell *state, t_token *tt, char flag);
+bool		zf_check(t_shell *state, t_zflags *f, t_token *tt);
+void		zf_unesc(t_zflags *f);
+void		zf_finish(t_shell *state, t_zflags *f, t_token *tt, char *val);
+void		zf_install(t_token *tt, char *owned);
+void		zf_emit(t_shell *state, t_zflags *f, t_token *tt, t_vec *l);
+char		*zl_join(t_vec *l, const char *sep);
+void		zl_push(t_vec *l, char *owned);
+void		zl_free(t_vec *l);
+void		zl_erase(t_vec *l, size_t at);
+void		zl_swap(char **a, char **b);
+t_vec		zl_from(t_shell *state, t_zflags *f, const char *val);
+void		zl_split_ws(t_vec *l, const char *v);
+void		zl_records(t_shell *state, t_zflags *f, t_vec *l, const char *val);
+void		zl_arr_one(t_zflags *f, t_vec *l, long idx, char *owned);
+void		zl_order(t_zflags *f, t_vec *l);
+void		zl_uniq(t_zflags *f, t_vec *l);
+void		zl_map(t_shell *state, t_zflags *f, t_vec *l);
+char		*zx_one(t_shell *state, t_zflags *f, char *v);
+char		*zf_quote(const char *v, char style);
+char		*zf_case(const char *v, char how);
+void		emit_val_at(const char *val, t_ast_node *curr_node, t_vec_nd *ret);
+
 /* Convenience inline: zero-initialise a t_expand_ctx from its four fields.
    Inlined so there is zero overhead when called from tight scan loops. */
 static inline t_expand_ctx	init_expand(const char *s, int slen,
