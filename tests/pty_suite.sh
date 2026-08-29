@@ -26,6 +26,30 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# ---- environment isolation -------------------------------------------------
+# These tests spawn INTERACTIVE shells, which source ~/.hellishrc. On the
+# machine of anyone who actually uses hellish -- this project's whole audience
+# -- that loads their real config into the shell under test, and prompt tests
+# then diff against someone's personal PS1. Observed: 4 spurious failures with
+# a real $HOME and 0 with a clean one, plus the developer's own framework
+# writing state mid-run.
+#
+# HOME is redirected to a throwaway dir rather than unset, because tools that
+# expand ~ must still work. The oracle is symlinked in: history_multiline_matrix
+# resolves it as ~/bash-5.3.9, so isolating HOME alone would hide it and the
+# test would exit 2 without running.
+if [ "${PTY_SUITE_KEEP_HOME:-0}" != "1" ]; then
+	_iso_home="$(mktemp -d)"
+	[ -d "$HOME/bash-5.3.9" ] && ln -s "$HOME/bash-5.3.9" "$_iso_home/bash-5.3.9"
+	[ -n "${HELLISH_ORACLE:-}" ] || \
+		{ [ -x "$HOME/bash-5.3.9/bin/bash" ] && export HELLISH_ORACLE="$HOME/bash-5.3.9/bin/bash"; }
+	HOME="$_iso_home"
+	export HOME
+	trap 'rm -rf "$_iso_home"' EXIT
+fi
+unset HISTTIMEFORMAT HISTCONTROL HISTSIZE HISTFILE HISTFILESIZE HISTIGNORE
+unset ENV BASH_ENV CDPATH GLOBIGNORE
+
 SHELL_BIN="${HELLISH:-build/bin/hellish}"
 [ -x "$SHELL_BIN" ] || { echo "error: $SHELL_BIN is not executable -- run make" >&2; exit 2; }
 
