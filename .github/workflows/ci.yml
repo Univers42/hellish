@@ -196,6 +196,32 @@ jobs:
           if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
+      # The suite diffs hellish against bash byte-for-byte, so anything that
+      # steers bash steers the verdict -- and the people most likely to run it
+      # are the people whose rc exports the most. A ~/.hellishrc framework
+      # exporting HISTTIMEFORMAT once failed 12 issue42_history_opts cases
+      # against code that was correct. tests/tester now unsets the variables
+      # that reach the constructs under test; this step is what keeps that
+      # true, by running the whole suite under a deliberately hostile
+      # environment. CI is otherwise the ONE machine where the bug cannot
+      # reproduce, which is exactly how the isolation would rot.
+      - name: Suite survives a polluted developer environment
+        env:
+          HISTTIMEFORMAT: '%F %T '
+          HISTCONTROL: ignoredups:ignorespace:erasedups
+          HISTSIZE: '20000'
+          HISTFILESIZE: '20000'
+          HISTIGNORE: 'ls:cd:pwd'
+          CDPATH: /tmp
+          GLOBIGNORE: '*.o'
+          PROMPT_COMMAND: 'true'
+        run: |
+          cd tests
+          ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../dirty.log \
+            | grep -E 'PASSED|FAIL' | tail -3
+          grep -q 'ALL [0-9]* TESTS PASSED' ../dirty.log || {
+            echo "::error::A polluted environment changed the verdict -- tests/tester is not isolating it"
+            exit 1; }
 
   # ── Everything the golden suite cannot express ───────────────────────────
   # The golden suite diffs stdout+status of one-line cases. A lot of this
@@ -257,6 +283,23 @@ jobs:
       # moment it is written, with no second place to remember.
       - name: Every pty regression test (tests/*.py, discovered)
         run: make pty-test
+      # The other half of the same bug. These tests spawn INTERACTIVE shells,
+      # which source ~/.hellishrc -- so on the machine of anyone who actually
+      # uses hellish (this project's whole audience) their own config loads
+      # into the shell under test and the prompt gates diff against a personal
+      # PS1. Observed on a developer box: 4 spurious failures with a real
+      # $HOME, 0 with a clean one. CI's $HOME is empty, so CI is the one
+      # machine where it cannot reproduce -- hence this step, which plants a
+      # hostile rc first and expects the suite to be unmoved by it.
+      - name: pty suite ignores a hostile ~/.hellishrc
+        run: |
+          printf '%s\n' \
+            'PS1="HOSTILE-PROMPT> "' \
+            'PS2="HOSTILE2> "' \
+            'alias ls="echo hijacked"' \
+            'HISTTIMEFORMAT="%F %T "' > "$HOME/.hellishrc"
+          make pty-test
+          rm -f "$HOME/.hellishrc"
       - name: Multi-line history, both modes, vs the pinned bash
         run: make history-matrix-test
 
