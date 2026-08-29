@@ -96,6 +96,8 @@ static bool	try_array_forms(t_shell *state, t_token *curr_tt, bool split_ctx)
 {
 	if (expand_zsh_flags(state, curr_tt, split_ctx))
 		return (true);
+	if (zsh_param_token(state, curr_tt))
+		return (true);
 	if (expand_pos_slice(state, curr_tt))
 		return (true);
 	if (expand_array_op(state, curr_tt))

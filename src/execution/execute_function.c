@@ -56,8 +56,8 @@ void	unset_function(t_shell *state, const char *name)
    overwrite we free the old body first (free_ast) to avoid leaking the
    previous definition -- redefining a function many times should stay
    memory-flat. */
-static void	store_function(t_shell *state, char *name, t_ast_node *body,
-				char *text)
+void	store_function(t_shell *state, char *name, t_ast_node *body,
+			char *text)
 {
 	t_shell_func	*existing;
 	t_shell_func	new_fn;
@@ -94,8 +94,13 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 	char		*name;
 	t_ast_node	*body;
 
-	name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	body = vec_idx(&exe->node->children, 0);
+	if (zsh_mode(state))
+	{
+		if (zfunc_define_all(state, &exe->node->token, body) > 0)
+			return (res_status(0));
+	}
+	name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	store_function(state, name, body, ast_source_text(body));
 	xfree(name);
 	return (res_status(0));

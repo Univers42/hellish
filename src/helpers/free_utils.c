@@ -15,6 +15,8 @@
 #include "env.h"
 #include "expander.h"
 #include "parena.h"
+#include "sh_alias.h"
+#include "cmd_hash.h"
 
 void	arr_marks_clear(t_shell *state);
 void	attr_clear(t_shell *state);
@@ -114,16 +116,33 @@ static void	free_session_strings(t_shell *state)
 	state->path_dirs_src = NULL;
 }
 
-/* Session data, still in free_all_state's order: history, cwd, positional
-   args, the argv pool, the trap table (handler strings are ft_strdup'd in
-   set_one_trap and live for the whole session — freeing them here keeps a
-   script using trap leak-clean like any other), then the dirstack and the
-   for-loop positional snapshot. */
+/* Session data, still in free_all_state's order: history, aliases, cwd,
+   positional args, the argv pool, the trap table (handler strings are
+   ft_strdup'd in set_one_trap and live for the whole session — freeing them
+   here keeps a script using trap leak-clean like any other), then the
+   dirstack and the for-loop positional snapshot.
+
+   alias_table_free existed and was correct and was never CALLED, so every
+   alias leaked its name, its value and its entry. It went unnoticed for two
+   reasons that reinforce each other: our own tests define a handful of
+   aliases, and LeakSanitizer does not report the table at all — it is still
+   reachable through state at exit, which LSan classes as "still reachable"
+   rather than leaked. The ft_malloc oracle counts live bytes instead of
+   reachability, so it sees it; sourcing oh-my-zsh's git plugin, which
+   defines 201 aliases, put 18 KB on the board. Exactly the case the SAFE=0
+   parity run exists for.
+
+   cmd_hash_free was the same shape and found by the same run: a correct
+   destructor that only `hash -r` ever called. It matters more than the alias
+   one looks like it should, because prehash_external populates that cache
+   on every external command a session runs -- ~88 bytes each, forever. */
 static void	free_session_data(t_shell *state)
 {
 	int	i;
 
 	free_hist(state);
+	alias_table_free(&state->aliases);
+	cmd_hash_free(&state->cmd_cache);
 	xfree(state->cwd.ctx);
 	pos_free(&state->pos);
 	free_argv_pool(state);

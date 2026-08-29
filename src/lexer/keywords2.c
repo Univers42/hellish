@@ -77,14 +77,25 @@ static bool	is_function_kw(t_ltoken *t, const char *base)
    `coproc` (the token AFTER the name is still a command position), and
    flags[3] is the dialect, read by is_always_kw.  Bundled in the array the
    loop already keeps rather than passed one by one, which is also how they
-   fit inside the argument budget. */
+   fit inside the argument budget.
+
+   In the ZSH dialect the flags[2] latch STAYS armed across a run of words,
+   because `function` there takes a name LIST:
+
+       function man dman debman { colored $0 "$@" }
+
+   is oh-my-zsh's colored-man-pages, and with a latch that skips exactly one
+   token the `{` after the third name never reached a command position -- so
+   the brace stayed a word and the parser reported an error on the closing
+   one. Gated on the dialect: bash has no such form. */
 static void	advance(t_ltoken *t, const char *base, bool *cmd_pos, bool *flags)
 {
 	flags[1] = (t->tt == TT_FOR);
 	*cmd_pos = is_cmd_position(t->tt);
 	if ((flags[2] && t->tt == TT_WORD) || is_always_kw(t, base, flags[3]))
 		*cmd_pos = true;
-	flags[2] = (t->tt == TT_COPROC) || is_function_kw(t, base);
+	flags[2] = (t->tt == TT_COPROC) || is_function_kw(t, base)
+		|| (flags[3] && flags[2] && t->tt == TT_WORD);
 }
 
 void	reclassify_keywords(t_deque_tok *tokens, bool zsh)

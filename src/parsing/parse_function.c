@@ -113,7 +113,7 @@ static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
      function name () { }  all four
 
    The name is always the token immediately after an optional `function`. */
-static t_token	pop_func_head(t_deque_tok *tokens)
+static t_token	pop_func_head(t_shell *state, t_deque_tok *tokens)
 {
 	t_token	name_tok;
 	size_t	head;
@@ -122,6 +122,8 @@ static t_token	pop_func_head(t_deque_tok *tokens)
 	if (head > 0)
 		(void)deque_pop_start(&tokens->deqtok);
 	name_tok = pop_tok(tokens);
+	if (head > 0 && zsh_mode(state))
+		zfunc_names(tokens, &name_tok);
 	if (head != 2)
 	{
 		(void)deque_pop_start(&tokens->deqtok);
@@ -142,7 +144,7 @@ t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 	t_token		name_tok;
 	t_ast_node	body;
 
-	name_tok = pop_func_head(tokens);
+	name_tok = pop_func_head(state, tokens);
 	skip_newlines(tokens);
 	if ((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt == TT_END)
 	{

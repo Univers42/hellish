@@ -122,10 +122,21 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
    expression -- goes through resolve_recursive which re-invokes the full
    arithmetic evaluator. That's what makes `((16#ff))` and indirect
    references work. */
+/* `$+commands[x]` reaches here as a variable named "+commands[x]" (see
+   lex_zsh_plus): the lexer has no t_shell and cannot resolve it, this does.
+   zsh_param answers NULL outside the zsh dialect, so bash arithmetic is
+   untouched -- and a name starting with '+' is not one bash can produce. */
 long long	get_var_value(t_arith_parser *p, const char *name, int len)
 {
-	char	*val;
+	long long	n;
+	char		*val;
 
+	if (len > 1 && name[0] == '+')
+	{
+		val = zsh_param(p->shell, name, len);
+		if (val)
+			return (n = ft_atol(val), xfree(val), n);
+	}
 	val = env_expand_n(p->shell, (char *)name, len);
 	if (!val || !*val)
 		return (0);

@@ -175,5 +175,6 @@ bool		for_in_clause(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens, t_ast_node *ret);
 bool		is_for_word(t_tt tt);
 void		zfor_names(t_deque_tok *tokens, t_ast_node *ret);
+void		zfunc_names(t_deque_tok *tokens, t_token *name);
 
 #endif
