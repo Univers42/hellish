@@ -196,4 +196,6 @@ int			mascot_hook(void);
 void		mascot_install(void);
 void		redraw_mascot(t_string *r);
 
+bool		ps1_is_special(char c);
+
 #endif
