@@ -55,7 +55,7 @@ t_ull	pf_unum(t_pf *pf, const char *arg)
    split above it. bash prints the converted prefix of a malformed number
    and still exits 1, which is why the error is reported but the value is
    used anyway. */
-void	pf_conv_float(t_pf *pf, char *fmt, const char *arg, char *buf)
+void	pf_conv_float(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b)
 {
 	char	*end;
 	double	d;
@@ -67,5 +67,5 @@ void	pf_conv_float(t_pf *pf, char *fmt, const char *arg, char *buf)
 		d = strtod(arg, &end);
 	if (arg && (end == arg || *end != '\0' || errno == ERANGE))
 		pf_err_num(pf, arg);
-	snprintf(buf, 4096, fmt, d);
+	snprintf(b->p, b->cap, fmt, d);
 }

@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 /* Run the freshly downloaded binary and make it tell us its own version.
    This is the step that catches everything a checksum cannot: a build for
@@ -66,19 +67,38 @@ static int	move_into_place(const char *tmp, const char *target, int sudo)
 
 /* Build the sibling temp path the download lands on. Same directory as the
    target so the final rename stays inside one filesystem -- across a mount
-   point rename(2) fails and there is no atomic replacement at all. */
-static int	tmp_path(const char *target, char *out, size_t n)
+   point rename(2) fails and there is no atomic replacement at all.
+
+   ...but ONLY when we can write there. `make my_shell` installs into
+   /usr/bin, owned by root, and staging the download beside the target then
+   asks curl to create a file in a directory the caller cannot write. It
+   failed at the DOWNLOAD step and reported "the download failed", which is a
+   false diagnosis -- the network was fine, the directory was not ours
+   (issue #75). The elevation logic was never missing: update_needs_sudo()
+   spots the case and move_into_place() already runs `sudo install`. Only the
+   staging path disagreed with it.
+
+   So staging follows the same decision. With elevation the download goes to
+   TMPDIR and `sudo install` places it, which is cross-filesystem safe --
+   unlike rename, which is exactly why the same-directory rule exists for the
+   unprivileged path. */
+static int	tmp_path(const char *target, char *out, size_t n, int sudo)
 {
+	const char	*dir;
+
+	if (sudo)
+	{
+		dir = getenv("TMPDIR");
+		if (!dir || !*dir)
+			dir = "/tmp";
+		return (snprintf(out, n, "%s/hellish-update-%d", dir,
+				(int)getpid()) < (int)n);
+	}
 	ft_strlcpy(out, target, n);
 	ft_strlcat(out, ".hellish-update", n);
 	return (ft_strlen(out) + 1 < n);
 }
 
-/* check -> download -> verify -> validate -> atomically replace.
-   Returns 0 on success or a step code: 1 no asset for this platform,
-   2 download failed, 3 checksum REJECTED, 4 the binary would not run,
-   5 the replacement itself failed. Every failure path unlinks the download
-   and leaves the installed binary exactly as it was. */
 int	update_apply(const char *tag, const char *target, int sudo)
 {
 	char	asset[64];
@@ -88,7 +108,7 @@ int	update_apply(const char *tag, const char *target, int sudo)
 
 	if (!update_asset_name(asset, sizeof(asset))
 		|| !update_asset_url(tag, asset, url, sizeof(url))
-		|| !tmp_path(target, tmp, sizeof(tmp)))
+		|| !tmp_path(target, tmp, sizeof(tmp), sudo))
 		return (1);
 	if (!update_download(url, tmp, 1024))
 		return (unlink(tmp), 2);

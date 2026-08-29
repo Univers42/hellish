@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "builtins_private.h"
+#include "ft_builtins.h"
 #include "executor.h"
 #include <fcntl.h>
 
@@ -76,6 +77,7 @@ static int	run_source(t_shell *state, char *content, t_vec argv)
 	int		status;
 
 	state->source_depth++;
+	frame_push(state, NULL, ((char **)argv.ctx)[1]);
 	if (argv.len > 2)
 	{
 		saved = state->pos;
@@ -88,6 +90,7 @@ static int	run_source(t_shell *state, char *content, t_vec argv)
 	}
 	else
 		status = exec_string(state, content);
+	frame_pop(state);
 	state->source_depth--;
 	return (status);
 }

@@ -52,7 +52,12 @@ int	builtin_alias(t_shell *state, t_vec argv)
 
 	if (argv.len <= 1)
 	{
-		alias_print_all(&state->aliases);
+		alias_print_all(&state->aliases, false);
+		return (0);
+	}
+	if (!ft_strcmp(((char **)argv.ctx)[1], "-p"))
+	{
+		alias_print_all(&state->aliases, true);
 		return (0);
 	}
 	ret = 0;

@@ -351,8 +351,23 @@ COMPILED := 0
 ##@ Build
 all: safe_banner $(BIN_DIR)/$(BAPTIZE_SHELL)  ## Build the shell → build/bin/hellish
 
-# Announce the active allocator before building so it is never a surprise.
+# Announce the active allocator AND the build mode before building, so
+# neither is ever a surprise.
+#
+# The MODE line is not decoration. build/bin/hellish is a single shared path
+# that every mode relinks (deliberately -- see OBJ_DIR above), and `make test`
+# rebuilds at the DEFAULT mode, which is debug. So
+#
+#     make all OPT=1      # release binary
+#     make test           # ...silently replaced it with a debug+ASan one
+#
+# left you benchmarking, shipping or `make my_shell`-installing a 7.4MB ASan
+# build while believing it was the 619KB release one. Nothing said so. The
+# stamp below remembers what the binary currently IS, and the link rule says
+# out loud when that changes.
 safe_banner:
+	@printf "  \033[1;36m▸\033[0m \033[1;37mMODE=%s\033[0m \033[90m→ %s\033[0m\n" \
+		"$(MODE)" "$(BIN_DIR)/$(BAPTIZE_SHELL)" >&2
 	@if [ "$(SAFE)" = "0" ]; then \
 		printf "\n  \033[1;31m⚠  SAFE=0\033[0m \033[1;37m— custom ft_malloc heap (faster, UNSAFE).\033[0m\n" >&2; \
 		printf "  \033[90mPass SAFE=1 for the libc allocator. Stability is on you.\033[0m\n\n" >&2; \
@@ -360,10 +375,22 @@ safe_banner:
 		printf "\n  \033[1;32m✓  SAFE=1\033[0m \033[1;37m— libc malloc/free.\033[0m \033[90m(OPT build defaults to SAFE=0 ft_malloc)\033[0m\n\n" >&2; \
 	fi
 
-# Link the final binary
+# Link the final binary.
+#
+# MODE_STAMP records which configuration the binary at this shared path was
+# last linked from. If the mode changed under you, say so -- that is the whole
+# defence against the `make all OPT=1 && make test` trap described above.
+MODE_STAMP := $(BIN_DIR)/.mode
+
 $(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
 	@mkdir -p $(BIN_DIR)
+	@prev=$$(cat $(MODE_STAMP) 2>/dev/null || echo ""); \
+	if [ -n "$$prev" ] && [ "$$prev" != "$(MODE)-$(SAFE_TAG)" ]; then \
+		printf "  \033[1;33m!\033[0m \033[1;37m%s was %s, now relinked as %s\033[0m\n" \
+			"$(BIN_DIR)/$(BAPTIZE_SHELL)" "$$prev" "$(MODE)-$(SAFE_TAG)" >&2; \
+	fi
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
+	@printf '%s\n' "$(MODE)-$(SAFE_TAG)" > $(MODE_STAMP)
 
 # Platform files implement module seams (the fork/spawn leaves), so they —
 # and only they — may see the module-private headers of the modules whose
@@ -559,6 +586,18 @@ norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 # never touches an rc you already have. It runs BEFORE chsh: the config
 # should be in place before anything can log you into the new shell. You may force
 # the custom heap with `make my_shell SAFE=0`, but then stability is on you.
+#
+# Installing and registering are tools/register_shell.sh, in THIS repo. They
+# used to be a raw `sudo install` here plus vendor/scripts/register_shell.sh,
+# fourteen unchecked lines in a submodule -- which meant the most dangerous
+# step in the whole build (rewriting your passwd entry) was the one step with
+# no preflight, no smoke test and no test coverage. It failed in a clean
+# container on a bare `chsh` that prompts for a password make cannot answer,
+# and it would happily make a binary that does not run your login shell. See
+# the header of tools/register_shell.sh and tests/register_shell_test.py.
+#
+# --preflight runs FIRST, before the rebuild: "chsh is not installed" is worth
+# knowing before three minutes of compiling, not after.
 # Which binary gets installed. STATIC=1 takes the container-built static one
 # from dist/ instead of compiling here -- the "build it in docker, then run it
 # on my machine" flow. Recursively expanded (`=`, not `:=`) because STATIC_OUT
@@ -582,18 +621,16 @@ flags:  ## Show the compiler/linker flags for this MODE
 
 ##@ Install
 my_shell:  ## sudo-install to /usr/bin and register as a login shell
+	@./tools/register_shell.sh --preflight
 	@if [ "$(STATIC)" = "1" ]; then \
 		$(MAKE) --no-print-directory static-verify; \
 	else \
 		$(MAKE) --no-print-directory re OPT=1 \
 			SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1); \
 	fi
-	@echo "Installing hellish shell from $(MY_SHELL_BIN)..."
-	sudo install -m 755 $(MY_SHELL_BIN) /usr/bin/hellish
 	@echo "Seeding your config..."
 	@./tools/seed_hellishrc.sh
-	@echo "Registering shell..."
-	./vendor/scripts/register_shell.sh
+	@./tools/register_shell.sh --bin $(MY_SHELL_BIN) --dest /usr/bin/hellish
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
 	@echo '    exec /usr/bin/hellish --login'

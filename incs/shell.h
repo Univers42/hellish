@@ -52,7 +52,8 @@ enum e_opt_flag
 	OPT_FLAG_VERSION = 1u << 4,
 	OPT_FLAG_DEBUG_LEXER = 1u << 8,
 	OPT_FLAG_DEBUG_PARSER = 1u << 9,
-	OPT_FLAG_DEBUG_AST = 1u << 10
+	OPT_FLAG_DEBUG_AST = 1u << 10,
+	OPT_FLAG_NORC = 1u << 11
 };
 
 /* The `set -o` options that do not own a dedicated opt_* bool.  bash accepts
@@ -142,7 +143,40 @@ typedef struct s_shell_func
 {
 	char		*name; /* heap-allocated function name */
 	t_ast_node	body; /* deep-cloned AST of the function body */
+	char		*src; /* file it was DEFINED in (see below) */
+	char		*text; /* its source text, for declare -f */
 }	t_shell_func;
+
+/* src: the file this function was DEFINED in (strdup'd, NULL at top level).
+   BASH_SOURCE[0] must name the defining file, not whatever happens to be
+   sourcing when the function is CALLED -- that is what lets a plugin locate
+   its own directory from inside a helper.
+   text: the definition's SOURCE TEXT, captured before the body was cloned
+   (ast_span.c explains why that timing is the whole trick); NULL when the
+   span could not be recovered, and declare -f says so rather than inventing
+   a body.
+
+   One entry per live function call or `source`, innermost last. This is the
+   backing store for FUNCNAME and BASH_SOURCE, which had nowhere to come from
+   before: the shell tracked only the two int counters func_depth and
+   source_depth, so a sourced file could not name itself and $0 answered
+   /usr/bin/hellish. Issue #71 calls BASH_SOURCE the single highest-leverage
+   gap for plugins, because without it every module has to hardcode its path.
+   Frames OWN their strings. Borrowing t_shell_func.name/.src would repeat the
+   use-after-free that retire_body() exists to prevent: a function may free
+   its own definition mid-call --
+
+       deactivate () { ... unset -f deactivate ; }
+
+   which is not contrived, it is how every Python venv ends -- and the frame
+   for that call is still on the stack, so the next publish would read freed
+   memory. Two small strdups per call is the cheap way to make that
+   impossible; the publish already allocates, so it is not the hot cost. */
+typedef struct s_call_frame
+{
+	char				*func;
+	char				*src;
+}	t_call_frame;
 
 /* One saved variable for function scope: its value at the moment it was made
    local / before positional params were replaced, restored on return. */
@@ -152,6 +186,14 @@ typedef struct s_scope_save
 	char	*key;
 	char	*value;
 	bool	existed;
+	/* The var_attrs entry as it was on entry, so `local -n` unwinds like
+	   every other local. Saving only the VALUE was not enough: the nameref
+	   attribute lives in a separate table, so an inner `local -n r=w` used
+	   to leak past its own function's return and the caller's `r` silently
+	   started following the callee's target. kind 0 means "no attribute",
+	   which is also what restoring 0 through attr_set means. */
+	char	attr_kind;
+	char	*attr_target;
 }	t_scope_save;
 
 /* Positional parameters $1..$count, stored outside the env so function calls
@@ -228,6 +270,12 @@ typedef struct s_shell
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
 	int					source_depth; /* nesting depth of `.`/`source` runs */
+	/* --rcfile=FILE, else NULL (borrowed from argv) */
+	char				*rcfile;
+	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */
+	t_vec				call_frames;
+	/* call_frames changed since the two env arrays were last rebuilt */
+	bool				frames_dirty;
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */
@@ -302,6 +350,7 @@ typedef struct s_shell
 	int					bg_done_next; /* next write slot in bg_done ring */
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
+	t_hash				func_index; /* name -> functions slot+1 (O(1) lookup) */
 	t_vec				dead_funcs; /* bodies retired during their own call */
 	t_job_table			job_table; /* background job list */
 	bool				exit_warned; /* stopped-job exit warning given */

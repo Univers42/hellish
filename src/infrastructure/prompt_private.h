@@ -196,4 +196,8 @@ int			mascot_hook(void);
 void		mascot_install(void);
 void		redraw_mascot(t_string *r);
 
+bool		ps1_is_special(char c);
+t_string	zsh_to_ps1(const char *fmt);
+t_string	zsh_prompt(t_shell *state, char *fmt);
+
 #endif

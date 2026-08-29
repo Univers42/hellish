@@ -76,7 +76,7 @@ void	alias_table_free(t_hash *aliases);
 int		alias_set(t_hash *aliases, const char *name, const char *value);
 char	*alias_get(t_hash *aliases, const char *name);
 int		alias_remove(t_hash *aliases, const char *name);
-void	alias_print_all(t_hash *aliases);
+void	alias_print_all(t_hash *aliases, bool reusable);
 int		alias_print_one(t_hash *aliases, const char *name);
 bool	alias_table_empty(t_hash *aliases);
 
