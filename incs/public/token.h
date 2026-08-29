@@ -72,7 +72,8 @@ typedef enum e_tt
 	TT_BANG,
 	TT_DSEMI,
 	TT_HERESTRING,
-	TT_COPROC
+	TT_COPROC,
+	TT_PROC_SUB_FILE
 }	t_tt;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop

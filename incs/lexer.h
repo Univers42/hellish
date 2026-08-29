@@ -77,6 +77,8 @@ static inline bool	kw_eq(const char *s, const char *kw, int n)
 	return (true);
 }
 
+int			glob_qual_ahead(const char *start, const char *at);
+bool		zsh_eqsub_break(const char *start, const char *at);
 bool		skip_noise(char **str);
 char		*tokenize_step(char **str, t_deque_tok *ret, int *in_db);
 char		*lex_line(char *base, char **str, t_deque_tok *ret, int *in_db);
