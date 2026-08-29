@@ -206,4 +206,9 @@ void				zfor_bind_row(t_shell *state, t_ast_node *node,
 t_execution_state	execute_brace_group(t_shell *state,
 						t_executable_node *exe);
 
+/* zsh's multi-name function definition (execute_func_zsh.c): one body under
+   several names, each brace-expanded. Returns how many were defined. */
+int					zfunc_define_all(t_shell *state, t_token *tok,
+						t_ast_node *body);
+
 #endif

@@ -25,7 +25,7 @@ int	run_parsed(t_shell *state, t_ast_node *ast)
 	t_executable_node	exe;
 	t_execution_state	res;
 
-	reparse_all(ast);
+	reparse_all(state, ast);
 	exe = create_exe_node(0, 1, ast, true);
 	vec_init(&exe.redirs);
 	exe.redirs.elem_size = sizeof(int);

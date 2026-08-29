@@ -57,6 +57,7 @@ void			frame_push(t_shell *state, const char *func, const char *src);
 void			frame_pop(t_shell *state);
 void			frames_sync(t_shell *state);
 char			*frame_src_dup(t_shell *state);
+const char		*frame_func_name(t_shell *state);
 int				apply_set_flags(t_shell *state, t_vec argv);
 const t_setopt	*setopt_table(void);
 const t_setopt	*setopt_find(const char *name, char letter);

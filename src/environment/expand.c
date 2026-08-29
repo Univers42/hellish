@@ -27,6 +27,8 @@ void	exit_clean(t_shell *state, int code);
 char	*build_flagstr(t_shell *state);
 char	*lineno_str(t_shell *state);
 char	*expand_special_dyn(t_shell *state, char *key, int len);
+char	*zsh_arg_zero(t_shell *state);
+char	*expand_special_1(t_shell *state, char c);
 
 /* Detect a positional parameter index: key must be all digits and > 0.
    $0 is NOT a positional parameter -- POSIX says $0 is the shell name,
@@ -75,16 +77,10 @@ static char	*expand_special(t_shell *state, char *key, int len)
 			return (state->last_bg_pid);
 		return ("");
 	}
-	if (len == 1 && key[0] == '-')
-		return (build_flagstr(state));
 	if (len == 0)
 		return ("");
-	if (len == 1 && key[0] == '#')
-	{
-		if (state->pos.cnt_str[0])
-			return (state->pos.cnt_str);
-		return ("0");
-	}
+	if (len == 1)
+		return (expand_special_1(state, key[0]));
 	return (expand_special_dyn(state, key, len));
 }
 

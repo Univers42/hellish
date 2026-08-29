@@ -100,6 +100,8 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 		return (update_envvar_result(ret, i, &rp));
 	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
 		return (update_envvar_result(ret, i, &rp));
+	if (reparse_zsh_param(&rp, prev_start, tt))
+		return (update_envvar_result(ret, i, &rp));
 	consume_ident_rp(&rp);
 	if (prev_start == rp.i)
 	{
