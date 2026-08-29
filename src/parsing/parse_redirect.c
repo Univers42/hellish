@@ -35,7 +35,8 @@ void	validate_next_token_is_properly_set_for_redirect(t_deque_tok *tokens,
    etc.) is consumed first and becomes the first AST_TOKEN child. The target
    is either a process substitution `<(cmd)` / `>(cmd)` or a plain word (file
    name, heredoc label, fd number). Process subs take priority because the
-   lexer already classified `<(` as TT_PROC_SUB_IN, so we just peek and
+   lexer already classified `<(` as TT_PROC_SUB_IN (and zsh's `=(` as
+   TT_PROC_SUB_FILE), so we just peek and
    branch. Missing or wrong target triggers unexpected() which sets RES_ERR
    and returns a partial node for the caller to propagate upward. */
 t_ast_node	parse_redirect(t_shell *state,
@@ -54,7 +55,7 @@ t_ast_node	parse_redirect(t_shell *state,
 		return (unexpected(state, parser, ret, tokens));
 	push_token_child(&ret, t);
 	next = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
-	if (next.tt == TT_PROC_SUB_IN || next.tt == TT_PROC_SUB_OUT)
+	if (is_proc_sub(next.tt))
 		ast_push_child(&ret, (t_ast_node[])
 		{parse_proc_sub(state, parser, tokens)});
 	else if (next.tt == TT_WORD || next.tt == TT_SQWORD

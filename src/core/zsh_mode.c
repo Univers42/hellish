@@ -12,6 +12,7 @@
 
 #include "shell.h"
 #include "libft.h"
+#include "ft_glob.h"
 
 /* The zsh dialect gate.
 **
@@ -49,9 +50,14 @@ bool	zsh_mode(t_shell *state)
 }
 
 /* Set the mode and hand back what it was, so the caller can restore it with
-   a second call.  Callers pair these across a construct the way the parser
-   pairs its own latches -- there is no stack because there is nothing to
-   stack: the flag is one bit and the restore is unconditional. */
+   a second call.
+     Also mirrors it into the glob layer's cell (glob_opts.c), which has no
+   t_shell of its own -- the same arrangement nullglob and dotglob already
+   use. Doing it HERE, in the one function that changes the mode, is what
+   makes the mirror impossible to forget.
+     Callers pair these across a construct the way the parser pairs its own
+   latches -- there is no stack because there is nothing to stack: the flag
+   is one bit and the restore is unconditional. */
 bool	zsh_mode_swap(t_shell *state, bool on)
 {
 	bool	was;
@@ -63,6 +69,7 @@ bool	zsh_mode_swap(t_shell *state, bool on)
 		state->setopt |= SETOPT_ZSH;
 	else
 		state->setopt &= ~SETOPT_ZSH;
+	*glob_zsh_cell() = on;
 	return (was);
 }
 
