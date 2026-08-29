@@ -94,7 +94,7 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 
 	name = ft_strndup(exe->node->token.start, exe->node->token.len);
 	body = vec_idx(&exe->node->children, 0);
-	store_function(state, name, body, ast_source_text(exe->node));
+	store_function(state, name, body, ast_source_text(body));
 	xfree(name);
 	return (res_status(0));
 }

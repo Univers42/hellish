@@ -44,16 +44,20 @@ int	alias_remove(t_hash *aliases, const char *name)
    pinned bash 5.3.9 oracle. */
 void	alias_print_all(t_hash *aliases, bool reusable)
 {
+	const char		*pre;
 	size_t			i;
 	t_hash_entry	*entries;
 
+	pre = "";
+	if (reusable)
+		pre = "alias ";
 	entries = (t_hash_entry *)aliases->ctx;
 	i = 0;
 	while (i < aliases->cap)
 	{
 		if (entries[i].key && entries[i].value)
 		{
-			ft_printf("%s%s='%s'\n", reusable ? "alias " : "",
+			ft_printf("%s%s='%s'\n", pre,
 				((t_alias_entry *)entries[i].value)->name,
 				((t_alias_entry *)entries[i].value)->value);
 		}

@@ -278,9 +278,13 @@ int		pretty_show(t_shell *state, bool reusable);
 int		pretty_list(t_shell *state);
 void	pretty_sync(t_shell *state);
 
-int			declare_functions(t_shell *state, t_vec argv, size_t i,
-				bool bodies);
+int		declare_functions(t_shell *state, t_vec argv, size_t i,
+			bool bodies);
 
-void		dirstack_print(t_shell *state);
+void	dirstack_print(t_shell *state);
+
+int		declare_names(t_shell *state, t_vec argv, size_t i);
+int		list_all(t_shell *state);
+int		list_named(t_shell *state, t_vec argv, size_t i);
 
 #endif

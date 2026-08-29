@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "env.h"
 #include "execution_private.h"
 #include "ft_builtins.h"
 
@@ -29,6 +30,11 @@ void	scope_save(t_shell *state, const char *key)
 	}
 	s.depth = state->func_depth;
 	s.key = ft_strdup(key);
+	s.attr_kind = attr_kind(state, key, (int)ft_strlen(key));
+	s.attr_target = NULL;
+	if (attr_target(state, key, (int)ft_strlen(key)))
+		s.attr_target = ft_strdup(attr_target(state, key,
+					(int)ft_strlen(key)));
 	e = env_get(&state->env, (char *)key);
 	s.existed = (e != NULL);
 	if (e && e->value)
@@ -45,6 +51,9 @@ void	scope_save(t_shell *state, const char *key)
    takes ownership and we must not xfree it afterward. */
 void	restore_one(t_shell *state, t_scope_save *s)
 {
+	attr_set(state, s->key, s->attr_kind, s->attr_target);
+	xfree(s->attr_target);
+	s->attr_target = NULL;
 	if (s->existed)
 	{
 		if (!s->value)

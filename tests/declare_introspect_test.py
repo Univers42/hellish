@@ -17,13 +17,13 @@ hand-register its aliases and functions into a registry maintained by hand,
 so a plugin that forgets to register is invisible. It also blocks the other
 thing a plugin manager needs: detecting that two plugins both define `gs`.
 
-`declare -f` (BODIES) is deliberately NOT implemented and says so on stderr
-with a non-zero status. There is no AST deparser in the tree, and rebuilding
-source text from token spans is not safe (t_token.start only points into the
-input buffer while t_token.allocated is false). Printing an inexact body
-would repeat the exact failure mode issue #71 item 4 complains about -- a
-feature that reports success and is subtly wrong. This test pins the loud
-failure, so that if bodies land later, it is a deliberate change.
+`declare -f` prints the definition, rebuilt from the body's SOURCE TEXT
+(src/infrastructure/ast_span.c). The wrapper `name () { ... }` is synthesised
+rather than taken from source, because `{`, `}` and `()` are not AST tokens:
+a span over the whole definition stops at the last WORD and comes back as
+`f() { echo hi;` with no closing brace, which does not re-parse. The one
+thing this output must do is survive a round trip through eval, so that is
+what the test asserts.
 
 Usage: python3 declare_introspect_test.py [/path/to/hellish]
 """
@@ -95,13 +95,30 @@ def main():
           p.stdout.split("\n")[:-1] == ["declare -f b"],
           "got %r" % (p.stdout.split("\n")[:-1],))
 
-    # 7. -f is a LOUD not-implemented, never a silent success.
-    p = run('a() { :; }; declare -f a; echo "rc=$?"')
-    check("declare -f fails loudly instead of silently printing nothing",
-          p.returncode != 0 or "rc=0" not in p.stdout,
-          "declare -f exited 0 with no output -- the original bug")
-    check("...and says why on stderr",
-          "not implemented" in p.stderr, "stderr=%r" % p.stderr.strip()[:150])
+    # 7. -f prints a body, and it must be one the shell can read back.
+    p = run('a() { echo hi; }; declare -f a')
+    check("declare -f prints the definition",
+          "echo hi" in p.stdout and p.stdout.strip().endswith("}"),
+          "got %r -- a truncated body does not re-parse" % p.stdout.strip())
+
+    #    The property that matters: round-trip. A body missing its closing
+    #    brace still "looks right" in a terminal and is useless.
+    p = run('a() { echo ROUNDTRIP; }; b=$(declare -f a); unset -f a; '
+            'eval "$b"; a')
+    check("declare -f output survives a round trip through eval",
+          p.stdout.strip() == "ROUNDTRIP",
+          "got %r %r" % (p.stdout.strip(), p.stderr.strip()[:120]))
+
+    #    multi-line bodies too, not just one-liners
+    p = run('m() {\n  local x=1\n  echo "m$x"\n}\n'
+            'b=$(declare -f m); unset -f m; eval "$b"; m')
+    check("a multi-line body round-trips", p.stdout.strip() == "m1",
+          "got %r %r" % (p.stdout.strip(), p.stderr.strip()[:120]))
+
+    #    an unknown name is still status 1, not a crash
+    p = run('declare -f nope; echo "rc=$?"')
+    check("declare -f on an undefined name reports 1",
+          p.stdout.split() == ["rc=1"], "got %r" % (p.stdout.split(),))
 
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
