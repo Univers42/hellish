@@ -19,7 +19,8 @@ bool	is_redirect(t_tt tt);
    introduces a proc-sub rather than a plain redirect. */
 bool	is_proc_sub(t_tt tt)
 {
-	return (tt == TT_PROC_SUB_IN || tt == TT_PROC_SUB_OUT);
+	return (tt == TT_PROC_SUB_IN || tt == TT_PROC_SUB_OUT
+		|| tt == TT_PROC_SUB_FILE);
 }
 
 /* True when tt can legally follow a redirect operator as its target -- words

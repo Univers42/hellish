@@ -86,6 +86,7 @@ static void	init_tt_names_group3(const char **names)
 	names[TT_AMPERSAND] = "TT_AMPERSAND";
 	names[TT_ARITH_START] = "TT_ARITH_START";
 	names[TT_PROC_SUB_IN] = "TT_PROC_SUB_IN";
+	names[TT_PROC_SUB_FILE] = "TT_PROC_SUB_FILE";
 	names[TT_PROC_SUB_OUT] = "TT_PROC_SUB_OUT";
 	names[TT_DUP_OUT] = "TT_DUP_OUT";
 	names[TT_DUP_IN] = "TT_DUP_IN";
