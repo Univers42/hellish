@@ -166,4 +166,14 @@ bool		is_function_def(t_deque_tok *tokens);
 t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 
+/* for-loop head, shared by the POSIX and zsh spellings (parse_for.c and
+   parse_for_zsh.c).  `for_head` picks between them; the zsh half is only
+   reachable in the zsh dialect. */
+bool		for_head(t_shell *state, t_parser *parser, t_deque_tok *tokens,
+				t_ast_node *ret);
+bool		for_in_clause(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node *ret);
+bool		is_for_word(t_tt tt);
+void		zfor_names(t_deque_tok *tokens, t_ast_node *ret);
+
 #endif

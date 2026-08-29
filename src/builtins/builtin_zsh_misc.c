@@ -117,25 +117,40 @@ int	builtin_autoload(t_shell *state, t_vec argv)
 	return (0);
 }
 
-/* zmodload / zstyle -- announced once, then quiet.
+/* The unsupported roster: zmodload, zstyle, compdef, zle, bindkey.
 **
-** Both configure machinery hellish does not have (dynamic modules, and the
-** completion system's style database).  Failing silently would let a plugin
-** believe its completion styles took effect; failing on every call would
-** bury the session in identical lines, because a single completion config
-** sets dozens of styles.  So: say it once, per builtin, per session, and
-** return 1 so a caller that checks can tell.
-*/
+** Each configures machinery hellish does not have -- loadable modules, the
+** zsh completion system, and the ZLE line editor, which readline has no
+** widget or redraw model for.
+**
+** They are BUILTINS rather than missing commands on purpose.  Left
+** unregistered, every one produced `command not found` on a line the plugin
+** author wrote deliberately, and the plugin's exit status became 127 -- so a
+** plugin that loaded perfectly looked broken.  Registered, the load succeeds
+** and the ONE thing that is missing says so by name.
+**
+** Announced once per name per session, and then quiet: a single completion
+** config calls zstyle dozens of times, and forty identical lines is the same
+** as no message.  The status is 1 so a caller that checks still can. */
+static int	zunsup_slot(const char *name, const char **why)
+{
+	*why = "the zsh line editor (ZLE)";
+	if (!ft_strcmp(name, "zle") || !ft_strcmp(name, "bindkey"))
+		return (0);
+	*why = "the zsh completion system";
+	if (!ft_strcmp(name, "zstyle") || !ft_strcmp(name, "compdef"))
+		return (1);
+	*why = "loadable modules";
+	return (2);
+}
+
 int	builtin_zunsupported(t_shell *state, t_vec argv)
 {
-	static bool	said[2];
+	static bool	said[3];
 	const char	*why;
 	int			slot;
 
-	slot = (((char **)argv.ctx)[0][1] == 's');
-	why = "loadable modules";
-	if (slot)
-		why = "the zsh completion system";
+	slot = zunsup_slot(((char **)argv.ctx)[0], &why);
 	if (!said[slot])
 	{
 		said[slot] = true;

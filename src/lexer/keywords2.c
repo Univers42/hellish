@@ -15,6 +15,8 @@
 void	reclassify_word(t_ltoken *t, char *base);
 bool	is_redirect(t_tt tt);
 bool	is_cmd_position(t_tt tt);
+bool	is_always_kw(t_ltoken *t, const char *base, bool zsh);
+void	brace_step(t_ltoken *t, const char *base, int *depth, bool zsh);
 
 /* Advance the context flags for one token and decide whether to skip
    reclassification. We skip when:
@@ -70,17 +72,35 @@ static bool	is_function_kw(t_ltoken *t, const char *base)
 		&& ft_strncmp(base + t->off, "function", 8) == 0);
 }
 
-void	reclassify_keywords(t_deque_tok *tokens)
+/* Carry the context flags to the next token.  flags[1] latches `for` (its
+   variable name must not become TT_DO), flags[2] latches `function` and
+   `coproc` (the token AFTER the name is still a command position), and
+   flags[3] is the dialect, read by is_always_kw.  Bundled in the array the
+   loop already keeps rather than passed one by one, which is also how they
+   fit inside the argument budget. */
+static void	advance(t_ltoken *t, const char *base, bool *cmd_pos, bool *flags)
+{
+	flags[1] = (t->tt == TT_FOR);
+	*cmd_pos = is_cmd_position(t->tt);
+	if ((flags[2] && t->tt == TT_WORD) || is_always_kw(t, base, flags[3]))
+		*cmd_pos = true;
+	flags[2] = (t->tt == TT_COPROC) || is_function_kw(t, base);
+}
+
+void	reclassify_keywords(t_deque_tok *tokens, bool zsh)
 {
 	size_t		i;
 	t_ltoken	*t;
 	bool		cmd_pos;
-	bool		flags[3];
+	bool		flags[4];
+	int			depth;
 
 	cmd_pos = true;
 	flags[0] = false;
 	flags[1] = false;
 	flags[2] = false;
+	flags[3] = zsh;
+	depth = 0;
 	i = 0;
 	while (i < tokens->deqtok.len)
 	{
@@ -89,10 +109,7 @@ void	reclassify_keywords(t_deque_tok *tokens)
 			continue ;
 		if (t->tt == TT_WORD && cmd_pos)
 			reclassify_word(t, tokens->base);
-		flags[1] = (t->tt == TT_FOR);
-		cmd_pos = is_cmd_position(t->tt);
-		if (flags[2] && t->tt == TT_WORD)
-			cmd_pos = true;
-		flags[2] = (t->tt == TT_COPROC) || is_function_kw(t, tokens->base);
+		brace_step(t, tokens->base, &depth, zsh);
+		advance(t, tokens->base, &cmd_pos, flags);
 	}
 }

@@ -43,7 +43,7 @@ char	*g_builtins[] = {
 	"let", "local", "kill", "printf", "ulimit", "update", "help",
 	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	"dirs", "setopt", "unsetopt", "emulate", "print", "autoload",
-	"zmodload", "zstyle",
+	"zmodload", "zstyle", "compdef", "zle", "bindkey",
 	NULL
 };
 

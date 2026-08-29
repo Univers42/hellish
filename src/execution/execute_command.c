@@ -39,8 +39,7 @@ t_execution_state	run_compound(t_shell *state,
 	if (t == AST_CASE)
 		return (execute_case(state, exe));
 	if (t == AST_BRACE_GROUP)
-		return (exe->node = vec_idx(&exe->node->children, 0),
-			execute_tree_node(state, exe));
+		return (execute_brace_group(state, exe));
 	return (ft_assert(0), res_status(1));
 }
 

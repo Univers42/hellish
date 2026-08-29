@@ -97,7 +97,7 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 		return (buff_readline_reset(&state->rl), false);
 	parser->parse_stack.len = 0;
 	extract_input_heredocs(state, tt);
-	reclassify_keywords(tt);
+	reclassify_keywords(tt, zsh_mode(state));
 	if (stream_try(state, parser, tt))
 		return (true);
 	parena_on(true);

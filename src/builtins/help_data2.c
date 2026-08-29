@@ -169,6 +169,15 @@ static const t_help	g_help_2[] = {
 {"zstyle", "zsh",
 	"zstyle [args ...]",
 	"not supported: hellish has no zsh completion system"},
+{"compdef", "zsh",
+	"compdef [args ...]",
+	"not supported: hellish has no zsh completion system"},
+{"zle", "zsh",
+	"zle [args ...]",
+	"not supported: readline has no ZLE widget model"},
+{"bindkey", "zsh",
+	"bindkey [args ...]",
+	"not supported: readline has no ZLE widget model"},
 {NULL, NULL, NULL, NULL}
 };
 
