@@ -22,7 +22,17 @@
 #       it. Silenced by HELLISH_NO_UPDATE_CHECK like the rest.
 #   \A  an ANIMATED glyph (see HELLISH_ANIM below) — OPT-IN, off by
 #       default. (Shadows bash's \A 24h-clock escape; use \t for time.)
-# Live $VAR / ${VAR} expansion happens at every render.
+# Live $VAR / ${VAR} expansion happens at every render, and so does $? and
+# the other single-character specials ($$, $!, $#, $1...). QUOTE PS1 WITH
+# SINGLE QUOTES if you use them: in double quotes the shell expands $? once,
+# when you ASSIGN it, and bakes that one value in forever -- which looks
+# exactly like a prompt that cannot see your exit status (issue #69).
+#
+#     PS1='[$?] \$ '     # re-read every prompt   <- what you want
+#     PS1="[$?] \$ "     # frozen at assignment
+#
+# \S is usually the nicer answer than $? anyway: it shows " ✘N" only after a
+# failure and stays invisible when everything is fine.
 
 # ── ANIMATION: OFF BY DEFAULT, AND THAT IS DELIBERATE ──────────────────
 # A live style makes \A repaint the prompt rows in place ~10x/second
@@ -50,6 +60,11 @@ HELLISH_ANIM=off
 #     ❯
 PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
 PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
+
+# Theme: "powerline" — solid colour blocks, from issue #68. Reverse-video
+# segments in 24-bit colour, with the git/failure/duration/update badges in
+# the last block so it stays quiet until something is worth saying.
+# PS1='\[\e[1;38;2;20;20;20;48;2;152;195;121m\] ➜ \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;229;192;123m\] \u@\h \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;224;108;117m\] \w \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;152;195;121m\] \g\S\p\J\U \[\e[0m\] '
 
 # Theme: "ember" — framed two-liner, user shown, same badges.
 # PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \[\e[1;38;2;122;162;247m\]\u\[\e[0m\] \[\e[38;2;108;114;125m\]in\[\e[0m\] \[\e[1;38;2;158;203;255m\]\w\[\e[0m\] \[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\n\[\e[38;2;90;96;106m\]╰─\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
