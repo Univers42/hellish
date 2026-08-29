@@ -54,7 +54,7 @@ char	*zf_inner(t_shell *state, t_token *tt, const char *s, int slen)
 	{
 		v = zf_nested(state, tt, s, slen);
 		if (v)
-			return (v);
+			return (zn_subscript(state, v, s, slen));
 	}
 	if (s[0] == '$' || s[0] == '"' || s[0] == '\'' || s[0] == '`')
 		return (pf_word_pipeline(state, s, slen, false));

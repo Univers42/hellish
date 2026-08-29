@@ -21,13 +21,18 @@ int	ansic_simple(char c);
      o O n u  order and de-duplicate   p        escapes in the s/j argument
      U L C    case                     q        shell-quote
      %        prompt escapes           P        the value names a parameter
+   (A) is accepted and does nothing, which is not a shortcut: in a READ
+   context zsh ignores it too -- `${(As: :)x}` and `${(s: :)x}` are the same
+   expansion, checked against 5.9 -- and its real meaning, "assign as an
+   array", only exists in `${(A)name=value}`, a form that reaches
+   pf_bad_subst here rather than this table.
    Deliberately absent, so they fail loudly rather than lie: M (return the
-   match), A (array assignment), b, e, t, V, w, W, X, ~, #.  Each needs
+   match), b, e, t, V, w, W, X, ~, #.  Each needs
    machinery this does not have, and every one of them has a plausible wrong
    answer available -- which is exactly why none may fall through. */
 static bool	zf_known(char c)
 {
-	return (ft_strchr("fszjFkv@oOnupULCq%P-", c) != NULL);
+	return (ft_strchr("fszjFkv@oOnupULCq%PA-", c) != NULL);
 }
 
 /* Reject the whole expansion on the first flag we do not implement. */

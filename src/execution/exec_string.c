@@ -18,6 +18,7 @@
 
 int		run_parsed(t_shell *state, t_ast_node *ast);
 bool	must_stop(t_shell *state);
+void	report_parse_error(t_shell *state, t_parser *parser, t_deque_tok *tt);
 
 /* Lex `str` once, then parse + execute it one statement at a time (the REPL
    normally feeds the parser one line at a time). Used by eval, command and the
@@ -43,7 +44,16 @@ static void	skip_delimiters(t_deque_tok *tt)
    of the loop.  The AST is freed unconditionally -- it is a per-statement
    allocation and must not escape this function.  *stop is also set when
    the shell hits an unconditional-exit condition (break outside loop,
-   return outside function, exit, SIGTERM unwind). */
+   return outside function, exit, SIGTERM unwind).
+
+   RES_GETMOREINPUT means an unterminated construct with no more input to
+   come, and it has to be REPORTED here.  stream_finish() does it for the
+   main input path (input_stream.c), but eval and source come through this
+   function instead -- so `source file` on a file ending mid-`{` set $? to 2
+   and printed nothing at all.  A file that fails to load and says nothing
+   about it is the worst possible answer, and it is what every plugin with a
+   brace hellish could not parse was getting.  A plain RES_ERR already
+   printed its own message during the parse. */
 static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 {
 	t_parser	parser;
@@ -54,13 +64,11 @@ static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 	vec_init(&parser.parse_stack);
 	parser.parse_stack.elem_size = sizeof(int);
 	ast = parse_simple_list(state, &parser, tt);
+	status = 2;
 	if (parser.res == RES_OK)
 		status = run_parsed(state, &ast);
 	else
-	{
-		set_cmd_status(state, res_status(2));
-		status = 2;
-	}
+		report_parse_error(state, &parser, tt);
 	free_ast(&ast);
 	xfree(parser.parse_stack.ctx);
 	*stop = (parser.res != RES_OK || must_stop(state));

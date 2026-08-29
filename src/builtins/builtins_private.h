@@ -22,6 +22,16 @@
 # include "helpers.h"
 # include "sh_input.h"
 
+/* print's option set (builtin_zsh_print.c); here because the norm keeps
+   typedefs out of .c files. */
+typedef struct s_pflags
+{
+	bool	raw;
+	bool	nonl;
+	bool	lines;
+	bool	prompt;
+}	t_pflags;
+
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \
 				No such file or directory\n"

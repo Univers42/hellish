@@ -107,7 +107,7 @@ int	zf_parse(const char *s, int slen, t_zflags *f)
    (@) flag asks for it, or the operand carries a [@] / [*] subscript --
    `"${(o)${(f)x}[@]}"` sorts for exactly that last reason, while the same
    line without the subscript does not. */
-static bool	zf_arrayness(t_zflags *f, t_token *tt, const char *s, int slen)
+bool	zf_arrayness(t_zflags *f, t_token *tt, const char *s, int slen)
 {
 	return (zf_has(f, '@') || tt->tt != TT_DQENVVAR
 		|| zn_at_len(s, slen) != 0);
@@ -122,8 +122,10 @@ bool	expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx)
 	int			end;
 	char		*val;
 
-	if (!zsh_mode(state) || tt->len < 2 || tt->start[0] != '(')
+	if (!zsh_mode(state) || tt->len < 2)
 		return (false);
+	if (tt->start[0] != '(')
+		return (zsh_bare_nested(state, tt, split_ctx));
 	f = (t_zflags){0};
 	f.split = split_ctx;
 	end = zf_parse(tt->start, tt->len, &f);
