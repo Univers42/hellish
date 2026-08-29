@@ -50,6 +50,8 @@ void		expand_word_ro(t_shell *state, t_ast_node *src,
 				t_vec *args, bool keep_as_one);
 void		expand_word_assign_ro(t_shell *state, t_ast_node *src,
 				t_vec *args);
+void		expand_word_elem_ro(t_shell *state, t_ast_node *src,
+				t_vec *args);
 char		*expand_word_single(t_shell *state, t_ast_node *curr);
 char		*expand_word_single_ro(t_shell *state, t_ast_node *curr);
 void		expand_tilde_word(t_shell *state, t_ast_node *curr);
