@@ -76,3 +76,35 @@ void	local_set_var(t_shell *state, char *key, char *eq)
 	else
 		env_set(&state->env, env_create(key, ft_strdup(""), false));
 }
+
+/* The saves vec itself, at shutdown.
+**
+** scope_leave restores each entry and drops the LENGTH; nothing ever
+** released the backing buffer, so the first `local` in a session put ~80
+** bytes on the ft_malloc oracle and left them there. Invisible to ASan --
+** the vec is still reachable through t_shell -- and invisible to a
+** zero-leak claim made from a run that never called a function.
+**
+** Any entries still present are a shell that exited from INSIDE a function
+** (`f() { local v=1; exit 0; }`), so their scope never left. They are freed
+** rather than restored: restoring writes into an environment that is about
+** to be freed, and restore_one hands ownership of key/value to env_set,
+** which would make this a double free instead of a fix.
+*/
+void	free_local_saves(t_shell *state)
+{
+	t_scope_save	*s;
+
+	while (state->local_saves.len > 0)
+	{
+		s = (t_scope_save *)vec_idx(&state->local_saves,
+				state->local_saves.len - 1);
+		xfree(s->attr_target);
+		xfree(s->key);
+		xfree(s->value);
+		state->local_saves.len--;
+	}
+	xfree(state->local_saves.ctx);
+	state->local_saves.ctx = NULL;
+	state->local_saves.elem_size = 0;
+}
