@@ -438,6 +438,12 @@ bool		append_zsh_len(t_arith_expand_ctx *ctx);
 long		elem_sub_index(t_shell *state, char *text, long count);
 bool		splice_elem_assign(t_shell *state, t_env *ev, t_vec *args);
 void		bad_subscript(t_shell *state, const char *name, const char *sub);
+t_slice		zsh_slice_bounds(t_shell *state, const char *body, int blen,
+				const char *val);
+long		zsh_slice_universe(const char *val);
+long		zsh_slice_len(t_slice r, long count);
+char		*zsh_slice_str(t_shell *state, const char *val, t_slice r);
+void		zsh_slice_set(t_env *ret, const char *old, t_slice r);
 void		assoc_elem_assign(t_shell *state, t_env *ret, char *sub,
 				char *old);
 char		*zn_scalar_pick(t_shell *state, const char *val, long sub);
