@@ -18,14 +18,20 @@ never registered in the shell being tested. The lesson is in the test now.
 A negative result from a harness that never armed the feature looks
 identical to a broken feature.
 
-THE BOUNDARY THAT IS REAL. readline runs in a FORKED CHILD of the shell
-(bg_readline). A widget's edits to BUFFER survive, because the line is what
-the child sends back. Anything else it changes does not: a widget that runs
-`cd` changes the child's directory and the parent never learns. Verified in
-a pty rather than assumed -- the key fires, the widget runs, the shell stays
-put. That is why sudo (which only edits the buffer) works end to end and
-dirhistory's ALT-LEFT does not, though everything else about dirhistory
-does. Tracked as #80.
+THE BOUNDARY, AND WHAT NOW CROSSES IT. readline runs in a FORKED CHILD of
+the shell (bg_readline). A widget's edits to BUFFER survive because the line
+is what the child sends back; everything else it changed used to die with
+the child, so a widget that ran `cd` moved the child and the parent never
+learned. That is why oh-my-zsh's sudo (which only edits the buffer) worked
+end to end while dirhistory's ALT-LEFT fired, ran, and left the shell
+exactly where it was.
+
+The child now reports its final directory on a pipe of its own and the
+parent adopts it (#80 item 2, src/editing/zle_cwd.c), so `cd` crosses too.
+The line protocol is untouched: the cwd travels BESIDE the line, which was
+the stated risk of the round-trip option in #80. Nothing else crosses --
+a widget's variable assignments and its exported environment still die with
+the child, and that is still the boundary this file pins.
 
 Usage: python3 zle_test.py [/path/to/hellish]
 """

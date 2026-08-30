@@ -14,6 +14,29 @@
 #include "cmd_hash.h"
 #include "env.h"
 
+/* `hash -l`: the same table as `hash`, printed as commands that would
+   rebuild it -- `builtin hash -p PATH NAME` per entry, which is what makes
+   the output pipeable back into a shell. An empty table prints nothing at
+   all (bash does the same) rather than a header with no rows. */
+void	cmd_hash_print_reusable(t_hash *ht)
+{
+	size_t				i;
+	t_hash_entry		*entries;
+	t_cmd_hash_entry	*ce;
+
+	entries = (t_hash_entry *)ht->ctx;
+	i = 0;
+	while (ht->len && i < ht->cap)
+	{
+		if (entries[i].key && entries[i].value)
+		{
+			ce = (t_cmd_hash_entry *)entries[i].value;
+			ft_printf("builtin hash -p %s %s\n", ce->path, entries[i].key);
+		}
+		i++;
+	}
+}
+
 /* Add each operand to the cache. Accumulates errors so a missing name does
    not abort the rest, but the overall exit status is 1 if any failed. */
 static int	hash_add_names(t_shell *state, char **av, int ac)

@@ -31,11 +31,12 @@ int	process_simple_child(t_shell *state, t_expander_simple_cmd *exp,
 	else if (exp->curr->node_type == AST_PROC_SUB)
 	{
 		path = expand_proc_sub(state, exp->curr);
-		if (path)
-		{
-			vec_push(&ret->argv, &path);
-			exp->found_first = true;
-		}
+		if (!path)
+			return (0);
+		if (procsub_is_assign_rhs(exp))
+			return (procsub_join_assign(exp, ret, path), 0);
+		vec_push(&ret->argv, &path);
+		exp->found_first = true;
 		return (0);
 	}
 	else if (exp->curr->node_type == AST_ARRAY_ASSIGN)

@@ -168,6 +168,7 @@ void		procsub_detach_all(t_shell *state);
 int			net_redir_open(char *fname, t_redir *ret);
 bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 bool		redir_park_fd(t_redir *ret);
+bool		dup_target_is_fd(const char *fname);
 int			parse_src_fd(t_tt tt, t_token op_tok);
 int			try_create_redir(t_shell *state, t_ast_node *curr,
 				t_tt tt, int src_fd);
@@ -323,6 +324,9 @@ bool		expand_pos_slice(t_shell *state, t_token *tt);
 bool		expand_array_op(t_shell *state, t_token *tt);
 bool		expand_array_elem_op(t_shell *state, t_token *tt);
 bool		arr_keys(t_shell *state, t_token *tt, bool split_ctx);
+bool		arr_prefix_names(t_shell *state, t_token *tt, bool split_ctx);
+bool		arr_emit(t_token *tt, char *owned);
+bool		at_op_ok(const char *op, int oplen);
 bool		arr_slice(t_shell *state, t_token *tt, int nl, int colon);
 char		*idx_str(long idx);
 int			arith_num(t_shell *state, const char *s, int len);
@@ -438,6 +442,12 @@ bool		append_zsh_len(t_arith_expand_ctx *ctx);
 long		elem_sub_index(t_shell *state, char *text, long count);
 bool		splice_elem_assign(t_shell *state, t_env *ev, t_vec *args);
 void		bad_subscript(t_shell *state, const char *name, const char *sub);
+t_slice		zsh_slice_bounds(t_shell *state, const char *body, int blen,
+				const char *val);
+long		zsh_slice_universe(const char *val);
+long		zsh_slice_len(t_slice r, long count);
+char		*zsh_slice_str(t_shell *state, const char *val, t_slice r);
+void		zsh_slice_set(t_env *ret, const char *old, t_slice r);
 void		assoc_elem_assign(t_shell *state, t_env *ret, char *sub,
 				char *old);
 char		*zn_scalar_pick(t_shell *state, const char *val, long sub);
@@ -481,5 +491,20 @@ static inline t_expand_ctx	init_expand(const char *s, int slen,
 	ectx.consumed = consumed;
 	return (ectx);
 }
+
+/* subscript_append.c: `a[i]+=v` / `M[k]+=v` -- splice the element's current
+   value in front of the new one, then let the ordinary set path store it. */
+long		arr_sub_index(t_shell *state, const char *sub, long count);
+bool		subscript_take_append(t_env *ret);
+void		subscript_append_value(t_shell *state, t_env *ret,
+				const char *sub, const char *old);
+void		subscript_prepend_current(t_shell *state, t_env *ret, char *br);
+
+/* procsub_assign.c: a process substitution glued to the assignment word
+   before it (`x=<(cmd)`, zsh's `x==(cmd)`) is that assignment's VALUE, not
+   a separate operand. */
+bool		procsub_is_assign_rhs(t_expander_simple_cmd *exp);
+void		procsub_join_assign(t_expander_simple_cmd *exp,
+				t_executable_cmd *ret, char *path);
 
 #endif

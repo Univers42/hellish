@@ -18,6 +18,8 @@
    parses is what has to be gated, which is why the expander's flags are.
    `pretty` and `update`, both hellish-only, already sit on this side of the
    line.  See src/builtins/builtin_zsh_opt.c. */
+void	fill_builtin_hash5(t_hash *h);
+
 void	fill_builtin_hash4(t_hash *h)
 {
 	hash_set(h, "setopt", (void *)builtin_setopt);
@@ -31,4 +33,14 @@ void	fill_builtin_hash4(t_hash *h)
 	hash_set(h, "zle", (void *)builtin_zle);
 	hash_set(h, "bindkey", (void *)builtin_bindkey);
 	hash_set(h, "add-zsh-hook", (void *)builtin_add_zsh_hook);
+	fill_builtin_hash5(h);
+}
+
+/* Programmable completion (#72 phase 4). Not zsh-only -- they live here
+   because fill_builtin_hash4 is where the registration chain currently
+   ends, and the norm caps a function at 25 lines. */
+void	fill_builtin_hash5(t_hash *h)
+{
+	hash_set(h, "compgen", (void *)builtin_compgen);
+	hash_set(h, "complete", (void *)builtin_complete);
 }

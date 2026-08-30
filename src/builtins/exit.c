@@ -17,7 +17,15 @@
    trap sets traps[0]=NULL so a recursive exit from inside the trap body does
    not loop). History is persisted and state freed only in the top-level shell
    process — the pid comparison guards against subshell exits doing that work
-   twice and corrupting the history file. */
+   twice and corrupting the history file.
+
+   free_env() before free_all_state(), exactly as off() does it: the env is
+   NOT part of free_all_state (env_index_free runs there, the table itself
+   does not), so every exit through this path abandoned the whole
+   environment -- ~9.6 KB, on `exit 3` as much as on a fatal error.  ASan
+   never saw it, because the table stays reachable from t_shell; only
+   HELLISH_ALLOC_STATS did, which is the oracle #78 was filed to protect.
+   The trap runs first because it may still read variables. */
 void	exit_clean(t_shell *state, int code)
 {
 	char	*pid_s;
@@ -25,7 +33,11 @@ void	exit_clean(t_shell *state, int code)
 	run_exit_trap(state);
 	pid_s = ft_itoa((int)getpid());
 	if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
-		(manage_history(state), free_all_state(state));
+	{
+		manage_history(state);
+		free_env(&state->env);
+		free_all_state(state);
+	}
 	(xfree(pid_s), exit(code));
 }
 

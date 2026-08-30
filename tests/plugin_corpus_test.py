@@ -82,8 +82,13 @@ CORPUS = [
      "loads", 4, ""),
     ("git-prompt", GIT % "completion/git-prompt.sh", "loads", 4,
      "the one that used to segfault"),
-    ("git-completion", GIT % "completion/git-completion.bash", "loads-noisy",
-     100, "compgen: no programmable completion here"),
+    # Was "loads-noisy" while compgen/complete did not exist: the file
+    # defined its 140 functions and then complained on every completion.
+    # compgen and complete landed (#72 phase 4) and it now loads in
+    # silence, so the expectation moves with the shell -- which is the
+    # whole reason each row declares one.
+    ("git-completion", GIT % "completion/git-completion.bash", "loads",
+     100, ""),
     ("bash-preexec",
      "https://raw.githubusercontent.com/rcaloras/bash-preexec/master/"
      "bash-preexec.sh", "loads", 15, ""),

@@ -70,7 +70,13 @@ def check(name, ok, detail=""):
 
 
 def pty_run(argv, sends, settle=1.6):
-    """Run argv on a pty, feed `sends`, return everything it printed."""
+    """Run argv on a pty, feed `sends`, return everything it printed.
+
+    Every caller passes --norc (bash and hellish both take it). An
+    interactive shell that reads the developer's rc is not running the
+    configuration this test describes, and the ways that goes wrong are
+    quiet ones -- see the header of prompt_jobs_badge_test.py.
+    """
     pid, fd = pty.fork()
     if pid == 0:
         os.environ.clear()
@@ -193,8 +199,10 @@ def fg_pgrps(argv):
 
 def main():
     # 1: interactive keeps the terminal, and bash agrees
-    bash = bg_stdin_verdict([BASH, "-i"])
-    hell = bg_stdin_verdict([SHELL])
+    # --norc goes BEFORE -i on the bash side: bash refuses
+    # `bash -i --norc` outright ("--: invalid option").
+    bash = bg_stdin_verdict([BASH, "--norc", "-i"])
+    hell = bg_stdin_verdict([SHELL, "--norc"])
     check("interactive: bash keeps the tty on a background job",
           bash == "tty", "bash said %r" % bash)
     check("interactive: background job keeps the tty (matches bash)",
@@ -210,7 +218,8 @@ def main():
               "BG_NOT_TTY" in r.stdout, "stdout=%r" % r.stdout[:80])
 
     # 3: the exact command from the report
-    out = pty_run([SHELL], [b"top &\n", b"\n", b"jobs\n"], settle=1.8)
+    out = pty_run([SHELL, "--norc"],
+                  [b"top &\n", b"\n", b"jobs\n"], settle=1.8)
     check("top & does not fail tty get", "failed tty get" not in out)
     check("top & becomes a stopped job", "Stopped" in out,
           "no Stopped line; output tail=%r" % out[-160:])
@@ -224,7 +233,7 @@ def main():
     seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"jobs\n", 1.2),
            (b"echo AFTER_STOP\n", 1.2), (b"fg\n", 2.0), (b"q", 1.2),
            (b"echo AFTER_FG\n", 1.2)]
-    out = pty_run_seq([SHELL], seq)
+    out = pty_run_seq([SHELL, "--norc"], seq)
     check("^Z on a foreground job reports Stopped", "Stopped" in out,
           "tail=%r" % out[-200:])
     check("^Z leaves the shell able to run the next command",
@@ -240,7 +249,7 @@ def main():
     # session full of backgrounded `top`s vanished in issue #41.
     seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
            (b"echo STILL_HERE\n", 1.2)]
-    out = pty_run_seq([SHELL], seq)
+    out = pty_run_seq([SHELL, "--norc"], seq)
     check("exit with a stopped job is refused once",
           "There are stopped jobs." in out, "tail=%r" % out[-200:])
     check("the shell survives the refused exit",
@@ -250,7 +259,7 @@ def main():
     # can never become a trap the user cannot get out of.
     seq = [(b"top\n", 2.2), (b"\x1a", 1.5), (b"exit\n", 1.5),
            (b"exit\n", 1.5), (b"echo NOT_REACHED\n", 1.2)]
-    out = pty_run_seq([SHELL], seq)
+    out = pty_run_seq([SHELL, "--norc"], seq)
     check("a second, immediate exit leaves anyway",
           out.count("NOT_REACHED") < 2, "shell would not exit; tail=%r"
           % out[-200:])
@@ -262,7 +271,8 @@ def main():
     # leader), and the kernel DISCARDS every SIGTSTP/SIGTTIN/SIGTTOU sent
     # to it -- so ^Z did not merely aim badly, it did nothing at all and
     # the command kept eating the keystrokes meant for the shell. (#27)
-    for name, argv in (("bash", [BASH, "-i"]), ("hellish", [SHELL])):
+    for name, argv in (("bash", [BASH, "--norc", "-i"]),
+                       ("hellish", [SHELL, "--norc"])):
         cpg, ctpgid, spg = fg_pgrps(argv)
         check("%s: foreground command gets its own process group" % name,
               cpg is not None and spg is not None and cpg != spg,
@@ -276,7 +286,7 @@ def main():
     # true only once the job has a process group of its own.
     seq = [(b"cat\n", 1.2), (b"\x1a", 1.5), (b"echo AFTER_TSTP\n", 1.3),
            (b"jobs\n", 1.3)]
-    out = pty_run_seq([SHELL], seq)
+    out = pty_run_seq([SHELL, "--norc"], seq)
     check("^Z stops a command that does not stop itself",
           "Stopped" in out, "tail=%r" % out[-200:])
     check("the shell runs the next command after that ^Z",
@@ -289,7 +299,7 @@ def main():
     # stopped job or the shell can never notice it died.
     seq = [(b"cat\n", 1.2), (b"\x1a", 1.5), (b"kill %1\n", 1.5),
            (b"echo AFTER_KILL\n", 1.3), (b"jobs\n", 1.5)]
-    out = pty_run_seq([SHELL], seq)
+    out = pty_run_seq([SHELL, "--norc"], seq)
     check("kill %1 terminates a stopped job", "Terminated" in out,
           "tail=%r" % out[-240:])
     check("the killed job then leaves the jobs table",

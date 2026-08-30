@@ -48,6 +48,8 @@ t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted)
 	ctx.ret = &ret;
 	while (i < len)
 	{
+		if (handle_extglob_token(ctx))
+			continue ;
 		if (pattern[i] == '/')
 			handle_slash_token(ctx);
 		else if (!quoted && pattern[i] == '*')
@@ -60,4 +62,21 @@ t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted)
 			handle_literal_token(ctx);
 	}
 	return (ret);
+}
+
+/* Is the star run that starts at *ctx.i a globstar -- exactly `**` filling a
+   whole path segment?  bash is strict about this and so are we: `a**b` and
+   `**c` are ordinary stars, only a segment that is nothing but two stars
+   descends.  Requires the option, so with globstar off every pattern keeps
+   the POSIX reading it has always had. */
+bool	is_globstar(t_tokenizer_ctx ctx, int run)
+{
+	int	at;
+
+	at = *ctx.i;
+	if (!glob_globstar() || run != 2)
+		return (false);
+	if (at > 0 && ctx.pattern[at - 1] != '/')
+		return (false);
+	return (at + 2 >= ctx.len || ctx.pattern[at + 2] == '/');
 }

@@ -64,5 +64,7 @@ size_t	matches_pattern(char *name, t_vec_glob patt, size_t offset, bool first)
 		return (match_g_question(name, patt, offset, first));
 	else if (curr.ty == G_BRACKET)
 		return (match_g_bracket(name, patt, offset, first));
+	else if (curr.ty == G_EXTGLOB)
+		return (match_g_extglob(name, patt, offset, first));
 	return (0);
 }

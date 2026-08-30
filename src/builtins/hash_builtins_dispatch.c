@@ -84,6 +84,7 @@ static void	fill_builtin_hash2(t_hash *h)
 /* Registration overflow: fill_builtin_hash2 hit the 25-line ceiling, so
    the newest builtins spill over here. */
 void	fill_builtin_hash4(t_hash *h);
+void	fill_builtin_hash5(t_hash *h);
 
 static void	fill_builtin_hash3(t_hash *h)
 {

@@ -60,7 +60,7 @@ static void	run_format(t_pf *pf, const char *fmt)
 			pf_parse_spec(pf, fmt, &i, &sp);
 			while (fmt[i] && ft_strchr("lhjztL", fmt[i]))
 				i++;
-			if (!fmt[i] || !ft_strchr("diouxXeEfgGaAcsb%", fmt[i]))
+			if (!fmt[i] || !ft_strchr("diouxXeEfgGaAcsbq%", fmt[i]))
 				return (pf_bad_fmt(pf, fmt[i]));
 			pf_conv(pf, &sp, fmt[i]);
 			i++;

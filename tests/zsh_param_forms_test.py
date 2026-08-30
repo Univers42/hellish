@@ -102,6 +102,34 @@ CASES = [
 echo "[${0:t}]"'''),
 ]
 
+# $+commands, asserted rather than compared.
+#
+# The oracle cannot judge these: `zsh -f` runs without the zsh/parameter
+# module, so `commands` does not exist there and real zsh answers 0 for
+# every one of them -- the same reason ${+terminfo[...]} is 0 in both.
+# hellish answers from its own PATH lookup, which is MORE useful and
+# therefore not comparable, so the expectations are written out.
+#
+# The literal form always worked. The variable form asked after a program
+# literally named "$m" and answered 0 -- indistinguishable from a program
+# that is genuinely missing, which is the whole problem. The loop is the
+# idiom every plugin writes it in, and it is why jsontools found no
+# interpreter on a machine with three of them installed.
+COMMANDS_CASES = [
+    ("literal", '''echo "[${+commands[sh]}]"''', "[1]"),
+    ("via-variable", '''m=sh; echo "[${+commands[$m]}]"''', "[1]"),
+    ("via-braced-variable", '''m=sh; echo "[${+commands[${m}]}]"''', "[1]"),
+    ("via-substitution", '''echo "[${+commands[$(echo sh)]}]"''', "[1]"),
+    ("missing-literal", '''echo "[${+commands[no_such_xyzzy]}]"''', "[0]"),
+    ("missing-via-variable",
+     '''m=no_such_xyzzy; echo "[${+commands[$m]}]"''', "[0]"),
+    ("loop-idiom", '''for m in no_such_xyzzy sh; do
+  (( $+commands[$m] )) && break
+  unset m
+done
+echo "[$m]"''', "[sh]"),
+]
+
 # The bash dialect must be unmoved by any of this. Compared against bash
 # itself rather than against a hardcoded string, so the check is "hellish
 # still agrees with bash here" and not "hellish still produces what I typed".
@@ -163,6 +191,24 @@ def oracle_cases(zsh, d):
         _, hout, herr = run([SHELL, "-c", "source %s" % path])
         check("param/" + name, hout == zout,
               "zsh=%r hellish=%r %r" % (zout, hout, herr[:100]))
+
+
+def commands_cases(d):
+    """$+commands / ${commands[x]}, including through a variable."""
+    path = os.path.join(d, "case.zsh")
+    for name, script, want in COMMANDS_CASES:
+        with open(path, "w") as fh:
+            fh.write(script + "\n")
+        _, out, err = run([SHELL, "-c", "source %s" % path])
+        check("commands/" + name, out.decode().strip() == want,
+              "want %r got %r %r" % (want, out, err[:100]))
+    # The VALUE form, which must be a real path to the real program.
+    with open(path, "w") as fh:
+        fh.write('m=sh; echo "${commands[$m]}"\n')
+    _, out, _ = run([SHELL, "-c", "source %s" % path])
+    got = out.decode().strip()
+    check("commands/value-via-variable-is-a-path",
+          got.endswith("/sh") and os.path.exists(got), "got %r" % got)
 
 
 def gate_cases(d):
@@ -254,6 +300,7 @@ def main():
         return 1
     with tempfile.TemporaryDirectory() as d:
         gate_cases(d)
+        commands_cases(d)
         plugin_cases(d)
         churn_cases(d)
         zsh = find_zsh()
