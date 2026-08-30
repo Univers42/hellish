@@ -256,15 +256,45 @@ def dispatch_cases():
 def cd_boundary_case():
     """A widget that cds does NOT move the shell, because readline runs in a
     forked child. Asserted so the boundary is pinned rather than folklore --
-    if the architecture ever changes, this test says so."""
+    if the architecture ever changes, this test says so.
+
+    The destination is a freshly made UNIQUE directory, and the assertion
+    names that exact path. It used to `cd /tmp` and assert that "/tmp" never
+    appeared in the output, which fails whenever the suite is run from
+    anywhere under /tmp: the unmoved shell's own `pwd` contains it. A git
+    worktree at /tmp/hellish-zle reported that as "the fork boundary
+    changed" while the shell was behaving perfectly -- the same
+    harness-fault-looks-like-a-feature-fault this file's header warns about,
+    caught a second time. A unique path cannot collide with the cwd, so the
+    check now answers only the question it means to ask."""
+    dest = tempfile.mkdtemp(prefix="zle_cd_boundary_")
     rc = ("setopt zsh\n"
-          'jump() { cd /tmp; BUFFER="pwd"; }\n'
+          'jump() { cd %s; BUFFER="pwd"; }\n'
           "zle -N jump\n"
-          "bindkey '\\e\\e' jump\n")
+          "bindkey '\\e\\e' jump\n") % dest
     out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
-    check("boundary/widget-cd-does-not-move-the-shell", b"/tmp" not in out,
+    check("boundary/widget-cd-does-not-move-the-shell",
+          dest.encode() not in out,
           "it MOVED -- the fork boundary changed, update #80 and the docs; "
           "%r" % out[-200:])
+
+    # POSITIVE CONTROL. The check above is an absence, and an absence proves
+    # nothing unless the same probe can also see a presence: a typo in the rc,
+    # a widget that never fires, or a pty that captured nothing all produce
+    # the identical "not in out" pass. So do the move the supported way --
+    # the widget puts the cd in BUFFER and the PARENT runs it on Enter -- and
+    # require the detector to notice. If this ever stops printing the path,
+    # the assertion above has quietly become vacuous.
+    rc2 = ("setopt zsh\n"
+           'jump() { BUFFER="cd %s; pwd"; }\n'
+           "zle -N jump\n"
+           "bindkey '\\e\\e' jump\n") % dest
+    out2 = pty_session(rc2, [(b"\x1b\x1b", 0.8), (b"\r", 1.2)])
+    os.rmdir(dest)
+    check("boundary/the-probe-can-actually-see-a-move",
+          dest.encode() in out2,
+          "the detector is blind, so the check above proves nothing; "
+          "%r" % out2[-200:])
 
 
 def main():
