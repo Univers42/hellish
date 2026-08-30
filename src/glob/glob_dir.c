@@ -98,7 +98,8 @@ void	match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset)
 		s = ft_strdup(path);
 		vec_push(args, &s);
 	}
-	else if (!handle_dot_segment(args, glob, path, offset))
+	else if (!handle_globstar(args, glob, path, offset)
+		&& !handle_dot_segment(args, glob, path, offset))
 	{
 		matcher = (t_dir_matcher){.path = path, .dir = dir,
 			.glob = glob, .offset = offset, .args = args};

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "libft.h"
+#include "case_match.h"
 
 /* Match the single char `c` against a [...] bracket expression starting at
    *pp (which points at '['). Advances *pp past the closing ']'. */
@@ -71,11 +72,18 @@ static bool	advance_one(const char **s, const char **p)
 	return (true);
 }
 
-/* fnmatch-style glob match used by `case` patterns: '*' '?' '[..]' '\'. */
+/* fnmatch-style glob match used by `case` patterns: '*' '?' '[..]' '\',
+   plus the extglob groups when `shopt -s extglob` is on.
+     The extglob test comes FIRST in the loop because advance_one would
+   otherwise take the `?` of `?(a|b)` as an ordinary one-character wildcard
+   and leave the group's paren behind. xg_match answers for the whole
+   remaining pattern, so its result is the answer. */
 bool	case_match(const char *s, const char *p)
 {
 	while (*p)
 	{
+		if (xg_start(p))
+			return (xg_match(s, p));
 		if (*p == '*')
 		{
 			while (*p == '*')

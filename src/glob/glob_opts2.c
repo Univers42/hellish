@@ -32,3 +32,20 @@ int	glob_zsh(void)
 {
 	return (*glob_zsh_cell());
 }
+
+/* `shopt -s globstar`, mirrored the same way. The token that carries it is
+   emitted only when the option is on, so a `**` written with globstar off
+   stays two collapsed asterisks and every existing pattern keeps its POSIX
+   meaning -- the option is the whole difference between the two readings. */
+
+int	*glob_globstar_cell(void)
+{
+	static int	on;
+
+	return (&on);
+}
+
+int	glob_globstar(void)
+{
+	return (*glob_globstar_cell());
+}
