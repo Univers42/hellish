@@ -18,15 +18,22 @@
    An empty pattern matches the empty string at the anchor, so ${v/#/X}
    prepends and ${v/%/X} appends — same as bash. */
 
-/* Detect the anchor character right after the operator slashes: 2 for a
-   '#' (prefix-anchored), 3 for '%' (suffix-anchored), 0 for none. */
+/* Detect the anchor character right after the operator slash: 2 for a '#'
+   (prefix-anchored), 3 for '%' (suffix-anchored), 0 for none.
+     ONLY for the single-slash form.  In the GLOBAL form `${v//#/X}` bash
+   takes the `#` as an ordinary pattern character -- an anchor and "replace
+   every match" are contradictory, since an anchor can match at most one
+   spot -- so `${v//%/X}` replaces every literal percent and does not append.
+   Reading it as an anchor made `${x//%/%%}` return the value with one `%%`
+   stuck on the end: not an error, just a quietly wrong string, which is how
+   it survived until a prompt theme containing a `%` was previewed. */
 int	subst_anchor(t_trim_ctx ctx, int g)
 {
-	if (ctx.name_len + 1 + g < ctx.slen
-		&& ctx.name[ctx.name_len + 1 + g] == '#')
+	if (g)
+		return (0);
+	if (ctx.name_len + 1 < ctx.slen && ctx.name[ctx.name_len + 1] == '#')
 		return (2);
-	if (ctx.name_len + 1 + g < ctx.slen
-		&& ctx.name[ctx.name_len + 1 + g] == '%')
+	if (ctx.name_len + 1 < ctx.slen && ctx.name[ctx.name_len + 1] == '%')
 		return (3);
 	return (0);
 }

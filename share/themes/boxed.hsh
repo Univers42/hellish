@@ -1,0 +1,5 @@
+# boxed -- box-drawing characters: single-width, non-ASCII, no combining
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;244m\]┌─\[\e[0m\] \w \[\e[38;5;244m\]─┐\[\e[0m\]\n\[\e[38;5;244m\]└─\[\e[0m\] \$ '

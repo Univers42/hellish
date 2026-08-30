@@ -20,7 +20,7 @@
 typedef int	(*t_builtin_fn)(t_shell *state, t_vec argv);
 
 void			parse_numeric_escape(t_vec *out, char **str);
-int				e_parser(t_vec *out, char *str);
+int				e_parser(t_vec *out, char *str, bool drop_unknown);
 int				parse_flags(t_vec argv, int *n, int *e);
 int				print_args(t_vec *out, int e, t_vec argv, size_t i);
 int				try_unset(t_shell *state, char *key);
@@ -37,6 +37,9 @@ int				builtin_unset(t_shell *state, t_vec argv);
 int				builtin_type(t_shell *state, t_vec argv);
 int				builtin_set(t_shell *state, t_vec argv);
 int				builtin_shift(t_shell *state, t_vec argv);
+void			free_split(char **arr);
+/* zsh's `shift [n] array`; -1 when the args are the positional form. */
+int				zsh_shift_array(t_shell *state, t_vec argv);
 int				set_positional_args(t_shell *state,
 					char **args, size_t n);
 void			pos_build(t_pos *pos, char **args, size_t n);
@@ -47,10 +50,24 @@ int				builtin_ulimit(t_shell *state, t_vec argv);
 int				builtin_update(t_shell *state, t_vec argv);
 int				builtin_help(t_shell *state, t_vec argv);
 void			unset_function(t_shell *state, const char *name);
+int				builtin_dirs(t_shell *state, t_vec argv);
 t_shell_func	*func_lookup(t_shell *state, const char *name);
+void			func_index_init(t_shell *state);
+void			func_index_set(t_shell *state, const char *name, size_t idx);
+void			func_index_rebuild(t_shell *state);
+t_shell_func	*func_index_get(t_shell *state, const char *name);
+void			frame_push(t_shell *state, const char *func, const char *src);
+void			frame_pop(t_shell *state);
+void			frames_sync(t_shell *state);
+char			*frame_src_dup(t_shell *state);
+const char		*frame_func_name(t_shell *state);
+const char		*frame_src_name(t_shell *state);
+char			*zsh_zero_bind(t_shell *state, const char *src);
+void			zsh_zero_restore(t_shell *state, char *old);
 int				apply_set_flags(t_shell *state, t_vec argv);
 const t_setopt	*setopt_table(void);
 const t_setopt	*setopt_find(const char *name, char letter);
+bool			setopt_hidden(const t_setopt *e);
 bool			setopt_get(t_shell *st, const t_setopt *e);
 void			setopt_put(t_shell *st, const t_setopt *e, bool on);
 void			set_opt_edit_mode(t_shell *st, const char *name, bool on);
@@ -106,6 +123,21 @@ int				builtin_bg(t_shell *state, t_vec argv);
 int				builtin_fc(t_shell *state, t_vec argv);
 int				builtin_history(t_shell *state, t_vec argv);
 int				builtin_pretty(t_shell *state, t_vec argv);
+/* zsh dialect builtins (src/builtins/builtin_zsh_*.c) */
+int				builtin_setopt(t_shell *state, t_vec argv);
+int				builtin_unsetopt(t_shell *state, t_vec argv);
+int				builtin_emulate(t_shell *state, t_vec argv);
+int				builtin_print(t_shell *state, t_vec argv);
+int				builtin_autoload(t_shell *state, t_vec argv);
+int				builtin_zunsupported(t_shell *state, t_vec argv);
+int				builtin_zle(t_shell *state, t_vec argv);
+int				builtin_bindkey(t_shell *state, t_vec argv);
+int				builtin_add_zsh_hook(t_shell *state, t_vec argv);
+/* Fire chpwd_functions after a successful cd; see builtin_zsh_hook.c. */
+void			run_chpwd_hooks(t_shell *state);
+bool			zopt_bare(const char *n);
+bool			zopt_inert(const char *n);
+bool			zopt_apply(t_shell *state, const char *n, bool on);
 int				builtin_let(t_shell *state, t_vec argv);
 int				builtin_kill(t_shell *state, t_vec argv);
 int				builtin_printf(t_shell *state, t_vec argv);

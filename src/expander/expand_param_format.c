@@ -40,56 +40,6 @@ static bool	is_unset_or_null(const char *val)
 	return (val == NULL || *val == '\0');
 }
 
-/* ${#arr[@]} is the element count, ${#arr[i]} an element's length; the
-   subscript token is expanded by expand_array_token first, so here we
-   only need the name[body] shapes on the raw text. */
-static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
-{
-	t_token	tok;
-
-	tok = (t_token){.tt = TT_ENVVAR, .start = (char *)s, .len = slen};
-	if (slen > 3 && s[slen - 1] == ']' && (s[slen - 2] == '@'
-			|| s[slen - 2] == '*') && s[slen - 3] == '[')
-	{
-		tok.start = env_expand_n(state, (char *)s, slen - 3);
-		if (assoc_is(tok.start))
-			return (ft_itoa(assoc_count(tok.start)));
-		if (tok.start && !arr_is(tok.start))
-			return (ft_itoa(1));
-		return (ft_itoa(arr_count(tok.start)));
-	}
-	if (!expand_array_token(state, &tok, false))
-		return (NULL);
-	if (tok.allocated)
-		parena_free((char *)tok.start);
-	return (ft_itoa(tok.len));
-}
-
-/* ${#param} — return the length of the variable's value as a decimal string.
-   An unset variable counts as length 0 rather than an error (unless set -u).
-   The result is always a fresh malloc'd string (ft_itoa allocates). */
-char	*expand_strlen(t_shell *state, const char *s, int slen)
-{
-	char	*val;
-	char	*result;
-
-	if (ft_strnchr((char *)s, '[', slen))
-	{
-		result = expand_strlen_arr(state, s, slen);
-		if (result)
-			return (result);
-	}
-	val = pf_get_var_value(state, s, slen);
-	if (!val)
-		return (ft_strdup("0"));
-	if (arr_is(val))
-		val = arr_get_idx(val, 0);
-	if (!val)
-		return (ft_strdup("0"));
-	result = ft_itoa(ft_strlen(val));
-	return (result);
-}
-
 /* Handle the default/alternate family of parameter operators:
      ${p-w}  → w if p is UNSET,          else p
      ${p:-w} → w if p is UNSET OR EMPTY, else p

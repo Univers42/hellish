@@ -22,8 +22,11 @@
 
 /* NAME+=value: the key still carries its trailing '+'. Prepend the
    variable's current value (string concatenation, bash scalar +=) and
-   drop the '+'. A subscript key (a[i]+=) keeps its brackets for
-   subscript_assign; only the plain-scalar case concatenates here. */
+   drop the '+'. A subscript key (a[i]+=) belongs to subscript_assign, so
+   it is left completely alone here -- INCLUDING the '+'.
+     Stripping it here and then returning is what made `a[1]+=Z` overwrite
+   instead of appending: by the time the element path ran, the only mark
+   that an append had been asked for was gone. */
 void	scalar_append(t_shell *state, t_env *ret)
 {
 	int		klen;
@@ -33,9 +36,9 @@ void	scalar_append(t_shell *state, t_env *ret)
 	klen = (int)ft_strlen(ret->key);
 	if (klen < 1 || ret->key[klen - 1] != '+' || !ret->value)
 		return ;
-	ret->key[klen - 1] = '\0';
 	if (ft_strchr(ret->key, '['))
 		return ;
+	ret->key[klen - 1] = '\0';
 	old = env_expand(state, ret->key);
 	if (!old)
 		old = "";
@@ -111,4 +114,32 @@ void	apply_var_attrs(t_shell *state, t_env *ret)
 		ret->key[nl] = '\0';
 	if (ret->value)
 		apply_int_attr(state, ret, append);
+}
+
+/* The associative half: the subscript is a LITERAL string key, so it is
+   word-expanded and used as written rather than evaluated.
+     An empty key is refused.  An indexed array reads an empty subscript as
+   0 -- `a[$unset]=v` writes element 0, and bash agrees -- but a map has no
+   such default, and storing under "" is the silent wrongness this whole
+   issue was about: the script names one key, the shell writes another, and
+   `${M[$k]}` reads back nothing forever after.  bash calls it `bad array
+   subscript`, so we do too, through the shared refusal path. */
+void	assoc_elem_assign(t_shell *state, t_env *ret, char *sub, char *old)
+{
+	char	*key;
+	char	*nv;
+	size_t	n;
+
+	n = ft_strlen(sub);
+	key = expand_param_word(state, sub, (int)n - 1, false);
+	if (!key || !*key)
+	{
+		xfree(key);
+		sub[n - 1] = '\0';
+		return (bad_subscript(state, ret->key, sub));
+	}
+	nv = assoc_with_set(old, key, (int)ft_strlen(key), ret->value);
+	xfree(key);
+	xfree(ret->value);
+	ret->value = nv;
 }

@@ -1,0 +1,5 @@
+# titled -- OSC 0 window title -- KNOWN-BROKEN width today (#72)
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e]0;\u@\h: \w\a\]\u@\h:\w\$ '

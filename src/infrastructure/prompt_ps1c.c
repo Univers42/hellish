@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "prompt_private.h"
+#include "ft_builtins.h"
 
 /* The hellish PS1 extension escapes, all SELF-SPACING conditionals: they
    render nothing at all until they have something to say, so a theme can
@@ -69,14 +70,31 @@ void	ps1_builtin(t_shell *state, t_string *out)
 		state->last_cmd_st_exe.status);
 }
 
+/* The file currently being sourced -- what zsh's %N answers.
+   Reads the call-frame stack, the same place BASH_SOURCE[0] comes from, so
+   the two spellings cannot disagree about which file is running. Empty at
+   an interactive prompt, where there is no file. */
+void	ps1_srcfile(t_shell *state, t_string *out)
+{
+	char	*p;
+
+	p = frame_src_dup(state);
+	if (!p)
+		return ;
+	vec_push_str(out, p);
+	xfree(p);
+}
+
 /* Extension dispatch, tried after the bash-compatible set: \g branch,
    \S failure badge, \p duration, \J jobs, \A animation frame, \U pending
-   update, \B the built-in prompt. Returns
+   update, \B the built-in prompt, \I the file being sourced. Returns
    false so unknown escapes still fall through to literal passthrough. */
 bool	ps1_escape_ext(t_shell *state, t_string *out, char c)
 {
 	if (c == 'B')
 		return (ps1_builtin(state, out), true);
+	if (c == 'I')
+		return (ps1_srcfile(state, out), true);
 	if (c == 'g')
 		return (ps1_git(out), true);
 	if (c == 'S')

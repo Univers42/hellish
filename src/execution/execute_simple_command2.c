@@ -99,12 +99,19 @@ bool	redir_err_is_fatal(t_shell *state, t_executable_cmd *cmd)
    was malformed.  Measured against bash 5.3.9:
 
     export 1BAD / export -Z / readonly 1BAD / readonly -Z / unset -Z
-    and `readonly R=1; unset R`  all abort;  `unset 1BAD` returns 0. */
+    and `readonly R=1; unset R`  all abort;  `unset 1BAD` returns 0.
+
+   A builtin that can tell the two apart itself says so through
+   state->builtin_fatal -- `shift x` aborts while `shift 99` does not, and
+   both return non-zero.  Read and cleared here so the verdict cannot leak
+   into the next command. */
 bool	strict_builtin_failed(t_shell *state, t_executable_cmd *cmd,
 			int status)
 {
 	const char	*name;
 
+	if (state->builtin_fatal)
+		return (state->builtin_fatal = false, true);
 	if (status == 0 || state->metinp == INP_RL)
 		return (false);
 	if (!cmd->argv.ctx || cmd->argv.len == 0)

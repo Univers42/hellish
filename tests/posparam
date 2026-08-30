@@ -29,3 +29,15 @@ set -- a b c; shift 3; echo "after:$#"
 true; echo $?
 false; echo $?
 set -- a b c; echo $@ | tr ' ' '\n' | wc -l
+set -- a b; shift x; echo after
+set -- a b; shift 2x; echo after
+set -- a b c; shift 0x2; echo $#
+set -- a b; shift ""; echo after
+foo=bar; shift foo; echo after
+set -- a b; shift 1 2; echo after
+set -- a b; shift 1 2 3; echo after
+set -- a b; shift " 2 "; echo "n=$#"
+set -- a b c; shift +1; echo "n=$# first=$1"
+set -- a b; shift 5; echo "after:$? n=$#"
+set -- a b; shift -1; echo "after:$? n=$#"
+set -- a b c; shift 0; echo "n=$# first=$1"

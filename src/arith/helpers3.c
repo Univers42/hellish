@@ -45,6 +45,8 @@ void	lex_dollar_var(t_arith_lexer *lex)
 	braced = (lex->pos < lex->len && lex->input[lex->pos] == '{');
 	if (braced)
 		lex->pos++;
+	if (lex_zsh_plus(lex) || lex_zsh_len(lex))
+		return ;
 	if (lex->pos < lex->len && is_var_start(lex->input[lex->pos]))
 		lex_variable(lex);
 	else if (lex->pos < lex->len && ft_isdigit(lex->input[lex->pos]))

@@ -69,3 +69,27 @@ void	handle_single_close_paren(int *depth, int *j)
 	(*depth)--;
 	(*j)++;
 }
+
+/* The span of zsh's `$#name` at `j` -- the '#' plus the name -- or 0.
+**
+**     precmd_functions[$(($#precmd_functions+1))]=_z_precmd       (z.sh:247)
+**
+** The arithmetic pre-expander reads `#` as the one-character special `$#`
+** and copies the name after it verbatim, which leaves `0precmd_functions`
+** for the evaluator: an arithmetic error, and one that names a variable the
+** author never wrote.  A bare `$#` has no name after it and yields 0 here,
+** so the positional count is untouched in both dialects.
+*/
+int	zsh_len_span(t_shell *state, const char *s, int len, int j)
+{
+	int	k;
+
+	if (!zsh_arrays(state) || j >= len || s[j] != '#')
+		return (0);
+	k = j + 1;
+	if (k >= len || !(s[k] == '_' || ft_isalpha((unsigned char)s[k])))
+		return (0);
+	while (k < len && (s[k] == '_' || ft_isalnum((unsigned char)s[k])))
+		k++;
+	return (k - j);
+}

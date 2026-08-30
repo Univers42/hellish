@@ -49,10 +49,8 @@ static char	*elem_value(t_shell *state, const char *s, int nl, int sublen)
 	xfree(r);
 	xfree(sub);
 	if (arr_is(val))
-		return (arr_get_idx(val, idx));
-	if (val && idx == 0)
-		return (ft_strdup(val));
-	return (NULL);
+		return (arr_get_idx(val, sub_to_index(state, idx, arr_count(val))));
+	return (zn_scalar_pick(state, val, idx));
 }
 
 /* Split name[sub]OP: *nl name length, *sublen subscript length, *opat

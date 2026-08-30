@@ -1,0 +1,5 @@
+# pure -- sindresorhus/pure: path on one row, symbol on the next
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;242m\]\w\[\e[0m\]\[\e[38;5;244m\]\g\[\e[0m\]\n\[\e[38;5;5m\]\$\[\e[0m\] '

@@ -20,31 +20,19 @@
    pre"${a[@]}"post rule, same as "$@"). A scalar variable counts as one
    element; an unset one contributes nothing. */
 
-/* Quoted "${arr[@]}": one verbatim field per element. */
+/* Quoted "${arr[@]}": one verbatim field per element.  The lookup and the
+   walk are separate because a zsh flagged expansion (${(f)$(cmd)}) defers a
+   computed VALUE rather than a name and needs only the second half -- see
+   emit_val_at in split_array2.c. */
 void	emit_array_at(t_shell *state, const char *name, t_ast_node *curr_node,
 			t_vec_nd *ret)
 {
-	char		*val;
-	const char	*cur;
-	const char	*v;
-	long		idx;
-	int			nth[2];
+	char	*val;
 
 	val = env_expand(state, (char *)name);
 	if (!val)
 		return ;
-	if (assoc_is(val))
-		return (emit_assoc_fields(val, curr_node, ret, 0));
-	if (!arr_is(val))
-		return (push_new_env_child(curr_node, ft_strdup(val)));
-	cur = val + 1;
-	nth[0] = 0;
-	while (arr_next(&cur, &idx, &v, &nth[1]))
-	{
-		if (nth[0]++ > 0)
-			push_and_reinit_curr_node(ret, curr_node);
-		push_new_env_child(curr_node, ft_strndup(v, nth[1]));
-	}
+	emit_val_at(val, curr_node, ret);
 }
 
 /* One field per associative element: values (want_keys 0) or keys

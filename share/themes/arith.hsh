@@ -1,0 +1,5 @@
+# arith -- $((...)) arithmetic, evaluated at every render
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='<$((2 * 21))> \w \$ '

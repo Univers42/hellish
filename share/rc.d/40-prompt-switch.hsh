@@ -1,0 +1,132 @@
+# prompt -- switch prompt themes without restarting.
+#
+# A shell FUNCTION, not a builtin, because issue #74's point is that the
+# prompt lives in configuration. Anything here you can read, edit, and
+# override by defining your own `prompt` after this file loads.
+#
+#   prompt              list themes, marking the active one
+#   prompt <name>       switch now
+#   prompt preview      render every theme, one line each
+#   prompt save <name>  make it the default for new sessions
+#   prompt edit <name>  open it in $EDITOR
+#
+# Themes are data: one .hsh file each, setting PS1 or PROMPT. See
+# $HELLISH_THEMES/README.md.
+
+: "${HELLISH_THEMES:=${XDG_CONFIG_HOME:-$HOME/.config}/hellish/themes}"
+
+# Switching has to clear BOTH spellings before sourcing the new theme.
+# A theme that sets PROMPT (the zsh syntax) and one that sets PS1 pick
+# different frontends, and the prompt engine prefers PROMPT when it is
+# set -- so going from a zsh theme to a bash one without unsetting would
+# silently keep rendering the old zsh theme, and look like the switch had
+# simply failed.
+prompt_apply() {
+	if [ ! -r "$HELLISH_THEMES/$1.hsh" ]; then
+		echo "prompt: no such theme: $1" >&2
+		echo "prompt: try 'prompt' for the list" >&2
+		return 1
+	fi
+	unset PS1 PROMPT PS2
+	. "$HELLISH_THEMES/$1.hsh"
+	HELLISH_THEME="$1"
+	return 0
+}
+
+prompt_list() {
+	local f name
+	for f in "$HELLISH_THEMES"/*.hsh; do
+		[ -e "$f" ] || continue
+		name="${f##*/}"
+		name="${name%.hsh}"
+		if [ "$name" = "$HELLISH_THEME" ]; then
+			printf '* %s\n' "$name"
+		else
+			printf '  %s\n' "$name"
+		fi
+	done
+}
+
+# Render every theme, then put back the one that was active.
+#
+# `print -rP` is the renderer, not a reimplementation of one: it runs the
+# same code the prompt itself does, so a preview cannot disagree with what
+# you get after switching. It handles both spellings -- the % escapes of a
+# PROMPT theme and the backslash escapes of a PS1 one -- because the zsh
+# frontend rewrites into the backslash language and they share the engine.
+#
+# The \001/\002 pair is stripped: those are the zero-width markers `\[` and
+# `\]` become, invisible to a line editor and line noise on a terminal.
+#
+# A PS1 theme has its percent signs doubled first. `print -P` always enters
+# through the zsh frontend, and a bare `%` there is an escape -- so a PS1
+# containing `$(date +%H:%M)` previewed as `$(date +%H:<hostname>)`, because
+# %M is zsh for the full host name. Doubling makes each one literal, which
+# is what the backslash renderer would have done with it anyway. Without
+# this the preview quietly lies about any prompt containing a percent.
+#
+# A two-row theme takes two rows here. Flattening it would show a prompt
+# that does not exist.
+#
+# Restoring afterwards is the part worth having: a preview that leaves you
+# in the last theme it drew is a switch, not a preview.
+prompt_preview() {
+	local f name was
+	was="$HELLISH_THEME"
+	for f in "$HELLISH_THEMES"/*.hsh; do
+		[ -e "$f" ] || continue
+		name="${f##*/}"
+		name="${name%.hsh}"
+		prompt_apply "$name" >/dev/null 2>&1 || continue
+		printf '%-14s ' "$name"
+		if [ -n "${PROMPT:-}" ]; then
+			print -rP "$PROMPT" | tr -d '\001\002'
+		else
+			print -rP "${PS1//%/%%}" | tr -d '\001\002'
+		fi
+	done
+	if [ -n "$was" ]; then
+		prompt_apply "$was" >/dev/null 2>&1
+	fi
+	return 0
+}
+
+# Persist by writing the choice into its own rc.d file rather than editing
+# 30-prompt.hsh. 30-prompt.hsh is the user's -- the seeder never overwrites
+# it -- and a switcher that rewrote it would eventually eat a hand-edited
+# prompt. 50- sorts after 30-, so this wins on the next session.
+prompt_save() {
+	local dir
+	prompt_apply "$1" || return 1
+	dir="${XDG_CONFIG_HOME:-$HOME/.config}/hellish/rc.d"
+	mkdir -p "$dir" 2>/dev/null
+	{
+		echo "# Written by \`prompt save\`. Delete this file to go back to"
+		echo "# whatever 30-prompt.hsh sets."
+		echo "HELLISH_THEME=$1"
+		echo ". \"\${HELLISH_THEMES:-\${XDG_CONFIG_HOME:-\$HOME/.config}/hellish/themes}/$1.hsh\""
+	} > "$dir/50-theme.hsh"
+	echo "prompt: saved $1"
+}
+
+prompt_edit() {
+	local f
+	f="$HELLISH_THEMES/${1:-$HELLISH_THEME}.hsh"
+	if [ ! -e "$f" ]; then
+		echo "prompt: no such theme: ${1:-$HELLISH_THEME}" >&2
+		return 1
+	fi
+	"${EDITOR:-vi}" "$f"
+}
+
+prompt() {
+	case "${1:-}" in
+		"")         prompt_list ;;
+		preview)    prompt_preview ;;
+		save)       shift; prompt_save "$@" ;;
+		edit)       shift; prompt_edit "$@" ;;
+		-h|--help)
+			echo "prompt [<name>|preview|save <name>|edit [<name>]]" ;;
+		*)          prompt_apply "$1" ;;
+	esac
+}

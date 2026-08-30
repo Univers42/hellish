@@ -131,4 +131,9 @@ static inline void	create_reparser(t_reparser *rp,
 	rp->prev_start = 0;
 }
 
+/* zsh's `$+name[key]` / `$name[key]` (reparse_zsh.c). Gated on the dialect
+   latch reparse_all sets, so bash input cannot reach it. */
+bool		reparse_zsh_param(t_reparser *rp, int prev_start, t_tt tt);
+bool		is_zsh_pos_key(char *s, int len);
+
 #endif

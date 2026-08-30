@@ -20,7 +20,23 @@
    Each operand stands alone. There is deliberately no `export NAME value`
    two-word form: bash has none, and inventing one made `export A B C` read
    its operands pairwise -- assigning B as A's value and never exporting B
-   at all (GitHub issue #12). A bare NAME must leave the value untouched. */
+   at all (GitHub issue #12). A bare NAME must leave the value untouched.
+
+   The value is taken EXACTLY as argv carries it.  This used to strip a
+   second layer of quotes and re-expand $name, which is one pass too many:
+   the word reparser and the expander have already done both by the time a
+   builtin sees its argv, so the second pass ate data that had survived the
+   first --
+
+     export s='x$y'        stored  x     ($y expanded a second time)
+     y=Q; export s='x$y'   stored  xQ    (single quotes ignored outright)
+     export s="'a'"        stored  a     (inner quotes stripped again)
+     export s='$y'"$y"     stored  ""
+
+   -- while every case it was meant to serve (export s=$y, "$y", ${y},
+   $y$y, pre$y.post) works without it, because the ordinary expander does
+   them.  `declare -x`, `readonly` and `local` never had the extra pass and
+   were right all along; export is now the same code path in this respect. */
 static int	handle_parsed_export_arg(t_shell *st,
 				t_vec av,
 				int i,
@@ -28,14 +44,10 @@ static int	handle_parsed_export_arg(t_shell *st,
 {
 	char	*id;
 	char	*val;
-	char	quote;
 
 	id = NULL;
 	val = NULL;
 	parse_export_arg(((char **)av.ctx)[i], &id, &val);
-	quote = strip_surrounding_quotes(&val);
-	if (val)
-		val = expand_export_value(st, val, quote != '\'');
 	return (handle_identifier(st, id, val, argv0));
 }
 

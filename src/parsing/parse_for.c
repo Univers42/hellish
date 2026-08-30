@@ -40,7 +40,7 @@ static bool	expect_for_kw(t_shell *state, t_parser *parser,
 /* True for any of the five token types that represent a shell word (bare,
    single-quoted, double-quoted, env-var). Used to validate the for-variable
    name and to collect the optional `in wordlist` items. */
-static bool	is_word_token(t_tt tt)
+bool	is_for_word(t_tt tt)
 {
 	return (tt == TT_WORD || tt == TT_SQWORD || tt == TT_DQWORD
 		|| tt == TT_ENVVAR || tt == TT_DQENVVAR);
@@ -54,7 +54,7 @@ static void	collect_word_list(t_deque_tok *tokens, t_ast_node *ret)
 	t_tt	next;
 
 	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
-	while (is_word_token(next))
+	while (is_for_word(next))
 	{
 		push_parsed_word(tokens, ret);
 		next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
@@ -68,8 +68,8 @@ static void	collect_word_list(t_deque_tok *tokens, t_ast_node *ret)
    Gotcha: `in` is not a keyword token -- the lexer leaves it as TT_WORD and
    we compare the raw text here because the for-variable name already consumed
    the keyword-position slot. */
-static bool	parse_for_in_clause(t_shell *state, t_parser *parser,
-								t_deque_tok *tokens, t_ast_node *ret)
+bool	for_in_clause(t_shell *state, t_parser *parser,
+			t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_tt		next;
 	t_ltoken	*peek;
@@ -113,10 +113,10 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 	vec_push_int(&parser->parse_stack, TT_FOR);
 	if (next == TT_END)
 		return (parser->res = RES_GETMOREINPUT, ret);
-	if (!is_word_token(next))
+	if (!is_for_word(next))
 		return (parser->res = RES_ERR, ret);
 	ret.token = pop_tok(tokens);
-	if (!parse_for_in_clause(state, parser, tokens, &ret))
+	if (!for_head(state, parser, tokens, &ret))
 		return (ret);
 	if (!expect_for_kw(state, parser, tokens, TT_DO))
 		return (ret);

@@ -16,6 +16,7 @@
    It intentionally returns interior pointers into state or the env vector,
    NOT copies, so callers must NOT free the result. */
 
+#include "ft_builtins.h"
 #include "env.h"
 #include "shell.h"
 #include "helpers.h"
@@ -26,6 +27,8 @@ void	exit_clean(t_shell *state, int code);
 char	*build_flagstr(t_shell *state);
 char	*lineno_str(t_shell *state);
 char	*expand_special_dyn(t_shell *state, char *key, int len);
+char	*zsh_arg_zero(t_shell *state);
+char	*expand_special_1(t_shell *state, char c);
 
 /* Detect a positional parameter index: key must be all digits and > 0.
    $0 is NOT a positional parameter -- POSIX says $0 is the shell name,
@@ -54,8 +57,16 @@ static int	pos_index(const char *key, int len)
 /* Map the one-character special variables to their runtime values.
    Returns NULL (not "not found") to distinguish "keep looking in env"
    from "found, value is empty string" -- both "" and NULL are valid. */
+/* FUNCNAME and BASH_SOURCE are rebuilt on the first READ after a call, not
+   on every push and pop -- see src/execution/call_frames.c. This is that
+   read hook, and it sits here because expand_special() is on the path of
+   every variable read, scalar and array alike. The gate is a bool, a length
+   and one character, so any other name pays three comparisons. */
 static char	*expand_special(t_shell *state, char *key, int len)
 {
+	if (state->frames_dirty && (len == 8 || len == 11)
+		&& (key[0] == 'F' || key[0] == 'B'))
+		frames_sync(state);
 	if (ft_strncmp(key, "?", len) == 0 && len == 1)
 		return (state->last_cmd_st);
 	if (ft_strncmp(key, "$", len) == 0 && state->pid && len == 1)
@@ -66,16 +77,10 @@ static char	*expand_special(t_shell *state, char *key, int len)
 			return (state->last_bg_pid);
 		return ("");
 	}
-	if (len == 1 && key[0] == '-')
-		return (build_flagstr(state));
 	if (len == 0)
 		return ("");
-	if (len == 1 && key[0] == '#')
-	{
-		if (state->pos.cnt_str[0])
-			return (state->pos.cnt_str);
-		return ("0");
-	}
+	if (len == 1)
+		return (expand_special_1(state, key[0]));
 	return (expand_special_dyn(state, key, len));
 }
 

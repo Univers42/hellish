@@ -160,6 +160,7 @@ void		assignment_word_to_word(t_ast_node *node);
 void		procsub_exec_self(t_shell *state, const char *cmd);
 char		*create_procsub_input(t_shell *state, const char *cmd);
 char		*create_procsub_output(t_shell *state, const char *cmd);
+char		*create_procsub_file(t_shell *state, const char *cmd);
 char		*expand_proc_sub(t_shell *state, t_ast_node *node);
 void		procsub_close_fds_parent(t_shell *state);
 void		cleanup_proc_subs(t_shell *state);
@@ -370,6 +371,109 @@ void		handle_double_open_paren(int *depth, int *j);
 bool		is_double_close_paren_v1(int slen, const char *s, int j);
 bool		is_double_open_paren_v1(int slen, const char *s, int j);
 
+/* One parsed ${(flags)x} prefix -- the zsh dialect only, gated on zsh_mode()
+   at the single entry point (expand_zsh_flags).  `set` is the letters seen,
+   NUL-terminated, so zf_has() is a strchr over at most a dozen bytes: a flag
+   list is never long enough for anything cleverer to pay for itself.
+   `sep` and `join` hold the arguments of (s:x:) and (j:x:), already
+   unescaped when (p) asked for it. */
+# define ZF_MAX 23
+
+typedef struct s_zflags
+{
+	char	set[ZF_MAX + 1];
+	int		n;
+	char	*sep;
+	char	*join;
+	bool	split;
+	bool	array;
+}	t_zflags;
+
+bool		expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx);
+bool		zsh_bare_nested(t_shell *state, t_token *tt, bool split_ctx);
+bool		zf_arrayness(t_zflags *f, t_token *tt, const char *s, int slen);
+bool		zf_has(const t_zflags *f, char c);
+int			zf_count(const t_zflags *f, char c);
+char		zq_style(const t_zflags *f);
+void		zf_free(t_zflags *f);
+char		*zf_inner(t_shell *state, t_token *tt, const char *s, int slen);
+bool		zf_is_nested(const char *s, int slen);
+int			zn_at_len(const char *s, int slen);
+int			zn_sub_len(const char *s, int slen);
+char		*zn_subscript(t_shell *state, char *enc, const char *s, int slen);
+char		*zsh_strlen(t_shell *state, const char *s, int slen);
+char		*zsh_param(t_shell *state, const char *s, int slen);
+/* zsh modifiers ${x:h} ${x:t} ... (expand_zsh_mod*.c) and the :# filter
+   operator with its (M) partner (expand_zsh_hash.c). */
+char		*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr);
+char		*zf_inner_text(t_shell *state, const char *s, int n);
+char		*zsh_token_text(t_shell *state, const char *s, int slen);
+char		*zd_plain(t_shell *state, const char *name, int len);
+char		*zd_splice(const char *val, const char *rest, int rlen);
+char		*zd_bind_name(int depth);
+void		zd_unbind(t_shell *state, const char *name);
+char		*zsh_modifier(t_shell *state, const char *s, int slen);
+/* ${x:#pat}: `want` inverts it (the (M) flag), `as_array` says whether the
+   expansion is still an array at this point -- quoting joins first, which
+   changes the answer. */
+typedef struct s_zhash
+{
+	bool	want;
+	bool	as_array;
+}	t_zhash;
+
+char		*zsh_hash_op(t_shell *state, const char *s, int slen, t_zhash h);
+int			zh_find(const char *s, int slen, int *name_len);
+char		*zm_head(const char *v);
+char		*zm_tail(const char *v);
+char		*zm_root(const char *v);
+char		*zm_ext(const char *v);
+char		*zm_abs(t_shell *state, const char *v);
+bool		zsh_param_token(t_shell *state, t_token *tt);
+bool		zsh_hash_token(t_shell *state, t_token *tt);
+char		*zp_which(t_shell *state, char *name);
+int			zp_elem_set(t_shell *state, const char *base, int blen, char *key);
+int			zsh_len_span(t_shell *state, const char *s, int len, int j);
+bool		append_zsh_len(t_arith_expand_ctx *ctx);
+long		elem_sub_index(t_shell *state, char *text, long count);
+bool		splice_elem_assign(t_shell *state, t_env *ev, t_vec *args);
+void		bad_subscript(t_shell *state, const char *name, const char *sub);
+t_slice		zsh_slice_bounds(t_shell *state, const char *body, int blen,
+				const char *val);
+long		zsh_slice_universe(const char *val);
+long		zsh_slice_len(t_slice r, long count);
+char		*zsh_slice_str(t_shell *state, const char *val, t_slice r);
+void		zsh_slice_set(t_env *ret, const char *old, t_slice r);
+void		assoc_elem_assign(t_shell *state, t_env *ret, char *sub,
+				char *old);
+char		*zn_scalar_pick(t_shell *state, const char *val, long sub);
+char		*zf_nested(t_shell *state, t_token *tt, const char *s, int slen);
+int			zf_parse(const char *s, int slen, t_zflags *f);
+void		zf_bad(t_shell *state, t_token *tt, char flag);
+bool		zf_check(t_shell *state, t_zflags *f, t_token *tt);
+bool		zf_hash_form(t_shell *state, t_zflags *f, t_token *tt, int end);
+void		zf_unesc(t_zflags *f);
+void		zf_finish(t_shell *state, t_zflags *f, t_token *tt, char *val);
+void		zf_install(t_token *tt, char *owned);
+void		zf_emit(t_shell *state, t_zflags *f, t_token *tt, t_vec *l);
+void		zf_emit_value(t_shell *state, t_zflags *f, t_token *tt, char *val);
+char		*zl_join(t_vec *l, const char *sep);
+void		zl_push(t_vec *l, char *owned);
+void		zl_free(t_vec *l);
+void		zl_erase(t_vec *l, size_t at);
+void		zl_swap(char **a, char **b);
+t_vec		zl_from(t_shell *state, t_zflags *f, const char *val);
+void		zl_split_ws(t_vec *l, const char *v);
+void		zl_records(t_shell *state, t_zflags *f, t_vec *l, const char *val);
+void		zl_arr_one(t_zflags *f, t_vec *l, long idx, char *owned);
+void		zl_order(t_zflags *f, t_vec *l);
+void		zl_uniq(t_zflags *f, t_vec *l);
+void		zl_map(t_shell *state, t_zflags *f, t_vec *l);
+char		*zx_one(t_shell *state, t_zflags *f, char *v);
+char		*zf_quote(const char *v, char style);
+char		*zf_case(const char *v, char how);
+void		emit_val_at(const char *val, t_ast_node *curr_node, t_vec_nd *ret);
+
 /* Convenience inline: zero-initialise a t_expand_ctx from its four fields.
    Inlined so there is zero overhead when called from tight scan loops. */
 static inline t_expand_ctx	init_expand(const char *s, int slen,
@@ -383,5 +487,20 @@ static inline t_expand_ctx	init_expand(const char *s, int slen,
 	ectx.consumed = consumed;
 	return (ectx);
 }
+
+/* subscript_append.c: `a[i]+=v` / `M[k]+=v` -- splice the element's current
+   value in front of the new one, then let the ordinary set path store it. */
+long		arr_sub_index(t_shell *state, const char *sub, long count);
+bool		subscript_take_append(t_env *ret);
+void		subscript_append_value(t_shell *state, t_env *ret,
+				const char *sub, const char *old);
+void		subscript_prepend_current(t_shell *state, t_env *ret, char *br);
+
+/* procsub_assign.c: a process substitution glued to the assignment word
+   before it (`x=<(cmd)`, zsh's `x==(cmd)`) is that assignment's VALUE, not
+   a separate operand. */
+bool		procsub_is_assign_rhs(t_expander_simple_cmd *exp);
+void		procsub_join_assign(t_expander_simple_cmd *exp,
+				t_executable_cmd *ret, char *path);
 
 #endif

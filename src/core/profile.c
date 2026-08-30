@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_builtins.h"
 #include "core.h"
 #include <fcntl.h>
 #include <unistd.h>
@@ -55,7 +56,9 @@ static void	source_file(t_shell *state, const char *path)
 	content = read_file(path);
 	if (!content)
 		return ;
+	frame_push(state, NULL, path);
 	exec_string(state, content);
+	frame_pop(state);
 	xfree(content);
 }
 

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "rl_private.h"
+#include "zle.h"
 #include <locale.h>
 
 void	setup_completion(void);
@@ -76,8 +77,11 @@ static void	debug_dump_prompt(char *prompt)
    → exits. stdin/stdout are inherited; rl_outstream is redirected to stderr
    so readline's display uses the right fd. Exit 0 = line, 1 = EOF (^D). One
    trap: readline's buffer is libc-malloc'd, so free(ret) uses libc free, not
-   xfree -- at SAFE=0 that would hit the ft_malloc heap and corrupt it. */
-void	bg_readline(int outfd, char *prompt, int edit_mode)
+   xfree -- at SAFE=0 that would hit the ft_malloc heap and corrupt it.
+     zle_install goes AFTER the editing mode is chosen: setup_emacs_mode and
+   setup_vi_mode replace the keymap, so a binding installed before them
+   would be discarded and the key would silently do nothing. */
+void	bg_readline(int outfd, char *prompt, int edit_mode, t_shell *state)
 {
 	char	*ret;
 
@@ -89,6 +93,7 @@ void	bg_readline(int outfd, char *prompt, int edit_mode)
 		setup_vi_mode();
 	else
 		setup_emacs_mode();
+	zle_install(state);
 	debug_dump_prompt(prompt);
 	mascot_install();
 	ret = readline(split_prompt(prompt));
@@ -143,7 +148,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 	{
 		readline_bg_signals();
 		close(pp[0]);
-		bg_readline(pp[1], prompt, l->edit_mode);
+		bg_readline(pp[1], prompt, l->edit_mode, zle_caller());
 	}
 	else if (pid < 0)
 		critical_error_errno_ctx("fork");

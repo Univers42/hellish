@@ -54,33 +54,37 @@ static t_vec	expand_for_words(t_shell *state,
 
 /* Run the body once per expanded word.  set_for_var updates the loop
    variable in the environment before each iteration.  After the loop the
-   expanded words are freed individually (they were strdup'd by the
-   expander); the backing array (words.ctx) is plain heap via xfree. */
+
+   `step` (for_stride) is what makes zsh's `for a b (w x y z)` consume the
+   list two at a time; it is 1 for every POSIX loop, which keeps the
+   single-name path exactly as it was -- one env write per turn and no
+   per-iteration allocation. */
 static t_execution_state	for_word_loop(t_shell *state,
 		t_ast_node *node, char *var_name, size_t wc)
 {
 	t_execution_state	status;
 	t_vec				words;
-	size_t				i;
+	size_t				i[2];
 
 	words = expand_for_words(state, node, wc);
 	status = res_status(0);
-	i = 0;
+	i[1] = for_stride(node);
+	i[0] = 0;
 	state->loop_depth++;
-	while (i < words.len)
+	while (i[0] < words.len)
 	{
 		fire_debug_trap(state);
-		set_for_var(state, var_name, ((char **)words.ctx)[i]);
+		if (i[1] == 1)
+			set_for_var(state, var_name, ((char **)words.ctx)[i[0]]);
+		else
+			zfor_bind_row(state, node, &words, i[0]);
 		status = run_body(state, vec_idx(&node->children, wc));
 		if (handle_loop_ctl(state))
 			break ;
-		i++;
+		i[0] += i[1];
 	}
 	state->loop_depth--;
-	i = 0;
-	while (i < words.len)
-		xfree(((char **)words.ctx)[i++]);
-	xfree(words.ctx);
+	free_word_vec(&words);
 	return (status);
 }
 

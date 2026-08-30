@@ -46,7 +46,8 @@ bool		handle_coproc_case(t_shell *state, t_parser *parser,
 t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);
-bool		try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
+bool		try_push_array_assign(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens,
 				t_ast_node *ret);
 t_ast_node	parse_tokens(t_shell *state,
 				t_parser *parser,
@@ -165,5 +166,17 @@ t_ast_node	parse_brace_group(t_shell *state,
 bool		is_function_def(t_deque_tok *tokens);
 t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
+
+/* for-loop head, shared by the POSIX and zsh spellings (parse_for.c and
+   parse_for_zsh.c).  `for_head` picks between them; the zsh half is only
+   reachable in the zsh dialect. */
+bool		for_head(t_shell *state, t_parser *parser, t_deque_tok *tokens,
+				t_ast_node *ret);
+bool		for_in_clause(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node *ret);
+bool		is_for_word(t_tt tt);
+void		zfor_names(t_deque_tok *tokens, t_ast_node *ret);
+void		zfunc_names(t_deque_tok *tokens, t_token *name);
+bool		zfunc_is_cont(const char *base, t_ltoken *t);
 
 #endif
