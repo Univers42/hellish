@@ -140,6 +140,8 @@ size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
 int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);
 int		exit_parse_ll(const char *s, long long *out);
 int		shift_operand(t_shell *state, t_vec argv, int *out);
+void	subscript_assign(t_shell *state, t_env *ret);
+char	*declare_assign_eq(const char *word);
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 

@@ -488,10 +488,19 @@ static inline t_expand_ctx	init_expand(const char *s, int slen,
 	return (ectx);
 }
 
-#endif
+/* subscript_append.c: `a[i]+=v` / `M[k]+=v` -- splice the element's current
+   value in front of the new one, then let the ordinary set path store it. */
+long		arr_sub_index(t_shell *state, const char *sub, long count);
+bool		subscript_take_append(t_env *ret);
+void		subscript_append_value(t_shell *state, t_env *ret,
+				const char *sub, const char *old);
+void		subscript_prepend_current(t_shell *state, t_env *ret, char *br);
+
 /* procsub_assign.c: a process substitution glued to the assignment word
    before it (`x=<(cmd)`, zsh's `x==(cmd)`) is that assignment's VALUE, not
    a separate operand. */
 bool		procsub_is_assign_rhs(t_expander_simple_cmd *exp);
 void		procsub_join_assign(t_expander_simple_cmd *exp,
 				t_executable_cmd *ret, char *path);
+
+#endif

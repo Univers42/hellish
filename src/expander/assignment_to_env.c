@@ -54,7 +54,7 @@ static char	*dup_value_from_args(t_vec *args)
    `a[-1]=x` means the LAST element in both dialects.  Without the wrap it
    was stored at index -1, which no read can reach and which "${a[@]}" then
    printed ahead of the real elements -- silently, as `-1x`. */
-static long	arr_sub_index(t_shell *state, const char *sub, long count)
+long	arr_sub_index(t_shell *state, const char *sub, long count)
 {
 	char	*res;
 	long	idx;
@@ -76,7 +76,7 @@ static long	arr_sub_index(t_shell *state, const char *sub, long count)
    The slice check comes before the index one, because `lo,hi` evaluates
    perfectly well as arithmetic -- the comma operator yields `hi` -- and
    would write ONE element where zsh replaces a whole run. */
-static void	subscript_assign(t_shell *state, t_env *ret)
+void	subscript_assign(t_shell *state, t_env *ret)
 {
 	char	*br;
 	char	*res;
@@ -86,6 +86,7 @@ static void	subscript_assign(t_shell *state, t_env *ret)
 	br = ft_strchr(ret->key, '[');
 	if (!br || !ret->value)
 		return ;
+	subscript_prepend_current(state, ret, br);
 	*br = '\0';
 	old = env_expand(state, ret->key);
 	if (assoc_is(old))
