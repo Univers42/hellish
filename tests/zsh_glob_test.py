@@ -217,25 +217,32 @@ def nomatch_divergence(d):
 
 
 def known_gap_cases(d):
-    """A proc-sub in ASSIGNMENT position does not attach to the assignment:
+    """A proc-sub in ASSIGNMENT position attaches to the assignment (#83).
 
            f=<(echo hi)     bash: f=/dev/fd/63
-                            hellish: f= , then it RUNS /dev/fd/3
+                            hellish, before: f= , then it RAN /dev/fd/3
 
-    Pre-existing, verified against `<()` which predates all zsh work, and it
-    hits zsh's `=()` identically -- which is how it was found. Recorded at
-    the CURRENT behaviour so the day it is fixed this fails and names it.
+    This was recorded here as a KNOWN GAP, at the broken behaviour, so that
+    the day it was fixed this file would fail and name it.  It did exactly
+    that, and the expectation is now the fixed one.  Pinning a gap only
+    works if flipping it is a failure rather than a quiet pass.
 
-    An attempt to fix it by gluing the path onto the previous argv element
-    was reverted: argv elements are not plain heap, so freeing the old one
-    aborted with `munmap_chunk(): invalid pointer`, and it did not reach the
-    assignment case anyway -- assignments never touch argv."""
+    The note that came with the gap said an earlier attempt had been
+    reverted -- gluing the path onto the previous argv element aborted with
+    `munmap_chunk(): invalid pointer`, because argv holds a MIX of word-slab
+    and xmalloc pointers.  That is why the fix frees through word_free(),
+    which routes each kind to its own allocator, and why it is exercised on
+    the ft_malloc build and not only under ASan.
+
+    The full behaviour lives in tests/procsub_assign (bash `<(cmd)`, diffed
+    against bash) and tests/zsh_procsub_test.py (zsh `=(cmd)`); these two
+    rows stay here because this is the file that recorded the gap."""
     rc, out, err = run([SHELL, "-c", 'f=<(echo hi); echo "[$f]"'], cwd=d)
-    check("known-gap/procsub-in-assignment-still-splits",
-          b"[]" in out or b"No such file" in err,
-          "this may be FIXED now -- out=%r err=%r" % (out, err[:120]))
+    check("procsub-in-assignment/attaches-now",
+          b"/dev/fd/" in out and b"No such file" not in err,
+          "regressed to the #83 behaviour -- out=%r err=%r" % (out, err[:120]))
     _, bout, _ = run(["bash", "-c", 'f=<(echo hi); echo "[$f]"'], cwd=d)
-    check("known-gap/bash-still-attaches", b"/dev/fd/" in bout,
+    check("procsub-in-assignment/bash-agrees", b"/dev/fd/" in bout,
           "bash changed: %r" % bout)
 
 
