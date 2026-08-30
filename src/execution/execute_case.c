@@ -18,7 +18,14 @@ bool	case_match(const char *s, const char *p);
 /* Expand a case word (subject or pattern) to a single string: parameter,
    command and arithmetic substitution and tilde, but NO field splitting and
    NO pathname (glob) expansion - a case pattern *is* the glob.  Exported:
-   [[ ]] operands follow exactly these rules (expand_dbracket.c). */
+   [[ ]] operands follow exactly these rules (expand_dbracket.c).
+
+   A word that expands to NOTHING leaves word_to_string's vector
+   unallocated, and ft_strndup(NULL, 0) hands back NULL, which case_match
+   then walks -- `case "$UNSET" in a) ;; esac` was a segfault.
+   expand_case_pattern below has carried this same guard for a while; the
+   subject side never got it, and nothing reached the hole while an unset
+   variable alone still stringified to a literal '$'. */
 char	*expand_case_word(t_shell *state, t_ast_node *node)
 {
 	t_ast_node	copy;
@@ -30,7 +37,10 @@ char	*expand_case_word(t_shell *state, t_ast_node *node)
 	expand_cmd_substitutions(state, &copy);
 	expand_env_vars(state, &copy, false);
 	s = word_to_string(copy);
-	ret = ft_strndup((char *)s.ctx, s.len);
+	if (s.ctx)
+		ret = ft_strndup((char *)s.ctx, s.len);
+	else
+		ret = ft_strndup("", s.len);
 	xfree(s.ctx);
 	free_ast(&copy);
 	return (ret);

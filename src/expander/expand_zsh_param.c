@@ -78,7 +78,16 @@ static int	zp_exists(t_shell *state, const char *base, int blen, char *key)
 }
 
 /* ${+name} and ${+name[key]}: 1 if set, 0 if not.  Returns NULL when the
-   body is not a `+` form at all. */
+   body is not a `+` form at all.
+
+   The key is WORD-EXPANDED, like every other subscript.  Taking the raw
+   text made `$+commands[$m]` ask after a program literally named "$m" and
+   answer 0 -- and 0 is the same answer a genuinely missing program gives,
+   so the loop this construct always appears in
+
+       for m in node python3 ruby; do (( $+commands[$m] )) && break; done
+
+   simply never found anything, on a machine with all three installed. */
 static char	*zp_plus(t_shell *state, const char *s, int slen)
 {
 	const char	*sub;
@@ -90,7 +99,7 @@ static char	*zp_plus(t_shell *state, const char *s, int slen)
 	sub = zp_subscript(s + 1, slen - 1, &nlen, &klen);
 	if (!sub)
 		return (ft_itoa(env_expand_n(state, (char *)s + 1, slen - 1) != NULL));
-	key = ft_strndup(sub, (size_t)klen);
+	key = expand_param_word(state, sub, klen, false);
 	r = zp_exists(state, s + 1, nlen, key);
 	xfree(key);
 	return (ft_itoa(r));
@@ -131,7 +140,7 @@ char	*zsh_param(t_shell *state, const char *s, int slen)
 	sub = zp_subscript(s, slen, &nlen, &klen);
 	if (!sub || nlen != 8 || ft_strncmp(s, "commands", 8))
 		return (NULL);
-	key = ft_strndup(sub, (size_t)klen);
+	key = expand_param_word(state, sub, klen, false);
 	out = zp_which(state, key);
 	xfree(key);
 	if (!out)
