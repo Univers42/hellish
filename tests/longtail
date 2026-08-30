@@ -98,3 +98,23 @@ shopt -s extglob; eval 'case foo.h in !(*.h)) echo notH;; *) echo isH;; esac'
 shopt -s extglob; eval '[[ abc == a@(b|c)c ]] && echo dbr'
 shopt -s extglob; eval 'case ab in @(a|@(b|c))b) echo nest;; esac'
 echo @(a); echo "rc=$?"
+compgen -W 'alpha beta' al; echo "rc=$?"
+compgen -W 'a b c' ''; echo "rc=$?"
+compgen -b ech
+compgen -k fo
+compgen -v HOM
+f(){ :; }; g(){ :; }; compgen -A function g
+compgen -A variable HOM
+compgen -A nosuch x; echo "rc=$?"
+compgen -Z x; echo "rc=$?"
+compgen; echo "rc=$?"
+complete -W 'a b' foo; echo "rc=$?"
+complete -W 'x y' foo; complete -p foo
+complete -W a foo; complete -W b foo; complete -p foo
+complete -F _fn -o nospace bar; complete -p bar
+complete -p nosuchcmd 2>/dev/null; echo "rc=$?"
+complete -W a foo; complete -r foo; complete -p foo 2>/dev/null; echo "rc=$?"
+complete -W a f1; complete -W b f2; complete -r f1; complete -p
+complete -W x a; complete -r; complete -p; echo "rc=$?"
+complete -W 'a b' one two; complete -p one; complete -p two
+complete; echo "rc=$?"

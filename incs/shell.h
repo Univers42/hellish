@@ -115,6 +115,7 @@ void	parse_and_execute_input(t_shell *state);
 char	*x_getcwd(void);
 /* release the pushd/popd dir stack at exit; builtins/builtin_dirstack.c */
 void	free_dirstack(t_shell *state);
+void	free_compspecs(t_shell *state);
 /* remember / recover a finished bg child's status; src/execution/bg_done.c */
 void	bg_done_record(t_shell *state, pid_t pid, int status);
 int		bg_done_take(t_shell *state, pid_t pid, int *status);
@@ -148,6 +149,21 @@ typedef struct s_procsub_entry
 }	t_procsub_entry;
 
 typedef t_vec	t_vec_procsub;
+
+/* One `complete` registration: what to offer when the user tabs an
+   argument of NAME.  Lives in state->compspecs.
+     `words` is -W (a literal word list), `func` is -F (a shell function
+   that fills COMPREPLY), `act` is the letter of -A/-f/-d/-c/-v/... and 0
+   for none, `opts` collects -o names verbatim.  A spec may carry several
+   at once; bash runs the function first and appends the rest. */
+typedef struct s_compspec
+{
+	char	*name;
+	char	*words;
+	char	*func;
+	char	*opts;
+	char	act;
+}	t_compspec;
 
 /* A user-defined shell function.  The body is the AST of the compound
    list between the braces, deep-cloned at definition time so the
@@ -417,6 +433,7 @@ typedef struct s_shell
 	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				var_attrs; /* declare -i/-n attribute table */
 	t_vec				dirstack; /* pushd/popd dir stack */
+	t_vec				compspecs; /* t_compspec: `complete` registrations */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */
 	t_hash				cmd_cache; /* command name -> resolved path cache */
