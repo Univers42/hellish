@@ -58,7 +58,9 @@ def session(cwd, cols):
     pid, fd = pty.fork()
     if pid == 0:
         os.chdir(cwd)
-        os.execve(BIN, [BIN], env)
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execve(BIN, [BIN, "--norc"], env)
         os._exit(1)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, cols, 0, 0))
     screen = pyte.Screen(cols, ROWS)

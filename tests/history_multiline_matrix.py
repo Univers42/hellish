@@ -107,7 +107,9 @@ def drive(shell, keys, lithist, ask):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(shell, [shell])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(shell, [shell, "--norc"])
         os._exit(127)
 
     def read(quiet=0.35, cap=15.0):
