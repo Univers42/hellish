@@ -70,6 +70,10 @@ typedef struct s_rdopt
 	size_t	first;
 	char	*aname;
 	char	*prompt;
+	long	nchars;
+	bool	exact;
+	char	delim;
+	long	tmo_ms;
 }	t_rdopt;
 
 typedef struct s_getopts
@@ -156,6 +160,7 @@ int		eval_four(char **av);
 int		tx_or(t_tx *t);
 bool	tx_is_binop(const char *s);
 int		tx_test_unary(char **a);
+bool	test_var_isset(t_shell *st, char *name);
 int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);
 t_shell	**db_state_cell(void);
@@ -209,7 +214,9 @@ int		handle_hash_flags(t_shell *state, char **av, int ac);
 char	*dup_ifs(t_shell *state);
 int		is_ifs(char c, const char *ifs);
 int		is_ifs_ws(char c, const char *ifs);
-char	*read_one_line(bool raw, int *eof);
+char	*read_one_line(t_rdopt *o, int *eof);
+int		rd_wait_input(t_rdopt *o);
+bool	rd_at_delim(char ch, t_rdopt *o, bool bs);
 char	*next_field(char **pp, const char *ifs, bool raw);
 void	skip_delim(char **pp, const char *ifs);
 char	*last_field(char *p, const char *ifs, bool raw);
@@ -217,7 +224,7 @@ size_t	parse_read_opts2(t_vec argv, t_rdopt *o);
 void	rd_assign_array(t_shell *state, char *line, t_rdopt *o);
 void	rd_set_var(t_shell *state, char *name, char *value_owned);
 void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
-size_t	parse_read_opts(t_vec argv, bool *raw);
+long	rd_secs_ms(const char *s);
 int		fc_resolve_idx(t_shell *state, const char *s);
 int		fc_list(t_shell *state, char **av, int ac, bool reverse);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);

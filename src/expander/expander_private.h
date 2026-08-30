@@ -168,6 +168,7 @@ void		procsub_detach_all(t_shell *state);
 int			net_redir_open(char *fname, t_redir *ret);
 bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 bool		redir_park_fd(t_redir *ret);
+bool		dup_target_is_fd(const char *fname);
 int			parse_src_fd(t_tt tt, t_token op_tok);
 int			try_create_redir(t_shell *state, t_ast_node *curr,
 				t_tt tt, int src_fd);
@@ -323,6 +324,9 @@ bool		expand_pos_slice(t_shell *state, t_token *tt);
 bool		expand_array_op(t_shell *state, t_token *tt);
 bool		expand_array_elem_op(t_shell *state, t_token *tt);
 bool		arr_keys(t_shell *state, t_token *tt, bool split_ctx);
+bool		arr_prefix_names(t_shell *state, t_token *tt, bool split_ctx);
+bool		arr_emit(t_token *tt, char *owned);
+bool		at_op_ok(const char *op, int oplen);
 bool		arr_slice(t_shell *state, t_token *tt, int nl, int colon);
 char		*idx_str(long idx);
 int			arith_num(t_shell *state, const char *s, int len);

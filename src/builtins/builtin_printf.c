@@ -83,10 +83,10 @@ static void	pf_conv_char(t_pf *pf, t_spec *sp, const char *arg)
 	pf_buf_close(&b, stack);
 }
 
-/* Handle one conversion: %%, %c, %b (backslash-escape string), and the
-   full snprintf-delegated set. pf->used is set to true whenever we consume
-   an argument — the outer loop in builtin_printf uses that to decide whether
-   to re-run the format string against the remaining arguments. */
+/* Handle one conversion: %%, %c, %b (backslash-escape string), %q (shell
+   quoting), and the full snprintf-delegated set. pf->used is set to true
+   whenever we consume an argument — the outer loop in builtin_printf uses
+   that to decide whether to re-run the format against the remaining args. */
 void	pf_conv(t_pf *pf, t_spec *sp, char conv)
 {
 	char		fmt[80];
@@ -98,6 +98,8 @@ void	pf_conv(t_pf *pf, t_spec *sp, char conv)
 	arg = pf_arg(pf);
 	if (conv == 'c')
 		return (pf_conv_char(pf, sp, arg));
+	if (conv == 'q')
+		return (pf_conv_quote(pf, sp, arg));
 	if (conv == 'b')
 	{
 		if (!arg)

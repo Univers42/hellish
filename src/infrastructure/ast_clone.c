@@ -28,6 +28,7 @@ void	ast_clone_scalars(t_ast_node *dst, t_ast_node *src)
 	dst->redir_idx = src->redir_idx;
 	dst->negate = src->negate;
 	dst->glued = src->glued;
+	dst->case_term = src->case_term;
 	dst->heredoc_body = NULL;
 	if (src->heredoc_body)
 		dst->heredoc_body = ft_strdup(src->heredoc_body);

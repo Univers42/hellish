@@ -70,6 +70,10 @@ typedef struct s_ast_node
 						  before it, so it CONTINUES that word instead of
 						  starting a new one.  Set on process substitutions
 						  only, at parse time -- see procsub_assign.c */
+	char			case_term; /* AST_CASE_ITEM only: which terminator closed
+							  this clause.  0 for `;;` (stop), '&' for `;;&`
+							  (keep TESTING the remaining patterns), ';' for
+							  `;&` (fall into the next body, untested). */
 	char			*heredoc_body; /* raw body string for a HERE-doc node */
 }	t_ast_node;
 

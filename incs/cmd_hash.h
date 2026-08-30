@@ -33,5 +33,6 @@ void	cmd_hash_insert(t_hash *ht,
 void	cmd_hash_remove(t_hash *ht, const char *name);
 void	cmd_hash_clear(t_hash *ht);
 void	cmd_hash_print_all(t_hash *ht);
+void	cmd_hash_print_reusable(t_hash *ht);
 
 #endif

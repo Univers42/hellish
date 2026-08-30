@@ -131,6 +131,15 @@ int					find_cmd_path(t_shell *state, char *cmd_name,
 						char **path_of_exe);
 void				prehash_external(t_shell *state, char *argv0);
 void				path_cache_sync(t_shell *state);
+
+/* The function name bash runs instead of printing "command not found". */
+# define CNF_HOOK "command_not_found_handle"
+
+bool				cnf_not_found(t_shell *state, char *argv0);
+bool				cnf_hook_applies(t_shell *state, char *argv0);
+bool				cnf_shift_argv(t_vec *argv);
+t_execution_state	cnf_fork_hook(t_shell *state, t_executable_cmd *cmd,
+						t_executable_node *exe);
 t_execution_state	res_status(int status);
 t_execution_state	res_pid(int pid);
 void				exe_res_set_status(t_shell *st, t_execution_state *res);

@@ -132,6 +132,7 @@ int			proc_sub_handle_eof(t_parser *parser,
 				t_token curr);
 bool		is_compound_start(t_tt tt);
 bool		is_compound_terminator(t_tt tt);
+bool		is_case_term(t_tt tt);
 bool		is_separator_before_terminator(t_ast_node *ret,
 				t_deque_tok *tokens);
 void		skip_newlines(t_deque_tok *tokens);
