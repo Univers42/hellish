@@ -88,3 +88,13 @@ command_not_found_handle() { echo hi; }; echo direct; nosuchcmd_xyz
 a=(x y z w); echo "${a[@]:1:2}" "${a[@]:2}" "${!a[@]}"
 a=(a b c d e); echo "${a[@]:1:3}" "${a[*]:2:2}"
 a=(1 2 3); echo "[${a[@]:1}]" "[${a[@]:-d}]"
+shopt -s extglob; eval 'echo @(f1|f2)'
+shopt -s extglob; eval 'case abc in @(a|b)*) echo A;; esac'
+shopt -s extglob; eval 'case aXbXc in a@(X|Y)b?(X)c) echo N;; esac'
+shopt -s extglob; eval 'case "" in *(a)) echo empty;; esac'
+shopt -s extglob; eval 'case aaa in +(a|aa)) echo plus;; esac'
+shopt -s extglob; eval 'case foo.c in !(*.h)) echo notH;; esac'
+shopt -s extglob; eval 'case foo.h in !(*.h)) echo notH;; *) echo isH;; esac'
+shopt -s extglob; eval '[[ abc == a@(b|c)c ]] && echo dbr'
+shopt -s extglob; eval 'case ab in @(a|@(b|c))b) echo nest;; esac'
+echo @(a); echo "rc=$?"
