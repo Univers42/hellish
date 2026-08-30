@@ -64,6 +64,7 @@ char		*arr_with_set(const char *old, long idx, const char *v);
 char		*arr_from_elems(char **elems, int n, const char *base);
 char		*arr_format(const char *val);
 char		*arr_without(const char *old, long idx);
+char		*arr_splice(const char *old, long idx, char **elems, int n);
 long		arr_max_idx(const char *val);
 void		rec_append(t_string *out, long idx, const char *v, int vl);
 

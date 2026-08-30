@@ -102,7 +102,9 @@ static char	**collect_tail_positionals(t_shell *state, int from, int count)
 /* shift [n]: discard the first n positional parameters (default 1). We
    collect the remaining tail as a new owned array, then replace the current
    set. Shifting by more than $# is an error (status 1) per POSIX — we do
-   NOT exit; the caller can check $? and decide. */
+   NOT exit; the caller can check $? and decide.
+     zsh's `shift [n] name` shifts an ARRAY instead, and gets first refusal:
+   it answers -1 for every spelling this function handles. */
 int	builtin_shift(t_shell *state, t_vec argv)
 {
 	char	**vals;
@@ -110,6 +112,9 @@ int	builtin_shift(t_shell *state, t_vec argv)
 	int		count;
 	int		n;
 
+	n = zsh_shift_array(state, argv);
+	if (n >= 0)
+		return (n);
 	cnt = env_expand(state, "#");
 	if (cnt)
 		count = ft_atoi(cnt);
@@ -124,8 +129,5 @@ int	builtin_shift(t_shell *state, t_vec argv)
 	if (!vals)
 		return (1);
 	set_positional_args(state, vals, (size_t)(count - n));
-	n = -1;
-	while (vals[++n])
-		xfree(vals[n]);
-	return (xfree(vals), 0);
+	return (free_split(vals), 0);
 }

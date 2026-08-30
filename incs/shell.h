@@ -84,6 +84,8 @@ enum e_setopt
 	SETOPT_EMACS = 1u << 15,
 	SETOPT_VI = 1u << 16,
 	SETOPT_ZSH = 1u << 17,
+	SETOPT_KSHARRAYS = 1u << 18,
+	SETOPT_LOCALOPTS = 1u << 19,
 	SETOPT_DEFAULT = SETOPT_BRACEEXPAND | SETOPT_HASHALL | SETOPT_ICOMMENTS
 };
 
@@ -103,6 +105,10 @@ typedef struct s_setopt
 bool	zsh_mode(t_shell *state);
 bool	zsh_mode_swap(t_shell *state, bool on);
 bool	zsh_path(const char *path);
+/* True when arrays count from 1 -- zsh mode with ksh_arrays not set. */
+bool	zsh_arrays(t_shell *state);
+/* One written subscript -> the 0-based index the array store uses. */
+long	sub_to_index(t_shell *state, long sub, long count);
 
 void	parse_and_execute_input(t_shell *state);
 /* getcwd(NULL,0) onto the active fn_* heap; see helpers/x_getcwd.c */
@@ -191,12 +197,25 @@ typedef struct s_shell_func
    author wrote.  So each function records the dialect it was defined in
    (t_shell_func.zsh) and execute_func_call re-arms it for the call; the
    frame puts back whatever the caller had.  Push sites declare the new
-   dialect right after pushing, so nesting composes without a second stack. */
+   dialect right after pushing, so nesting composes without a second stack.
+
+   setopt/shopt: the option words as they were on entry, put back by
+   frame_pop only when the body asked for `setopt localoptions`.  zsh's
+   options are GLOBAL by default and that one word makes them function-local,
+   which is not a nicety -- oh-my-zsh's extract says
+
+       setopt localoptions extendedglob
+
+   and extendedglob changes how every later pattern PARSES.  Letting that
+   escape the function would silently re-interpret globs typed at the prompt
+   half an hour later, with nothing to connect the two. */
 typedef struct s_call_frame
 {
 	char				*func;
 	char				*src;
 	bool				zsh;
+	unsigned int		setopt;
+	unsigned int		shopt;
 }	t_call_frame;
 
 /* One saved variable for function scope: its value at the moment it was made

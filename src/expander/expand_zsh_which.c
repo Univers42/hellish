@@ -46,3 +46,33 @@ char	*zp_which(t_shell *state, char *name)
 	path = exe_path(state->path_dirs, name, &denied);
 	return (path);
 }
+
+/* Is element `key` of an ORDINARY parameter set?  The fallback for a base
+   that is not one of zsh's special tables -- an associative array a script
+   built itself, or a table we do not have.
+
+   `${+terminfo[kcub1]}` is the second kind, and 0 is the RIGHT answer for
+   it rather than a shrug: terminfo is a loadable module, real zsh without
+   that module also answers 0, and the plugin's `if` is written to be false
+   in exactly that case.  What must not happen is answering 0 for a table we
+   DO have and simply failed to consult -- which is why the special three
+   are checked first and this is the fallback, not the other way round. */
+int	zp_elem_set(t_shell *state, const char *base, int blen, char *key)
+{
+	char	*val;
+	char	*elem;
+
+	val = env_expand_n(state, (char *)base, blen);
+	if (!val)
+		return (0);
+	if (assoc_is(val))
+		elem = assoc_get(val, key, (int)ft_strlen(key));
+	else if (arr_is(val))
+		elem = arr_get_idx(val, sub_to_index(state, ft_atol(key),
+					arr_count(val)));
+	else
+		return (sub_to_index(state, ft_atol(key), 1) == 0);
+	if (!elem)
+		return (0);
+	return (xfree(elem), 1);
+}

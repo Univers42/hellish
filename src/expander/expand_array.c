@@ -90,13 +90,14 @@ static void	arr_elem_emit(t_token *tt, char *elem)
 }
 
 /* Subscript element read. For an associative value the subscript is a
-   LITERAL string key; otherwise it is an arithmetic index (negative
-   wraps from the end). A scalar answers only index 0. */
+   LITERAL string key; otherwise it is an arithmetic index, converted to the
+   store's 0-based one by sub_to_index -- which is where bash's counting from
+   0 and zsh's from 1 part company, and where negatives wrap from the end.
+   A scalar answers index 0 in bash and one character in zsh. */
 static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 {
 	char	*res;
-	char	*elem;
-	long	idx;
+	long	sub;
 
 	if (assoc_is(val))
 	{
@@ -106,18 +107,14 @@ static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 		return ((void)xfree(res));
 	}
 	res = arith_expand(state, tt->start + nl + 1, tt->len - nl - 2);
-	idx = 0;
+	sub = 0;
 	if (res)
-		idx = ft_atoi(res);
+		sub = ft_atoi(res);
 	xfree(res);
-	if (idx < 0 && arr_is(val))
-		idx += arr_count(val);
-	elem = NULL;
-	if (arr_is(val))
-		elem = arr_get_idx(val, idx);
-	else if (val && idx == 0)
-		elem = ft_strdup(val);
-	arr_elem_emit(tt, elem);
+	if (!arr_is(val))
+		return (arr_elem_emit(tt, zn_scalar_pick(state, val, sub)));
+	arr_elem_emit(tt, arr_get_idx(val,
+			sub_to_index(state, sub, arr_count(val))));
 }
 
 /* Entry, tried before the ${p-w} operator family: recognise NAME[...]

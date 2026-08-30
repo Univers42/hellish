@@ -125,7 +125,10 @@ static long long	resolve_recursive(t_arith_parser *p, const char *val)
 /* `$+commands[x]` reaches here as a variable named "+commands[x]" (see
    lex_zsh_plus): the lexer has no t_shell and cannot resolve it, this does.
    zsh_param answers NULL outside the zsh dialect, so bash arithmetic is
-   untouched -- and a name starting with '+' is not one bash can produce. */
+   untouched -- and a name starting with '+' is not one bash can produce.
+   `$#stack` arrives the same way, named "#stack" (lex_zsh_len), which
+   already checked the dialect because bash DOES have a reading of that
+   text: an error. */
 long long	get_var_value(t_arith_parser *p, const char *name, int len)
 {
 	long long	n;
@@ -134,6 +137,12 @@ long long	get_var_value(t_arith_parser *p, const char *name, int len)
 	if (len > 1 && name[0] == '+')
 	{
 		val = zsh_param(p->shell, name, len);
+		if (val)
+			return (n = ft_atol(val), xfree(val), n);
+	}
+	if (len > 1 && name[0] == '#')
+	{
+		val = expand_strlen(p->shell, name + 1, len - 1);
 		if (val)
 			return (n = ft_atol(val), xfree(val), n);
 	}

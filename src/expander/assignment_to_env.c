@@ -46,10 +46,15 @@ static char	*dup_value_from_args(t_vec *args)
 	return (ft_strdup(""));
 }
 
-/* Turn an already-word-expanded subscript string into a numeric index:
-   the result is a bare arithmetic expression (variables and $((...)) are
-   gone), so arith_expand handles it directly. Empty -> 0. */
-static long	arr_sub_index(t_shell *state, const char *sub)
+/* Turn an already-word-expanded subscript string into the 0-based index the
+   store uses: the text is a bare arithmetic expression (variables and
+   $((...)) are gone), so arith_expand handles it directly, and sub_to_index
+   applies the dialect's counting base and wraps negatives against `count`.
+
+   `a[-1]=x` means the LAST element in both dialects.  Without the wrap it
+   was stored at index -1, which no read can reach and which "${a[@]}" then
+   printed ahead of the real elements -- silently, as `-1x`. */
+static long	arr_sub_index(t_shell *state, const char *sub, long count)
 {
 	char	*res;
 	long	idx;
@@ -60,7 +65,7 @@ static long	arr_sub_index(t_shell *state, const char *sub)
 	idx = 0;
 	if (res)
 		idx = ft_atoi(res);
-	return (xfree(res), idx);
+	return (xfree(res), sub_to_index(state, idx, count));
 }
 
 /* arr[expr]=v: the key still carries its "[expr]" suffix here. Evaluate
@@ -71,7 +76,6 @@ static void	subscript_assign(t_shell *state, t_env *ret)
 {
 	char	*br;
 	char	*res;
-	char	*nv;
 	char	*old;
 	long	idx;
 
@@ -81,19 +85,15 @@ static void	subscript_assign(t_shell *state, t_env *ret)
 	*br = '\0';
 	old = env_expand(state, ret->key);
 	if (assoc_is(old))
-	{
-		res = expand_param_word(state, br + 1,
-				(int)ft_strlen(br + 1) - 1, false);
-		nv = assoc_with_set(old, res, (int)ft_strlen(res), ret->value);
-		xfree(res);
-		return (xfree(ret->value), (void)(ret->value = nv));
-	}
+		return (assoc_elem_assign(state, ret, br + 1, old));
 	res = expand_param_word(state, br + 1, (int)ft_strlen(br + 1) - 1, false);
-	idx = arr_sub_index(state, res);
+	idx = arr_sub_index(state, res, arr_count(old));
+	if (idx < 0)
+		return ((void)(bad_subscript(state, ret->key, res), xfree(res)));
 	xfree(res);
-	nv = arr_with_set(old, idx, ret->value);
+	res = arr_with_set(old, idx, ret->value);
 	xfree(ret->value);
-	ret->value = nv;
+	ret->value = res;
 }
 
 /* Convert a VAR=value AST node into a t_env ready to be pushed into the
