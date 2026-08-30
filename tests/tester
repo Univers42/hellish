@@ -55,7 +55,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "job_label"
         "help_builtin"
         "printf_length"
-        "array_subscript"
+        "array_subscript" "declare_quoting"
     )
 fi
 

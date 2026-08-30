@@ -114,13 +114,27 @@ void	apply_var_attrs(t_shell *state, t_env *ret)
 }
 
 /* The associative half: the subscript is a LITERAL string key, so it is
-   word-expanded and used as written rather than evaluated. */
+   word-expanded and used as written rather than evaluated.
+     An empty key is refused.  An indexed array reads an empty subscript as
+   0 -- `a[$unset]=v` writes element 0, and bash agrees -- but a map has no
+   such default, and storing under "" is the silent wrongness this whole
+   issue was about: the script names one key, the shell writes another, and
+   `${M[$k]}` reads back nothing forever after.  bash calls it `bad array
+   subscript`, so we do too, through the shared refusal path. */
 void	assoc_elem_assign(t_shell *state, t_env *ret, char *sub, char *old)
 {
 	char	*key;
 	char	*nv;
+	size_t	n;
 
-	key = expand_param_word(state, sub, (int)ft_strlen(sub) - 1, false);
+	n = ft_strlen(sub);
+	key = expand_param_word(state, sub, (int)n - 1, false);
+	if (!key || !*key)
+	{
+		xfree(key);
+		sub[n - 1] = '\0';
+		return (bad_subscript(state, ret->key, sub));
+	}
 	nv = assoc_with_set(old, key, (int)ft_strlen(key), ret->value);
 	xfree(key);
 	xfree(ret->value);

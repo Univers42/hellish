@@ -27,7 +27,7 @@ static void	fmt_rec(t_string *out, long idx, const char *v, int vl)
 	xfree(n);
 	vec_push_str(out, "]=\"");
 	if (v && vl > 0)
-		vec_push_nstr(out, (char *)v, vl);
+		vec_push_dquoted(out, v, vl);
 	vec_push_char(out, '"');
 }
 

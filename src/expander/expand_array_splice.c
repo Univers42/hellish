@@ -15,6 +15,7 @@
 #include "sh_input.h"
 
 void	fatal_input_error(t_shell *state, int code);
+int		shell_fatal_status(t_shell *state);
 
 /* zsh's `a[i]=(...)` -- assigning a LIST to one element.
 **
@@ -58,10 +59,15 @@ long	elem_sub_index(t_shell *state, char *text, long count)
 }
 
 /* A subscript that names no possible element: `a[-1]` counted back past the
-   start, or zsh's `a[0]` where counting begins at 1.  Writing to a different
-   element than the script named is the one outcome worse than stopping, so
-   this never assigns -- and fatal_input_error decides how far the stop
-   reaches (the shell for -c and scripts, only the file when sourced). */
+   start, zsh's `a[0]` where counting begins at 1, or an EMPTY key on an
+   associative array.  Writing to a different element than the script named
+   is the one outcome worse than stopping, so this never assigns -- and
+   fatal_input_error decides how far the stop reaches (the shell for -c and
+   scripts, only the file when sourced).
+     The status is shell_fatal_status(), not a hardcoded 1: a refused
+   assignment is the same fatal family as ${p:?w}, `set -u` and readonly,
+   and bash reports 127 for all four when a -c string's top-level shell dies
+   and 1 everywhere else.  This one answered 1 in both places. */
 void	bad_subscript(t_shell *state, const char *name, const char *sub)
 {
 	if (zsh_arrays(state))
@@ -71,7 +77,7 @@ void	bad_subscript(t_shell *state, const char *name, const char *sub)
 		ft_eprintf("%s: %s[%s]: bad array subscript\n",
 			state->ctx, name, sub);
 	set_cmd_status(state, create_exec_state(1, false));
-	fatal_input_error(state, 1);
+	fatal_input_error(state, shell_fatal_status(state));
 }
 
 /* The assignment target as a RANGE.  `a[i]=(...)` and zsh's

@@ -307,6 +307,11 @@ typedef struct s_shell
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
 	bool				should_exit; /* set by `exit` builtin */
+	bool				builtin_fatal; /* special builtin got a MALFORMED
+										  request, not merely a failing one:
+										  read and cleared by
+										  strict_builtin_failed() so the
+										  abort happens after teardown */
 	/* --- loop/function control flow --- */
 	int					loop_break; /* pending break depth (>0 = active) */
 	int					loop_continue; /* pending continue depth */
