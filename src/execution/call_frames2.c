@@ -105,3 +105,24 @@ void	zsh_zero_restore(t_shell *state, char *old)
 		return ;
 	env_set(&state->env, env_create(ft_strdup("0"), old, false));
 }
+
+/* A fresh copy of the file the innermost frame belongs to -- what a function
+   being defined right now should record as its origin, so BASH_SOURCE[0]
+   inside it later names where it was WRITTEN, not where it was called from.
+   Returns a heap string the caller owns, or NULL at top level. Hands back a
+   copy rather than the borrowed pointer because both call sites store it,
+   and the frame it came from is gone by then. */
+char	*frame_src_dup(t_shell *state)
+{
+	t_call_frame	*f;
+	size_t			i;
+
+	i = state->call_frames.len;
+	while (i-- > 0)
+	{
+		f = (t_call_frame *)vec_idx(&state->call_frames, i);
+		if (f->src)
+			return (ft_strdup(f->src));
+	}
+	return (NULL);
+}

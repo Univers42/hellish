@@ -12,17 +12,6 @@
 
 #include "builtins_private.h"
 
-/* Options whose NAME starts with a literal "no" that is part of the word,
-   not the inversion prefix.  Without this `setopt notify` would be read as
-   "un-set tify" and `setopt nomatch` as "un-set match". */
-bool	zopt_bare(const char *n)
-{
-	return (!ft_strcmp(n, "notify") || !ft_strcmp(n, "nomatch")
-		|| !ft_strcmp(n, "noclobber") || !ft_strcmp(n, "noglob")
-		|| !ft_strcmp(n, "nounset") || !ft_strcmp(n, "noexec")
-		|| !ft_strcmp(n, "nolog") || !ft_strcmp(n, "nobeep"));
-}
-
 /* The shopt-backed half of the mapping: zsh's name on the left, the bit we
    already implement on the right.  Returns 0 for a name this table does not
    cover, so zopt_apply can carry on to the set -o half. */
@@ -76,12 +65,38 @@ static const char	*zopt_setopt_name(const char *n)
 	return (NULL);
 }
 
+/* The two options backed by a SETOPT bit of their own rather than by a
+   bash-side name.  `ksharrays` picks the counting base (zsh_mode.c) and
+   `localoptions` makes this function's option changes revert on return
+   (call_frames.c) -- both are real behaviour, so neither belongs in the
+   inert list, and `setopt localoptions` must NOT be undone by unsetopt
+   later in the same body: the restore is what the caller asked for. */
+static bool	zopt_own_bit(t_shell *state, const char *n, bool on)
+{
+	unsigned int	bit;
+
+	bit = 0;
+	if (!ft_strcmp(n, "ksharrays"))
+		bit = SETOPT_KSHARRAYS;
+	else if (!ft_strcmp(n, "localoptions"))
+		bit = SETOPT_LOCALOPTS;
+	if (!bit)
+		return (false);
+	if (on)
+		state->setopt |= bit;
+	else
+		state->setopt &= ~bit;
+	return (true);
+}
+
 /* Set one option we actually implement.  True when the name was handled. */
 bool	zopt_apply(t_shell *state, const char *n, bool on)
 {
 	const t_setopt	*e;
 	unsigned int	bit;
 
+	if (zopt_own_bit(state, n, on))
+		return (true);
 	bit = zopt_shopt_bit(n);
 	if (bit && on)
 		return (state->shopt |= bit, true);
@@ -105,7 +120,7 @@ bool	zopt_apply(t_shell *state, const char *n, bool on)
    here still gets zsh's "no such option". */
 bool	zopt_inert(const char *n)
 {
-	static const char	*t[] = {"localoptions", "localtraps",
+	static const char	*t[] = {"localtraps",
 		"warncreateglobal", "promptsubst", "promptpercent",
 		"promptbang", "rcquotes", "noexec",
 		"nobeep", "nomatch", "notify", "autopushd", "pushdignoredups",

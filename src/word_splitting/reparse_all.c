@@ -12,25 +12,27 @@
 
 #include "decomposer.h"
 #include "shell.h"
+#include "ft_glob.h"
 
-/* The dialect, for the duration of one reparse pass.
+/* The dialect, for the reparser.
 **
 ** The reparser is the one part of the pipeline that does NOT carry a
 ** t_shell: every function in it takes a t_reparser, and threading state
 ** through eight functions in the hottest path in the shell to answer one
-** question is a poor trade. reparse_all is the single entry to the whole
-** pipeline -- that is why it exists -- so the dialect is a parameter OF the
-** pass, stashed where the pass can reach it.
+** question is a poor trade.  So it reads the same process-wide cell the
+** glob layer does, which zsh_mode_swap keeps in step with t_shell.setopt.
 **
-** Saved and restored rather than merely set, because the pipeline re-enters
-** itself: a command substitution inside a word parses through here again.
-** The value is the same either way (it comes from the same t_shell), but a
-** latch that unwinds cannot be the thing that is wrong later. */
-static bool	g_reparse_zsh = false;
-
+** This USED to be a latch armed only around reparse_all, and that was a
+** genuine bug rather than a simplification: reparse_all is the PARSE-time
+** entry, and words are reparsed again at EXPANSION time -- the word half of
+** `${x:-word}`, an array subscript -- through expand_param_word, which does
+** not go through reparse_all.  The latch read false there, so `a[$#a]=()`
+** saw `$#a` split into the positional count and a stray name and evaluated
+** the subscript of a pop as `0a`. Reading the live cell is both simpler and
+** the only version that answers the same way at both times. */
 bool	reparse_zsh(void)
 {
-	return (g_reparse_zsh);
+	return (glob_zsh() != 0);
 }
 
 /* The reparse pipeline, in one place because it has to run in one order and
@@ -61,12 +63,8 @@ bool	reparse_zsh(void)
 ** behaviour. */
 void	reparse_all(t_shell *state, t_ast_node *node)
 {
-	bool	was;
-
-	was = g_reparse_zsh;
-	g_reparse_zsh = zsh_mode(state);
+	(void)state;
 	reparse_subscript_assigns(node);
 	reparse_words(node);
 	reparse_assignment_words(node);
-	g_reparse_zsh = was;
 }

@@ -54,8 +54,14 @@ static int	zr_sub_len(const char *s, int len, int i)
 	return (0);
 }
 
-/* The whole `+name[key]` / `name[key]` span at rp->i, or 0 when the shape is
-   not there.  rp->i is left where it was; the caller advances it. */
+/* The whole `+name[key]` / `name[key]` / `#name` span at rp->i, or 0 when
+   the shape is not there.  rp->i is left where it was; the caller advances.
+
+   The subscript is required for `+` and for a bare name -- `$commands` with
+   no `[...]` is an ordinary variable and must stay one -- but NOT for `#`,
+   where the whole point is `$#stack`, the element count with nothing after
+   it.  A bare `$#` still falls through untouched: `#` has to be followed by
+   a name character to be claimed, so the positional count is unaffected. */
 static int	zr_span(t_reparser *rp)
 {
 	const char	*s;
@@ -66,14 +72,14 @@ static int	zr_span(t_reparser *rp)
 	s = rp->current_token.start;
 	len = rp->current_token.len;
 	i = rp->i;
-	if (i < len && s[i] == '+')
+	if (i < len && (s[i] == '+' || s[i] == '#'))
 		i++;
 	if (i >= len || !is_var_name_p1(s[i]))
 		return (0);
 	while (i < len && is_var_name_p2(s[i]))
 		i++;
 	n = zr_sub_len(s, len, i);
-	if (!n)
+	if (!n && s[rp->i] != '#')
 		return (0);
 	return (i + n - rp->i);
 }

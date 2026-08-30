@@ -94,6 +94,8 @@ void	frame_push(t_shell *state, const char *func, const char *src)
 	f.func = NULL;
 	f.src = NULL;
 	f.zsh = zsh_mode(state);
+	f.setopt = state->setopt;
+	f.shopt = state->shopt;
 	if (func)
 		f.func = ft_strdup(func);
 	if (src)
@@ -104,6 +106,20 @@ void	frame_push(t_shell *state, const char *func, const char *src)
 	state->frames_dirty = true;
 }
 
+/* Put the option words back, but only if the body said `setopt localoptions`
+   -- without it zsh's options are global and a `setopt xtrace` inside a
+   function is meant to outlive it.  The dialect bit is restored either way:
+   it is scoped by the frame by construction, never by a request. */
+static void	frame_restore_opts(t_shell *state, t_call_frame *f)
+{
+	if (state->setopt & SETOPT_LOCALOPTS)
+	{
+		state->setopt = f->setopt;
+		state->shopt = f->shopt;
+	}
+	zsh_mode_swap(state, f->zsh);
+}
+
 void	frame_pop(t_shell *state)
 {
 	t_call_frame	*f;
@@ -112,31 +128,10 @@ void	frame_pop(t_shell *state)
 	{
 		f = (t_call_frame *)vec_idx(&state->call_frames,
 				state->call_frames.len - 1);
-		zsh_mode_swap(state, f->zsh);
+		frame_restore_opts(state, f);
 		xfree(f->func);
 		xfree(f->src);
 		state->call_frames.len--;
 	}
 	state->frames_dirty = true;
-}
-
-/* A fresh copy of the file the innermost frame belongs to -- what a function
-   being defined right now should record as its origin, so BASH_SOURCE[0]
-   inside it later names where it was WRITTEN, not where it was called from.
-   Returns a heap string the caller owns, or NULL at top level. Hands back a
-   copy rather than the borrowed pointer because both call sites store it,
-   and the frame it came from is gone by then. */
-char	*frame_src_dup(t_shell *state)
-{
-	t_call_frame	*f;
-	size_t			i;
-
-	i = state->call_frames.len;
-	while (i-- > 0)
-	{
-		f = (t_call_frame *)vec_idx(&state->call_frames, i);
-		if (f->src)
-			return (ft_strdup(f->src));
-	}
-	return (NULL);
 }
