@@ -40,7 +40,7 @@ static int	zle_builtin(t_shell *state, const char *name)
 		|| !ft_strcmp(name, ".redisplay"))
 		return (zle_do_redisplay(), 0);
 	if (!ft_strcmp(name, "kill-buffer") || !ft_strcmp(name, ".kill-buffer"))
-		return (zle_do_kill_buffer(), 0);
+		return (zle_do_kill_buffer(), zle_publish(state), 0);
 	if (!ft_strcmp(name, "accept-line") || !ft_strcmp(name, ".accept-line"))
 		return (zle_do_accept_line(), 0);
 	if (zle_widget_get(name))

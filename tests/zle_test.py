@@ -286,6 +286,28 @@ def cd_boundary_case():
           real.encode() in out or dest.encode() in out,
           "the widget's cd did not reach the parent; %r" % out[-200:])
 
+    # `zle kill-buffer` must actually empty the line, and STAY empty.
+    #
+    # It clears readline's buffer directly, but the dispatcher then writes the
+    # shell's BUFFER/LBUFFER back into readline -- and those still held the
+    # old text, so the kill was silently undone. Harmless-looking on its own;
+    # not harmless at all in the idiom every navigation plugin uses:
+    #
+    #     zle .kill-buffer ; some_function_that_cds ; zle .accept-line
+    #
+    # With the kill undone, accept-line submits whatever the user had already
+    # typed. Pressing the key with `rm -rf x` half-written RAN it. That is the
+    # case below, and it is why this is asserted on the executed output rather
+    # than on the redrawn line.
+    rc3 = ("setopt zsh\n"
+           'wipe() { zle .kill-buffer; zle .accept-line; }\n'
+           "zle -N wipe\n"
+           "bindkey '\\e\\e' wipe\n")
+    out3 = pty_session(rc3, [(b"echo DETONATE", 0.5), (b"\x1b\x1b", 1.2)])
+    check("widget/kill-buffer-is-not-undone-by-the-write-back",
+          b"DETONATE\r\n" not in out3,
+          "the typed line was RESTORED and then executed; %r" % out3[-200:])
+
     # POSITIVE CONTROL. The check above is an absence, and an absence proves
     # nothing unless the same probe can also see a presence: a typo in the rc,
     # a widget that never fires, or a pty that captured nothing all produce

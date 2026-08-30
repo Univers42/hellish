@@ -51,8 +51,11 @@ t_shell	**zle_state_cell(void)
 
 /* Copy readline's line and cursor into the shell variables a widget reads.
    LBUFFER and RBUFFER are the halves either side of the cursor, which is
-   how zsh code inserts at the cursor without touching the rest. */
-static void	zle_publish(t_shell *state)
+   how zsh code inserts at the cursor without touching the rest.
+     Not static: a built-in widget that edits readline's line directly
+   (`zle kill-buffer`) has to refresh these too, or zle_collect writes the
+   stale text straight back over the edit. See builtin_zle.c. */
+void	zle_publish(t_shell *state)
 {
 	char	*s;
 
