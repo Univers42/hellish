@@ -22,8 +22,11 @@
 
 /* NAME+=value: the key still carries its trailing '+'. Prepend the
    variable's current value (string concatenation, bash scalar +=) and
-   drop the '+'. A subscript key (a[i]+=) keeps its brackets for
-   subscript_assign; only the plain-scalar case concatenates here. */
+   drop the '+'. A subscript key (a[i]+=) belongs to subscript_assign, so
+   it is left completely alone here -- INCLUDING the '+'.
+     Stripping it here and then returning is what made `a[1]+=Z` overwrite
+   instead of appending: by the time the element path ran, the only mark
+   that an append had been asked for was gone. */
 void	scalar_append(t_shell *state, t_env *ret)
 {
 	int		klen;
@@ -33,9 +36,9 @@ void	scalar_append(t_shell *state, t_env *ret)
 	klen = (int)ft_strlen(ret->key);
 	if (klen < 1 || ret->key[klen - 1] != '+' || !ret->value)
 		return ;
-	ret->key[klen - 1] = '\0';
 	if (ft_strchr(ret->key, '['))
 		return ;
+	ret->key[klen - 1] = '\0';
 	old = env_expand(state, ret->key);
 	if (!old)
 		old = "";

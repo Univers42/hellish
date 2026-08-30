@@ -69,3 +69,25 @@ declare -A M; M[" "]=v; declare -p M
 declare -A M; M["x y"]=v; declare -p M
 declare -A M; M["a\$b"]=v; declare -p M
 declare -A M; M[a]=1; echo "n=${#M[@]}"
+a=(1 2); a[1]+=Z; declare -p a
+a=(1 2); a[0]+=9; declare -p a
+a=(1 2); a[-1]+=Z; declare -p a
+a=(1 2); a[9]+=x; declare -p a
+a=(); a[0]+=x; declare -p a
+a=(1 2); i=1; a[$i]+=Z; declare -p a
+a=(1 2); a[$((0+1))]+=Z; declare -p a
+a=(1 2); a[$(echo 1)]+=Z; declare -p a
+declare -A M; M[k]=a; M[k]+=b; declare -p M
+declare -A M; M[new]+=v; declare -p M
+declare -A M; k="a b"; M[$k]+=v; M[$k]+=w; declare -p M
+declare -A M; k=ab; M[$k]+=z; declare -p M
+a=(1 2); declare "a[1]=Z"; declare -p a
+a=(1 2); declare "a[1]+=Z"; declare -p a
+declare -A M; declare "M[a b]=v"; declare -p M
+declare -A M; declare "M[ab]=v"; declare -p M
+declare -A M; declare "M[a=b]=v"; declare -p M
+declare -A M; typeset "M[a b]=v"; declare -p M
+declare -A M; M[k]=a; declare "M[k]+=b"; declare -p M
+declare "x=1"; declare -p x
+a=(1 2); a[1]+=Z; a[1]+=Y; declare -p a
+x=1; x+=2; declare -p x

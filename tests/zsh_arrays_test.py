@@ -293,10 +293,17 @@ def bad_subscript_cases():
 
     The same policy governs a readonly assignment, so it is pinned here too
     rather than left to be rediscovered from another plugin."""
+    # 127, not 1.  A refused assignment is the same fatal family as ${p:?w},
+    # `set -u` and readonly, and bash reports 127 for all four when the
+    # top-level shell of a -c string dies (1 in a subshell or a script) --
+    # `bash --posix -c 'unset a; a[-1]=x'` is 127, plain `bash -c` is 1, and
+    # bash --posix is what the golden suite grades against.  This row said 1
+    # because bad_subscript() hardcoded it while the other three used
+    # shell_fatal_status(); it now uses that too (#82 item 5).
     out, rc = run_bash_mode('unset a; a[-1]=x; echo REACHED')
     check("bad-sub/bash-negative-past-start",
           (rc, "REACHED" in out, "bad array subscript" in out),
-          (1, False, True))
+          (127, False, True))
     out, _ = run_zsh('a=(1 2 3); a[0]=(x); echo REACHED')
     check("bad-sub/zsh-a0-is-refused",
           ("REACHED" in out, "invalid subscript range" in out),
