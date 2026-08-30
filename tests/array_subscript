@@ -44,3 +44,13 @@ NOPE=set; case "$NOPE" in set) echo SET;; esac
 case "$NOPE" in a|b) echo AB;; esac; echo "rc=$?"
 case "" in "") echo EMPTYLIT;; esac
 [[ "$NOPE" == "" ]] && echo DBRACKET_EMPTY
+x=hello; x[2]=Z; echo "${x[0]}|${x[2]}|${#x[@]}"
+x=hello; x[2]=Z; declare -p x
+x=hi; x[1]=B; echo "${x[@]}"
+x=hello; x[0]=Z; echo "$x"
+x=hello; x[2]=Z; echo "$x"
+unset y; y[3]=Q; echo "${y[3]}|${#y[@]}"
+x=a; x[2]=c; x+=(d); echo "${x[@]}"
+x=hello; x[$((1+1))]=Z; echo "${x[@]}"
+n=2; x=hello; x[$n]=Z; declare -p x
+x=hello; x[2]=Z; unset 'x[2]'; declare -p x
