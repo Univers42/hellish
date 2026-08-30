@@ -88,7 +88,7 @@ command_not_found_handle() { echo hi; }; echo direct; nosuchcmd_xyz
 a=(x y z w); echo "${a[@]:1:2}" "${a[@]:2}" "${!a[@]}"
 a=(a b c d e); echo "${a[@]:1:3}" "${a[*]:2:2}"
 a=(1 2 3); echo "[${a[@]:1}]" "[${a[@]:-d}]"
-shopt -s extglob; eval 'echo @(f1|f2)'
+touch xg1 xg2; shopt -s extglob; eval 'echo @(xg1|xg2)'
 shopt -s extglob; eval 'case abc in @(a|b)*) echo A;; esac'
 shopt -s extglob; eval 'case aXbXc in a@(X|Y)b?(X)c) echo N;; esac'
 shopt -s extglob; eval 'case "" in *(a)) echo empty;; esac'
@@ -100,11 +100,11 @@ shopt -s extglob; eval 'case ab in @(a|@(b|c))b) echo nest;; esac'
 echo @(a); echo "rc=$?"
 compgen -W 'alpha beta' al; echo "rc=$?"
 compgen -W 'a b c' ''; echo "rc=$?"
-compgen -b ech
-compgen -k fo
-compgen -v HOM
+compgen -b echo
+compgen -k for
+zqb=1 zqa=2 zqc=3; compgen -v zq
 f(){ :; }; g(){ :; }; compgen -A function g
-compgen -A variable HOM
+zva=1 zvc=2 zvb=3; compgen -A variable zv
 compgen -A nosuch x; echo "rc=$?"
 compgen -Z x; echo "rc=$?"
 compgen; echo "rc=$?"
@@ -118,3 +118,7 @@ complete -W a f1; complete -W b f2; complete -r f1; complete -p
 complete -W x a; complete -r; complete -p; echo "rc=$?"
 complete -W 'a b' one two; complete -p one; complete -p two
 complete; echo "rc=$?"
+zzqb=1 zzqa=2 zzqc=3; compgen -v zzq
+zfb(){ :; }; zfa(){ :; }; compgen -A function zf
+compgen -W 'zeta alpha mid' ''
+compgen -W 'zb za zc' z

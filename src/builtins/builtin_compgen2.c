@@ -21,59 +21,62 @@ extern char	*g_builtins[];
    nothing here builds a new registry, because a completion list that is
    assembled separately from the thing it describes goes stale silently. */
 
-/* -A function: the user-defined function table. */
+/* -A function: the user-defined function table, sorted -- definition
+   order is an implementation detail and bash does not expose it. */
 static int	cg_functions(t_shell *st, const char *pfx)
 {
 	size_t	i;
-	int		hit;
+	t_vec	out;
 
+	out = (t_vec){0};
 	i = 0;
-	hit = 0;
 	while (i < st->functions.len)
-		hit += cg_emit(((t_shell_func *)vec_idx(&st->functions, i++))->name,
-				pfx);
-	return (hit);
+		cg_add(&out, ((t_shell_func *)vec_idx(&st->functions, i++))->name,
+			pfx);
+	return (cg_flush(&out));
 }
 
 /* -v: every variable that has a value, the same "set" test `test -v` uses
-   so the two cannot disagree about what exists. */
+   so the two cannot disagree about what exists. Sorted: the env vec is in
+   assignment order, which no caller should be able to observe. */
 static int	cg_vars(t_shell *st, const char *pfx)
 {
 	size_t	i;
 	t_env	*e;
-	int		hit;
+	t_vec	out;
 
+	out = (t_vec){0};
 	i = 0;
-	hit = 0;
 	while (i < st->env.len)
 	{
 		e = &((t_env *)st->env.ctx)[i++];
 		if (e->key && e->value)
-			hit += cg_emit(e->key, pfx);
+			cg_add(&out, e->key, pfx);
 	}
-	return (hit);
+	return (cg_flush(&out));
 }
 
-/* -b builtins and -k keywords, from the tables the shell itself uses. */
+/* -b builtins and -k keywords, from the tables the shell itself uses,
+   sorted -- hellish's dispatch table is in registration order. */
 static int	cg_names(char act, const char *pfx)
 {
 	static const char	*kw[] = {"if", "then", "else", "elif", "fi", "case",
 		"esac", "for", "select", "while", "until", "do", "done", "in",
 		"function", "time", "coproc", "{", "}", "!", "[[", "]]", NULL};
 	int					i;
-	int					hit;
+	t_vec				out;
 
+	out = (t_vec){0};
 	i = 0;
-	hit = 0;
 	if (act == 'k')
 	{
 		while (kw[i])
-			hit += cg_emit(kw[i++], pfx);
-		return (hit);
+			cg_add(&out, kw[i++], pfx);
+		return (cg_flush(&out));
 	}
 	while (g_builtins[i])
-		hit += cg_emit(g_builtins[i++], pfx);
-	return (hit);
+		cg_add(&out, g_builtins[i++], pfx);
+	return (cg_flush(&out));
 }
 
 /* -f / -d / -c: the filesystem and PATH sources. -c offers builtins and
