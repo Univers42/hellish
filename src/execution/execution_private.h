@@ -192,4 +192,23 @@ static inline t_executable_node	create_exe_node(int infd,
 	});
 }
 
+/* zsh's multi-variable for (execute_for_zsh.c). The names live as one
+   space-separated span in the node token; zfor_count is how the loop knows
+   its stride, so a one-name loop is unchanged. */
+int					zfor_count(const char *names, int len);
+size_t				for_stride(t_ast_node *node);
+void				free_word_vec(t_vec *w);
+void				zfor_bind_row(t_shell *state, t_ast_node *node,
+						t_vec *w, size_t base);
+
+/* Brace groups, and zsh's `} always { }` (execute_always.c). A group with a
+   second child carries a cleanup block that runs however the body exited. */
+t_execution_state	execute_brace_group(t_shell *state,
+						t_executable_node *exe);
+
+/* zsh's multi-name function definition (execute_func_zsh.c): one body under
+   several names, each brace-expanded. Returns how many were defined. */
+int					zfunc_define_all(t_shell *state, t_token *tok,
+						t_ast_node *body);
+
 #endif

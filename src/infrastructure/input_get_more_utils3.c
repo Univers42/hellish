@@ -61,7 +61,7 @@ static void	parse_print_and_cleanup(t_shell *state,
 	t_ast_node	parsed;
 
 	parser->parse_stack.len = 0;
-	reclassify_keywords(tt);
+	reclassify_keywords(tt, zsh_mode(state));
 	parsed = parse_tokens(state, parser, tt);
 	debug_parser_print_ast(state, parser, parsed);
 	debug_parser_cleanup(state, tt, prompt);

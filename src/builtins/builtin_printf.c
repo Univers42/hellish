@@ -37,7 +37,7 @@ void	pf_err_num(t_pf *pf, const char *arg)
    signed parser clamped every value above LLONG_MAX (issue #28). Floats
    get the same trailing-junk treatment via strtod in pf_conv_float — bash
    prints the converted prefix but still exits 1. */
-static void	pf_conv_str(t_pf *pf, char *fmt, const char *arg, char *buf)
+int	pf_conv_str(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b)
 {
 	char	conv;
 
@@ -46,14 +46,14 @@ static void	pf_conv_str(t_pf *pf, char *fmt, const char *arg, char *buf)
 	{
 		if (!arg)
 			arg = "";
-		snprintf(buf, 4096, fmt, arg);
+		return (snprintf(b->p, b->cap, fmt, arg));
 	}
-	else if (ft_strchr("ouxX", conv))
-		snprintf(buf, 4096, fmt, pf_unum(pf, arg));
-	else if (ft_strchr("di", conv))
-		snprintf(buf, 4096, fmt, pf_num(pf, arg));
-	else
-		pf_conv_float(pf, fmt, arg, buf);
+	if (ft_strchr("ouxX", conv))
+		return (snprintf(b->p, b->cap, fmt, pf_unum(pf, arg)));
+	if (ft_strchr("di", conv))
+		return (snprintf(b->p, b->cap, fmt, pf_num(pf, arg)));
+	pf_conv_float(pf, fmt, arg, b);
+	return ((int)ft_strlen(b->p));
 }
 
 /* %c prints the first byte of its argument — bash emits a real NUL byte
@@ -62,23 +62,25 @@ static void	pf_conv_str(t_pf *pf, char *fmt, const char *arg, char *buf)
    not by strlen, precisely because of that possible embedded NUL. */
 static void	pf_conv_char(t_pf *pf, t_spec *sp, const char *arg)
 {
-	char	buf[4096];
+	char	stack[PF_STACK_BUF];
 	char	fmt[80];
+	t_pfbuf	b;
 	int		n;
 	int		i;
-	char	c;
 
-	c = '\0';
+	i = 0;
 	if (arg)
-		c = arg[0];
+		i = (unsigned char)arg[0];
 	sp->has_prec = false;
 	pf_build_spec(fmt, sp, 'c');
-	n = snprintf(buf, 4096, fmt, (int)c);
-	if (n > 4095)
-		n = 4095;
+	pf_buf_open(sp, &b, stack);
+	n = snprintf(b.p, b.cap, fmt, i);
+	if (n >= (int)b.cap)
+		n = (int)b.cap - 1;
 	i = 0;
 	while (i < n)
-		vec_push_char(pf->out, buf[i++]);
+		vec_push_char(pf->out, b.p[i++]);
+	pf_buf_close(&b, stack);
 }
 
 /* Handle one conversion: %%, %c, %b (backslash-escape string), and the
@@ -87,7 +89,6 @@ static void	pf_conv_char(t_pf *pf, t_spec *sp, const char *arg)
    to re-run the format string against the remaining arguments. */
 void	pf_conv(t_pf *pf, t_spec *sp, char conv)
 {
-	char		buf[4096];
 	char		fmt[80];
 	const char	*arg;
 
@@ -101,10 +102,8 @@ void	pf_conv(t_pf *pf, t_spec *sp, char conv)
 	{
 		if (!arg)
 			arg = "";
-		return (pf_emit_b(pf->out, arg, &pf->stop));
+		return (pf_emit_b_padded(pf, sp, arg));
 	}
 	pf_build_spec(fmt, sp, conv);
-	buf[0] = '\0';
-	pf_conv_str(pf, fmt, arg, buf);
-	vec_push_str(pf->out, buf);
+	pf_emit_sized(pf, sp, fmt, arg);
 }

@@ -53,6 +53,20 @@ fi
 
 RC="$TARGET_HOME/.hellishrc"
 
+# Where the config tree goes. XDG_CONFIG_HOME is honoured only when it
+# actually lives UNDER the home being seeded.
+#
+# Anything looser seeds the wrong machine. Comparing TARGET_HOME to $HOME is
+# not enough: every test drives this by overriding HOME, which makes the two
+# equal while the ambient XDG_CONFIG_HOME still points at the developer's own
+# ~/.config. The first version of this did exactly that and created
+# ~/.config/hellish on my box while reporting that it had seeded a temp dir.
+case "${XDG_CONFIG_HOME:-}" in
+"$TARGET_HOME"/*) XDG="$XDG_CONFIG_HOME/hellish" ;;
+*) XDG="$TARGET_HOME/.config/hellish" ;;
+esac
+
+
 PATH_BEGIN='# >>> hellish path >>>'
 PATH_END='# <<< hellish path <<<'
 
@@ -74,6 +88,89 @@ seed_rc() {
 	cp "$EXAMPLE" "$RC.new" || return 1
 	mv -f "$RC.new" "$RC" || return 1
 	printf '  \033[1;32m✓\033[0m  seeded %s from %s\n' "$RC" "$(basename "$EXAMPLE")"
+}
+
+
+# -- the default prompt, as a FILE -----------------------------------------
+# Issue #74: "this prompt should exist in configuration so we can retouch it
+# and not in binary only". The shell keeps a built-in fallback for a machine
+# with no config at all, but the prompt you actually get is this file, and
+# editing it is the supported way to change it -- no rebuild, and no hunting
+# for the escape sequence in C.
+#
+# Deliberately plain. The built-in theme is a two-row box with git, timing
+# and job badges, which is a lot to meet on first launch; #74 asks for "a
+# normal prompt without nothing, just maybe the update notification". So:
+# three coloured segments (user, host, cwd) in the shape zsh users already
+# expect, \U for a pending release, nothing else.
+#
+# Never overwritten: like the rc, an existing file is the user's.
+seed_prompt() {
+	if [ -e "$XDG/rc.d/30-prompt.hsh" ]; then
+		printf '  \033[1;34mi\033[0m  %s already exists -- left untouched\n' \
+			"$XDG/rc.d/30-prompt.hsh"
+		return 0
+	fi
+	mkdir -p "$XDG/rc.d" "$XDG/plugins" 2>/dev/null || return 0
+	cat > "$XDG/rc.d/30-prompt.hsh" <<'PROMPT_EOF'
+# The prompt. Yours to edit -- hellish reads this file, it is not compiled in.
+#
+#   \u user   \h host   \w cwd (~)   \W basename   \$ $ or #
+#   \U  a pending release, invisible otherwise
+#   \g git branch   \S failure badge   \p duration   \J jobs
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE, when
+# this line runs, and are then frozen forever.
+PS1='\[\e[48;5;24;38;5;255m\] \u \[\e[0m\]\[\e[48;5;60;38;5;255m\] \h \[\e[0m\]\[\e[48;5;238;38;5;252m\] \w \[\e[0m\]\U \$ '
+PS2='\[\e[38;5;245m\]> \[\e[0m\]'
+
+# The full built-in theme (git, timing, jobs, two rows) is one line away:
+# PS1='\B'
+#
+# Or the zsh spelling, if you prefer it -- set PROMPT instead of PS1:
+# PROMPT='%F{green}%n@%m%f %~ %# '
+PROMPT_EOF
+	printf '  \033[1;32mok\033[0m  seeded %s\n' "$XDG/rc.d/30-prompt.hsh"
+}
+
+# ── the prompt themes and the `prompt` switcher ────────────────────────────
+#
+# 29 themes plus one rc.d file defining `prompt`. Copied, not symlinked: they
+# are yours once they are there, and an upgrade must not silently rewrite a
+# theme you edited.
+#
+# Per-file never-clobber, not all-or-nothing. A user who edited two themes
+# still gets the twenty-seven new ones on the next upgrade, and the two they
+# touched are left exactly as they are -- an all-or-nothing check would mean
+# one edit freezes the whole set forever.
+#
+# The switcher itself IS overwritten, and that is the one deliberate
+# exception: it is code rather than configuration, a stale copy would not
+# know about a new subcommand, and anyone who wants their own can define
+# `prompt` after it loads -- the last definition wins.
+seed_themes() {
+	_src="$(dirname "$0")/../share"
+	[ -d "$_src/themes" ] || return 0
+	mkdir -p "$XDG/themes" "$XDG/rc.d" 2>/dev/null || return 0
+	_new=0
+	_kept=0
+	for _f in "$_src"/themes/*.hsh "$_src"/themes/README.md; do
+		[ -e "$_f" ] || continue
+		if [ -e "$XDG/themes/$(basename "$_f")" ]; then
+			_kept=$((_kept + 1))
+		else
+			cp "$_f" "$XDG/themes/" 2>/dev/null && _new=$((_new + 1))
+		fi
+	done
+	cp "$_src/rc.d/40-prompt-switch.hsh" "$XDG/rc.d/" 2>/dev/null
+	if [ "$_kept" -gt 0 ]; then
+		printf '  \033[1;32mok\033[0m  %s themes (%s new, %s of yours left alone)\n' \
+			"$XDG/themes" "$_new" "$_kept"
+	else
+		printf '  \033[1;32mok\033[0m  seeded %s themes in %s\n' \
+			"$_new" "$XDG/themes"
+	fi
+	printf '        try:  prompt          (list)   prompt preview   (see them all)\n'
 }
 
 # ── the managed PATH block ─────────────────────────────────────────────────
@@ -159,6 +256,8 @@ if [ "$STRIP_PATH" = "1" ]; then
 fi
 
 seed_rc || exit 1
+seed_prompt || exit 1
+seed_themes || exit 1
 if [ -n "$PATH_DIR" ]; then
 	write_path_block "$PATH_DIR" || exit 1
 fi

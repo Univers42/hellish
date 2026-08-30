@@ -15,6 +15,9 @@
 #include "env.h"
 #include "expander.h"
 #include "parena.h"
+#include "sh_alias.h"
+#include "cmd_hash.h"
+#include "zle.h"
 
 void	arr_marks_clear(t_shell *state);
 void	attr_clear(t_shell *state);
@@ -68,13 +71,23 @@ static void	free_functions(t_shell *state)
 	{
 		fn = vec_idx(&state->functions, i++);
 		xfree(fn->name);
+		xfree(fn->src);
+		xfree(fn->text);
 		free_ast(&fn->body);
 	}
+	hash_destroy(&state->func_index, NULL);
 	xfree(state->functions.ctx);
 	i = 0;
 	while (i < state->dead_funcs.len)
 		free_ast((t_ast_node *)vec_idx(&state->dead_funcs, i++));
 	xfree(state->dead_funcs.ctx);
+	i = 0;
+	while (i < state->call_frames.len)
+	{
+		xfree(((t_call_frame *)vec_idx(&state->call_frames, i))->func);
+		xfree(((t_call_frame *)vec_idx(&state->call_frames, i++))->src);
+	}
+	xfree(state->call_frames.ctx);
 }
 
 /* Session-lifetime strings and caches, in the exact order free_all_state
@@ -104,16 +117,41 @@ static void	free_session_strings(t_shell *state)
 	state->path_dirs_src = NULL;
 }
 
-/* Session data, still in free_all_state's order: history, cwd, positional
-   args, the argv pool, the trap table (handler strings are ft_strdup'd in
-   set_one_trap and live for the whole session — freeing them here keeps a
-   script using trap leak-clean like any other), then the dirstack and the
-   for-loop positional snapshot. */
+/* Session data, still in free_all_state's order: history, aliases, cwd,
+   positional args, the argv pool, the trap table (handler strings are
+   ft_strdup'd in set_one_trap and live for the whole session — freeing them
+   here keeps a script using trap leak-clean like any other), then the
+   dirstack and the for-loop positional snapshot.
+
+   alias_table_free existed and was correct and was never CALLED, so every
+   alias leaked its name, its value and its entry. It went unnoticed for two
+   reasons that reinforce each other: our own tests define a handful of
+   aliases, and LeakSanitizer does not report the table at all — it is still
+   reachable through state at exit, which LSan classes as "still reachable"
+   rather than leaked. The ft_malloc oracle counts live bytes instead of
+   reachability, so it sees it; sourcing oh-my-zsh's git plugin, which
+   defines 201 aliases, put 18 KB on the board. Exactly the case the SAFE=0
+   parity run exists for.
+
+   cmd_hash_free was the same shape and found by the same run: a correct
+   destructor that only `hash -r` ever called. It matters more than the alias
+   one looks like it should, because prehash_external populates that cache
+   on every external command a session runs -- ~88 bytes each, forever.
+
+   The ZLE tables are here for the same reason and were caught the same way:
+   200 `zle -N` registrations put 17 KB on the ft_malloc oracle. They live in
+   function-local statics rather than in t_shell -- readline's callback takes
+   no context, so they have to be reachable without one -- which is exactly
+   the shape that gets forgotten at shutdown. */
 static void	free_session_data(t_shell *state)
 {
 	int	i;
 
 	free_hist(state);
+	alias_table_free(&state->aliases);
+	cmd_hash_free(&state->cmd_cache);
+	zle_widgets_free();
+	zle_binds_free();
 	xfree(state->cwd.ctx);
 	pos_free(&state->pos);
 	free_argv_pool(state);

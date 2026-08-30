@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# ---- environment isolation -------------------------------------------------
+# Both sides of every comparison must see the same environment, and the
+# DEVELOPER's environment is not neutral. This suite diffs hellish against
+# bash byte-for-byte, so any variable that changes bash's output changes the
+# verdict -- and the people most likely to run it are the people who use
+# hellish as their daily shell, i.e. the people whose rc exports the most.
+#
+# Real case: a `~/.hellishrc` framework exporting HISTTIMEFORMAT='%F %T '
+# made `history` print timestamps on the bash side and not on hellish's, and
+# 12 issue42_history_opts cases "failed" against code that was correct. The
+# same class of leak (HOME, so the rc itself loads) breaks the pty suite.
+#
+# So: unset the variables that steer the constructs under test, rather than
+# scrubbing the whole environment -- PATH, TERM and the locale still have to
+# work. Add to this list when a new category turns out to be env-sensitive.
+unset HISTTIMEFORMAT HISTCONTROL HISTSIZE HISTFILE HISTFILESIZE HISTIGNORE
+unset ENV BASH_ENV CDPATH IFS GLOBIGNORE PROMPT_COMMAND
+export LC_ALL=C
+
 # Parse arguments:
 VERBOSE=0
 test_lists=()
@@ -36,6 +55,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "job_label"
         "help_builtin"
         "printf_length"
+        "array_subscript" "declare_quoting" "procsub_assign"
     )
 fi
 
@@ -93,8 +113,17 @@ printf "${RED}🔥 Parallel Test Harness starting 🔥${END}\n"
 
 RUN_DIR="$(mktemp -d /tmp/sh42_tester_XXXXXX)"
 
+# A named file that is not there is FATAL, not a warning.
+#
+# test_lists is hand-maintained, so a rename or a typo used to drop a whole
+# case file on the floor and print one yellow line in the middle of a run
+# that then said "ALL N TESTS PASSED" -- a smaller N nobody was watching.
+# The pty runner discovers its tests for exactly this reason and says so;
+# this suite cannot discover (tests/ holds fixtures, scripts and outputs
+# next to the case files), so it fails loudly instead.
 rm -f "$RUN_DIR/queue.txt"
 TOTAL_TESTS=0
+MISSING=()
 for tf in "${test_lists[@]}"; do
     if [[ -f "$tf" ]]; then
         while IFS= read -r teste || [[ -n "$teste" ]]; do
@@ -103,9 +132,17 @@ for tf in "${test_lists[@]}"; do
             echo "$TOTAL_TESTS|||$tf|||$teste" >> "$RUN_DIR/queue.txt"
         done < "$tf"
     else
-        echo -e "${YELLOW}Warning: File $tf not found${END}"
+        MISSING+=("$tf")
     fi
 done
+
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    printf "${RED}✗ case file(s) named in test_lists but not on disk:${END}\n" >&2
+    printf "   %s\n" "${MISSING[@]}" >&2
+    printf "${RED}   Refusing to report a pass on a suite that shrank.${END}\n" >&2
+    rm -rf "$RUN_DIR"
+    exit 1
+fi
 
 if [[ $TOTAL_TESTS -eq 0 ]]; then
     echo "No tests found."

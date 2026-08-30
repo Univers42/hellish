@@ -94,7 +94,7 @@ int	print_args(t_vec *out, int e, t_vec argv, size_t i)
 	{
 		if (e)
 		{
-			if (e_parser(out, ((char **)argv.ctx)[i]))
+			if (e_parser(out, ((char **)argv.ctx)[i], false))
 				return (1);
 		}
 		else

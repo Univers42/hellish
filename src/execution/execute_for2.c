@@ -73,3 +73,15 @@ void	set_for_var(t_shell *state, char *name, char *val)
 	env_set(&state->env,
 		env_create(ft_strdup(name), ft_strdup(val), false));
 }
+
+/* Release the expanded word list: the strings were strdup'd by the expander
+   and the backing array is plain heap. */
+void	free_word_vec(t_vec *w)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < w->len)
+		xfree(((char **)w->ctx)[i++]);
+	xfree(w->ctx);
+}

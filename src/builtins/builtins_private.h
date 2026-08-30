@@ -22,6 +22,16 @@
 # include "helpers.h"
 # include "sh_input.h"
 
+/* print's option set (builtin_zsh_print.c); here because the norm keeps
+   typedefs out of .c files. */
+typedef struct s_pflags
+{
+	bool	raw;
+	bool	nonl;
+	bool	lines;
+	bool	prompt;
+}	t_pflags;
+
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \
 				No such file or directory\n"
@@ -129,6 +139,9 @@ int		handle_no_args(t_shell *state, t_vec argv);
 size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
 int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);
 int		exit_parse_ll(const char *s, long long *out);
+int		shift_operand(t_shell *state, t_vec argv, int *out);
+void	subscript_assign(t_shell *state, t_env *ret);
+char	*declare_assign_eq(const char *word);
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 
@@ -277,5 +290,15 @@ int		pretty_mode(t_shell *state, t_vec argv, int first);
 int		pretty_show(t_shell *state, bool reusable);
 int		pretty_list(t_shell *state);
 void	pretty_sync(t_shell *state);
+
+int		declare_functions(t_shell *state, t_vec argv, size_t i,
+			bool bodies);
+
+void	dirstack_print(t_shell *state);
+
+char	scan_term(const char *w);
+int		declare_names(t_shell *state, t_vec argv, size_t i);
+int		list_all(t_shell *state);
+int		list_named(t_shell *state, t_vec argv, size_t i);
 
 #endif

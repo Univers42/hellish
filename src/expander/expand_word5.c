@@ -88,3 +88,30 @@ void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 	expand_word_glob_ctl(state, &scratch, args, EW_KEEP_AS_ONE | EW_NO_GLOB);
 	word_slab_push(o);
 }
+
+/* One ELEMENT of an array literal: arr=(a $V *.md).
+**
+** Elements are not scalar assignments. bash word-splits and globs them --
+** `arr=($V)` yields one element per field and `files=(*.c)` yields one per
+** match -- and those are the two commonest array idioms there are. Routing
+** them through expand_word_assign_ro (EW_KEEP_AS_ONE | EW_NO_GLOB) gave a
+** one-element array holding the unsplit string, silently: no error, just a
+** loop that ran once with the wrong value.
+**
+** So this passes flags 0, exactly like a command word. What it does NOT
+** share with expand_word_ro is the slab: an array value is stored into the
+** environment and outlives the command, so the slab is pushed off around the
+** expansion (same reason and same idiom as the function above).
+**
+** The scalar path above is deliberately untouched. POSIX really does say
+** VAR=value neither splits nor globs, so `x=*.md` must stay literal. */
+void	expand_word_elem_ro(t_shell *state, t_ast_node *src, t_vec *args)
+{
+	t_ast_node	scratch;
+	int			o;
+
+	o = word_slab_push(0);
+	scratch = clone_ast(src);
+	expand_word_glob_ctl(state, &scratch, args, 0);
+	word_slab_push(o);
+}

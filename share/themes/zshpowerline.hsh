@@ -1,0 +1,5 @@
+# zshpowerline -- powerline in zsh syntax -- %K background, %F foreground
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PROMPT='%K{24}%F{255} %n %f%k%K{60}%F{255} %m %f%k%K{238}%F{252} %~ %f%k '

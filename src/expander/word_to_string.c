@@ -17,15 +17,30 @@ static bool	is_envvar_token(t_tt tt)
 	return (tt == TT_ENVVAR || tt == TT_DQENVVAR);
 }
 
-static void	append_token_text(t_string *s, t_token curr, size_t total_children)
+/* A $-token with no text left is a variable that expanded to NOTHING, and
+   contributes nothing.
+
+   It used to put a literal '$' back when it was the word's only child, on
+   the theory that a bare `$` reaches here the same way.  It does not: the
+   reparser routes a bare `$` through handle_envvar_literal, which pushes a
+   subtoken that still CARRIES the character -- reparse_envvar2.c says the
+   same thing about `${}`, which it deliberately keeps its braces for so it
+   cannot be confused with one.  So a real `$` has a non-NULL start and
+   prints through the branch above.
+
+   The rule therefore only ever fired for an UNSET variable alone in an
+   operator word, where it printed a dollar sign that was never in the
+   input:
+
+     ${x:-$k}   k unset   printed "$"   bash prints ""
+
+   and that is also how `a[$k]=v` -- a subscript, which goes through this
+   same word pipeline -- became "$: arithmetic error" instead of assigning
+   to element 0. */
+static void	append_token_text(t_string *s, t_token curr)
 {
 	if (curr.start)
 		vec_push_nstr(s, curr.start, (size_t)curr.len);
-	else if (curr.len == 0 && is_envvar_token(curr.tt))
-	{
-		if (total_children == 1)
-			vec_push_char(s, '$');
-	}
 }
 
 /* Serialise one subtoken in a form that can be re-lexed as the same token
@@ -94,7 +109,7 @@ t_string	word_to_string(t_ast_node node)
 		child = &((t_ast_node *)node.children.ctx)[i];
 		if (child->node_type != AST_TOKEN)
 			break ;
-		append_token_text(&s, child->token, node.children.len);
+		append_token_text(&s, child->token);
 	}
 	return (s);
 }

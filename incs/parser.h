@@ -32,6 +32,13 @@ typedef struct s_parser
 	t_vec			parse_stack; /* heredoc ordering stack */
 	int				stream; /* 1: stop after a TT_NEWLINE list operator */
 	bool			stream_more; /* out: stopped at a boundary, more pending */
+	/* Set by unexpected() when it has already printed a message.  The
+	   finish points use it to catch a RES_ERR that nobody reported: a
+	   dozen productions set res = RES_ERR directly (parse_for, parse_if,
+	   parse_case, parse_array, parse_arith ...) and `for x (a b)` used to
+	   fail with status 2 and complete silence.  One flag beats a message
+	   at each of those sites, and it also covers the next one added. */
+	bool			reported;
 }	t_parser;
 
 /* Token classification helpers: is this token a redirect operator?

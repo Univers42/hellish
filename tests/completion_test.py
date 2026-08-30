@@ -78,7 +78,9 @@ def run(sends, path_extra=None, settle=1.4):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 100, 0, 0))
     time.sleep(0.8)

@@ -1,0 +1,5 @@
+# ember -- 24-bit truecolour -- SGR 38;2;r;g;b, not the 256 palette
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;2;255;140;0m\]\u\[\e[0m\]\[\e[38;2;120;120;120m\]@\[\e[0m\]\[\e[38;2;255;69;0m\]\h\[\e[0m\] \[\e[38;2;70;130;180m\]\w\[\e[0m\] \$ '

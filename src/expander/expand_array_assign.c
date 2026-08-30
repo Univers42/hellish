@@ -17,10 +17,12 @@ void	scope_save(t_shell *state, const char *key);
 
 /* Apply an AST_ARRAY_ASSIGN node: arr=(a b c) rebuilds the array from
    scratch, arr+=(d e) keeps the existing records and appends after the
-   highest index. Each element word expands with assignment semantics
-   (one field, no glob) — element-level splitting/globbing is a
-   documented v1 divergence from bash. The result rides the normal
-   pre_assigns path, so `arr=(1 2) cmd` scopes exactly like VAR=v cmd. */
+   highest index. Each element word SPLITS and GLOBS, like a command word
+   and like bash: arr=($V) is one element per field, files=(*.c) one per
+   match. This used to use assignment semantics (one field, no glob), which
+   silently produced a one-element array holding the unsplit string.
+   The result rides the normal pre_assigns path, so `arr=(1 2) cmd` scopes
+   exactly like VAR=v cmd. */
 
 /* Expand children [1..] (the element words) into heap strings. */
 static void	expand_elems(t_shell *state, t_ast_node *node, t_vec *args)
@@ -30,7 +32,7 @@ static void	expand_elems(t_shell *state, t_ast_node *node, t_vec *args)
 	i = 1;
 	while (i < node->children.len)
 	{
-		expand_word_assign_ro(state,
+		expand_word_elem_ro(state,
 			&((t_ast_node *)node->children.ctx)[i], args);
 		i++;
 	}
@@ -88,7 +90,8 @@ int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 	ev.exported = state->opt_allexport;
 	aa.ev = &ev;
 	aa.args = &args;
-	ev.value = build_array_value(state, ret, &aa);
+	if (!splice_elem_assign(state, &ev, &args))
+		ev.value = build_array_value(state, ret, &aa);
 	if (is_assign_builtin(ret))
 		persist_array(state, ret, ev);
 	else
