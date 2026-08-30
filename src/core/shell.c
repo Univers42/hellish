@@ -138,6 +138,7 @@ static void	open_cycle(t_shell *state)
 	update_notify_prompt(state);
 	if (state->metinp != INP_RL)
 		return ;
+	tty_snapshot_refresh();
 	pc = env_expand(state, "PROMPT_COMMAND");
 	if (!pc || !*pc)
 		return ;

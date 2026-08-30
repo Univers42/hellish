@@ -114,5 +114,7 @@ char	*self_exe_path(void);
 
 void	tty_snapshot_save(void);
 void	tty_snapshot_restore(void);
+void	tty_snapshot_refresh(void);
+void	tty_reclaim_after_signal(void);
 
 #endif
