@@ -62,7 +62,9 @@ def run(cols=200, rounds=14):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     # A wide terminal makes the prompt's box-drawing line long, so one frame
     # is several hundred bytes of escapes and multibyte glyphs.
@@ -110,7 +112,9 @@ def idle_bytes(anim, seconds=2.0):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 120, 0, 0))
     time.sleep(1.0)
