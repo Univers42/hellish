@@ -56,22 +56,18 @@ static bool	shift_arr_args(t_shell *state, t_vec argv, char **name, long *n)
 }
 
 /* Drop the first `n` elements of `val`, renumbering what is left.  Built
-   out of arr_splice at index 0 rather than a second walk of the encoding:
-   "remove this element and close the array up behind it" is exactly that
-   primitive, and these arrays hold tens of entries, not millions. */
+   out of arr_splice rather than a second walk of the encoding: "remove this
+   run and close the array up behind it" is exactly that primitive.
+     One splice over [0, n-1], not n splices at index 0 -- the same answer
+   without the intermediate copies, which is what the range gained us.  n of
+   0 leaves the array alone, since [0,-1] is an empty range. */
 static char	*shift_drop(const char *val, long n)
 {
-	char	*cur;
-	char	*next;
+	t_slice	r;
 
-	cur = ft_strdup(val);
-	while (n-- > 0)
-	{
-		next = arr_splice(cur, 0, NULL, 0);
-		xfree(cur);
-		cur = next;
-	}
-	return (cur);
+	r.lo = 0;
+	r.hi = n - 1;
+	return (arr_splice(val, r, NULL, 0));
 }
 
 /* `shift [n] name`.  Returns -1 when this is not the array form so the

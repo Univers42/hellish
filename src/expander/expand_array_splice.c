@@ -74,6 +74,27 @@ void	bad_subscript(t_shell *state, const char *name, const char *sub)
 	fatal_input_error(state, 1);
 }
 
+/* The assignment target as a RANGE.  `a[i]=(...)` and zsh's
+   `a[lo,hi]=(...)` are one operation over a narrow and a wide run, so both
+   arrive here as a t_slice and arr_splice never has to ask which was
+   written.  A plain index becomes the one-element range [i,i]. */
+static t_slice	target_slice(t_shell *state, char *text, const char *old)
+{
+	t_slice	r;
+	char	*rb;
+
+	r.lo = SLICE_NONE;
+	r.hi = 0;
+	rb = ft_strrchr(text, ']');
+	if (rb)
+		r = zsh_slice_bounds(state, text, (int)(rb - text), old);
+	if (r.lo != SLICE_NONE)
+		return (r);
+	r.lo = elem_sub_index(state, text, arr_count(old));
+	r.hi = r.lo;
+	return (r);
+}
+
 /* The array as it stands, for the paths that must leave it ALONE: an
    out-of-range subscript names no destination, so the old value is written
    back unchanged rather than the assignment landing somewhere else. */
@@ -96,16 +117,16 @@ bool	splice_elem_assign(t_shell *state, t_env *ev, t_vec *args)
 {
 	char	*br;
 	char	*old;
-	long	idx;
+	t_slice	r;
 
 	br = ft_strchr(ev->key, '[');
 	if (!br)
 		return (false);
 	*br = '\0';
 	old = env_expand(state, ev->key);
-	idx = elem_sub_index(state, br + 1, arr_count(old));
-	if (assoc_is(old) || idx < 0)
+	r = target_slice(state, br + 1, old);
+	if (assoc_is(old) || r.lo < 0)
 		return (ev->value = keep_unchanged(state, ev, old), true);
-	ev->value = arr_splice(old, idx, (char **)args->ctx, (int)args->len);
+	ev->value = arr_splice(old, r, (char **)args->ctx, (int)args->len);
 	return (true);
 }
