@@ -97,27 +97,31 @@ static void	arr_elem_emit(t_token *tt, char *elem)
 
    The slice check comes FIRST because `lo,hi` is a legal arithmetic
    expression: the comma operator would quietly evaluate it to `hi` and read
-   one element, which is a wrong answer that reports nothing. */
+   one element, which is a wrong answer that reports nothing.
+
+   The subscript is WORD-EXPANDED before it is evaluated -- the same two
+   steps in the same order as the write path in assignment_to_env.c.  It
+   used to go straight to arith_expand, which resolves `$name` but not
+   `$(( ))` or `$( )`, so `a[$((n+1))]=v` worked while `${a[$((n+1))]}`
+   answered "arithmetic error": the two halves of one syntax disagreed. */
 static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 {
 	char	*res;
 	t_slice	r;
 	long	sub;
 
+	res = expand_param_word(state, tt->start + nl + 1,
+			tt->len - nl - 2, false);
 	if (assoc_is(val))
 	{
-		res = expand_param_word(state, tt->start + nl + 1,
-				tt->len - nl - 2, false);
 		arr_elem_emit(tt, assoc_get(val, res, (int)ft_strlen(res)));
 		return ((void)xfree(res));
 	}
-	r = zsh_slice_bounds(state, tt->start + nl + 1, tt->len - nl - 2, val);
+	r = zsh_slice_bounds(state, res, (int)ft_strlen(res), val);
 	if (r.lo != SLICE_NONE)
-		return (arr_elem_emit(tt, zsh_slice_str(state, val, r)));
-	res = arith_expand(state, tt->start + nl + 1, tt->len - nl - 2);
-	sub = 0;
-	if (res)
-		sub = ft_atoi(res);
+		return (xfree(res),
+			arr_elem_emit(tt, zsh_slice_str(state, val, r)));
+	sub = arith_num(state, res, (int)ft_strlen(res));
 	xfree(res);
 	if (!arr_is(val))
 		return (arr_elem_emit(tt, zn_scalar_pick(state, val, sub)));
