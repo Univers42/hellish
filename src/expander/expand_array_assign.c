@@ -90,7 +90,8 @@ int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 	ev.exported = state->opt_allexport;
 	aa.ev = &ev;
 	aa.args = &args;
-	ev.value = build_array_value(state, ret, &aa);
+	if (!splice_elem_assign(state, &ev, &args))
+		ev.value = build_array_value(state, ret, &aa);
 	if (is_assign_builtin(ret))
 		persist_array(state, ret, ev);
 	else

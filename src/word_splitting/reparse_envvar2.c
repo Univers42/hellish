@@ -81,7 +81,16 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 }
 
 /* Parse a $... expansion: consume the '$' then dispatch on the next char.
-   Priority: ${brace} > $(paren)/special > plain identifier > lone-$ literal.
+   Priority: ${brace} > zsh shapes > $(paren)/special > plain identifier >
+   lone-$ literal.
+
+   The zsh hook goes AHEAD of the special-parameter one because `$#stack`
+   collides with `$#`: the special handler would claim the `#` as the
+   positional count and leave `stack` as literal text, printing `0stack`.
+   Nothing else moves past it -- reparse_zsh_param claims only `#name`,
+   `+name[key]` and `name[key]`, all three of which are the dialect's and
+   none of which any bash input can reach, since it returns false outright
+   when the mode is off.
    The lone-$ case (prev_start == rp.i after consume_ident_rp) means the '$'
    was not followed by anything we recognise as an expansion; we call
    handle_envvar_empty which emits the '$' as a literal and optionally
@@ -98,9 +107,9 @@ void	reparse_envvar(t_ast_node *ret, int *i, t_token t, t_tt tt)
 	prev_start = rp.i;
 	if (handle_envvar_brace(&rp, tt))
 		return (update_envvar_result(ret, i, &rp));
-	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
-		return (update_envvar_result(ret, i, &rp));
 	if (reparse_zsh_param(&rp, prev_start, tt))
+		return (update_envvar_result(ret, i, &rp));
+	if (handle_envvar_paren_or_special(&rp, prev_start, tt))
 		return (update_envvar_result(ret, i, &rp));
 	consume_ident_rp(&rp);
 	if (prev_start == rp.i)

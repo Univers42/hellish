@@ -432,6 +432,15 @@ char		*zm_abs(t_shell *state, const char *v);
 bool		zsh_param_token(t_shell *state, t_token *tt);
 bool		zsh_hash_token(t_shell *state, t_token *tt);
 char		*zp_which(t_shell *state, char *name);
+int			zp_elem_set(t_shell *state, const char *base, int blen, char *key);
+int			zsh_len_span(t_shell *state, const char *s, int len, int j);
+bool		append_zsh_len(t_arith_expand_ctx *ctx);
+long		elem_sub_index(t_shell *state, char *text, long count);
+bool		splice_elem_assign(t_shell *state, t_env *ev, t_vec *args);
+void		bad_subscript(t_shell *state, const char *name, const char *sub);
+void		assoc_elem_assign(t_shell *state, t_env *ret, char *sub,
+				char *old);
+char		*zn_scalar_pick(t_shell *state, const char *val, long sub);
 char		*zf_nested(t_shell *state, t_token *tt, const char *s, int slen);
 int			zf_parse(const char *s, int slen, t_zflags *f);
 void		zf_bad(t_shell *state, t_token *tt, char flag);

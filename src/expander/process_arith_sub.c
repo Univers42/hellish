@@ -55,3 +55,22 @@ bool	process_arith_sub(t_shell *state, t_expand_ctx *ctx)
 		return (false);
 	return (finish_arith_sub(state, ctx, j));
 }
+
+/* zsh's `$#name` -- the element count.  True when it claimed the span.
+   Checked before the ordinary scanner because it OVERLAPS `$#`: read as the
+   special, the name after it is copied through as literal text and the
+   evaluator is handed `0precmd_functions`. */
+bool	append_zsh_len(t_arith_expand_ctx *ctx)
+{
+	int		n;
+	char	*v;
+
+	n = zsh_len_span(ctx->state, ctx->s, ctx->len, *ctx->i);
+	if (!n)
+		return (false);
+	v = expand_strlen(ctx->state, ctx->s + *ctx->i + 1, n - 1);
+	vec_push_str(ctx->out, v);
+	xfree(v);
+	*ctx->i += n;
+	return (true);
+}

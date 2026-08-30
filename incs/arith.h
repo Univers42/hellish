@@ -105,7 +105,9 @@ typedef struct s_arith_parser
 }	t_arith_parser;
 
 char			*zsh_param(t_shell *state, const char *s, int slen);
+char			*expand_strlen(t_shell *state, const char *s, int slen);
 bool			lex_zsh_plus(t_arith_lexer *lex);
+bool			lex_zsh_len(t_arith_lexer *lex);
 
 /* Main API */
 char			*arith_expand(t_shell *state, const char *expr, int len);

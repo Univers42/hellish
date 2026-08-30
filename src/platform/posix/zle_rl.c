@@ -27,6 +27,11 @@ int	exec_string(t_shell *state, char *content);
 ** keymap: readline can say "this key fired" but not "and it means the shell
 ** function named X".
 **
+** exec_string does NOT take the string it is handed: it alias-expands into
+** a copy and frees only that.  The widget's name is passed straight from
+** the registry -- a strdup here would leak one name per keypress, on a path
+** no `-c` test can reach because it needs a live readline.
+**
 ** THE SHELL STATE IS THE FORKED CHILD'S. readline runs in a child of the
 ** shell (see bg_readline), so the widget's edits to BUFFER survive -- the
 ** line is what the child sends back -- while anything else it changes does
@@ -116,7 +121,7 @@ int	zle_dispatch(int count, int key)
 	if (rl_line_buffer)
 		was = (xfree(was), ft_strdup(rl_line_buffer));
 	zle_publish(state);
-	exec_string(state, ft_strdup(w->fn));
+	exec_string(state, w->fn);
 	if (was)
 		zle_collect(state, was);
 	xfree(was);

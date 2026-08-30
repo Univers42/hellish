@@ -112,3 +112,17 @@ void	apply_var_attrs(t_shell *state, t_env *ret)
 	if (ret->value)
 		apply_int_attr(state, ret, append);
 }
+
+/* The associative half: the subscript is a LITERAL string key, so it is
+   word-expanded and used as written rather than evaluated. */
+void	assoc_elem_assign(t_shell *state, t_env *ret, char *sub, char *old)
+{
+	char	*key;
+	char	*nv;
+
+	key = expand_param_word(state, sub, (int)ft_strlen(sub) - 1, false);
+	nv = assoc_with_set(old, key, (int)ft_strlen(key), ret->value);
+	xfree(key);
+	xfree(ret->value);
+	ret->value = nv;
+}

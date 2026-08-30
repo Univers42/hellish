@@ -27,6 +27,17 @@
 ** for with machinery.
 */
 
+/* Options whose NAME starts with a literal "no" that is part of the word,
+   not the inversion prefix.  Without this `setopt notify` would be read as
+   "un-set tify" and `setopt nomatch` as "un-set match". */
+bool	zopt_bare(const char *n)
+{
+	return (!ft_strcmp(n, "notify") || !ft_strcmp(n, "nomatch")
+		|| !ft_strcmp(n, "noclobber") || !ft_strcmp(n, "noglob")
+		|| !ft_strcmp(n, "nounset") || !ft_strcmp(n, "noexec")
+		|| !ft_strcmp(n, "nolog") || !ft_strcmp(n, "nobeep"));
+}
+
 /* zsh option names are case-insensitive and ignore underscores, so
    NO_GLOB, no_glob, noglob and NoGlob are one option.  Normalise to lower
    case with the underscores removed before any comparison, and strip a

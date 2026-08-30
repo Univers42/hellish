@@ -73,6 +73,39 @@ bool	zsh_mode_swap(t_shell *state, bool on)
 	return (was);
 }
 
+/* Do arrays count from 1?  Only in the zsh dialect, and only while
+   `ksh_arrays` is unset -- that option is zsh's own switch back to 0-based,
+   and plugins write `setopt localoptions no_ksh_arrays` precisely to be sure
+   of the default.  Accepting that line while ignoring what it names would
+   make the reassurance a lie, so the option is real. */
+bool	zsh_arrays(t_shell *state)
+{
+	return (state && (state->setopt & SETOPT_ZSH)
+		&& !(state->setopt & SETOPT_KSHARRAYS));
+}
+
+/* Turn a WRITTEN subscript into the 0-based index the array store uses.
+**
+** zsh counts from 1 where bash counts from 0, and the difference is not
+** noisy: `${a[$#a]}` -- the last element, which is how a plugin pops a stack
+** -- returns a DIFFERENT ELEMENT under the wrong base and reports nothing at
+** all.  Every subscript site used to do its own ft_atoi, so getting this
+** right meant getting it right in four places; it is one function now for
+** the same reason the dotglob cell is one cell.
+**
+** NEGATIVE subscripts are identical in both dialects: -1 is the last element
+** either way.  They wrap against the count before the base applies, which is
+** why the wrap is here and not left to the callers that used to do it.
+*/
+long	sub_to_index(t_shell *state, long sub, long count)
+{
+	if (sub < 0)
+		return (sub + count);
+	if (zsh_arrays(state))
+		return (sub - 1);
+	return (sub);
+}
+
 /* True for a path a zsh plugin would be shipped as.  `.zsh` covers both
    `foo.zsh` and oh-my-zsh's `foo.plugin.zsh`; `.zshrc` and `.zshenv` are
    matched by name because they carry no extension of their own.  A path
