@@ -174,7 +174,9 @@ def run(sends, path, cwd, home, extra_env=None, settle=1.3):
             os.environ.clear()
             os.environ.update(env)
             os.chdir(cwd)
-            os.execv(SHELL, [SHELL])
+            # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+            # define names, and quietly decide what this test sees.
+            os.execv(SHELL, [SHELL, "--norc"])
         except BaseException:
             pass
         os._exit(127)

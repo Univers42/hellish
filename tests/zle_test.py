@@ -256,15 +256,26 @@ def dispatch_cases():
 def cd_boundary_case():
     """A widget that cds does NOT move the shell, because readline runs in a
     forked child. Asserted so the boundary is pinned rather than folklore --
-    if the architecture ever changes, this test says so."""
-    rc = ("setopt zsh\n"
-          'jump() { cd /tmp; BUFFER="pwd"; }\n'
-          "zle -N jump\n"
-          "bindkey '\\e\\e' jump\n")
-    out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
-    check("boundary/widget-cd-does-not-move-the-shell", b"/tmp" not in out,
-          "it MOVED -- the fork boundary changed, update #80 and the docs; "
-          "%r" % out[-200:])
+    if the architecture ever changes, this test says so.
+
+    The destination is a FRESH directory with a unique name, not /tmp, and
+    the check is whether the parent's `pwd` mentions it. `/tmp` cannot do
+    that job: it matches the moment the suite runs from anywhere under
+    /tmp, which is how this went red reporting a boundary change that had
+    not happened."""
+    dest = tempfile.mkdtemp(prefix="hellish_zle_boundary_")
+    mark = os.path.basename(dest).encode()
+    try:
+        rc = ("setopt zsh\n"
+              'jump() { cd %s; BUFFER="pwd"; }\n' % dest
+              + "zle -N jump\n"
+              "bindkey '\\e\\e' jump\n")
+        out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
+        check("boundary/widget-cd-does-not-move-the-shell", mark not in out,
+              "it MOVED -- the fork boundary changed, update #80 and the "
+              "docs; %r" % out[-200:])
+    finally:
+        os.rmdir(dest)
 
 
 def main():
