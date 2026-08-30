@@ -122,3 +122,15 @@ zzqb=1 zzqa=2 zzqc=3; compgen -v zzq
 zfb(){ :; }; zfa(){ :; }; compgen -A function zf
 compgen -W 'zeta alpha mid' ''
 compgen -W 'zb za zc' z
+shopt -s extglob; eval 'case "@(a)" in "@(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case a in "@(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "@(a)" in @\(a\)) echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "+(a)" in "+(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "a|b" in "a|b") echo pipe;; *) echo no;; esac'
+shopt -s extglob; eval 'case "a)b" in "a)b") echo paren;; *) echo no;; esac'
+shopt -s extglob; eval '[[ "@(a)" == "@(a)" ]] && echo literal || echo group'
+shopt -s extglob; eval '[[ a == "@(a)" ]] && echo literal || echo group'
+shopt -s extglob; eval '[[ "@(a)" == @\(a\) ]] && echo literal || echo group'
+shopt -s extglob; eval 'case "*" in "*") echo star;; *) echo no;; esac'
+shopt -s extglob; eval 'case "@(a|b)" in "@(a|b)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case ab in "@("a"|b)") echo mixed;; *) echo no;; esac'

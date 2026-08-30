@@ -12,6 +12,7 @@
 
 #include "reparser_private.h"
 #include "ft_glob.h"
+#include "case_match.h"
 
 /* Entry point: take a raw TT_WORD/TT_ASSIGN_WORD token from the parser
    and decompose it into a tree of typed subtokens (TT_SQWORD, TT_DQWORD,
@@ -50,6 +51,8 @@ int	reparse_extglob(t_ast_node *ret, int *i, t_token t)
 	int	n;
 
 	n = extglob_ahead(t.start + *i);
+	if (n <= 0)
+		n = zsh_alt_ahead(t.start, t.start + *i);
 	if (n <= 0 || *i + n > t.len)
 		return (0);
 	push_subtoken_node(ret, t, create_interval(*i, *i + n), TT_WORD);

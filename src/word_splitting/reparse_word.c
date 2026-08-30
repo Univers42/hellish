@@ -12,6 +12,7 @@
 
 #include "reparser_private.h"
 #include "ft_glob.h"
+#include "case_match.h"
 
 /* These four helpers used to round-trip through a t_reparser: copy the
    104-byte current node in, push into the copy, copy it back out — twice
@@ -59,10 +60,11 @@ void	reparse_bs(t_ast_node *ret, int *i, t_token t)
    dispatch loop (loop_node_rp) can handle it. The fallthrough (*i)++ after
    the loop is the safety valve: if we ended up on a lone special we couldn't
    classify, advance one character anyway to prevent an infinite loop.
-     It also stops in FRONT of an extglob group, so the group starts a
+     It also stops in FRONT of a glob group, so the group starts a
    subtoken of its own and reparse_extglob can take it whole. `b*(a)` is the
    case: without this the run swallows `b*` and leaves a bare `(`, and the
-   group is gone before anything can recognise it. */
+   group is gone before anything can recognise it. zsh's bare `(a|b)` needs
+   the same stop for the same reason -- `foo_(a|b)_*` is one pattern. */
 void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 {
 	int	start;
@@ -70,7 +72,8 @@ void	reparse_norm_word(t_ast_node *ret, int *i, t_token t)
 	start = *i;
 	while (*i < t.len && !is_special_char(t.start[*i])
 		&& t.start[*i] != '\\' && t.start[*i] != '`'
-		&& !(*i > start && extglob_ahead(t.start + *i)))
+		&& !(*i > start && (extglob_ahead(t.start + *i)
+				|| zsh_alt_ahead(t.start, t.start + *i))))
 		(*i)++;
 	if (*i == start && *i < t.len)
 		(*i)++;
