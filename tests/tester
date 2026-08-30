@@ -55,6 +55,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "job_label"
         "help_builtin"
         "printf_length"
+        "array_subscript"
     )
 fi
 
@@ -112,8 +113,17 @@ printf "${RED}🔥 Parallel Test Harness starting 🔥${END}\n"
 
 RUN_DIR="$(mktemp -d /tmp/sh42_tester_XXXXXX)"
 
+# A named file that is not there is FATAL, not a warning.
+#
+# test_lists is hand-maintained, so a rename or a typo used to drop a whole
+# case file on the floor and print one yellow line in the middle of a run
+# that then said "ALL N TESTS PASSED" -- a smaller N nobody was watching.
+# The pty runner discovers its tests for exactly this reason and says so;
+# this suite cannot discover (tests/ holds fixtures, scripts and outputs
+# next to the case files), so it fails loudly instead.
 rm -f "$RUN_DIR/queue.txt"
 TOTAL_TESTS=0
+MISSING=()
 for tf in "${test_lists[@]}"; do
     if [[ -f "$tf" ]]; then
         while IFS= read -r teste || [[ -n "$teste" ]]; do
@@ -122,9 +132,17 @@ for tf in "${test_lists[@]}"; do
             echo "$TOTAL_TESTS|||$tf|||$teste" >> "$RUN_DIR/queue.txt"
         done < "$tf"
     else
-        echo -e "${YELLOW}Warning: File $tf not found${END}"
+        MISSING+=("$tf")
     fi
 done
+
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+    printf "${RED}✗ case file(s) named in test_lists but not on disk:${END}\n" >&2
+    printf "   %s\n" "${MISSING[@]}" >&2
+    printf "${RED}   Refusing to report a pass on a suite that shrank.${END}\n" >&2
+    rm -rf "$RUN_DIR"
+    exit 1
+fi
 
 if [[ $TOTAL_TESTS -eq 0 ]]; then
     echo "No tests found."

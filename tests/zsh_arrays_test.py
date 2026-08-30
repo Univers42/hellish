@@ -188,6 +188,24 @@ SLICE_CASES = [
     # A comma only separates at the TOP level, which is what leaves an
     # associative key with a comma in it alone.
     ('typeset -A M; M[a,b]=z; echo "[${M[a,b]}]"', "[z]"),
+    # A subscript is WORD-EXPANDED before it is evaluated, so $(( )) and
+    # $( ) work inside one -- on both sides of a slice's comma too. The read
+    # path used to go straight to arithmetic, which resolves $name but
+    # neither of those, so `a[$((n+1))]=v` assigned happily while
+    # `${a[$((n+1))]}` answered "arithmetic error". tests/array_subscript
+    # pins the bash half of the same fix.
+    (A5 + 'echo "[${a[$((1+1))]}]"', "[two]"),
+    (A5 + 'n=1; echo "[${a[$((n+1))]}]"', "[two]"),
+    (A5 + 'echo "[${a[$(echo 2)]}]"', "[two]"),
+    (A5 + 'echo "[${a[$((1)),$((3))]}]"', "[one two three]"),
+    (A5 + 'echo "[${a[$(echo 2),$(echo 4)]}]"', "[two three four]"),
+    (A5 + 'echo "[${#a[$((1+1))]}]"', "[3]"),
+    (A5 + 'a[$((1+1))]=(Z); echo "[${a[@]}] n=$#a"',
+     "[one Z three four five] n=5"),
+    ('x=hello; echo "[${x[$((2))]}]"', "[e]"),
+    # ... and a comma INSIDE $(( )) stays the arithmetic comma operator, so
+    # this is one index and not a range.
+    (A5 + 'echo "[${a[$((1,2))]}]"', "[two]"),
 ]
 
 # The same constructs in the DEFAULT dialect, against bash's answers.
