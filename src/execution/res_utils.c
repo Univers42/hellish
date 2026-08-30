@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "sys.h"
 
 /* Build an execution result that already carries a concrete exit status.
    pid=-1 signals "no background child to wait for". */
@@ -34,7 +35,14 @@ t_execution_state	res_pid(int pid)
    this specific child.  Ctrl-C (SIGINT from the terminal) is noted in
    ctrl_c so the parent can print a newline or exit a script.  Waits go
    through pal_waitpid: the win32 shim resolves the pid to a HANDLE via
-   st->pal_procs, which is why the shell handle is threaded in here. */
+   st->pal_procs, which is why the shell handle is threaded in here.
+
+   A job killed BY A SIGNAL never ran its own cleanup, so a program that
+   turned echo off to read a password (chsh, ssh, sudo) leaves the terminal
+   that way and the shell is the only thing left that can undo it (#85).
+   Only on a signal: restoring after every command would reverse an `stty
+   -echo` the user typed on purpose. Interactive only -- a script has no
+   terminal state of its own to reclaim. */
 void	exe_res_set_status(t_shell *st, t_execution_state *res)
 {
 	int	status;
@@ -49,6 +57,8 @@ void	exe_res_set_status(t_shell *st, t_execution_state *res)
 		return (fg_job_stopped(st, res, status));
 	if (WIFSIGNALED(status) && WTERMSIG(status) == SIGINT)
 		res->ctrl_c = true;
+	if (WIFSIGNALED(status) && st->metinp == INP_RL)
+		tty_reclaim_after_signal();
 	res->status = WEXITSTATUS(status)
 		+ WIFSIGNALED(status) * 128 + WIFSIGNALED(status) * WTERMSIG(status);
 }

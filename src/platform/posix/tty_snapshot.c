@@ -51,3 +51,41 @@ void	tty_snapshot_restore(void)
 		return ;
 	tcsetattr(STDIN_FILENO, TCSANOW, &g_tty);
 }
+
+/* Re-take the snapshot at the top of an interactive turn.
+**
+** Without this the shell only ever knows the settings it started with, and
+** putting THOSE back would undo a deliberate `stty -echo` -- which bash
+** does not do, and which would be its own bug.  Taken at the prompt, the
+** snapshot is by definition "what the user last chose", because anything a
+** command did to the terminal happened after the previous prompt and the
+** user is looking at a prompt now.
+*/
+void	tty_snapshot_refresh(void)
+{
+	tty_snapshot_save();
+}
+
+/* Put the shell's terminal settings back after a foreground job was KILLED
+** BY A SIGNAL.
+**
+** A program that reads a password (chsh, ssh, sudo) turns echo off and
+** turns it back on when it finishes.  Interrupt it and it never reaches
+** the second half, so the terminal is left with no echo -- and the shell
+** is the only thing still running that can undo it.  Reported as #85:
+** "the TTY is disactivated and crash, we can no longer see the input".
+**
+** Only on a signal, and that condition is the whole design.  Restoring
+** after EVERY command would undo `stty -echo` typed as a command, which is
+** a deliberate request the shell has no business reversing.  Measured
+** against bash 5.3.9, which draws the line in exactly that place:
+**
+**     stty -echo                       -> echo stays off   (both shells)
+**     <program that disables echo> ^C  -> echo restored     (bash only)
+*/
+void	tty_reclaim_after_signal(void)
+{
+	if (!isatty(STDIN_FILENO))
+		return ;
+	tty_snapshot_restore();
+}
