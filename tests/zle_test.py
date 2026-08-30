@@ -119,6 +119,42 @@ def unknown_widget_cases():
           or b"only be called from a widget" in err, "err=%r" % err[:120])
 
 
+def option_cases():
+    """The same rule, applied to the OPTIONS -- which is where it was not.
+
+    `zle` used to answer every option but `-N` with a silent success:
+
+        if (av[1][0] == '-')
+            return (0);
+
+    so `zle -M "hello"` printed nothing and reported that it had worked. The
+    widget-name path above goes out of its way to avoid exactly that, and
+    the options walked around it. `-M` and `-R` are now real; everything
+    else says so and fails."""
+    for opt in ("-F", "-K", "-U", "-w"):
+        rc, _, err = run('zle %s x' % opt)
+        check("option/%s-is-not-a-silent-success" % opt,
+              rc != 0 and b"not supported" in err,
+              "rc=%d err=%r" % (rc, err[:120]))
+    # ONCE. A plugin may call one of these per keystroke, and a diagnostic
+    # that repeats forever is one the user learns to ignore -- which is
+    # silence with extra steps.
+    _, _, err = run('zle -F a; zle -K b; zle -U c; true')
+    check("option/reported-once-not-per-call",
+          err.count(b"not supported") == 1, "err=%r" % err[:220])
+    # `region_highlight` is DELIBERATELY not defined. zsh predefines it as a
+    # ZLE parameter, and zsh-syntax-highlighting tests for it by name
+    # (`(( ${+region_highlight[@]} )) || { echo error }`) -- so leaving it
+    # undefined is what makes that plugin's own message true. Defining it to
+    # look supported is the one thing that would make the failure silent.
+    _, out, _ = run('setopt zsh\necho "[${region_highlight+set}]"'
+                    '"[${#region_highlight[@]}]"')
+    check("option/region_highlight-is-honestly-absent",
+          out.strip() == b"[][0]", "got %r -- if it is now defined, it must "
+          "also REPAINT, or a plugin's own check has been made to lie"
+          % out.strip())
+
+
 def plugin_cases():
     """oh-my-zsh's sudo: it must LOAD and define both functions. Whether the
     key fires is not asserted -- see the module docstring."""
@@ -341,6 +377,7 @@ def main():
     bindkey_cases()
     guard_cases()
     unknown_widget_cases()
+    option_cases()
     plugin_cases()
     churn_cases()
     dispatch_cases()
