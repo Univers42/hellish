@@ -17,23 +17,24 @@
 
 /* The filesystem and alias sources for compgen, plus its option scanner. */
 
-/* -a: the alias table, walked the same way alias_print_all walks it. */
+/* -a: the alias table, walked the same way alias_print_all walks it and
+   sorted -- a hash table has no order worth exposing. */
 int	cg_aliases(t_shell *st, const char *pfx)
 {
 	size_t			i;
 	t_hash_entry	*e;
-	int				hit;
+	t_vec			out;
 
+	out = (t_vec){0};
 	e = (t_hash_entry *)st->aliases.ctx;
 	i = 0;
-	hit = 0;
 	while (e && i < st->aliases.cap)
 	{
 		if (e[i].key)
-			hit += cg_emit(e[i].key, pfx);
+			cg_add(&out, e[i].key, pfx);
 		i++;
 	}
-	return (hit);
+	return (cg_flush(&out));
 }
 
 /* Split a prefix into the directory to read and the leading bytes an entry

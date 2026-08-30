@@ -191,6 +191,8 @@ bool	test_var_isset(t_shell *st, char *name);
 int		builtin_compgen(t_shell *state, t_vec argv);
 int		builtin_complete(t_shell *state, t_vec argv);
 int		cg_emit(const char *s, const char *pfx);
+void	cg_add(t_vec *out, const char *s, const char *pfx);
+int		cg_flush(t_vec *out);
 int		cg_source(t_shell *st, char act, const char *pfx);
 int		cg_aliases(t_shell *st, const char *pfx);
 int		cg_glob_paths(char act, const char *pfx);
