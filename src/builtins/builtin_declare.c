@@ -47,11 +47,12 @@ static int	declare_print_one(t_shell *state, const char *name)
 		ft_printf("declare -a %s=%s\n", e->key, fmt);
 		return (xfree(fmt), 0);
 	}
+	fmt = dquote_str(e->value);
 	if (e->exported)
-		ft_printf("declare -x %s=\"%s\"\n", e->key, e->value);
+		ft_printf("declare -x %s=\"%s\"\n", e->key, fmt);
 	else
-		ft_printf("declare -- %s=\"%s\"\n", e->key, e->value);
-	return (0);
+		ft_printf("declare -- %s=\"%s\"\n", e->key, fmt);
+	return (xfree(fmt), 0);
 }
 
 /* declare -p: print the named variables (or, with none, all of them). */

@@ -54,3 +54,18 @@ x=a; x[2]=c; x+=(d); echo "${x[@]}"
 x=hello; x[$((1+1))]=Z; echo "${x[@]}"
 n=2; x=hello; x[$n]=Z; declare -p x
 x=hello; x[2]=Z; unset 'x[2]'; declare -p x
+declare -A M; M[$k]=v; echo after
+declare -A M; M[""]=v; echo after
+declare -A M; k=""; M[$k]=v; echo after
+declare -A M; M=([$k]=v); echo after
+declare -A M; M+=([$k]=v); echo after
+declare -A M; M[a]=1; M[$k]=v; declare -p M
+a=(1 2 3); a[-99]=v; echo after
+a=(1 2 3); a[-99]=v
+f(){ a=(1); a[-99]=v; }; f; echo after
+( a=(1); a[-99]=v ); echo "rc=$?"
+( declare -A M; M[$k]=v ); echo "rc=$?"
+declare -A M; M[" "]=v; declare -p M
+declare -A M; M["x y"]=v; declare -p M
+declare -A M; M["a\$b"]=v; declare -p M
+declare -A M; M[a]=1; echo "n=${#M[@]}"

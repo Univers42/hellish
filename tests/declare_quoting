@@ -1,0 +1,74 @@
+s='x"y'; declare -p s
+s='x$y'; declare -p s
+s='x`y'; declare -p s
+s='x\y'; declare -p s
+s='x y'; declare -p s
+s="x'y"; declare -p s
+s='x!y'; declare -p s
+s='a$b"c`d\e'; declare -p s
+s=''; declare -p s
+s='$HOME'; declare -p s
+s='${x}'; declare -p s
+s='$(echo hi)'; declare -p s
+a=('x"y'); declare -p a
+a=('x$y'); declare -p a
+a=('x`y'); declare -p a
+a=('x\y'); declare -p a
+a=('x y' 'p$q'); declare -p a
+a=(a b c); declare -p a
+declare -A M; M[a]='x"y'; declare -p M
+declare -A M; M[a]='x$y'; declare -p M
+declare -A M; M[a]='x`y'; declare -p M
+declare -A M; M[a]='x\y'; declare -p M
+declare -A M; M[" "]=v; declare -p M
+declare -A M; M["x y"]=v; declare -p M
+declare -A M; M['a$b']=v; declare -p M
+declare -A M; M['a"b']=v; declare -p M
+declare -A M; M['a`b']=v; declare -p M
+declare -A M; M['a\b']=v; declare -p M
+declare -A M; M["a'b"]=v; declare -p M
+declare -A M; M[a-b]=v; declare -p M
+declare -A M; M[a/b.c]=v; declare -p M
+declare -A M; M[abc]=v; declare -p M
+declare -A M; M[5]=v; declare -p M
+declare -A M; M[a_b]=v; declare -p M
+declare -A M; M['a,b']=v; declare -p M
+declare -A M; M['a:b']=v; declare -p M
+declare -A M; M['a+b']=v; declare -p M
+declare -A M; M['a%b']=v; declare -p M
+declare -A M; M['a@b']=v; declare -p M
+declare -A M; M['~']=v; declare -p M
+declare -A M; M['a~']=v; declare -p M
+declare -A M; M['#']=v; declare -p M
+declare -A M; M['a#']=v; declare -p M
+declare -A M; M['!']=v; declare -p M
+declare -A M; M['*']=v; declare -p M
+declare -A M; M['?']=v; declare -p M
+declare -A M; M['^']=v; declare -p M
+declare -A M; M['[']=v; declare -p M
+declare -A M; M[']']=v; declare -p M
+declare -A M; M['{']=v; declare -p M
+declare -A M; M['}']=v; declare -p M
+declare -A M; M['(']=v; declare -p M
+declare -A M; M[')']=v; declare -p M
+declare -A M; M['<']=v; declare -p M
+declare -A M; M['>']=v; declare -p M
+declare -A M; M['|']=v; declare -p M
+declare -A M; M['&']=v; declare -p M
+declare -A M; M[';']=v; declare -p M
+declare -A M; M["a b"]="x y"; declare -p M
+declare -A M; M['k$1']='v$2'; declare -p M
+s='x"y'; eval "$(declare -p s | sed s/^declare....//)"; echo "$s"
+a=('x"y' 'p$q'); eval "b=$(declare -p a | sed 's/^declare -a a=//')"; echo "${b[0]}|${b[1]}"
+readonly r=1; readonly -p | grep " r="
+readonly r="a b"; readonly -p | grep " r="
+readonly r='x"y'; readonly -p | grep " r="
+readonly r='x$y'; readonly -p | grep " r="
+readonly r; readonly -p | grep " r"
+export s='x"y'; export -p | grep "^export s="
+export s='x$y'; export -p | grep "^export s="
+export s='x`y'; export -p | grep "^export s="
+export s='x\y'; export -p | grep "^export s="
+export s=; export -p | grep "^export s="
+declare -A M; M['@']=v; declare -p M
+declare -A M; M['a@b']=v; declare -p M
