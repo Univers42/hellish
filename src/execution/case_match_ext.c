@@ -35,7 +35,11 @@
 
 /* Past the ')' that closes the group `p` opens, or NULL if unbalanced.
    `p` points at the '('. Nested groups are counted, so `@(a|@(b|c))` ends
-   at the right paren rather than the first one. */
+   at the right paren rather than the first one.
+     A backslash-escaped byte is stepped over whole. That is what a quoted
+   `")"` inside a group is by the time it gets here (append_pat_tok escapes
+   it), and counting it as the closing paren would end the group in the
+   middle of itself. */
 const char	*xg_group_end(const char *p)
 {
 	int	depth;
@@ -44,7 +48,9 @@ const char	*xg_group_end(const char *p)
 	p++;
 	while (*p)
 	{
-		if (*p == '(')
+		if (*p == '\\' && p[1])
+			p++;
+		else if (*p == '(')
 			depth++;
 		else if (*p == ')' && depth-- == 0)
 			return (p + 1);
@@ -53,25 +59,34 @@ const char	*xg_group_end(const char *p)
 	return (NULL);
 }
 
-/* Does an extglob group start here? Gated on the option, so with extglob
-   off `@(` is a literal at-sign followed by whatever the shell made of the
-   paren -- exactly the reading every existing pattern has today. */
+/* Does a group start here?
+     bash's spelling needs the operator AND the option, so with extglob off
+   `@(` is a literal at-sign followed by whatever the shell made of the paren
+   -- exactly the reading every existing pattern has today. zsh's spelling is
+   the bare paren and needs neither; xg_alt_group carries that rule, and the
+   `|` it insists on is what keeps `f()` a function definition. */
 bool	xg_start(const char *p)
 {
+	if (*p == '(')
+		return (xg_alt_group(p) != 0);
 	return (*p && ft_strchr("?*+@!", *p) != NULL && p[1] == '('
 		&& glob_extglob());
 }
 
 /* The end of the alternative starting at `p`: the next top-level `|`, or
-   the group's closing `)`. Nested groups are skipped whole. */
-static const char	*xg_alt_end(const char *p)
+   the group's closing `)`. Nested groups are skipped whole, and so is a
+   backslash-escaped byte -- a quoted `"a|b"` written inside a group is ONE
+   alternative, not two. */
+const char	*xg_alt_end(const char *p)
 {
 	int	depth;
 
 	depth = 0;
 	while (*p)
 	{
-		if (*p == '(')
+		if (*p == '\\' && p[1])
+			p++;
+		else if (*p == '(')
 			depth++;
 		else if (*p == ')' && depth-- == 0)
 			return (p);
