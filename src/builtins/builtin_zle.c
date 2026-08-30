@@ -74,7 +74,7 @@ int	builtin_zle(t_shell *state, t_vec argv)
 	if (!ft_strcmp(av[1], "-N"))
 		return (zle_register(state, argv, 2));
 	if (av[1][0] == '-')
-		return (0);
+		return (zle_option(state, argv, 1));
 	if (!zle_active())
 		return (ft_eprintf("%s: zle: can only be called from a widget\n",
 				state->ctx), 1);

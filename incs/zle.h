@@ -14,9 +14,24 @@
    src/editing/; the readline half is in src/platform/posix/zle_rl*.c,
    because every one of those functions is a single readline call.
 
-   WHAT IS NOT HERE, and is reported rather than accepted: region_highlight,
-   the (start, end, style) array zsh repaints from. readline has no styled
-   region model, and it is what zsh-syntax-highlighting is built on. */
+   WHAT IS NOT HERE: region_highlight, the (start, end, style) array zsh
+   repaints from. readline has no styled region model, and it is what
+   zsh-syntax-highlighting is built on.
+
+   It is left UNDEFINED on purpose, and that IS the loud answer rather than
+   the silent one. zsh predefines it as a ZLE parameter and the plugin tests
+   for it by name before doing anything:
+
+       (( ${+region_highlight[@]} )) || {
+         echo >&2 'zsh-syntax-highlighting: error: $region_highlight ...'
+
+   so an absent array is what makes that message true. Defining it to look
+   supported is the single change that would turn a plugin's own honest
+   failure into silence. A per-assignment warning is not the alternative it
+   sounds like: the assignments happen inside widgets, once per keystroke,
+   and a diagnostic that repeats forever is one the user learns to ignore.
+   The `zle` OPTIONS report once and fail (builtin_zle2.c); this one reports
+   by not being there. #77 item 4. */
 
 #ifndef ZLE_H
 # define ZLE_H
@@ -71,6 +86,12 @@ void			zle_do_kill_buffer(void);
    dispatcher's write-back restores the text it just removed. */
 void			zle_publish(t_shell *state);
 void			zle_do_accept_line(void);
+
+/* `zle -M text`: a message under the line (#77 item 5). readline has no
+   message area, so it is printed on its own line and the prompt redrawn
+   under it -- see zle_rl4.c for why that is the harmless direction. */
+void			zle_do_message(const char *msg);
+int				zle_option(t_shell *state, t_vec argv, size_t i);
 int				zle_run_widget(t_shell *state, const char *name);
 
 /* Carrying a widget's `cd` back over the readline fork (#80 item 2). The
