@@ -22,14 +22,21 @@ looks like a shell that simply did not move.
       forward /usr    past=[start /tmp /usr]    future=[/etc]
       up      /
 
-WHAT IS NOT ASSERTED: that ALT-LEFT does this. The binding is recorded,
-translated and installed, and the dispatch fires -- a widget that edits the
-BUFFER works, which is why oh-my-zsh's sudo does. But dirhistory's widgets
+ALT-LEFT IS ASSERTED TOO, at the bottom of this file, in a real pty.
+
+It could not be until #80 item 2 landed. The binding was recorded,
+translated and installed and the dispatch fired -- a widget that edits the
+BUFFER worked, which is why oh-my-zsh's sudo did -- but dirhistory's widgets
 `cd`, readline runs in a FORKED CHILD (bg_readline), and a directory change
-there dies with the child. Verified in a pty, not assumed: the key fires,
-the widget runs, the parent shell stays put. Tracked as #80; asserting it
-here would be a test passing against a binary where the feature does not
-work.
+there died with the child. The key fired, the widget ran, and the shell
+stayed exactly where it was.
+
+The child now reports its final directory to the parent on a pipe of its
+own, and the parent adopts it, so the navigation completes. The pty case at
+the bottom is the acceptance test for that: it presses the key a user would
+press and asks the shell where it ended up. Everything above it drives the
+plugin's functions directly, which is a different question -- those cases
+would keep passing even if the key did nothing at all.
 
 Usage: python3 zsh_dirhistory_test.py [/path/to/hellish]
 """
@@ -37,6 +44,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
@@ -153,6 +161,74 @@ def recover_cases(tmp):
           (0, "/tmp", True))
 
 
+def key_nav_case(tmp):
+    """THE acceptance test for #80 item 2: press the key, move the shell.
+
+    Everything else in this file calls dirhistory's functions directly, so
+    it measures the plugin's logic and would pass unchanged against a build
+    where the keybinding did nothing. This one goes through the whole chain
+    -- readline dispatch, the widget, its `cd` in the forked child, and the
+    child's report back to the parent -- and then asks the PARENT for $PWD,
+    which is the only answer a user cares about.
+
+    ESC [ 3 D is one of the four sequences dirhistory binds to
+    dirhistory_zle_dirhistory_back (line 133 of the plugin: "xterm in normal
+    mode"). Sent as raw bytes, exactly as a terminal would."""
+    import pty
+    import select
+
+    a = os.path.join(tmp, "alpha")
+    b = os.path.join(tmp, "beta")
+    os.makedirs(a, exist_ok=True)
+    os.makedirs(b, exist_ok=True)
+    rc = os.path.join(tmp, "kn.zsh")
+    with open(rc, "w") as f:
+        f.write("source %s\n" % PLUGIN)
+
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.execve(SHELL, [SHELL, "-i", "--rcfile=" + rc],
+                  dict(ENV, PS1="> ", TERM="xterm", HOME=tmp))
+        os._exit(1)
+    out = b""
+
+    def drain(t):
+        nonlocal out
+        end = time.time() + t
+        while time.time() < end:
+            r, _, _ = select.select([fd], [], [], 0.2)
+            if not r:
+                continue
+            try:
+                d = os.read(fd, 65536)
+            except OSError:
+                return
+            if not d:
+                return
+            out += d
+
+    drain(2.0)
+    for line in ("cd %s\n" % a, "cd %s\n" % b):
+        os.write(fd, line.encode())
+        drain(1.0)
+    mark = len(out)
+    os.write(fd, b"\x1b[3D")          # ALT-LEFT: dirhistory_back
+    drain(1.5)
+    os.write(fd, b"pwd\n")
+    drain(1.5)
+    tail = out[mark:]
+    try:
+        os.write(fd, b"exit\n")
+        time.sleep(0.3)
+        os.close(fd)
+    except OSError:
+        pass
+
+    check("key/alt-left-moves-the-parent-shell",
+          (os.path.realpath(a).encode() in tail
+           or a.encode() in tail), True)
+
+
 def main():
     if not os.path.exists(SHELL):
         print("no shell at", SHELL)
@@ -166,6 +242,7 @@ def main():
         nav_cases(tmp)
         cap_cases(tmp)
         recover_cases(tmp)
+        key_nav_case(tmp)
     print("\n%d failed" % len(FAILS) if FAILS else "\nall passed")
     return 1 if FAILS else 0
 

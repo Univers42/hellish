@@ -68,4 +68,13 @@ void			zle_do_kill_buffer(void);
 void			zle_do_accept_line(void);
 int				zle_run_widget(t_shell *state, const char *name);
 
+/* Carrying a widget's `cd` back over the readline fork (#80 item 2). The
+   child reports its final directory on a pipe of its own, so the line
+   protocol is untouched and no consumer of it needs to know this exists;
+   the parent adopts the directory when it differs. See zle_cwd.c. */
+int				*zle_cwd_pipe(void);
+void			zle_cwd_open(void);
+void			zle_cwd_send(void);
+void			zle_cwd_adopt(t_shell *state);
+
 #endif

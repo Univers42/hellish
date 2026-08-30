@@ -254,29 +254,37 @@ def dispatch_cases():
 
 
 def cd_boundary_case():
-    """A widget that cds does NOT move the shell, because readline runs in a
-    forked child. Asserted so the boundary is pinned rather than folklore --
-    if the architecture ever changes, this test says so.
+    """A widget that cds MOVES the shell -- #80 item 2.
 
-    The destination is a freshly made UNIQUE directory, and the assertion
+    This assertion used to say the opposite, and said it deliberately:
+    readline runs in a forked child (bg_readline), so a widget's `cd` changed
+    the CHILD's directory and the parent never learned. That is why
+    oh-my-zsh's `sudo` (which only edits the buffer) worked here while
+    `dirhistory` (whose widgets navigate) did not.
+
+    The child now reports its final working directory back to the parent on a
+    SECOND pipe, and the parent adopts it. The line protocol is untouched --
+    that was the stated risk of the round-trip option in #80, so the cwd
+    travels beside the line rather than inside it.
+
+    The destination is a freshly made UNIQUE directory and the assertion
     names that exact path. It used to `cd /tmp` and assert that "/tmp" never
     appeared in the output, which fails whenever the suite is run from
-    anywhere under /tmp: the unmoved shell's own `pwd` contains it. A git
-    worktree at /tmp/hellish-zle reported that as "the fork boundary
-    changed" while the shell was behaving perfectly -- the same
+    anywhere under /tmp: the shell's own `pwd` contains it. A git worktree at
+    /tmp/hellish-zle reported that as "the fork boundary changed" while the
+    shell was behaving perfectly -- the same
     harness-fault-looks-like-a-feature-fault this file's header warns about,
-    caught a second time. A unique path cannot collide with the cwd, so the
-    check now answers only the question it means to ask."""
+    caught a second time. A unique path cannot collide with the cwd."""
     dest = tempfile.mkdtemp(prefix="zle_cd_boundary_")
+    real = os.path.realpath(dest)
     rc = ("setopt zsh\n"
           'jump() { cd %s; BUFFER="pwd"; }\n'
           "zle -N jump\n"
           "bindkey '\\e\\e' jump\n") % dest
     out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
-    check("boundary/widget-cd-does-not-move-the-shell",
-          dest.encode() not in out,
-          "it MOVED -- the fork boundary changed, update #80 and the docs; "
-          "%r" % out[-200:])
+    check("boundary/widget-cd-moves-the-shell",
+          real.encode() in out or dest.encode() in out,
+          "the widget's cd did not reach the parent; %r" % out[-200:])
 
     # POSITIVE CONTROL. The check above is an absence, and an absence proves
     # nothing unless the same probe can also see a presence: a typo in the rc,
