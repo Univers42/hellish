@@ -50,9 +50,10 @@ static bool	open_file_redir(t_tt tt, t_redir *ret)
 {
 	if (tt == TT_REDIRECT_LEFT)
 		ret->fd = open(ret->fname, O_RDONLY);
-	else if (tt == TT_REDIRECT_RIGHT || tt == TT_CLOBBER)
+	else if (tt == TT_REDIRECT_RIGHT || tt == TT_CLOBBER
+		|| tt == TT_AMP_REDIR)
 		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-	else if (tt == TT_APPEND)
+	else if (tt == TT_APPEND || tt == TT_AMP_APPEND)
 		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0666);
 	else if (tt == TT_READWRITE)
 		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0666);
@@ -97,10 +98,13 @@ bool	create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd)
 	ret->src_fd = src_fd;
 	ret->close_fd = false;
 	ret->is_dup = false;
+	ret->both = (tt == TT_AMP_REDIR || tt == TT_AMP_APPEND);
 	if (!ret->fname)
 		return (false);
-	if (tt == TT_DUP_OUT || tt == TT_DUP_IN)
+	if (tt == TT_DUP_IN || (tt == TT_DUP_OUT && dup_target_is_fd(fname)))
 		return (create_dup_redir(tt, fname, ret, src_fd));
+	if (tt == TT_DUP_OUT)
+		tt = (t_tt)(ret->both = true, TT_AMP_REDIR);
 	if (ft_strncmp(fname, "/dev/fd/", 8) == 0)
 		return (handle_devfd_redir(fname, ret));
 	net_rc = net_redir_open(fname, ret);

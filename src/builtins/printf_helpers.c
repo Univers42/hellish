@@ -58,23 +58,14 @@ static char	pf_read_hex(const char *s, int *i)
    backslash path (the 'c' is then emitted as a plain character). */
 char	pf_escape(const char *s, int *i, bool *stop)
 {
+	static const char	from[] = "ntr\\abfveE";
+	static const char	to[] = "\n\t\r\\\a\b\f\v\033\033";
+	char				*p;
+
 	(*i)++;
-	if (s[*i] == 'n')
-		return ((*i)++, '\n');
-	if (s[*i] == 't')
-		return ((*i)++, '\t');
-	if (s[*i] == 'r')
-		return ((*i)++, '\r');
-	if (s[*i] == '\\')
-		return ((*i)++, '\\');
-	if (s[*i] == 'a')
-		return ((*i)++, '\a');
-	if (s[*i] == 'b')
-		return ((*i)++, '\b');
-	if (s[*i] == 'f')
-		return ((*i)++, '\f');
-	if (s[*i] == 'v')
-		return ((*i)++, '\v');
+	p = ft_strchr(from, s[*i]);
+	if (s[*i] && p)
+		return ((*i)++, to[p - from]);
 	if (s[*i] == 'c' && stop)
 		return (*stop = true, '\0');
 	if (s[*i] == 'x')

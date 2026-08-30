@@ -64,14 +64,14 @@ static char	*line_build(t_string *buf, int eof_flag)
 	return ((char *)buf->ctx);
 }
 
-/* One step of the line loop. A newline only reaches here when it follows an
-   unescaped backslash in non-raw mode (line continuation): pop the pending
+/* One step of the line loop. The delimiter only reaches here when it follows
+   an unescaped backslash in non-raw mode (line continuation): pop the pending
    backslash and resume on the next line. Any other byte is appended, and
-   the pending-backslash state is updated so `\<newline>` is spotted next
-   iteration. Identical logic to the old byte-at-a-time loop. */
-static void	consume_char(t_string *buf, char ch, bool raw, bool *bs)
+   the pending-backslash state is updated so `\<delim>` is spotted next
+   iteration. Under -N the delimiter is ordinary data and never continues. */
+static void	consume_char(t_string *buf, char ch, t_rdopt *o, bool *bs)
 {
-	if (ch == '\n')
+	if (ch == o->delim && !o->exact)
 	{
 		buf->len--;
 		*bs = false;
@@ -79,12 +79,18 @@ static void	consume_char(t_string *buf, char ch, bool raw, bool *bs)
 	else
 	{
 		vec_push(buf, &ch);
-		*bs = (!raw && ch == '\\' && !*bs);
+		*bs = (!o->raw && ch == '\\' && !*bs);
 	}
 }
 
-/* Read one logical line. Returns NULL only at EOF with no data. */
-char	*read_one_line(bool raw, int *eof)
+/* Read one logical line. Returns NULL only at EOF with no data.
+     -n N stops after N bytes or at the delimiter, whichever comes first;
+     -N N stops only after N bytes or at EOF, delimiter included as data;
+     -d C replaces the newline as the delimiter.
+   The count is checked AFTER the byte lands, never before fetching the next
+   one: `read -n 2` must not block waiting for a third byte that an
+   interactive stream will never send -- which is the whole point of -n. */
+char	*read_one_line(t_rdopt *o, int *eof)
 {
 	char		ch;
 	t_string	buf;
@@ -97,13 +103,16 @@ char	*read_one_line(bool raw, int *eof)
 	vec_init(&buf);
 	buf.elem_size = 1;
 	bs = false;
-	n = rb_next(&rb, &ch);
-	while (n > 0 && !(ch == '\n' && !(bs && !raw)))
+	ch = '\0';
+	n = 1;
+	if (o->nchars != 0)
+		n = rb_next(&rb, &ch);
+	while (n > 0 && o->nchars != 0 && !rd_at_delim(ch, o, bs))
 	{
-		consume_char(&buf, ch, raw, &bs);
+		consume_char(&buf, ch, o, &bs);
+		if (o->nchars > 0 && (long)buf.len >= o->nchars)
+			break ;
 		n = rb_next(&rb, &ch);
 	}
-	rb_rewind(&rb);
-	*eof = (n <= 0);
-	return (line_build(&buf, *eof));
+	return (rb_rewind(&rb), *eof = (n <= 0), line_build(&buf, *eof));
 }

@@ -1,0 +1,90 @@
+echo abcdef | { read -n 2 v; echo "[$v]"; }
+echo abcdef | { read -n 3; echo "[$REPLY]"; }
+echo abcdef | { read -n 99 v; echo "[$v]"; }
+printf 'ab' | { read -N 5 v; echo "rc=$? [$v]"; }
+printf 'abcdef\n' | { read -N 3 v; echo "rc=$? [$v]"; }
+printf 'a b\nc\n' | { read -N 4 v; echo "[$v]"; }
+printf 'a:b\n' | { read -d : v; echo "rc=$? [$v]"; }
+printf 'a:b:c\n' | { read -d : x y; echo "[$x][$y]"; }
+echo 'one two' | { read -n 5 a b; echo "[$a][$b]"; }
+echo abc | { read -rn 2 v; echo "[$v]"; }
+{ echo o; echo e >&2; } &>outfiles/amp1; cat outfiles/amp1
+{ echo o; echo e >&2; } >&outfiles/amp2; cat outfiles/amp2
+echo one &>outfiles/amp3; echo two &>>outfiles/amp3; cat outfiles/amp3
+{ echo x >&2; } &>outfiles/amp4; echo "rc=$?"; cat outfiles/amp4
+ls nosuchfile_xyz &>outfiles/amp5; echo "rc=$?"; test -s outfiles/amp5 && echo captured
+aa=1 ab=2 b=3; echo ${!a*}
+aa=1 ab=2 b=3; echo "${!a@}"
+aa=1 ab=2; for k in ${!a*}; do echo "k=$k"; done
+zz=1; echo "[${!nomatch_prefix*}]"
+aa=1; echo ${!a*} ${!a@}
+a=(); echo "[${a[@]:-dflt}]"
+a=(1 2); echo "[${a[@]:-dflt}]"
+echo "[${undefarr[@]:-dflt}]"
+a=(1 2); echo "[${a[*]:-dflt}]"
+a=(); echo "[${a[@]:+set}]"
+a=(1); echo "[${a[@]:+set}]"
+printf '%q\n' 'a b'
+printf '%q\n' abc
+printf '%q\n' ''
+printf '%q\n' 'a$b'
+printf '%q\n' "it's"
+printf '%q|%q\n' 'x y' 'z*'
+printf 'x\ey\n' | cat -v
+printf '\e[1m\n' | cat -v
+printf 'a\eb\ec\n' | cat -v
+case a in a) echo one ;;& a) echo two ;; esac
+case abc in a*) echo first ;;& *c) echo second ;; *) echo third ;; esac
+case x in y) echo no ;;& x) echo yes ;; esac
+case q in q) echo A ;;& z) echo B ;; esac
+v=1; test -v v; echo "rc=$?"
+unset u; test -v u; echo "rc=$?"
+v=1; [ -v v ]; echo "rc=$?"
+v=; test -v v; echo "rc=$?"
+a=(1 2); test -v 'a[1]'; echo "rc=$?"
+a=(1 2); test -v 'a[9]'; echo "rc=$?"
+hash -l; echo "rc=$?"
+hash -r; hash -l; echo "rc=$?"
+mkdir -p gs/a/b && touch gs/a/b/f && shopt -s globstar && echo gs/**/f
+mkdir -p gs2/a/b && touch gs2/a/b/f gs2/t && shopt -s globstar && echo gs2/**
+mkdir -p gs3/a && touch gs3/a/x && shopt -s globstar && echo gs3/**/*
+mkdir -p gs4/a/b/c && touch gs4/a/b/c/d && shopt -s globstar && echo gs4/**/d
+mkdir -p gs5/a && touch gs5/a/f && echo gs5/**/f
+shopt -s extglob; eval 'case abc in @(abc|d)) echo yes ;; esac'
+shopt -s extglob; eval 'case ad in @(abc|d)) echo yes ;; *) echo no ;; esac'
+shopt -s extglob; eval 'case abbbc in a+(b)c) echo plus ;; esac'
+shopt -s extglob; eval 'case ac in a*(b)c) echo star ;; esac'
+shopt -s extglob; eval 'case ac in a?(b)c) echo q ;; esac'
+shopt -s extglob; eval 'case axc in a!(b)c) echo neg ;; esac'
+command_not_found_handle() { echo "cnf:$1"; return 42; }; nosuchcmd_xyz; echo "rc=$?"
+command_not_found_handle() { echo "cnf:$*"; }; nosuchcmd_xyz a b; echo "rc=$?"
+nosuchcmd_xyz; echo "rc=$?"
+command_not_found_handle() { return 7; }; nosuchcmd_xyz 2>/dev/null; echo "rc=$?"
+compgen -W 'alpha beta gamma' a
+compgen -W 'alpha beta gamma'
+compgen -W 'alpha beta gamma' z; echo "rc=$?"
+compgen -W 'one two' o; echo "rc=$?"
+f() { :; }; compgen -A function f
+complete -W 'a b' foo; echo "rc=$?"
+a=(); echo "[${a[@]-dflt}]"
+a=(); echo "[${a[*]-d}]"
+echo "[${nope[@]-d}]"
+a=(1 2); echo "[${a[@]#1}]"
+a=(x y); echo "[${a[@]/x/z}]"
+v=x; echo "[${v[@]-d}]"
+declare -A M; M[k]=v; echo "[${M[@]:-d}]"
+a=(1 2); echo "[${a[*]:-d}]"
+case a in a) echo one ;& b) echo two ;; esac
+case a in a) echo one ;& b) echo two ;& c) echo three ;; esac
+case z in a) echo one ;& z) echo zed ;; esac
+case abc in a*) echo A ;;& *c) echo C ;;& *) echo D ;; esac
+case abc in a*) echo A ;;& zz) echo Z ;; esac
+case a in a) ;;& a) echo second ;; esac
+command_not_found_handle() { echo "n=$#"; }; nosuchcmd_xyz; echo "rc=$?"
+command_not_found_handle() { echo "[$1][$2][$3]"; }; nosuchcmd_xyz a b
+command_not_found_handle() { cd /tmp; }; nosuchcmd_xyz; pwd
+command_not_found_handle() { X=set; }; nosuchcmd_xyz; echo "X=$X"
+command_not_found_handle() { echo hi; }; echo direct; nosuchcmd_xyz
+a=(x y z w); echo "${a[@]:1:2}" "${a[@]:2}" "${!a[@]}"
+a=(a b c d e); echo "${a[@]:1:3}" "${a[*]:2:2}"
+a=(1 2 3); echo "[${a[@]:1}]" "[${a[@]:-d}]"

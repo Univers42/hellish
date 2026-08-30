@@ -48,3 +48,24 @@ bool	redir_park_fd(t_redir *ret)
 	ret->fd = parked;
 	return (parked >= 0);
 }
+
+/* `>&WORD` is a dup only when WORD is a file DESCRIPTOR (all digits, or the
+   `-` that closes one).  `>&out` is not: bash reads it as `&>out`, both
+   streams into that file.  Skipping this test was silent -- ft_atoi turned
+   `>&out` into fd 0, so the command dup'd stdin onto stdout and the file it
+   named was never written at all. */
+bool	dup_target_is_fd(const char *fname)
+{
+	int	i;
+
+	if (fname[0] == '-' && fname[1] == '\0')
+		return (true);
+	i = 0;
+	while (fname[i])
+	{
+		if (!ft_isdigit((unsigned char)fname[i]))
+			return (false);
+		i++;
+	}
+	return (true);
+}
