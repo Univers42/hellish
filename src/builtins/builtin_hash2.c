@@ -92,14 +92,23 @@ int	hash_add_from_path(t_shell *state, const char *name)
 	return (0);
 }
 
-/* Dispatch the two flag forms: -r (reset the cache) and -d name (delete one
-   entry). Returns 0 on success, -1 if the flag was not recognised (so
-   builtin_hash can fall through to the name-adding path). */
+/* Dispatch the flag forms: -r (reset the cache), -l (print it as reusable
+   `hash -p` commands) and -d name (delete one entry). Returns 0 on success,
+   -1 if the flag was not recognised (so builtin_hash can fall through to
+   the name-adding path).
+     -l used to reach that fallthrough and be looked up in PATH as if it
+   were a command name, printing "hash: -l: not found" and exiting 1 -- an
+   error for the one form whose entire job is to be re-readable output. */
 int	handle_hash_flags(t_shell *state, char **av, int ac)
 {
 	if (ft_strcmp(av[1], "-r") == 0)
 	{
 		cmd_hash_clear(&state->cmd_cache);
+		return (0);
+	}
+	if (ft_strcmp(av[1], "-l") == 0)
+	{
+		cmd_hash_print_reusable(&state->cmd_cache);
 		return (0);
 	}
 	if (ft_strcmp(av[1], "-d") == 0 && ac >= 3)

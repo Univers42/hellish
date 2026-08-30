@@ -44,11 +44,13 @@ static unsigned int	shopt_bit(const char *name)
 	return (0);
 }
 
-/* Push the two glob-affecting options down to the expander accessors. */
+/* Push the glob-affecting options down to the expander accessors. */
 static void	shopt_sync(t_shell *state)
 {
 	*glob_nullglob_cell() = (state->shopt & SHOPT_NULLGLOB) != 0;
 	*glob_dotglob_cell() = (state->shopt & SHOPT_DOTGLOB) != 0;
+	*glob_globstar_cell() = (state->shopt & SHOPT_GLOBSTAR) != 0;
+	*glob_extglob_cell() = (state->shopt & SHOPT_EXTGLOB) != 0;
 }
 
 /* Apply/query one name under act ('s' set, 'u' unset, 'p' print in

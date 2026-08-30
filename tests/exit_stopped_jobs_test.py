@@ -72,7 +72,11 @@ def drive(sh, cmds, settle=1.5):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execv(sh, [sh] + interactive)
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.  It goes
+        # BEFORE the short options: bash refuses `bash -i --norc` outright
+        # ("--: invalid option") and takes the long form only in front.
+        os.execv(sh, [sh, "--norc"] + interactive)
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 100, 0, 0))
     time.sleep(0.9)

@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "ft_glob.h"
 #include "brace_expand.h"
 #include "decomposer.h"
 #include "sys.h"
@@ -113,7 +114,13 @@ static bool	has_plain_literal_meta(char c, int *lbr, int i)
    This is the most common case for command names like "ls" or "-la";
    detecting it here avoids calling the full pipeline at all.
    Note: '[' is only a metachar when matched by a later ']' (glob bracket),
-   so `lbr` tracks the position of an unmatched '['. */
+   so `lbr` tracks the position of an unmatched '['.
+     An extglob group is a metacharacter run that has to be spotted by
+   LOOKAHEAD, not by its first byte: `@(a|b)` and `+(a)` contain none of the
+   characters above, so this fast path claimed them as plain literals and
+   the glob walk never ran -- `echo @(aa|ab)` printed itself. `*(` and `?(`
+   escaped that only by accident, because their first byte is already a
+   wildcard. */
 bool	word_is_plain_literal(t_ast_node *node)
 {
 	t_token	*t;
@@ -132,7 +139,7 @@ bool	word_is_plain_literal(t_ast_node *node)
 	while (i < t->len)
 	{
 		c = t->start[i];
-		if (has_plain_literal_meta(c, &lbr, i))
+		if (has_plain_literal_meta(c, &lbr, i) || extglob_ahead(t->start + i))
 			return (false);
 		i++;
 	}

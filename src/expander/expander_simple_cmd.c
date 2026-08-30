@@ -77,6 +77,7 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 	if (node->children.elem_size == 0)
 		node->children.elem_size = sizeof(t_ast_node);
 	exp = (t_expander_simple_cmd){0};
+	exp.node = node;
 	exp.in_db = db_head_detect(node);
 	arr_marks_clear(state);
 	init_executable_cmd(state, ret);

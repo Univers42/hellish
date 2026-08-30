@@ -24,16 +24,26 @@ bool	is_compound_start(t_tt tt)
 		|| tt == TT_BANG || tt == TT_ARITH_START);
 }
 
+/* The three case-clause terminators: `;;` stops, `;;&` resumes testing the
+   remaining patterns, `;&` falls into the next body untested. They differ
+   only in what happens AFTER the body runs, so every place that asks "is
+   the clause over" must accept all three -- asking about TT_DSEMI alone is
+   what let `;;&` lex as `;;` followed by a background `&`. */
+bool	is_case_term(t_tt tt)
+{
+	return (tt == TT_DSEMI || tt == TT_DSEMI_FALL || tt == TT_SEMI_FALL);
+}
+
 /* True when tt is a keyword that closes a compound construct. The parser
    checks this before trying to parse another pipeline inside a compound-list
-   so that `do done` and `then fi` are not mistaken for commands. TT_DSEMI
-   terminates case clauses. TT_RBRACE closes brace groups. */
+   so that `do done` and `then fi` are not mistaken for commands. The case
+   terminators close case clauses. TT_RBRACE closes brace groups. */
 bool	is_compound_terminator(t_tt tt)
 {
 	return (tt == TT_BRACE_RIGHT || tt == TT_THEN || tt == TT_ELIF
 		|| tt == TT_ELSE || tt == TT_FI || tt == TT_DO
 		|| tt == TT_DONE || tt == TT_ESAC || tt == TT_RBRACE
-		|| tt == TT_DSEMI);
+		|| is_case_term(tt));
 }
 
 /* True when the last child of ret was a `;` or newline separator AND the

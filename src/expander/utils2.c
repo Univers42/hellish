@@ -44,8 +44,9 @@ bool	node_is_groupable(t_ast_node *node)
 	return (false);
 }
 
-/* True for any token type that introduces a redirection.  All eight forms
-   recognised by the shell — <, >, >>, <<, <&, >&, <>, >| — are listed. */
+/* True for any token type that introduces a redirection.  All ten forms
+   recognised by the shell — <, >, >>, <<, <&, >&, <>, >|, &>, &>> — are
+   listed. */
 bool	is_redirect(t_tt tt)
 {
 	if (tt == TT_REDIRECT_LEFT
@@ -56,7 +57,9 @@ bool	is_redirect(t_tt tt)
 		|| tt == TT_DUP_OUT
 		|| tt == TT_DUP_IN
 		|| tt == TT_READWRITE
-		|| tt == TT_CLOBBER)
+		|| tt == TT_CLOBBER
+		|| tt == TT_AMP_REDIR
+		|| tt == TT_AMP_APPEND)
 		return (true);
 	return (false);
 }

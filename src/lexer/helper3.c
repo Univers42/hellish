@@ -53,9 +53,24 @@ static int	op_right(const char *s, t_tt *t)
 	return (*t = TT_REDIRECT_RIGHT, 1);
 }
 
-/* Everything else: pipe/or, amp/and, semi/dsemi, parens/arith, and zsh's
-   `=(cmd)` process substitution to a temp file. That last one is gated on
-   the dialect through the mirrored cell -- in bash a leading `=` is an
+/* The `&` family. `&>` and `&>>` are REDIRECTS, not a background operator
+   followed by one: reading them byte by byte is what made `cmd &>f` run the
+   command in the background, leave stderr on the terminal and report status
+   0 -- three wrong answers from one missing case. Longest match first. */
+static int	op_amp(const char *s, t_tt *t)
+{
+	if (s[1] == '&')
+		return (*t = TT_AND, 2);
+	if (s[1] == '>' && s[2] == '>')
+		return (*t = TT_AMP_APPEND, 3);
+	if (s[1] == '>')
+		return (*t = TT_AMP_REDIR, 2);
+	return (*t = TT_AMPERSAND, 1);
+}
+
+/* Everything else: pipe/or, the amp family, semi/dsemi, parens/arith, and
+   zsh's `=(cmd)` process substitution to a temp file. That last one is gated
+   on the dialect through the mirrored cell -- in bash a leading `=` is an
    ordinary word character, and `=(x)` there is a word followed by a
    subshell. Returns 0
    for a character that is no operator at all — the caller asserts, since
@@ -66,12 +81,14 @@ static int	op_other(const char *s, t_tt *t)
 		return (*t = TT_OR, 2);
 	if (s[0] == '|')
 		return (*t = TT_PIPE, 1);
-	if (s[0] == '&' && s[1] == '&')
-		return (*t = TT_AND, 2);
 	if (s[0] == '&')
-		return (*t = TT_AMPERSAND, 1);
+		return (op_amp(s, t));
+	if (s[0] == ';' && s[1] == ';' && s[2] == '&')
+		return (*t = TT_DSEMI_FALL, 3);
 	if (s[0] == ';' && s[1] == ';')
 		return (*t = TT_DSEMI, 2);
+	if (s[0] == ';' && s[1] == '&')
+		return (*t = TT_SEMI_FALL, 2);
 	if (s[0] == ';')
 		return (*t = TT_SEMICOLON, 1);
 	if (s[0] == '=' && s[1] == '(' && glob_zsh())
