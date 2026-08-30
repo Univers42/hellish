@@ -72,13 +72,16 @@ bool	is_function_def(t_deque_tok *tokens)
 		&& t2->tt == TT_BRACE_RIGHT);
 }
 
-/* Parse the function body after `name()`. If it starts with TT_LBRACE
+/* Parse the function body after `name()`. Shared with the anonymous
+   form (parse_func_anon.c): `() { ... }` has no name and no other
+   difference, so it must not grow a second body parser.
+     Parse the function body after `name()`. If it starts with TT_LBRACE
    we enter the explicit `{ compound_list }` path and consume the braces.
    Otherwise (e.g. a compound command like `while ... done`) we hand off
    directly to parse_compound_list. The TT_RBRACE-vs-TT_END check prevents
    an infinite-input prompt when the user types `f() {` and forgets `}`. */
-static t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
-					t_deque_tok *tokens)
+t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens)
 {
 	t_ast_node	body;
 	t_tt		next;
