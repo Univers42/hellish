@@ -61,7 +61,11 @@ static int	cd_do_physical(t_shell *state, char *target)
 
 /* Perform the directory change (logical or physical per -L/-P), then -- on
    success -- echo the destination when asked (CDPATH hit, `cd -`, `cd a b`)
-   and rotate $PWD/$OLDPWD. The operand is already fully resolved. */
+   and rotate $PWD/$OLDPWD.  The operand is already fully resolved.
+     This is the single point at which a cd SUCCEEDS, which is why zsh's
+   chpwd hooks fire from here rather than from builtin_cd: `cd -`, `cd a b`
+   and a CDPATH hit all arrive through this one function, and a hook that
+   ran for some of those and not others would be worse than none. */
 int	cd_apply(t_shell *state, t_cdopt *o, char *target)
 {
 	int	ret;
@@ -75,5 +79,6 @@ int	cd_apply(t_shell *state, t_cdopt *o, char *target)
 	if (o->echo)
 		ft_printf("%s\n", (char *)state->cwd.ctx);
 	update_pwd_vars(state);
+	run_chpwd_hooks(state);
 	return (0);
 }

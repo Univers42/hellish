@@ -73,10 +73,9 @@ CORPUS = [
     ("omz-web-search", OMZ % "web-search/web-search.plugin.zsh", "loads", 5,
      ""),
     ("omz-copypath", OMZ % "copypath/copypath.plugin.zsh", "loads", 1, ""),
-    ("omz-dirhistory", OMZ % "dirhistory/dirhistory.plugin.zsh",
-     "unsupported", 0,
-     "arr[i]=() element assignment; its widgets also cd, which the forked "
-     "readline child cannot carry back"),
+    ("omz-dirhistory", OMZ % "dirhistory/dirhistory.plugin.zsh", "loads", 12,
+     "navigation verified against zsh 5.9 in zsh_dirhistory_test.py; its "
+     "widgets cd, and that does not cross the readline fork -- see #80"),
     ("omz-jsontools", OMZ % "jsontools/jsontools.plugin.zsh", "loads", 3, ""),
     ("omz-colored-man", OMZ % "colored-man-pages/colored-man-pages.plugin.zsh",
      "loads", 4, ""),

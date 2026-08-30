@@ -76,6 +76,24 @@ static char	*zn_pick_char(const char *v, long n)
 	return (ft_strndup(v + n - 1, 1));
 }
 
+/* A subscript on a plain SCALAR parameter, `${x[1]}`.
+**
+** bash answers the whole value at [0] and nothing anywhere else; zsh takes
+** one CHARACTER, counting from 1, so `${x[1]}` of "hello" is "h".  Letting
+** bash's rule stand under the zsh dialect would hand back the ENTIRE STRING
+** for [1] -- an answer that looks like it worked.
+*/
+char	*zn_scalar_pick(t_shell *state, const char *val, long sub)
+{
+	if (!val)
+		return (NULL);
+	if (zsh_arrays(state))
+		return (zn_pick_char(val, sub));
+	if (sub == 0)
+		return (ft_strdup(val));
+	return (NULL);
+}
+
 /* Apply the trailing subscript, if there is one, to what the nested
    expansion produced.  Consumes `enc` and returns an owned value.
      [@] and [*] are not a pick: they mean "keep this an array", which

@@ -57,10 +57,8 @@ static const char	*zp_subscript(const char *s, int slen, int *nlen,
 	return (s + i + 1);
 }
 
-/* Is `key` a live thing of the kind `base` names?  Only the three kinds the
-   corpus uses; anything else returns -1 so the caller can fail loudly
-   instead of answering 0, which would read as "not installed" and send the
-   plugin down a fallback path for a construct we simply did not implement. */
+/* Is `key` a live thing of the kind `base` names?  The three special tables
+   zsh exposes, then ordinary parameters. */
 static int	zp_exists(t_shell *state, const char *base, int blen, char *key)
 {
 	char	*path;
@@ -76,7 +74,7 @@ static int	zp_exists(t_shell *state, const char *base, int blen, char *key)
 		return (func_lookup(state, key) != NULL);
 	if (blen == 7 && !ft_strncmp(base, "aliases", 7))
 		return (hash_get(&state->aliases, key) != NULL);
-	return (-1);
+	return (zp_elem_set(state, base, blen, key));
 }
 
 /* ${+name} and ${+name[key]}: 1 if set, 0 if not.  Returns NULL when the
@@ -95,8 +93,6 @@ static char	*zp_plus(t_shell *state, const char *s, int slen)
 	key = ft_strndup(sub, (size_t)klen);
 	r = zp_exists(state, s + 1, nlen, key);
 	xfree(key);
-	if (r < 0)
-		return (NULL);
 	return (ft_itoa(r));
 }
 

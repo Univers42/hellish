@@ -37,6 +37,9 @@ int				builtin_unset(t_shell *state, t_vec argv);
 int				builtin_type(t_shell *state, t_vec argv);
 int				builtin_set(t_shell *state, t_vec argv);
 int				builtin_shift(t_shell *state, t_vec argv);
+void			free_split(char **arr);
+/* zsh's `shift [n] array`; -1 when the args are the positional form. */
+int				zsh_shift_array(t_shell *state, t_vec argv);
 int				set_positional_args(t_shell *state,
 					char **args, size_t n);
 void			pos_build(t_pos *pos, char **args, size_t n);
@@ -129,6 +132,9 @@ int				builtin_autoload(t_shell *state, t_vec argv);
 int				builtin_zunsupported(t_shell *state, t_vec argv);
 int				builtin_zle(t_shell *state, t_vec argv);
 int				builtin_bindkey(t_shell *state, t_vec argv);
+int				builtin_add_zsh_hook(t_shell *state, t_vec argv);
+/* Fire chpwd_functions after a successful cd; see builtin_zsh_hook.c. */
+void			run_chpwd_hooks(t_shell *state);
 bool			zopt_bare(const char *n);
 bool			zopt_inert(const char *n);
 bool			zopt_apply(t_shell *state, const char *n, bool on);

@@ -21,8 +21,32 @@ bool	is_valid_ident(char *s, int len);
    `arr= (x)` is an assignment followed by a subshell and must NOT match,
    exactly as in bash). */
 
-/* Does `w` look like NAME= or NAME+= with `open` immediately after it? */
-static bool	is_array_assign_start(t_token *w, t_ltoken *open, char *base)
+/* Is the target `NAME[subscript]`?  zsh's element SPLICE, `a[i]=(x y)` --
+   and with an empty list, `a[i]=()`, which removes the element and closes
+   the array up behind it.  That is how a plugin pops a stack, and it is
+   what oh-my-zsh's dirhistory is built on.
+
+   Gated on the dialect: bash rejects `a[2]=(x)` outright, so accepting it
+   there would turn a syntax error into a silent, different meaning.  The
+   subscript itself is not parsed here -- only its shape -- because it is an
+   arbitrary expression the expander evaluates later. */
+static bool	is_zsh_elem_target(t_shell *state, char *s, int n)
+{
+	int	i;
+
+	if (!zsh_mode(state) || n < 4 || s[n - 1] != ']')
+		return (false);
+	i = 0;
+	while (i < n && s[i] != '[')
+		i++;
+	if (i == 0 || i >= n - 1)
+		return (false);
+	return (is_valid_ident(s, i));
+}
+
+/* Does `w` look like NAME= / NAME+= / NAME[sub]= with `open` right after? */
+static bool	is_array_assign_start(t_shell *state, t_token *w, t_ltoken *open,
+				char *base)
 {
 	int	n;
 
@@ -37,6 +61,8 @@ static bool	is_array_assign_start(t_token *w, t_ltoken *open, char *base)
 		n--;
 	if (n <= 0)
 		return (false);
+	if (is_zsh_elem_target(state, w->start, n))
+		return (true);
 	return (is_valid_ident(w->start, n));
 }
 
@@ -72,14 +98,14 @@ static void	collect_array_elems(t_parser *parser, t_deque_tok *tokens,
    trailing '=' or '+=' so the expander can see the append flag), the
    rest are the element words. Returns false when the shape does not
    match and the caller should treat the word normally. */
-bool	try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
-			t_ast_node *ret)
+bool	try_push_array_assign(t_shell *state, t_parser *parser,
+			t_deque_tok *tokens, t_ast_node *ret)
 {
 	t_ast_node	node;
 	t_token		curr;
 
 	curr = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
-	if (tokens->deqtok.len < 2 || !is_array_assign_start(&curr,
+	if (tokens->deqtok.len < 2 || !is_array_assign_start(state, &curr,
 			(t_ltoken *)deque_idx(&tokens->deqtok, 1), tokens->base))
 		return (false);
 	node = create_node_type(AST_ARRAY_ASSIGN);

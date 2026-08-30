@@ -173,11 +173,14 @@ static const t_help	g_help_2[] = {
 	"compdef [args ...]",
 	"not supported: hellish has no zsh completion system"},
 {"zle", "zsh",
-	"zle [args ...]",
-	"not supported: readline has no ZLE widget model"},
+	"zle -N widget [fn] | zle widget",
+	"register a line-editor widget; key dispatch is not wired yet"},
 {"bindkey", "zsh",
-	"bindkey [args ...]",
-	"not supported: readline has no ZLE widget model"},
+	"bindkey [-M keymap] seq widget",
+	"record a key binding for a zle widget"},
+{"add-zsh-hook", "zsh",
+	"add-zsh-hook hook function",
+	"run a function on an event; only chpwd fires here"},
 {NULL, NULL, NULL, NULL}
 };
 
