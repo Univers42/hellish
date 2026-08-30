@@ -93,10 +93,15 @@ static void	arr_elem_emit(t_token *tt, char *elem)
    LITERAL string key; otherwise it is an arithmetic index, converted to the
    store's 0-based one by sub_to_index -- which is where bash's counting from
    0 and zsh's from 1 part company, and where negatives wrap from the end.
-   A scalar answers index 0 in bash and one character in zsh. */
+   A scalar answers index 0 in bash and one character in zsh.
+
+   The slice check comes FIRST because `lo,hi` is a legal arithmetic
+   expression: the comma operator would quietly evaluate it to `hi` and read
+   one element, which is a wrong answer that reports nothing. */
 static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 {
 	char	*res;
+	t_slice	r;
 	long	sub;
 
 	if (assoc_is(val))
@@ -106,6 +111,9 @@ static void	arr_element(t_shell *state, t_token *tt, char *val, int nl)
 		arr_elem_emit(tt, assoc_get(val, res, (int)ft_strlen(res)));
 		return ((void)xfree(res));
 	}
+	r = zsh_slice_bounds(state, tt->start + nl + 1, tt->len - nl - 2, val);
+	if (r.lo != SLICE_NONE)
+		return (arr_elem_emit(tt, zsh_slice_str(state, val, r)));
 	res = arith_expand(state, tt->start + nl + 1, tt->len - nl - 2);
 	sub = 0;
 	if (res)
