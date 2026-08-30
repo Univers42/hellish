@@ -76,6 +76,26 @@ typedef struct s_rdopt
 	long	tmo_ms;
 }	t_rdopt;
 
+/* compgen's parsed options: -W's list (borrowed from argv) and the single
+   action letter -A/-f/-d/... resolves to. */
+typedef struct s_cgopt
+{
+	char	*words;
+	char	act;
+}	t_cgopt;
+
+/* complete's parsed options. All pointers borrow from argv; comp_store
+   copies per NAME, since one command can register several names. */
+typedef struct s_cmpopt
+{
+	char	*words;
+	char	*func;
+	char	*opts;
+	char	act;
+	bool	print;
+	bool	remove;
+}	t_cmpopt;
+
 typedef struct s_getopts
 {
 	char	*optstring;
@@ -161,6 +181,30 @@ int		tx_or(t_tx *t);
 bool	tx_is_binop(const char *s);
 int		tx_test_unary(char **a);
 bool	test_var_isset(t_shell *st, char *name);
+
+/* compgen / complete (#72 phase 4). cg_* generate completions, comp_*
+   store and print the `complete` registrations kept in state->compspecs.
+   CG_OPT_ERR is what both option scanners return for "usage error"; the
+   caller turns it into status 2. */
+# define CG_OPT_ERR 0xFFFFFFFFFFFFFFFFUL
+
+int		builtin_compgen(t_shell *state, t_vec argv);
+int		builtin_complete(t_shell *state, t_vec argv);
+int		cg_emit(const char *s, const char *pfx);
+int		cg_source(t_shell *st, char act, const char *pfx);
+int		cg_aliases(t_shell *st, const char *pfx);
+int		cg_glob_paths(char act, const char *pfx);
+int		cg_is_dir(const char *path);
+char	*cg_join_prefix(const char *pfx, const char *name);
+char	cg_action_of(const char *name);
+size_t	cg_parse_opts(t_shell *st, t_vec argv, t_cgopt *o);
+void	comp_free_spec(t_compspec *c);
+void	comp_vec_push(t_shell *st, t_compspec *c);
+void	comp_print_one(t_compspec *c);
+void	comp_print_all(t_shell *st);
+int		comp_remove(t_shell *st, t_vec argv, size_t i);
+size_t	comp_parse_opts(t_shell *st, t_vec argv, t_cmpopt *o);
+
 int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);
 t_shell	**db_state_cell(void);

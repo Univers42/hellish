@@ -162,6 +162,7 @@ static void	free_session_data(t_shell *state)
 		state->traps[i] = NULL;
 	}
 	free_dirstack(state);
+	free_compspecs(state);
 	if (state->for_snapshot)
 		free_positional_snapshot(state->for_snapshot);
 	state->for_snapshot = NULL;
