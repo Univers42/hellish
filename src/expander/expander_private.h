@@ -489,3 +489,9 @@ static inline t_expand_ctx	init_expand(const char *s, int slen,
 }
 
 #endif
+/* procsub_assign.c: a process substitution glued to the assignment word
+   before it (`x=<(cmd)`, zsh's `x==(cmd)`) is that assignment's VALUE, not
+   a separate operand. */
+bool		procsub_is_assign_rhs(t_expander_simple_cmd *exp);
+void		procsub_join_assign(t_expander_simple_cmd *exp,
+				t_executable_cmd *ret, char *path);
