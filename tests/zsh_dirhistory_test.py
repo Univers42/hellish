@@ -217,7 +217,22 @@ def key_nav_case(tmp):
     os.write(fd, b"pwd\n")
     drain(1.5)
     tail = out[mark:]
+
+    # The same key, pressed with a half-written command on the line. The
+    # widget's first act is `zle .kill-buffer` and its last is
+    # `zle .accept-line`; if the kill does not stick, accept-line submits
+    # whatever the user had typed. It did -- pressing ALT-LEFT with `echo
+    # DETONATE` on the line ran it. With a destructive command half-written
+    # that is a very bad afternoon, so it is pinned on the plugin as well as
+    # on the mechanism in zle_test.py.
+    mark2 = len(out)
+    os.write(fd, b"echo DETONATE")
+    drain(0.6)
+    os.write(fd, b"\x1b[3D")
+    drain(1.5)
+    tail2 = out[mark2:]
     try:
+        os.write(fd, b"\x03")
         os.write(fd, b"exit\n")
         time.sleep(0.3)
         os.close(fd)
@@ -227,6 +242,8 @@ def key_nav_case(tmp):
     check("key/alt-left-moves-the-parent-shell",
           (os.path.realpath(a).encode() in tail
            or a.encode() in tail), True)
+    check("key/alt-left-does-not-execute-a-half-typed-line",
+          b"DETONATE\r\n" not in tail2, True)
 
 
 def main():

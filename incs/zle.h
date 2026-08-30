@@ -65,6 +65,11 @@ void			zle_install(t_shell *state);
 int				zle_dispatch(int count, int key);
 void			zle_do_redisplay(void);
 void			zle_do_kill_buffer(void);
+
+/* Refresh BUFFER/LBUFFER/RBUFFER/CURSOR from readline's current line. A
+   built-in widget that edits the line directly must call this, or the
+   dispatcher's write-back restores the text it just removed. */
+void			zle_publish(t_shell *state);
 void			zle_do_accept_line(void);
 int				zle_run_widget(t_shell *state, const char *name);
 
