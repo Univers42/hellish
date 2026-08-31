@@ -85,8 +85,15 @@ The fish/zsh-grade layer (menus, descriptions, fuzzy matching) is on the roadmap
 
 ## Prompt ✅
 
-Rich, configurable prompt elements: user, cwd, git branch, virtualenv, and time — rendered with
-correct width accounting so segments and colors line up.
+**The default is zsh's own**: `hostname% `, plus the self-spacing `⬆` update badge — a first
+prompt that looks like the shell you already know. The rich two-row theme is one command away:
+`prompt` lists 29 themes, `prompt <name>` switches, `prompt save <name>` persists, and
+`PS1='\B'` is the old default by name.
+
+**PS1 is bilingual.** Both escape languages render in a plain PS1 — paste `%n@%m %~ %#` or
+`\u@\h \w \$` and either works, while `100% `, csh-style `%> ` and the strftime percents inside
+`$(date +%H:%M)` or `\D{%M}` survive literally. `PROMPT` and `print -P` keep exact zsh semantics
+(measured against zsh 5.9), and under `set -o zsh`, PS1 *is* PROMPT, as in zsh.
 
 Bash's escape set is implemented — `\u \h \H \w \W \t \d \D{fmt} \T \@ \! \# \j \l \r \s \v \V
 \n \e \a \$ \\ \[ \] \nnn` — plus hellish's own: `\g` git branch, `\S` failure badge, `\p`
