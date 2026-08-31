@@ -19,6 +19,19 @@ on:
       - 'docker-compose.yml'
       - '.dockerignore'
       - '.github/workflows/docker.yml'
+      # The my_shell + update job below. These are the files that can break
+      # it, and none of them is under docker/ -- without naming them the job
+      # would only ever run on a Dockerfile edit, which is not where the two
+      # bugs it guards came from.
+      - 'tools/register_shell.sh'
+      - 'src/platform/posix/update_*.c'
+      - 'tests/my_shell_update_test.py'
+      # The login-shell job. Anything that changes what the shell writes on
+      # startup or in -c mode can break scp/rsync/git over ssh, and none of
+      # those files live under docker/ either.
+      - 'src/core/**'
+      - 'src/infrastructure/banner*.c'
+      - 'tests/ssh_login_shell.sh'
   workflow_dispatch:
 
 concurrency:
@@ -43,3 +56,37 @@ jobs:
         run: |
           chmod +x docker/test.sh docker/smoke.sh
           docker/test.sh ${{ matrix.distro }}
+
+  # `make my_shell`, then the update button -- issues #75 and #76.
+  #
+  # Needs a container for the same reason the report did: a root-owned
+  # /usr/bin and a non-root human with a password-protected sudo. The
+  # permission shape alone is covered without root, on every push, by
+  # tests/update_sudo_fail_test.py in the pty suite; this is the job that
+  # runs the REAL my_shell target -- chsh, /etc/shells, the passwd entry --
+  # which no host-side test may do.
+  my-shell:
+    name: make my_shell + the update button
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Install as a login shell, then update it
+        run: make my-shell-test
+
+  # hellish as the login shell sshd execs for EVERY remote operation. After
+  # `make my_shell`, `ssh host cmd`, scp, sftp, rsync and git all run
+  # `$SHELL -c ...`, and those protocols fail on one stray byte of stdout.
+  # The golden suite cannot reach any of it -- no sshd, no chsh, no pipe.
+  ssh-login-shell:
+    name: login shell over ssh (scp/rsync/git)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: ssh, scp, sftp, rsync and git against a real sshd
+        run: make ssh-shell-test

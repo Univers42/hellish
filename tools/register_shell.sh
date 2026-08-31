@@ -46,6 +46,8 @@
 #   tools/register_shell.sh --bin build/bin/hellish     install and register
 #   tools/register_shell.sh --dry-run --bin X  say what it would do, do nothing
 #   tools/register_shell.sh --uninstall        put the previous shell back
+#   tools/register_shell.sh --purge            ...and the config too
+#   tools/register_shell.sh --doctor           what is installed, and will it update?
 # ============================================================================
 set -eu
 
@@ -56,6 +58,7 @@ DEST="${DEST:-/usr/bin/hellish}"
 TARGET_USER=""
 ACTION="register"
 DRY_RUN=0
+PURGE=0
 
 # ── plumbing (same vocabulary as user-install.sh) ──────────────────────────
 red()  { printf '\033[1;31m%s\033[0m\n' "$*" >&2; }
@@ -66,14 +69,16 @@ die()  { red "$PROG: $*"; exit 1; }
 
 usage() {
 	cat >&2 <<EOF
-usage: $PROG [--preflight|--uninstall] [--bin PATH] [--dest PATH] [--user NAME]
+usage: $PROG [--preflight|--uninstall|--doctor] [--bin PATH] [--dest PATH] [--user NAME]
 
   --preflight    check this machine CAN install a login shell, change nothing
   --bin PATH     the freshly built binary to install
   --dest PATH    where it goes            (default: $DEST)
   --user NAME    whose login shell to set (default: the invoking human)
   --dry-run      print every privileged action instead of running it
-  --uninstall    restore the previous login shell
+  --uninstall    restore the login shell, remove the binary and /etc/shells entry
+  --purge        ...and delete ~/.hellishrc, ~/.config/hellish, ~/.cache/hellish
+  --doctor       report what is installed and whether updating will work
 EOF
 	exit 2
 }
@@ -82,6 +87,8 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	--preflight) ACTION="preflight" ;;
 	--uninstall) ACTION="uninstall" ;;
+	--doctor)    ACTION="doctor" ;;
+	--purge)     ACTION="uninstall"; PURGE=1 ;;
 	--dry-run)   DRY_RUN=1 ;;
 	--bin)   shift; [ $# -gt 0 ] || usage; BIN_SRC="$1" ;;
 	--dest)  shift; [ $# -gt 0 ] || usage; DEST="$1" ;;
@@ -314,24 +321,209 @@ register() {
 			|| die "chsh reported success but $TARGET_USER's shell is still '$_now'"
 	fi
 	grn "$TARGET_USER's login shell is now $DEST"
+
+	# Never fail the install over the report -- the install worked, and these
+	# are warnings about the machine, not about what we just did.
+	[ "$DRY_RUN" = "1" ] || doctor || true
 }
 
+# ── doctor: the two things that go wrong AFTER a successful install ───────
+#
+# Both were reported as "the path is wrong" and neither is $PATH being wrong.
+#
+# 1. A SHADOWED binary. `make user-install` puts hellish in ~/.local/bin,
+#    which Ubuntu's ~/.profile puts BEFORE /usr/bin. Run user-install once and
+#    my_shell later and there are two hellishes: the one you type is the old
+#    user copy, the one chsh logs you into is the new system one. `update`
+#    then replaces whichever binary is RUNNING, so the other stays stale for
+#    ever and every symptom looks like "the update did nothing". Two copies is
+#    not itself an error -- it is only ever a surprise, so say it out loud.
+#
+# 2. An install whose directory needs elevation. That is normal for /usr/bin
+#    and it is what my_shell is for, but the user should learn it here rather
+#    than from a password prompt in the middle of their first update.
+doctor() {
+	_rc=0
+	inf "hellish install report"
+
+	if [ ! -e "$DEST" ]; then
+		warn "nothing installed at $DEST"
+		_rc=1
+	else
+		# Ask the thing at DEST what it is. An answer we cannot read is NOT a
+		# clean bill of health -- the first version of this reported "no
+		# problems found" next to a literal "(?)" on a box where $DEST was a
+		# hand-written bash wrapper execing a hellish.real beside it. A report
+		# that says all-clear on a machine it did not understand is worse than
+		# no report, so an unreadable version is a finding.
+		_ver="$( "$DEST" -c 'update --version' 2>/dev/null | head -1 )"
+		case "$_ver" in
+		hellish\ *) grn "$DEST ($_ver)" ;;
+		*)
+			warn "$DEST does not report a hellish version"
+			[ -n "$_ver" ] && warn "  it answered: $_ver"
+			# The shape this takes in practice: something at the canonical
+			# path that is not the shell -- a wrapper, a symlink to another
+			# shell, a stale stub. `update` replaces the binary that is
+			# RUNNING (/proc/self/exe), which in that arrangement is the real
+			# one beside it, so the two can drift apart silently.
+			if ! head -c 4 "$DEST" 2>/dev/null | grep -q 'ELF'; then
+				warn "  it is not an ELF binary:  $(head -1 "$DEST" 2>/dev/null)"
+				[ -e "$DEST.real" ] && warn "  ...and $DEST.real exists" \
+					&& warn "  so \`update\` will replace $DEST.real, not $DEST"
+			fi
+			_rc=1
+			;;
+		esac
+	fi
+
+	# Every hellish PATH can reach, in PATH order. `command -v` gives only the
+	# winner, which is exactly the copy that hides the problem.
+	#
+	# Deduplicated by RESOLVED path, not by the name we walked to. /bin is a
+	# symlink to /usr/bin on every merged-/usr distro, so a single install
+	# shows up under both and the naive list reports "installed twice" on a
+	# machine with one copy -- a warning that is wrong is worse than none.
+	_found=""
+	_seen=""
+	_ifs="$IFS"; IFS=:
+	for _d in $PATH; do
+		[ -n "$_d" ] || _d=.
+		if [ -x "$_d/hellish" ]; then
+			_real="$(readlink -f "$_d/hellish" 2>/dev/null || echo "$_d/hellish")"
+			case " $_seen " in
+			*" $_real "*) ;;
+			*) _seen="$_seen $_real"; _found="$_found $_d/hellish" ;;
+			esac
+		fi
+	done
+	IFS="$_ifs"
+	set -- $_found
+	if [ $# -eq 0 ]; then
+		red "$PROG: no hellish on your PATH at all"
+		red "  installed at $DEST, but PATH cannot reach it."
+		red "  PATH=$PATH"
+		_rc=1
+	elif [ $# -gt 1 ]; then
+		warn "hellish exists $# times on PATH; you are running the FIRST:"
+		for _p in "$@"; do
+			printf '      %s  (%s)\n' "$_p" \
+				"$( "$_p" -c 'update --version' 2>/dev/null || echo '?' )" >&2
+		done
+		warn "an \`update\` only replaces the one that is RUNNING, so the"
+		warn "others stay behind and look like an update that did nothing."
+		[ "$1" = "$DEST" ] || warn "remove $1, or run: hash -r"
+		_rc=1
+	elif [ "$1" != "$DEST" ]; then
+		warn "PATH finds $1, but this installs to $DEST"
+		_rc=1
+	else
+		grn "PATH finds exactly one hellish, and it is $DEST"
+	fi
+
+	# What the next update will have to do. update_needs_sudo() asks the same
+	# question the same way: write access to the DIRECTORY, because replacing
+	# a binary is a rename inside it.
+	_dir="$(dirname "$DEST")"
+	if [ -w "$_dir" ]; then
+		grn "$_dir is writable — updates need no password"
+	elif have_root; then
+		inf "$_dir is root's — \`update\` will ask for your sudo password"
+		inf "  and run: sudo install -m 755 <verified download> $DEST"
+	else
+		red "$PROG: $_dir is not writable and there is no sudo here"
+		red "  updates cannot install. Use: make user-install"
+		_rc=1
+	fi
+
+	[ "$_rc" = "0" ] && grn "no problems found"
+	return $_rc
+}
+
+# Put the machine back the way it was.
+#
+# ORDER IS LOAD-BEARING: the login shell is restored FIRST, and the binary is
+# only removed once the passwd entry no longer points at it. The other order
+# leaves a window -- and, if chsh then fails, a permanent state -- where the
+# account's login shell is a path that does not exist. That locks the user out
+# of ssh and every tty, and only root can undo it. So a failed chsh aborts
+# before anything is deleted.
+#
+# --purge also takes the config, which plain --uninstall deliberately keeps:
+# ~/.hellishrc is the user's own work, and reinstalling to test something is
+# not a reason to throw it away. `make my_shell VERSION=…` uses --purge so
+# each reinstall starts from a genuinely clean machine.
 uninstall() {
 	_prev=""
 	[ -n "${HOME:-}" ] && [ -f "$HOME/.hellish-previous-shell" ] \
 		&& _prev="$(cat "$HOME/.hellish-previous-shell")"
 	[ -n "$_prev" ] || _prev="/bin/sh"
 	[ -x "$_prev" ] || _prev="/bin/sh"
-	inf "restoring $TARGET_USER's login shell to $_prev"
-	as_root chsh -s "$_prev" -- "$TARGET_USER" \
-		|| die "could not restore the shell; run: sudo chsh -s $_prev $TARGET_USER"
-	grn "$TARGET_USER's login shell is $_prev again"
+
+	_now="$(current_shell_of "$TARGET_USER")"
+	if [ "$_now" = "$DEST" ]; then
+		inf "restoring $TARGET_USER's login shell to $_prev"
+		if ! as_root chsh -s "$_prev" -- "$TARGET_USER"; then
+			red "$PROG: could not restore the shell; run: sudo chsh -s $_prev $TARGET_USER"
+			die "NOTHING was removed -- $DEST is still in place, so you are not locked out."
+		fi
+		grn "$TARGET_USER's login shell is $_prev again"
+	else
+		inf "$TARGET_USER's login shell is $_now, not $DEST — leaving it"
+	fi
 	[ -n "${HOME:-}" ] && rm -f "$HOME/.hellish-previous-shell"
-	inf "$DEST was left in place — remove it with: sudo rm -f $DEST"
+
+	# Only now, with nothing pointing at it any more.
+	if [ -e "$DEST" ]; then
+		inf "removing $DEST"
+		as_root rm -f "$DEST"
+		[ -e "$DEST" ] && die "could not remove $DEST"
+		grn "removed $DEST"
+	else
+		inf "no binary at $DEST"
+	fi
+
+	# chsh refuses a shell that is not listed, so the entry has to go too or
+	# the next install thinks it is already registered.
+	if [ -f /etc/shells ] && grep -qxF -- "$DEST" /etc/shells; then
+		inf "removing $DEST from /etc/shells"
+		_tmp="$(mktemp)" || die "mktemp failed"
+		grep -vxF -- "$DEST" /etc/shells > "$_tmp" || true
+		as_root tee /etc/shells < "$_tmp" >/dev/null
+		rm -f "$_tmp"
+		grn "/etc/shells no longer lists $DEST"
+	fi
+
+	if [ "$PURGE" = "1" ] && [ -n "${HOME:-}" ]; then
+		inf "purging config and cached update state"
+		rm -f "$HOME/.hellishrc" "$HOME/.hellish_history"
+		rm -rf "$HOME/.config/hellish" "$HOME/.cache/hellish"
+		grn "config removed"
+	elif [ -n "${HOME:-}" ]; then
+		inf "kept your ~/.hellishrc (use --purge to remove it too)"
+	fi
+
+	# The other install route puts a SECOND copy in ~/.local/bin, and it wins
+	# on PATH. Uninstalling only the system one and leaving that behind is how
+	# "I removed it but it is still there" happens.
+	_leftover=""
+	_ifs="$IFS"; IFS=:
+	for _d in $PATH; do
+		[ -n "$_d" ] || _d=.
+		[ "$_d/hellish" = "$DEST" ] && continue
+		[ -x "$_d/hellish" ] && _leftover="$_leftover $_d/hellish"
+	done
+	IFS="$_ifs"
+	if [ -n "$_leftover" ]; then
+		warn "another hellish is still on your PATH:$_leftover"
+		warn "that is probably \`make user-install\` — remove it with:"
+		warn "    make user-uninstall"
+	fi
 }
 
 case "$ACTION" in
 preflight) preflight ;;
 register)  register ;;
 uninstall) uninstall ;;
+doctor)    doctor ;;
 esac

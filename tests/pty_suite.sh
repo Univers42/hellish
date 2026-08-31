@@ -64,6 +64,18 @@ pattern=""
 # that genuinely cannot run in this job, with the reason attached -- a skip
 # without a reason is just a test nobody runs.
 skip_reason() {
+	# This one is skipped BEFORE the PTY_SUITE_ALL override, and stays
+	# skipped through it. Every other skip here is about a test being
+	# uninformative in this job; this one would run `make my_shell` on the
+	# machine invoking it and change the caller's LOGIN SHELL. An override
+	# flag meaning "run the ones that are merely unhelpful" must not also
+	# mean "rewrite my /etc/passwd entry". It runs as `make my-shell-test`,
+	# in a container built for it.
+	if [ "$1" = "my_shell_update_test.py" ]; then
+		echo "installs a login shell; runs as \`make my-shell-test\`"\
+		     "in docker/Dockerfile.my-shell, never on a host."
+		return 0
+	fi
 	[ "${PTY_SUITE_ALL:-0}" = "1" ] && return 1
 	case "$1" in
 		completion_test.py)

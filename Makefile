@@ -627,6 +627,26 @@ norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 # is defined further down the file.
 MY_SHELL_BIN = $(if $(filter 1,$(STATIC)),$(STATIC_OUT),$(BIN_DIR)/$(BAPTIZE_SHELL))
 
+# Install a PUBLISHED release instead of this working tree:
+#
+#   make my_shell VERSION=2.7.2
+#
+# The point is bug reports. A user's problem lives in the binary they already
+# have, and issue #76 is the extreme case -- the bug is IN THE UPDATER, so it
+# cannot be reproduced from HEAD at all: you have to install the old one and
+# press the button. With this, `make my_shell VERSION=2.7.2` puts you exactly
+# where the reporter was, on your own machine.
+#
+# It skips the build entirely and downloads the release asset (checksum
+# verified, and proven to run before anything installs it -- see
+# tools/fetch_release.sh). VERSION= and STATIC=1 are mutually exclusive:
+# STATIC builds a binary here, VERSION fetches one that already exists.
+VERSION ?=
+RELEASE_BIN := build/bin/hellish-release
+ifneq ($(VERSION),)
+MY_SHELL_BIN = $(RELEASE_BIN)
+endif
+
 ##@ Build info
 # Print the configuration a given MODE actually resolves to, without building
 # anything. This is how you check what you are about to ship -- and what the
@@ -643,9 +663,17 @@ flags:  ## Show the compiler/linker flags for this MODE
 	@printf 'OBJ_DIR=%s\n' '$(OBJ_DIR)'
 
 ##@ Install
-my_shell:  ## sudo-install to /usr/bin and register as a login shell
+my_shell:  ## sudo-install to /usr/bin and register as a login shell (VERSION=2.7.2 for a release)
+	@if [ -n "$(VERSION)" ] && [ "$(STATIC)" = "1" ]; then \
+		echo "make: VERSION= and STATIC=1 are mutually exclusive --"; \
+		echo "  VERSION fetches a published binary, STATIC builds one here."; \
+		exit 1; \
+	fi
 	@./tools/register_shell.sh --preflight
-	@if [ "$(STATIC)" = "1" ]; then \
+	@if [ -n "$(VERSION)" ]; then \
+		mkdir -p $(BIN_DIR); \
+		./tools/fetch_release.sh "$(VERSION)" "$(RELEASE_BIN)" >/dev/null; \
+	elif [ "$(STATIC)" = "1" ]; then \
 		$(MAKE) --no-print-directory static-verify; \
 	else \
 		$(MAKE) --no-print-directory re OPT=1 \
@@ -657,6 +685,29 @@ my_shell:  ## sudo-install to /usr/bin and register as a login shell
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
 	@echo '    exec /usr/bin/hellish --login'
+	@if [ -n "$(VERSION)" ]; then \
+		printf '\n  \033[1;33m!\033[0m installed the PUBLISHED v%s, not this working tree.\n' \
+			"$(VERSION)"; \
+		printf '    to reproduce a report from here:  hellish -c "update --now"\n'; \
+		printf '    to go back to your build:         make my-shell-uninstall && make my_shell\n\n'; \
+	fi
+
+# Undo my_shell completely: login shell restored, binary gone, /etc/shells
+# entry gone. The config is KEPT -- ~/.hellishrc is your own work and
+# reinstalling to test something is not a reason to lose it.
+#
+# The login shell is restored BEFORE the binary is deleted, and a failed chsh
+# aborts without deleting anything: the reverse order can leave an account
+# whose login shell does not exist, which locks you out of ssh and every tty.
+my-shell-uninstall:  ## Undo make my_shell (keeps your ~/.hellishrc)
+	@./tools/register_shell.sh --uninstall --dest /usr/bin/hellish
+
+# ...and take the config too, for a genuinely clean slate. This is the one to
+# pair with VERSION= when reproducing a report: a stale ~/.cache/hellish
+# remembers which release it already told you about, so a reinstall of an old
+# version can start out believing it is current.
+my-shell-purge:  ## Undo make my_shell AND delete ~/.hellishrc + caches
+	@./tools/register_shell.sh --purge --dest /usr/bin/hellish
 
 # The same thing on a machine where you are not root -- a lab box, a shared
 # server, a 42 cluster account. `my_shell` cannot work there: it needs sudo to
@@ -827,6 +878,42 @@ agnostic-bench:  ## Cross-shell speed matrix vs 8 shells, in docker
 cd-zsh-test:  ## docker: the zsh-style `cd old new` extension vs real zsh
 	docker build -f docker/Dockerfile.zsh -t hellish:zsh .
 	docker run --rm hellish:zsh
+
+# `make my_shell` and the update that follows it, on a machine shaped like the
+# one in issue #76: Ubuntu, a NON-ROOT human with a password-protected sudo,
+# and hellish in /usr/bin owned by root.
+#
+# It runs the REAL my_shell target -- chsh, /etc/shells, the passwd entry --
+# which is exactly why it cannot run on a developer host: a test may not
+# rewrite your login shell. The permission shape alone is covered without
+# root, and in CI, by tests/update_sudo_fail_test.py.
+#
+# The release is a local fake, so this proves the mechanism rather than
+# whatever github is serving today, and needs no network.
+my-shell-test:  ## docker: make my_shell, then the update button (issue #76)
+	docker build -f docker/Dockerfile.my-shell -t hellish:my-shell .
+	docker run --rm hellish:my-shell
+
+# hellish as a real LOGIN SHELL behind a real sshd. After `make my_shell`,
+# sshd execs hellish for every remote operation -- ssh-command, scp, sftp,
+# rsync and git all run `$SHELL -c ...` -- and those protocols die on a single
+# stray byte of stdout. The golden suite cannot see any of it: it runs
+# `hellish -c` with no sshd, no chsh and no pipe. Every case is diffed against
+# bash as the login shell, so nothing can encode a hellish bug as "expected".
+ssh-shell-test:  ## docker: hellish as a login shell (ssh/scp/rsync/git) vs bash
+	docker build -f docker/Dockerfile.sshd -t hellish:sshd .
+	docker run --rm hellish:sshd
+
+# The same report `make my_shell` prints at the end, on demand. Answers the
+# two questions behind every "the update did nothing" report: WHICH hellish
+# does PATH actually reach, and can its directory be written to.
+#
+# Reports; never fails the target. The findings are things about the MACHINE
+# (a second copy on PATH, a root-owned install dir), not build failures, and a
+# red `make doctor` would train people to ignore it. The script's own exit
+# status still means something for anything that wants to check it.
+doctor:  ## Which hellish is on PATH, and will `update` be able to install?
+	@./tools/register_shell.sh --doctor || true
 
 # Host-side check (no docker): `hellish --posix` must match `bash --posix` on
 # the cd cases the zsh extension would otherwise change, while normal mode keeps
@@ -1118,7 +1205,8 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
-	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
+	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
+	my-shell-uninstall my-shell-purge ssh-shell-test agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
