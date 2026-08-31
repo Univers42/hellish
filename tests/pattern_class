@@ -1,0 +1,31 @@
+case a in [[:alpha:]]) echo M;; *) echo n;; esac
+case " " in [[:space:]]) echo M;; *) echo n;; esac
+case 5 in [[:digit:]]) echo M;; *) echo n;; esac
+case a in [![:digit:]]) echo M;; *) echo n;; esac
+case 5 in [![:digit:]]) echo M;; *) echo n;; esac
+case a in [[:alpha:]x]) echo M;; *) echo n;; esac
+case x in [[:digit:]x]) echo M;; *) echo n;; esac
+case a in [x[:alpha:]]) echo M;; *) echo n;; esac
+case _ in [[:alnum:]_]) echo M;; *) echo n;; esac
+case B in [[:upper:]]) echo M;; *) echo n;; esac
+case b in [[:upper:]]) echo M;; *) echo n;; esac
+case 7 in [[:xdigit:]]) echo M;; *) echo n;; esac
+case g in [[:xdigit:]]) echo M;; *) echo n;; esac
+case - in [[:alpha:]-]) echo M;; *) echo n;; esac
+case ! in [[:punct:]]) echo M;; *) echo n;; esac
+s=" hi"; echo "[${s#[[:space:]]}]"
+s="hi "; echo "[${s%[[:space:]]}]"
+s="Xhi"; echo "[${s#[![:space:]]}]"
+s="_hx_run"; echo "[${s%%[![:space:]]*}]"
+s="  lead"; echo "[${s#"${s%%[![:space:]]*}"}]"
+s="trail  "; echo "[${s%"${s##*[![:space:]]}"}]"
+v="a b c"; echo "${v//[[:space:]]/_}"
+v="tab	sep"; echo "${v/[[:blank:]]/-}"
+s="abc123"; echo "[${s%%[[:digit:]]*}]"
+s="abc123"; echo "[${s##[[:alpha:]]}]"
+f() { :; }; declare -ft f; echo "rc=$?"
+f() { :; }; declare -fx f; echo "rc=$?"
+declare -ft no_such_fn_xyz; echo "rc=$?"; unset -f no_such_fn_xyz
+f() { :; }; g() { :; }; declare -ft f g; echo "rc=$?"
+f() { :; }; declare -ft f no_such_fn_xyz; echo "rc=$?"
+f() { echo body; }; declare -ft f; f
