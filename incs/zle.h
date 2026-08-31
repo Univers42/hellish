@@ -88,10 +88,6 @@ void			zle_do_kill_buffer(void);
 void			zle_publish(t_shell *state);
 void			zle_do_accept_line(void);
 
-/* `zle -M text`: a message under the line (#77 item 5). readline has no
-   message area, so it is printed on its own line and the prompt redrawn
-   under it -- see zle_rl4.c for why that is the harmless direction. */
-void			zle_do_message(const char *msg);
 int				zle_option(t_shell *state, t_vec argv, size_t i);
 int				zle_run_widget(t_shell *state, const char *name);
 

@@ -28,9 +28,9 @@
 ** instead. The plugin believes the message was shown and the user has
 ** nothing anywhere to read.
 **
-** Two are real here and are implemented rather than reported:
+** `-R` is real here and is implemented rather than reported (`-M` is too,
+** but it takes the message words and lives in builtin_zle.c):
 **
-**     zle -M text    a message under the line   -- zle_do_message
 **     zle -R         refresh the display        -- the same redisplay
 **                                                  `zle redisplay` runs
 **
@@ -57,20 +57,13 @@ static bool	zle_opt_told(void)
 	return (false);
 }
 
-/* zle -M / -R / anything else. `i` is the index of the option word. */
+/* zle -R / anything else (-N and -M were dispatched before this). `i` is
+   the index of the option word. */
 int	zle_option(t_shell *state, t_vec argv, size_t i)
 {
 	char	**av;
 
 	av = (char **)argv.ctx;
-	if (!ft_strcmp(av[i], "-M"))
-	{
-		if (i + 1 < argv.len)
-			zle_do_message(av[i + 1]);
-		else
-			zle_do_message("");
-		return (0);
-	}
 	if (!ft_strcmp(av[i], "-R"))
 		return (zle_do_redisplay(), 0);
 	if (!zle_opt_told())
