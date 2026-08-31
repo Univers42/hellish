@@ -55,29 +55,6 @@ static char	cond_next(const char *f, int *j, char delim)
 	return (0);
 }
 
-/* How many components the cwd has -- absolute for %(nC..), with the
-   $HOME prefix counting as one '~' component for the lowercase forms. */
-static int	cond_comps(t_shell *state, bool tilde)
-{
-	char	buf[PATH_MAX + 2];
-	int		count;
-	int		i;
-
-	if (!getcwd(buf, sizeof(buf)))
-		return (0);
-	if (tilde)
-		zsh_path_abbrev(state, buf);
-	count = (buf[0] == '~');
-	i = 0;
-	while (buf[i])
-	{
-		if (buf[i] == '/' && buf[i + 1] && buf[i + 1] != '/')
-			count++;
-		i++;
-	}
-	return (count);
-}
-
 static bool	cond_eval(t_shell *state, int n, char x)
 {
 	char	*lvl;
@@ -98,54 +75,64 @@ static bool	cond_eval(t_shell *state, int n, char x)
 		return (lvl && ft_atoi(lvl) >= n);
 	}
 	if (x == 'C')
-		return (cond_comps(state, false) >= n);
+		return (zsh_cond_comps(state, false) >= n);
 	if (x == 'c' || x == '~' || x == '.')
-		return (cond_comps(state, true) >= n);
+		return (zsh_cond_comps(state, true) >= n);
 	return (false);
 }
 
-/* Rewrite `len` bytes of `s` as their own little prompt and append the
-   result -- the recursion that makes nesting work. */
-static void	cond_branch(t_shell *state, t_string *out, const char *s, int len)
+/* Rewrite the span sp[0]..sp[1] of the format as its own little prompt
+   and append the result -- the recursion that makes nesting work, with
+   the caller's strictness carried through. */
+static void	cond_branch(t_shell *state, t_string *out, t_zesc *z, int *sp)
 {
 	char		*sub;
 	t_string	conv;
 
-	sub = xmalloc(len + 1);
-	ft_memcpy(sub, s, len);
-	sub[len] = '\0';
-	conv = zsh_to_ps1(state, sub);
+	sub = ft_substr(z->f, sp[0], sp[1] - sp[0]);
+	if (!sub)
+		return ;
+	conv = zsh_to_ps1(state, sub, z->strict);
 	if (conv.ctx)
 		vec_push_str(out, (char *)conv.ctx);
 	xfree(conv.ctx);
 	xfree(sub);
 }
 
+/* The two-branch tail, once a real delimiter was found: scan the false
+   part to the closing ')', evaluate, splice the winner. */
+static bool	cond_two(t_shell *state, t_string *out, t_zesc *z, int *sp)
+{
+	sp[2] = sp[1] + 1;
+	sp[3] = sp[2];
+	cond_next(z->f, &sp[3], ')');
+	if (cond_eval(state, z->n * z->has_n, z->f[z->j]))
+		cond_branch(state, out, z, sp);
+	else
+		cond_branch(state, out, z, sp + 2);
+	return (z->j = sp[3] + (z->f[sp[3]] == ')'), true);
+}
+
 bool	zsh_cond(t_shell *state, t_string *out, t_zesc *z, char c)
 {
 	int		sp[4];
-	char	x;
 
 	if (c != '(')
 		return (false);
 	zsh_num(z);
-	x = z->f[z->j];
-	if (!x || !z->f[z->j + 1])
+	if (!z->f[z->j] || !z->f[z->j + 1])
+	{
+		if (!z->strict)
+			return (zsh_lit(out, z), true);
 		return (z->j += ft_strlen(z->f + z->j), true);
+	}
 	sp[0] = z->j + 2;
 	sp[1] = sp[0];
 	if (cond_next(z->f, &sp[1], z->f[z->j + 1]) != z->f[z->j + 1])
 	{
-		if (cond_eval(state, z->n * z->has_n, x))
-			cond_branch(state, out, z->f + sp[0], sp[1] - sp[0]);
+		if (cond_eval(state, z->n * z->has_n, z->f[z->j]))
+			cond_branch(state, out, z, sp);
 		return (z->j = sp[1], true);
 	}
-	sp[2] = sp[1] + 1;
-	sp[3] = sp[2];
-	cond_next(z->f, &sp[3], ')');
-	if (cond_eval(state, z->n * z->has_n, x))
-		cond_branch(state, out, z->f + sp[0], sp[1] - sp[0]);
-	else
-		cond_branch(state, out, z->f + sp[2], sp[3] - sp[2]);
-	return (z->j = sp[3] + (z->f[sp[3]] == ')'), true);
+	return (cond_two(state, out, z, sp));
 }

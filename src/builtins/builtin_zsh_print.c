@@ -13,7 +13,7 @@
 #include "builtins_private.h"
 #include <unistd.h>
 
-t_string	zsh_prompt(t_shell *state, char *fmt);
+t_string	zsh_prompt(t_shell *state, char *fmt, bool strict);
 
 /* print [-nrlP] [--] [arg ...] -- zsh's echo, and a separate builtin rather
 ** than an alias for ours because the DEFAULT differs: `echo` here leaves
@@ -92,7 +92,7 @@ static void	print_one(t_shell *state, t_pflags *f, t_string *out, char *s)
 
 	if (f->prompt)
 	{
-		r = zsh_prompt(state, s);
+		r = zsh_prompt(state, s, true);
 		p = (char *)r.ctx;
 		while (p && *p)
 		{
