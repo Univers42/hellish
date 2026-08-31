@@ -62,5 +62,7 @@ int	update_now(t_shell *state, t_origin origin, char *repo)
 	if (hellish_version_cmp(latest, HELLISH_VERSION) <= 0)
 		return (ft_printf("hellish %s is already the latest release.\n",
 				HELLISH_VERSION), 0);
+	if (update_warn_stale_session(latest))
+		return (0);
 	return (update_interactive(origin, repo, latest));
 }

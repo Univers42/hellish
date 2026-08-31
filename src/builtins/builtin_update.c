@@ -16,17 +16,21 @@
 #include "version.h"
 #include <time.h>
 
-/* Report how the running version compares to the latest release. */
-static void	print_status(const char *latest)
+/* Report how the running version compares to the latest release. Returns 1
+   when the DISK is already current and only this process is behind, so the
+   caller offers nothing -- downloading in that state is what produces a
+   second install in another prefix (see update_stale.c). */
+static int	print_status(const char *latest)
 {
 	if (hellish_version_cmp(latest, HELLISH_VERSION) <= 0)
 	{
 		ft_printf("\033[32m\xe2\x9c\x93\033[0m hellish %s", HELLISH_VERSION);
 		ft_printf(" is the latest release.\n");
-		return ;
+		return (0);
 	}
 	ft_printf("\033[33m\xe2\xac\x86\033[0m hellish %s is available ", latest);
 	ft_printf("(you have %s).\n", HELLISH_VERSION);
+	return (update_warn_stale_session(latest));
 }
 
 /* Persist what a foreground check just learned, so the prompt notice and the
@@ -78,7 +82,8 @@ static int	do_check(t_shell *state, t_origin origin, char *repo, int ask)
 		return (ft_eprintf("hellish: the release source published no "
 				"usable release\n"), 1);
 	remember(latest);
-	print_status(latest);
+	if (print_status(latest))
+		return (0);
 	if (hellish_version_cmp(latest, HELLISH_VERSION) <= 0)
 		return (0);
 	if (!ask)
