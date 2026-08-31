@@ -34,12 +34,26 @@ static void	pat_append_escaped(t_string *s, t_token t)
 }
 
 /* One subtoken: quoted text becomes literal (escaped), everything else keeps
-   its metachars active so `${v%*.c}` still globs. */
+** its metachars active so `${v%*.c}` still globs.
+**
+** TT_DQENVVAR belongs on the escaped side and was missing from it: the
+** VALUE of a variable expanded inside double quotes is literal text in a
+** pattern, exactly as quoted literal text is. Unquoted `${v%$y}` still
+** globs -- that is TT_ENVVAR, and the difference between the two is the
+** whole reason for writing the quotes.
+**
+**     stack='[[x'; top=${stack%"${stack#?}"}
+**
+** is the bracket-matcher idiom, and its pattern is the literal `[x`. Read
+** as a bracket expression it matched a bare `x`, so the stack popped one
+** character too few and every nested `[` in tests/stress/s34_brackets.sh
+** came back "unbalanced". Invisible until the trim matcher learned bracket
+** expressions at all, which is why it surfaced with that change. */
 static void	pat_append(t_string *s, t_token t)
 {
 	if (!t.start)
 		return ;
-	if (t.tt == TT_SQWORD || t.tt == TT_DQWORD)
+	if (t.tt == TT_SQWORD || t.tt == TT_DQWORD || t.tt == TT_DQENVVAR)
 		pat_append_escaped(s, t);
 	else
 		vec_push_nstr(s, t.start, (size_t)t.len);

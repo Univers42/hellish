@@ -36,6 +36,28 @@ static char	*strlen_of_first(char *val)
 	return (result);
 }
 
+/* ${#a[lo,hi]} counts the ELEMENTS the slice covers, not the width of the
+   string it expands to: zsh answers 2 for `a[2,3]`, where the joined
+   "two three" is nine characters.  NULL when the subscript is not a slice
+   (or the dialect is off), which leaves every other ${#...} shape alone. */
+static char	*strlen_of_slice(t_shell *state, const char *s, int slen)
+{
+	char	*br;
+	char	*val;
+	t_slice	r;
+	int		nl;
+
+	br = ft_strnchr((char *)s, '[', slen);
+	if (!br || slen < 1 || s[slen - 1] != ']')
+		return (NULL);
+	nl = (int)(br - s);
+	val = env_expand_n(state, (char *)s, nl);
+	r = zsh_slice_bounds(state, s + nl + 1, slen - nl - 2, val);
+	if (r.lo == SLICE_NONE)
+		return (NULL);
+	return (ft_itoa((int)zsh_slice_len(r, zsh_slice_universe(val))));
+}
+
 /* ${#arr[@]} is the element count, ${#arr[i]} an element's length; the
    subscript token is expanded by expand_array_token first, so here we
    only need the name[body] shapes on the raw text. */
@@ -76,6 +98,9 @@ char	*expand_strlen(t_shell *state, const char *s, int slen)
 	char	*val;
 	char	*result;
 
+	result = strlen_of_slice(state, s, slen);
+	if (result)
+		return (result);
 	result = zsh_strlen(state, s, slen);
 	if (result)
 		return (result);

@@ -22,15 +22,20 @@ int		test_filecomp(const char *op, const char *f1, const char *f2);
    2 = error. This is the *inverse* of C's boolean, which trips everyone up
    at least once. Keep it in mind when reading the returns below. */
 
-/* Leaf evaluator for `-X operand`: -z/-n (string length), any other
-   single-letter -X flag is a file test. An unknown operator is an error
-   (2), matching bash's "unary operator expected". */
+/* Leaf evaluator for `-X operand`: -z/-n (string length), -v (variable is
+   set), any other single-letter -X flag is a file test. An unknown operator
+   is an error (2), matching bash's "unary operator expected".
+     -v must be answered BEFORE the file-test fallthrough, which would
+   otherwise stat a file named after the variable and report "not set" for
+   every name in the environment. */
 int	tx_test_unary(char **a)
 {
 	if (ft_strcmp(a[0], "-z") == 0)
 		return (ft_strlen(a[1]) != 0);
 	if (ft_strcmp(a[0], "-n") == 0)
 		return (ft_strlen(a[1]) == 0);
+	if (ft_strcmp(a[0], "-v") == 0)
+		return (!test_var_isset(*db_state_cell(), a[1]));
 	if (a[0][0] == '-' && a[0][1] && !a[0][2])
 		return (test_file_op(a[0], a[1]));
 	return (ft_eprintf("test: %s: unary operator expected\n", a[0]), 2);
@@ -99,6 +104,7 @@ int	builtin_test(t_shell *state, t_vec argv)
 
 	av = (char **)argv.ctx;
 	ac = (int)argv.len;
+	*db_state_cell() = state;
 	if (ac > 0 && av[0][0] == '[' && av[0][1] == '[')
 		return (eval_bracketed(state, av, ac, 1));
 	if (ac > 0 && ft_strcmp(av[0], "[") == 0)

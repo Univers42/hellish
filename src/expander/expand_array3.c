@@ -25,7 +25,7 @@ bool	is_valid_ident(char *s, int len);
    slice is a documented v1 scope-out.) */
 
 /* Store an owned result string into the token. */
-static bool	arr_emit(t_token *tt, char *owned)
+bool	arr_emit(t_token *tt, char *owned)
 {
 	tt->start = owned;
 	tt->len = (int)ft_strlen(owned);
@@ -110,6 +110,10 @@ bool	expand_array_ext(t_shell *state, t_token *tt, bool split_ctx)
 		&& (tt->start[tt->len - 2] == '@' || tt->start[tt->len - 2] == '*')
 		&& tt->start[tt->len - 3] == '[')
 		return (arr_keys(state, tt, split_ctx));
+	if (tt->len >= 3 && tt->start[0] == '!'
+		&& (tt->start[tt->len - 1] == '*' || tt->start[tt->len - 1] == '@')
+		&& pf_is_indirect(tt->start + 1, tt->len - 2))
+		return (arr_prefix_names(state, tt, split_ctx));
 	nl = slice_name_len(tt->start, tt->len, &colon);
 	if (nl > 0)
 		return (arr_slice(state, tt, nl, colon));

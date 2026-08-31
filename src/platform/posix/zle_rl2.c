@@ -14,6 +14,7 @@
 #include "libft.h"
 #include "zle.h"
 #include <readline/readline.h>
+#include <stdio.h>
 
 int	exec_string(t_shell *state, char *content);
 
@@ -31,6 +32,29 @@ bool	zle_active(void)
 void	zle_do_redisplay(void)
 {
 	rl_redisplay();
+}
+
+/* zle -M: the message on a line of its own, and the edited line painted
+** again underneath it.
+**
+** rl_on_new_line_with_prompt is the call that is easy to leave out and
+** impossible to miss once it is missing: readline caches where it believes
+** the cursor is, and text written to the terminal behind its back
+** invalidates that cache. Skip the re-anchor and the next keystroke
+** repaints over the message, or over the user's own line, depending on how
+** long each is -- which reads as a rendering race rather than one absent
+** call.
+*/
+void	zle_do_message(const char *msg)
+{
+	if (!msg)
+		return ;
+	rl_crlf();
+	fputs(msg, rl_outstream);
+	rl_crlf();
+	fflush(rl_outstream);
+	rl_on_new_line_with_prompt();
+	rl_forced_update_display();
 }
 
 void	zle_do_kill_buffer(void)

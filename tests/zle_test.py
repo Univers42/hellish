@@ -256,15 +256,52 @@ def dispatch_cases():
 def cd_boundary_case():
     """A widget that cds does NOT move the shell, because readline runs in a
     forked child. Asserted so the boundary is pinned rather than folklore --
-    if the architecture ever changes, this test says so."""
-    rc = ("setopt zsh\n"
-          'jump() { cd /tmp; BUFFER="pwd"; }\n'
-          "zle -N jump\n"
-          "bindkey '\\e\\e' jump\n")
-    out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
-    check("boundary/widget-cd-does-not-move-the-shell", b"/tmp" not in out,
-          "it MOVED -- the fork boundary changed, update #80 and the docs; "
-          "%r" % out[-200:])
+    if the architecture ever changes, this test says so.
+
+    The destination is a FRESH directory with a unique name, not /tmp, and
+    the check is whether the parent's `pwd` mentions it. `/tmp` cannot do
+    that job: it matches the moment the suite runs from anywhere under
+    /tmp, which is how this went red reporting a boundary change that had
+    not happened."""
+    dest = tempfile.mkdtemp(prefix="hellish_zle_boundary_")
+    mark = os.path.basename(dest).encode()
+    try:
+        rc = ("setopt zsh\n"
+              'jump() { cd %s; BUFFER="pwd"; }\n' % dest
+              + "zle -N jump\n"
+              "bindkey '\\e\\e' jump\n")
+        out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
+        check("boundary/widget-cd-does-not-move-the-shell", mark not in out,
+              "it MOVED -- the fork boundary changed, update #80 and the "
+              "docs; %r" % out[-200:])
+    finally:
+        os.rmdir(dest)
+
+
+def message_cases():
+    """`zle -M text` -- the message line under the prompt (#77, last item).
+
+    It was the one spelling that took the silent path: builtin_zle answered
+    any argument starting with '-' with a bare `return 0`, so `zle -M` set
+    no message, printed nothing, and reported success. A plugin using it to
+    explain what it had just done looked like it had done nothing at all.
+
+    The buffer check is the one that matters. zsh puts the message BELOW
+    the line being edited and the line survives; an implementation that
+    prints wherever the cursor happens to be eats it instead."""
+    rc, _, err = run("setopt zsh\nzle -M hi\n")
+    check("message/refused-outside-the-editor",
+          rc != 0 and b"widget" in err, "rc=%d err=%r" % (rc, err[:90]))
+    rc_body = ("setopt zsh\n"
+               'note() { zle -M "NOTE_MARK here"; }\n'
+               "zle -N note\n"
+               "bindkey '\\e\\e' note\n")
+    out = pty_session(rc_body, [(b"echo KEEPME", 0.4), (b"\x1b\x1b", 0.9),
+                                (b"\r", 1.0)])
+    check("message/text-reaches-the-terminal", b"NOTE_MARK here" in out,
+          "terminal showed %r" % out[-250:])
+    check("message/the-line-being-edited-survives", b"KEEPME" in out,
+          "the message ate the buffer; %r" % out[-250:])
 
 
 def main():
@@ -278,6 +315,7 @@ def main():
     plugin_cases()
     churn_cases()
     dispatch_cases()
+    message_cases()
     cd_boundary_case()
     print("\n%d failed" % len(FAILS) if FAILS else "\nall passed")
     return 1 if FAILS else 0

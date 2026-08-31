@@ -15,6 +15,7 @@
 #include "sh_input.h"
 
 void	fatal_input_error(t_shell *state, int code);
+int		shell_fatal_status(t_shell *state);
 
 /* zsh's `a[i]=(...)` -- assigning a LIST to one element.
 **
@@ -58,10 +59,15 @@ long	elem_sub_index(t_shell *state, char *text, long count)
 }
 
 /* A subscript that names no possible element: `a[-1]` counted back past the
-   start, or zsh's `a[0]` where counting begins at 1.  Writing to a different
-   element than the script named is the one outcome worse than stopping, so
-   this never assigns -- and fatal_input_error decides how far the stop
-   reaches (the shell for -c and scripts, only the file when sourced). */
+   start, zsh's `a[0]` where counting begins at 1, or an EMPTY key on an
+   associative array.  Writing to a different element than the script named
+   is the one outcome worse than stopping, so this never assigns -- and
+   fatal_input_error decides how far the stop reaches (the shell for -c and
+   scripts, only the file when sourced).
+     The status is shell_fatal_status(), not a hardcoded 1: a refused
+   assignment is the same fatal family as ${p:?w}, `set -u` and readonly,
+   and bash reports 127 for all four when a -c string's top-level shell dies
+   and 1 everywhere else.  This one answered 1 in both places. */
 void	bad_subscript(t_shell *state, const char *name, const char *sub)
 {
 	if (zsh_arrays(state))
@@ -71,7 +77,28 @@ void	bad_subscript(t_shell *state, const char *name, const char *sub)
 		ft_eprintf("%s: %s[%s]: bad array subscript\n",
 			state->ctx, name, sub);
 	set_cmd_status(state, create_exec_state(1, false));
-	fatal_input_error(state, 1);
+	fatal_input_error(state, shell_fatal_status(state));
+}
+
+/* The assignment target as a RANGE.  `a[i]=(...)` and zsh's
+   `a[lo,hi]=(...)` are one operation over a narrow and a wide run, so both
+   arrive here as a t_slice and arr_splice never has to ask which was
+   written.  A plain index becomes the one-element range [i,i]. */
+static t_slice	target_slice(t_shell *state, char *text, const char *old)
+{
+	t_slice	r;
+	char	*rb;
+
+	r.lo = SLICE_NONE;
+	r.hi = 0;
+	rb = ft_strrchr(text, ']');
+	if (rb)
+		r = zsh_slice_bounds(state, text, (int)(rb - text), old);
+	if (r.lo != SLICE_NONE)
+		return (r);
+	r.lo = elem_sub_index(state, text, arr_count(old));
+	r.hi = r.lo;
+	return (r);
 }
 
 /* The array as it stands, for the paths that must leave it ALONE: an
@@ -96,16 +123,16 @@ bool	splice_elem_assign(t_shell *state, t_env *ev, t_vec *args)
 {
 	char	*br;
 	char	*old;
-	long	idx;
+	t_slice	r;
 
 	br = ft_strchr(ev->key, '[');
 	if (!br)
 		return (false);
 	*br = '\0';
 	old = env_expand(state, ev->key);
-	idx = elem_sub_index(state, br + 1, arr_count(old));
-	if (assoc_is(old) || idx < 0)
+	r = target_slice(state, br + 1, old);
+	if (assoc_is(old) || r.lo < 0)
 		return (ev->value = keep_unchanged(state, ev, old), true);
-	ev->value = arr_splice(old, idx, (char **)args->ctx, (int)args->len);
+	ev->value = arr_splice(old, r, (char **)args->ctx, (int)args->len);
 	return (true);
 }

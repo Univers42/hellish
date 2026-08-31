@@ -61,10 +61,15 @@ t_vec_glob	word_to_glob(t_ast_node word)
 	return (ret);
 }
 
-/* Scan the token list for any wildcard (*, ?, bracket). A word with no
-   wildcards can never expand to more than itself, so we skip the opendir call
-   entirely. This is the single biggest performance win for completion and
-   heavy-argument commands: no filesystem I/O for plain strings. */
+/* Scan the token list for any wildcard (*, ?, bracket, globstar). A word
+   with no wildcards can never expand to more than itself, so we skip the
+   opendir call entirely. This is the single biggest performance win for
+   completion and heavy-argument commands: no filesystem I/O for plain
+   strings.
+     G_GLOBSTAR belongs in this list for the same reason the others do, and
+   leaving it out is silent in the worst way: the walk never runs, the word
+   has no match, and the shell falls back to the literal `**` -- which reads
+   exactly like "that directory is empty". */
 static bool	glob_has_wildcard(t_vec_glob glob)
 {
 	size_t	i;
@@ -75,7 +80,8 @@ static bool	glob_has_wildcard(t_vec_glob glob)
 	while (i < glob.len)
 	{
 		if (g[i].ty == G_ASTERISK || g[i].ty == G_QUESTION
-			|| g[i].ty == G_BRACKET)
+			|| g[i].ty == G_BRACKET || g[i].ty == G_GLOBSTAR
+			|| g[i].ty == G_EXTGLOB)
 			return (true);
 		i++;
 	}

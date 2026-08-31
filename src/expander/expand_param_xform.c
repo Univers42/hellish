@@ -12,35 +12,17 @@
 
 #include "expander_private.h"
 #include "env.h"
+#include "helpers.h"
 
 /* ${var@OP} parameter transformations (bash 5):
      @Q  single-quote the value so it can be re-read by the shell
      @U  uppercase   @L lowercase   @u uppercase-first
      @A  an assignment statement that would recreate the variable
-   The rarer @E/@P/@a/@K are documented v1 scope-outs. */
+   The rarer @E/@P/@a/@K are documented v1 scope-outs.
 
-/* @Q: wrap in single quotes, escaping any embedded single quote as the
-   '\'' idiom bash uses (so the result re-parses to the original). */
-static char	*xform_quote(const char *val)
-{
-	t_string	out;
-	int			i;
-
-	vec_init(&out);
-	out.elem_size = 1;
-	vec_push_char(&out, '\'');
-	i = 0;
-	while (val[i])
-	{
-		if (val[i] == '\'')
-			vec_push_str(&out, "'\\''");
-		else
-			vec_push_char(&out, val[i]);
-		i++;
-	}
-	vec_push_char(&out, '\'');
-	return (vec_push_char(&out, '\0'), (char *)out.ctx);
-}
+   @Q is sq_quote (src/helpers/sq_quote.c), shared with the completion
+   dispatcher, which quotes the word under the cursor for the same reason:
+   both hand text back to the parser and need it to come out unchanged. */
 
 /* @U/@L/@u case transforms into a fresh buffer. */
 static char	*xform_case(const char *val, char op)
@@ -75,7 +57,7 @@ static char	*xform_assign(const char *name, int nlen, const char *val)
 	out.elem_size = 1;
 	vec_push_nstr(&out, (char *)name, nlen);
 	vec_push_char(&out, '=');
-	q = xform_quote(val);
+	q = sq_quote(val);
 	vec_push_str(&out, q);
 	xfree(q);
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
@@ -93,7 +75,7 @@ char	*expand_xform(t_shell *state, const char *s, int name_len, char op)
 	if (arr_is(val))
 		val = "";
 	if (op == 'Q')
-		return (xform_quote(val));
+		return (sq_quote(val));
 	if (op == 'U' || op == 'L' || op == 'u')
 		return (xform_case(val, op));
 	if (op == 'A')

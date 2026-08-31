@@ -13,6 +13,8 @@
 #include "execution_private.h"
 #include "arith.h"
 
+char	*expand_arith_vars(t_shell *state, const char *s, int len);
+
 /* True when the slice holds no expression at all (only blanks). */
 static bool	xa_blank(t_token tok)
 {
@@ -26,13 +28,39 @@ static bool	xa_blank(t_token tok)
 }
 
 /* Evaluate one arithmetic slice; a blank slice is a no-op that reports 1
-   (the for-arith header treats a missing cond as "keep looping" and a
-   missing init/step as nothing to do).  Errors surface through *err. */
+** (the for-arith header treats a missing cond as "keep looping" and a
+** missing init/step as nothing to do).  Errors surface through *err.
+**
+** THE `$` PASS IS WHY $(( )) AND (( )) AGREED ON SO LITTLE. $(( )) is
+** reached through the expander, which resolves every $var and ${...} in the
+** text before the arithmetic evaluator sees it. (( )) is a COMMAND and
+** arrives here as raw source, so it only ever knew what the arithmetic
+** lexer itself knows -- $name and ${name}, and nothing more:
+**
+**     A=(7 8); echo $(( ${#A[@]} ))     2        correct
+**     A=(7 8); (( n = ${#A[@]} ))       n=0      silently
+**     for ((i=0; i < ${#A[@]}; i++))    zero iterations, status 0
+**
+** A loop that runs no times and reports success is the worst shape this can
+** take, and it is why git-completion's __git_main handed back an empty
+** COMPREPLY after loading perfectly. Same text, same expander, one answer.
+** The memchr keeps the common `(( i < n ))` off the new path entirely, so
+** nothing that already worked pays for it.
+*/
 static long long	xa_eval(t_shell *state, t_token tok, bool *err)
 {
+	char		*txt;
+	long long	v;
+
 	if (xa_blank(tok))
 		return (1);
-	return (arith_eval(state, tok.start, tok.len, err));
+	if (!ft_memchr(tok.start, '$', (size_t)tok.len))
+		return (arith_eval(state, tok.start, tok.len, err));
+	txt = expand_arith_vars(state, tok.start, tok.len);
+	if (!txt)
+		return (arith_eval(state, tok.start, tok.len, err));
+	v = arith_eval(state, txt, (int)ft_strlen(txt), err);
+	return (xfree(txt), v);
 }
 
 /* (( expr )): evaluate and map value!=0 to status 0, value==0 to 1, an

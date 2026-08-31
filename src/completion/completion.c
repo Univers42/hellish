@@ -18,6 +18,7 @@
    readline's own filename completion by returning NULL. */
 
 #include "completion_private.h"
+#include "progcomp_private.h"
 #include "libft.h"
 #include <stdio.h>
 #include <readline/readline.h>
@@ -112,14 +113,28 @@ static int	is_cmd_word(int start)
    word still ended up offering the documents sitting in the current
    directory, which is the same wrong list arriving by a second route.
    bash sets this flag for exactly this reason; with it, an unknown
-   command name just dings, as it should. */
+   command name just dings, as it should.
+
+   An ARGUMENT word now asks progcomp_try whether the command it belongs to
+   has a `complete` spec (#72 phase 4).  It answers NULL and leaves the flag
+   alone when there is none, so every command without a registration keeps
+   the filename completion it has always had -- which is the case that would
+   have been broken silently, and everywhere, by a dispatcher that claimed
+   arguments unconditionally. */
 static char	**cmd_completion(const char *text, int start, int end)
 {
+	char	**spec;
+
 	if (text[0] == '$')
 		return (rl_attempted_completion_over = 1,
 			complete_variables(text, start, end));
 	if (!is_cmd_word(start))
+	{
+		spec = progcomp_try(text, start, end);
+		if (rl_attempted_completion_over)
+			return (spec);
 		return (NULL);
+	}
 	rl_attempted_completion_over = 1;
 	if (ft_strchr(text, '/'))
 		return (complete_exec_files(text, start, end));

@@ -64,6 +64,37 @@ static int	zle_register(t_shell *state, t_vec argv, size_t i)
 	return (0);
 }
 
+/* zle -M text... -- a message on its own line under the one being edited.
+**
+** This was the spelling that took the silent path: any argument starting
+** with '-' fell into a bare `return 0`, so the message was never set, never
+** printed, and reported success. A plugin using it to say what it had just
+** done looked like it had done nothing.
+**
+** Outside the editor it is an error rather than an ordinary print: there is
+** no line to put a message under, and a shell that printed it anyway would
+** put plugin chatter into the stdout of a script.
+*/
+static int	zle_message(t_shell *state, t_vec argv, size_t i)
+{
+	t_string	msg;
+
+	if (!zle_active())
+		return (ft_eprintf("%s: zle: can only be called from a widget\n",
+				state->ctx), 1);
+	vec_init(&msg);
+	msg.elem_size = 1;
+	while (i < argv.len)
+	{
+		vec_push_str(&msg, ((char **)argv.ctx)[i++]);
+		if (i < argv.len)
+			vec_push_char(&msg, ' ');
+	}
+	vec_push_char(&msg, '\0');
+	zle_do_message((char *)msg.ctx);
+	return (xfree(msg.ctx), 0);
+}
+
 int	builtin_zle(t_shell *state, t_vec argv)
 {
 	char	**av;
@@ -73,6 +104,8 @@ int	builtin_zle(t_shell *state, t_vec argv)
 		return (zle_active() == false);
 	if (!ft_strcmp(av[1], "-N"))
 		return (zle_register(state, argv, 2));
+	if (!ft_strcmp(av[1], "-M"))
+		return (zle_message(state, argv, 2));
 	if (av[1][0] == '-')
 		return (0);
 	if (!zle_active())

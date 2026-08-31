@@ -78,6 +78,10 @@ typedef unsigned long long	t_ull;
 
 void		pf_err_num(t_pf *pf, const char *arg);
 char		pf_escape(const char *s, int *i, bool *stop);
+char		*pf_quote(const char *arg);
+void		pq_ansi(t_string *out, const char *s);
+void		pq_ansi_char(t_string *out, unsigned char c);
+void		pf_conv_quote(t_pf *pf, t_spec *sp, const char *arg);
 long long	pf_num(t_pf *pf, const char *arg);
 void		pf_conv_float(t_pf *pf, char *fmt, const char *arg,
 				t_pfbuf *b);

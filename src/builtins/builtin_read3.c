@@ -12,32 +12,50 @@
 
 #include "builtins_private.h"
 #include <unistd.h>
+#include <poll.h>
 
-/* Scan leading option words (anything starting with '-' and having at least
-   one more character). Only -r is meaningful: set *raw so read_one_line and
-   next_field skip backslash processing. Other letters are silently ignored —
-   we parse them rather than stopping so `-rp "prompt: "` does not treat `-p`
-   as the first variable name. Returns the index of the first non-option arg
-   (i.e., the first variable name). */
-size_t	parse_read_opts(t_vec argv, bool *raw)
+/* -t SECS as milliseconds. Accepts the fractional form bash accepts
+   (`-t 0.1`) to three digits; anything past that is dropped rather than
+   rounded, which errs toward waiting slightly less, never longer. */
+long	rd_secs_ms(const char *s)
 {
-	size_t	i;
-	int		j;
+	long	ms;
+	int		i;
+	int		scale;
 
-	i = 1;
-	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
-		&& ((char **)argv.ctx)[i][1])
+	ms = ft_atol(s) * 1000;
+	i = 0;
+	while (s[i] && s[i] != '.')
+		i++;
+	if (!s[i])
+		return (ms);
+	i++;
+	scale = 100;
+	while (s[i] >= '0' && s[i] <= '9' && scale > 0)
 	{
-		j = 1;
-		while (((char **)argv.ctx)[i][j])
-		{
-			if (((char **)argv.ctx)[i][j] == 'r')
-				*raw = true;
-			j++;
-		}
+		ms += (s[i] - '0') * scale;
+		scale /= 10;
 		i++;
 	}
-	return (i);
+	return (ms);
+}
+
+/* -t: wait for stdin to become readable. Returns 0 when there is input (or
+   no timeout was asked for), 1 when the deadline passed with nothing there.
+     bash reports a timeout with a status ABOVE 128 and leaves the named
+   variables untouched, so a caller can tell "no input yet" from "read an
+   empty line" -- the two are otherwise indistinguishable and scripts branch
+   on the difference. */
+int	rd_wait_input(t_rdopt *o)
+{
+	struct pollfd	pfd;
+
+	if (o->tmo_ms < 0)
+		return (0);
+	pfd.fd = STDIN_FILENO;
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+	return (poll(&pfd, 1, (int)o->tmo_ms) <= 0);
 }
 
 /* Route the completed line to its destination: -a fills the named array,
@@ -60,24 +78,32 @@ static void	rd_dispatch(t_shell *state, t_vec argv, char *line, t_rdopt *o)
 	}
 }
 
-/* read [-r] [var ...]: read one line from stdin and split it into variables.
-   If no variable names are given, the whole line goes into $REPLY (POSIX).
+/* read [-r] [-n N] [-N N] [-d C] [-t S] [-p PROMPT] [-a NAME] [var ...]:
+   read one logical line from stdin and split it into variables. If no
+   variable names are given, the whole line goes into $REPLY (POSIX).
    Returns 1 on EOF even if some data was read (mimics bash), so `while read
    line; do …; done` processes the last line before stopping even when the
-   file lacks a trailing newline. */
+   file lacks a trailing newline.
+     -N reads a fixed byte count and must NOT field-split: an empty IFS is
+   exactly that, so the ordinary assign_words path handles it with no second
+   code path to keep in step. */
 int	builtin_read(t_shell *state, t_vec argv)
 {
 	char	*line;
 	t_rdopt	o;
 	int		eof;
 
-	o = (t_rdopt){0};
+	o = (t_rdopt){.nchars = -1, .delim = '\n', .tmo_ms = -1};
 	o.first = parse_read_opts2(argv, &o);
 	o.ifs = dup_ifs(state);
+	if (o.exact)
+		o.ifs = (xfree(o.ifs), ft_strdup(""));
 	if (o.prompt && isatty(STDIN_FILENO))
 		if (write(2, o.prompt, ft_strlen(o.prompt)) < 0)
 			o.prompt = NULL;
-	line = read_one_line(o.raw, &eof);
+	if (rd_wait_input(&o))
+		return (xfree(o.ifs), 142);
+	line = read_one_line(&o, &eof);
 	if (!line)
 		return (xfree(o.ifs), 1);
 	rd_dispatch(state, argv, line, &o);

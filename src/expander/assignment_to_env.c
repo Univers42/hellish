@@ -54,7 +54,7 @@ static char	*dup_value_from_args(t_vec *args)
    `a[-1]=x` means the LAST element in both dialects.  Without the wrap it
    was stored at index -1, which no read can reach and which "${a[@]}" then
    printed ahead of the real elements -- silently, as `-1x`. */
-static long	arr_sub_index(t_shell *state, const char *sub, long count)
+long	arr_sub_index(t_shell *state, const char *sub, long count)
 {
 	char	*res;
 	long	idx;
@@ -71,27 +71,35 @@ static long	arr_sub_index(t_shell *state, const char *sub, long count)
 /* arr[expr]=v: the key still carries its "[expr]" suffix here. Evaluate
    the subscript arithmetically, rebuild the array value with that
    element set (scalars promote to a one-element array first), truncate
-   the key to the bare name. A plain key passes through untouched. */
-static void	subscript_assign(t_shell *state, t_env *ret)
+   the key to the bare name. A plain key passes through untouched.
+
+   The slice check comes before the index one, because `lo,hi` evaluates
+   perfectly well as arithmetic -- the comma operator yields `hi` -- and
+   would write ONE element where zsh replaces a whole run. */
+void	subscript_assign(t_shell *state, t_env *ret)
 {
 	char	*br;
 	char	*res;
 	char	*old;
-	long	idx;
+	t_slice	r;
 
 	br = ft_strchr(ret->key, '[');
 	if (!br || !ret->value)
 		return ;
+	subscript_prepend_current(state, ret, br);
 	*br = '\0';
 	old = env_expand(state, ret->key);
 	if (assoc_is(old))
 		return (assoc_elem_assign(state, ret, br + 1, old));
 	res = expand_param_word(state, br + 1, (int)ft_strlen(br + 1) - 1, false);
-	idx = arr_sub_index(state, res, arr_count(old));
-	if (idx < 0)
+	r = zsh_slice_bounds(state, res, (int)ft_strlen(res), old);
+	if (r.lo != SLICE_NONE)
+		return (xfree(res), zsh_slice_set(ret, old, r));
+	r.lo = arr_sub_index(state, res, arr_count(old));
+	if (r.lo < 0)
 		return ((void)(bad_subscript(state, ret->key, res), xfree(res)));
 	xfree(res);
-	res = arr_with_set(old, idx, ret->value);
+	res = arr_with_set(old, r.lo, ret->value);
 	xfree(ret->value);
 	ret->value = res;
 }

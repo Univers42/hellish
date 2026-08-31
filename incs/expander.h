@@ -28,6 +28,7 @@
 typedef struct s_expander_simple_cmd
 {
 	size_t		i; /* current child node index */
+	t_ast_node	*node; /* the simple command, for looking at siblings */
 	t_ast_node	*curr; /* shorthand for children[i] */
 	bool		found_first; /* true once the command word is seen */
 	bool		export; /* true when expanding an `export` command */

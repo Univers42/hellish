@@ -181,8 +181,18 @@ def main():
               "the whole set -o table hit the screen: %r" % startup[:300])
         check("the ~/.bashrc posix branch is taken", "PROBE_POSIX=off" in out,
               "got %r" % startup[:300])
+        # progcomp answers "off" until `shopt -s progcomp` asks for it, and
+        # THIS PROBE IS WHY. It is the gate /etc/profile.d/bash_completion.sh
+        # checks; answering "on" made the runner source a 3800-line framework
+        # hellish cannot yet run, and the login opened with a syntax error --
+        # #51's exact complaint, arriving through the door #51 opened. The
+        # dispatch itself works (progcomp_test.py drives git's completion
+        # through a real TAB); it is the DEFAULT that waits.
         check("progcomp answers instead of erroring",
               "PROBE_PROGCOMP=off" in out, "got %r" % startup[:300])
+        check("the login chain prints nothing of its own",
+              "syntax error" not in startup and "not found" not in startup,
+              "a login shell said something: %r" % startup[:400])
 
         # 3. PATH: the login chain does the job, unaided. This is the claim
         #    the hand-rolled `case ":$PATH:"` block was compensating for.

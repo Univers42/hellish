@@ -179,6 +179,29 @@ up() {
 	done
 }
 
+# ── 5b. HOOKS: RUN SOMETHING AROUND EVERY COMMAND ─────────────────────
+# Two arrays of FUNCTION NAMES. Everything named in them runs, in order.
+#
+#   HELLISH_PRECMD_FUNCS    just before each prompt is drawn
+#   HELLISH_PREEXEC_FUNCS   just before a typed line runs; $1 is the line
+#
+# Arrays, and not one string of code, so that two plugins can both attach.
+# `trap ... DEBUG` holds exactly one handler: the second thing to install
+# one silently removes the first, and neither can tell. Appending a name to
+# an array cannot do that.
+#
+#   note_dir()  { echo "[$PWD]"; }
+#   log_cmd()   { printf '%s\t%s\n' "$(date +%s)" "$1" >> ~/.cmdlog; }
+#   HELLISH_PRECMD_FUNCS=(note_dir)
+#   HELLISH_PREEXEC_FUNCS=(log_cmd)
+#
+# A plain string works too -- HELLISH_PRECMD_FUNCS='a b' -- for when you are
+# adding one name and would rather not think about arrays.
+#
+# $? is saved and put back around the hooks, so a prompt with a status badge
+# still shows YOUR command's result and not the hook's. Interactive shells
+# only: scripts and `-c` never run them.
+
 # ── 6. HISTORY ────────────────────────────────────────────────────────
 # Kept in ~/.hellish_history. By DEFAULT a multi-line command is stored as
 # one joined entry -- `for i in 1 2\ndo\n...` comes back as

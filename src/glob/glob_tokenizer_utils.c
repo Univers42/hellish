@@ -24,16 +24,22 @@ void	handle_slash_token(t_tokenizer_ctx ctx)
 	(*ctx.i)++;
 }
 
-/* Consume one or more consecutive '*' characters and emit a single G_ASTERISK
-   token. Multiple stars collapse into one -- '***' is identical to '*' in
-   POSIX glob semantics (no recursive globbing unlike zsh '**'). */
+/* Consume one or more consecutive '*' characters and emit a single token.
+   Stars collapse into one G_ASTERISK -- '***' is identical to '*' in POSIX
+   glob semantics -- unless the run is a globstar segment, which becomes a
+   G_GLOBSTAR the directory walker descends on. */
 void	handle_asterisk_token(t_tokenizer_ctx ctx)
 {
 	t_glob	g;
+	int		run;
 
-	while (*ctx.i < ctx.len && ctx.pattern[*ctx.i] == '*')
-		(*ctx.i)++;
+	run = 0;
+	while (*ctx.i + run < ctx.len && ctx.pattern[*ctx.i + run] == '*')
+		run++;
 	g = init_glob(G_ASTERISK, ctx.pattern, 1);
+	if (is_globstar(ctx, run))
+		g = init_glob(G_GLOBSTAR, ctx.pattern, 2);
+	*ctx.i += run;
 	vec_push(ctx.ret, &g);
 }
 

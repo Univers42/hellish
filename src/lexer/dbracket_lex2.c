@@ -35,9 +35,23 @@ void	db_track_regex(t_deque_tok *ret, int *in_db)
 		*in_db = 2;
 }
 
-/* Consume the whole regex word (everything up to unquoted whitespace)
-   and emit it as a single TT_WORD; drop back to plain conditional mode.
-   Returns 1 when a regex token was emitted. */
+/* Consume the whole regex word (everything up to UNQUOTED whitespace) and
+** emit it as a single TT_WORD; drop back to plain conditional mode.
+** Returns 1 when a regex token was emitted.
+**
+** "unquoted" is the load-bearing word and it was missing: the scan stopped
+** at the first space wherever it sat, so a quoted right-hand side with a
+** space in it came apart mid-quote --
+**
+**     [[ $x =~ "declare -a" ]]
+**
+** left `"declare` as the token and `-a"` behind it, and the shell answered
+** `unexpected EOF while looking for matching '"'` for a line of perfectly
+** ordinary bash. That line is in Ubuntu's own /etc/profile.d/vte-2.91.sh,
+** so every GNOME desktop login printed a syntax error -- issue #51's
+** complaint, arriving from a file #51 never looked at. A backslash-escaped
+** space belongs to the word too.
+*/
 int	db_regex_word(char **str, t_deque_tok *ret, int *in_db)
 {
 	t_token	tmp;
@@ -47,7 +61,16 @@ int	db_regex_word(char **str, t_deque_tok *ret, int *in_db)
 		return (0);
 	start = *str;
 	while (**str && !is_space(**str) && **str != '\n')
-		(*str)++;
+	{
+		if (**str == '\\' && (*str)[1])
+			(*str) += 2;
+		else if (**str == '\'')
+			advance_squoted(str);
+		else if (**str == '"')
+			advance_dquoted(str);
+		else
+			(*str)++;
+	}
 	tmp = create_token(start, (int)(*str - start), TT_WORD);
 	push_ltok(ret, tmp);
 	*in_db = 1;

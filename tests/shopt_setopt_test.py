@@ -20,15 +20,20 @@ builtin's fault.
 
          hellish: shopt: progcomp: invalid shell option name
 
-     hellish has no `complete` builtin -- there is no programmable
-     completion to enable -- so progcomp is now a known option that is
-     OFF, which is the truthful answer AND the one that makes
-     bash_completion.sh correctly skip itself instead of feeding hellish a
-     2500-line bash script.
+     progcomp landed as a known option that was OFF, which was the
+     truthful answer while hellish had no `complete` builtin.
+
+     It has one now, and TAB consults its specs (#72 phase 4) -- but the
+     DEFAULT stays off, and this probe is the reason. It is the gate
+     bash_completion.sh checks: answer "on" and a Debian or Ubuntu login
+     sources a 3800-line framework hellish cannot yet run, and opens with a
+     syntax error. That is #51's own complaint arriving through the door
+     #51 opened, and the CI runner demonstrated it. `shopt -s progcomp`
+     arms a dispatch that works end to end; tests/plugin_corpus_test.py
+     carries the row that will notice when the default can flip.
 
 Everything asserted below was read off bash 5.x first; each case carries
-the bash command that produced it. The one deliberate divergence is
-progcomp's default, and it is marked as such.
+the bash command that produced it.
 
 Usage: python3 shopt_setopt_test.py /path/to/hellish
 """
@@ -82,12 +87,17 @@ def main():
     case("shopt -oq posix does not dump the table", "shopt -oq posix",
          out_absent="braceexpand", rc=1)
 
-    # bash: `shopt -q progcomp` -> silent, status 0 because bash HAS
-    # programmable completion. hellish has no `complete` builtin, so it
-    # answers the same question honestly: silent, status 1. What matters
-    # for the login is that it no longer ERRORS.
+    # bash: `shopt -q progcomp` -> silent, status 0, because bash HAS
+    # programmable completion and defaults it on. hellish has it too, and
+    # answers the same question about its own state honestly: off until
+    # asked. The DEFAULT is the deliberate divergence and the reason is in
+    # incs/shell.h. What #51 needed either way is that it does not ERROR.
     case("shopt -q progcomp is silent and off", "shopt -q progcomp",
          out="", err="", rc=1)
+    # It is a real switch, not a stored bit: -s arms the dispatch that
+    # progcomp_test.py then drives through an actual TAB.
+    case("shopt -s progcomp then -q reports on",
+         "shopt -s progcomp; shopt -q progcomp", out="", err="", rc=0)
     o, e, r = run("shopt -q progcomp; echo rc=$?")
     check("shopt -q progcomp prints no error at all",
           "invalid" not in e and "invalid" not in o,

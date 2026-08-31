@@ -17,13 +17,14 @@ int	get_default_src_fd(t_tt tt);
 
 /* Implement the `set -C` / noclobber guard for `>` redirections.  When active,
    attempting to truncate an existing regular file with `>` is an error; the
-   user must use `>|` (TT_CLOBBER) to override.  Only TT_REDIRECT_RIGHT is
-   guarded; append (`>>`) and read-write (`<>`) are always allowed. */
+   user must use `>|` (TT_CLOBBER) to override.  `&>` truncates too, so it is
+   guarded alike; append (`>>`, `&>>`) and read-write (`<>`) are allowed. */
 static int	noclobber_blocks(t_shell *state, t_tt tt, const char *fname)
 {
 	struct stat	st;
 
-	if (tt != TT_REDIRECT_RIGHT || !state->opt_noclobber || !fname)
+	if ((tt != TT_REDIRECT_RIGHT && tt != TT_AMP_REDIR)
+		|| !state->opt_noclobber || !fname)
 		return (0);
 	if (stat(fname, &st) == 0 && S_ISREG(st.st_mode))
 		return (1);
