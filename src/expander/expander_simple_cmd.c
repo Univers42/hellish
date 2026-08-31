@@ -14,7 +14,7 @@
 #include "sh_input.h"
 
 bool	is_readonly_var(t_shell *state, const char *key);
-void	exit_clean(t_shell *state, int code);
+void	fatal_input_error(t_shell *state, int code);
 int		shell_fatal_status(t_shell *state);
 
 /* Prepare an executable_cmd for a new simple command.  pre_assigns holds
@@ -32,8 +32,10 @@ static void	init_executable_cmd(t_shell *state, t_executable_cmd *ret)
 /* If the simple command is assignment-only (no command name, only VAR=val
    words), transfer the pre_assigns into the current shell environment.
    POSIX says "VAR=x" alone is equivalent to a shell assignment.  Readonly
-   variable violations are caught here and result in a non-zero exit status
-   (or exit in non-interactive mode). */
+   variable violations are caught here and result in a non-zero exit status;
+   fatal_input_error decides how far the abort reaches, which for a sourced
+   file is the file and NOT the shell -- a plugin that writes to a readonly
+   name used to take the whole session down with it. */
 static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 												t_executable_cmd *ret)
 {
@@ -49,8 +51,7 @@ static void	apply_pre_assigns_if_assignment_only(t_shell *state,
 				ft_eprintf("%s: %s: readonly variable\n", state->ctx, tmp.key);
 				xfree(tmp.key);
 				xfree(tmp.value);
-				if (state->metinp != INP_RL)
-					exit_clean(state, shell_fatal_status(state));
+				fatal_input_error(state, shell_fatal_status(state));
 				state->last_cmd_st_exe = (t_execution_state){.status = 1};
 			}
 			else
@@ -76,6 +77,7 @@ int	expand_simple_command(t_shell *state, t_ast_node *node,
 	if (node->children.elem_size == 0)
 		node->children.elem_size = sizeof(t_ast_node);
 	exp = (t_expander_simple_cmd){0};
+	exp.node = node;
 	exp.in_db = db_head_detect(node);
 	arr_marks_clear(state);
 	init_executable_cmd(state, ret);

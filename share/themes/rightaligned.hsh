@@ -1,0 +1,5 @@
+# rightaligned -- trailing pad: column arithmetic with no cursor movement
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;39m\]\w\[\e[0m\]                    \[\e[38;5;244m\]\t\[\e[0m\]\n\$ '

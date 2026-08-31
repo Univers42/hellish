@@ -34,6 +34,20 @@ Three routes are covered, because they reach render_extras() differently:
   2. PS1='\B'       -- the shipped default, the one users actually run
   3. PS1='...\J...' -- the \J escape, which reads the job table directly
 
+WHY --norc, WHICH IS NOT COSMETIC
+
+This suite spawns an INTERACTIVE shell, so without --norc it reads the
+developer's ~/.hellishrc -- and a prompt module in there sets PS1
+unconditionally, throwing away the `ps1=` this file just asked for. Route 3
+then failed on any machine with a configured hellish and passed on a bare
+CI runner.
+
+The dangerous half is route 2. It kept PASSING under the same clobber,
+because "\B" is what a typical prompt module installs anyway -- so the two
+cases shared one oracle and the green one could not tell a working PS1 from
+an ignored one. A test that inherits ambient configuration is not testing
+the shell; --norc is what makes `ps1=` mean anything.
+
 Usage: python3 prompt_jobs_badge_test.py /path/to/hellish
 """
 import fcntl
@@ -83,7 +97,9 @@ def session(cmds, ps1=None, cols=120, settle=1.4):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execv(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execv(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, cols, 0, 0))
     time.sleep(0.8)
@@ -124,12 +140,17 @@ def jobs_badge_case(label, ps1):
 
 
 def main():
-    # The shipped configuration: PS1 unset in the environment, so the shell
-    # falls back to its own default. This is the exact case from the report.
-    jobs_badge_case("default prompt", None)
+    # The DEFAULT is no longer the rich theme: an unconfigured hellish
+    # shows zsh's own "hostname% " (plus the update badge when one is
+    # pending), so the tracker deliberately does NOT appear there. What
+    # the default must still do is exist and stay basic.
+    out = session([b"sleep 30 &\n", b"kill %1\n", b"echo BASIC\n"], ps1=None)
+    check("default prompt is the basic zsh one, no gear",
+          GEAR not in out and "% " in out, "got %r" % out[-260:])
 
-    # The literal default value set_default_ps1() installs. Same renderer,
-    # reached through the PS1 branch instead of the fallback.
+    # The rich theme -- where the report's badges live -- is what \B (and
+    # the `prompt` switcher) asks for by name. This is the exact case from
+    # the report, one opt-in away.
     jobs_badge_case("PS1='\\B'", "\\B")
 
     # \J in a user PS1 reads state->job_table directly and never regressed;
@@ -140,8 +161,8 @@ def main():
 
     # The duration badge shares the mirrors with the tracker and broke with
     # it, so it is pinned here too: 2s is render_extras()'s threshold.
-    out = session([b"sleep 2.5\n", b"echo DONE\n"], ps1=None, settle=4.0)
-    check("default prompt: 'took N.Ns' returns after a slow command",
+    out = session([b"sleep 2.5\n", b"echo DONE\n"], ps1="\\B", settle=4.0)
+    check("rich theme: 'took N.Ns' returns after a slow command",
           "took 2." in out, "no duration badge: %r" % out[-260:])
 
     print("\n%d checks failed" % len(FAILS))

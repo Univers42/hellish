@@ -21,6 +21,7 @@
 
 # include "shell.h"
 # include "helpers.h"
+# include <limits.h>
 
 /* One shell variable.  exported=true means it will appear in the envp[]
    passed to execve (i.e. child processes see it).  exported=false makes
@@ -55,15 +56,38 @@ char		*env_expand(t_shell *state, char *key);
    just ARR_ASSOC_MAGIC — so no per-variable attribute table is needed. */
 # define ARR_ASSOC_MAGIC '\x1c'
 
+/* A contiguous run of elements, 0-BASED and INCLUSIVE, as the store counts
+** them.  zsh's `a[lo,hi]` is the only thing that produces one; the dialect's
+** 1-based, negative-wrapping subscripts are resolved into this shape by
+** zsh_slice_bounds(), so nothing below the expander has to know which
+** dialect is running.
+**
+** hi < lo is an EMPTY range and is meaningful rather than an error: reading
+** it gives "", and assigning to it INSERTS at lo without removing anything.
+** `a=(1 2 3); a[3,2]=(P)` is how zsh splices P in ahead of element 3.
+**
+** lo == SLICE_NONE means "not a slice at all" -- the subscript was an
+** ordinary arithmetic index, or the zsh dialect is not in effect.
+*/
+# define SLICE_NONE LONG_MIN
+
+typedef struct s_slice
+{
+	long	lo;
+	long	hi;
+}	t_slice;
+
 bool		arr_is(const char *val);
 bool		arr_next(const char **cur, long *idx, const char **v, int *vl);
 int			arr_count(const char *val);
 char		*arr_get_idx(const char *val, long want);
 char		*arr_join(const char *val, char sep);
+char		*arr_join_range(const char *val, char sep, t_slice r);
 char		*arr_with_set(const char *old, long idx, const char *v);
 char		*arr_from_elems(char **elems, int n, const char *base);
 char		*arr_format(const char *val);
 char		*arr_without(const char *old, long idx);
+char		*arr_splice(const char *old, t_slice r, char **elems, int n);
 long		arr_max_idx(const char *val);
 void		rec_append(t_string *out, long idx, const char *v, int vl);
 
@@ -108,6 +132,9 @@ char		*assoc_without(const char *old, const char *key, int klen);
 char		*assoc_keys(const char *val);
 char		*assoc_values(const char *val, char sep);
 char		*assoc_format(const char *val);
+void		vec_push_dquoted(t_string *out, const char *s, int len);
+bool		assoc_key_quoted(const char *k, int len);
+char		*dquote_str(const char *s);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 t_env		*env_get(t_vec_env *env, char *key);

@@ -52,7 +52,8 @@ typedef enum e_ast_type
 	AST_ARITH_CMD,
 	AST_FOR_ARITH,
 	AST_ARRAY_ASSIGN,
-	AST_COPROC
+	AST_COPROC,
+	AST_ANON_FUNC
 }	t_ast_type;
 
 /* The universal AST node.  Used for EVERY grammar construct (commands,
@@ -66,6 +67,14 @@ typedef struct s_ast_node
 	bool			has_redirect; /* true if any child is a redirection */
 	int				redir_idx; /* index into state->redirects */
 	bool			negate; /* true for `! cmd` (pipeline negation) */
+	bool			glued; /* no whitespace separates this child from the one
+						  before it, so it CONTINUES that word instead of
+						  starting a new one.  Set on process substitutions
+						  only, at parse time -- see procsub_assign.c */
+	char			case_term; /* AST_CASE_ITEM only: which terminator closed
+							  this clause.  0 for `;;` (stop), '&' for `;;&`
+							  (keep TESTING the remaining patterns), ';' for
+							  `;&` (fall into the next body, untested). */
 	char			*heredoc_body; /* raw body string for a HERE-doc node */
 }	t_ast_node;
 
@@ -77,9 +86,16 @@ void		ast_push_child(t_ast_node *parent, t_ast_node *child);
 void		free_ast(t_ast_node *node);
 t_ast_node	clone_ast(t_ast_node *src);
 t_ast_node	deep_clone_ast(t_ast_node *src);
+void		ast_clone_scalars(t_ast_node *dst, t_ast_node *src);
 void		ast_postorder_traversal(t_ast_node *node,
 				void (*f)(t_ast_node *node));
 void		print_ast_dot(t_shell *state, t_ast_node node);
+
+/* Sanity ceiling on a recovered source span. Tokens from two different
+   buffers would produce a nonsense distance; refuse rather than copy it. */
+# define AST_SPAN_MAX 1048576
+
+char		*ast_source_text(t_ast_node *node);
 char		*node_name(t_ast_type tn);
 void		print_node(t_ast_node node);
 

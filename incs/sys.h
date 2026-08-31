@@ -112,7 +112,17 @@ getcwd() failed: No such file or directory\n"
    say. Read-only, and never freed by the caller. */
 char	*self_exe_path(void);
 
+/* True when this process's own binary was replaced or deleted after it
+   started -- every in-place upgrade does exactly that. See self_exe.c. */
+int		self_exe_replaced(void);
+
+/* Internal to the self_exe pair: 0 unresolved, 1 resolved, 2 resolved and
+   the image had been unlinked, -1 the kernel would not say. */
+int		*self_exe_state(void);
+
 void	tty_snapshot_save(void);
 void	tty_snapshot_restore(void);
+void	tty_snapshot_refresh(void);
+void	tty_reclaim_after_signal(void);
 
 #endif

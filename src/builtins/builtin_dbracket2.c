@@ -23,19 +23,16 @@ bool	case_match(const char *s, const char *p);
    eval_test.  Plain `[`/test NEVER pattern-matches (POSIX `=` is literal
    string equality there); that is why this lives behind the [[ parser
    only.  Returns the test convention: 0 true, 1 false, 2 error. */
-/* [[ -v NAME ]]: true when the variable NAME is set. A [[ ]]-only
-   operator, so it lives here rather than in the shared test evaluator;
-   the environment is reached through the parked state cell. */
+/* [[ -v NAME ]]: true when the variable NAME is set. `test -v` answers the
+   same question (test_isset.c) and both route here through the parked state
+   cell, so the two spellings cannot drift -- they used to, this one calling
+   env_get (which is true for a declared-but-unset name) and the flat
+   evaluator stat'ing a file. */
 static int	db_isset(char **av, int n)
 {
-	t_shell	*state;
-
 	if (n != 2 || ft_strcmp(av[0], "-v") != 0)
 		return (-1);
-	state = *db_state_cell();
-	if (state && env_get(&state->env, av[1]))
-		return (0);
-	return (1);
+	return (!test_var_isset(*db_state_cell(), av[1]));
 }
 
 int	db_eval_flat(char **av, int n)

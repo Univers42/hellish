@@ -88,27 +88,14 @@ char	*arr_get_idx(const char *val, long want)
 }
 
 /* Heap string of all elements joined with `sep` (0 = no separator):
-   the "${arr[*]}" and no-split "${arr[@]}" expansions. */
+   the "${arr[*]}" and no-split "${arr[@]}" expansions.  The whole array is
+   just the widest possible range, so this defers to arr_join_range and
+   there is ONE join loop rather than two that can drift apart. */
 char	*arr_join(const char *val, char sep)
 {
-	t_string	out;
-	const char	*cur;
-	const char	*v;
-	long		idx;
-	int			vl;
+	t_slice	all;
 
-	vec_init(&out);
-	out.elem_size = 1;
-	if (arr_is(val))
-		cur = val + 1;
-	else
-		cur = "";
-	while (arr_next(&cur, &idx, &v, &vl))
-	{
-		if (out.len && sep)
-			vec_push_char(&out, sep);
-		vec_push_nstr(&out, (char *)v, vl);
-	}
-	vec_push_char(&out, '\0');
-	return ((char *)out.ctx);
+	all.lo = 0;
+	all.hi = LONG_MAX;
+	return (arr_join_range(val, sep, all));
 }

@@ -70,7 +70,13 @@ int	check_posix_class(const char *s, int len, char *buf, int *buf_pos)
    scan is fine here -- bracket classes are small (at most a few dozen chars
    after range expansion), and this runs once per filename character per bracket
    token, not in an inner loop. BRACKET_NEGATED flips the result so [^abc]
-   matches anything except a, b, and c. */
+   matches anything except a, b, and c.
+
+   The fold under `shopt -s nocaseglob` has to happen here as well as in the
+   literal comparison, and negation is why it is not optional: with the
+   option on, [^a] must reject `A` too. A version that folded only literals
+   would answer `*.TXT` correctly and `[a-z]*` wrongly, in the same
+   pattern. */
 bool	glob_char_in_class(char c, t_glob *bracket)
 {
 	int		i;
@@ -82,7 +88,9 @@ bool	glob_char_in_class(char c, t_glob *bracket)
 	i = 0;
 	while (i < bracket->char_set_len)
 	{
-		if (bracket->char_set[i] == c)
+		if (bracket->char_set[i] == c || (glob_nocase()
+				&& ft_tolower((unsigned char)bracket->char_set[i])
+				== ft_tolower((unsigned char)c)))
 		{
 			found = true;
 			break ;

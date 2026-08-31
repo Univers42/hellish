@@ -76,8 +76,13 @@ static char	*assoc_set_free(char *cur, const char *sub, int subl,
 /* Build an associative value from [key]=value elements. A plain `=`
    assignment starts from an empty array (bash replaces the whole map);
    `+=` starts from the current value and merges. Bare elements (no
-   [key]=) are ignored, as bash rejects them for assoc arrays. */
-static char	*build_assoc(t_vec *args, const char *base, int append)
+   [key]=) are ignored, as bash rejects them for assoc arrays.
+     An empty key -- `M=([$unset]=v)` -- is refused here for the same reason
+   assoc_elem_assign refuses it: a map has no element 0 to fall back on, so
+   accepting it stores under a key the script never named.  The map built so
+   far is returned intact, because bad_subscript does not always exit: inside
+   a sourced file it abandons only the file. */
+static char	*build_assoc(t_shell *state, t_arr_assign *aa, const char *base)
 {
 	char	*cur;
 	char	*sub;
@@ -85,15 +90,18 @@ static char	*build_assoc(t_vec *args, const char *base, int append)
 	int		subl;
 	size_t	i;
 
-	if (append && assoc_is(base))
+	if (aa->append && assoc_is(base))
 		cur = ft_strdup(base);
 	else
 		cur = ft_strdup((char [2]){ARR_ASSOC_MAGIC});
 	i = 0;
-	while (i < args->len)
+	while (i < aa->args->len)
 	{
-		if (parse_sub_elem(((char **)args->ctx)[i++], &sub, &subl, &val))
-			cur = assoc_set_free(cur, sub, subl, val);
+		if (!parse_sub_elem(((char **)aa->args->ctx)[i++], &sub, &subl, &val))
+			continue ;
+		if (subl <= 0)
+			return (bad_subscript(state, aa->ev->key, ""), cur);
+		cur = assoc_set_free(cur, sub, subl, val);
 	}
 	return (cur);
 }
@@ -110,7 +118,7 @@ char	*build_array_value(t_shell *state, t_executable_cmd *ret,
 
 	base = env_expand(state, aa->ev->key);
 	if (is_assoc_target(ret, base))
-		return (build_assoc(aa->args, base, aa->append));
+		return (build_assoc(state, aa, base));
 	if (has_subscript(aa->args))
 		return (build_indexed_sub(state, aa->args, base, aa->append));
 	if (aa->append)

@@ -38,6 +38,7 @@ int		ft_checked_atoi(const char *str, int *ret, int flags);
 bool	is_var_name_p1(char c);
 int		sh_skip_quoted(const char *s, int len, int i);
 bool	is_var_name_p2(char c);
+char	*sq_quote(const char *val);
 
 # ifdef VERBOSE
 
@@ -56,5 +57,18 @@ static inline bool	vec_str_ends_with_str(t_string *s, char *s2)
 		return (true);
 	return (false);
 }
+
+/* Config load path (src/core/rc_load*.c). */
+bool	str_ends_with(const char *s, const char *suf);
+char	*path_join(const char *a, const char *b);
+void	sort_strvec(t_vec *v, size_t from);
+char	*xdg_config_hellish(t_shell *state, const char *home);
+void	collect(const char *dir, const char *suffix, t_vec *out);
+void	collect_plugins(const char *dir, t_vec *out);
+void	rc_load_all(t_shell *state, const char *home);
+
+/* Composable rc hooks (src/core/hooks*.c). */
+void	run_hook_funcs(t_shell *state, char *var, const char *arg);
+void	run_preexec(t_shell *state);
 
 #endif

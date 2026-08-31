@@ -63,6 +63,8 @@ static void	append_simple(t_arith_expand_ctx *ctx)
 	int		j;
 	char	*v;
 
+	if (append_zsh_len(ctx))
+		return ;
 	j = *ctx->i;
 	if (ft_isdigit((unsigned char)ctx->s[j]))
 		j++;

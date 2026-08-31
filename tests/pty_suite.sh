@@ -26,6 +26,30 @@
 set -u
 cd "$(dirname "$0")/.."
 
+# ---- environment isolation -------------------------------------------------
+# These tests spawn INTERACTIVE shells, which source ~/.hellishrc. On the
+# machine of anyone who actually uses hellish -- this project's whole audience
+# -- that loads their real config into the shell under test, and prompt tests
+# then diff against someone's personal PS1. Observed: 4 spurious failures with
+# a real $HOME and 0 with a clean one, plus the developer's own framework
+# writing state mid-run.
+#
+# HOME is redirected to a throwaway dir rather than unset, because tools that
+# expand ~ must still work. The oracle is symlinked in: history_multiline_matrix
+# resolves it as ~/bash-5.3.9, so isolating HOME alone would hide it and the
+# test would exit 2 without running.
+if [ "${PTY_SUITE_KEEP_HOME:-0}" != "1" ]; then
+	_iso_home="$(mktemp -d)"
+	[ -d "$HOME/bash-5.3.9" ] && ln -s "$HOME/bash-5.3.9" "$_iso_home/bash-5.3.9"
+	[ -n "${HELLISH_ORACLE:-}" ] || \
+		{ [ -x "$HOME/bash-5.3.9/bin/bash" ] && export HELLISH_ORACLE="$HOME/bash-5.3.9/bin/bash"; }
+	HOME="$_iso_home"
+	export HOME
+	trap 'rm -rf "$_iso_home"' EXIT
+fi
+unset HISTTIMEFORMAT HISTCONTROL HISTSIZE HISTFILE HISTFILESIZE HISTIGNORE
+unset ENV BASH_ENV CDPATH GLOBIGNORE
+
 SHELL_BIN="${HELLISH:-build/bin/hellish}"
 [ -x "$SHELL_BIN" ] || { echo "error: $SHELL_BIN is not executable -- run make" >&2; exit 2; }
 
@@ -40,6 +64,18 @@ pattern=""
 # that genuinely cannot run in this job, with the reason attached -- a skip
 # without a reason is just a test nobody runs.
 skip_reason() {
+	# This one is skipped BEFORE the PTY_SUITE_ALL override, and stays
+	# skipped through it. Every other skip here is about a test being
+	# uninformative in this job; this one would run `make my_shell` on the
+	# machine invoking it and change the caller's LOGIN SHELL. An override
+	# flag meaning "run the ones that are merely unhelpful" must not also
+	# mean "rewrite my /etc/passwd entry". It runs as `make my-shell-test`,
+	# in a container built for it.
+	if [ "$1" = "my_shell_update_test.py" ]; then
+		echo "installs a login shell; runs as \`make my-shell-test\`"\
+		     "in docker/Dockerfile.my-shell, never on a host."
+		return 0
+	fi
 	[ "${PTY_SUITE_ALL:-0}" = "1" ] && return 1
 	case "$1" in
 		completion_test.py)

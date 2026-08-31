@@ -351,8 +351,23 @@ COMPILED := 0
 ##@ Build
 all: safe_banner $(BIN_DIR)/$(BAPTIZE_SHELL)  ## Build the shell → build/bin/hellish
 
-# Announce the active allocator before building so it is never a surprise.
+# Announce the active allocator AND the build mode before building, so
+# neither is ever a surprise.
+#
+# The MODE line is not decoration. build/bin/hellish is a single shared path
+# that every mode relinks (deliberately -- see OBJ_DIR above), and `make test`
+# rebuilds at the DEFAULT mode, which is debug. So
+#
+#     make all OPT=1      # release binary
+#     make test           # ...silently replaced it with a debug+ASan one
+#
+# left you benchmarking, shipping or `make my_shell`-installing a 7.4MB ASan
+# build while believing it was the 619KB release one. Nothing said so. The
+# stamp below remembers what the binary currently IS, and the link rule says
+# out loud when that changes.
 safe_banner:
+	@printf "  \033[1;36m▸\033[0m \033[1;37mMODE=%s\033[0m \033[90m→ %s\033[0m\n" \
+		"$(MODE)" "$(BIN_DIR)/$(BAPTIZE_SHELL)" >&2
 	@if [ "$(SAFE)" = "0" ]; then \
 		printf "\n  \033[1;31m⚠  SAFE=0\033[0m \033[1;37m— custom ft_malloc heap (faster, UNSAFE).\033[0m\n" >&2; \
 		printf "  \033[90mPass SAFE=1 for the libc allocator. Stability is on you.\033[0m\n\n" >&2; \
@@ -360,10 +375,22 @@ safe_banner:
 		printf "\n  \033[1;32m✓  SAFE=1\033[0m \033[1;37m— libc malloc/free.\033[0m \033[90m(OPT build defaults to SAFE=0 ft_malloc)\033[0m\n\n" >&2; \
 	fi
 
-# Link the final binary
+# Link the final binary.
+#
+# MODE_STAMP records which configuration the binary at this shared path was
+# last linked from. If the mode changed under you, say so -- that is the whole
+# defence against the `make all OPT=1 && make test` trap described above.
+MODE_STAMP := $(BIN_DIR)/.mode
+
 $(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
 	@mkdir -p $(BIN_DIR)
+	@prev=$$(cat $(MODE_STAMP) 2>/dev/null || echo ""); \
+	if [ -n "$$prev" ] && [ "$$prev" != "$(MODE)-$(SAFE_TAG)" ]; then \
+		printf "  \033[1;33m!\033[0m \033[1;37m%s was %s, now relinked as %s\033[0m\n" \
+			"$(BIN_DIR)/$(BAPTIZE_SHELL)" "$$prev" "$(MODE)-$(SAFE_TAG)" >&2; \
+	fi
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
+	@printf '%s\n' "$(MODE)-$(SAFE_TAG)" > $(MODE_STAMP)
 
 # Platform files implement module seams (the fork/spawn leaves), so they —
 # and only they — may see the module-private headers of the modules whose
@@ -500,6 +527,14 @@ re:  ## fclean + rebuild (OPT/SAFE propagate)
 ORACLE_PREFIX ?= $(HOME)/bash-5.3.9
 
 ##@ Test
+ZSH_ORACLE_PREFIX ?= $(HOME)/zsh-5.9
+
+# The zsh dialect's oracle, same arrangement as `oracle` below: the flag
+# semantics are not inferable from our source (see tests/build_zsh_oracle.sh),
+# so the tests diff against a real zsh or they skip and say so.
+zsh-oracle:  ## Build the zsh 5.9 the zsh-dialect tests are defined against
+	@/bin/bash tests/build_zsh_oracle.sh "$(ZSH_ORACLE_PREFIX)"
+
 oracle:  ## Build the PINNED bash 5.3.9 the suite is defined against
 	@if [ -x "$(ORACLE_PREFIX)/bin/bash" ]; then \
 		printf "\n  \033[1;32m✓\033[0m \033[1;37m%s\033[0m \033[90m(cached)\033[0m\n\n" \
@@ -516,6 +551,21 @@ test:  ## Golden suite: ~3800 cases diffed against bash --posix
 	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@$(MAKE) --no-print-directory all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests\033[0m\n\n" >&2
+	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
+
+# The same suite against the RELEASE build.
+#
+# `test` above builds at the DEFAULT mode, which is debug+ASan, so until this
+# existed nothing ever ran the golden cases against what we actually ship. A
+# heap bug that ASan happened to render benign passed 3790/3790 while the
+# release binary segfaulted on `V=1 cmd` -- one of the most common constructs
+# there is, with nine cases in tests/var that all "passed". Optimisation and
+# the sanitizer disagree about uninitialised stack, so one run cannot stand
+# in for the other.
+test-release:  ## Golden suite against the RELEASE build (not debug+ASan)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all OPT=1 SAFE=1
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mRunning tests (RELEASE build)\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); /bin/bash $(BIN_TEST))
 
 # Official speed verdict vs `bash --posix`. Always benchmarks the OPT build
@@ -559,11 +609,43 @@ norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 # never touches an rc you already have. It runs BEFORE chsh: the config
 # should be in place before anything can log you into the new shell. You may force
 # the custom heap with `make my_shell SAFE=0`, but then stability is on you.
+#
+# Installing and registering are tools/register_shell.sh, in THIS repo. They
+# used to be a raw `sudo install` here plus vendor/scripts/register_shell.sh,
+# fourteen unchecked lines in a submodule -- which meant the most dangerous
+# step in the whole build (rewriting your passwd entry) was the one step with
+# no preflight, no smoke test and no test coverage. It failed in a clean
+# container on a bare `chsh` that prompts for a password make cannot answer,
+# and it would happily make a binary that does not run your login shell. See
+# the header of tools/register_shell.sh and tests/register_shell_test.py.
+#
+# --preflight runs FIRST, before the rebuild: "chsh is not installed" is worth
+# knowing before three minutes of compiling, not after.
 # Which binary gets installed. STATIC=1 takes the container-built static one
 # from dist/ instead of compiling here -- the "build it in docker, then run it
 # on my machine" flow. Recursively expanded (`=`, not `:=`) because STATIC_OUT
 # is defined further down the file.
 MY_SHELL_BIN = $(if $(filter 1,$(STATIC)),$(STATIC_OUT),$(BIN_DIR)/$(BAPTIZE_SHELL))
+
+# Install a PUBLISHED release instead of this working tree:
+#
+#   make my_shell VERSION=2.7.2
+#
+# The point is bug reports. A user's problem lives in the binary they already
+# have, and issue #76 is the extreme case -- the bug is IN THE UPDATER, so it
+# cannot be reproduced from HEAD at all: you have to install the old one and
+# press the button. With this, `make my_shell VERSION=2.7.2` puts you exactly
+# where the reporter was, on your own machine.
+#
+# It skips the build entirely and downloads the release asset (checksum
+# verified, and proven to run before anything installs it -- see
+# tools/fetch_release.sh). VERSION= and STATIC=1 are mutually exclusive:
+# STATIC builds a binary here, VERSION fetches one that already exists.
+VERSION ?=
+RELEASE_BIN := build/bin/hellish-release
+ifneq ($(VERSION),)
+MY_SHELL_BIN = $(RELEASE_BIN)
+endif
 
 ##@ Build info
 # Print the configuration a given MODE actually resolves to, without building
@@ -581,22 +663,51 @@ flags:  ## Show the compiler/linker flags for this MODE
 	@printf 'OBJ_DIR=%s\n' '$(OBJ_DIR)'
 
 ##@ Install
-my_shell:  ## sudo-install to /usr/bin and register as a login shell
-	@if [ "$(STATIC)" = "1" ]; then \
+my_shell:  ## sudo-install to /usr/bin and register as a login shell (VERSION=2.7.2 for a release)
+	@if [ -n "$(VERSION)" ] && [ "$(STATIC)" = "1" ]; then \
+		echo "make: VERSION= and STATIC=1 are mutually exclusive --"; \
+		echo "  VERSION fetches a published binary, STATIC builds one here."; \
+		exit 1; \
+	fi
+	@./tools/register_shell.sh --preflight
+	@if [ -n "$(VERSION)" ]; then \
+		mkdir -p $(BIN_DIR); \
+		./tools/fetch_release.sh "$(VERSION)" "$(RELEASE_BIN)" >/dev/null; \
+	elif [ "$(STATIC)" = "1" ]; then \
 		$(MAKE) --no-print-directory static-verify; \
 	else \
 		$(MAKE) --no-print-directory re OPT=1 \
 			SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1); \
 	fi
-	@echo "Installing hellish shell from $(MY_SHELL_BIN)..."
-	sudo install -m 755 $(MY_SHELL_BIN) /usr/bin/hellish
 	@echo "Seeding your config..."
 	@./tools/seed_hellishrc.sh
-	@echo "Registering shell..."
-	./vendor/scripts/register_shell.sh
+	@./tools/register_shell.sh --bin $(MY_SHELL_BIN) --dest /usr/bin/hellish
 	@echo "Done. Log out and log back in to use hellish as your default shell."
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
 	@echo '    exec /usr/bin/hellish --login'
+	@if [ -n "$(VERSION)" ]; then \
+		printf '\n  \033[1;33m!\033[0m installed the PUBLISHED v%s, not this working tree.\n' \
+			"$(VERSION)"; \
+		printf '    to reproduce a report from here:  hellish -c "update --now"\n'; \
+		printf '    to go back to your build:         make my-shell-uninstall && make my_shell\n\n'; \
+	fi
+
+# Undo my_shell completely: login shell restored, binary gone, /etc/shells
+# entry gone. The config is KEPT -- ~/.hellishrc is your own work and
+# reinstalling to test something is not a reason to lose it.
+#
+# The login shell is restored BEFORE the binary is deleted, and a failed chsh
+# aborts without deleting anything: the reverse order can leave an account
+# whose login shell does not exist, which locks you out of ssh and every tty.
+my-shell-uninstall:  ## Undo make my_shell (keeps your ~/.hellishrc)
+	@./tools/register_shell.sh --uninstall --dest /usr/bin/hellish
+
+# ...and take the config too, for a genuinely clean slate. This is the one to
+# pair with VERSION= when reproducing a report: a stale ~/.cache/hellish
+# remembers which release it already told you about, so a reinstall of an old
+# version can start out believing it is current.
+my-shell-purge:  ## Undo make my_shell AND delete ~/.hellishrc + caches
+	@./tools/register_shell.sh --purge --dest /usr/bin/hellish
 
 # The same thing on a machine where you are not root -- a lab box, a shared
 # server, a 42 cluster account. `my_shell` cannot work there: it needs sudo to
@@ -768,6 +879,42 @@ cd-zsh-test:  ## docker: the zsh-style `cd old new` extension vs real zsh
 	docker build -f docker/Dockerfile.zsh -t hellish:zsh .
 	docker run --rm hellish:zsh
 
+# `make my_shell` and the update that follows it, on a machine shaped like the
+# one in issue #76: Ubuntu, a NON-ROOT human with a password-protected sudo,
+# and hellish in /usr/bin owned by root.
+#
+# It runs the REAL my_shell target -- chsh, /etc/shells, the passwd entry --
+# which is exactly why it cannot run on a developer host: a test may not
+# rewrite your login shell. The permission shape alone is covered without
+# root, and in CI, by tests/update_sudo_fail_test.py.
+#
+# The release is a local fake, so this proves the mechanism rather than
+# whatever github is serving today, and needs no network.
+my-shell-test:  ## docker: make my_shell, then the update button (issue #76)
+	docker build -f docker/Dockerfile.my-shell -t hellish:my-shell .
+	docker run --rm hellish:my-shell
+
+# hellish as a real LOGIN SHELL behind a real sshd. After `make my_shell`,
+# sshd execs hellish for every remote operation -- ssh-command, scp, sftp,
+# rsync and git all run `$SHELL -c ...` -- and those protocols die on a single
+# stray byte of stdout. The golden suite cannot see any of it: it runs
+# `hellish -c` with no sshd, no chsh and no pipe. Every case is diffed against
+# bash as the login shell, so nothing can encode a hellish bug as "expected".
+ssh-shell-test:  ## docker: hellish as a login shell (ssh/scp/rsync/git) vs bash
+	docker build -f docker/Dockerfile.sshd -t hellish:sshd .
+	docker run --rm hellish:sshd
+
+# The same report `make my_shell` prints at the end, on demand. Answers the
+# two questions behind every "the update did nothing" report: WHICH hellish
+# does PATH actually reach, and can its directory be written to.
+#
+# Reports; never fails the target. The findings are things about the MACHINE
+# (a second copy on PATH, a root-owned install dir), not build failures, and a
+# red `make doctor` would train people to ignore it. The script's own exit
+# status still means something for anything that wants to check it.
+doctor:  ## Which hellish is on PATH, and will `update` be able to install?
+	@./tools/register_shell.sh --doctor || true
+
 # Host-side check (no docker): `hellish --posix` must match `bash --posix` on
 # the cd cases the zsh extension would otherwise change, while normal mode keeps
 # the extension. Builds first so the binary is current.
@@ -819,6 +966,35 @@ git-star-test: all  ## pty: the git dirty star never outlives the state it descr
 ##@ Interactive (pty) gates
 pty-test: all  ## EVERY tests/*.py regression test, by discovery — what CI runs
 	@chmod +x $(TEST_DIR)/pty_suite.sh && $(TEST_DIR)/pty_suite.sh
+
+# The prompt WIDTH model, linked directly. Not a pty case and not by choice:
+# the width is what the line editor uses to place the cursor, it is never
+# printed, and no shell command reveals it -- so the only shell-level
+# observable is where a line wraps. The pty case that inferred it that way
+# PASSED against a binary with the bug still in it, which is the one outcome
+# a test may never have. See tests/prompt_width_test.c.
+prompt-width-test: all  ## unit: visible_width_cstr (CSI, OSC, guards, wide glyphs)
+	@chmod +x $(TEST_DIR)/prompt_width_test.sh && $(TEST_DIR)/prompt_width_test.sh
+
+# Twelve real third-party plugins, each with a declared expectation. Runs
+# against BOTH builds because that is how it earns its keep: the git-prompt.sh
+# segfault existed only in release while the golden suite passed 3790/3790 in
+# debug, and the 18 KB alias leak is invisible to ASan (still-reachable) and
+# only shows on the ft_malloc oracle. A corpus that ran one build would have
+# missed one of them.
+#
+# Vendors nothing and skips cleanly offline, so a CI box with no network
+# still passes rather than pretending to have checked.
+plugin-corpus: ## Real plugins vs release AND ASan — the compatibility matrix
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory MODE=release all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: release\033[0m\n" >&2
+	@python3 $(TEST_DIR)/plugin_corpus_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: debug + ASan\033[0m\n" >&2
+	@ASAN_OPTIONS=detect_leaks=1 python3 $(TEST_DIR)/plugin_corpus_test.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made
@@ -1029,13 +1205,14 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	static static-verify \
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
-	smoke docker-clean cd-zsh-test cd-posix-test agnostic-bench \
+	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
+	my-shell-uninstall my-shell-purge ssh-shell-test agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
 	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
-	update-config-test update-test help-test \
+	update-config-test update-test help-test test-release \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test user-install-test \
 	geoman oracle docker-suite docker widechar-test \

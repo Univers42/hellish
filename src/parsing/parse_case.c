@@ -46,12 +46,32 @@ static void	parse_case_patterns(t_deque_tok *tokens, t_ast_node *item)
 	}
 }
 
+/* Consume the clause terminator and record WHICH one it was on the item.
+   The three spellings differ only in what happens after the body runs, so
+   the parser's whole job here is not to lose that byte -- `;;&` used to
+   lex as `;;` plus a background `&` and `;&` as a syntax error. */
+static bool	take_case_term(t_deque_tok *tokens, t_ast_node *item)
+{
+	t_tt	tt;
+
+	tt = pk(tokens)->tt;
+	if (tt != TT_DSEMI && tt != TT_DSEMI_FALL && tt != TT_SEMI_FALL)
+		return (false);
+	item->case_term = 0;
+	if (tt == TT_DSEMI_FALL)
+		item->case_term = '&';
+	else if (tt == TT_SEMI_FALL)
+		item->case_term = ';';
+	(void)deque_pop_start(&tokens->deqtok);
+	return (true);
+}
+
 /* Parse one case clause: [(] pattern [| pattern]... ) [compound-list] [;;]
    AST_CASE_ITEM children = pattern word nodes followed by the body compound-
-   list. An empty body (pattern followed immediately by `;;` or `esac`) is
-   allowed; we create an empty AST_COMPOUND_LIST node for the executor to
-   skip cleanly. The trailing `;;` is consumed here so the outer loop in
-   parse_case_command sees the next pattern or `esac`. */
+   list. An empty body (pattern followed immediately by a terminator or by
+   `esac`) is allowed; we create an empty AST_COMPOUND_LIST node for the
+   executor to skip cleanly. The terminator is consumed here so the outer
+   loop in parse_case_command sees the next pattern or `esac`. */
 t_ast_node	parse_case_item(t_shell *state, t_parser *parser,
 					t_deque_tok *tokens)
 {
@@ -64,16 +84,15 @@ t_ast_node	parse_case_item(t_shell *state, t_parser *parser,
 		return (parser->res = RES_ERR, item);
 	(void)deque_pop_start(&tokens->deqtok);
 	skip_newlines(tokens);
-	if (pk(tokens)->tt == TT_DSEMI || pk(tokens)->tt == TT_ESAC)
+	if (pk(tokens)->tt == TT_ESAC || is_case_term(pk(tokens)->tt))
 	{
 		init_ast_node_children(&body, AST_COMPOUND_LIST);
 		ast_push_child(&item, &body);
-		if (pk(tokens)->tt == TT_DSEMI)
-			(void)deque_pop_start(&tokens->deqtok);
+		take_case_term(tokens, &item);
 		return (item);
 	}
 	push_parsed_compound_list(state, parser, tokens, &item);
-	if (parser->res == RES_OK && pk(tokens)->tt == TT_DSEMI)
-		(void)deque_pop_start(&tokens->deqtok);
+	if (parser->res == RES_OK)
+		take_case_term(tokens, &item);
 	return (item);
 }

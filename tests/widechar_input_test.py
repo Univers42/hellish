@@ -60,6 +60,10 @@ def session(payload, cols):
     env = {
         "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "TERM": "xterm-256color", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
+        # This test is about the RICH prompt's ambiguous-width glyphs
+        # (❯ ✦ ✘); since the default became the basic zsh prompt, the
+        # theme under test has to be asked for by name.
+        "PS1": "\\B",
         "PS2": "> ", "HELLISH_NO_BANNER": "1", "HELLISH_NO_ANIM": "1",
         "HELLISH_NO_UPDATE_CHECK": "1", "ASAN_OPTIONS": "detect_leaks=0",
     }
@@ -69,7 +73,9 @@ def session(payload, cols):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ,
                 struct.pack("HHHH", ROWS, cols, 0, 0))

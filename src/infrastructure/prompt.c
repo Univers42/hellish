@@ -145,8 +145,13 @@ static void	maybe_bench(void)
 
    Build the primary prompt for an interactive read. A user-set PS1 (from
    ~/.hellishrc or the environment) takes over completely, rendered with
-   the bash escape set — the built-in two-row prompt is simply the theme
-   you get when PS1 is unset, and "\B" asks for it by name. Otherwise: the
+   the bash escape set — except when the zsh dialect is armed, where PS1
+   becomes the zsh `%` parameter, because in zsh PS1 and PROMPT are the
+   same variable. The dialect BIT decides, never the text: a literal `%`
+   in a legacy bash PS1 must survive, so there is no sniffing. An unset
+   PS1 falls back to HELLISH_PS1_DEFAULT -- zsh's own "hostname% " plus
+   the update badge -- and the rich two-row theme is what "\B" (or the
+   `prompt` switcher) asks for by name. Otherwise: the
    frame counter advances only when HELLISH_ANIM selects a live style, so
    the default prompt is perfectly still and each readline call redraws the
    SAME glyph; the status is snapshotted before rendering so the arrow
@@ -154,7 +159,6 @@ static void	maybe_bench(void)
    value. */
 t_string	prompt_normal(t_shell *state)
 {
-	t_string	ret;
 	int			status;
 	char		*ps1;
 
@@ -165,13 +169,11 @@ t_string	prompt_normal(t_shell *state)
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
+	ps1 = env_expand(state, "PROMPT");
+	if (ps1 && *ps1)
+		return (zsh_prompt(state, ps1, true));
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
-		return (ps1_animated(state, ps1));
-	vec_init(&ret);
-	ret.elem_size = 1;
-	if (anim_style(state) != 0)
-		(*anim_frame())++;
-	render_prompt(state, &ret, *anim_frame(), status);
-	return (ret);
+		return (zsh_prompt(state, ps1, zsh_mode(state)));
+	return (zsh_prompt(state, HELLISH_PS1_DEFAULT, false));
 }

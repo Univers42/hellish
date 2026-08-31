@@ -8,7 +8,224 @@ shows you how to drive the shell.
 
 ---
 
-## v2.7.6
+## v2.8.0 — *the runs-your-plugins release*
+
+The biggest release since 2.0. The headline: **real third-party plugins now
+load and run** — oh-my-zsh plugins, git's own completion and prompt scripts,
+bash-preexec, z — and the shell now proves it on every CI run instead of
+claiming it. Under that headline sit an opt-in zsh dialect, programmable
+completion wired into TAB, a whole zsh prompt language, a line-editor widget
+layer, an installer that can prove what it installed, and a long list of
+silent divergences from bash found *by running other people's code* and fixed
+with a test each.
+
+### The zsh dialect — opt-in, and off means off
+
+zsh syntax is not bash and not POSIX, so none of it is reachable until
+something arms the mode: `set -o zsh`, `emulate zsh`, or sourcing a `.zsh`
+file (restored when the file finishes). There is deliberately **no heuristic
+on file content** — the 4248-case golden suite pins the bash meaning of the
+same text, so the dialect cannot leak into your scripts by guesswork.
+
+Inside the mode, the things real plugins actually use:
+
+- **Parameter-expansion flags** — `${(f)x}` `${(s:/:)x}` `${(j:-:)x}`
+  `${(k)x}` `${(%)x}` `${(q)x}` `${(U)x}` `${(L)x}` and friends, plus the
+  modifiers `${x:a}` `:h` `:t` `:r`, nested expansions, and the `:#` filter.
+  Anything unimplemented fails loudly instead of returning the unflagged
+  value.
+- **Builtins**: `setopt`/`unsetopt` (mirrored into the glob layer, so
+  `setopt dotglob` in a plugin actually changes what `*` matches), `print`
+  (`-r -n -l -P`), `emulate`, `autoload`, `add-zsh-hook`, `shift NAME`, and
+  loud stubs for `zmodload`/`zstyle`/`compdef` — they say what is missing
+  rather than pretending.
+- **Grammar**: `function name { }` (also plain bash, #71), anonymous
+  `() { … }` functions, empty compound bodies, `} always { }`,
+  `for a b (…)`, `}` without a separator, multi-name function definitions,
+  `[[ -o opt ]]`, `$+commands[x]`, unbraced `$arr[i]`.
+- **Arrays, the zsh way**: 1-based indexing, `$#name`, `a[lo,hi]` slices
+  (read *and* write), `a[i]=(…)` splices, `shift NAME` — measured against
+  zsh 5.9, which `make zsh-oracle` pins the same way `make oracle` pins
+  bash 5.3.9.
+- **Glob qualifiers** and `=(cmd)` process substitution.
+
+### The plugin corpus — the acceptance test for all of it
+
+`make plugin-corpus` sources **13 real third-party plugins** — eight from
+oh-my-zsh, git's `git-prompt.sh` and `git-completion.bash`, bash-preexec,
+`z`, and bash-completion — against both the release build and the ASan
+build. Twelve load; every row declares an expectation (`loads`,
+`loads-noisy`, `unsupported`), and **a plugin that starts working is a
+failure until its expectation is updated**, so the matrix cannot rot.
+
+It earned its keep immediately: a heap bug that existed only in release
+builds while the golden suite passed everything in debug, and an 18 KB alias
+leak invisible to ASan, were both found by sourcing code nobody here wrote.
+
+### The line editor speaks zsh — `zle`, `bindkey`, widgets
+
+- `zle -N name [fn]` registers widgets; `bindkey` binds them; `BUFFER`,
+  `LBUFFER`, `RBUFFER` and `CURSOR` are readable *and writable* from widget
+  functions. oh-my-zsh's **sudo** plugin (ESC-ESC prepends `sudo`) works.
+- **A widget's `cd` now reaches your shell.** Readline runs in a forked
+  child, so a directory change used to die with the fork. The child now
+  reports its final directory on a dedicated pipe — which is what makes
+  oh-my-zsh's **dirhistory** (Alt-Left/Alt-Right to walk your cd history)
+  actually navigate.
+- `zle -M msg` prints a message under the line being edited and repaints;
+  `zle -R` refreshes. Every *other* zle option now says once, honestly, that
+  it is not supported instead of claiming success — a message you never see
+  is indistinguishable from a working one.
+- A built-in widget's edit is no longer undone by the write-back, and the
+  dispatcher no longer leaks a widget name per keypress.
+- `region_highlight` stays out, deliberately: readline has no styled-region
+  model, and a registration that silently never fires would leave a plugin
+  believing it is installed. `incs/zle.h` says so; the corpus records it.
+
+### Programmable completion — TAB consults your specs
+
+`complete` and `compgen` exist, and — the half that was missing — **TAB
+actually asks them**: `-W` word lists, `-F` functions (with `COMP_WORDS`,
+`COMP_CWORD`, `COMP_LINE`, `COMP_POINT`, `COMPREPLY` and `$1 $2 $3` as bash
+defines them), and the `-A` actions. Sourcing git's own
+`git-completion.bash` and typing `git che<TAB>` offers
+`checkout cherry-pick cherry` — byte-identical to bash 5.3.9.
+
+It sits behind `shopt -s progcomp`, **off by default where bash has it on**,
+and the reason is measured, not cautious: `shopt -q progcomp` is the exact
+gate `/etc/profile.d/bash_completion.sh` probes, and answering yes makes a
+Debian/Ubuntu login source bash-completion's 3800-line framework, which
+hellish cannot yet parse (`shopt -s extglob` on line 47 has not *run* when
+the extglob pattern on line 1810 is tokenised — hellish lexes a sourced file
+whole, bash reads it incrementally). Put `shopt -s progcomp` in your rc and
+every spec works; the corpus carries the row that will say when the default
+can flip.
+
+### The prompt — two languages, 29 themes, and a quieter default
+
+- **The default prompt is now zsh's own**: `hostname% ` — plus exactly one
+  thing hellish still volunteers, the self-spacing `⬆` update badge. A
+  shell's first prompt should look like the shell you already know, not like
+  something you have to figure out how to turn off. The rich two-row theme
+  did not go anywhere: `prompt` lists **29 themes** (`prompt <name>` to
+  switch, `prompt save` to persist), and `PS1='\B'` is the old default by
+  name.
+- **The entire zsh prompt language** — `%n %m %~ %#`, `%F{color}`,
+  `%(?.ok.no)` conditionals, truncation, the time family — measured against
+  zsh 5.9. `PROMPT` and `print -P` keep exact zsh semantics; under
+  `set -o zsh`, PS1 *is* PROMPT, as in zsh.
+- **PS1 is bilingual.** Paste `%n@%m %~ %#` *or* `\u@\h \w \$` into plain
+  PS1 and both render — while `100% `, a csh-style `%> `, and the strftime
+  percents inside `$(date +%H:%M)` or `\D{%M}` all survive literally. Unknown
+  `%` sequences stay on screen in plain PS1; strict zsh contexts consume
+  them, exactly as zsh does.
+- **Bash's escape set is complete**: `\D{fmt} \T \@ \! \# \l \r \V` joined
+  `\u \h \w \t` and the rest — they used to print their own spelling into
+  the prompt. `\A` is the one deliberate divergence (hellish's animation
+  frame, shipped first; `\D{%H:%M}` is bash's clock). Bare `$?`, `$(cmd)`
+  and `$((expr))` in PS1 expand like bash's promptvars.
+- **Hook arrays**: `HELLISH_PRECMD_FUNCS` and `HELLISH_PREEXEC_FUNCS` run
+  around every interactive command — *arrays* of function names, so two
+  plugins can both attach without silently removing each other (the
+  `trap DEBUG` failure mode). `$?` is preserved across them. bash-preexec
+  loads.
+- OSC title sequences no longer confuse the width model, `$((…))` works in
+  prompts, and 24-bit color, wide characters and the venv badge all keep
+  the cursor where it belongs.
+
+### Install, update, and the login shell — issue #76, end to end
+
+- **Releases ship a static musl binary.** The old glibc build did not run
+  on Debian 11, Ubuntu 20.04, RHEL 8 — or a stock ubuntu:24.04, the distro
+  it was *built* on (no libreadline8 by default). Measured on the published
+  asset, fixed by publishing `make static`'s output, verified on all three.
+- **The updater survives its own install.** Judging an elevated install by
+  its exit status (not by a version re-read that raced), staging the
+  download somewhere writable when elevation is needed, and surviving
+  `/proc/self/exe` pointing at a replaced binary mid-run.
+- **`make doctor`** tells you which `hellish` your PATH actually reaches and
+  whether `update` will need elevation — the two things behind most "the
+  update did nothing" reports (a stale `~/.local/bin` copy shadowing
+  `/usr/bin` being the classic).
+- **`make my_shell VERSION=2.7.2`** installs a *published release* instead
+  of the working tree — the only way to reproduce a bug that lives in an
+  installed updater. `make my-shell-uninstall` reverses it (login shell
+  restored *before* the binary is deleted); `my-shell-purge` also drops the
+  caches that remember which release was announced.
+- **`command_not_found_handle`** — bash's hook, so Ubuntu's
+  "Command 'vim' not found, but can be installed with: sudo apt install vim"
+  helper works. Runs where bash runs it (a child; a handler cannot `cd` your
+  shell), and its status becomes the command's status.
+- A real **ssh login-shell suite**: sshd + `chsh` in docker, diffing
+  ssh-command, scp, sftp, rsync and git-over-ssh against bash as the login
+  shell — because those protocols fail on one stray byte of stdout, and no
+  other layer can see it.
+
+### Silent divergences from bash, found by running real code
+
+Each of these was reached by sourcing third-party scripts, not by a test we
+wrote for it — and every one was silent:
+
+- `[[ x =~ "a b" ]]` came apart at the space: the line is in Ubuntu's own
+  `/etc/profile.d/vte-2.91.sh`, so **every GNOME login printed a syntax
+  error**. All of `/etc/profile.d` parses clean now.
+- A bare `{` inside `${…}` counted as a nesting brace → `unexpected EOF` on
+  valid bash.
+- `${#arr[@]}` was unknown to the `(( ))` *command*, so
+  `for ((i=0; i<${#W[@]}; i++))` ran zero times and reported success.
+- An empty unquoted `${a:+…}` contributed an empty argv slot instead of no
+  field.
+- Prefix/suffix trims and `${v//…/…}` used a private pattern matcher that
+  ignored `[ranges]`; there is now **one** matcher shared by `case`,
+  `[[ == ]]`, trims and globs — which surfaced three more bugs, including an
+  unterminated `[` that matched things it did not name.
+- `compgen -W "$o" -- "$cur"` — the idiom every completion script uses —
+  died on `--`.
+- Array literals `arr=($V)` and `arr=(*.md)` now split and glob like bash.
+- `VAR=x cmd` corrupted the heap via a second, incomplete `t_scope_save`
+  constructor — release-only, invisible to the entire debug suite.
+- `a[i]+=` appended nothing; `declare NAME[sub]=` did nothing; `export`
+  value fidelity, `shift` operand validation, empty assoc keys and
+  `declare -p` quoting all diffed against bash and fixed.
+- A process substitution can be an assignment's value (#83); `exit_clean`
+  abandoned the environment table (#78); `printf` wide field widths and the
+  full unsigned range (#73); `local` no longer leaves bookkeeping on the
+  heap; killing a foreground job gives the terminal back (#85).
+
+### Options that stopped lying
+
+`nullglob`, `dotglob`, `globstar`, `extglob`, `nocaseglob`: every one used
+to be storable, reportable — and read by nothing. All five now change what
+actually matches, through **one** mirror function with three callers, so
+`pretty`, `shopt` and zsh's `setopt` can no longer disagree about what `**`
+means.
+
+### The long tail
+
+`read -n N`, `&>file`, `${!prefix*}`, `${arr[@]:-default}`, `printf %q`,
+`printf '\e'`, `case … ;;&`, `test -v`, `hash -l`, `\D{…}` in PS1 — and
+`FUNCNAME`/`BASH_SOURCE` are rebuilt on read rather than on every call.
+
+### rc files and plugins have a real load path
+
+`/etc/hellish/rc.d` → `$XDG_CONFIG_HOME/hellish/rc.d` → `plugins/*/plugin.hsh`
+→ `~/.hellishrc` last; `--norc` and `--rcfile=FILE` for scripts and tests;
+`tools/seed_hellishrc.sh` seeds rc.d, plugins, the 29 themes and the
+`prompt` switcher — never clobbering anything you wrote.
+
+### Testing and CI, because none of the above counts unclaimed
+
+- The golden suite grew to **4248 cases**, still diffed live against a
+  pinned bash 5.3.9 (`make oracle`); the zsh dialect diffs against a pinned
+  zsh 5.9 (`make zsh-oracle`).
+- `make test-release` exists because ASan and `-O3` disagree: one heap bug
+  passed 3790/3790 in debug while the release binary segfaulted.
+- CI gained required jobs for the ft_malloc allocator (release + `SAFE=0`),
+  the prompt width model, the plugin corpus, and the update path.
+- The pty suite runs `--norc`, so it stopped inheriting the developer's
+  own config, and proves its isolation instead of just claiming it.
+
+
 
 The 2.7.5 fix taken through the full CI gate, plus a proper split between the
 build you develop against and the build you ship.

@@ -1,0 +1,5 @@
+# statusdot -- a colour that depends on $? -- recomputed every render
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\[\e[38;5;35m\]●\[\e[0m\]\S \w \$ '

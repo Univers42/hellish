@@ -22,6 +22,16 @@
 # include "helpers.h"
 # include "sh_input.h"
 
+/* print's option set (builtin_zsh_print.c); here because the norm keeps
+   typedefs out of .c files. */
+typedef struct s_pflags
+{
+	bool	raw;
+	bool	nonl;
+	bool	lines;
+	bool	prompt;
+}	t_pflags;
+
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \
 				No such file or directory\n"
@@ -60,7 +70,31 @@ typedef struct s_rdopt
 	size_t	first;
 	char	*aname;
 	char	*prompt;
+	long	nchars;
+	bool	exact;
+	char	delim;
+	long	tmo_ms;
 }	t_rdopt;
+
+/* compgen's parsed options: -W's list (borrowed from argv) and the single
+   action letter -A/-f/-d/... resolves to. */
+typedef struct s_cgopt
+{
+	char	*words;
+	char	act;
+}	t_cgopt;
+
+/* complete's parsed options. All pointers borrow from argv; comp_store
+   copies per NAME, since one command can register several names. */
+typedef struct s_cmpopt
+{
+	char	*words;
+	char	*func;
+	char	*opts;
+	char	act;
+	bool	print;
+	bool	remove;
+}	t_cmpopt;
 
 typedef struct s_getopts
 {
@@ -129,6 +163,9 @@ int		handle_no_args(t_shell *state, t_vec argv);
 size_t	handle_double_dash(t_shell *state, t_vec argv, size_t i);
 int		handle_non_numeric(t_shell *state, t_vec argv, size_t i, long long *r);
 int		exit_parse_ll(const char *s, long long *out);
+int		shift_operand(t_shell *state, t_vec argv, int *out);
+void	subscript_assign(t_shell *state, t_env *ret);
+char	*declare_assign_eq(const char *word);
 char	*expand_export_value(t_shell *st, char *val, bool allow_expand);
 bool	ft_is_valid_ident(char *id);
 
@@ -143,6 +180,33 @@ int		eval_four(char **av);
 int		tx_or(t_tx *t);
 bool	tx_is_binop(const char *s);
 int		tx_test_unary(char **a);
+bool	test_var_isset(t_shell *st, char *name);
+
+/* compgen / complete (#72 phase 4). cg_* generate completions, comp_*
+   store and print the `complete` registrations kept in state->compspecs.
+   CG_OPT_ERR is what both option scanners return for "usage error"; the
+   caller turns it into status 2. */
+# define CG_OPT_ERR 0xFFFFFFFFFFFFFFFFUL
+
+int		builtin_compgen(t_shell *state, t_vec argv);
+int		builtin_complete(t_shell *state, t_vec argv);
+int		cg_emit(const char *s, const char *pfx);
+void	cg_add(t_vec *out, const char *s, const char *pfx);
+int		cg_flush(t_vec *out);
+int		cg_source(t_shell *st, char act, const char *pfx);
+int		cg_aliases(t_shell *st, const char *pfx);
+int		cg_glob_paths(char act, const char *pfx);
+int		cg_is_dir(const char *path);
+char	*cg_join_prefix(const char *pfx, const char *name);
+char	cg_action_of(const char *name);
+size_t	cg_parse_opts(t_shell *st, t_vec argv, t_cgopt *o);
+void	comp_free_spec(t_compspec *c);
+void	comp_vec_push(t_shell *st, t_compspec *c);
+void	comp_print_one(t_compspec *c);
+void	comp_print_all(t_shell *st);
+int		comp_remove(t_shell *st, t_vec argv, size_t i);
+size_t	comp_parse_opts(t_shell *st, t_vec argv, t_cmpopt *o);
+
 int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);
 t_shell	**db_state_cell(void);
@@ -196,7 +260,9 @@ int		handle_hash_flags(t_shell *state, char **av, int ac);
 char	*dup_ifs(t_shell *state);
 int		is_ifs(char c, const char *ifs);
 int		is_ifs_ws(char c, const char *ifs);
-char	*read_one_line(bool raw, int *eof);
+char	*read_one_line(t_rdopt *o, int *eof);
+int		rd_wait_input(t_rdopt *o);
+bool	rd_at_delim(char ch, t_rdopt *o, bool bs);
 char	*next_field(char **pp, const char *ifs, bool raw);
 void	skip_delim(char **pp, const char *ifs);
 char	*last_field(char *p, const char *ifs, bool raw);
@@ -204,7 +270,7 @@ size_t	parse_read_opts2(t_vec argv, t_rdopt *o);
 void	rd_assign_array(t_shell *state, char *line, t_rdopt *o);
 void	rd_set_var(t_shell *state, char *name, char *value_owned);
 void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
-size_t	parse_read_opts(t_vec argv, bool *raw);
+long	rd_secs_ms(const char *s);
 int		fc_resolve_idx(t_shell *state, const char *s);
 int		fc_list(t_shell *state, char **av, int ac, bool reverse);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);
@@ -276,6 +342,16 @@ t_pret	*pretty_table(void);
 int		pretty_mode(t_shell *state, t_vec argv, int first);
 int		pretty_show(t_shell *state, bool reusable);
 int		pretty_list(t_shell *state);
-void	pretty_sync(t_shell *state);
+void	glob_opts_sync(t_shell *state);
+
+int		declare_functions(t_shell *state, t_vec argv, size_t i,
+			bool bodies);
+
+void	dirstack_print(t_shell *state);
+
+char	scan_term(const char *w);
+int		declare_names(t_shell *state, t_vec argv, size_t i);
+int		list_all(t_shell *state);
+int		list_named(t_shell *state, t_vec argv, size_t i);
 
 #endif

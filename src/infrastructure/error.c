@@ -65,5 +65,6 @@ t_ast_node	unexpected(t_shell *state, t_parser *parser,
 		ft_eprintf("%s: syntax error near unexpected token `%.*s'\n",
 			state->ctx, t.len, t.start);
 	parser->res = RES_ERR;
+	parser->reported = true;
 	return (ret);
 }

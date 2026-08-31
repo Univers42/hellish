@@ -1,0 +1,5 @@
+# wide -- a long path that will wrap on a narrow terminal
+#
+# Single quotes matter: in double quotes $? and friends expand ONCE,
+# when this file is sourced, and stay frozen for the session.
+PS1='\u@\h \w \g \t \$ '

@@ -24,7 +24,9 @@ static void	print_set_opt(const char *name, int on)
 
 /* set -o (no option name): list every shell option with its current state,
    in the roster's own order -- which is bash's alphabetical listing order,
-   so the two outputs are byte-identical. */
+   so the two outputs are byte-identical.  setopt_hidden() rows (hellish
+   extensions, currently just `zsh`) are skipped precisely to keep that true:
+   the golden suite diffs this listing line-for-line against bash. */
 int	list_set_options(t_shell *state)
 {
 	const t_setopt	*e;
@@ -32,7 +34,8 @@ int	list_set_options(t_shell *state)
 	e = setopt_table();
 	while (e->name)
 	{
-		print_set_opt(e->name, setopt_get(state, e));
+		if (!setopt_hidden(e))
+			print_set_opt(e->name, setopt_get(state, e));
 		e++;
 	}
 	return (0);

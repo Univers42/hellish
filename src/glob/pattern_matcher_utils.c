@@ -18,12 +18,23 @@
    against the remaining name -- classic backtracking. The finished_pattern
    check handles the case where '*' is the last token: if there's nothing more
    to match, any suffix works and we return offset+1 immediately at EOL. */
+/* The leading-dot rule, in the matcher the DIRECTORY WALK uses.
+**
+** There are two matchers in this directory: glob_match.c answers "does this
+** whole name match this pattern" for `case` and `[[ = ]]`, and this one
+** drives the incremental walk. They implement the same rules, so a rule
+** fixed in one and not the other is fixed nowhere that matters -- which is
+** what happened first here: `shopt -s dotglob` started working for pattern
+** MATCHING and still hid dotfiles when globbing a directory.
+**
+** Both now ask glob_dotglob(), which is also what zsh's `(D)` qualifier
+** arms for the length of one walk. */
 size_t	match_g_asterisk(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
 	size_t	res;
 
-	if (first && *name == '.')
+	if (first && *name == '.' && !glob_dotglob())
 		return (0);
 	while (*name)
 	{
@@ -49,7 +60,7 @@ size_t	match_g_question(char *name, t_vec_glob patt, size_t offset,
 {
 	if (*name == '\0')
 		return (0);
-	if (first && *name == '.')
+	if (first && *name == '.' && !glob_dotglob())
 		return (0);
 	if (finished_pattern(patt, offset))
 	{
@@ -71,7 +82,7 @@ size_t	match_g_bracket(char *name, t_vec_glob patt, size_t offset,
 
 	if (*name == '\0')
 		return (0);
-	if (first && *name == '.')
+	if (first && *name == '.' && !glob_dotglob())
 		return (0);
 	g = &((t_glob *)patt.ctx)[offset];
 	if (!glob_char_in_class(*name, g))

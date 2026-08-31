@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_builtins.h"
 #include "shell.h"
 #include "helpers.h"
 #include "env.h"
@@ -35,12 +36,21 @@ char		*read_file(const char *path);
 void		source_profile(t_shell *state);
 void		set_default_ps1(t_shell *state);
 
-/* Interactive startup only: source the user's ~/.hellishrc (aliases, exports,
-   functions, set-options, prompt tweaks) right in this shell -- our .bashrc
-   analogue. The `metinp != INP_RL` guard is the part that matters: -c, scripts
-   and piped input must NOT read it, or every test run would silently inherit
-   your dotfile and you'd chase ghosts for an afternoon. Absent file or no
-   $HOME? Just shrug and carry on. */
+/* Interactive startup only: load the configuration. The `metinp != INP_RL`
+   guard is the part that matters: -c, scripts and piped input must NOT read
+   it, or every test run would silently inherit your dotfile and you'd chase
+   ghosts for an afternoon. Absent files or no $HOME? Just shrug and carry on.
+**
+** Order (rc_load.c owns the first three, this owns the last):
+**
+**     /etc/hellish/rc.d/          system-wide
+**     $XDG_CONFIG_HOME/hellish/rc.d/
+**     $XDG_CONFIG_HOME/hellish/plugins/<name>/plugin.hsh
+**     ~/.hellishrc                LAST, so your own file always wins
+**
+** ~/.hellishrc going last is the compatibility promise: it is the file people
+** already have, and a loader that let a dropped-in plugin override it is a
+** loader people switch off. */
 static void	source_hellishrc(t_shell *state)
 {
 	char	*home;
@@ -50,16 +60,21 @@ static void	source_hellishrc(t_shell *state)
 	if (state->metinp != INP_RL)
 		return ;
 	home = env_expand(state, "HOME");
+	rc_load_all(state, home);
+	if (state->option_flags & OPT_FLAG_NORC || state->rcfile)
+		return ;
 	if (!home || !*home)
 		return ;
 	path = ft_strjoin(home, "/.hellishrc");
 	if (!path)
 		return ;
 	content = read_file(path);
-	xfree(path);
 	if (!content)
-		return ;
+		return (xfree(path));
+	frame_push(state, NULL, path);
 	exec_string(state, content);
+	frame_pop(state);
+	xfree(path);
 	xfree(content);
 }
 
@@ -117,18 +132,22 @@ static void	open_cycle(t_shell *state)
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	state->rl.eof_refused = false;
+	state->cmd_no++;
 	state->exit_warned = state->exit_attempt;
 	state->exit_attempt = false;
 	get_g_sig()->should_unwind = 0;
 	update_notify_prompt(state);
 	if (state->metinp != INP_RL)
 		return ;
+	tty_snapshot_refresh();
 	pc = env_expand(state, "PROMPT_COMMAND");
-	if (!pc || !*pc)
-		return ;
-	saved = state->last_cmd_st_exe;
-	exec_string(state, pc);
-	set_cmd_status(state, saved);
+	if (pc && *pc)
+	{
+		saved = state->last_cmd_st_exe;
+		exec_string(state, pc);
+		set_cmd_status(state, saved);
+	}
+	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
 }
 
 /* The read-eval-print loop -- the beating heart of the shell. Each turn hands

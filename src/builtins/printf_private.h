@@ -40,6 +40,21 @@ typedef struct s_pf
 /* One parsed %-directive, conversion character excluded. Width/precision are
    stored numerically because '*' sources them from positional arguments; the
    spec string handed to snprintf is rebuilt from these fields. */
+/* The stack render buffer, and the ceiling on a field width. The width cap
+   is a sanity bound against `printf "%99999999999999s"`, not a correctness
+   limit -- anything under it is rendered in full, on the heap if needed. */
+# define PF_STACK_BUF 4096
+# define PF_WIDTH_MAX 268435456
+
+/* Render target for one conversion: where to write and how much room there
+   is. Bundled because the 42 norm caps a function at four arguments and
+   pf_conv_str already needs the shell, the spec string and the argument. */
+typedef struct s_pfbuf
+{
+	char	*p;
+	size_t	cap;
+}	t_pfbuf;
+
 typedef struct s_spec
 {
 	char		flags[8];
@@ -50,6 +65,12 @@ typedef struct s_spec
 }	t_spec;
 
 const char	*pf_arg(t_pf *pf);
+size_t		pf_render_size(t_spec *sp);
+void		pf_buf_open(t_spec *sp, t_pfbuf *b, char *stack);
+void		pf_buf_close(t_pfbuf *b, char *stack);
+void		pf_emit_b_padded(t_pf *pf, t_spec *sp, const char *arg);
+void		pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg);
+int			pf_conv_str(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b);
 /* printf renders unsigned conversions through the full 64-bit range;
    spelled as a typedef so the declarations below keep one alignment
    column (`unsigned long long` is too wide for it). */
@@ -57,9 +78,13 @@ typedef unsigned long long	t_ull;
 
 void		pf_err_num(t_pf *pf, const char *arg);
 char		pf_escape(const char *s, int *i, bool *stop);
+char		*pf_quote(const char *arg);
+void		pq_ansi(t_string *out, const char *s);
+void		pq_ansi_char(t_string *out, unsigned char c);
+void		pf_conv_quote(t_pf *pf, t_spec *sp, const char *arg);
 long long	pf_num(t_pf *pf, const char *arg);
 void		pf_conv_float(t_pf *pf, char *fmt, const char *arg,
-				char *buf);
+				t_pfbuf *b);
 void		pf_emit_b(t_string *out, const char *arg, bool *stop);
 t_ull		pf_unum(t_pf *pf, const char *arg);
 void		pf_conv(t_pf *pf, t_spec *sp, char conv);

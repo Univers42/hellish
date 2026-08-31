@@ -57,6 +57,9 @@ class Session:
     def __init__(self, home, cwd, path):
         env = {
             "HOME": home, "PATH": path,
+            # The git segment under test lives in the RICH theme, which
+            # stopped being the default -- ask for it by name.
+            "PS1": "\\B",
             "TERM": "xterm-256color", "LANG": "C.UTF-8",
             "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
             "HELLISH_NO_ANIM": "1",
@@ -70,7 +73,9 @@ class Session:
             os.chdir(cwd)
             os.environ.clear()
             os.environ.update(env)
-            os.execvp(SHELL, [SHELL])
+            # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+            # define names, and quietly decide what this test sees.
+            os.execvp(SHELL, [SHELL, "--norc"])
             os._exit(127)
         fcntl.ioctl(self.fd, termios.TIOCSWINSZ,
                     struct.pack("HHHH", 24, 100, 0, 0))

@@ -42,7 +42,8 @@ void	reparse_assignment_word(t_ast_node *word)
 		return ;
 	if (!is_valid_ident(first_token->start, eq_pos)
 		&& !is_subscript_key(first_token->start, eq_pos)
-		&& !is_append_key(first_token->start, eq_pos))
+		&& !is_append_key(first_token->start, eq_pos)
+		&& !is_zsh_pos_key(first_token->start, eq_pos))
 		return ;
 	apply_assignment_split(word, first_token, eq_pos);
 }
@@ -52,7 +53,12 @@ void	reparse_assignment_word(t_ast_node *word)
    the subscript (a[$i]=x, h[$key]=v) does not split the word out from
    under the classifier. Only words with a '[' before the '=' are touched;
    plain NAME=value is left to the normal post-split pass. subscript_assign
-   later expands the raw subscript (arith for indexed, param for assoc). */
+   later expands the raw subscript (arith for indexed, param for assoc).
+     is_append_key too, not only is_subscript_key: `a[$i]+=Z` needs this
+   pass for exactly the same reason `a[$i]=Z` does, and without it the word
+   reached the post-split pass with `$i` already expanded, failed to
+   classify, and RAN as a command -- "a[1]+=Z: command not found", while the
+   literal `a[1]+=Z` worked. */
 static void	subscript_assign_word(t_ast_node *word)
 {
 	t_token	*ft;
@@ -62,7 +68,8 @@ static void	subscript_assign_word(t_ast_node *word)
 	if (!ft || ft->tt != TT_WORD || !ft->start || ft->len <= 0)
 		return ;
 	eq = find_eq_pos(ft);
-	if (eq < 1 || !is_subscript_key(ft->start, eq))
+	if (eq < 1 || (!is_subscript_key(ft->start, eq)
+			&& !is_append_key(ft->start, eq)))
 		return ;
 	if (!ft_strnchr(ft->start, '[', eq))
 		return ;

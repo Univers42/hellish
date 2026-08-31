@@ -50,21 +50,28 @@ static void	mark_readonly(t_shell *state, char *name)
 	vec_push(&state->readonly_vars, &dup);
 }
 
-/* Print all readonly variables in `readonly name=value` form, matching the
+/* Print all readonly variables in `readonly name="value"` form, matching the
    bash output that can be saved and replayed. Variables without a current
-   value (declared but not set) are printed without the `=value` part. */
+   value (declared but not set) are printed without the `="value"` part.
+     Quoted, and escaped, for the same reason declare -p is: the output is
+   meant to be replayable, and `readonly r=a b` reads back as two names. */
 static int	list_readonly(t_shell *state)
 {
 	size_t	i;
 	char	*val;
+	char	*q;
 
 	i = 0;
 	while (state->readonly_vars.ctx && i < state->readonly_vars.len)
 	{
 		val = env_expand(state, ((char **)state->readonly_vars.ctx)[i]);
 		if (val)
-			ft_printf("readonly %s=%s\n",
-				((char **)state->readonly_vars.ctx)[i], val);
+		{
+			q = dquote_str(val);
+			ft_printf("readonly %s=\"%s\"\n",
+				((char **)state->readonly_vars.ctx)[i], q);
+			xfree(q);
+		}
 		else
 			ft_printf("readonly %s\n", ((char **)state->readonly_vars.ctx)[i]);
 		i++;

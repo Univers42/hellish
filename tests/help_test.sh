@@ -5,7 +5,8 @@
 # knows must have a help entry. Documentation rots by omission -- someone
 # adds a builtin, forgets the help line, and `help` quietly becomes a list
 # of most of the shell. Deriving the expected set from
-# hash_builtins_dispatch.c means the test fails the moment that happens,
+# hash_builtins*.c (the table spans more than one file) means the test
+# fails the moment that happens,
 # rather than the docs drifting silently.
 #
 # Usage: bash tests/help_test.sh [path/to/hellish]
@@ -20,7 +21,7 @@ bad()  { printf 'FAIL %s\n       %s\n' "$1" "${2:-}"; fails=$((fails + 1)); }
 
 # 1. every builtin is documented
 missing=""
-for b in $(grep -o 'hash_set(h, "[^"]*"' src/builtins/hash_builtins_dispatch.c \
+for b in $(grep -oh 'hash_set(h, "[^"]*"' src/builtins/hash_builtins*.c \
 		| sed 's/.*"\(.*\)"/\1/'); do
 	"$H" -c "help -s '$b'" >/dev/null 2>&1 || missing="$missing $b"
 done
@@ -38,7 +39,7 @@ for t in $("$H" -c 'help' 2>/dev/null | sed -n 's/^  \([a-z.:[][^ ]*\) .*/\1/p')
 		"for("*|"(("*|'$(('*|'$('*|"[["|"["|redirection|pipeline) continue ;;
 		for|while|until|if|case|function) continue ;;
 	esac
-	grep -q "hash_set(h, \"$t\"" src/builtins/hash_builtins_dispatch.c \
+	grep -qh "hash_set(h, \"$t\"" src/builtins/hash_builtins*.c \
 		|| ghost="$ghost $t"
 done
 if [ -z "$ghost" ]; then

@@ -103,6 +103,14 @@ int			update_verify_sha(const char *tag, const char *asset,
 /* `update --now`: discover the latest release and install it. */
 int			update_now(t_shell *state, t_origin origin, char *repo);
 
+/* The version reported by the binary now at our own path (which is not
+   necessarily this process -- see update_stale.c). 1 on success. */
+int			installed_version(char *out, size_t n);
+
+/* Warn when this session's image was replaced after it started, and return
+   1 when the disk is already at `latest` so no update must be offered. */
+int			update_warn_stale_session(const char *latest);
+
 /* Replace this machine's hellish binary with release `tag` in place. */
 int			update_selfupdate(t_origin o, const char *tag);
 
@@ -132,7 +140,8 @@ void		run_bg_update_check(void);
 
 /* Download, verify and atomically install release `tag` over `target`.
    0 on success, or a step code (1 unsupported platform, 2 download,
-   3 checksum rejected, 4 binary would not run, 5 replacement failed);
+   3 checksum rejected, 4 binary would not run, 5 replacement failed,
+   6 the replacement did not take effect);
    on every failure the installed binary is left untouched. */
 int			update_apply(const char *tag, const char *target, int sudo);
 
@@ -144,8 +153,16 @@ long		update_last_check_age(void);
    few seconds, so only call it from the background worker or `update`. */
 int			fetch_latest_tag(char *out, size_t n);
 
-/* Run argv and capture its stdout (stderr is discarded). Bytes read, or -1. */
+/* Run argv and capture its stdout (stderr is discarded). Bytes read, or -1.
+   Bytes read is NOT a success signal -- use update_run_visible when the
+   command's exit status is what you need. */
 ssize_t		update_capture(char *const argv[], char *out, size_t n);
+
+/* Run argv with stdin/stdout/stderr untouched and return its EXIT STATUS
+   (-1 if it could not be run or was signalled). For commands whose output
+   belongs to the user -- `sudo`, which prompts for a password on the
+   terminal and explains its own refusals on stderr. */
+int			update_run_visible(char *const argv[]);
 
 /* The release-metadata URL: $HELLISH_UPDATE_API, else the GitHub API. */
 void		update_api_url(char *out, size_t n);

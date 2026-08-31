@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "parser_private.h"
+#include "ft_glob.h"
 
 /* Consume one `op pipeline` pair inside a compound-list (e.g. `; cmd` or
    `&& cmd`). Returns true when the loop should stop: either the next token
@@ -54,7 +55,15 @@ bool	parse_compound_list_s(t_shell *state, t_parser *parser,
    Leading newlines are consumed first (POSIX allows `if\n\ncmd\nthen`).
    TT_ARITH_START opens an arithmetic command `(( expr ))` like any other
    pipeline start — `if ((x))` and `while ((n<3))` depend on it.
-   The loop runs until parse_compound_list_s signals "done". */
+   The loop runs until parse_compound_list_s signals "done".
+     An EMPTY body -- the terminator arriving where a pipeline was expected
+   -- is accepted in the zsh dialect only. `if true; then` followed by
+   nothing but a comment, and `f() { # todo\n}`, are both zsh; bash calls
+   them a syntax error and the golden suite pins that, so the dialect gate
+   is what keeps the two answers apart rather than a permissiveness that
+   leaks. Comments never reach here (the lexer drops them), so what this
+   really accepts is "the body is only whitespace and comments" -- which is
+   how the construct is always written. */
 t_ast_node	parse_compound_list(t_shell *state,
 								t_parser *parser, t_deque_tok *tokens)
 {
@@ -68,6 +77,8 @@ t_ast_node	parse_compound_list(t_shell *state,
 	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_END)
 		return (parser->res = RES_GETMOREINPUT, ret);
+	if (glob_zsh() && is_compound_terminator(next))
+		return (ret);
 	push_parsed_pipeline_child(state, parser, tokens, &ret);
 	if (parser->res != RES_OK)
 		return (ret);
