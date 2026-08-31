@@ -62,7 +62,14 @@ static int	cg_one_opt(t_shell *st, t_vec argv, size_t i, t_cgopt *o)
 }
 
 /* Scan leading options; returns the index of the word to complete, or
-   (size_t)-1 after an error the caller reports as status 2. */
+   (size_t)-1 after an error the caller reports as status 2.
+
+   `--` ends the options, and it is not a nicety: every completion script
+   ever written spells the call `compgen -W "$opts" -- "$cur"`, because the
+   word being completed is under the user's control and may well start with
+   a dash. Without this the whole idiom died on "--: invalid option" and
+   produced nothing -- loudly on stderr, which readline never shows, so it
+   looked exactly like a script that had no completions to offer. */
 size_t	cg_parse_opts(t_shell *st, t_vec argv, t_cgopt *o)
 {
 	size_t	i;
@@ -72,6 +79,8 @@ size_t	cg_parse_opts(t_shell *st, t_vec argv, t_cgopt *o)
 	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
 		&& ((char **)argv.ctx)[i][1])
 	{
+		if (ft_strcmp(((char **)argv.ctx)[i], "--") == 0)
+			return (i + 1);
 		n = cg_one_opt(st, argv, i, o);
 		if (n < 0)
 			return (CG_OPT_ERR);

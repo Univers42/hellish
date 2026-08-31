@@ -64,7 +64,9 @@ static int	comp_one_opt(t_shell *st, t_vec argv, size_t i, t_cmpopt *o)
 }
 
 /* Scan leading options; returns the index of the first NAME, or
-   (size_t)-1 after an error the caller reports as status 2. */
+   (size_t)-1 after an error the caller reports as status 2. `--` ends the
+   options here for the same reason it does in compgen: what follows is
+   arbitrary text the shell must not read as a flag. */
 size_t	comp_parse_opts(t_shell *st, t_vec argv, t_cmpopt *o)
 {
 	size_t	i;
@@ -74,6 +76,8 @@ size_t	comp_parse_opts(t_shell *st, t_vec argv, t_cmpopt *o)
 	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
 		&& ((char **)argv.ctx)[i][1])
 	{
+		if (ft_strcmp(((char **)argv.ctx)[i], "--") == 0)
+			return (i + 1);
 		n = comp_one_opt(st, argv, i, o);
 		if (n < 0)
 			return (CG_OPT_ERR);
