@@ -20,6 +20,15 @@
 /* forward-declare shell to avoid pulling full shell.h here */
 typedef struct s_shell	t_shell;
 
+/* The prompt an unconfigured hellish shows: zsh's own default -- `%m%# `
+   renders "hostname% " (measured on the 5.9 oracle with zsh -f) -- plus
+   the \U update badge, which is the one piece of information the shell
+   must still be able to volunteer (self-spacing: invisible until a newer
+   release is pending, honours HELLISH_NO_UPDATE_CHECK). The rich two-row
+   theme did NOT go away; it stopped being the default. `PS1='\B'` or the
+   `prompt` switcher bring it back. */
+# define HELLISH_PS1_DEFAULT "%m\\U%# "
+
 // buff_readline.c
 typedef struct s_rl
 {

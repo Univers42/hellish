@@ -30,6 +30,7 @@ import os
 import pty
 import select
 import shutil
+import socket
 import struct
 import subprocess
 import sys
@@ -114,9 +115,11 @@ def main():
     done = after_last(out, "ZZZ_DONE")
     check("the venv name is GONE after deactivate restores PS1",
           "(testenv)" not in done, "prompt still says it: %r" % done[:200])
-    check("the built-in prompt comes back after deactivate",
-          "╭─" in done or "╯" in done or "❯" in done,
-          "no built-in prompt after restore: %r" % done[:200])
+    # The restored default is zsh's basic "hostname% " -- the rich theme
+    # stopped being the default, so what must come back is the hostname.
+    check("the default prompt comes back after deactivate",
+          socket.gethostname().split(".")[0] in done,
+          "no default prompt after restore: %r" % done[:200])
 
     # 2: the real thing, if python3 can build a venv here.
     probe = subprocess.run([sys.executable, "-c", "import venv"],

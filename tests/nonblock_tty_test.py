@@ -45,6 +45,9 @@ FAILS = []
 ENV = {
     "HOME": os.environ.get("HOME", "/tmp"),
     "PATH": os.environ["PATH"],
+    # The multibyte ❯ under test belongs to the RICH theme, which stopped
+    # being the default -- ask for it by name.
+    "PS1": "\\B",
     "TERM": "xterm-256color", "LANG": "C.UTF-8",
     "COLORTERM": "truecolor",
     "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
