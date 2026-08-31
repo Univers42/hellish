@@ -130,6 +130,6 @@ zqf(){ :; }; compgen -A function -- zqf
 compgen -W 'a b' -- z; echo "rc=$?"
 complete -W 'a b' -- zcmd; complete -p zcmd
 complete -F _f -- zc2; complete -p zc2
-shopt -q progcomp; echo "progcomp=$?"
-shopt progcomp
+shopt -s progcomp; shopt -q progcomp; echo "progcomp=$?"
+shopt -s progcomp; shopt progcomp
 compgen -W 'a*b cd' -- 'a'

@@ -132,7 +132,7 @@ void	on(t_shell *state, char **argv, char **envp)
 
 	set_unwind_sig();
 	*state = shell_init();
-	state->shopt = SHOPT_CHECKWINSIZE | SHOPT_PROGCOMP;
+	state->shopt = SHOPT_CHECKWINSIZE;
 	cli_parse(state, argv, &cli);
 	cli_early_exit(state, argv, &cli);
 	init_rl_buffer(state);

@@ -459,12 +459,26 @@ typedef struct s_shell
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
 # define SHOPT_LITHIST 0x400
-/* progcomp arrived as a truthful "no": the bit existed, defaulted off and
-   controlled nothing, so /etc/profile.d/bash_completion.sh's `shopt -q
-   progcomp` got an answer instead of an error on every login (#51). It now
-   means what it says -- src/completion/progcomp*.c reads it before it will
-   consult a `complete` spec -- and defaults ON, as bash does (#72 phase 4).
-   Unsetting it restores plain filename completion for arguments. */
+/* progcomp arrived as a truthful "no": the bit existed, defaulted off, and
+** controlled nothing -- it was there so /etc/profile.d/bash_completion.sh's
+** `shopt -q progcomp` got an answer instead of an error on every login
+** (#51). It now MEANS what it says: src/completion/progcomp*.c reads it
+** before it will consult a `complete` spec, and `shopt -s progcomp` turns
+** on a dispatch that works end to end (#72 phase 4).
+**
+** It still defaults OFF, and bash defaults it on. That is the one place
+** hellish deliberately differs, and the reason is measured, not cautious:
+** the option is exactly the gate /etc/profile.d/bash_completion.sh checks,
+** so switching it on makes every Debian and Ubuntu login source a
+** 3800-line framework that hellish cannot yet run. The CI runner proved it
+** -- one `syntax error near unexpected token '('` at login, which is #51's
+** complaint arriving by the door #51 opened.
+**
+** The blocker is architectural: exec_string LEXES a whole sourced file
+** before executing any of it, so `shopt -s extglob` on line 47 has not run
+** when the extglob case pattern on line 1810 is tokenised. Lexing
+** incrementally would fix it and flip this default in one line.
+** tests/plugin_corpus_test.py carries the row that will notice. */
 # define SHOPT_PROGCOMP 0x800
 
 /* Directory matcher ctx for glob expansion */

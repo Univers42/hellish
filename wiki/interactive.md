@@ -61,13 +61,21 @@ Readline-driven completion with context-aware generators:
 |---|---|
 | First word | commands on `$PATH` + builtins |
 | `$…` / `${…}` | environment & shell variable names |
-| Argument, command has a `complete` spec | whatever the spec says |
-| Argument, no spec | files and directories |
+| Argument, `shopt -s progcomp` + a `complete` spec | whatever the spec says |
+| Argument, otherwise | files and directories |
 
-**Programmable completion** works: `complete -W 'add commit push' git` and `complete -F _fn cmd`
-are both consulted at TAB, with `COMP_WORDS`, `COMP_CWORD`, `COMP_LINE`, `COMP_POINT` and
-`COMPREPLY` behaving as bash defines them. `compgen` generates the same lists on demand. Turn the
-whole thing off with `shopt -u progcomp`.
+**Programmable completion** works, behind `shopt -s progcomp`: `complete -W 'add commit push' git`
+and `complete -F _fn cmd` are both consulted at TAB, with `COMP_WORDS`, `COMP_CWORD`, `COMP_LINE`,
+`COMP_POINT` and `COMPREPLY` behaving as bash defines them. `compgen` generates the same lists on
+demand. Sourcing git's own `git-completion.bash` and pressing TAB after `git che` offers
+`checkout cherry-pick cherry`, byte-identical to bash 5.3.9.
+
+**Why it is not on by default, when bash has it on.** `shopt -q progcomp` is the exact gate
+`/etc/profile.d/bash_completion.sh` checks. Answering yes makes a Debian or Ubuntu login source
+bash-completion's 3800-line framework, which hellish cannot yet parse — so the session opens with
+a syntax error, which is the thing issue #51 was filed about. Put `shopt -s progcomp` in your
+rc and every `complete` spec works; the default flips the day that framework loads clean, and
+`tests/plugin_corpus_test.py` carries the row that will say so.
 
 One documented gap: bash re-expands a `-W` list at every TAB, so the deferred form
 `complete -W '$(cmd)' x` (single-quoted) stays literal here. `complete -W "$(cmd)" x` is expanded

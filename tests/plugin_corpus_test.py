@@ -93,13 +93,13 @@ CORPUS = [
      "bash-preexec.sh", "loads", 15, ""),
     ("z", "https://raw.githubusercontent.com/rupa/z/master/z.sh", "loads", 1,
      ""),
-    # THE COST OF progcomp BEING ON BY DEFAULT, written down.
+    # THE ROW THAT HOLDS progcomp's DEFAULT DOWN.
     #
-    # With progcomp on -- bash's default, and now honestly ours --
-    # /etc/profile.d/bash_completion.sh will try to source this on any host
-    # that has bash-completion installed. It does not parse, so such a login
-    # gets one syntax error. The row is here so that cost is measured and
-    # watched rather than found by a user.
+    # /etc/profile.d/bash_completion.sh sources this when `shopt -q progcomp`
+    # says yes, so this file failing to parse is exactly why hellish leaves
+    # progcomp off by default while bash turns it on (incs/shell.h). The day
+    # this row can move to `loads`, that default can flip -- which is what a
+    # declared expectation is FOR.
     #
     # The blocker is architectural, not a missing feature: exec_string LEXES
     # a whole sourced file before executing any of it, so `shopt -s extglob`
