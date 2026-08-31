@@ -40,7 +40,7 @@ int	exec_string(t_shell *state, char *content);
    is quoted through the shell rather than invoked directly so that a hook
    is an ordinary command -- it can be a function, an alias, or a builtin,
    and it reports its status the same way any of them would. */
-static void	hook_run_one(t_shell *state, const char *fn, const char *arg)
+void	hook_run_one(t_shell *state, const char *fn, const char *arg)
 {
 	t_string	cmd;
 	char		*q;

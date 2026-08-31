@@ -28,8 +28,10 @@ void	fill_builtin_hash4(t_hash *h)
 	hash_set(h, "print", (void *)builtin_print);
 	hash_set(h, "autoload", (void *)builtin_autoload);
 	hash_set(h, "zmodload", (void *)builtin_zunsupported);
-	hash_set(h, "zstyle", (void *)builtin_zunsupported);
+	hash_set(h, "zstyle", (void *)builtin_zstyle);
 	hash_set(h, "compdef", (void *)builtin_zunsupported);
+	hash_set(h, "colors", (void *)builtin_colors);
+	hash_set(h, "vcs_info", (void *)builtin_vcs_info);
 	hash_set(h, "zle", (void *)builtin_zle);
 	hash_set(h, "bindkey", (void *)builtin_bindkey);
 	hash_set(h, "add-zsh-hook", (void *)builtin_add_zsh_hook);

@@ -223,6 +223,7 @@ typedef struct s_zesc
 
 t_string	zsh_to_ps1(t_shell *state, const char *fmt, bool strict);
 t_string	zsh_prompt(t_shell *state, char *fmt, bool strict);
+t_string	rprompt_wrap(t_shell *state, t_string base);
 void		zsh_num(t_zesc *z);
 int			zsh_color_code(const char *name, int len);
 bool		zsh_color(t_string *out, t_zesc *z, char c);

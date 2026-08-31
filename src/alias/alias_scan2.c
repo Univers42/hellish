@@ -71,6 +71,8 @@ static void	asc_word_state(t_ascan *a, const char *w, size_t len, bool plain)
 {
 	if (a->after_redir)
 		a->after_redir = false;
+	else if (asc_case_word(a, w, len, plain))
+		;
 	else if (plain && asc_kw_cmdnext(w, len))
 		a->cmd_pos = true;
 	else if (plain && asc_kw_noncmd(w, len))
@@ -117,6 +119,7 @@ void	asc_word(t_ascan *a)
 
 	s = &a->src[a->depth - 1];
 	len = asc_word_span(s->s + s->pos, &plain);
+	a->was_cmd = (a->cmd_pos || a->chk_next);
 	if (asc_word_verbatim(a, s, len))
 		return ;
 	if (!a->after_redir && (a->cmd_pos || a->chk_next) && plain
