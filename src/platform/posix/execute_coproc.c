@@ -90,7 +90,7 @@ static void	coproc_parent(t_shell *state, t_ast_node *node, int *fds,
 	xfree(name);
 	state->bg_job_count++;
 	job = job_add(&state->job_table, pid, "coproc", true);
-	if (state->metinp == INP_RL && job)
+	if (state->metinp == INP_RL && getpid() == state->shell_pid && job)
 		ft_printf("[%d] %d\n", job->id, pid);
 }
 
