@@ -13,15 +13,18 @@
 #   \s shell  \v \V version   \e ESC   \r CR   \[ \] readline width guards
 #   \D{strftime-format} custom clock
 #
-# Prefer zsh's % syntax? Set PROMPT instead of PS1 -- it speaks the FULL
-# zsh prompt language, verified byte-for-byte against zsh 5.9
-# (tests/zsh_prompt_parity_test.py): %n %m %~ %d %c, %F{color}/%f (names,
-# 0-255, #rrggbb), %B %U %S, %K, %{...%}, %? %j %h %L %#, the %T/%t/%*/%D
-# clocks, %(x.true.false) conditionals, and %n<...< truncation. A literal
-# % in PS1 is always safe: PS1 only speaks zsh after `set -o zsh`, because
-# in zsh PS1 and PROMPT are the same parameter. PROMPT wins when both are
-# set; an empty PROMPT falls back to PS1.
-#     PROMPT='%F{cyan}%~%f %(?.%F{green}.%F{red})%#%f '
+# PS1 is BILINGUAL: zsh's % syntax works right here too, alongside the
+# backslash set -- %n %m %~ %d %c, %F{color}/%f (names, 0-255, #rrggbb),
+# %B %U %S, %K, %{...%}, %? %j %h %L %#, the %T/%t/%*/%D clocks,
+# %(x.true.false) conditionals, %n<...< truncation -- all verified
+# byte-for-byte against zsh 5.9 (tests/zsh_prompt_parity_test.py).
+#     PS1='%F{cyan}%~%f %(?.%F{green}.%F{red})%#%f '
+# Your old percents are safe: an unknown or unclosed % sequence stays on
+# screen literally ('100% ', '%> '), and the strftime percents inside
+# $(...) or \D{...} are never touched. PROMPT is the same language with
+# EXACT zsh semantics (unknown escapes vanish, as zsh does); it wins over
+# PS1 when both are set, and `set -o zsh` gives PS1 those exact
+# semantics too, since in zsh PS1 and PROMPT are one parameter.
 # hellish extensions — all SELF-SPACING (invisible until relevant):
 #   \g  git branch of the cwd (+ * when dirty), empty outside a repo
 #   \S  " ✘N" after a failing command, empty after success

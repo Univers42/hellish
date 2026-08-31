@@ -203,21 +203,26 @@ bool		ps1_is_special(char c);
    command substitution deliberately is not -- see the file comment. */
 bool		ps1_arith(t_shell *state, t_string *out, const char *f, int *i);
 void		ps1_srcfile(t_shell *state, t_string *out);
-/* One `%` escape being read: f is the whole format, j the cursor (just
-   past the `%` and its numeric argument once zsh_num ran), n that numeric
-   argument and has_n whether one was written. Bundled because the 42 norm
-   caps functions at four parameters and every family needs all of it. */
+/* One `%` escape being read: f is the whole format, start the `%` itself,
+   j the cursor (just past the `%` and its numeric argument once zsh_num
+   ran), n that numeric argument and has_n whether one was written.
+   strict selects exact-zsh semantics (unknown escapes consumed) over the
+   bilingual PS1 rules (unknown escapes kept literal -- prompt_zsh7.c).
+   Bundled because the 42 norm caps functions at four parameters and
+   every family needs all of it. */
 typedef struct s_zesc
 {
 	const char	*f;
+	int			start;
 	int			j;
 	int			n;
 	bool		has_n;
+	bool		strict;
 	char		dir;
 }	t_zesc;
 
-t_string	zsh_to_ps1(t_shell *state, const char *fmt);
-t_string	zsh_prompt(t_shell *state, char *fmt);
+t_string	zsh_to_ps1(t_shell *state, const char *fmt, bool strict);
+t_string	zsh_prompt(t_shell *state, char *fmt, bool strict);
 void		zsh_num(t_zesc *z);
 int			zsh_color_code(const char *name, int len);
 bool		zsh_color(t_string *out, t_zesc *z, char c);
@@ -228,6 +233,11 @@ void		zsh_inject(t_string *out, const char *s);
 bool		zsh_cwd(t_shell *state, t_string *out, t_zesc *z, char c);
 void		zsh_path_abbrev(t_shell *state, char *buf);
 bool		zsh_color_hex(char *buf, size_t n, const char *s, int base);
+const char	*zsh_simple(char c);
+int			zsh_span_dollar(const char *f, int i);
+bool		zsh_span_copy(t_string *out, const char *f, int *i);
+void		zsh_lit(t_string *out, t_zesc *z);
+int			zsh_cond_comps(t_shell *state, bool tilde);
 bool		zsh_cond(t_shell *state, t_string *out, t_zesc *z, char c);
 bool		zsh_trunc(t_shell *state, t_string *out, t_zesc *z, char c);
 

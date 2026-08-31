@@ -53,6 +53,31 @@ static void	zsh_tty(t_string *out, char c)
 	zsh_inject(out, name);
 }
 
+/* How many components the cwd has -- absolute for %(nC..), with the
+   $HOME prefix counting as one '~' component for the lowercase forms.
+   Lives here rather than with the conditionals only because of the
+   five-functions rule; the conditionals are its one caller. */
+int	zsh_cond_comps(t_shell *state, bool tilde)
+{
+	char	buf[PATH_MAX + 2];
+	int		count;
+	int		i;
+
+	if (!getcwd(buf, sizeof(buf)))
+		return (0);
+	if (tilde)
+		zsh_path_abbrev(state, buf);
+	count = (buf[0] == '~');
+	i = 0;
+	while (buf[i])
+	{
+		if (buf[i] == '/' && buf[i + 1] && buf[i + 1] != '/')
+			count++;
+		i++;
+	}
+	return (count);
+}
+
 /* %v / %Nv: element n of psvar, 1-based like zsh, read straight from the
    stored array rather than written back through ${psvar[n]} -- the
    subscript's base would then depend on which dialect happens to be

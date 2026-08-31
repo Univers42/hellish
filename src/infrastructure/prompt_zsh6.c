@@ -119,7 +119,7 @@ static void	trunc_apply(t_shell *state, t_string *out, char *rep, t_zesc *z)
 	z->j = end[0] + end[1];
 	if (!sub)
 		return ;
-	conv = zsh_to_ps1(state, sub);
+	conv = zsh_to_ps1(state, sub, z->strict);
 	txt = ps1_render(state, (char *)conv.ctx);
 	plain = xmalloc(txt.len + 1);
 	if (z->n > 0 && trunc_plain((char *)txt.ctx, plain) > z->n)
@@ -145,6 +145,8 @@ bool	zsh_trunc(t_shell *state, t_string *out, t_zesc *z, char c)
 			z->j++;
 		return (z->j += (z->f[z->j] == ']'), true);
 	}
+	if (!z->strict && !ft_strchr(z->f + z->j, c))
+		return (zsh_lit(out, z), true);
 	k = 0;
 	while (z->f[z->j] && z->f[z->j] != c)
 	{

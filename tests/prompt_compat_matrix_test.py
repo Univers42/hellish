@@ -9,11 +9,13 @@ markers -- and issue #69 added a second prompt language on top (zsh-style
 
 The contract under test, from prompt.c / prompt_zsh.c:
 
-  * PROMPT set and non-empty  -> the zsh `%` reader (a frontend that
-    rewrites into the backslash language; ONE renderer, not two);
-  * else PS1                  -> the bash reader, where `%` is an ordinary
-    character -- no sniffing, ever, so a literal percent in a legacy PS1
-    can never be eaten;
+  * PROMPT set and non-empty  -> exact zsh semantics (unknown escapes
+    consumed, oracle parity), backslash escapes as a bonus;
+  * else PS1                  -> BILINGUAL: bash escapes and every KNOWN
+    zsh escape both render, because PS1 habits do not migrate -- while an
+    unknown or malformed `%` sequence stays literal and $()/${}/\D{}
+    spans are copied verbatim, so a legacy percent is never eaten;
+  * PS1 under `set -o zsh`    -> exact zsh, like zsh's own PS1;
   * else                      -> the built-in theme.
 
 Every case below is a complete rc file, written to its own throwaway HOME
@@ -176,12 +178,23 @@ CASES = [
      ["$(pwd)"], []),
     ("git-prompt style cmdsub survives as text",
      r"PS1='\w$(__git_ps1 \" (%s)\")\$ '", ["__git_ps1"], []),
-    # ── the literal-% guarantee: bash PS1 never feeds the zsh reader ───
-    ("literal percent", r"PS1='100% \$ '", ["100% "], []),
-    ("percent-n stays literal in PS1", r"PS1='%n@%m \$ '", ["%n@%m"], []),
-    ("percent-F color stays literal in PS1", r"PS1='%F{green}ok%f\$ '",
-     ["%F{green}ok%f"], []),
-    ("date format percents", r"PS1='%Y-%m-%d \$ '", ["%Y-%m-%d"], []),
+    # ── PS1 is BILINGUAL: both escape languages render, and what keeps a
+    # legacy percent safe is the mixed reader's own rules -- an unknown or
+    # malformed `%` sequence stays literal (strict zsh would consume it),
+    # and $-expansion / \D{...} spans are copied through verbatim. ──────
+    ("literal percent survives", r"PS1='100% \$ '", ["100% "], []),
+    ("csh-style %> survives", r"PS1='%> '", ["%> "], []),
+    ("unknown escapes survive", r"PS1='%q %Y \$ '", ["%q %Y "], []),
+    ("PS1 speaks %n@%m with no mode", r"PS1='<<%n>>@%m \$ '",
+     ["<<", ">>@"], ["%n", "%m"]),
+    ("PS1 speaks %F color with no mode", r"PS1='%F{green}ok%f\$ '",
+     ["\x1b[32mok"], ["%F"]),
+    ("PS1 speaks %(?..) with no mode", r"PS1='%(?.OK.NO) \$ '", ["OK "],
+     ["%("]),
+    ("strftime percents inside $() untouched",
+     r"PS1='$(date +%Y-%m-%d) \$ '", ["$(date +%Y-%m-%d)"], []),
+    ("strftime percents inside \\D{} untouched", r"PS1='[\D{%M}] \$ '",
+     [], [r"\D", "%M"]),
     # ── shapes users actually build ────────────────────────────────────
     ("two-line boxed",
      r"PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \u \w\n╰─ ❯ '",

@@ -12,7 +12,7 @@
 
 #include "expander_private.h"
 
-t_string	zsh_prompt(t_shell *state, char *fmt);
+t_string	zsh_prompt(t_shell *state, char *fmt, bool strict);
 
 /* (%): render prompt escapes.  Routed through the same zsh_prompt() the
    PROMPT variable uses, so `${(%)...}` and a prompt string containing the
@@ -22,7 +22,7 @@ static char	*zx_prompt(t_shell *state, char *v)
 {
 	t_string	r;
 
-	r = zsh_prompt(state, v);
+	r = zsh_prompt(state, v, true);
 	xfree(v);
 	if (!r.ctx)
 		return (ft_strdup(""));

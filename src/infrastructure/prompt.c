@@ -171,12 +171,10 @@ t_string	prompt_normal(t_shell *state)
 	*anim_jobs() = state->job_table.count;
 	ps1 = env_expand(state, "PROMPT");
 	if (ps1 && *ps1)
-		return (zsh_prompt(state, ps1));
+		return (zsh_prompt(state, ps1, true));
 	ps1 = env_expand(state, "PS1");
-	if (ps1 && *ps1 && zsh_mode(state))
-		return (zsh_prompt(state, ps1));
 	if (ps1 && *ps1)
-		return (ps1_animated(state, ps1));
+		return (zsh_prompt(state, ps1, zsh_mode(state)));
 	vec_init(&ret);
 	ret.elem_size = 1;
 	if (anim_style(state) != 0)

@@ -31,39 +31,13 @@
 ** tests/zsh_prompt_parity_test.py diffs `print -P` against that oracle
 ** byte for byte.
 **
-** The families live in their own files: numbers, colours, effects and the
-** clock (prompt_zsh2.c), identity and psvar (prompt_zsh3.c), paths
+** The families live in their own files: colours, effects and the clock
+** (prompt_zsh2.c), identity and psvar (prompt_zsh3.c), paths
 ** (prompt_zsh4.c), conditionals (prompt_zsh5.c), truncation
-** (prompt_zsh6.c). This file is the dispatcher.
+** (prompt_zsh6.c), and the bilingual-PS1 rules -- literal unknowns,
+** verbatim $-spans -- with the simple map (prompt_zsh7.c). This file is
+** the dispatcher.
 */
-
-/* The one-character escapes that map straight onto a backslash spelling.
-   %h and %! are the history number; %N/%x answer "what file am I", which
-   is how `${(%):-%N}` opens half the plugin corpus. */
-static const char	*zsh_simple(char c)
-{
-	if (c == 'n')
-		return ("\\u");
-	if (c == 'm')
-		return ("\\h");
-	if (c == 'M')
-		return ("\\H");
-	if (c == '?')
-		return ("$?");
-	if (c == 'j')
-		return ("\\j");
-	if (c == 'h' || c == '!')
-		return ("\\!");
-	if (c == '%')
-		return ("%");
-	if (c == 'N' || c == 'x')
-		return ("\\I");
-	if (c == 'L')
-		return ("${SHLVL}");
-	if (c == 'i' || c == 'I')
-		return ("${LINENO}");
-	return (NULL);
-}
 
 /* zsh names eight colours; a number passes through; anything else is -1
    so the caller can try the #rrggbb form. */
@@ -117,8 +91,9 @@ void	zsh_num(t_zesc *z)
 
 /* One `%` escape. z->j sits on the character after `%` and any numeric
    argument; each family consumes what it recognises and answers true. An
-   escape nobody claims renders NOTHING -- measured: zsh consumes unknown
-   escapes, it does not print them. */
+   escape nobody claims renders NOTHING under strict zsh -- measured: zsh
+   consumes unknown escapes -- and stays LITERAL in the bilingual PS1
+   reader, which is what keeps a legacy `100% ` intact. */
 static void	zsh_escape(t_shell *state, t_string *out, t_zesc *z)
 {
 	const char	*rep;
@@ -136,14 +111,18 @@ static void	zsh_escape(t_shell *state, t_string *out, t_zesc *z)
 		return ;
 	rep = zsh_simple(c);
 	if (rep)
-		vec_push_str(out, (char *)rep);
+		return ((void)vec_push_str(out, (char *)rep));
+	if (!z->strict)
+		zsh_lit(out, z);
 }
 
 /* Rewrite a whole prompt string into the backslash language. The caller
    renders the result with ps1_render, so nothing downstream knows which
    syntax was used. Re-entrant on purpose: conditionals and truncation
-   hand their chosen sub-text back through here. */
-t_string	zsh_to_ps1(t_shell *state, const char *fmt)
+   hand their chosen sub-text back through here, strictness included.
+   The mixed reader copies $-expansion and \D{...} spans through
+   verbatim first, so their strftime percents never reach the escapes. */
+t_string	zsh_to_ps1(t_shell *state, const char *fmt, bool strict)
 {
 	t_string	out;
 	t_zesc		z;
@@ -154,19 +133,19 @@ t_string	zsh_to_ps1(t_shell *state, const char *fmt)
 	i = 0;
 	while (fmt[i])
 	{
+		if (!strict && zsh_span_copy(&out, fmt, &i))
+			continue ;
 		if (fmt[i] == '%' && fmt[i + 1])
 		{
-			z = (t_zesc){.f = fmt, .j = i + 1};
+			z = (t_zesc){.f = fmt, .j = i + 1, .strict = strict, .start = i};
 			zsh_num(&z);
 			zsh_escape(state, &out, &z);
 			i = z.j;
 		}
-		else if (fmt[i] == '%')
+		else if (fmt[i] == '%' && strict)
 			i++;
 		else
 			vec_push_char(&out, fmt[i++]);
 	}
-	vec_push_char(&out, '\0');
-	out.len--;
-	return (out);
+	return (vec_push_char(&out, '\0'), out.len--, out);
 }

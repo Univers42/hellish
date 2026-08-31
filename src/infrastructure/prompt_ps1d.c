@@ -112,14 +112,17 @@ bool	ps1_is_special(char c)
 }
 
 /* PROMPT (zsh syntax) -> the backslash language -> the one renderer.
-   Kept here rather than in prompt_zsh.c so that file stays a pure translator
-   with no dependency on the animation layer. */
-t_string	zsh_prompt(t_shell *state, char *fmt)
+   Kept here rather than in prompt_zsh.c so that file stays a pure
+   translator with no dependency on the animation layer. strict selects
+   exact-zsh semantics (PROMPT, print -P, a zsh-armed PS1) over the
+   bilingual PS1 rules, where an unknown `%` stays literal so a legacy
+   percent survives. */
+t_string	zsh_prompt(t_shell *state, char *fmt, bool strict)
 {
 	t_string	conv;
 	t_string	out;
 
-	conv = zsh_to_ps1(state, fmt);
+	conv = zsh_to_ps1(state, fmt, strict);
 	out = ps1_animated(state, (char *)conv.ctx);
 	xfree(conv.ctx);
 	return (out);
