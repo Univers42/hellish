@@ -1118,6 +1118,12 @@ update-config-test:  ## Offline gate: version, GitHub slug, install.sh, npm and 
 help-test: all  ## The help builtin — every dispatch-table entry must have one
 	@bash $(TEST_DIR)/help_test.sh $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The builtins page of the docs site IS `help` output (help-test above is
+# what stops it drifting from the dispatch table). Regenerate + commit after
+# adding or changing a builtin; the site build needs no compiler this way.
+docs-builtins: all  ## Regenerate wiki/builtins/index.md from the help builtin
+	@python3 tools/gen_builtins_md.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # The update path end to end against a LOCAL fake release server: discovery,
 # download, sha256, atomic replace, and every rejection path (bad checksum,
 # truncated asset, unreachable source). Nothing is installed system-wide and
@@ -1222,6 +1228,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
+	docs-builtins \
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \

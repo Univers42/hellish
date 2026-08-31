@@ -28,7 +28,10 @@ plugins. Details and every other route (source, npm, Docker):
 | you want to… | read |
 |---|---|
 | know what it is and install it | [Product & Install](product.md) |
-| live at the prompt — themes, completion, plugins, zsh dialect | [Interactive Experience](interactive.md) |
+| `man hellish` — invocation, startup files, grammar, everything | [The manual](manual.md) |
+| look up one builtin | [Builtins reference](builtins/index.md) — all 67, from the shell's own `help` |
+| install and write plugins (with screenshots) | [Plugins](plugins.md) |
+| live at the prompt — themes, completion, zsh dialect | [Interactive Experience](interactive.md) |
 | run your bash scripts on it | [Bash Compatibility & Scripting](scripting.md) |
 | see the numbers | [Benchmarks](benchmarks.md) · [Performance](performance.md) |
 | understand how it's built | [Architecture](architecture.md) |
