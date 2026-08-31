@@ -59,8 +59,12 @@ def render(sh, ps1, extra=None):
     search over the whole transcript would match the PS1 assignment being
     echoed back rather than the rendered prompt.
     """
+    # LC_ALL=C so strftime is the same on both shells and on every runner:
+    # \@ is %p, and a locale where that is empty would turn a real
+    # comparison into a shape check nobody notices has stopped comparing.
     env = dict(os.environ, HELLISH_NO_BANNER="1", HELLISH_BANNER="0",
-               HELLISH_NO_UPDATE_CHECK="1", HELLISH_NO_ANIM="1", TERM="dumb")
+               HELLISH_NO_UPDATE_CHECK="1", HELLISH_NO_ANIM="1", TERM="dumb",
+               LC_ALL="C")
     env.pop("PS1", None)
     args = ["--norc", "-i"]
     if os.path.basename(sh).startswith("bash"):
