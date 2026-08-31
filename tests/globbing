@@ -342,3 +342,24 @@ printf '%s\n' * | head -n 5
 # Clean up created long test file (ignore errors)
 rm -f /tmp/longpattern.test || true
 # --- end failing/weird section ---
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; shopt -s nocaseglob; echo ncg/*.txt
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; echo ncg/*.txt
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; shopt -s nocaseglob; echo ncg/*.TXT
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; shopt -s nocaseglob; echo ncg/[f]*
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; shopt -s nocaseglob; echo ncg/[^f]*
+mkdir -p ncg && : > ncg/FOO.TXT && : > ncg/bar.txt; shopt -s nocaseglob; shopt -u nocaseglob; echo ncg/*.txt
+mkdir -p ncg && : > ncg/Alpha && : > ncg/beta; shopt -s nocaseglob; echo ncg/a*
+mkdir -p ncg && : > ncg/Alpha && : > ncg/beta; shopt -s nocaseglob; echo ncg/?LPHA
+shopt -s nocaseglob; shopt nocaseglob; echo "rc=$?"
+shopt -s nocaseglob; shopt -u nocaseglob; shopt -q nocaseglob; echo "rc=$?"
+case "[" in [) echo lit;; *) echo no;; esac
+case "[x" in [x) echo lit;; *) echo no;; esac
+case "a" in [abc) echo lit;; *) echo no;; esac
+case "[]" in []) echo m;; *) echo no;; esac
+case "b" in [abc]) echo m;; *) echo no;; esac
+case "]" in []]) echo m;; *) echo no;; esac
+case "a" in [!abc]) echo m;; *) echo no;; esac
+case "z" in [!abc]) echo m;; *) echo no;; esac
+l="[srv]"; echo "${l#[}"
+l="[srv]"; inner=${l#[}; inner=${inner%]}; echo "$inner"
+case "x" in [) echo lit;; *) echo no;; esac

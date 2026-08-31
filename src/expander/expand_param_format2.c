@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "sh_input.h"
+#include "case_match.h"
 
 void	exit_clean(t_shell *state, int code);
 
@@ -94,44 +95,25 @@ bool	find_param_op(const char *s, int slen, t_pe_op *o)
 	return (true);
 }
 
-/* The '*' arm of pat_match_pub: swallow the star run, then advance `s` one
-   character at a time until the rest of the pattern matches — the shortest
-   viable position.  Split out to keep pat_match_pub in the line budget. */
-static bool	pat_match_star(const char *p, const char *s)
-{
-	while (*p == '*')
-		p++;
-	if (*p == '\0')
-		return (true);
-	while (*s)
-	{
-		if (pat_match_pub(p, s))
-			return (true);
-		s++;
-	}
-	return (pat_match_pub(p, s));
-}
-
-/* Minimal shell-pattern matcher used by prefix/suffix trimming and ${/} subst.
-   Handles * (any sequence) and ? (any single character) only — not [ranges].
-   Recursive descent: consume one pattern unit and recurse on the rest.
-   The * branch advances `s` one character at a time to find the shortest
-   position where the remainder of the pattern still matches. */
+/* Prefix/suffix trimming (${v#p} ${v%p}) and ${v/a/b} substitution match
+** with the SAME matcher `case` and `[[ == ]]` use.
+**
+** This was a private recursive descent that handled `*` and `?` and, by its
+** own comment, "not [ranges]". So a bracket expression in a trim pattern
+** matched nothing, silently:
+**
+**     v=abc; echo ${v%%[bx]*}       bash: a        here: abc
+**
+** No error, status 0, the original string handed back -- indistinguishable
+** from a pattern that legitimately did not match. That is exactly what
+** case_match.h's header comment warns about: a second matcher eventually
+** disagrees with the first, and a pattern means two things depending on
+** where it was written. Now there is one, so brackets, character classes
+** and extglob groups work everywhere or nowhere.
+**
+** The argument order is (pattern, string) here and (string, pattern) there;
+** the wrapper stays so the call sites do not all have to flip. */
 bool	pat_match_pub(const char *p, const char *s)
 {
-	if (*p == '\0')
-		return (*s == '\0');
-	if (*p == '\\' && p[1] != '\0')
-	{
-		if (p[1] == *s && *s != '\0')
-			return (pat_match_pub(p + 2, s + 1));
-		return (false);
-	}
-	if (*p == '*')
-		return (pat_match_star(p, s));
-	if (*p == '?' && *s != '\0')
-		return (pat_match_pub(p + 1, s + 1));
-	if (*p == *s && *s != '\0')
-		return (pat_match_pub(p + 1, s + 1));
-	return (false);
+	return (case_match(s, p));
 }
