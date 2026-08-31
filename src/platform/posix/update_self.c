@@ -27,7 +27,10 @@ static const char	*apply_error(int code)
 		return ("the checksum did NOT match — download rejected");
 	if (code == 4)
 		return ("the downloaded binary would not run here");
-	return ("the binary could not be put in place");
+	if (code == 6)
+		return ("the install reported success but the binary did not change");
+	return ("the binary could not be put in place — the elevated `install` "
+		"did not succeed (see the message above it)");
 }
 
 /* Ask before doing anything that needs root. Issue #20 is explicit: never

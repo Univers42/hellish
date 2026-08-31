@@ -44,12 +44,18 @@ static int	validate_binary(const char *path, const char *want)
    half-written executable, and the running shell keeps its own open inode,
    so replacing the file underneath it is safe on Linux. With elevation we
    hand the same job to `sudo install`, which is a single auditable command
-   rather than a shell we assembled ourselves. */
+   rather than a shell we assembled ourselves.
+
+   The elevated branch is judged on `install`'s EXIT STATUS. It used to be
+   judged on `access(target, X_OK) == 0`, which is a condition the OLD binary
+   already satisfies -- so a refused sudo password left the shell announcing
+   "✓ updated" over a file it had not touched (issue #76). A test for
+   "something executable is at this path" can never distinguish a successful
+   replacement from no replacement at all. */
 static int	move_into_place(const char *tmp, const char *target, int sudo)
 {
 	char *const	argv[] = {"sudo", "install", "-m", "755",
 		(char *)tmp, (char *)target, NULL};
-	char		out[64];
 	int			st;
 
 	if (!sudo)
@@ -60,9 +66,9 @@ static int	move_into_place(const char *tmp, const char *target, int sudo)
 	}
 	ft_eprintf("hellish: %s is not writable; running:\n  sudo install -m "
 		"755 <download> %s\n", target, target);
-	st = (int)update_capture(argv, out, sizeof(out));
+	st = update_run_visible(argv);
 	unlink(tmp);
-	return (st >= 0 && access(target, X_OK) == 0);
+	return (st == 0);
 }
 
 /* Build the sibling temp path the download lands on. Same directory as the
@@ -99,6 +105,18 @@ static int	tmp_path(const char *target, char *out, size_t n, int sudo)
 	return (ft_strlen(out) + 1 < n);
 }
 
+/* check -> download -> verify -> validate -> replace -> PROVE IT.
+   Returns 0 on success or a step code: 1 no asset for this platform,
+   2 download failed, 3 checksum REJECTED, 4 the binary would not run,
+   5 the replacement itself failed, 6 the replacement reported success but
+   the installed binary still answers with the old version.
+
+   Step 6 is the one that is not paranoia. Every earlier step judges its own
+   mechanism; only this one judges the OUTCOME, by asking the binary now at
+   `target` what version it is. That is the single question the user actually
+   cares about, and until it was asked a silently-failed `sudo install`
+   reported a completed update (issue #76). Every failure path leaves the
+   installed binary exactly as it was. */
 int	update_apply(const char *tag, const char *target, int sudo)
 {
 	char	asset[64];
@@ -123,5 +141,7 @@ int	update_apply(const char *tag, const char *target, int sudo)
 		return (unlink(tmp), 4);
 	if (!move_into_place(tmp, target, sudo))
 		return (unlink(tmp), 5);
+	if (!validate_binary(target, tag))
+		return (6);
 	return (0);
 }
