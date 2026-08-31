@@ -38,8 +38,14 @@ import time
 
 SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else "../build/bin/hellish")
-ORACLE = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser(
-    "~/bash-5.3.9/bin/bash")
+# HELLISH_ORACLE before ~, which is what tests/tester already honours. The
+# home-relative fallback on its own made this file exit 2 in zero seconds
+# under any harness that isolates $HOME -- the oracle simply was not there,
+# and a suite that skips in silence looks exactly like one that passes
+# (#72 item 3.4).
+ORACLE = (sys.argv[2] if len(sys.argv) > 2
+          else os.environ.get("HELLISH_ORACLE")
+          or os.path.expanduser("~/bash-5.3.9/bin/bash"))
 FAILS = []
 
 # name, keystrokes. Every one of these is a command whose text spans more
