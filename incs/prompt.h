@@ -29,6 +29,12 @@ typedef struct s_shell	t_shell;
    `prompt` switcher bring it back. */
 # define HELLISH_PS1_DEFAULT "%m\\U%# "
 
+/* The prompt's fork-free cached git reader (prompt_metadata.c): branch is
+   heap-owned by the caller, dirty is the TTL-throttled `git status`
+   answer. Public because vcs_info (builtin_zsh_prompt.c) reports the
+   same repository state the \g escape renders. */
+void		get_git_info(char **branch, int *dirty);
+
 // buff_readline.c
 typedef struct s_rl
 {
