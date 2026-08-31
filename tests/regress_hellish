@@ -247,3 +247,13 @@ shopt -o | head -3
 shopt -o | wc -l; set -o | wc -l
 shopt -qs lithist cdspell; echo "rc=$?"; shopt -q lithist; echo "l=$?"; shopt -q cdspell; echo "c=$?"
 shopt -sq nocaseglob; echo "sq=$?"; shopt nocaseglob
+[[ hi =~ "h i" ]]; echo $?
+[[ "hi there" =~ "h i" ]]; echo $?
+[[ "hi there" =~ "hi t" ]]; echo $?
+[[ hi =~ 'h i' ]]; echo $?
+[[ "declare -a x" =~ "declare -a" ]]; echo $?
+if [[ "$(echo hi)" =~ "declare -a" ]]; then echo A; else echo B; fi
+[[ "a b" =~ a\ b ]]; echo $?
+[[ abc =~ ^(a)(b)c$ ]]; echo $?
+[[ "x y" =~ "x"" ""y" ]]; echo $?
+v="p q"; [[ "p q" =~ "$v" ]]; echo $?
