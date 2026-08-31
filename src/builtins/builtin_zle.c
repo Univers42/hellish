@@ -31,16 +31,28 @@
 */
 
 /* The built-in widgets a plugin invokes by name. Only the ones the corpus
-   uses; anything else is reported rather than quietly accepted, because a
-   widget that appears to run and does nothing is indistinguishable from a
-   working one until the user presses the key. */
+** uses; anything else is reported rather than quietly accepted, because a
+** widget that appears to run and does nothing is indistinguishable from a
+** working one until the user presses the key.
+**
+** `reset-prompt` is NOT `redisplay` and is answered with it anyway -- the
+** remaining half of #77 item 5, written down here because it is the one
+** inexactness in this file that cannot announce itself. zsh re-expands PS1
+** and redraws; this only redraws, so a plugin that changes the prompt and
+** calls reset-prompt sees the old one. Doing it properly means running
+** prompt_normal inside the readline CHILD, which can fork for a `$(...)` in
+** PS1 and writes to the terminal mid-edit: worth prototyping rather than
+** bolting on. Reporting it instead is not available either -- plugins call
+** it from widgets, once per keystroke, and the child is a fresh fork every
+** prompt, so "once per session" cannot be said there.
+*/
 static int	zle_builtin(t_shell *state, const char *name)
 {
 	if (!ft_strcmp(name, "redisplay") || !ft_strcmp(name, "reset-prompt")
 		|| !ft_strcmp(name, ".redisplay"))
 		return (zle_do_redisplay(), 0);
 	if (!ft_strcmp(name, "kill-buffer") || !ft_strcmp(name, ".kill-buffer"))
-		return (zle_do_kill_buffer(), 0);
+		return (zle_do_kill_buffer(), zle_publish(state), 0);
 	if (!ft_strcmp(name, "accept-line") || !ft_strcmp(name, ".accept-line"))
 		return (zle_do_accept_line(), 0);
 	if (zle_widget_get(name))
@@ -107,7 +119,7 @@ int	builtin_zle(t_shell *state, t_vec argv)
 	if (!ft_strcmp(av[1], "-M"))
 		return (zle_message(state, argv, 2));
 	if (av[1][0] == '-')
-		return (0);
+		return (zle_option(state, argv, 1));
 	if (!zle_active())
 		return (ft_eprintf("%s: zle: can only be called from a widget\n",
 				state->ctx), 1);

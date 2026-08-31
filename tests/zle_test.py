@@ -18,14 +18,20 @@ never registered in the shell being tested. The lesson is in the test now.
 A negative result from a harness that never armed the feature looks
 identical to a broken feature.
 
-THE BOUNDARY THAT IS REAL. readline runs in a FORKED CHILD of the shell
-(bg_readline). A widget's edits to BUFFER survive, because the line is what
-the child sends back. Anything else it changes does not: a widget that runs
-`cd` changes the child's directory and the parent never learns. Verified in
-a pty rather than assumed -- the key fires, the widget runs, the shell stays
-put. That is why sudo (which only edits the buffer) works end to end and
-dirhistory's ALT-LEFT does not, though everything else about dirhistory
-does. Tracked as #80.
+THE BOUNDARY, AND WHAT NOW CROSSES IT. readline runs in a FORKED CHILD of
+the shell (bg_readline). A widget's edits to BUFFER survive because the line
+is what the child sends back; everything else it changed used to die with
+the child, so a widget that ran `cd` moved the child and the parent never
+learned. That is why oh-my-zsh's sudo (which only edits the buffer) worked
+end to end while dirhistory's ALT-LEFT fired, ran, and left the shell
+exactly where it was.
+
+The child now reports its final directory on a pipe of its own and the
+parent adopts it (#80 item 2, src/editing/zle_cwd.c), so `cd` crosses too.
+The line protocol is untouched: the cwd travels BESIDE the line, which was
+the stated risk of the round-trip option in #80. Nothing else crosses --
+a widget's variable assignments and its exported environment still die with
+the child, and that is still the boundary this file pins.
 
 Usage: python3 zle_test.py [/path/to/hellish]
 """
@@ -111,6 +117,42 @@ def unknown_widget_cases():
     rc, _, err = run('zle -N real; zle definitely-not-a-widget')
     check("unknown/is-reported", b"no such widget" in err
           or b"only be called from a widget" in err, "err=%r" % err[:120])
+
+
+def option_cases():
+    """The same rule, applied to the OPTIONS -- which is where it was not.
+
+    `zle` used to answer every option but `-N` with a silent success:
+
+        if (av[1][0] == '-')
+            return (0);
+
+    so `zle -M "hello"` printed nothing and reported that it had worked. The
+    widget-name path above goes out of its way to avoid exactly that, and
+    the options walked around it. `-M` and `-R` are now real; everything
+    else says so and fails."""
+    for opt in ("-F", "-K", "-U", "-w"):
+        rc, _, err = run('zle %s x' % opt)
+        check("option/%s-is-not-a-silent-success" % opt,
+              rc != 0 and b"not supported" in err,
+              "rc=%d err=%r" % (rc, err[:120]))
+    # ONCE. A plugin may call one of these per keystroke, and a diagnostic
+    # that repeats forever is one the user learns to ignore -- which is
+    # silence with extra steps.
+    _, _, err = run('zle -F a; zle -K b; zle -U c; true')
+    check("option/reported-once-not-per-call",
+          err.count(b"not supported") == 1, "err=%r" % err[:220])
+    # `region_highlight` is DELIBERATELY not defined. zsh predefines it as a
+    # ZLE parameter, and zsh-syntax-highlighting tests for it by name
+    # (`(( ${+region_highlight[@]} )) || { echo error }`) -- so leaving it
+    # undefined is what makes that plugin's own message true. Defining it to
+    # look supported is the one thing that would make the failure silent.
+    _, out, _ = run('setopt zsh\necho "[${region_highlight+set}]"'
+                    '"[${#region_highlight[@]}]"')
+    check("option/region_highlight-is-honestly-absent",
+          out.strip() == b"[][0]", "got %r -- if it is now defined, it must "
+          "also REPAINT, or a plugin's own check has been made to lie"
+          % out.strip())
 
 
 def plugin_cases():
@@ -254,28 +296,77 @@ def dispatch_cases():
 
 
 def cd_boundary_case():
-    """A widget that cds does NOT move the shell, because readline runs in a
-    forked child. Asserted so the boundary is pinned rather than folklore --
-    if the architecture ever changes, this test says so.
+    """A widget that cds MOVES the shell -- #80 item 2.
 
-    The destination is a FRESH directory with a unique name, not /tmp, and
-    the check is whether the parent's `pwd` mentions it. `/tmp` cannot do
-    that job: it matches the moment the suite runs from anywhere under
-    /tmp, which is how this went red reporting a boundary change that had
-    not happened."""
-    dest = tempfile.mkdtemp(prefix="hellish_zle_boundary_")
-    mark = os.path.basename(dest).encode()
-    try:
-        rc = ("setopt zsh\n"
-              'jump() { cd %s; BUFFER="pwd"; }\n' % dest
-              + "zle -N jump\n"
-              "bindkey '\\e\\e' jump\n")
-        out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
-        check("boundary/widget-cd-does-not-move-the-shell", mark not in out,
-              "it MOVED -- the fork boundary changed, update #80 and the "
-              "docs; %r" % out[-200:])
-    finally:
-        os.rmdir(dest)
+    This assertion used to say the opposite, and said it deliberately:
+    readline runs in a forked child (bg_readline), so a widget's `cd` changed
+    the CHILD's directory and the parent never learned. That is why
+    oh-my-zsh's `sudo` (which only edits the buffer) worked here while
+    `dirhistory` (whose widgets navigate) did not.
+
+    The child now reports its final working directory back to the parent on a
+    SECOND pipe, and the parent adopts it. The line protocol is untouched --
+    that was the stated risk of the round-trip option in #80, so the cwd
+    travels beside the line rather than inside it.
+
+    The destination is a freshly made UNIQUE directory and the assertion
+    names that exact path. It used to `cd /tmp` and assert that "/tmp" never
+    appeared in the output, which fails whenever the suite is run from
+    anywhere under /tmp: the shell's own `pwd` contains it. A git worktree at
+    /tmp/hellish-zle reported that as "the fork boundary changed" while the
+    shell was behaving perfectly -- the same
+    harness-fault-looks-like-a-feature-fault this file's header warns about,
+    caught a second time. A unique path cannot collide with the cwd."""
+    dest = tempfile.mkdtemp(prefix="zle_cd_boundary_")
+    real = os.path.realpath(dest)
+    rc = ("setopt zsh\n"
+          'jump() { cd %s; BUFFER="pwd"; }\n'
+          "zle -N jump\n"
+          "bindkey '\\e\\e' jump\n") % dest
+    out = pty_session(rc, [(b"\x1b\x1b", 0.8), (b"\r", 1.0)])
+    check("boundary/widget-cd-moves-the-shell",
+          real.encode() in out or dest.encode() in out,
+          "the widget's cd did not reach the parent; %r" % out[-200:])
+
+    # `zle kill-buffer` must actually empty the line, and STAY empty.
+    #
+    # It clears readline's buffer directly, but the dispatcher then writes the
+    # shell's BUFFER/LBUFFER back into readline -- and those still held the
+    # old text, so the kill was silently undone. Harmless-looking on its own;
+    # not harmless at all in the idiom every navigation plugin uses:
+    #
+    #     zle .kill-buffer ; some_function_that_cds ; zle .accept-line
+    #
+    # With the kill undone, accept-line submits whatever the user had already
+    # typed. Pressing the key with `rm -rf x` half-written RAN it. That is the
+    # case below, and it is why this is asserted on the executed output rather
+    # than on the redrawn line.
+    rc3 = ("setopt zsh\n"
+           'wipe() { zle .kill-buffer; zle .accept-line; }\n'
+           "zle -N wipe\n"
+           "bindkey '\\e\\e' wipe\n")
+    out3 = pty_session(rc3, [(b"echo DETONATE", 0.5), (b"\x1b\x1b", 1.2)])
+    check("widget/kill-buffer-is-not-undone-by-the-write-back",
+          b"DETONATE\r\n" not in out3,
+          "the typed line was RESTORED and then executed; %r" % out3[-200:])
+
+    # POSITIVE CONTROL. The check above is an absence, and an absence proves
+    # nothing unless the same probe can also see a presence: a typo in the rc,
+    # a widget that never fires, or a pty that captured nothing all produce
+    # the identical "not in out" pass. So do the move the supported way --
+    # the widget puts the cd in BUFFER and the PARENT runs it on Enter -- and
+    # require the detector to notice. If this ever stops printing the path,
+    # the assertion above has quietly become vacuous.
+    rc2 = ("setopt zsh\n"
+           'jump() { BUFFER="cd %s; pwd"; }\n'
+           "zle -N jump\n"
+           "bindkey '\\e\\e' jump\n") % dest
+    out2 = pty_session(rc2, [(b"\x1b\x1b", 0.8), (b"\r", 1.2)])
+    os.rmdir(dest)
+    check("boundary/the-probe-can-actually-see-a-move",
+          dest.encode() in out2,
+          "the detector is blind, so the check above proves nothing; "
+          "%r" % out2[-200:])
 
 
 def message_cases():
@@ -312,6 +403,7 @@ def main():
     bindkey_cases()
     guard_cases()
     unknown_widget_cases()
+    option_cases()
     plugin_cases()
     churn_cases()
     dispatch_cases()

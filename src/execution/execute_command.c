@@ -40,6 +40,8 @@ t_execution_state	run_compound(t_shell *state,
 		return (execute_case(state, exe));
 	if (t == AST_BRACE_GROUP)
 		return (execute_brace_group(state, exe));
+	if (t == AST_ANON_FUNC)
+		return (execute_anon_func(state, exe));
 	return (ft_assert(0), res_status(1));
 }
 

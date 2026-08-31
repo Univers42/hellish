@@ -23,6 +23,7 @@ void	arr_marks_clear(t_shell *state);
 void	attr_clear(t_shell *state);
 
 void	pos_free(t_pos *pos);
+void	free_local_saves(t_shell *state);
 void	free_positional_snapshot(t_vec *w);
 
 /* Tear down one command's redirect list. Three cleanup duties in one pass:
@@ -163,6 +164,7 @@ static void	free_session_data(t_shell *state)
 	}
 	free_dirstack(state);
 	free_compspecs(state);
+	free_local_saves(state);
 	if (state->for_snapshot)
 		free_positional_snapshot(state->for_snapshot);
 	state->for_snapshot = NULL;

@@ -133,3 +133,15 @@ complete -F _f -- zc2; complete -p zc2
 shopt -s progcomp; shopt -q progcomp; echo "progcomp=$?"
 shopt -s progcomp; shopt progcomp
 compgen -W 'a*b cd' -- 'a'
+shopt -s extglob; eval 'case "@(a)" in "@(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case a in "@(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "@(a)" in @\(a\)) echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "+(a)" in "+(a)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case "a|b" in "a|b") echo pipe;; *) echo no;; esac'
+shopt -s extglob; eval 'case "a)b" in "a)b") echo paren;; *) echo no;; esac'
+shopt -s extglob; eval '[[ "@(a)" == "@(a)" ]] && echo literal || echo group'
+shopt -s extglob; eval '[[ a == "@(a)" ]] && echo literal || echo group'
+shopt -s extglob; eval '[[ "@(a)" == @\(a\) ]] && echo literal || echo group'
+shopt -s extglob; eval 'case "*" in "*") echo star;; *) echo no;; esac'
+shopt -s extglob; eval 'case "@(a|b)" in "@(a|b)") echo literal;; *) echo group;; esac'
+shopt -s extglob; eval 'case ab in "@("a"|b)") echo mixed;; *) echo no;; esac'

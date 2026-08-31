@@ -15,6 +15,7 @@
 #include "brace_expand.h"
 #include "decomposer.h"
 #include "sys.h"
+#include "case_match.h"
 
 char	*arith_expand(t_shell *state, const char *expr, int len);
 
@@ -115,12 +116,19 @@ static bool	has_plain_literal_meta(char c, int *lbr, int i)
    detecting it here avoids calling the full pipeline at all.
    Note: '[' is only a metachar when matched by a later ']' (glob bracket),
    so `lbr` tracks the position of an unmatched '['.
-     An extglob group is a metacharacter run that has to be spotted by
+     A glob group is a metacharacter run that has to be spotted by
    LOOKAHEAD, not by its first byte: `@(a|b)` and `+(a)` contain none of the
    characters above, so this fast path claimed them as plain literals and
    the glob walk never ran -- `echo @(aa|ab)` printed itself. `*(` and `?(`
    escaped that only by accident, because their first byte is already a
-   wildcard. */
+   wildcard.
+     zsh's bare `(a|b)` is the same trap with even less to notice: its bytes
+   are `(`, `|` and `)`, none of which can reach a word through the lexer
+   unless something deliberately claimed them, so a word holding one is
+   ALWAYS a pattern. `echo g(lob|OB)` printed itself while
+   `case glob in g(lob|OB))` matched -- the same pattern meaning two things
+   depending on where it was written, which is the one outcome the single
+   matcher exists to prevent. */
 bool	word_is_plain_literal(t_ast_node *node)
 {
 	t_token	*t;
@@ -139,7 +147,8 @@ bool	word_is_plain_literal(t_ast_node *node)
 	while (i < t->len)
 	{
 		c = t->start[i];
-		if (has_plain_literal_meta(c, &lbr, i) || extglob_ahead(t->start + i))
+		if (has_plain_literal_meta(c, &lbr, i) || extglob_ahead(t->start + i)
+			|| xg_alt_group(t->start + i))
 			return (false);
 		i++;
 	}

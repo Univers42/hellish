@@ -12,6 +12,21 @@
 
 #include "parser_private.h"
 
+/* An anonymous function is pushed exactly like a named one; only the node
+   type differs, and only the executor cares. It is checked BEFORE the
+   subshell branch because both start on `(` -- is_anon_func is the narrower
+   test (it also requires the `)` immediately after and the zsh dialect), so
+   asking it first cannot steal a subshell. */
+static bool	handle_anon_func(t_shell *state, t_parser *parser,
+							t_deque_tok *tokens, t_ast_node *ret)
+{
+	t_ast_node	node;
+
+	node = parse_anon_func(state, parser, tokens);
+	ast_push_child(ret, &node);
+	return (parser->res == RES_OK);
+}
+
 /* Parse a function definition and push it as a child of ret. Only reached
    after is_function_def has confirmed the WORD ( ) pattern, so the first
    three tokens are always well-formed here. */
@@ -41,6 +56,8 @@ static bool	dispatch_cmd(t_shell *state, t_parser *parser,
 	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
 	if (next == TT_COPROC)
 		return (handle_coproc_case(state, parser, tokens, ret));
+	if (is_anon_func(tokens))
+		return (handle_anon_func(state, parser, tokens, ret));
 	if (next == TT_BRACE_LEFT)
 		return (handle_subshell_case(state, parser, tokens, ret));
 	if (is_compound_start(next))

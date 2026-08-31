@@ -165,6 +165,11 @@ bool		handle_simple_command_case(t_shell *state, t_parser *parser,
 t_ast_node	parse_brace_group(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 bool		is_function_def(t_deque_tok *tokens);
+bool		is_anon_func(t_deque_tok *tokens);
+t_ast_node	parse_anon_func(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens);
+t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens);
 t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 

@@ -97,6 +97,7 @@ void	bg_readline(int outfd, char *prompt, int edit_mode, t_shell *state)
 	debug_dump_prompt(prompt);
 	mascot_install();
 	ret = readline(split_prompt(prompt));
+	zle_cwd_send();
 	if (!ret)
 		(close(outfd), exit (1));
 	(write_to_file(ret, outfd), free(ret), close(outfd), exit(0));
@@ -121,6 +122,7 @@ int	attach_input_readline(t_rl *l, int pp[2], int pid)
 	vec_append_fd(pp[0], &l->buff);
 	buff_readline_update(l);
 	close(pp[0]);
+	zle_cwd_adopt(zle_caller());
 	while (1)
 		if (waitpid(pid, &status, 0) != -1)
 			break ;
@@ -143,6 +145,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 
 	if (pipe(pp))
 		critical_error_errno_ctx("pipe");
+	zle_cwd_open();
 	pid = fork();
 	if (pid == 0)
 	{

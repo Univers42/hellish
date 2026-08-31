@@ -30,6 +30,18 @@ bool		case_match(const char *s, const char *p);
 bool		xg_start(const char *p);
 bool		xg_match(const char *s, const char *p);
 const char	*xg_group_end(const char *p);
+const char	*xg_alt_end(const char *p);
 bool		xg_any_alt(const char *s, size_t cut, const char *alts);
+
+/* Both spellings of a group -- bash's `@(a|b)` and zsh's bare `(a|b)` --
+   answered in one place (case_match_ext3.c) so the lexer, the word reparser,
+   the filename globber and the matcher cannot disagree about where a group
+   starts or ends.  xg_meta is the set a QUOTED segment must escape to stay
+   literal; zsh_alt_ahead is the lexer's position-guarded wrapper, because a
+   `(` at the start of a word is a subshell and only the lexer has to care. */
+const char	*xg_open(const char *p);
+bool		xg_meta(char c);
+int			xg_alt_group(const char *at);
+int			zsh_alt_ahead(const char *start, const char *at);
 
 #endif

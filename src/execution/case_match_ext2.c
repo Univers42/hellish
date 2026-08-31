@@ -38,7 +38,7 @@ static bool	xg_rep(const char *s, const char *p, const char *tail)
 	cut = 1;
 	while (cut <= n)
 	{
-		if (xg_any_alt(s, cut, p + 2) && xg_rep(s + cut, p, tail))
+		if (xg_any_alt(s, cut, xg_open(p) + 1) && xg_rep(s + cut, p, tail))
 			return (true);
 		cut++;
 	}
@@ -55,7 +55,7 @@ static bool	xg_plus(const char *s, const char *p, const char *tail)
 	cut = 1;
 	while (cut <= n)
 	{
-		if (xg_any_alt(s, cut, p + 2) && xg_rep(s + cut, p, tail))
+		if (xg_any_alt(s, cut, xg_open(p) + 1) && xg_rep(s + cut, p, tail))
 			return (true);
 		cut++;
 	}
@@ -79,7 +79,7 @@ static bool	xg_once(const char *s, const char *p, const char *tail)
 	cut = -1;
 	while (++cut <= n)
 	{
-		hit = xg_any_alt(s, cut, p + 2);
+		hit = xg_any_alt(s, cut, xg_open(p) + 1);
 		if (*p == '!' && !hit && case_match(s + cut, tail))
 			return (true);
 		if (*p != '!' && hit && case_match(s + cut, tail))
@@ -88,14 +88,18 @@ static bool	xg_once(const char *s, const char *p, const char *tail)
 	return (false);
 }
 
-/* Match `s` against a pattern that BEGINS with an extglob group at `p`.
+/* Match `s` against a pattern that BEGINS with a group at `p`.
    The whole remaining pattern is handled here -- the group and everything
-   after it -- so case_match can hand off and return the answer directly. */
+   after it -- so case_match can hand off and return the answer directly.
+     zsh's bare `(a|b)` carries no operator, so it falls through to xg_once
+   and is read as `@` -- exactly one alternative, which is what zsh means by
+   it. Nothing else in this file had to learn the second spelling: xg_open
+   is the only place that knows where the paren is. */
 bool	xg_match(const char *s, const char *p)
 {
 	const char	*tail;
 
-	tail = xg_group_end(p + 1);
+	tail = xg_group_end(xg_open(p));
 	if (!tail)
 		return (false);
 	if (*p == '*')
