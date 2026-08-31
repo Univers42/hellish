@@ -8,6 +8,32 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.2 — *the customize-your-prompt release*
+
+Paste any zsh prompt tutorial into `~/.hellishrc` and it now just works
+(issue #91):
+
+- **`colors`** defines `$fg[..]`, `$bg[..]`, `$fg_bold[..]`,
+  `$reset_color` — the arrays zsh's own colors function provides.
+- **`vcs_info`** fills `$vcs_info_msg_0_` from the prompt's fork-free
+  cached git reader; **`zstyle`** silently honours the
+  `formats`/`actionformats` it reads (everything else keeps the loud stub).
+- **`precmd` / `preexec`** functions (and the `precmd_functions` /
+  `preexec_functions` arrays) fire like zsh's — unless bash-preexec is
+  loaded, which owns the convention and would otherwise double-fire.
+- **`RPROMPT`** renders at the right margin, invisible to readline's
+  width model, skipped on dumb terminals.
+- And the bug that started it: the alias scanner expanded aliases inside
+  `case` **patterns**, so re-sourcing a config whose loader contains
+  `case "$1" in list|ls)` died on
+  `syntax error near unexpected token --color=auto` with the stock
+  `ls` alias active. Patterns are never commands now — 12 golden cases
+  diff every shape (`|`, `(`, `;;`, `;&`, `;;&`, newline-led, nested)
+  against bash 5.3.9, and `tests/prompt_zshrc_test.py` drives the whole
+  tutorial rc on a pty inside a real repository, ten checks.
+
+---
+
 ## v2.8.1 — *the first-prompt release*
 
 A fresh `curl install.sh | sh` with the plugin framework, bash-preexec and z
