@@ -96,6 +96,10 @@ static size_t	declare_scan(t_vec argv, int *flags, char *term)
 			*flags |= 2;
 		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
 			*flags |= 4;
+		if (ft_strchr(((char **)argv.ctx)[i], 't')
+			|| ft_strchr(((char **)argv.ctx)[i], 'r')
+			|| ft_strchr(((char **)argv.ctx)[i], 'g'))
+			*flags |= 8;
 		*term = scan_term(((char **)argv.ctx)[i]);
 		if (*term)
 			return (i);
@@ -111,6 +115,9 @@ int	builtin_declare(t_shell *state, t_vec argv)
 	char	term;
 
 	i = declare_scan(argv, &flags, &term);
+	if ((term == 'F' || term == 'f') && i + 1 < argv.len
+		&& (flags & (2 | 8)) && !(flags & 1))
+		return (declare_func_attrs(state, argv, i + 1));
 	if (term == 'F' || term == 'f')
 		return (declare_functions(state, argv, i + 1, term == 'f'));
 	if (term == 'n')
