@@ -8,6 +8,35 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.1 — *the first-prompt release*
+
+A fresh `curl install.sh | sh` with the plugin framework, bash-preexec and z
+enabled greeted its very first prompt with
+`_hx_precmd_run__bp_install: command not found`, a `[1] <pid>` job notice,
+and two whole function bodies dumped over the banner (issue #88). Three
+separate shell bugs stacked into that first impression, each fixed and
+pinned:
+
+- **POSIX character classes in `case` and `${var#…}` patterns** —
+  `[[:space:]]`, `[![:space:]]` and the rest matched *nothing* in the
+  case/trim matcher (filename globs had them all along — a second matcher
+  had drifted). bash-preexec's own PROMPT_COMMAND surgery depends on them.
+  31 new golden cases diff the classes against bash 5.3.9 on every push.
+- **`declare -ft fn` is silent** — `-f` plus an attribute letter applies
+  the attribute in bash; it printed the function bodies here, which is
+  where the dump came from. Measured semantics: silent, 0 when every name
+  is a function, 1 otherwise. Plain `declare -f fn` still prints.
+- **`( cmd & )` no longer announces a job** — bash keeps job control off
+  in subshells, and z backgrounds its bookkeeping exactly that way to stay
+  silent. A top-level `cmd &` still prints its `[n] pid` line.
+
+New regression rig: `tests/fresh_install_test.py` rebuilds the reporting
+machine — the framework's PROMPT_COMMAND convention plus the real upstream
+`bash-preexec.sh` and `z.sh` on a live pty. It fails 5 of its 8 checks
+against v2.8.0 and passes 8/8 here.
+
+---
+
 ## v2.8.0 — *the runs-your-plugins release*
 
 The biggest release since 2.0. The headline: **real third-party plugins now
