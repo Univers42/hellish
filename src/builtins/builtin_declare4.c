@@ -59,3 +59,26 @@ int	declare_functions(t_shell *state, t_vec argv, size_t i, bool bodies)
 		return (bodies_of(state, argv, i));
 	return (declare_names(state, argv, i));
 }
+
+/* `declare -ft name` (or -fx, -fr, -fg): -f combined with an ATTRIBUTE
+   letter is bash's "apply the attribute to these functions" -- it prints
+   NOTHING and answers 0 when every name is a function, 1 otherwise
+   (measured on the oracle). It used to fall into the print path, so
+   bash-preexec's closing `declare -ft __bp_install ...` dumped both
+   function bodies onto the screen of every fresh install (issue #88).
+   The attributes themselves are accepted and dropped: trace/export
+   semantics for functions are not implemented, and silently succeeding
+   is what bash's own scripts expect from the call. */
+int	declare_func_attrs(t_shell *state, t_vec argv, size_t i)
+{
+	int	rc;
+
+	rc = 0;
+	while (i < argv.len)
+	{
+		if (!func_lookup(state, ((char **)argv.ctx)[i]))
+			rc = 1;
+		i++;
+	}
+	return (rc);
+}

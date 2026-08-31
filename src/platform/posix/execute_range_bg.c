@@ -163,9 +163,13 @@ static void	bg_job_label(t_shell *state, t_ast_node *node, char *buf,
 
 /* Fork a background job, register it in the job table (this is what makes
    jobs/fg/bg/kill %1 see it), record $! (last_bg_pid), and print
-   "[id] pid" if running interactively.  The parent always returns status
-   0 immediately (background jobs never block the parent).  bg_job_count
-   still gates reap_background_children's waitpid call. */
+   "[id] pid" if running interactively -- AND only in the original shell
+   process (the shell_pid check): bash keeps job control off in subshells,
+   so `( cmd & )` -- the exact spelling z.sh uses to background its
+   bookkeeping silently -- must not announce a job number. It did, and a
+   fresh install printed "[1] <pid>" above every prompt (issue #88).  The
+   parent always returns status 0 immediately (background jobs never block
+   the parent).  bg_job_count still gates reap_background_children. */
 t_execution_state	execute_range_background(t_shell *state,
 										t_executable_node *exe,
 										size_t start, size_t end)
@@ -186,9 +190,9 @@ t_execution_state	execute_range_background(t_shell *state,
 	bg_job_label(state, (t_ast_node *)exe->node->children.ctx + start,
 		label, sizeof(label));
 	job = job_add(&state->job_table, pid, label, true);
-	if (state->metinp == INP_RL && job)
+	if (state->metinp == INP_RL && getpid() == state->shell_pid && job)
 		ft_printf("[%d] %d\n", job->id, pid);
-	else if (state->metinp == INP_RL)
+	else if (state->metinp == INP_RL && getpid() == state->shell_pid)
 		ft_printf("[%d] %d\n", state->bg_job_count, pid);
 	return (res_status(0));
 }

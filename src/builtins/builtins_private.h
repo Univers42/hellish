@@ -344,6 +344,7 @@ int		pretty_show(t_shell *state, bool reusable);
 int		pretty_list(t_shell *state);
 void	glob_opts_sync(t_shell *state);
 
+int		declare_func_attrs(t_shell *state, t_vec argv, size_t i);
 int		declare_functions(t_shell *state, t_vec argv, size_t i,
 			bool bodies);
 
