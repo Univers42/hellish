@@ -1,0 +1,68 @@
+# The docs site: https://univers42.github.io/hellish/
+#
+# The source of the site IS the wiki/ directory -- one set of pages, readable
+# on GitHub and rendered by MkDocs, so the two can never drift. Built and
+# deployed by .github/workflows/docs.yml on every push to main.
+site_name: hellish
+site_description: A from-scratch, almost-POSIX shell in C — minimalist-shell speed, bash-class features.
+site_url: https://univers42.github.io/hellish/
+repo_url: https://github.com/Univers42/hellish
+repo_name: Univers42/hellish
+edit_uri: edit/main/wiki/
+
+docs_dir: wiki
+
+# Working material that lives in wiki/ but is not part of the site: session
+# notes, reference PDFs (19 MB), captured logs, the legacy readme collection.
+exclude_docs: |
+  context.md
+  assets/pdfs/
+  assets/logs/
+  assets/manual/
+  assets/readmes/
+  assets/hellishrc.example
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      accent: red
+      toggle:
+        icon: material/weather-night
+        name: dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      accent: red
+      toggle:
+        icon: material/weather-sunny
+        name: light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - What it is + Install: product.md
+  - Interactive Experience: interactive.md
+  - Scripting & Compatibility: scripting.md
+  - Benchmarks: benchmarks.md
+  - Architecture: architecture.md
+  - Performance: performance.md
+  - Platforms: platforms.md
+  - Builtins:
+      - cd: builtins/cd.md
+  - Troubleshooting: troubleshoot/README.md
+  - Fix write-ups: fixes/README.md

@@ -1,0 +1,20 @@
+# Build context for docker/Dockerfile.installer: the installer scripts, the
+# static binary in dist/, and the test harness -- never host build objects or
+# git internals. dist/ is NOT ignored here: the image serves that binary as
+# its fake release.
+.git
+**/.git
+build/
+vendor/libft/build
+vendor/libft/build-*
+vendor/libft/src
+vendor/scripts
+**/*.o
+**/*.a
+npm/node_modules/
+tests/outfiles/
+tests/mini_outfiles/
+tests/bash_outfiles/
+bench/suites/
+wiki/assets/pdfs/
+site/

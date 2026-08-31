@@ -48,6 +48,19 @@ jobs:
           file hellish-linux-x86_64
           sha256sum hellish-linux-x86_64 > hellish-linux-x86_64.sha256
           cat hellish-linux-x86_64.sha256
+      # The install bundle: the proven install drivers, shipped beside the
+      # binary so `curl | sh` reuses them instead of reimplementing preflight,
+      # smoke-testing and never-clobber seeding. Layout mirrors the repo,
+      # because the scripts locate each other relatively (tools/../share).
+      - name: Stage the install bundle
+        run: |
+          set -eux
+          mkdir -p bundle/tools
+          cp user-install.sh hellishrc.example bundle/
+          cp tools/register_shell.sh tools/seed_hellishrc.sh bundle/tools/
+          cp -R share bundle/share
+          tar -czf hellish-install-bundle.tar.gz -C bundle .
+          tar -tzf hellish-install-bundle.tar.gz | head
       # Proves the asset runs where the old one could not, before it is
       # published rather than after someone reports that it does not.
       - name: The asset runs on an old glibc and with no readline
@@ -65,6 +78,7 @@ jobs:
           files: |
             hellish-linux-x86_64
             hellish-linux-x86_64.sha256
+            hellish-install-bundle.tar.gz
           generate_release_notes: true
           # A tag carrying a pre-release suffix must never become "latest":
           # the update check reads /releases/latest, so publishing a test
