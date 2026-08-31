@@ -83,8 +83,11 @@ done
 # Under `curl | sh`, stdin is the pipe -- but /dev/tty is still the terminal,
 # so questions remain possible. No tty (CI, docker build) means every answer
 # is the default and the plugin step is skipped unless flags said otherwise.
+# The probe runs in a SUBSHELL on purpose: a failed redirection on a special
+# builtin like `:` is fatal to a non-interactive POSIX shell, even inside an
+# `if` -- the subshell dies in the parent's place.
 INTERACTIVE=0
-if [ "$ASSUME_YES" = "0" ] && { : </dev/tty; } 2>/dev/null; then
+if [ "$ASSUME_YES" = "0" ] && ( exec </dev/tty ) 2>/dev/null; then
 	INTERACTIVE=1
 fi
 
