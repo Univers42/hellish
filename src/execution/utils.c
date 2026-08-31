@@ -37,7 +37,11 @@ int	save_fd(int fd)
    is_dup   -- dup2 src_fd to a different target without closing the source
                (used when the source is a pre-opened read fd like a pipe);
    normal   -- dup2 then close the original so only the canonical fd number
-               remains live (the typical file-backed redirect). */
+               remains live (the typical file-backed redirect).
+   `both` is the `&>file` / `>&file` shorthand: bash defines it as
+   `>file 2>&1`, so stderr follows stdout AFTER stdout has moved. Doing it
+   here rather than emitting a second t_redir keeps one AST redirect node
+   mapping to one table entry, which every caller already assumes. */
 static void	apply_redir_now(t_redir redir)
 {
 	if (redir.close_fd)
@@ -55,6 +59,8 @@ static void	apply_redir_now(t_redir redir)
 		dup2(redir.fd, redir.src_fd);
 		close(redir.fd);
 	}
+	if (redir.both)
+		dup2(redir.src_fd, STDERR_FILENO);
 }
 
 /* Look up the t_redir at index `idx` in state->redirects and apply it.

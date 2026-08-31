@@ -5,11 +5,28 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 # ── 1. PROMPT ──────────────────────────────────────────────────────────
-# Setting PS1 replaces the built-in prompt entirely; unset it to get the
-# rich built-in theme back. Bash escape set:
+# Unconfigured, hellish shows zsh's own default -- "hostname% " -- plus
+# the ⬆ badge when an update is pending. The rich two-row theme is one
+# command away (`prompt` lists them; PS1='\B' is the same theme by name).
+# Setting PS1 replaces the prompt entirely. Bash escape set:
 #   \u user   \h host   \H host.fqdn   \w cwd(~)   \W cwd basename
-#   \$ $/#    \n newline   \t HH:MM:SS   \d date   \j job count
-#   \s shell  \v version   \e ESC   \[ \] readline width guards
+#   \$ $/#    \n newline   \t HH:MM:SS   \T 12h   \@ am/pm   \d date
+#   \j job count   \l tty   \! history no.   \# command no.
+#   \s shell  \v \V version   \e ESC   \r CR   \[ \] readline width guards
+#   \D{strftime-format} custom clock
+#
+# PS1 is BILINGUAL: zsh's % syntax works right here too, alongside the
+# backslash set -- %n %m %~ %d %c, %F{color}/%f (names, 0-255, #rrggbb),
+# %B %U %S, %K, %{...%}, %? %j %h %L %#, the %T/%t/%*/%D clocks,
+# %(x.true.false) conditionals, %n<...< truncation -- all verified
+# byte-for-byte against zsh 5.9 (tests/zsh_prompt_parity_test.py).
+#     PS1='%F{cyan}%~%f %(?.%F{green}.%F{red})%#%f '
+# Your old percents are safe: an unknown or unclosed % sequence stays on
+# screen literally ('100% ', '%> '), and the strftime percents inside
+# $(...) or \D{...} are never touched. PROMPT is the same language with
+# EXACT zsh semantics (unknown escapes vanish, as zsh does); it wins over
+# PS1 when both are set, and `set -o zsh` gives PS1 those exact
+# semantics too, since in zsh PS1 and PROMPT are one parameter.
 # hellish extensions — all SELF-SPACING (invisible until relevant):
 #   \g  git branch of the cwd (+ * when dirty), empty outside a repo
 #   \S  " ✘N" after a failing command, empty after success
@@ -22,7 +39,17 @@
 #       it. Silenced by HELLISH_NO_UPDATE_CHECK like the rest.
 #   \A  an ANIMATED glyph (see HELLISH_ANIM below) — OPT-IN, off by
 #       default. (Shadows bash's \A 24h-clock escape; use \t for time.)
-# Live $VAR / ${VAR} expansion happens at every render.
+# Live $VAR / ${VAR} expansion happens at every render, and so does $? and
+# the other single-character specials ($$, $!, $#, $1...). QUOTE PS1 WITH
+# SINGLE QUOTES if you use them: in double quotes the shell expands $? once,
+# when you ASSIGN it, and bakes that one value in forever -- which looks
+# exactly like a prompt that cannot see your exit status (issue #69).
+#
+#     PS1='[$?] \$ '     # re-read every prompt   <- what you want
+#     PS1="[$?] \$ "     # frozen at assignment
+#
+# \S is usually the nicer answer than $? anyway: it shows " ✘N" only after a
+# failure and stays invisible when everything is fine.
 
 # ── ANIMATION: OFF BY DEFAULT, AND THAT IS DELIBERATE ──────────────────
 # A live style makes \A repaint the prompt rows in place ~10x/second
@@ -48,8 +75,26 @@ HELLISH_ANIM=off
 #
 #     ~/Documents/hellish feat/rc-theming* ✘1 took 3.2s ⚙1
 #     ❯
-PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
-PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
+# The prompt now lives in its own file, not here:
+#
+#     ~/.config/hellish/rc.d/30-prompt.hsh
+#
+# That is issue #74 -- "this prompt should exist in configuration so we can
+# retouch it and not in binary only". rc.d is loaded BEFORE this file, so
+# anything you set here still wins; the split just means the default is
+# somewhere obvious and editable instead of compiled in.
+#
+# Uncomment either of these to override it from here. Note they are the
+# richer two-row themes -- the seeded default is deliberately plainer.
+#
+# Theme: "pure"
+# PS1='\n\[\e[1;38;2;122;162;247m\]\w\[\e[0m\] \[\e[38;2;125;133;144m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\[\e[38;2;229;192;123m\]\p\[\e[0m\]\[\e[1;38;2;125;207;255m\]\J\[\e[0m\] \A\n\[\e[1;38;2;198;120;221m\]❯\[\e[0m\] '
+# PS2='\[\e[38;2;125;133;144m\]❯\[\e[0m\] '
+
+# Theme: "powerline" — solid colour blocks, from issue #68. Reverse-video
+# segments in 24-bit colour, with the git/failure/duration/update badges in
+# the last block so it stays quiet until something is worth saying.
+# PS1='\[\e[1;38;2;20;20;20;48;2;152;195;121m\] ➜ \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;229;192;123m\] \u@\h \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;224;108;117m\] \w \[\e[0m\]\[\e[1;38;2;20;20;20;48;2;152;195;121m\] \g\S\p\J\U \[\e[0m\] '
 
 # Theme: "ember" — framed two-liner, user shown, same badges.
 # PS1='\[\e[38;2;90;96;106m\]╭─\[\e[0m\] \[\e[1;38;2;122;162;247m\]\u\[\e[0m\] \[\e[38;2;108;114;125m\]in\[\e[0m\] \[\e[1;38;2;158;203;255m\]\w\[\e[0m\] \[\e[1;38;2;152;195;121m\]\g\[\e[0m\]\[\e[1;38;2;224;108;117m\]\S\[\e[0m\]\n\[\e[38;2;90;96;106m\]╰─\[\e[0m\] \[\e[1;38;2;152;195;121m\]❯\[\e[0m\] '
@@ -133,6 +178,29 @@ up() {
 		n=$((n - 1))
 	done
 }
+
+# ── 5b. HOOKS: RUN SOMETHING AROUND EVERY COMMAND ─────────────────────
+# Two arrays of FUNCTION NAMES. Everything named in them runs, in order.
+#
+#   HELLISH_PRECMD_FUNCS    just before each prompt is drawn
+#   HELLISH_PREEXEC_FUNCS   just before a typed line runs; $1 is the line
+#
+# Arrays, and not one string of code, so that two plugins can both attach.
+# `trap ... DEBUG` holds exactly one handler: the second thing to install
+# one silently removes the first, and neither can tell. Appending a name to
+# an array cannot do that.
+#
+#   note_dir()  { echo "[$PWD]"; }
+#   log_cmd()   { printf '%s\t%s\n' "$(date +%s)" "$1" >> ~/.cmdlog; }
+#   HELLISH_PRECMD_FUNCS=(note_dir)
+#   HELLISH_PREEXEC_FUNCS=(log_cmd)
+#
+# A plain string works too -- HELLISH_PRECMD_FUNCS='a b' -- for when you are
+# adding one name and would rather not think about arrays.
+#
+# $? is saved and put back around the hooks, so a prompt with a status badge
+# still shows YOUR command's result and not the hook's. Interactive shells
+# only: scripts and `-c` never run them.
 
 # ── 6. HISTORY ────────────────────────────────────────────────────────
 # Kept in ~/.hellish_history. By DEFAULT a multi-line command is stored as

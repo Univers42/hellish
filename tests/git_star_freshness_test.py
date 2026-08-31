@@ -113,6 +113,9 @@ class Shell:
             path = path_prefix + ":" + path
         env = {
             "HOME": tempfile.mkdtemp(prefix="hellish_star_home_"),
+            # The `on branch*` segment lives in the RICH theme, which
+            # stopped being the default -- ask for it by name.
+            "PS1": "\\B",
             "PATH": path, "TERM": "xterm-256color", "LANG": "C.UTF-8",
             "INPUTRC": "/dev/null", "HELLISH_NO_BANNER": "1",
             "HELLISH_NO_UPDATE_CHECK": "1", "HELLISH_NO_ANIM": "1",

@@ -20,6 +20,7 @@
 # define COMPLETION_PRIVATE_H
 
 # include "libft.h"
+# include "shell.h"
 # include <stddef.h>
 # include <dirent.h>
 

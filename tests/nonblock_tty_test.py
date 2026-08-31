@@ -45,6 +45,9 @@ FAILS = []
 ENV = {
     "HOME": os.environ.get("HOME", "/tmp"),
     "PATH": os.environ["PATH"],
+    # The multibyte ❯ under test belongs to the RICH theme, which stopped
+    # being the default -- ask for it by name.
+    "PS1": "\\B",
     "TERM": "xterm-256color", "LANG": "C.UTF-8",
     "COLORTERM": "truecolor",
     "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
@@ -71,7 +74,9 @@ def run_nonblocking(cmds, slow_reader):
         os.environ.update(ENV)
         flags = fcntl.fcntl(1, fcntl.F_GETFL)
         fcntl.fcntl(1, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 200, 0, 0))
     time.sleep(0.8)
@@ -121,7 +126,9 @@ def run_stalled(cmds, stall_bytes=400000):
         os.environ.update(ENV)
         flags = fcntl.fcntl(1, fcntl.F_GETFL)
         fcntl.fcntl(1, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 200, 0, 0))
     time.sleep(0.8)

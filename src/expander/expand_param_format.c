@@ -40,54 +40,34 @@ static bool	is_unset_or_null(const char *val)
 	return (val == NULL || *val == '\0');
 }
 
-/* ${#arr[@]} is the element count, ${#arr[i]} an element's length; the
-   subscript token is expanded by expand_array_token first, so here we
-   only need the name[body] shapes on the raw text. */
-static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
+/* Did the operator's WORD supply the result, rather than the variable?
+**
+** Asked in two places -- here, to build the value, and in expand_op_token,
+** to decide whether an EMPTY result is a field at all -- so it is one
+** function. bash draws that line exactly here:
+**
+**     x=;  ${x:-}      word used, but empty       no field
+**     x=;  ${x:-""}    word used, quoted empty    one empty field
+**     x=;  ${x:+""}    word NOT used              no field
+**     x=1; ${x:+""}    word used, quoted empty    one empty field
+**
+** Two copies of this predicate would eventually answer those four
+** differently, and the symptom -- an extra empty argument -- is invisible
+** until some program counts its arguments.
+*/
+bool	pf_op_word_used(char *val, t_pe_op o)
 {
-	t_token	tok;
+	bool	act;
 
-	tok = (t_token){.tt = TT_ENVVAR, .start = (char *)s, .len = slen};
-	if (slen > 3 && s[slen - 1] == ']' && (s[slen - 2] == '@'
-			|| s[slen - 2] == '*') && s[slen - 3] == '[')
-	{
-		tok.start = env_expand_n(state, (char *)s, slen - 3);
-		if (assoc_is(tok.start))
-			return (ft_itoa(assoc_count(tok.start)));
-		if (tok.start && !arr_is(tok.start))
-			return (ft_itoa(1));
-		return (ft_itoa(arr_count(tok.start)));
-	}
-	if (!expand_array_token(state, &tok, false))
-		return (NULL);
-	if (tok.allocated)
-		parena_free((char *)tok.start);
-	return (ft_itoa(tok.len));
-}
-
-/* ${#param} — return the length of the variable's value as a decimal string.
-   An unset variable counts as length 0 rather than an error (unless set -u).
-   The result is always a fresh malloc'd string (ft_itoa allocates). */
-char	*expand_strlen(t_shell *state, const char *s, int slen)
-{
-	char	*val;
-	char	*result;
-
-	if (ft_strnchr((char *)s, '[', slen))
-	{
-		result = expand_strlen_arr(state, s, slen);
-		if (result)
-			return (result);
-	}
-	val = pf_get_var_value(state, s, slen);
-	if (!val)
-		return (ft_strdup("0"));
-	if (arr_is(val))
-		val = arr_get_idx(val, 0);
-	if (!val)
-		return (ft_strdup("0"));
-	result = ft_itoa(ft_strlen(val));
-	return (result);
+	if (o.colon)
+		act = is_unset_or_null(val);
+	else
+		act = (val == NULL);
+	if (o.opc == '-' || o.opc == '=')
+		return (act);
+	if (o.opc == '+')
+		return (!act);
+	return (false);
 }
 
 /* Handle the default/alternate family of parameter operators:
@@ -99,19 +79,9 @@ char	*expand_strlen(t_shell *state, const char *s, int slen)
    `val` is NULL for unset, "" for set-but-empty (pf_get_var_value contract). */
 char	*default_or_alt(t_shell *state, char *val, t_pe_op o)
 {
-	bool	act;
-
-	if (o.colon)
-		act = is_unset_or_null(val);
-	else
-		act = (val == NULL);
+	if (pf_op_word_used(val, o))
+		return (expand_param_word(state, o.word, o.wlen, o.dq));
 	if (o.opc == '-')
-	{
-		if (act)
-			return (expand_param_word(state, o.word, o.wlen, o.dq));
 		return (ft_strdup(val));
-	}
-	if (act)
-		return (ft_strdup(""));
-	return (expand_param_word(state, o.word, o.wlen, o.dq));
+	return (ft_strdup(""));
 }

@@ -52,7 +52,8 @@ enum e_opt_flag
 	OPT_FLAG_VERSION = 1u << 4,
 	OPT_FLAG_DEBUG_LEXER = 1u << 8,
 	OPT_FLAG_DEBUG_PARSER = 1u << 9,
-	OPT_FLAG_DEBUG_AST = 1u << 10
+	OPT_FLAG_DEBUG_AST = 1u << 10,
+	OPT_FLAG_NORC = 1u << 11
 };
 
 /* The `set -o` options that do not own a dedicated opt_* bool.  bash accepts
@@ -82,6 +83,9 @@ enum e_setopt
 	SETOPT_PRIVILEGED = 1u << 14,
 	SETOPT_EMACS = 1u << 15,
 	SETOPT_VI = 1u << 16,
+	SETOPT_ZSH = 1u << 17,
+	SETOPT_KSHARRAYS = 1u << 18,
+	SETOPT_LOCALOPTS = 1u << 19,
 	SETOPT_DEFAULT = SETOPT_BRACEEXPAND | SETOPT_HASHALL | SETOPT_ICOMMENTS
 };
 
@@ -95,11 +99,25 @@ typedef struct s_setopt
 	uint32_t	bit;
 }	t_setopt;
 
+/* The zsh dialect gate (src/core/zsh_mode.c).  Every zsh-only construct in
+   the lexer, parser, expander and builtins asks zsh_mode() first, so the
+   default dialect stays exactly the bash the golden suite pins. */
+bool	zsh_mode(t_shell *state);
+bool	zsh_mode_swap(t_shell *state, bool on);
+void	zsh_mode_pin(t_shell *state, bool on);
+int		zsh_mode_req(t_shell *state, bool on, bool local);
+bool	zsh_path(const char *path);
+/* True when arrays count from 1 -- zsh mode with ksh_arrays not set. */
+bool	zsh_arrays(t_shell *state);
+/* One written subscript -> the 0-based index the array store uses. */
+long	sub_to_index(t_shell *state, long sub, long count);
+
 void	parse_and_execute_input(t_shell *state);
 /* getcwd(NULL,0) onto the active fn_* heap; see helpers/x_getcwd.c */
 char	*x_getcwd(void);
 /* release the pushd/popd dir stack at exit; builtins/builtin_dirstack.c */
 void	free_dirstack(t_shell *state);
+void	free_compspecs(t_shell *state);
 /* remember / recover a finished bg child's status; src/execution/bg_done.c */
 void	bg_done_record(t_shell *state, pid_t pid, int status);
 int		bg_done_take(t_shell *state, pid_t pid, int *status);
@@ -134,6 +152,21 @@ typedef struct s_procsub_entry
 
 typedef t_vec	t_vec_procsub;
 
+/* One `complete` registration: what to offer when the user tabs an
+   argument of NAME.  Lives in state->compspecs.
+     `words` is -W (a literal word list), `func` is -F (a shell function
+   that fills COMPREPLY), `act` is the letter of -A/-f/-d/-c/-v/... and 0
+   for none, `opts` collects -o names verbatim.  A spec may carry several
+   at once; bash runs the function first and appends the rest. */
+typedef struct s_compspec
+{
+	char	*name;
+	char	*words;
+	char	*func;
+	char	*opts;
+	char	act;
+}	t_compspec;
+
 /* A user-defined shell function.  The body is the AST of the compound
    list between the braces, deep-cloned at definition time so the
    original parse tree can be freed.  Functions live in state->functions
@@ -142,7 +175,66 @@ typedef struct s_shell_func
 {
 	char		*name; /* heap-allocated function name */
 	t_ast_node	body; /* deep-cloned AST of the function body */
+	char		*src; /* file it was DEFINED in (see below) */
+	char		*text; /* its source text, for declare -f */
+	bool		zsh; /* defined under the zsh dialect (see t_call_frame) */
 }	t_shell_func;
+
+/* src: the file this function was DEFINED in (strdup'd, NULL at top level).
+   BASH_SOURCE[0] must name the defining file, not whatever happens to be
+   sourcing when the function is CALLED -- that is what lets a plugin locate
+   its own directory from inside a helper.
+   text: the definition's SOURCE TEXT, captured before the body was cloned
+   (ast_span.c explains why that timing is the whole trick); NULL when the
+   span could not be recovered, and declare -f says so rather than inventing
+   a body.
+
+   One entry per live function call or `source`, innermost last. This is the
+   backing store for FUNCNAME and BASH_SOURCE, which had nowhere to come from
+   before: the shell tracked only the two int counters func_depth and
+   source_depth, so a sourced file could not name itself and $0 answered
+   /usr/bin/hellish. Issue #71 calls BASH_SOURCE the single highest-leverage
+   gap for plugins, because without it every module has to hardcode its path.
+   Frames OWN their strings. Borrowing t_shell_func.name/.src would repeat the
+   use-after-free that retire_body() exists to prevent: a function may free
+   its own definition mid-call --
+
+       deactivate () { ... unset -f deactivate ; }
+
+   which is not contrived, it is how every Python venv ends -- and the frame
+   for that call is still on the stack, so the next publish would read freed
+   memory. Two small strdups per call is the cheap way to make that
+   impossible; the publish already allocates, so it is not the hot cost.
+
+   zsh: the dialect that was in force when this frame was pushed, restored by
+   frame_pop.  The frame is already the exact bracket around a call or a
+   source, so it is the natural place to hang it -- and hanging it there is
+   what makes a .zsh plugin work at all.  Sourcing the plugin parses it in zsh
+   mode, but its functions are CALLED later from an interactive prompt where
+   the mode is off, and `${(f)x}` in a body has to keep meaning what its
+   author wrote.  So each function records the dialect it was defined in
+   (t_shell_func.zsh) and execute_func_call re-arms it for the call; the
+   frame puts back whatever the caller had.  Push sites declare the new
+   dialect right after pushing, so nesting composes without a second stack.
+
+   setopt/shopt: the option words as they were on entry, put back by
+   frame_pop only when the body asked for `setopt localoptions`.  zsh's
+   options are GLOBAL by default and that one word makes them function-local,
+   which is not a nicety -- oh-my-zsh's extract says
+
+       setopt localoptions extendedglob
+
+   and extendedglob changes how every later pattern PARSES.  Letting that
+   escape the function would silently re-interpret globs typed at the prompt
+   half an hour later, with nothing to connect the two. */
+typedef struct s_call_frame
+{
+	char				*func;
+	char				*src;
+	bool				zsh;
+	unsigned int		setopt;
+	unsigned int		shopt;
+}	t_call_frame;
 
 /* One saved variable for function scope: its value at the moment it was made
    local / before positional params were replaced, restored on return. */
@@ -152,7 +244,19 @@ typedef struct s_scope_save
 	char	*key;
 	char	*value;
 	bool	existed;
+	/* The var_attrs entry as it was on entry, so `local -n` unwinds like
+	   every other local. Saving only the VALUE was not enough: the nameref
+	   attribute lives in a separate table, so an inner `local -n r=w` used
+	   to leak past its own function's return and the caller's `r` silently
+	   started following the callee's target. kind 0 means "no attribute",
+	   which is also what restoring 0 through attr_set means. */
+	char	attr_kind;
+	char	*attr_target;
 }	t_scope_save;
+
+/* The ONLY way to fill one. Every field must be set; a partially built save
+   frees garbage in restore_one. */
+void	scope_save_capture(t_shell *state, const char *key, t_scope_save *s);
 
 /* Positional parameters $1..$count, stored outside the env so function calls
    swap them in O(1) (a struct copy) instead of mutating the env hash 10x per
@@ -220,7 +324,15 @@ typedef struct s_shell
 	long long			last_cmd_ms; /* wall-clock ms of last command */
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
+	int					cmd_no; /* PS1 \# : REPL turns this session, from 1.
+								   NOT \! -- history dedupes and survives
+								   the session; this counter does neither */
 	bool				should_exit; /* set by `exit` builtin */
+	bool				builtin_fatal; /* special builtin got a MALFORMED
+										  request, not merely a failing one:
+										  read and cleared by
+										  strict_builtin_failed() so the
+										  abort happens after teardown */
 	/* --- loop/function control flow --- */
 	int					loop_break; /* pending break depth (>0 = active) */
 	int					loop_continue; /* pending continue depth */
@@ -228,6 +340,12 @@ typedef struct s_shell
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
 	int					source_depth; /* nesting depth of `.`/`source` runs */
+	/* --rcfile=FILE, else NULL (borrowed from argv) */
+	char				*rcfile;
+	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */
+	t_vec				call_frames;
+	/* call_frames changed since the two env arrays were last rebuilt */
+	bool				frames_dirty;
 	/* --- positional parameters and local variable saves --- */
 	t_pos				pos; /* $1..$N, $#, $* for current scope */
 	t_vec				local_saves; /* t_scope_save stack for `local` */
@@ -279,6 +397,11 @@ typedef struct s_shell
 	/* --- traps and readonly vars --- */
 	char				*traps[SH_NTRAP]; /* trap strings, by signal num */
 	int					trap_depth; /* >0 while a trap body runs */
+	/* >0 while a prompt is being rendered. An error raised in there must
+	   never end the session: a prompt redraws on every keystroke, and a
+	   shell that exits because of a typo in PS1 gives the user no way back
+	   in to fix it. arith_fail reads this and reports without exiting. */
+	int					prompt_depth;
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */
@@ -302,6 +425,7 @@ typedef struct s_shell
 	int					bg_done_next; /* next write slot in bg_done ring */
 	t_vec_procsub		proc_subs; /* open process substitutions */
 	t_vec				functions; /* t_shell_func list (user-defined fns) */
+	t_hash				func_index; /* name -> functions slot+1 (O(1) lookup) */
 	t_vec				dead_funcs; /* bodies retired during their own call */
 	t_job_table			job_table; /* background job list */
 	bool				exit_warned; /* stopped-job exit warning given */
@@ -314,6 +438,7 @@ typedef struct s_shell
 	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				var_attrs; /* declare -i/-n attribute table */
 	t_vec				dirstack; /* pushd/popd dir stack */
+	t_vec				compspecs; /* t_compspec: `complete` registrations */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */
 	t_hash				cmd_cache; /* command name -> resolved path cache */
@@ -336,10 +461,26 @@ typedef struct s_shell
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
 # define SHOPT_LITHIST 0x400
-/* progcomp is KNOWN but off, and stays off: hellish has no `complete`
-   builtin, so there is no programmable completion to switch on. It is
-   here so /etc/profile.d/bash_completion.sh's `shopt -q progcomp` gets a
-   truthful "no" instead of an error on every login -- issue #51. */
+/* progcomp arrived as a truthful "no": the bit existed, defaulted off, and
+** controlled nothing -- it was there so /etc/profile.d/bash_completion.sh's
+** `shopt -q progcomp` got an answer instead of an error on every login
+** (#51). It now MEANS what it says: src/completion/progcomp*.c reads it
+** before it will consult a `complete` spec, and `shopt -s progcomp` turns
+** on a dispatch that works end to end (#72 phase 4).
+**
+** It still defaults OFF, and bash defaults it on. That is the one place
+** hellish deliberately differs, and the reason is measured, not cautious:
+** the option is exactly the gate /etc/profile.d/bash_completion.sh checks,
+** so switching it on makes every Debian and Ubuntu login source a
+** 3800-line framework that hellish cannot yet run. The CI runner proved it
+** -- one `syntax error near unexpected token '('` at login, which is #51's
+** complaint arriving by the door #51 opened.
+**
+** The blocker is architectural: exec_string LEXES a whole sourced file
+** before executing any of it, so `shopt -s extglob` on line 47 has not run
+** when the extglob case pattern on line 1810 is tokenised. Lexing
+** incrementally would fix it and flip this default in one line.
+** tests/plugin_corpus_test.py carries the row that will notice. */
 # define SHOPT_PROGCOMP 0x800
 
 /* Directory matcher ctx for glob expansion */

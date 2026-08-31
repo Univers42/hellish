@@ -100,3 +100,43 @@ echo "[${$+haspid}][${$:+haspid}]"; echo done
 echo "[${!#x}][${!%x}][${!/x/y}]"; echo done
 v=abc; echo "[${v#a}][${v%c}][${v/b/B}][${v-D}][${v+A}]"; echo done
 set -- aa bb; echo "[${1#a}][${2%b}][${1/a/A}]"; echo done
+echo ${x:-a{b}
+echo "${x:-a{b}"
+o="a<b"; echo ${o%%[<{().[]*}
+y=q; echo ${x:-${y}}
+echo ${x:-{}}
+echo ${x:-a}b}
+echo ${x:-\}}
+v=abc; echo ${v%%[b{]*}
+v='a{b}c'; echo "${v#*\{}"
+u=1; echo ${u:+one{two}
+p="x{y"; echo ${p#*\{}
+x=; printf "<%s>" ${x:+a} ${x:-} end; echo
+x=; y=; printf "<%s>" ${x:+a} ${y:+b} end; echo
+x=; printf "<%s>" ${x:-""} end; echo
+x=; printf "<%s>" ${x:+""} end; echo
+x=1; printf "<%s>" ${x:+""} end; echo
+x=; printf "<%s>" ${x-} end; echo
+x=; printf "<%s>" ${x+} end; echo
+x=; printf "<%s>" ${x:-'q'} end; echo
+x=; printf "<%s>" ${x:-"c d"} end; echo
+d=; printf "%s\n" ${d:+--git-dir="$d"} --version
+x=; set -- a; printf "<%s>" ${x:+z} "$@" end; echo
+x=; printf "<%s>" "${x:-}" end; echo
+stack="[[x"; top=${stack%"${stack#?}"}; echo "[$top]"
+stack="{[x"; top=${stack%"${stack#?}"}; echo "[$top]"
+y="*"; v="ab*"; echo "${v%"$y"}"
+y="*"; v="ab*"; echo "${v%$y}"
+y="[b]"; v="a[b]"; echo "${v%"$y"}"
+y="[b]"; v="ab"; echo "${v%$y}"
+y="?"; v="ab?"; echo "${v%"$y"}"
+y="?"; v="ab?"; echo "${v%$y}"
+v=abc; echo "${v%%[bx]*}"
+v=abc; echo "${v##[ax]}"
+v=aXbXc; echo "${v//[X]/-}"
+p="a*c"; v="a*c"; echo "${v#"$p"}"
+v=aXbXc; echo "${v/[X]/-}"
+v=aXbXc; echo "${v//[XY]/-}"
+v=a.b.c; echo "${v//[.]/_}"
+v=abc; echo "${v//[a-c]/_}"
+v="a[b"; echo "${v//"["/_}"

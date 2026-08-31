@@ -30,6 +30,7 @@ import os
 import pty
 import select
 import shutil
+import socket
 import struct
 import subprocess
 import sys
@@ -61,7 +62,9 @@ def run(seq, home=None):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execvp(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 100, 0, 0))
     time.sleep(0.9)
@@ -114,9 +117,11 @@ def main():
     done = after_last(out, "ZZZ_DONE")
     check("the venv name is GONE after deactivate restores PS1",
           "(testenv)" not in done, "prompt still says it: %r" % done[:200])
-    check("the built-in prompt comes back after deactivate",
-          "╭─" in done or "╯" in done or "❯" in done,
-          "no built-in prompt after restore: %r" % done[:200])
+    # The restored default is zsh's basic "hostname% " -- the rich theme
+    # stopped being the default, so what must come back is the hostname.
+    check("the default prompt comes back after deactivate",
+          socket.gethostname().split(".")[0] in done,
+          "no default prompt after restore: %r" % done[:200])
 
     # 2: the real thing, if python3 can build a venv here.
     probe = subprocess.run([sys.executable, "-c", "import venv"],

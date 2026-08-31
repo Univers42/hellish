@@ -28,6 +28,7 @@
 typedef struct s_expander_simple_cmd
 {
 	size_t		i; /* current child node index */
+	t_ast_node	*node; /* the simple command, for looking at siblings */
 	t_ast_node	*curr; /* shorthand for children[i] */
 	bool		found_first; /* true once the command word is seen */
 	bool		export; /* true when expanding an `export` command */
@@ -49,6 +50,8 @@ void		expand_word_glob_ctl(t_shell *state, t_ast_node *node,
 void		expand_word_ro(t_shell *state, t_ast_node *src,
 				t_vec *args, bool keep_as_one);
 void		expand_word_assign_ro(t_shell *state, t_ast_node *src,
+				t_vec *args);
+void		expand_word_elem_ro(t_shell *state, t_ast_node *src,
 				t_vec *args);
 char		*expand_word_single(t_shell *state, t_ast_node *curr);
 char		*expand_word_single_ro(t_shell *state, t_ast_node *curr);

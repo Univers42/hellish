@@ -1,0 +1,154 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   builtin_zle.c                                      :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2026/08/30 15:30:00 by dlesieur          #+#    #+#             */
+/*   Updated: 2026/08/30 15:30:00 by dlesieur         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
+#include "builtins_private.h"
+#include "zle.h"
+
+/* `zle` and `bindkey`.
+**
+**     zle -N name [fn]     register a widget
+**     zle <widget>         invoke one (only from inside another widget)
+**     zle                  bare: "is the line editor active?"
+**     bindkey [-M map] seq widget
+**
+** The bare `zle` is the one worth explaining. Plugins guard on it:
+**
+**     zle && zle redisplay   # only run redisplay if zle is enabled
+**
+** so it must answer FALSE outside the editor and TRUE inside a widget --
+** otherwise every plugin that guards this way would try to redraw a line
+** that is not being edited. zle_state_cell() is non-NULL only inside the
+** readline child, which is exactly that distinction.
+*/
+
+/* The built-in widgets a plugin invokes by name. Only the ones the corpus
+** uses; anything else is reported rather than quietly accepted, because a
+** widget that appears to run and does nothing is indistinguishable from a
+** working one until the user presses the key.
+**
+** `reset-prompt` is NOT `redisplay` and is answered with it anyway -- the
+** remaining half of #77 item 5, written down here because it is the one
+** inexactness in this file that cannot announce itself. zsh re-expands PS1
+** and redraws; this only redraws, so a plugin that changes the prompt and
+** calls reset-prompt sees the old one. Doing it properly means running
+** prompt_normal inside the readline CHILD, which can fork for a `$(...)` in
+** PS1 and writes to the terminal mid-edit: worth prototyping rather than
+** bolting on. Reporting it instead is not available either -- plugins call
+** it from widgets, once per keystroke, and the child is a fresh fork every
+** prompt, so "once per session" cannot be said there.
+*/
+static int	zle_builtin(t_shell *state, const char *name)
+{
+	if (!ft_strcmp(name, "redisplay") || !ft_strcmp(name, "reset-prompt")
+		|| !ft_strcmp(name, ".redisplay"))
+		return (zle_do_redisplay(), 0);
+	if (!ft_strcmp(name, "kill-buffer") || !ft_strcmp(name, ".kill-buffer"))
+		return (zle_do_kill_buffer(), zle_publish(state), 0);
+	if (!ft_strcmp(name, "accept-line") || !ft_strcmp(name, ".accept-line"))
+		return (zle_do_accept_line(), 0);
+	if (zle_widget_get(name))
+		return (zle_run_widget(state, name));
+	return (ft_eprintf("%s: zle: %s: no such widget\n", state->ctx, name), 1);
+}
+
+/* zle -N name [fn] */
+static int	zle_register(t_shell *state, t_vec argv, size_t i)
+{
+	char	**av;
+
+	av = (char **)argv.ctx;
+	if (i >= argv.len)
+		return (ft_eprintf("%s: zle: -N: widget name expected\n",
+				state->ctx), 1);
+	if (i + 1 < argv.len)
+		zle_widget_add(av[i], av[i + 1]);
+	else
+		zle_widget_add(av[i], NULL);
+	return (0);
+}
+
+/* zle -M text... -- a message on its own line under the one being edited.
+**
+** This was the spelling that took the silent path: any argument starting
+** with '-' fell into a bare `return 0`, so the message was never set, never
+** printed, and reported success. A plugin using it to say what it had just
+** done looked like it had done nothing.
+**
+** Outside the editor it is an error rather than an ordinary print: there is
+** no line to put a message under, and a shell that printed it anyway would
+** put plugin chatter into the stdout of a script.
+*/
+static int	zle_message(t_shell *state, t_vec argv, size_t i)
+{
+	t_string	msg;
+
+	if (!zle_active())
+		return (ft_eprintf("%s: zle: can only be called from a widget\n",
+				state->ctx), 1);
+	vec_init(&msg);
+	msg.elem_size = 1;
+	while (i < argv.len)
+	{
+		vec_push_str(&msg, ((char **)argv.ctx)[i++]);
+		if (i < argv.len)
+			vec_push_char(&msg, ' ');
+	}
+	vec_push_char(&msg, '\0');
+	zle_do_message((char *)msg.ctx);
+	return (xfree(msg.ctx), 0);
+}
+
+int	builtin_zle(t_shell *state, t_vec argv)
+{
+	char	**av;
+
+	av = (char **)argv.ctx;
+	if (argv.len < 2)
+		return (zle_active() == false);
+	if (!ft_strcmp(av[1], "-N"))
+		return (zle_register(state, argv, 2));
+	if (!ft_strcmp(av[1], "-M"))
+		return (zle_message(state, argv, 2));
+	if (av[1][0] == '-')
+		return (zle_option(state, argv, 1));
+	if (!zle_active())
+		return (ft_eprintf("%s: zle: can only be called from a widget\n",
+				state->ctx), 1);
+	return (zle_builtin(state, av[1]));
+}
+
+/* bindkey [-M keymap] sequence widget.
+     -M is accepted and its argument discarded: readline has one keymap per
+   editing mode and switches between them itself, so binding the same key in
+   emacs, vicmd and viins -- which is what oh-my-zsh's sudo does, three
+   calls -- is one binding here. Recording three would have them overwrite
+   each other and the last would win, which is the same answer by accident
+   rather than by design. */
+int	builtin_bindkey(t_shell *state, t_vec argv)
+{
+	char	**av;
+	size_t	i;
+
+	av = (char **)argv.ctx;
+	i = 1;
+	while (i < argv.len && av[i][0] == '-' && av[i][1])
+	{
+		if (av[i][1] == 'M' && i + 1 < argv.len)
+			i++;
+		i++;
+	}
+	if (i + 1 >= argv.len)
+		return (0);
+	zle_bind_add(av[i], av[i + 1]);
+	(void)state;
+	return (0);
+}

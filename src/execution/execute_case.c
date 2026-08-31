@@ -18,7 +18,14 @@ bool	case_match(const char *s, const char *p);
 /* Expand a case word (subject or pattern) to a single string: parameter,
    command and arithmetic substitution and tilde, but NO field splitting and
    NO pathname (glob) expansion - a case pattern *is* the glob.  Exported:
-   [[ ]] operands follow exactly these rules (expand_dbracket.c). */
+   [[ ]] operands follow exactly these rules (expand_dbracket.c).
+
+   A word that expands to NOTHING leaves word_to_string's vector
+   unallocated, and ft_strndup(NULL, 0) hands back NULL, which case_match
+   then walks -- `case "$UNSET" in a) ;; esac` was a segfault.
+   expand_case_pattern below has carried this same guard for a while; the
+   subject side never got it, and nothing reached the hole while an unset
+   variable alone still stringified to a literal '$'. */
 char	*expand_case_word(t_shell *state, t_ast_node *node)
 {
 	t_ast_node	copy;
@@ -30,7 +37,10 @@ char	*expand_case_word(t_shell *state, t_ast_node *node)
 	expand_cmd_substitutions(state, &copy);
 	expand_env_vars(state, &copy, false);
 	s = word_to_string(copy);
-	ret = ft_strndup((char *)s.ctx, s.len);
+	if (s.ctx)
+		ret = ft_strndup((char *)s.ctx, s.len);
+	else
+		ret = ft_strndup("", s.len);
 	xfree(s.ctx);
 	free_ast(&copy);
 	return (ret);
@@ -38,6 +48,8 @@ char	*expand_case_word(t_shell *state, t_ast_node *node)
 
 bool	is_quoted_tok(t_tt tt);
 void	append_pat_tok(t_string *s, t_token t);
+bool	case_wants(t_shell *state, t_ast_node *item, const char *subj,
+			char prev);
 
 /* Like expand_case_word but for a PATTERN: quoted glob metacharacters are
    escaped so they match literally, unquoted ones stay active.  Exported:
@@ -87,7 +99,7 @@ static t_execution_state	run_case_body(t_shell *state, t_ast_node *body)
 
 /* Does any pattern of `item` (all children except the trailing body) match
    the already-expanded subject string? */
-static bool	item_matches(t_shell *state, t_ast_node *item, const char *subj)
+bool	item_matches(t_shell *state, t_ast_node *item, const char *subj)
 {
 	size_t	i;
 	char	*pat;
@@ -108,29 +120,34 @@ static bool	item_matches(t_shell *state, t_ast_node *item, const char *subj)
 
 /* AST_CASE: children[0]=subject word, children[1..]=AST_CASE_ITEM, each with
    pattern words followed by a trailing compound-list body. Runs the body of
-   the first item with a matching pattern (no fall-through). */
+   the first matching item, then obeys that clause's terminator:
+     `;;` stop  ·  `;;&` keep testing the rest  ·  `;&` run the next body.
+   `run` carries the previous clause's terminator into the next iteration,
+   which is the only state the two fall-through forms need. */
 t_execution_state	execute_case(t_shell *state, t_executable_node *exe)
 {
 	char				*subj;
 	t_ast_node			*item;
 	t_execution_state	st;
 	size_t				i;
+	char				run;
 
 	ft_assert(exe->node->children.len >= 1);
 	fire_debug_trap(state);
 	subj = expand_case_word(state, vec_idx(&exe->node->children, 0));
 	st = res_status(0);
 	i = 0;
+	run = 0;
 	while (++i < exe->node->children.len)
 	{
 		item = vec_idx(&exe->node->children, i);
-		if (item->node_type == AST_CASE_ITEM && item->children.len >= 2
-			&& item_matches(state, item, subj))
-		{
-			st = run_case_body(state,
-					vec_idx(&item->children, item->children.len - 1));
+		if (!case_wants(state, item, subj, run))
+			continue ;
+		st = run_case_body(state,
+				vec_idx(&item->children, item->children.len - 1));
+		run = item->case_term;
+		if (run == 0)
 			break ;
-		}
 	}
 	return (xfree(subj), st);
 }

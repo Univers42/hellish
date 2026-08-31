@@ -65,19 +65,19 @@ void	pf_parse_spec(t_pf *pf, const char *fmt, int *i, t_spec *sp)
    sourced from '*' arguments share the literal-digits path; a negative
    width re-enters snprintf as a '-' flag plus positive width, a negative
    precision is dropped entirely — both per C rules. Values are clamped
-   (well above the 4096-byte render buffer, so output is unaffected) to keep
+   (the render buffer grows to match, see printf_wide.c) to keep
    absurd widths from overflowing snprintf's internal int. The "ll" prefix
    makes the vararg stack layout match the long long we actually pass. */
 void	pf_build_spec(char *dst, t_spec *sp, char conv)
 {
 	int	k;
 
-	if (sp->width > 30000)
-		sp->width = 30000;
-	if (sp->width < -30000)
-		sp->width = -30000;
-	if (sp->prec > 30000)
-		sp->prec = 30000;
+	if (sp->width > PF_WIDTH_MAX)
+		sp->width = PF_WIDTH_MAX;
+	if (sp->width < -PF_WIDTH_MAX)
+		sp->width = -PF_WIDTH_MAX;
+	if (sp->prec > PF_WIDTH_MAX)
+		sp->prec = PF_WIDTH_MAX;
 	dst[0] = '%';
 	dst[1] = '\0';
 	ft_strlcat(dst, sp->flags, 80);

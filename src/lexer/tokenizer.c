@@ -11,17 +11,28 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include "ft_glob.h"
 #include "helpers.h"
 
 bool	is_word_boundary(const char *s);
+int		extglob_ahead(const char *at);
 
 /* Decide whether the current position starts a quoted/dollar/word lexeme
    that needs parse_lexeme, or a bare operator. The OR with !is_word_boundary
-   is the catch-all: any run of non-special chars is a plain word. */
+   is the catch-all: any run of non-special chars is a plain word.
+     zsh's `=(cmd)` has to be pulled out first: `=` is an ordinary word
+   character, so the catch-all would swallow it and leave the `(` to open a
+   subshell -- which is what `cat =(echo hi)` did, a syntax error. Gated on
+   the dialect; in bash a leading `=` really is just a word character.
+     extglob is the mirror case: `!(a)` and `*(a)` START with characters the
+   catch-all would hand to the operator path, so the group has to be spotted
+   here as well as inside parse_lexeme's loop. */
 static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
 {
+	if (glob_zsh() && (*str)[0] == '=' && (*str)[1] == '(')
+		return (0);
 	if (**str == '\'' || **str == '"' || **str == '$'
-		|| !(is_word_boundary(*str)))
+		|| extglob_ahead(*str) || !(is_word_boundary(*str)))
 		return (parse_lexeme(ret, str));
 	return (0);
 }

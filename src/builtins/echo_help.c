@@ -107,9 +107,14 @@ static int	backslash_writer(t_vec *out, char *s)
    one ahead. '\c' returns 1 immediately, telling the caller to suppress the
    trailing newline and stop all output (what was buffered so far is still
    written). Everything else is routed through backslash_writer or
-   parse_numeric_escape; unrecognised escapes keep the backslash and the
-   following character. */
-int	e_parser(t_vec *out, char *s)
+   parse_numeric_escape.
+
+   drop_unknown is the one place bash and zsh disagree, and they disagree
+   systematically rather than on one letter: `echo -e '\d'` prints \d and
+   `print '\d'` prints d.  Both spellings live here so there is a single
+   decoder -- forking it would have given two escape tables to keep in
+   step, and the difference is one branch. */
+int	e_parser(t_vec *out, char *s, bool drop_unknown)
 {
 	while (*s)
 	{
@@ -125,7 +130,8 @@ int	e_parser(t_vec *out, char *s)
 			}
 			else if (!backslash_writer(out, s))
 			{
-				vec_push_char(out, '\\');
+				if (!drop_unknown)
+					vec_push_char(out, '\\');
 				vec_push_char(out, *s);
 			}
 			s++;

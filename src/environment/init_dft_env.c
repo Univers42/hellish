@@ -83,6 +83,9 @@ static void	set_id_vars(t_shell *state)
 	if (!env_get(&state->env, "UID"))
 		env_set(&state->env, env_create(ft_strdup("UID"),
 				ft_itoa((int)getuid()), false));
+	if (!env_get(&state->env, "EUID"))
+		env_set(&state->env, env_create(ft_strdup("EUID"),
+				ft_itoa((int)geteuid()), false));
 	if (!env_get(&state->env, "HOSTNAME")
 		&& gethostname(host, sizeof(host)) == 0)
 		env_set(&state->env, env_create(ft_strdup("HOSTNAME"),

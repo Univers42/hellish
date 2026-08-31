@@ -49,15 +49,44 @@ static char	*elem_value(t_shell *state, const char *s, int nl, int sublen)
 	xfree(r);
 	xfree(sub);
 	if (arr_is(val))
-		return (arr_get_idx(val, idx));
-	if (val && idx == 0)
+		return (arr_get_idx(val, sub_to_index(state, idx, arr_count(val))));
+	return (zn_scalar_pick(state, val, idx));
+}
+
+/* ${name[@]OP} / ${name[*]OP}: the operator applies to the array JOINED
+   into one string, which is what bash --posix does here -- `a=(1 2);
+   ${a[@]#1}` is " 2", the joined "1 2" with its leading 1 trimmed, not a
+   per-element trim.  So the aggregate needs no engine of its own, only the
+   right left operand.
+     NULL for an unset array AND for an empty one: bash treats `a=()` as
+   unset for `-` as well as `:-`, so `${a[@]-d}` is "d" either way.  Before
+   this the whole shape was a bad substitution, and a bad substitution in a
+   non-interactive shell calls exit_clean(127) -- so the commonest way to
+   ask "does this array hold anything" killed the script outright. */
+static char	*at_value(t_shell *state, const char *s, int nl)
+{
+	char	*val;
+
+	val = env_expand_n(state, (char *)s, nl);
+	if (!val)
+		return (NULL);
+	if (assoc_is(val))
+	{
+		if (assoc_count(val) == 0)
+			return (NULL);
+		return (assoc_values(val, ' '));
+	}
+	if (!arr_is(val))
 		return (ft_strdup(val));
-	return (NULL);
+	if (arr_count(val) == 0)
+		return (NULL);
+	return (arr_join(val, ' '));
 }
 
 /* Split name[sub]OP: *nl name length, *sublen subscript length, *opat
-   operator offset. False unless sub is a real (non-aggregate) subscript AND an
-   operator follows the ']'. */
+   operator offset. False unless an operator follows the ']'; the aggregate
+   subscripts @ and * are accepted, subject to at_op_ok, and routed to
+   at_value by the caller. */
 static bool	elem_op_split(const char *s, int len, int *nl, int sublen[2])
 {
 	int	i;
@@ -68,7 +97,8 @@ static bool	elem_op_split(const char *s, int len, int *nl, int sublen[2])
 		i++;
 	if (i < 1 || i + 2 >= len || !is_valid_ident((char *)s, i))
 		return (false);
-	if (s[i + 1] == '@' || s[i + 1] == '*')
+	if ((s[i + 1] == '@' || s[i + 1] == '*') && s[i + 2] == ']'
+		&& !at_op_ok(s + i + 3, len - i - 3))
 		return (false);
 	close = i + 1;
 	while (close < len && s[close] != ']')
@@ -119,7 +149,10 @@ bool	expand_array_elem_op(t_shell *state, t_token *tt)
 		return (false);
 	if (sub[1] >= tt->len)
 		return (false);
-	elem = elem_value(state, tt->start, nl, sub[0]);
+	if (sub[0] == 1 && (tt->start[nl + 1] == '@' || tt->start[nl + 1] == '*'))
+		elem = at_value(state, tt->start, nl);
+	else
+		elem = elem_value(state, tt->start, nl, sub[0]);
 	res = elem_apply(state, tt->start + sub[1], tt->len - sub[1], elem);
 	tt->start = res;
 	tt->len = (int)ft_strlen(res);

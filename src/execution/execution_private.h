@@ -71,6 +71,14 @@ t_execution_state	execute_cmd_bg(t_shell *state, t_executable_node *exe,
 						t_executable_cmd *cmd);
 bool				check_is_a_dir(char *path, bool *enoent);
 int					cmd_not_found(t_shell *state, char *cmd_name);
+
+/* bash's hook for a command that PATH could not resolve. Debian/Ubuntu
+   define it in /etc/bash.bashrc, and it is what turns "vim: command not
+   found" into the "sudo apt install vim" suggestion. See cmd_not_found.c.
+   Returns the handler's exit status, or -1 for "no handler ran". */
+# define CNF_HANDLER "command_not_found_handle"
+
+int					try_cmd_not_found_handler(t_shell *state, t_vec *args);
 int					no_such_file_or_dir(t_shell *state,
 						char *cmd_name, char *path_of_exe);
 char				*exe_path(char **path_dirs, char *exe_name,
@@ -125,6 +133,9 @@ t_execution_state	execute_arith_cmd(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for_arith(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_tree_node_ext(t_shell *state,
 						t_executable_node *exe, t_ast_type t);
+void				free_local_saves(t_shell *state);
+t_execution_state	execute_anon_func(t_shell *state,
+						t_executable_node *exe);
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv);
 int					find_cmd_path(t_shell *state, char *cmd_name,
@@ -191,5 +202,24 @@ static inline t_executable_node	create_exe_node(int infd,
 		.modify_parent_ctx = modify_parent_ctx,
 	});
 }
+
+/* zsh's multi-variable for (execute_for_zsh.c). The names live as one
+   space-separated span in the node token; zfor_count is how the loop knows
+   its stride, so a one-name loop is unchanged. */
+int					zfor_count(const char *names, int len);
+size_t				for_stride(t_ast_node *node);
+void				free_word_vec(t_vec *w);
+void				zfor_bind_row(t_shell *state, t_ast_node *node,
+						t_vec *w, size_t base);
+
+/* Brace groups, and zsh's `} always { }` (execute_always.c). A group with a
+   second child carries a cleanup block that runs however the body exited. */
+t_execution_state	execute_brace_group(t_shell *state,
+						t_executable_node *exe);
+
+/* zsh's multi-name function definition (execute_func_zsh.c): one body under
+   several names, each brace-expanded. Returns how many were defined. */
+int					zfunc_define_all(t_shell *state, t_token *tok,
+						t_ast_node *body);
 
 #endif

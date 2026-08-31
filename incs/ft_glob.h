@@ -28,6 +28,8 @@ typedef enum e_glob_type
 	G_QUESTION,
 	G_BRACKET,
 	G_SLASH,
+	G_GLOBSTAR,
+	G_EXTGLOB,
 }	t_glob_type;
 
 /*
@@ -53,6 +55,21 @@ typedef struct s_glob
 	int				char_set_len;
 }	t_glob;
 
+/* zsh glob qualifiers -- the `(DNY2)` in `*(DNY2)` (glob_qual*.c).
+   `on` distinguishes "no qualifier group" from "a group that set nothing",
+   which matters because a group with only (N) still suppresses the
+   no-match-is-literal fallback. */
+typedef struct s_gqual
+{
+	bool	on;
+	bool	dots;
+	bool	null;
+	bool	plain;
+	bool	dir;
+	bool	link;
+	int		limit;
+}	t_gqual;
+
 /* Vector of glob tokens */
 typedef t_vec				t_vec_glob;
 /* Forward declarations for project types */
@@ -64,6 +81,12 @@ typedef struct s_token		t_token;
 */
 t_vec_glob	glob_tokenize(const char *pattern, int len, bool quoted);
 void		glob_free_tokens(t_vec_glob *tokens);
+int			*glob_zsh_cell(void);
+int			glob_zsh(void);
+bool		glob_qual_parse(t_vec_glob *g, t_gqual *q);
+void		glob_qual_apply(t_vec *args, t_gqual *q);
+void		glob_walk(t_vec *args, t_vec_glob glob);
+int			glob_dots_arm(t_gqual *q);
 bool		glob_match(const char *name, t_vec_glob *pattern);
 bool		glob_match_at(const char *name, t_vec_glob *pattern, size_t offset);
 bool		glob_char_in_class(char c, t_glob *bracket);
@@ -78,6 +101,14 @@ int			*glob_nullglob_cell(void);
 int			glob_nullglob(void);
 int			*glob_dotglob_cell(void);
 int			glob_dotglob(void);
+int			*glob_globstar_cell(void);
+int			glob_globstar(void);
+int			*glob_extglob_cell(void);
+int			glob_extglob(void);
+int			*glob_nocase_cell(void);
+int			glob_nocase(void);
+int			glob_ncmp(const char *a, const char *b, size_t n);
+int			extglob_ahead(const char *at);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
 size_t		matches_pattern(char *name, t_vec_glob patt,
 				size_t offset, bool first);

@@ -98,6 +98,64 @@ static int	self_exe_fill(char *buf, size_t n)
 
 #endif
 
+/* Linux marks an unlinked image by APPENDING this to the readlink result.
+   It is a human annotation in a field that otherwise holds a path, and it
+   is not quoted or escaped in any way. */
+#define DELETED_SUFFIX " (deleted)"
+
+/* Undo that annotation, and record that we saw it.
+**
+** Every in-place upgrade trips this. `install`(1) -- which is what
+** `make my_shell`, `sudo install` and the updater's own elevated path all
+** use -- UNLINKS the destination and creates a new inode, precisely so the
+** running process keeps executing the old one. From that instant the kernel
+** answers /proc/self/exe with
+**
+**     /usr/bin/hellish (deleted)
+**
+** and every caller that treats the result as a path is holding a filename
+** with an English phrase stapled to the end of it. Two things broke, both
+** silently:
+**
+**   * process substitution re-execs this path, so `cat <(echo hi)` printed
+**     NOTHING -- not an error, just an empty result -- for the rest of the
+**     session after any upgrade;
+**   * the updater installed to a literal file called "hellish (deleted)"
+**     next to the real one, leaving the binary it meant to replace
+**     untouched while reporting success.
+**
+** The suffix is only stripped when the annotated path does NOT exist on
+** disk. A file may legitimately be named "x (deleted)", and if such a file
+** is really there then readlink was reporting its name, not commenting on
+** it -- so the check distinguishes the two cases instead of assuming.
+*/
+static int	self_exe_undelete(char *buf)
+{
+	size_t	len;
+	size_t	slen;
+
+	len = ft_strlen(buf);
+	slen = ft_strlen(DELETED_SUFFIX);
+	if (len <= slen || ft_strcmp(buf + len - slen, DELETED_SUFFIX) != 0)
+		return (0);
+	if (access(buf, F_OK) == 0)
+		return (0);
+	buf[len - slen] = '\0';
+	return (1);
+}
+
+/* One cell for the lookup's outcome, so the path and the "was it replaced"
+   answer can never disagree: 0 not resolved, 1 resolved, 2 resolved and the
+   image had been unlinked, -1 the kernel would not say. A function-local
+   static rather than a file-scope one, the same way the glob and zle cells
+   are done -- the house rule is no NEW globals, and this stays inside. */
+int	*self_exe_state(void)
+{
+	static int	state;
+
+	return (&state);
+}
+
 /* The path, resolved once and cached, or NULL if the kernel will not say.
 
    Cached because it cannot change: a process keeps the image it was
@@ -110,16 +168,19 @@ static int	self_exe_fill(char *buf, size_t n)
 char	*self_exe_path(void)
 {
 	static char	buf[SELF_EXE_MAX];
-	static int	state;
+	int			*state;
 
-	if (state == 0)
+	state = self_exe_state();
+	if (*state == 0)
 	{
 		if (self_exe_fill(buf, sizeof(buf)))
-			state = 1;
+			*state = 1;
 		else
-			state = -1;
+			*state = -1;
+		if (*state == 1 && self_exe_undelete(buf))
+			*state = 2;
 	}
-	if (state == 1)
+	if (*state == 1 || *state == 2)
 		return (buf);
 	return (NULL);
 }

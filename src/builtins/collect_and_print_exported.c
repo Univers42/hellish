@@ -30,10 +30,9 @@ static void	collect_exported_list(t_shell *st, t_vec *list)
 		e = &((t_env *)st->env.ctx)[j];
 		if (e->exported)
 		{
-			tmp = "";
-			if (e->value)
-				tmp = e->value;
+			tmp = dquote_str(e->value);
 			s = ft_asprintf("export %s=\"%s\"", e->key, tmp);
+			xfree(tmp);
 			vec_push(list, &s);
 		}
 		j++;

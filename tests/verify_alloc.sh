@@ -88,6 +88,44 @@ for f in "$TESTS"/scripts/30_printf_format.sh "$TESTS"/hard/06_math_suite.sh "$T
 	lb=$(HELLISH_ALLOC_STATS=1 timeout 40 "$BIN" "$f" 2>&1 >/dev/null | grep -oE 'cleanup: [0-9]+' | grep -oE '[0-9]+')
 	printf "    %-26s live=%s\n" "$(basename "$f")" "${lb:-n/a}"
 done
+
+# ---------------------------------------------------------------------------
+# Exit-path abandonment (#78).  Every exit through exit_clean() used to walk
+# away from the whole environment table -- ~9.6 KB, on a plain `exit 3` as
+# much as on a fatal error -- because free_env() is not part of
+# free_all_state() and only off() called it.  ASan cannot see it (the table
+# stays reachable from t_shell), so this oracle is the only thing that can,
+# which is exactly why it has to ASSERT and not merely print: the noise it
+# measures is noise in the instrument itself, and drowns the malformed
+# inputs most worth testing.
+#   The ceiling is deliberately loose.  What matters is that a regression of
+# the original size cannot pass, not that the residue is pinned to the byte
+# (~1 KB today: the in-flight argv of the command that called exit, which is
+# still live when exit_clean runs).
+# ---------------------------------------------------------------------------
+live() { HELLISH_ALLOC_STATS=1 timeout 40 "$BIN" -c "$1" 2>&1 >/dev/null \
+	| grep -oE 'cleanup: [0-9]+' | grep -oE '[0-9]+'; }
+echo "  exit-path abandonment probe (ceiling ${EXIT_CEIL:=2048} bytes over baseline):"
+base=$(live 'true')
+exit_fail=0
+if [ -z "$base" ]; then
+	echo "    (no oracle output -- not an ft_malloc build, skipping)"
+else
+	for c in 'exit 3' 'exit' 'readonly r=1; r=2' 'echo ${undef:?}' \
+		'set -u; echo $nope' 'a=(1); a[-99]=v' 'echo "${!@bad}"' \
+		'declare -A M; M[$k]=v' 'trap "echo bye" EXIT; exit 2'; do
+		lb=$(live "$c")
+		d=$(( ${lb:-0} - base ))
+		if [ "$d" -gt "$EXIT_CEIL" ]; then
+			printf "    FAIL %-32s delta=%+d  (over %s)\n" "$c" "$d" "$EXIT_CEIL"
+			exit_fail=1
+		else
+			printf "    ok   %-32s delta=%+d\n" "$c" "$d"
+		fi
+	done
+	[ "$exit_fail" = 0 ] || echo "  EXIT-PATH PROBE FAILED -- see #78"
+fi
+
 echo
 echo "Identical bash-matching output on both heaps == the allocator swap is transparent."
 echo "(Restore the dev build with:  make   — or  make OPT=1  for the ft_malloc build.)"

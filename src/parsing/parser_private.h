@@ -46,7 +46,8 @@ bool		handle_coproc_case(t_shell *state, t_parser *parser,
 t_ast_node	parse_pipeline(t_shell *state,
 				t_parser *parser,
 				t_deque_tok *tokens);
-bool		try_push_array_assign(t_parser *parser, t_deque_tok *tokens,
+bool		try_push_array_assign(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens,
 				t_ast_node *ret);
 t_ast_node	parse_tokens(t_shell *state,
 				t_parser *parser,
@@ -131,6 +132,7 @@ int			proc_sub_handle_eof(t_parser *parser,
 				t_token curr);
 bool		is_compound_start(t_tt tt);
 bool		is_compound_terminator(t_tt tt);
+bool		is_case_term(t_tt tt);
 bool		is_separator_before_terminator(t_ast_node *ret,
 				t_deque_tok *tokens);
 void		skip_newlines(t_deque_tok *tokens);
@@ -163,7 +165,24 @@ bool		handle_simple_command_case(t_shell *state, t_parser *parser,
 t_ast_node	parse_brace_group(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 bool		is_function_def(t_deque_tok *tokens);
+bool		is_anon_func(t_deque_tok *tokens);
+t_ast_node	parse_anon_func(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens);
+t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens);
 t_ast_node	parse_function_def(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
+
+/* for-loop head, shared by the POSIX and zsh spellings (parse_for.c and
+   parse_for_zsh.c).  `for_head` picks between them; the zsh half is only
+   reachable in the zsh dialect. */
+bool		for_head(t_shell *state, t_parser *parser, t_deque_tok *tokens,
+				t_ast_node *ret);
+bool		for_in_clause(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node *ret);
+bool		is_for_word(t_tt tt);
+void		zfor_names(t_deque_tok *tokens, t_ast_node *ret);
+void		zfunc_names(t_deque_tok *tokens, t_token *name);
+bool		zfunc_is_cont(const char *base, t_ltoken *t);
 
 #endif

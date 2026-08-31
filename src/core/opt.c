@@ -34,6 +34,10 @@ void	cli_long_word(t_shell *state, t_cli *cli, const char *w)
 		state->option_flags |= OPT_FLAG_LOGIN;
 	else if (!ft_strcmp(w, "--version"))
 		state->option_flags |= OPT_FLAG_VERSION;
+	else if (!ft_strcmp(w, "--norc"))
+		state->option_flags |= OPT_FLAG_NORC;
+	else if (ft_strncmp(w, "--rcfile=", 9) == 0)
+		state->rcfile = (char *)w + 9;
 	else
 		cli->err = 2;
 }

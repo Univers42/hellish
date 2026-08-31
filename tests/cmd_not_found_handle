@@ -1,0 +1,20 @@
+command_not_found_handle() { echo "H:$1"; return 127; }; missing_xyz_cmd
+command_not_found_handle() { echo "args:$*"; return 127; }; missing_xyz_cmd a b c
+command_not_found_handle() { return 42; }; missing_xyz_cmd; echo "s=$?"
+command_not_found_handle() { echo H; return 0; }; missing_xyz_cmd; echo "s=$?"
+missing_xyz_cmd; echo "s=$?"
+command_not_found_handle() { echo H; }; echo real_command_still_runs; echo "s=$?"
+command_not_found_handle() { echo H; }; /nonexistent/path/x; echo "s=$?"
+command_not_found_handle() { echo H; return 3; }; command missing_xyz_cmd; echo "s=$?"
+command_not_found_handle() { X=leaked; }; missing_xyz_cmd; echo "X=[$X]"
+command_not_found_handle() { echo H; }; missing_xyz_cmd | cat
+command_not_found_handle() { echo "H:$1"; return 127; }; missing_xyz_cmd && echo yes || echo no
+command_not_found_handle() { echo H; return 0; }; if missing_xyz_cmd; then echo then; else echo else; fi
+command_not_found_handle() { echo "got:$#"; return 127; }; missing_xyz_cmd one two
+command_not_found_handle() { echo H; return 127; }; for i in 1 2; do missing_xyz_cmd; done
+command_not_found_handle() { printf '%s\n' "$1" >&2; return 127; }; missing_xyz_cmd 2>/dev/null; echo "s=$?"
+f() { command_not_found_handle() { echo "H:$1"; return 5; }; missing_xyz_cmd; }; f; echo "s=$?"
+command_not_found_handle() { echo H; return 127; }; PATH=/nonexistent missing_xyz_cmd; echo "s=$?"
+command_not_found_handle() { echo "H:$1"; return 127; }; $(echo missing_xyz_cmd)
+command_not_found_handle() { echo H; return 127; }; echo before; missing_xyz_cmd; echo after
+unset -f command_not_found_handle 2>/dev/null; missing_xyz_cmd; echo "s=$?"

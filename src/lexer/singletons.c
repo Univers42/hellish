@@ -86,11 +86,16 @@ static void	init_tt_names_group3(const char **names)
 	names[TT_AMPERSAND] = "TT_AMPERSAND";
 	names[TT_ARITH_START] = "TT_ARITH_START";
 	names[TT_PROC_SUB_IN] = "TT_PROC_SUB_IN";
+	names[TT_PROC_SUB_FILE] = "TT_PROC_SUB_FILE";
 	names[TT_PROC_SUB_OUT] = "TT_PROC_SUB_OUT";
 	names[TT_DUP_OUT] = "TT_DUP_OUT";
 	names[TT_DUP_IN] = "TT_DUP_IN";
 	names[TT_READWRITE] = "TT_READWRITE";
 	names[TT_CLOBBER] = "TT_CLOBBER";
+	names[TT_AMP_REDIR] = "TT_AMP_REDIR";
+	names[TT_AMP_APPEND] = "TT_AMP_APPEND";
+	names[TT_DSEMI_FALL] = "TT_DSEMI_FALL";
+	names[TT_SEMI_FALL] = "TT_SEMI_FALL";
 }
 
 void	init_tt_names_kw1(const char **names);

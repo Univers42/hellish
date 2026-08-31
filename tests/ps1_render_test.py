@@ -26,11 +26,14 @@ tell which option their rc file got wrong.
 Usage: python3 ps1_render_test.py /path/to/hellish
 """
 import fcntl
+import atexit
 import os
 import pty
 import select
+import shutil
 import struct
 import sys
+import tempfile
 import termios
 import time
 
@@ -38,8 +41,21 @@ SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else "../build/bin/hellish")
 FAILS = []
 
+# HOME is a scratch directory and the shell is started with --norc, so the
+# prompt under test is the PS1 this file sets and nothing else.
+#
+# Without both, the test reads the DEVELOPER'S configuration: ~/.hellishrc
+# and $XDG_CONFIG_HOME/hellish/rc.d/*.hsh are sourced for an interactive
+# shell, and anything in them that sets PS1 wins over the inherited one. The
+# symptom is every case failing with the developer's own prompt in the
+# `got` field -- a verdict about their dotfiles reported as a verdict about
+# the renderer. Same isolation completion_posix_test.py uses, for the same
+# reason.
+HOME_DIR = tempfile.mkdtemp(prefix="ps1_render_home_")
+atexit.register(shutil.rmtree, HOME_DIR, True)
+
 BASE_ENV = {
-    "HOME": os.environ.get("HOME", "/tmp"),
+    "HOME": HOME_DIR,
     "PATH": os.environ["PATH"],
     "TERM": "xterm-256color", "LANG": "C.UTF-8",
     "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
@@ -68,7 +84,14 @@ def render(ps1, extra=None, send=b"echo MARKER\n", settle=1.6):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execvp(SHELL, [SHELL])
+        try:
+            os.execv(SHELL, [SHELL, "--norc"])
+        except BaseException:
+            pass
+        # Nothing may escape this block. An exception here unwinds back into
+        # main() and runs the whole file again as a second process, turning
+        # one clear error into a cascade of unrelated ones with a Python
+        # traceback embedded in the pty capture.
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
     time.sleep(0.8)
