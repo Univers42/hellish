@@ -122,3 +122,14 @@ zzqb=1 zzqa=2 zzqc=3; compgen -v zzq
 zfb(){ :; }; zfa(){ :; }; compgen -A function zf
 compgen -W 'zeta alpha mid' ''
 compgen -W 'zb za zc' z
+compgen -W 'alpha beta gamma' -- al; echo "rc=$?"
+compgen -W 'alpha beta' -- ; echo "rc=$?"
+compgen -W '-x -y zz' -- -; echo "rc=$?"
+compgen -A function -- zq; echo "rc=$?"
+zqf(){ :; }; compgen -A function -- zqf
+compgen -W 'a b' -- z; echo "rc=$?"
+complete -W 'a b' -- zcmd; complete -p zcmd
+complete -F _f -- zc2; complete -p zc2
+shopt -q progcomp; echo "progcomp=$?"
+shopt progcomp
+compgen -W 'a*b cd' -- 'a'

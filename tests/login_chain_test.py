@@ -181,8 +181,16 @@ def main():
               "the whole set -o table hit the screen: %r" % startup[:300])
         check("the ~/.bashrc posix branch is taken", "PROBE_POSIX=off" in out,
               "got %r" % startup[:300])
+        # progcomp was a truthful "no" while there was no `complete` builtin.
+        # There is one now and TAB consults its specs (#72 phase 4), so the
+        # truthful answer is "on" -- which is bash's default too. What #51
+        # actually asked for is the check below: whatever it answers, the
+        # login stays silent.
         check("progcomp answers instead of erroring",
-              "PROBE_PROGCOMP=off" in out, "got %r" % startup[:300])
+              "PROBE_PROGCOMP=on" in out, "got %r" % startup[:300])
+        check("the login chain prints nothing of its own",
+              "syntax error" not in startup and "not found" not in startup,
+              "a login shell said something: %r" % startup[:400])
 
         # 3. PATH: the login chain does the job, unaided. This is the claim
         #    the hand-rolled `case ":$PATH:"` block was compensating for.
