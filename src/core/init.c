@@ -52,7 +52,12 @@ void	read_file_to_buffer(int fd, t_shell *state)
 /* Point ctx and dft_ctx at the script filename. ctx is what shows up in
    error messages ("script.sh: line 3: ...") while dft_ctx is the fallback
    used before any script name is set. Switching metinp to INP_FILE tells the
-   REPL not to prompt and not to source ~/.hellishrc. */
+   REPL not to prompt and not to source ~/.hellishrc.
+     The `.zsh` extension arms the dialect here too. It is the same rule
+   `source` and the rc loader already applied (zsh_path), and this was the one
+   way into the shell that never asked: `source plugin.zsh` got zsh and
+   `hellish plugin.zsh` got bash, silently, for the same bytes. There is no
+   third dialect for "the file arrived as an argument". */
 void	update_ctx_from_file(t_shell *state, char **argv)
 {
 	xfree(state->dft_ctx);
@@ -60,6 +65,8 @@ void	update_ctx_from_file(t_shell *state, char **argv)
 	state->dft_ctx = ft_strdup(argv[1]);
 	state->ctx = ft_strdup(argv[1]);
 	state->metinp = INP_FILE;
+	if (zsh_path(argv[1]))
+		zsh_mode_swap(state, true);
 }
 
 /* -c mode: push argv[2] (the inline script string) into the readline buffer

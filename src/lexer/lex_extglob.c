@@ -50,16 +50,24 @@ int	extglob_ahead(const char *at)
 	return ((int)(e - at));
 }
 
-/* The two parenthesised runs that belong to a WORD rather than opening a
-   subshell: a zsh glob qualifier at the end of a word, and an extglob
-   group anywhere in one. Both are swallowed whole so their parens never
-   reach the grammar; folded into one call so parse_lexeme's loop asks the
-   question once. Returns the byte count to skip, or 0. */
+/* The parenthesised runs that belong to a WORD rather than opening a
+   subshell: a zsh glob qualifier at the end of a word, a zsh alternation
+   anywhere but the front of one, and an extglob group anywhere in one. All
+   are swallowed whole so their parens never reach the grammar; folded into
+   one call so parse_lexeme's loop asks the question once. Returns the byte
+   count to skip, or 0.
+     The qualifier is asked FIRST and that ordering is load-bearing: `(N)`
+   and `(a|b)` are both parenthesised runs and only the letters inside tell
+   them apart, so the narrower test has to get there first or a qualifier
+   that happens to contain a `|` would be matched as a pattern. */
 int	word_group_ahead(const char *start, const char *at)
 {
 	int	n;
 
 	n = glob_qual_ahead(start, at);
+	if (n)
+		return (n);
+	n = zsh_alt_ahead(start, at);
 	if (n)
 		return (n);
 	return (extglob_ahead(at));

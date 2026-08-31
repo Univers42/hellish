@@ -133,6 +133,9 @@ t_execution_state	execute_arith_cmd(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_for_arith(t_shell *state, t_executable_node *exe);
 t_execution_state	execute_tree_node_ext(t_shell *state,
 						t_executable_node *exe, t_ast_type t);
+void				free_local_saves(t_shell *state);
+t_execution_state	execute_anon_func(t_shell *state,
+						t_executable_node *exe);
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv);
 int					find_cmd_path(t_shell *state, char *cmd_name,

@@ -48,12 +48,18 @@ static int	seg_end(const char *p, int i, int len)
 	return (len);
 }
 
-/* Does the segment starting at `i` contain an extglob group at depth 0? */
+/* Does the segment starting at `i` contain a group at depth 0? Both
+   spellings count: bash's `@(a|b)` and zsh's bare `(a|b)`.
+     The zsh form is asked with xg_alt_group rather than the lexer's
+   zsh_alt_ahead, so a group filling a WHOLE segment counts too -- `src/
+   (glob|lexer)` is a directory pattern and there is no subshell here to
+   confuse it with. That distinction is the lexer's alone; by the time a
+   pattern reaches this file it is already one word. */
 static bool	seg_has_group(const char *p, int i, int end)
 {
 	while (i < end)
 	{
-		if (extglob_ahead(p + i))
+		if (extglob_ahead(p + i) || xg_alt_group(p + i))
 			return (true);
 		i++;
 	}
