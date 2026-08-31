@@ -169,6 +169,8 @@ void		ps1_status(t_shell *state, t_string *out);
 void		ps1_duration(t_shell *state, t_string *out);
 void		ps1_jobs(t_shell *state, t_string *out);
 bool		ps1_escape_ext(t_shell *state, t_string *out, char c);
+bool		ps1_escape_bash(t_shell *state, t_string *out, char c);
+void		ps1_dfmt(t_string *out, const char *f, int *i);
 void		ps1_builtin(t_shell *state, t_string *out);
 t_panim		*anim_cells(void);
 void		ps1_anim(t_shell *state, t_string *out);

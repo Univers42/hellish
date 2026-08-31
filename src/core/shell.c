@@ -132,6 +132,7 @@ static void	open_cycle(t_shell *state)
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	state->rl.eof_refused = false;
+	state->cmd_no++;
 	state->exit_warned = state->exit_attempt;
 	state->exit_attempt = false;
 	get_g_sig()->should_unwind = 0;
