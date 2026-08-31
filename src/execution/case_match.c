@@ -37,10 +37,40 @@ static const char	*bracket_close(const char *p)
 	if (*q == ']')
 		q++;
 	while (*q && *q != ']')
-		q++;
+	{
+		if (q[0] == '[' && q[1] == ':')
+			cm_class_skip(&q);
+		else
+			q++;
+	}
 	if (*q == ']')
 		return (q);
 	return (NULL);
+}
+
+/* Walk the members between the (optional) leading ']' and the closing one,
+   accumulating whether `c` matched any: [:class:]es, X-Y ranges, then
+   single characters. Returns where the walk stopped -- the closing ']' or
+   the NUL of an expression bracket_close should have rejected. */
+static const char	*cm_members(char c, const char *p, bool *hit)
+{
+	while (*p && *p != ']')
+	{
+		if (p[0] == '[' && p[1] == ':')
+			*hit = cm_class_match(c, &p) || *hit;
+		else if (p[1] == '-' && p[2] && p[2] != ']')
+		{
+			*hit = *hit || ((unsigned char)c >= (unsigned char)p[0]
+					&& (unsigned char)c <= (unsigned char)p[2]);
+			p += 3;
+		}
+		else
+		{
+			*hit = *hit || (c == *p);
+			p++;
+		}
+	}
+	return (p);
 }
 
 /* Match the single char `c` against a [...] bracket expression starting at
@@ -59,20 +89,7 @@ static bool	match_bracket(char c, const char **pp)
 	p += neg;
 	hit = (*p == ']' && c == ']');
 	p += (*p == ']');
-	while (*p && *p != ']')
-	{
-		if (p[1] == '-' && p[2] && p[2] != ']')
-		{
-			hit = hit || ((unsigned char)c >= (unsigned char)p[0]
-					&& (unsigned char)c <= (unsigned char)p[2]);
-			p += 3;
-		}
-		else
-		{
-			hit = hit || (c == *p);
-			p++;
-		}
-	}
+	p = cm_members(c, p, &hit);
 	*pp = p + (*p == ']');
 	return (hit != neg);
 }

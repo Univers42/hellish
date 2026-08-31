@@ -25,6 +25,12 @@
 
 bool		case_match(const char *s, const char *p);
 
+/* POSIX classes for the bracket arm (case_match2.c): skip advances past a
+   whole [:name:] (false = unterminated, treat '[' as a member); match
+   tests one character against it and advances the same way. */
+bool		cm_class_skip(const char **q);
+bool		cm_class_match(char c, const char **pp);
+
 /* extglob (case_match_ext*.c): xg_start says a group begins here,
    xg_match matches the group PLUS the rest of the pattern. */
 bool		xg_start(const char *p);
