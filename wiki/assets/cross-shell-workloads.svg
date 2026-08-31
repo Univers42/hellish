@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="676" viewBox="0 0 880 676" font-family="system-ui">
+<style>
+  .bg{fill:#ffffff}.card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,sans-serif}
+  .lbl{fill:#1f2328;font:600 12.5px system-ui,-apple-system,Segoe UI,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,sans-serif}
+  .us{fill:#e2543a;font:700 12.5px system-ui,-apple-system,Segoe UI,sans-serif}
+  .axis{stroke:#8c959f;stroke-width:1}
+  @media (prefers-color-scheme:dark){
+   .bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+   .title{fill:#e6edf3}.sub{fill:#8b949e}.lbl{fill:#e6edf3}.val{fill:#e6edf3}
+   .muted{fill:#8b949e}.axis{stroke:#6e7681}}
+  :root[data-theme=dark] .bg{fill:#0d1117}
+  :root[data-theme=dark] .card{fill:#161b22;stroke:#30363d}
+  :root[data-theme=dark] .title{fill:#e6edf3}:root[data-theme=dark] .sub{fill:#8b949e}
+  :root[data-theme=dark] .lbl{fill:#e6edf3}:root[data-theme=dark] .val{fill:#e6edf3}
+  :root[data-theme=dark] .muted{fill:#8b949e}
+  :root[data-theme=light] .bg{fill:#ffffff}:root[data-theme=light] .card{fill:#f6f8fa;stroke:#d0d7de}
+  :root[data-theme=light] .title{fill:#1f2328}:root[data-theme=light] .lbl{fill:#1f2328}
+</style>
+<rect class="bg" width="880" height="676"/>
+<rect class="card" x="8" y="8" width="864" height="660" rx="10"/>
+<text class="title" x="26" y="40">Per-workload: hellish vs bash vs dash</text>
+<text class="sub" x="26" y="62">Best-of-7 ms, lower is faster. Legend: <tspan fill="#e2543a">hellish</tspan> <tspan fill="#5b7fa6">bash</tspan> <tspan fill="#6f9e78">dash</tspan></text>
+<text class="lbl" x="156" y="114" text-anchor="end">while-arith 50k</text>
+<rect x="168" y="98" width="291.0" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="465.0" y="108">75</text>
+<rect x="168" y="113" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="123">160</text>
+<rect x="168" y="128" width="255.0" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="429.0" y="138">66</text>
+<text class="lbl" x="156" y="174" text-anchor="end">func-call 5k</text>
+<rect x="168" y="158" width="252.8" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="426.8" y="168">19</text>
+<rect x="168" y="173" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="183">46</text>
+<rect x="168" y="188" width="184.6" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="358.6" y="198">14</text>
+<text class="lbl" x="156" y="234" text-anchor="end">var-concat 30k</text>
+<rect x="168" y="218" width="245.7" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="419.7" y="228">74</text>
+<rect x="168" y="233" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="243">189</text>
+<rect x="168" y="248" width="236.5" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="410.5" y="258">72</text>
+<text class="lbl" x="156" y="294" text-anchor="end">concat-grow 4k</text>
+<rect x="168" y="278" width="135.2" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="309.2" y="288">16</text>
+<rect x="168" y="293" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="303">73</text>
+<rect x="168" y="308" width="150.6" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="324.6" y="318">18</text>
+<text class="lbl" x="156" y="354" text-anchor="end">cmdsub 3k</text>
+<rect x="168" y="338" width="82.9" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="256.9" y="348">161</text>
+<rect x="168" y="353" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="363">1211</text>
+<rect x="168" y="368" width="316.0" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="490.0" y="378">615</text>
+<text class="lbl" x="156" y="414" text-anchor="end">param-expand 20k</text>
+<rect x="168" y="398" width="374.0" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="548.0" y="408">114</text>
+<rect x="168" y="413" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="423">190</text>
+<rect x="168" y="428" width="195.2" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="369.2" y="438">60</text>
+<text class="lbl" x="156" y="474" text-anchor="end">case-loop 20k</text>
+<rect x="168" y="458" width="447.0" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="621.0" y="468">81</text>
+<rect x="168" y="473" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="483">113</text>
+<rect x="168" y="488" width="197.6" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="371.6" y="498">36</text>
+<text class="lbl" x="156" y="534" text-anchor="end">test-string 20k</text>
+<rect x="168" y="518" width="274.5" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="448.5" y="528">68</text>
+<rect x="168" y="533" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="543">155</text>
+<rect x="168" y="548" width="216.8" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="390.8" y="558">54</text>
+<text class="lbl" x="156" y="594" text-anchor="end">arith-mix 20k</text>
+<rect x="168" y="578" width="244.6" height="12" rx="2" fill="#e2543a"/>
+<text class="val" x="418.6" y="588">44</text>
+<rect x="168" y="593" width="622.0" height="12" rx="2" fill="#5b7fa6"/>
+<text class="val" x="796.0" y="603">112</text>
+<rect x="168" y="608" width="218.6" height="12" rx="2" fill="#6f9e78"/>
+<text class="val" x="392.6" y="618">40</text>
+</svg>
