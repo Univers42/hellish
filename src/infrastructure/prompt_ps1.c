@@ -17,8 +17,9 @@
 /* User-configurable prompts, bash syntax. Setting PS1 in ~/.hellishrc (or
    exporting it) replaces the built-in two-row prompt entirely; unset PS1
    keeps the rich default as the "hellish theme". Escapes supported:
-   \u \h \H \w \W \$ \n \t \d \e \a \\ \j \s \v \[ \] \nnn — unknown
-   escapes pass through literally, exactly like bash. $NAME expands from
+   \u \h \H \w \W \$ \n \t \T \@ \d \e \a \r \\ \j \s \v \V \l \! \#
+   \[ \] \nnn — unknown escapes pass through literally, exactly like
+   bash. $NAME expands from
    the live environment on every render (prompt_ps1b.c); ${...} goes
    through the shell's own parameter expander (prompt_ps1d.c). */
 
@@ -52,19 +53,27 @@ static void	ps1_cwd(t_shell *state, t_string *out, char kind)
 	vec_push_str(out, cwd);
 }
 
-/* \t (HH:MM:SS) and \d (Tue Jul 21) via strftime, like bash. */
+/* \t (HH:MM:SS), \T (12-hour), \@ (am/pm) and \d (Tue Jul 21) via
+   strftime, like bash. \A is NOT here: bash's 24-hour clock is shadowed
+   by the animation escape, documented in hellishrc.example -- \t is the
+   time. */
 static void	ps1_timedate(t_string *out, char kind)
 {
 	time_t		now;
 	struct tm	tm;
 	char		buf[64];
+	const char	*fmt;
 
 	now = time(NULL);
 	localtime_r(&now, &tm);
+	fmt = "%a %b %d";
 	if (kind == 't')
-		strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
-	else
-		strftime(buf, sizeof(buf), "%a %b %d", &tm);
+		fmt = "%H:%M:%S";
+	if (kind == 'T')
+		fmt = "%I:%M:%S";
+	if (kind == '@')
+		fmt = "%I:%M %p";
+	strftime(buf, sizeof(buf), fmt, &tm);
 	vec_push_str(out, buf);
 }
 
@@ -116,11 +125,13 @@ static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 		return (ps1_host(out, c));
 	if (c == 'w' || c == 'W')
 		return (ps1_cwd(state, out, c));
-	if (c == 't' || c == 'd')
+	if (c == 't' || c == 'd' || c == 'T' || c == '@')
 		return (ps1_timedate(out, c));
 	if (c == '$')
 		return ((void)vec_push_char(out, "$#"[getuid() == 0]));
 	if (ps1_escape_misc(state, out, c))
+		return ;
+	if (ps1_escape_bash2(state, out, c))
 		return ;
 	if (ps1_escape_ext(state, out, c))
 		return ;
