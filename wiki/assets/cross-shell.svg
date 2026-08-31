@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="438" viewBox="0 0 880 438" font-family="system-ui">
+<style>
+  .bg{fill:#ffffff}.card{fill:#f6f8fa;stroke:#d0d7de}
+  .title{fill:#1f2328;font:600 17px system-ui,-apple-system,Segoe UI,sans-serif}
+  .sub{fill:#59636e;font:400 12px system-ui,-apple-system,Segoe UI,sans-serif}
+  .lbl{fill:#1f2328;font:600 12.5px system-ui,-apple-system,Segoe UI,sans-serif}
+  .val{fill:#1f2328;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace}
+  .muted{fill:#59636e;font:400 10.5px system-ui,-apple-system,sans-serif}
+  .us{fill:#e2543a;font:700 12.5px system-ui,-apple-system,Segoe UI,sans-serif}
+  .axis{stroke:#8c959f;stroke-width:1}
+  @media (prefers-color-scheme:dark){
+   .bg{fill:#0d1117}.card{fill:#161b22;stroke:#30363d}
+   .title{fill:#e6edf3}.sub{fill:#8b949e}.lbl{fill:#e6edf3}.val{fill:#e6edf3}
+   .muted{fill:#8b949e}.axis{stroke:#6e7681}}
+  :root[data-theme=dark] .bg{fill:#0d1117}
+  :root[data-theme=dark] .card{fill:#161b22;stroke:#30363d}
+  :root[data-theme=dark] .title{fill:#e6edf3}:root[data-theme=dark] .sub{fill:#8b949e}
+  :root[data-theme=dark] .lbl{fill:#e6edf3}:root[data-theme=dark] .val{fill:#e6edf3}
+  :root[data-theme=dark] .muted{fill:#8b949e}
+  :root[data-theme=light] .bg{fill:#ffffff}:root[data-theme=light] .card{fill:#f6f8fa;stroke:#d0d7de}
+  :root[data-theme=light] .title{fill:#1f2328}:root[data-theme=light] .lbl{fill:#1f2328}
+</style>
+<rect class="bg" width="880" height="438"/>
+<rect class="card" x="8" y="8" width="864" height="422" rx="10"/>
+<text class="title" x="26" y="40">Cross-shell speed ranking &#8212; 9 shells, one Docker image</text>
+<text class="sub" x="26" y="62">Geometric mean of best-of-7 across 17 portable POSIX workloads. Lower is faster; bar = geomean, label = ratio vs hellish.</text>
+<text class="lbl" x="138" y="113" text-anchor="end">#1 ksh</text>
+<rect x="150" y="101" width="30.4" height="16" rx="3" fill="#7f8fa0" opacity=".82"/>
+<text class="val" x="188.4" y="113">36.9 ms</text>
+<text class="muted" x="854" y="113" text-anchor="end">0.55&#215; faster</text>
+<text class="lbl" x="138" y="147" text-anchor="end">#2 dash</text>
+<rect x="150" y="135" width="42.4" height="16" rx="3" fill="#6f9e78" opacity=".82"/>
+<text class="val" x="200.4" y="147">51.4 ms</text>
+<text class="muted" x="854" y="147" text-anchor="end">0.77&#215; faster</text>
+<text class="us" x="138" y="181" text-anchor="end">#3 hellish &#9666;</text>
+<rect x="150" y="169" width="54.9" height="16" rx="3" fill="#e2543a" opacity="1"/>
+<text class="val" x="212.9" y="181">66.6 ms</text>
+<text class="muted" x="854" y="181" text-anchor="end">1.00&#215;</text>
+<text class="lbl" x="138" y="215" text-anchor="end">#4 busybox</text>
+<rect x="150" y="203" width="60.0" height="16" rx="3" fill="#a0708a" opacity=".82"/>
+<text class="val" x="218.0" y="215">72.8 ms</text>
+<text class="muted" x="854" y="215" text-anchor="end">1.09&#215; slower</text>
+<text class="lbl" x="138" y="249" text-anchor="end">#5 zsh</text>
+<rect x="150" y="237" width="94.1" height="16" rx="3" fill="#9a76b8" opacity=".82"/>
+<text class="val" x="252.1" y="249">114.1 ms</text>
+<text class="muted" x="854" y="249" text-anchor="end">1.71&#215; slower</text>
+<text class="lbl" x="138" y="283" text-anchor="end">#6 bash</text>
+<rect x="150" y="271" width="114.7" height="16" rx="3" fill="#5b7fa6" opacity=".82"/>
+<text class="val" x="272.7" y="283">139.1 ms</text>
+<text class="muted" x="854" y="283" text-anchor="end">2.09&#215; slower</text>
+<text class="lbl" x="138" y="317" text-anchor="end">#7 mksh</text>
+<rect x="150" y="305" width="124.6" height="16" rx="3" fill="#b8925c" opacity=".82"/>
+<text class="val" x="282.6" y="317">151.1 ms</text>
+<text class="muted" x="854" y="317" text-anchor="end">2.27&#215; slower</text>
+<text class="lbl" x="138" y="351" text-anchor="end">#8 yash</text>
+<rect x="150" y="339" width="153.1" height="16" rx="3" fill="#8aa05c" opacity=".82"/>
+<text class="val" x="311.1" y="351">185.6 ms</text>
+<text class="muted" x="854" y="351" text-anchor="end">2.79&#215; slower</text>
+<text class="lbl" x="138" y="385" text-anchor="end">#9 fish</text>
+<rect x="150" y="373" width="612.0" height="16" rx="3" fill="#5f9ea0" opacity=".82"/>
+<text class="val" x="770.0" y="385">742.0 ms</text>
+<text class="muted" x="854" y="385" text-anchor="end">11.14&#215; slower</text>
+<line class="axis" x1="150" y1="86" x2="150" y2="392"/>
+<text class="muted" x="26" y="418">oracle=bash &#183; ksh's recursion/cmdsub rows are builtin-accelerated outliers, not comparable work</text>
+</svg>
