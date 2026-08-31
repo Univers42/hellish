@@ -322,6 +322,9 @@ typedef struct s_shell
 	long long			last_cmd_ms; /* wall-clock ms of last command */
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
+	int					cmd_no; /* PS1 \# : REPL turns this session, from 1.
+								   NOT the same as \! -- history survives the
+								   session and this does not. */
 	bool				should_exit; /* set by `exit` builtin */
 	bool				builtin_fatal; /* special builtin got a MALFORMED
 										  request, not merely a failing one:
