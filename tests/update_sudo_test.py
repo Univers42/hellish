@@ -86,9 +86,12 @@ class Publisher:
         self.port = self.srv.server_address[1]
         threading.Thread(target=self.srv.serve_forever, daemon=True).start()
 
-    def env(self, home):
+    def env(self, home, sudodir=None):
         base = "http://127.0.0.1:%d" % self.port
-        return {"HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        path = os.environ.get("PATH", "/usr/bin:/bin")
+        if sudodir:
+            path = sudodir + os.pathsep + path
+        return {"HOME": home, "PATH": path,
                 "HELLISH_UPDATE_API": base + "/releases/latest",
                 "HELLISH_UPDATE_DL": base + "/download",
                 "HELLISH_NO_BANNER": "1", "HELLISH_NO_ANIM": "1",
@@ -171,7 +174,42 @@ def main():
     # exactly like /usr/bin after `make my_shell`.
     os.chmod(bindir, 0o555)
 
-    pub = Publisher("9.9.9", open(SHELL, "rb").read())
+    # The advertised release must genuinely REPORT the new version, and the
+    # fix for that is why this test now proves anything at all.
+    #
+    # It used to publish an unmodified copy of the shell under the tag
+    # "9.9.9". update_apply runs the download and asks its version (step 4),
+    # so the copy -- still saying 2.7.x -- was rejected there, and the run
+    # ended before move_into_place was ever called. Every check below then
+    # passed on the confirmation prompt's wording rather than on the staging
+    # decision they describe, and a `sudo` planted on PATH was never invoked
+    # even once. That is exactly how this test sat green through issue #76.
+    #
+    # Re-stamping the version string in place with one of the SAME LENGTH
+    # keeps every offset in the binary valid. Same trick as update_test.py.
+    cur = subprocess.run([SHELL, "-c", "update --version"],
+                         capture_output=True, text=True).stdout.split()[-1]
+    newer = "9" + cur[1:]
+    if newer == cur:
+        newer = "8" + cur[1:]
+    original = open(SHELL, "rb").read()
+    payload = original.replace(cur.encode(), newer.encode())
+    if payload == original:
+        print("error: could not re-stamp the version string in the binary")
+        sys.exit(2)
+
+    # A stand-in for a refused elevation. The real sudo cannot be used here:
+    # on a developer's box it would stop for a password this test has no way
+    # to know, and on a passwordless CI runner it would genuinely install
+    # over the copy -- two different outcomes for the same test.
+    sudodir = os.path.join(tmp, "sbin")
+    os.makedirs(sudodir)
+    with open(os.path.join(sudodir, "sudo"), "w") as f:
+        f.write("#!/bin/sh\necho 'sudo: 3 incorrect password attempts' >&2\n"
+                "exit 1\n")
+    os.chmod(os.path.join(sudodir, "sudo"), 0o755)
+
+    pub = Publisher(newer, payload)
     try:
         check("the install directory really is unwritable",
               not os.access(bindir, os.W_OK),
@@ -182,7 +220,14 @@ def main():
         # from a terminal" and never reaches update_apply, so the bug cannot
         # show. An earlier version of this test did exactly that and passed
         # against the broken build.
-        text = run_update_pty(installed, pub.env(home))
+        text = run_update_pty(installed, pub.env(home, sudodir))
+
+        # The staging decision this test is named for. Reaching the elevated
+        # install is the whole point -- without this the checks below can go
+        # green on a run that stopped three steps earlier.
+        check("the run actually reaches the elevated install",
+              "is not writable; running:" in text,
+              "never got past staging:\n    " + text.strip()[-400:])
 
         # The core of #75: whatever happens, it must not be blamed on the
         # download. Staging in an unwritable directory is a permission
