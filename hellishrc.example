@@ -8,8 +8,9 @@
 # Setting PS1 replaces the built-in prompt entirely; unset it to get the
 # rich built-in theme back. Bash escape set:
 #   \u user   \h host   \H host.fqdn   \w cwd(~)   \W cwd basename
-#   \$ $/#    \n newline   \t HH:MM:SS   \d date   \j job count
-#   \s shell  \v version   \e ESC   \[ \] readline width guards
+#   \$ $/#    \n newline   \t HH:MM:SS   \T 12h   \@ am/pm   \d date
+#   \j job count   \l tty   \! history no.   \# command no.
+#   \s shell  \v \V version   \e ESC   \r CR   \[ \] readline width guards
 # hellish extensions — all SELF-SPACING (invisible until relevant):
 #   \g  git branch of the cwd (+ * when dirty), empty outside a repo
 #   \S  " ✘N" after a failing command, empty after success
