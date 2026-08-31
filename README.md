@@ -93,13 +93,24 @@ Full discussion: **[DEV_DOC.md](DEV_DOC.md)**.
 - [Oils spec tests](https://github.com/oils-for-unix/oils) and [mksh check.t](https://github.com/MirBSD/mksh) — third-party conformance suites we run
 - [oh-my-zsh](https://github.com/ohmyzsh/ohmyzsh) — source of the real-world plugin corpus
 
-**AI use.** Claude (Anthropic's Claude Code) was used extensively across the
-project: implementation assistance in most modules, debugging, writing and
-hardening the golden/pty/corpus test suites, CI workflows, release
-engineering, and this documentation. Every AI-assisted behaviour change was
-validated the same way as a human one — diffed against the pinned bash/zsh
-oracles and taken through the full test gates — and the architecture,
-design decisions and 42-norm C style are the authors'.
+**AI use.** AI assistance (Claude Code) was used in a deliberately
+fine-grained, controlled way — and learning to *drive* an AI on a real
+system-programming project was itself one of this project's goals. The
+authors designed the control system first and made the assistant work
+inside it: a golden suite that diffs every behaviour against a **pinned
+bash 5.3.9 oracle** (and zsh 5.9 for the dialect), TDD with a
+test-per-fix rule enforced at review, a plugin corpus where third-party
+code declares expectations that go red when reality moves, allocator-parity
+and sanitizer gates, and a CI wall of 11 required jobs that no change —
+human or AI — merges without passing. Those guardrails are what shrink the
+assistant's scope for mistakes to near zero and make its output
+*ownable*: every AI-assisted change was specified, measured against the
+oracles, reviewed and accepted by the authors, who own the architecture,
+the design decisions and the 42-norm C throughout. The strategy — reduce
+the blast radius, measure everything, never trust a claim without a
+command and its output — is documented across [DEV_DOC.md](DEV_DOC.md)
+and [CONTRIBUTING.md](CONTRIBUTING.md), and is, we think, the honest way
+to build with an AI and still sign your own work.
 
 ## Documentation
 
