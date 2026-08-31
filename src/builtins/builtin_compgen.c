@@ -38,8 +38,17 @@ int	cg_emit(const char *s, const char *pfx)
 }
 
 /* -W: the word list is split on IFS-ish whitespace and each field offered.
-   bash also expands the list first; we take it as written, which is what
-   every real caller passes (a literal list of flags or subcommands). */
+** bash also EXPANDS the list before splitting it, and we do not. Stated
+** here rather than left to be discovered:
+**
+**     compgen -W "it's fine" -- it     bash: its fine      here: it's
+**     complete -W '$(git cmds)' git    bash: runs it       here: literal
+**
+** The common spellings are unaffected. `complete -W "$(...)" x` is expanded
+** by the shell when `complete` runs, long before the list is stored, and a
+** literal list of flags or subcommands -- what the corpus actually passes --
+** has nothing in it to expand. What is missing is the DEFERRED form, where
+** the list is single-quoted so that bash re-expands it at every TAB. */
 static int	cg_words(const char *list, const char *pfx)
 {
 	char	**w;
