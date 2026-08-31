@@ -1,0 +1,52 @@
+name: docs
+
+# The documentation site (https://univers42.github.io/hellish/) is MkDocs
+# Material over the wiki/ directory -- see mkdocs.yml. Rebuilt on every push
+# to main that touches the pages, and deployable by hand from any branch for
+# a preview of a docs change.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wiki/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build the site
+        # --strict makes a broken internal link a build failure, which is the
+        # only thing standing between a renamed page and a 404 nobody notices.
+        run: |
+          pip install --quiet mkdocs-material
+          mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

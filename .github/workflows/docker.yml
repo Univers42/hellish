@@ -76,6 +76,21 @@ jobs:
       - name: Install as a login shell, then update it
         run: make my-shell-test
 
+  # `curl | sh` for both privilege worlds: a sudoer routed to the system
+  # install, a sudo-less account routed to ~/.local/bin, the plugin
+  # questions over a real pty, and both uninstalls. Runs against a fake
+  # in-container release channel, so it tests the mechanism, not GitHub.
+  installer:
+    name: curl|sh installer, sudo and no-sudo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: install.sh end-to-end in docker
+        run: make installer-test
+
   # hellish as the login shell sshd execs for EVERY remote operation. After
   # `make my_shell`, `ssh host cmd`, scp, sftp, rsync and git all run
   # `$SHELL -c ...`, and those protocols fail on one stray byte of stdout.

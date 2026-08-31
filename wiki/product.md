@@ -28,51 +28,91 @@ straight read:
 | **dash** | Slower and larger (dash is the minimalist floor) — but vastly more capable. |
 
 What makes it credible rather than a toy: it's **fast**, it's **correct enough to build and boot an
-entire Linux From Scratch distro under itself**, and it's held to a strict automated bar (2481+
-tests, conformance vs `bash --posix`, ASan/leak-clean, norm). See
+entire Linux From Scratch distro under itself**, and it's held to a strict automated bar (4248
+golden cases diffed against a pinned bash 5.3.9, conformance suites, ASan/leak-clean on two
+allocators, norm). See **[Benchmarks](benchmarks.md)** and
 **[Performance & Robustness](performance.md)**.
 
 ---
 
 ## Install
 
-**One-liner (Linux x86-64):**
+**One-liner (Linux x86-64)** — detects whether you have sudo rights and routes
+itself: with sudo it installs to `/usr/bin` and registers hellish as your login
+shell (the `make my_shell` path); without sudo — a 42 school machine, a shared
+box — it installs to `~/.local/bin` with an rc hook (the `make user-install`
+path). It also offers to set up the plugin framework and lets you pick plugins:
+
 ```sh
 curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
 ```
+
+Non-interactive (scripts, CI): `sh install.sh --yes --plugins=all` (or
+`--plugins=none`, `--plugins="git jump z"`, `--user`, `--system`).
+
+**From a source checkout:**
+
+```sh
+git clone --recursive https://github.com/Univers42/hellish && cd hellish
+make OPT=1 all && ./build/bin/hellish    # just run it
+make user-install                        # no sudo: ~/.local/bin + rc hook
+make my_shell                            # sudo: /usr/bin + login shell
+```
+
+`--recursive` matters — hellish pulls in two submodules (`vendor/libft`,
+`vendor/scripts`). Forgot it? `git submodule update --init --recursive`.
 
 **npm / pnpm / yarn:**
 ```sh
 npm install -g hellish-shell      # or: pnpm add -g hellish-shell
 ```
 
-**Docker:**
+**Docker (easiest way to try it):**
 ```sh
 docker run --rm -it dlesieur/hellish-shell
 ```
 
-**From source:**
+Prefer to build from source in a clean container? Every supported platform has
+a rung — glibc and musl, gcc and clang, five package managers:
+
+| | rungs |
+|---|---|
+| glibc | `ubuntu` (24.04), `ubuntu2204`, `debian`, `arch`, `fedora`, `rocky`, `opensuse`, `void` |
+| musl | `alpine`, `alpine-clang`, `alpine-ftmalloc` |
+| compilers | gcc (11 → current) and clang, on both libcs, `-Werror` throughout |
+| architectures | x86_64 and arm64 (native runner in CI) |
+
 ```sh
-git clone --recursive https://github.com/Univers42/hellish && cd hellish
-make OPT=1 all && ./build/bin/hellish
+docker compose run --rm alpine     # interactive hellish on Alpine/musl
+make docker-test                   # build + run the portability smoke on ALL of them
 ```
 
-After install, hellish checks for newer releases in the background and can self-update with
-`update --now`. Opt out via `HELLISH_NO_UPDATE_CHECK=1`.
+macOS and WSL are covered by the `Platforms` workflow rather than Docker; both
+are **informational** today — see [platforms.md](platforms.md).
+
+**Updates.** Once installed, hellish checks for newer releases in the
+background (once a day, in a detached child — a dead release server costs your
+prompt nothing). A pending release is announced once in the welcome panel and
+sits as a quiet `⬆x.y.z` badge in the prompt until you update. `update` checks
+on demand, `update --now` self-updates. Knobs: `HELLISH_BANNER=0|1`,
+`HELLISH_NO_UPDATE_CHECK=1`.
 
 ---
 
 ## Roadmap
 
-**This cycle (4 weeks, UX-first):**
-1. **Week 1 — Interactive UX:** syntax highlighting + autosuggestions + completion polish. → [details](interactive.md)
-2. **Weeks 2–3 — Scripting:** indexed arrays (`declare -a`, `${a[@]}`, …) + crash-hardening + correct `set -e` in pipelines. → [details](scripting.md)
-3. **Week 4 — Performance + release:** script-mode startup (narrow the dash gap), rigorous benchmarks, a tagged release. → [details](performance.md)
+**Shipped since this page was first written** (the previous roadmap, in full):
+indexed *and* associative arrays, `${v/pat/repl}`, `extglob`,
+`mapfile`/`readarray`, namerefs, `coproc`, the zsh dialect + plugin corpus,
+programmable completion at TAB, the zsh prompt language, and the ZLE widget
+layer. See [RELEASE.md](https://github.com/Univers42/hellish/blob/main/RELEASE.md).
 
-**Beyond:**
-- Associative arrays (`declare -A`).
-- A native line editor (replacing readline) for fully native highlighting/autosuggest/completion menus.
-- `extglob`, `mapfile`/`readarray`, namerefs, `coproc`, `${v/pat/repl}`.
+**Still ahead:**
+- Syntax highlighting + autosuggestions at the prompt. → [details](interactive.md)
+- bash-completion framework support (incremental lexing vs `shopt -s extglob`) —
+  the thing that flips `progcomp` on by default.
+- A native line editor (replacing readline) for fully native
+  highlighting/autosuggest/completion menus.
 
 ---
 
