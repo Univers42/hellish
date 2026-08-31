@@ -89,7 +89,12 @@ static bool	zopt_own_bit(t_shell *state, const char *n, bool on)
 	return (true);
 }
 
-/* Set one option we actually implement.  True when the name was handled. */
+/* Set one option we actually implement.  True when the name was handled.
+
+   glob_opts_sync after the shopt bits, and NOT because it is tidy: the glob
+   layer reads mirrored cells, not state->shopt, so without it `setopt
+   dotglob` in a .zsh plugin set the bit, printed nothing, reported success
+   and changed no globbing whatsoever. */
 bool	zopt_apply(t_shell *state, const char *n, bool on)
 {
 	const t_setopt	*e;
@@ -99,9 +104,11 @@ bool	zopt_apply(t_shell *state, const char *n, bool on)
 		return (true);
 	bit = zopt_shopt_bit(n);
 	if (bit && on)
-		return (state->shopt |= bit, true);
+		state->shopt |= bit;
+	else if (bit)
+		state->shopt &= ~bit;
 	if (bit)
-		return (state->shopt &= ~bit, true);
+		return (glob_opts_sync(state), true);
 	if (!ft_strcmp(n, "zsh"))
 		return (zsh_mode_swap(state, on), true);
 	e = NULL;

@@ -105,6 +105,9 @@ int			*glob_globstar_cell(void);
 int			glob_globstar(void);
 int			*glob_extglob_cell(void);
 int			glob_extglob(void);
+int			*glob_nocase_cell(void);
+int			glob_nocase(void);
+int			glob_ncmp(const char *a, const char *b, size_t n);
 int			extglob_ahead(const char *at);
 void		match_dir(t_vec *args, t_vec_glob glob, char *path, size_t offset);
 size_t		matches_pattern(char *name, t_vec_glob patt,
