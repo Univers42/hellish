@@ -38,7 +38,22 @@ trap 'rm -rf "$SRC"' EXIT
 
 cd "$SRC"
 printf "  fetching zsh-%s\n" "$VERSION" >&2
-curl -sLO "https://www.zsh.org/pub/zsh-$VERSION.tar.xz"
+# zsh.org moves releases to pub/old/ once they are no longer current, and a
+# 404 there comes back as an HTML page that tar then chokes on with the
+# baffling "xz: File format not recognized". So: try each mirror in order,
+# and only accept a file that really is xz.
+for url in \
+	"https://www.zsh.org/pub/zsh-$VERSION.tar.xz" \
+	"https://www.zsh.org/pub/old/zsh-$VERSION.tar.xz" \
+	"https://downloads.sourceforge.net/project/zsh/zsh/$VERSION/zsh-$VERSION.tar.xz"; do
+	curl -fsLo "zsh-$VERSION.tar.xz" "$url" || continue
+	xz -t "zsh-$VERSION.tar.xz" 2>/dev/null && break
+	rm -f "zsh-$VERSION.tar.xz"
+done
+[ -f "zsh-$VERSION.tar.xz" ] || {
+	printf "  could not download zsh-%s from any mirror\n" "$VERSION" >&2
+	exit 1
+}
 tar xf "zsh-$VERSION.tar.xz"
 cd "zsh-$VERSION"
 
