@@ -103,7 +103,7 @@ bool	zopt_apply(t_shell *state, const char *n, bool on)
 	if (bit)
 		return (state->shopt &= ~bit, true);
 	if (!ft_strcmp(n, "zsh"))
-		return (zsh_mode_swap(state, on), true);
+		return (zsh_mode_pin(state, on), true);
 	e = NULL;
 	if (zopt_setopt_name(n))
 		e = setopt_find(zopt_setopt_name(n), 0);

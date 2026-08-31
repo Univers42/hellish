@@ -85,11 +85,21 @@ bool	setopt_get(t_shell *st, const t_setopt *e)
 
 /* Turn one option on or off.  vi and emacs are mutually exclusive and also
    drive the line editor, so they get the extra hop through the readline
-   layer; everything else is a plain flip. */
+   layer; everything else is a plain flip.
+
+   The dialect bit is NOT a plain flip, in two ways this function used to
+   get wrong by flipping it directly: zsh_mode_swap mirrors the bit into
+   the glob layer's cell (which stayed stale here), and an explicit
+   `set -o zsh` is a global request that must outlive the file it was
+   typed in -- an rc file is sourced through a call frame whose pop
+   restores the dialect unconditionally, so without the pin the mode
+   lasted exactly as long as the rc was being read. */
 void	setopt_put(t_shell *st, const t_setopt *e, bool on)
 {
 	bool	*cell;
 
+	if (e->bit == SETOPT_ZSH)
+		return (zsh_mode_pin(st, on));
 	if (e->bit && on)
 		st->setopt |= e->bit;
 	else if (e->bit)

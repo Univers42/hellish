@@ -104,6 +104,8 @@ typedef struct s_setopt
    default dialect stays exactly the bash the golden suite pins. */
 bool	zsh_mode(t_shell *state);
 bool	zsh_mode_swap(t_shell *state, bool on);
+void	zsh_mode_pin(t_shell *state, bool on);
+int		zsh_mode_req(t_shell *state, bool on, bool local);
 bool	zsh_path(const char *path);
 /* True when arrays count from 1 -- zsh mode with ksh_arrays not set. */
 bool	zsh_arrays(t_shell *state);

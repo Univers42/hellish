@@ -225,8 +225,16 @@ CASES = [
      ["BASH-SIDE"]),
     ("empty PROMPT falls back to PS1",
      "PROMPT=''\nPS1='LEGACY-\\u \\$ '", ["LEGACY-"], []),
-    ("zsh dialect armed, legacy PS1 untouched",
-     "set -o zsh\nPS1='50% \\u \\$ '", ["50% "], [r"\u"]),
+    # With the dialect ARMED, PS1 becomes the zsh parameter -- in zsh, PS1
+    # and PROMPT are the same variable. The bit decides, never the text:
+    # every literal-% case above runs with the mode off and stays safe.
+    ("zsh mode: PS1 speaks the % language",
+     "set -o zsh\nPS1='<<%n>>%~ %# '", ["<<", ">>~ % "], ["%n", "%~"]),
+    ("zsh mode: PROMPT still wins over PS1",
+     "set -o zsh\nPS1='PS-SIDE %# '\nPROMPT='PR-SIDE %# '", ["PR-SIDE"],
+     ["PS-SIDE"]),
+    ("zsh conditional + truncation in PROMPT",
+     "PROMPT='%(?.ok.no) %8<..<%~ %# '", ["ok "], []),
 ]
 
 
