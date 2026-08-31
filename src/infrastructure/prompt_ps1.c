@@ -116,8 +116,8 @@ static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 	char	c;
 
 	c = f[*i + 1];
-	if (c >= '0' && c <= '7')
-		return (ps1_octal(out, f, i));
+	if (ps1_escape_span(out, f, i))
+		return ;
 	*i += 2;
 	if (c == 'u')
 		return (ps1_user(state, out));

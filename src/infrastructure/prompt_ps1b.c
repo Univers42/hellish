@@ -12,6 +12,7 @@
 
 #include "prompt_private.h"
 #include "env.h"
+#include <pwd.h>
 
 /* \h (short) and \H (full) hostname for PS1. Cached: the box does not
    change its name mid-session, and the prompt renders per command. */
@@ -39,11 +40,18 @@ void	ps1_host(t_string *out, char kind)
 /* \u: the username, from the live environment. */
 void	ps1_user(t_shell *state, t_string *out)
 {
-	char	*user;
+	struct passwd	*pw;
+	char			*user;
 
 	user = env_expand(state, "USER");
-	if (!user)
-		user = "user";
+	if (!user || !*user)
+	{
+		pw = getpwuid(getuid());
+		if (pw && pw->pw_name)
+			user = pw->pw_name;
+		else
+			user = "user";
+	}
 	vec_push_str(out, user);
 }
 
