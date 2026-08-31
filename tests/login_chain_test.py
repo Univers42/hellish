@@ -181,13 +181,15 @@ def main():
               "the whole set -o table hit the screen: %r" % startup[:300])
         check("the ~/.bashrc posix branch is taken", "PROBE_POSIX=off" in out,
               "got %r" % startup[:300])
-        # progcomp was a truthful "no" while there was no `complete` builtin.
-        # There is one now and TAB consults its specs (#72 phase 4), so the
-        # truthful answer is "on" -- which is bash's default too. What #51
-        # actually asked for is the check below: whatever it answers, the
-        # login stays silent.
+        # progcomp answers "off" until `shopt -s progcomp` asks for it, and
+        # THIS PROBE IS WHY. It is the gate /etc/profile.d/bash_completion.sh
+        # checks; answering "on" made the runner source a 3800-line framework
+        # hellish cannot yet run, and the login opened with a syntax error --
+        # #51's exact complaint, arriving through the door #51 opened. The
+        # dispatch itself works (progcomp_test.py drives git's completion
+        # through a real TAB); it is the DEFAULT that waits.
         check("progcomp answers instead of erroring",
-              "PROBE_PROGCOMP=on" in out, "got %r" % startup[:300])
+              "PROBE_PROGCOMP=off" in out, "got %r" % startup[:300])
         check("the login chain prints nothing of its own",
               "syntax error" not in startup and "not found" not in startup,
               "a login shell said something: %r" % startup[:400])

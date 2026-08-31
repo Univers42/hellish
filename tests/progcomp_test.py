@@ -138,7 +138,8 @@ def main():
 
     # 1: -W with a unique prefix. One TAB must finish the word, and the
     # assertion looks only at the chunk the TAB produced.
-    c = run([b"complete -W 'alpha beta gamma' pfoo\n",
+    c = run([b"shopt -s progcomp\n",
+             b"complete -W 'alpha beta gamma' pfoo\n",
              b"pfoo al\t", KILL, b"\n", b"echo ALIVE\n"])
     check("complete -W: TAB finishes a unique match",
           "alpha" in c[1], "tab chunk=%r" % c[1][-300:])
@@ -151,7 +152,8 @@ def main():
     try:
         for n in ("zzdecoy_one", "zzdecoy_two"):
             open(os.path.join(d, n), "w").close()
-        c = run([b"complete -W 'alpha beta gamma' pfoo\n",
+        c = run([b"shopt -s progcomp\n",
+                 b"complete -W 'alpha beta gamma' pfoo\n",
                  b"pfoo \t\t", KILL, b"\n", b"echo ALIVE\n"],
                 cwd=d, settle=1.6)
         listed = [w for w in ("alpha", "beta", "gamma") if w in c[1]]
@@ -163,7 +165,7 @@ def main():
         shutil.rmtree(d, ignore_errors=True)
 
     # 3: -F, the shape every real completion script uses.
-    c = run([b"_pbar() { COMPREPLY=(zulu zebra); }\n",
+    c = run([b"shopt -s progcomp; _pbar() { COMPREPLY=(zulu zebra); }\n",
              b"complete -F _pbar pbar\n",
              b"pbar z\t\t", KILL, b"\n", b"echo ALIVE\n"], settle=1.6)
     check("complete -F: COMPREPLY reaches readline",
@@ -171,14 +173,14 @@ def main():
     alive(c, "complete -F")
 
     # 4: the positional contract -- $1 command, $2 current word, $3 previous.
-    c = run([b"_pargs() { COMPREPLY=(\"got-$1-$2-$3\"); }\n",
+    c = run([b"shopt -s progcomp\n_pargs() { COMPREPLY=(\"got-$1-$2-$3\"); }\n",
              b"complete -F _pargs pargs\n",
              b"pargs xy\t", KILL, b"\n", b"echo ALIVE\n"])
     check("complete -F: the function gets cmd, cur and prev",
           "got-pargs-xy-pargs" in c[2], "tab chunk=%r" % c[2][-400:])
 
     # 5: COMP_WORDS / COMP_CWORD, which scripts branch on far more than $2.
-    c = run([b"_pcw() { COMPREPLY=(\"n${#COMP_WORDS[@]}c$COMP_CWORD\"); }\n",
+    c = run([b"shopt -s progcomp\n_pcw() { COMPREPLY=(\"n${#COMP_WORDS[@]}c$COMP_CWORD\"); }\n",
              b"complete -F _pcw pcw\n",
              b"pcw a b\t", KILL, b"\n", b"echo ALIVE\n"])
     check("complete -F: COMP_WORDS and COMP_CWORD describe the line",
@@ -186,7 +188,7 @@ def main():
 
     # 6: an action, so -A is not the one registered shape that still does
     # nothing. It routes through compgen, which already knew how.
-    c = run([b"_zzx() { :; }\n_zzy() { :; }\n",
+    c = run([b"shopt -s progcomp; _zzx() { :; }\n_zzy() { :; }\n",
              b"complete -A function pfn\n",
              b"pfn _zz\t\t", KILL, b"\n", b"echo ALIVE\n"], settle=1.6)
     check("complete -A function: offers shell functions",
@@ -204,16 +206,23 @@ def main():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
-    # 8: `shopt -u progcomp` turns the dispatch off. The flag has reported
-    # its own state truthfully all along and controlled nothing; now the
-    # word it completes is the difference.
+    # 8: THE DEFAULT. progcomp is OFF unless asked for, and the option is a
+    # real switch in both directions -- which is why every case above arms
+    # it explicitly. bash defaults it on; hellish does not, because the
+    # option is the gate /etc/profile.d/bash_completion.sh checks and
+    # bash-completion does not run here yet (see incs/shell.h and the
+    # corpus row). `shopt progcomp` tells the truth either way.
     d = tempfile.mkdtemp(prefix="hellish_pc3_")
     try:
         open(os.path.join(d, "zzoff_file"), "w").close()
-        c = run([b"shopt -u progcomp\n",
+        c = run([b"complete -W 'alpha beta' pfoo\n",
+                 b"pfoo zzoff\t", KILL, b"\n", b"echo ALIVE\n"], cwd=d)
+        check("the default is off: filenames, not the spec",
+              "zzoff_file" in c[1], "tab chunk=%r" % c[1][-400:])
+        c = run([b"shopt -s progcomp; shopt -u progcomp\n",
                  b"complete -W 'alpha beta' pfoo\n",
                  b"pfoo zzoff\t", KILL, b"\n", b"echo ALIVE\n"], cwd=d)
-        check("shopt -u progcomp disables the dispatch",
+        check("shopt -u progcomp turns an armed dispatch back off",
               "zzoff_file" in c[2], "tab chunk=%r" % c[2][-400:])
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -236,7 +245,7 @@ def main():
                                         ".cache"))
     gc = os.path.join(cache, "hellish-plugin-corpus", "git-completion.bash")
     if os.path.exists(gc):
-        c = run([("source %s\n" % gc).encode(),
+        c = run([("shopt -s progcomp; source %s\n" % gc).encode(),
                  b"git che\t\t", KILL, b"\n", b"echo ALIVE\n"], settle=2.4)
         offered = [w for w in ("checkout", "cherry-pick", "cherry")
                    if w in c[1]]
