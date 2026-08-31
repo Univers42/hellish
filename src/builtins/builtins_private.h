@@ -342,7 +342,7 @@ t_pret	*pretty_table(void);
 int		pretty_mode(t_shell *state, t_vec argv, int first);
 int		pretty_show(t_shell *state, bool reusable);
 int		pretty_list(t_shell *state);
-void	pretty_sync(t_shell *state);
+void	glob_opts_sync(t_shell *state);
 
 int		declare_functions(t_shell *state, t_vec argv, size_t i,
 			bool bodies);

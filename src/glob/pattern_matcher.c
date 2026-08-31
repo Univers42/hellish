@@ -17,7 +17,12 @@
    which is the common fast path (most patterns are mostly literal text). On
    any mismatch return 0 immediately. If the match reaches a segment boundary
    (finished_pattern), the name must also be exhausted there. Otherwise we
-   recurse to handle the next token type after the literal run. */
+   recurse to handle the next token type after the literal run.
+
+   glob_ncmp and not ft_strncmp: it is the same comparison until
+   `shopt -s nocaseglob`, and this is the one place a filename literal is
+   ever compared, so putting the fold anywhere else would leave a second
+   spelling of the same rule. */
 size_t	match_g_literal(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
@@ -28,7 +33,7 @@ size_t	match_g_literal(char *name, t_vec_glob patt, size_t offset,
 	while (offset < patt.len && ((t_glob *)patt.ctx)[offset].ty == G_LITERAL)
 	{
 		curr = ((t_glob *)patt.ctx)[offset];
-		if (ft_strncmp(curr.start, name, curr.len) != 0)
+		if (glob_ncmp(curr.start, name, (size_t)curr.len) != 0)
 			return (0);
 		if (finished_pattern(patt, offset))
 		{

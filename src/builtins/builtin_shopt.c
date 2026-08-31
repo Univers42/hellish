@@ -44,13 +44,26 @@ static unsigned int	shopt_bit(const char *name)
 	return (0);
 }
 
-/* Push the glob-affecting options down to the expander accessors. */
-static void	shopt_sync(t_shell *state)
+/* Push the glob-affecting options down to the expander accessors.
+**
+** THE ONLY COPY OF THIS LIST. `shopt`, `pretty` and zsh's `setopt` all
+** write the same state->shopt bits, and the glob layer reads none of them
+** -- it has no t_shell, so it reads these cells instead. Three writers and
+** one reader means the mirror has to be one function:
+**
+**   - pretty_sync had a copy that mirrored two of the four, so
+**     `pretty on globstar` set the bit and `**` stayed a plain star;
+**   - zsh's setopt had no mirror at all, so `setopt dotglob` in a .zsh
+**     plugin did nothing whatsoever.
+**
+** Both reported success, and neither left anything to notice. */
+void	glob_opts_sync(t_shell *state)
 {
 	*glob_nullglob_cell() = (state->shopt & SHOPT_NULLGLOB) != 0;
 	*glob_dotglob_cell() = (state->shopt & SHOPT_DOTGLOB) != 0;
 	*glob_globstar_cell() = (state->shopt & SHOPT_GLOBSTAR) != 0;
 	*glob_extglob_cell() = (state->shopt & SHOPT_EXTGLOB) != 0;
+	*glob_nocase_cell() = (state->shopt & SHOPT_NOCASEGLOB) != 0;
 }
 
 /* Apply/query one name under act ('s' set, 'u' unset, 'p' print in
@@ -146,5 +159,5 @@ int	builtin_shopt(t_shell *state, t_vec argv)
 	while (i < argv.len)
 		if (shopt_one(state, ((char **)argv.ctx)[i++], act, quiet))
 			rc = 1;
-	return (shopt_sync(state), rc);
+	return (glob_opts_sync(state), rc);
 }
