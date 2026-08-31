@@ -5,8 +5,10 @@
 # ═══════════════════════════════════════════════════════════════════════
 
 # ── 1. PROMPT ──────────────────────────────────────────────────────────
-# Setting PS1 replaces the built-in prompt entirely; unset it to get the
-# rich built-in theme back. Bash escape set:
+# Unconfigured, hellish shows zsh's own default -- "hostname% " -- plus
+# the ⬆ badge when an update is pending. The rich two-row theme is one
+# command away (`prompt` lists them; PS1='\B' is the same theme by name).
+# Setting PS1 replaces the prompt entirely. Bash escape set:
 #   \u user   \h host   \H host.fqdn   \w cwd(~)   \W cwd basename
 #   \$ $/#    \n newline   \t HH:MM:SS   \T 12h   \@ am/pm   \d date
 #   \j job count   \l tty   \! history no.   \# command no.

@@ -124,12 +124,17 @@ def jobs_badge_case(label, ps1):
 
 
 def main():
-    # The shipped configuration: PS1 unset in the environment, so the shell
-    # falls back to its own default. This is the exact case from the report.
-    jobs_badge_case("default prompt", None)
+    # The DEFAULT is no longer the rich theme: an unconfigured hellish
+    # shows zsh's own "hostname% " (plus the update badge when one is
+    # pending), so the tracker deliberately does NOT appear there. What
+    # the default must still do is exist and stay basic.
+    out = session([b"sleep 30 &\n", b"kill %1\n", b"echo BASIC\n"], ps1=None)
+    check("default prompt is the basic zsh one, no gear",
+          GEAR not in out and "% " in out, "got %r" % out[-260:])
 
-    # The literal default value set_default_ps1() installs. Same renderer,
-    # reached through the PS1 branch instead of the fallback.
+    # The rich theme -- where the report's badges live -- is what \B (and
+    # the `prompt` switcher) asks for by name. This is the exact case from
+    # the report, one opt-in away.
     jobs_badge_case("PS1='\\B'", "\\B")
 
     # \J in a user PS1 reads state->job_table directly and never regressed;
@@ -140,8 +145,8 @@ def main():
 
     # The duration badge shares the mirrors with the tracker and broke with
     # it, so it is pinned here too: 2s is render_extras()'s threshold.
-    out = session([b"sleep 2.5\n", b"echo DONE\n"], ps1=None, settle=4.0)
-    check("default prompt: 'took N.Ns' returns after a slow command",
+    out = session([b"sleep 2.5\n", b"echo DONE\n"], ps1="\\B", settle=4.0)
+    check("rich theme: 'took N.Ns' returns after a slow command",
           "took 2." in out, "no duration badge: %r" % out[-260:])
 
     print("\n%d checks failed" % len(FAILS))

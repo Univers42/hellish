@@ -214,8 +214,9 @@ CASES = [
     ("very long prompt (1 KB)", "PS1='" + "N" * 1024 + r"\$ '",
      ["N" * 40], []),
     ("tabs and CR kept literal", "PS1='a\tb\\$ '", [], []),
-    ("empty PS1 falls back to theme", "PS1=''", [], []),
-    ("unset PS1 uses theme", "unset PS1", [], []),
+    # An unconfigured prompt is zsh's own default: "hostname% ".
+    ("empty PS1 falls back to the zsh default", "PS1=''", ["% "], []),
+    ("unset PS1 uses the zsh default", "unset PS1", ["% "], []),
     # ── the zsh PROMPT language ────────────────────────────────────────
     ("zsh identity", "PROMPT='<<%n>>@%m %# '", ["<<", ">>@"],
      ["%n", "%m"]),
