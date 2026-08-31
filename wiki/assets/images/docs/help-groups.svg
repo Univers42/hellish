@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="742" height="586" font-family="SFMono-Regular,Menlo,Consolas,monospace" font-size="14">
+<rect width="100%" height="100%" rx="8" fill="#1e2127"/>
+<circle cx="22" cy="20" r="6" fill="#e05561"/><circle cx="42" cy="20" r="6" fill="#d18f52"/><circle cx="62" cy="20" r="6" fill="#8cc265"/>
+<text x="50%" y="25" text-anchor="middle" fill="#72767d">hellish — help (first screen)</text>
+<text y="54" xml:space="preserve"><tspan x="14.0" fill="#d7dae0" font-weight="bold">hellish</tspan><tspan x="72.8" fill="#d7dae0"> — these are built in. `help NAME` explains one, `help -s NAME` just its form.</tspan></text>
+<text y="73" xml:space="preserve"></text>
+<text y="92" xml:space="preserve"><tspan x="14.0" fill="#ff875f" font-weight="bold">navigation</tspan></text>
+<text y="111" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">cd        </tspan><tspan x="114.8" fill="#d7dae0"> cd [-L|-P] [dir] | cd - | cd old new</tspan></text>
+<text y="130" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">pwd       </tspan><tspan x="114.8" fill="#d7dae0"> pwd [-L|-P]</tspan></text>
+<text y="149" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">pushd     </tspan><tspan x="114.8" fill="#d7dae0"> pushd [dir | +N | -N] [-n]</tspan></text>
+<text y="168" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">popd      </tspan><tspan x="114.8" fill="#d7dae0"> popd [+N | -N] [-n]</tspan></text>
+<text y="187" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">dirs      </tspan><tspan x="114.8" fill="#d7dae0"> dirs [-c]</tspan></text>
+<text y="206" xml:space="preserve"></text>
+<text y="225" xml:space="preserve"><tspan x="14.0" fill="#ff875f" font-weight="bold">output</tspan></text>
+<text y="244" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">echo      </tspan><tspan x="114.8" fill="#d7dae0"> echo [-neE] [arg ...]</tspan></text>
+<text y="263" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">printf    </tspan><tspan x="114.8" fill="#d7dae0"> printf [-v var] format [arg ...]</tspan></text>
+<text y="282" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">read      </tspan><tspan x="114.8" fill="#d7dae0"> read [-r] [-p prompt] [-n n] [-t sec] [name ...]</tspan></text>
+<text y="301" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">mapfile   </tspan><tspan x="114.8" fill="#d7dae0"> mapfile [-t] [-n n] [-O i] [-s n] [-u fd] [array]</tspan></text>
+<text y="320" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">readarray </tspan><tspan x="114.8" fill="#d7dae0"> readarray [-t] [-n n] [-O i] [-s n] [array]</tspan></text>
+<text y="339" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">umask     </tspan><tspan x="114.8" fill="#d7dae0"> umask [-S] [-p] [mode]</tspan></text>
+<text y="358" xml:space="preserve"></text>
+<text y="377" xml:space="preserve"><tspan x="14.0" fill="#ff875f" font-weight="bold">variables</tspan></text>
+<text y="396" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">export    </tspan><tspan x="114.8" fill="#d7dae0"> export [-p] [-n] [name[=value] ...]</tspan></text>
+<text y="415" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">readonly  </tspan><tspan x="114.8" fill="#d7dae0"> readonly [-p] [name[=value] ...]</tspan></text>
+<text y="434" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">unset     </tspan><tspan x="114.8" fill="#d7dae0"> unset [-f|-v] [name ...]</tspan></text>
+<text y="453" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">declare   </tspan><tspan x="114.8" fill="#d7dae0"> declare [-aAfFgiIlnrtux] [-p] [name[=value] ...]</tspan></text>
+<text y="472" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">typeset   </tspan><tspan x="114.8" fill="#d7dae0"> typeset [-aAfFgiIlnrtux] [-p] [name[=value]...]</tspan></text>
+<text y="491" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">local     </tspan><tspan x="114.8" fill="#d7dae0"> local [name[=value] ...]</tspan></text>
+<text y="510" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">let       </tspan><tspan x="114.8" fill="#d7dae0"> let arg [arg ...]</tspan></text>
+<text y="529" xml:space="preserve"><tspan x="14.0" fill="#d7dae0">  </tspan><tspan x="30.8" fill="#d7dae0" font-weight="bold">getopts   </tspan><tspan x="114.8" fill="#d7dae0"> getopts optstring name [arg ...]</tspan></text>
+<text y="548" xml:space="preserve"></text>
+<text y="567" xml:space="preserve"><tspan x="14.0" fill="#ff875f" font-weight="bold">jobs</tspan></text>
+</svg>

@@ -56,13 +56,16 @@ markdown_extensions:
 nav:
   - Home: index.md
   - What it is + Install: product.md
+  - The manual: manual.md
+  - Builtins reference:
+      - All builtins: builtins/index.md
+      - cd, in depth: builtins/cd.md
+  - Plugins: plugins.md
   - Interactive Experience: interactive.md
   - Scripting & Compatibility: scripting.md
   - Benchmarks: benchmarks.md
   - Architecture: architecture.md
   - Performance: performance.md
   - Platforms: platforms.md
-  - Builtins:
-      - cd: builtins/cd.md
   - Troubleshooting: troubleshoot/README.md
   - Fix write-ups: fixes/README.md
