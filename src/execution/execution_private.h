@@ -71,6 +71,14 @@ t_execution_state	execute_cmd_bg(t_shell *state, t_executable_node *exe,
 						t_executable_cmd *cmd);
 bool				check_is_a_dir(char *path, bool *enoent);
 int					cmd_not_found(t_shell *state, char *cmd_name);
+
+/* bash's hook for a command that PATH could not resolve. Debian/Ubuntu
+   define it in /etc/bash.bashrc, and it is what turns "vim: command not
+   found" into the "sudo apt install vim" suggestion. See cmd_not_found.c.
+   Returns the handler's exit status, or -1 for "no handler ran". */
+# define CNF_HANDLER "command_not_found_handle"
+
+int					try_cmd_not_found_handler(t_shell *state, t_vec *args);
 int					no_such_file_or_dir(t_shell *state,
 						char *cmd_name, char *path_of_exe);
 char				*exe_path(char **path_dirs, char *exe_name,

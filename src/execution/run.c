@@ -45,6 +45,9 @@ int	exec_external_argv(t_shell *state, t_vec *args)
 
 	path_of_exe = NULL;
 	ft_assert(args->len >= 1);
+	status = try_cmd_not_found_handler(state, args);
+	if (status >= 0)
+		return (status);
 	status = find_exe_path_wrapper(state,
 			((char **)(args->ctx))[0], &path_of_exe);
 	if (status != 0)
