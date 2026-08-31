@@ -61,15 +61,36 @@ Readline-driven completion with context-aware generators:
 |---|---|
 | First word | commands on `$PATH` + builtins |
 | `$…` / `${…}` | environment & shell variable names |
-| Argument | files and directories |
+| Argument, command has a `complete` spec | whatever the spec says |
+| Argument, no spec | files and directories |
 
-It's functional and fast today. The fish/zsh-grade layer (menus, descriptions, fuzzy matching)
-is on the roadmap below.
+**Programmable completion** works: `complete -W 'add commit push' git` and `complete -F _fn cmd`
+are both consulted at TAB, with `COMP_WORDS`, `COMP_CWORD`, `COMP_LINE`, `COMP_POINT` and
+`COMPREPLY` behaving as bash defines them. `compgen` generates the same lists on demand. Turn the
+whole thing off with `shopt -u progcomp`.
+
+One documented gap: bash re-expands a `-W` list at every TAB, so the deferred form
+`complete -W '$(cmd)' x` (single-quoted) stays literal here. `complete -W "$(cmd)" x` is expanded
+by the shell when `complete` runs and is unaffected.
+
+The fish/zsh-grade layer (menus, descriptions, fuzzy matching) is on the roadmap below.
 
 ## Prompt ✅
 
 Rich, configurable prompt elements: user, cwd, git branch, virtualenv, and time — rendered with
 correct width accounting so segments and colors line up.
+
+Bash's escape set is implemented — `\u \h \H \w \W \t \d \D{fmt} \T \@ \! \# \j \l \r \s \v \V
+\n \e \a \$ \\ \[ \] \nnn` — plus hellish's own: `\g` git branch, `\S` failure badge, `\p`
+duration, `\J` jobs, `\U` pending update, `\B` the built-in prompt, `\I` the file being sourced.
+
+**`\A` is the one deliberate divergence.** In bash it is the 24-hour clock; in hellish it is the
+animation frame, and it shipped first. `\D{%H:%M}` gives you bash's meaning.
+
+Two hook arrays run around every command — `HELLISH_PRECMD_FUNCS` before each prompt,
+`HELLISH_PREEXEC_FUNCS` before the typed line, with the line as `$1`. They are arrays of function
+names rather than strings of code so that two plugins can both attach; `$?` is preserved across
+them. See `hellishrc.example` section 5b.
 
 ## Update channel ✅
 

@@ -20,15 +20,21 @@ builtin's fault.
 
          hellish: shopt: progcomp: invalid shell option name
 
-     hellish has no `complete` builtin -- there is no programmable
-     completion to enable -- so progcomp is now a known option that is
-     OFF, which is the truthful answer AND the one that makes
-     bash_completion.sh correctly skip itself instead of feeding hellish a
-     2500-line bash script.
+     progcomp landed as a known option that was OFF, which was the
+     truthful answer while hellish had no `complete` builtin.
+
+     It has one now, and TAB consults its specs (#72 phase 4), so the
+     truthful answer changed with the shell: progcomp is ON, as it is in
+     bash. Turning it on has a consequence worth knowing about -- on a host
+     with bash-completion installed, bash_completion.sh will now try to
+     source its 3800-line framework, which hellish cannot yet parse (the
+     lexer runs over a whole sourced file before `shopt -s extglob` on line
+     47 has executed). That is recorded as an `unsupported` row in
+     tests/plugin_corpus_test.py rather than papered over by leaving the
+     option lying about itself.
 
 Everything asserted below was read off bash 5.x first; each case carries
-the bash command that produced it. The one deliberate divergence is
-progcomp's default, and it is marked as such.
+the bash command that produced it.
 
 Usage: python3 shopt_setopt_test.py /path/to/hellish
 """
@@ -82,12 +88,16 @@ def main():
     case("shopt -oq posix does not dump the table", "shopt -oq posix",
          out_absent="braceexpand", rc=1)
 
-    # bash: `shopt -q progcomp` -> silent, status 0 because bash HAS
-    # programmable completion. hellish has no `complete` builtin, so it
-    # answers the same question honestly: silent, status 1. What matters
-    # for the login is that it no longer ERRORS.
-    case("shopt -q progcomp is silent and off", "shopt -q progcomp",
-         out="", err="", rc=1)
+    # bash: `shopt -q progcomp` -> silent, status 0, because bash HAS
+    # programmable completion. So does hellish now, so the answer is the
+    # same one for the same reason. What #51 needed either way is that it
+    # does not ERROR.
+    case("shopt -q progcomp is silent and on", "shopt -q progcomp",
+         out="", err="", rc=0)
+    # And it is a real switch, not a stored bit: unsetting it turns the
+    # dispatch off (proved end to end in progcomp_test.py case 8).
+    case("shopt -u progcomp then -q reports off",
+         "shopt -u progcomp; shopt -q progcomp", out="", err="", rc=1)
     o, e, r = run("shopt -q progcomp; echo rc=$?")
     check("shopt -q progcomp prints no error at all",
           "invalid" not in e and "invalid" not in o,

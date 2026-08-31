@@ -456,10 +456,12 @@ typedef struct s_shell
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
 # define SHOPT_LITHIST 0x400
-/* progcomp is KNOWN but off, and stays off: hellish has no `complete`
-   builtin, so there is no programmable completion to switch on. It is
-   here so /etc/profile.d/bash_completion.sh's `shopt -q progcomp` gets a
-   truthful "no" instead of an error on every login -- issue #51. */
+/* progcomp arrived as a truthful "no": the bit existed, defaulted off and
+   controlled nothing, so /etc/profile.d/bash_completion.sh's `shopt -q
+   progcomp` got an answer instead of an error on every login (#51). It now
+   means what it says -- src/completion/progcomp*.c reads it before it will
+   consult a `complete` spec -- and defaults ON, as bash does (#72 phase 4).
+   Unsetting it restores plain filename completion for arguments. */
 # define SHOPT_PROGCOMP 0x800
 
 /* Directory matcher ctx for glob expansion */

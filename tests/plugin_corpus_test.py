@@ -93,6 +93,27 @@ CORPUS = [
      "bash-preexec.sh", "loads", 15, ""),
     ("z", "https://raw.githubusercontent.com/rupa/z/master/z.sh", "loads", 1,
      ""),
+    # THE COST OF progcomp BEING ON BY DEFAULT, written down.
+    #
+    # With progcomp on -- bash's default, and now honestly ours --
+    # /etc/profile.d/bash_completion.sh will try to source this on any host
+    # that has bash-completion installed. It does not parse, so such a login
+    # gets one syntax error. The row is here so that cost is measured and
+    # watched rather than found by a user.
+    #
+    # The blocker is architectural, not a missing feature: exec_string LEXES
+    # a whole sourced file before executing any of it, so `shopt -s extglob`
+    # on line 47 has not run when line 1810's `-?(\[)+([a-zA-Z0-9?]))` case
+    # pattern is tokenised -- and extglob patterns are gated on that option
+    # at lex time. bash reads and runs incrementally, so it has the option by
+    # then. Two real bugs found on the way here DID get fixed (a bare `{`
+    # inside ${...}, and a quoted right-hand side of [[ =~ ]]) and moved the
+    # failure from line 1425 to 1810.
+    ("bash-completion",
+     "https://raw.githubusercontent.com/scop/bash-completion/main/"
+     "bash_completion", "unsupported", 0,
+     "whole-file lexing vs `shopt -s extglob` on line 47: the extglob case "
+     "pattern at line 1810 is tokenised before the option is set"),
 ]
 
 
