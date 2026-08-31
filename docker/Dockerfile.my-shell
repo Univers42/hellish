@@ -1,0 +1,75 @@
+# ============================================================================
+# `make my_shell` and the update that follows it, on a machine shaped like the
+# one that reported issue #76: Ubuntu, a NON-ROOT human with sudo, and hellish
+# living in /usr/bin owned by root.
+#
+# Why a container and not a host test: every interesting condition here needs
+# a root-owned /usr/bin and a second identity to not-own it. The host-side
+# regression (tests/update_sudo_fail_test.py) reproduces the PERMISSION shape
+# with a mode-0555 directory and a fake sudo, which is enough for CI and needs
+# no root -- but it cannot exercise `make my_shell` itself: chsh, /etc/shells
+# and the passwd entry are machine state, and a test may not edit the
+# developer's login shell.
+#
+#   docker build -f docker/Dockerfile.my-shell -t hellish:my-shell .
+#   docker run --rm hellish:my-shell
+# or simply:  make my-shell-test
+#
+# The image builds hellish and runs `make my_shell` AS max, exactly as a user
+# would. The update is then driven against a LOCAL fake release server, so the
+# test proves the mechanism rather than whatever github is serving today.
+#
+# One phase is the exception and does need the network: `make my_shell
+# VERSION=2.7.2` downloads a real published release, because reproducing #76
+# means running the OLD updater and no local fake can stand in for that. It
+# skips cleanly when github is unreachable rather than failing a runner that
+# simply has no network.
+# ============================================================================
+FROM ubuntu:24.04
+
+# passwd = chsh, which register_shell.sh preflights for. sudo = the elevation
+# under test. python3 = the harness. curl + ca-certificates = what the updater
+# shells out to.
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		build-essential libreadline-dev ca-certificates curl git \
+		sudo passwd python3 coreutils; \
+	rm -rf /var/lib/apt/lists/*
+
+# A human, not root. The password is real and the sudoers entry does NOT say
+# NOPASSWD: a passwordless sudo would skip the prompt that made the elevated
+# install look silent, and that prompt is half of what this test is about.
+#
+# The two Defaults exist so ONE authentication can cover `make my_shell`,
+# which shells out to sudo three times (install, tee, chsh) across a build
+# that takes minutes and gives it no tty. The default 15-minute, tty-bound
+# ticket expired mid-build and my_shell died half-installed on "a terminal is
+# required to read the password". The harness drops the ticket with `sudo -k`
+# before the update phase, so the password prompt under test is real.
+RUN useradd -m -s /bin/bash max \
+	&& echo 'max:hunter2' | chpasswd \
+	&& printf '%s\n' \
+		'max ALL=(ALL) ALL' \
+		'Defaults:max timestamp_timeout=90' \
+		'Defaults:max !tty_tickets' \
+		> /etc/sudoers.d/max \
+	&& chmod 440 /etc/sudoers.d/max
+
+WORKDIR /hellish
+COPY . .
+RUN chown -R max:max /hellish
+
+# The test refuses to run without this. It rewrites the caller's login shell,
+# so "I am the container built for that" has to be stated by the image and
+# never inferable from a stray `python3 tests/my_shell_update_test.py`.
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 \
+	HELLISH_MY_SHELL_TEST=1
+
+# detect_origin() checks /.dockerenv BEFORE it checks who owns the binary, so
+# inside a container `update` correctly offers `docker pull` and never reaches
+# the self-update path at all. Removing the file is what makes this container
+# an ordinary machine as far as the updater is concerned; without it the test
+# would silently exercise nothing. It has to happen at RUN time -- docker
+# recreates it for every container.
+CMD ["/bin/bash", "-c", "rm -f /.dockerenv && exec su max -c 'HELLISH_MY_SHELL_TEST=1 python3 /hellish/tests/my_shell_update_test.py'"]

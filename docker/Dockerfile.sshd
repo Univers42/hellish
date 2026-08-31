@@ -1,0 +1,48 @@
+# ============================================================================
+# hellish as a real LOGIN SHELL behind a real sshd.
+#
+# `make my_shell` runs chsh, and from then on sshd execs hellish for every
+# remote operation -- `ssh host cmd`, scp, sftp, rsync, git-over-ssh all run
+# `$SHELL -c ...`. None of that is reachable from the golden suite, which
+# runs `hellish -c` directly with no sshd, no chsh and no pipe.
+#
+# Needs a container because it runs chsh and starts sshd: a host-side version
+# would rewrite the developer's own login shell, which no test may do.
+#
+#   docker build -f docker/Dockerfile.sshd -t hellish:sshd .
+#   docker run --rm hellish:sshd
+# or simply:  make ssh-shell-test
+#
+# Self-contained: it generates its own keypair and talks to its own sshd on
+# localhost, so there is no network and nothing to configure.
+# ============================================================================
+FROM ubuntu:24.04
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		build-essential libreadline-dev ca-certificates \
+		openssh-server openssh-client rsync git passwd; \
+	rm -rf /var/lib/apt/lists/*
+
+WORKDIR /hellish
+COPY . .
+
+# Optimised, libc-allocator build: the configuration `make my_shell` installs,
+# which is the one whose login-shell behaviour this is about.
+RUN make fclean >/dev/null 2>&1 || true; \
+	make all OPT=1 SAFE=1; \
+	install -m 755 build/bin/hellish /usr/bin/hellish; \
+	echo /usr/bin/hellish >> /etc/shells
+
+# A human to log in as, with key-based auth to its own sshd. No passwords
+# anywhere, so the test never stops to prompt.
+RUN useradd -m -s /bin/bash tester \
+	&& mkdir -p /run/sshd \
+	&& su tester -c 'mkdir -p ~/.ssh \
+		&& ssh-keygen -q -t ed25519 -N "" -f ~/.ssh/id_ed25519 \
+		&& cp ~/.ssh/id_ed25519.pub ~/.ssh/authorized_keys \
+		&& chmod 600 ~/.ssh/authorized_keys'
+
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
+CMD ["bash", "tests/ssh_login_shell.sh"]
