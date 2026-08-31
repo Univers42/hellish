@@ -145,8 +145,12 @@ static void	maybe_bench(void)
 
    Build the primary prompt for an interactive read. A user-set PS1 (from
    ~/.hellishrc or the environment) takes over completely, rendered with
-   the bash escape set — the built-in two-row prompt is simply the theme
-   you get when PS1 is unset, and "\B" asks for it by name. Otherwise: the
+   the bash escape set — except when the zsh dialect is armed, where PS1
+   becomes the zsh `%` parameter, because in zsh PS1 and PROMPT are the
+   same variable. The dialect BIT decides, never the text: a literal `%`
+   in a legacy bash PS1 must survive, so there is no sniffing. The
+   built-in two-row prompt is simply the theme you get when PS1 is unset,
+   and "\B" asks for it by name. Otherwise: the
    frame counter advances only when HELLISH_ANIM selects a live style, so
    the default prompt is perfectly still and each readline call redraws the
    SAME glyph; the status is snapshotted before rendering so the arrow
@@ -169,6 +173,8 @@ t_string	prompt_normal(t_shell *state)
 	if (ps1 && *ps1)
 		return (zsh_prompt(state, ps1));
 	ps1 = env_expand(state, "PS1");
+	if (ps1 && *ps1 && zsh_mode(state))
+		return (zsh_prompt(state, ps1));
 	if (ps1 && *ps1)
 		return (ps1_animated(state, ps1));
 	vec_init(&ret);

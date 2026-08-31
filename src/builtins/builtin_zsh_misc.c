@@ -20,31 +20,37 @@ int		builtin_source(t_shell *state, t_vec argv);
 ** dialect gets turned on: `emulate zsh` is the first line of a great many
 ** plugins and the only declaration of dialect their author wrote down.
 **
-** -L means "local to the enclosing function", and it needs no special
-** handling here for a reason worth stating: the call frame already restores
-** the dialect on return (see t_call_frame.zsh), so a plain `emulate zsh`
-** inside a function is ALREADY local.  Implementing -L as a separate
-** mechanism would give two ways to unwind the same bit and a chance for
-** them to disagree.  At top level neither form is local, which is also
-** zsh's behaviour.
+** -L means "local to the enclosing scope" and maps to the frame's own
+** restore (see t_call_frame.zsh). WITHOUT -L the request is global, like
+** every zsh option outside localoptions -- and since the rc file is
+** itself sourced through a frame, "global" has to mean zsh_mode_pin: the
+** unconditional per-frame restore would otherwise disarm the dialect the
+** moment ~/.hellishrc finished, leaving `emulate zsh` in an rc armed for
+** exactly as long as nobody was looking at it.
 */
 int	builtin_emulate(t_shell *state, t_vec argv)
 {
 	char	**av;
 	size_t	i;
+	bool	local;
 
 	av = (char **)argv.ctx;
 	i = 1;
+	local = false;
 	while (i < argv.len && av[i][0] == '-')
+	{
+		if (ft_strchr(av[i], 'L'))
+			local = true;
 		i++;
+	}
 	if (i >= argv.len)
 		return (ft_eprintf("%s: emulate: not enough arguments\n",
 				state->ctx), 1);
 	if (!ft_strcmp(av[i], "zsh"))
-		return (zsh_mode_swap(state, true), 0);
+		return (zsh_mode_req(state, true, local));
 	if (!ft_strcmp(av[i], "sh") || !ft_strcmp(av[i], "ksh")
 		|| !ft_strcmp(av[i], "bash"))
-		return (zsh_mode_swap(state, false), 0);
+		return (zsh_mode_req(state, false, local));
 	return (ft_eprintf("%s: emulate: %s: no such shell\n",
 			state->ctx, av[i]), 1);
 }
