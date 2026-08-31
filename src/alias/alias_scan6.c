@@ -62,7 +62,7 @@ void	asc_newline(t_ascan *a)
 		vec_push(&a->out, &c);
 	while (a->hd_n > 0 && s->s[s->pos])
 		asc_hd_body(a, s);
-	a->cmd_pos = true;
+	a->cmd_pos = (a->cs_n == 0 || a->cs_st == CS_BODY);
 	a->chk_next = false;
 	a->after_redir = false;
 	a->pend_hd = 0;

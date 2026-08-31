@@ -171,9 +171,11 @@ t_string	prompt_normal(t_shell *state)
 	*anim_jobs() = state->job_table.count;
 	ps1 = env_expand(state, "PROMPT");
 	if (ps1 && *ps1)
-		return (zsh_prompt(state, ps1, true));
+		return (rprompt_wrap(state, zsh_prompt(state, ps1, true)));
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
-		return (zsh_prompt(state, ps1, zsh_mode(state)));
-	return (zsh_prompt(state, HELLISH_PS1_DEFAULT, false));
+		return (rprompt_wrap(state,
+				zsh_prompt(state, ps1, zsh_mode(state))));
+	return (rprompt_wrap(state,
+			zsh_prompt(state, HELLISH_PS1_DEFAULT, false)));
 }
