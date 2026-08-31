@@ -69,6 +69,9 @@ void	rc_load_all(t_shell *state, const char *home);
 
 /* Composable rc hooks (src/core/hooks*.c). */
 void	run_hook_funcs(t_shell *state, char *var, const char *arg);
+void	hook_run_one(t_shell *state, const char *fn, const char *arg);
+void	run_zsh_prompt_hooks(t_shell *state, const char *which,
+			const char *arg);
 void	run_preexec(t_shell *state);
 
 #endif

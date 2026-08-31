@@ -18,3 +18,18 @@ alias sub='(echo insub)'; eval sub
 alias e=echo; f() { e infunc; }; eval 'alias e=printf; f'
 unalias nosuch
 alias e=echo; eval 'e "quoted arg" plain'
+alias ls='ls --color=auto'; eval 'case x in list|ls) echo P;; *) echo N;; esac'
+alias ls='ls --color=auto'; eval 'case ls in gs|ls) echo P;; *) echo N;; esac'
+alias ls='ls --color=auto'; eval 'case x in a) :;; ls) echo P;; *) echo N;; esac'
+alias ls='ls --color=auto' gs='git status'; eval 'case x in (gs|ls) echo P;; (*) echo N;; esac'
+alias ls='ls -x'; eval 'case x in
+    ls) echo P;;
+    *) echo N;;
+esac'
+alias ls='ls -x'; eval 'case ls in a) :;& ls) echo fall;; esac'
+alias ls='ls -x'; eval 'case ls in a) :;;& ls) echo more;; esac'
+alias e='echo EXP'; eval 'case x in x) e;; esac'
+alias e='echo EXP'; eval 'case x in x) e; e;; esac; e'
+alias e='echo EXP'; eval 'case a in a) case b in b) e;; esac;; esac'
+alias in='echo NOTKW'; eval 'for i in 1; do echo ok$i; done'
+alias case='echo NOTCASE'; eval 'echo case is fine'
