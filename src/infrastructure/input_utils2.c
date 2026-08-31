@@ -53,6 +53,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 {
 	if (parser->res == RES_OK && !state->cycle_streamed)
 	{
+		run_preexec(state);
 		execute_top_level(state);
 		(*git_scan_gen())++;
 		if (parena()->attached)
