@@ -52,25 +52,22 @@ static void	ps1_tty(t_string *out)
 
 /* \! and \#, both 1-based like bash. \! is the history number the NEXT
    command will get, so it keeps counting across sessions -- the loaded
-   file's entries are part of the numbering. \# restarts at 1 per session:
-   readmark is exactly "how many entries came from the file", so the
-   session count is what sits above it. Derived from history rather than a
-   separate counter, so it does not advance on a command history skipped
-   (a duplicate, a leading space) -- bash's does; close enough for a
-   prompt, and one less piece of state to keep honest. */
+   file's entries are part of the numbering. \# restarts at 1 per session
+   and comes from its own counter (state->cmd_no, bumped once per REPL
+   turn): deriving it from history froze the number on consecutive
+   duplicates, because history dedupes and bash's counter does not --
+   tests/ps1_bash_escapes_test.py runs `true` three times and watches the
+   number move. */
 static void	ps1_histno(t_shell *state, t_string *out, char c)
 {
-	size_t	n;
 	char	*s;
 
-	if (!state->hist.hist_active)
+	if (c == '#')
+		s = ft_itoa(state->cmd_no);
+	else if (!state->hist.hist_active)
 		return ((void)vec_push_char(out, '0'));
-	n = state->hist.hist_cmds.len;
-	if (c == '#' && n >= state->hist.readmark)
-		n -= state->hist.readmark;
-	else if (c == '#')
-		n = 0;
-	s = ft_itoa((int)n + 1);
+	else
+		s = ft_itoa((int)state->hist.hist_cmds.len + 1);
 	if (s)
 		vec_push_str(out, s);
 	xfree(s);

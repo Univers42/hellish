@@ -64,6 +64,7 @@ bool			zle_active(void);
 void			zle_install(t_shell *state);
 int				zle_dispatch(int count, int key);
 void			zle_do_redisplay(void);
+void			zle_do_message(const char *msg);
 void			zle_do_kill_buffer(void);
 void			zle_do_accept_line(void);
 int				zle_run_widget(t_shell *state, const char *name);

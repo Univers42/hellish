@@ -48,7 +48,9 @@ def paint(setup, cmds):
         env.pop(v, None)
     pid, fd = pty.fork()
     if pid == 0:
-        os.execve(SHELL, [SHELL, "-i"], env)
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execve(SHELL, [SHELL, "-i", "--norc"], env)
         os._exit(1)
     out = b""
 

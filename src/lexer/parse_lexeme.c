@@ -18,6 +18,7 @@ char	*parse_quote(t_deque_tok *tokens, char **str, char q);
 
 bool	is_word_boundary(const char *s);
 int		glob_qual_ahead(const char *start, const char *at);
+int		word_group_ahead(const char *start, const char *at);
 int		glob_zsh(void);
 bool	zsh_eqsub_break(const char *start, const char *at);
 
@@ -130,9 +131,9 @@ char	*parse_lexeme(t_deque_tok *tokens, char **str)
 	start = *str;
 	while (**str)
 	{
-		if (glob_qual_ahead(start, *str))
+		if (word_group_ahead(start, *str))
 		{
-			*str += glob_qual_ahead(start, *str);
+			*str += word_group_ahead(start, *str);
 			continue ;
 		}
 		if (zsh_eqsub_break(start, *str))

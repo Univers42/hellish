@@ -17,15 +17,22 @@
 
 int	exec_string(t_shell *state, char *content);
 
-/* Invoke one registered widget from inside another. */
+/* Invoke one registered widget from inside another.
+
+   No strdup on the way in: exec_string alias-expands into a COPY and frees
+   only that, so the string it is handed still belongs to the caller. The
+   strdup that used to be here leaked one widget name per invocation, on a
+   path no `-c` case can reach because it needs a live readline -- which is
+   why neither ASan nor the allocator oracle ever saw it. zle_dispatch
+   passes w->fn straight through, for the same reason. */
 int	zle_run_widget(t_shell *state, const char *name)
 {
 	t_zle_widget	*w;
 
 	w = zle_widget_get(name);
-	if (!w)
+	if (!w || !w->fn)
 		return (1);
-	return (exec_string(state, ft_strdup(w->fn)));
+	return (exec_string(state, w->fn));
 }
 
 /* Install every recorded binding into readline's current keymap, and mark

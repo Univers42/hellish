@@ -1,0 +1,20 @@
+x=<(echo hi); [ -n "$x" ] && echo nonempty
+x=<(echo hi); case "$x" in /dev/fd/*) echo fdpath;; *) echo "other";; esac
+x=<(echo hi); echo "rc=$?"
+x=<(echo hi); echo "argc=$#"
+f(){ local t=<(echo hi); [ -n "$t" ] && echo nonempty; }; f
+f(){ local t=<(echo hi); case "$t" in /dev/fd/*) echo fdpath;; *) echo other;; esac; }; f
+f(){ local t=<(echo hi); echo "rc=$?"; }; f
+f(){ typeset t=<(echo hi); [ -n "$t" ] && echo nonempty; }; f
+declare d=<(echo hi); [ -n "$d" ] && echo nonempty
+x=>(cat); [ -n "$x" ] && echo nonempty
+x=>(cat); case "$x" in /dev/fd/*) echo fdpath;; *) echo other;; esac
+x=<(echo hi); y=2; echo "y=$y"
+echo x= <(echo hi) | wc -w
+cat <(echo hi)
+cat <(echo a) <(echo b)
+x=<(echo hi) env >/dev/null; echo "rc=$?"
+for i in 1 2 3; do x=<(echo hi); [ -n "$x" ] || echo BAD; done; echo loopdone
+f(){ local a=<(echo 1); local b=<(echo 2); [ -n "$a" ] && [ -n "$b" ] && [ "$a" != "$b" ] && echo distinct; }; f
+x=pre<(echo hi); echo "rc=$?"
+while read l; do echo "got:$l"; done < <(echo one)

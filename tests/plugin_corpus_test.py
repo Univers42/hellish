@@ -81,13 +81,39 @@ CORPUS = [
      "loads", 4, ""),
     ("git-prompt", GIT % "completion/git-prompt.sh", "loads", 4,
      "the one that used to segfault"),
-    ("git-completion", GIT % "completion/git-completion.bash", "loads-noisy",
-     100, "compgen: no programmable completion here"),
+    # Was "loads-noisy" while compgen/complete did not exist: the file
+    # defined its 140 functions and then complained on every completion.
+    # compgen and complete landed (#72 phase 4) and it now loads in
+    # silence, so the expectation moves with the shell -- which is the
+    # whole reason each row declares one.
+    ("git-completion", GIT % "completion/git-completion.bash", "loads",
+     100, ""),
     ("bash-preexec",
      "https://raw.githubusercontent.com/rcaloras/bash-preexec/master/"
      "bash-preexec.sh", "loads", 15, ""),
     ("z", "https://raw.githubusercontent.com/rupa/z/master/z.sh", "loads", 1,
      ""),
+    # THE ROW THAT HOLDS progcomp's DEFAULT DOWN.
+    #
+    # /etc/profile.d/bash_completion.sh sources this when `shopt -q progcomp`
+    # says yes, so this file failing to parse is exactly why hellish leaves
+    # progcomp off by default while bash turns it on (incs/shell.h). The day
+    # this row can move to `loads`, that default can flip -- which is what a
+    # declared expectation is FOR.
+    #
+    # The blocker is architectural, not a missing feature: exec_string LEXES
+    # a whole sourced file before executing any of it, so `shopt -s extglob`
+    # on line 47 has not run when line 1810's `-?(\[)+([a-zA-Z0-9?]))` case
+    # pattern is tokenised -- and extglob patterns are gated on that option
+    # at lex time. bash reads and runs incrementally, so it has the option by
+    # then. Two real bugs found on the way here DID get fixed (a bare `{`
+    # inside ${...}, and a quoted right-hand side of [[ =~ ]]) and moved the
+    # failure from line 1425 to 1810.
+    ("bash-completion",
+     "https://raw.githubusercontent.com/scop/bash-completion/main/"
+     "bash_completion", "unsupported", 0,
+     "whole-file lexing vs `shopt -s extglob` on line 47: the extglob case "
+     "pattern at line 1810 is tokenised before the option is set"),
 ]
 
 

@@ -122,5 +122,7 @@ int		*self_exe_state(void);
 
 void	tty_snapshot_save(void);
 void	tty_snapshot_restore(void);
+void	tty_snapshot_refresh(void);
+void	tty_reclaim_after_signal(void);
 
 #endif

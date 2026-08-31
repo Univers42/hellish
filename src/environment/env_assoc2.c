@@ -76,6 +76,24 @@ char	*assoc_without(const char *old, const char *key, int klen)
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }
 
+/* One [key]="value" record.  The key is quoted only when it needs it and
+   the value always is, which is what bash prints -- see env_quote.c. */
+static void	assoc_rec(t_string *out, t_assoc_it *it)
+{
+	bool	q;
+
+	q = assoc_key_quoted(it->k, it->kl);
+	vec_push_char(out, '[');
+	if (q)
+		vec_push_char(out, '"');
+	vec_push_dquoted(out, it->k, it->kl);
+	if (q)
+		vec_push_char(out, '"');
+	vec_push_str(out, "]=\"");
+	vec_push_dquoted(out, it->v, it->vl);
+	vec_push_char(out, '"');
+}
+
 /* declare -p / set display form: ([key]="val" ...) with keys quoted.
    Bash quirk: a non-empty associative array carries a trailing space
    before the closing paren ( [k]="v" ) — indexed arrays do not. */
@@ -92,11 +110,7 @@ char	*assoc_format(const char *val)
 	{
 		if (out.len > 1)
 			vec_push_char(&out, ' ');
-		vec_push_char(&out, '[');
-		vec_push_nstr(&out, (char *)it.k, it.kl);
-		vec_push_str(&out, "]=\"");
-		vec_push_nstr(&out, (char *)it.v, it.vl);
-		vec_push_char(&out, '"');
+		assoc_rec(&out, &it);
 	}
 	if (out.len > 1)
 		vec_push_char(&out, ' ');

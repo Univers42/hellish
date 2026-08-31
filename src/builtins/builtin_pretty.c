@@ -107,7 +107,7 @@ static int	pretty_set(t_shell *state, t_vec argv, int first, bool on)
 			state->shopt &= ~t->bit;
 		first++;
 	}
-	return (pretty_sync(state), st);
+	return (glob_opts_sync(state), st);
 }
 
 /* pretty [-p] | list | on ... | off ... | mode NAME */

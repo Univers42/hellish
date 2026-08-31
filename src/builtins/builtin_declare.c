@@ -13,7 +13,8 @@
 #include "builtins_private.h"
 #include "env.h"
 
-int	declare_assoc(t_shell *state, t_vec argv, size_t i);
+int		declare_assoc(t_shell *state, t_vec argv, size_t i);
+void	declare_assign(t_shell *state, const char *word, int exprt);
 
 /* declare / typeset: the subset scripts actually depend on.
    - declare -p [NAME...]  prints each variable's declaration in bash form
@@ -47,11 +48,12 @@ static int	declare_print_one(t_shell *state, const char *name)
 		ft_printf("declare -a %s=%s\n", e->key, fmt);
 		return (xfree(fmt), 0);
 	}
+	fmt = dquote_str(e->value);
 	if (e->exported)
-		ft_printf("declare -x %s=\"%s\"\n", e->key, e->value);
+		ft_printf("declare -x %s=\"%s\"\n", e->key, fmt);
 	else
-		ft_printf("declare -- %s=\"%s\"\n", e->key, e->value);
-	return (0);
+		ft_printf("declare -- %s=\"%s\"\n", e->key, fmt);
+	return (xfree(fmt), 0);
 }
 
 /* declare -p: print the named variables (or, with none, all of them). */
@@ -68,24 +70,6 @@ static int	declare_print(t_shell *state, t_vec argv, size_t first)
 		if (declare_print_one(state, ((char **)argv.ctx)[i++]))
 			rc = 1;
 	return (rc);
-}
-
-/* One NAME or NAME=VALUE operand: NAME=VALUE assigns (export flag from
-   -x), a bare NAME with no '=' is a no-op that just accepts the name. */
-static void	declare_assign(t_shell *state, const char *word, int export)
-{
-	char	*eq;
-	char	*key;
-
-	eq = ft_strchr(word, '=');
-	if (!eq)
-	{
-		if (export && env_get(&state->env, (char *)word))
-			env_get(&state->env, (char *)word)->exported = true;
-		return ;
-	}
-	key = ft_strndup(word, eq - word);
-	env_set(&state->env, env_create(key, ft_strdup(eq + 1), export != 0));
 }
 
 /* Scan declare's leading option words into a p/x/A bitmask (1/2/4).

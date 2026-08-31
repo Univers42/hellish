@@ -125,6 +125,87 @@ ZSH_CASES = [
      "[1][2][1]"),
     ('setopt ksh_arrays; unsetopt ksh_arrays; a=(1 2); echo "[${a[1]}]"',
      "[1]"),
+    # ... slices included: the whole zsh array dialect is what the option
+    # switches off, so `a[1,2]` goes back to bash's comma operator.
+    ('setopt ksharrays; a=(x y z); echo "[${a[1,2]}]"', "[z]"),
+]
+
+A5 = "a=(one two three four five); "
+
+# ${a[lo,hi]} -- the SLICE, and the reason it is worth its own block.
+# `lo,hi` is a perfectly good arithmetic expression: the comma operator
+# evaluates both sides and yields the right one, so with no slice `a[2,3]`
+# reads element 3, ONE element comes back, and nothing anywhere reports a
+# problem. A plugin slicing an array gets a single element that looks
+# exactly like data.
+#
+# Every value below came from zsh 5.9 rather than from reasoning. The two
+# that look like typos are the interesting ones: `a[0,2]` and `a[-6,2]`
+# both name position 0 and they answer differently.
+SLICE_CASES = [
+    (A5 + 'echo "[${a[2,3]}]"', "[two three]"),
+    (A5 + 'echo "[$a[2,3]]"', "[two three]"),
+    (A5 + 'echo "[${a[2,-1]}]"', "[two three four five]"),
+    (A5 + 'echo "[${a[-2,-1]}]"', "[four five]"),
+    (A5 + 'echo "[${a[1,$#a]}]"', "[one two three four five]"),
+    (A5 + 'echo "[${a[1+1,2+1]}]"', "[two three]"),
+    (A5 + 'i=1; j=3; echo "[${a[i,j]}]"', "[one two three]"),
+    # hi < lo is empty, not everything.
+    (A5 + 'echo "[${a[3,2]}]"', "[]"),
+    # 0 clamps UP to the first element ...
+    (A5 + 'echo "[${a[0,2]}]"', "[one two]"),
+    # ... but a negative reaching past the start VOIDS the range.
+    (A5 + 'echo "[${a[-6,2]}]"', "[]"),
+    (A5 + 'echo "[${a[-5,2]}]"', "[one two]"),
+    (A5 + 'echo "[${a[-99,2]}]"', "[]"),
+    (A5 + 'echo "[${a[1,-5]}]"', "[one]"),
+    (A5 + 'echo "[${a[1,-6]}]"', "[]"),
+    # Past the end is taken quietly, no complaint.
+    (A5 + 'echo "[${a[2,99]}]"', "[two three four five]"),
+    # The count is of ELEMENTS, not the width of the joined string.
+    (A5 + 'echo "[${#a[2,3]}]"', "[2]"),
+    # Quoted joins with IFS[0]; unquoted goes through word splitting, the
+    # same route "${a[*]}" already takes.
+    (A5 + 'IFS=:; echo "[${a[2,3]}]"', "[two:three]"),
+    (A5 + "printf '<%s>' ${a[2,3]}; echo", "<two><three>"),
+    # A scalar slices by CHARACTER.
+    ('x=hello; echo "[${x[2,3]}][${x[2,-1]}][${#x[2,3]}]"', "[el][ello][2]"),
+    ('x=; echo "[${x[1,2]}]"', "[]"),
+    # Writing a range: the run is replaced and the array RENUMBERS.
+    (A5 + 'a[2,3]=(X Y); echo "[${a[@]}] n=$#a"', "[one X Y four five] n=5"),
+    (A5 + 'a[2,3]=(); echo "[${a[@]}] n=$#a"', "[one four five] n=3"),
+    (A5 + 'a[2,3]=X; echo "[${a[@]}] n=$#a"', "[one X four five] n=4"),
+    (A5 + 'a[2,2]=(P Q); echo "[${a[@]}] n=$#a"',
+     "[one P Q three four five] n=6"),
+    # An empty range is a POSITION, not an error: this INSERTS.
+    (A5 + 'a[3,2]=(P); echo "[${a[@]}] n=$#a"',
+     "[one two P three four five] n=6"),
+    # Past the end pads, exactly as a plain a[9]= does.
+    (A5 + 'a[9,10]=(P); echo "n=$#a"', "n=9"),
+    (A5 + 'a[-2,-1]=(P); echo "[${a[@]}] n=$#a"', "[one two three P] n=4"),
+    (A5 + 'a[2,99]=(X); echo "[${a[@]}] n=$#a"', "[one X] n=2"),
+    ('unset a; a[1,2]=(X Y); echo "[${a[@]}] n=$#a"', "[X Y] n=2"),
+    # A comma only separates at the TOP level, which is what leaves an
+    # associative key with a comma in it alone.
+    ('typeset -A M; M[a,b]=z; echo "[${M[a,b]}]"', "[z]"),
+    # A subscript is WORD-EXPANDED before it is evaluated, so $(( )) and
+    # $( ) work inside one -- on both sides of a slice's comma too. The read
+    # path used to go straight to arithmetic, which resolves $name but
+    # neither of those, so `a[$((n+1))]=v` assigned happily while
+    # `${a[$((n+1))]}` answered "arithmetic error". tests/array_subscript
+    # pins the bash half of the same fix.
+    (A5 + 'echo "[${a[$((1+1))]}]"', "[two]"),
+    (A5 + 'n=1; echo "[${a[$((n+1))]}]"', "[two]"),
+    (A5 + 'echo "[${a[$(echo 2)]}]"', "[two]"),
+    (A5 + 'echo "[${a[$((1)),$((3))]}]"', "[one two three]"),
+    (A5 + 'echo "[${a[$(echo 2),$(echo 4)]}]"', "[two three four]"),
+    (A5 + 'echo "[${#a[$((1+1))]}]"', "[3]"),
+    (A5 + 'a[$((1+1))]=(Z); echo "[${a[@]}] n=$#a"',
+     "[one Z three four five] n=5"),
+    ('x=hello; echo "[${x[$((2))]}]"', "[e]"),
+    # ... and a comma INSIDE $(( )) stays the arithmetic comma operator, so
+    # this is one index and not a range.
+    (A5 + 'echo "[${a[$((1,2))]}]"', "[two]"),
 ]
 
 # The same constructs in the DEFAULT dialect, against bash's answers.
@@ -144,6 +225,31 @@ def zsh_cases():
     for script, want in ZSH_CASES:
         out, _ = run_zsh(script)
         check("zsh/" + script[:52], out, want)
+
+
+def slice_cases():
+    for script, want in SLICE_CASES:
+        out, _ = run_zsh(script)
+        check("slice/" + script[len(A5):][:48], out, want)
+    # bash has no slice and DOES mean the comma operator, so the same text
+    # must keep answering bash's way with the dialect off. Without this the
+    # suite could not tell "gated correctly" from "changed the default".
+    out, _ = run_bash_mode('a=(one two three four five); echo "[${a[2,3]}]"')
+    check("slice/bash-mode-is-the-comma-operator", out, "[four]")
+    out, _ = run_bash_mode('a=(1 2 3); a[1,2]=x; echo "[${a[@]}]"')
+    check("slice/bash-mode-writes-one-element", out, "[1 2 x]")
+    # KNOWN DIVERGENCE, recorded rather than matched. ${#a[lo,hi]} on a
+    # range that starts past the end: zsh 5.9 answers by how WIDE the range
+    # is rather than by how much of it exists --
+    #     a=();  ${#a[1,1]} -> 0   ${#a[1,2]} -> 1   ${#a[2,3]} -> 1
+    #     a=(x); ${#a[2,3]} -> 1
+    # -- so an empty slice reports one element whenever it spans more than
+    # one position. That is not a rule anything can rely on; it looks like
+    # an off-by-one in how zsh materialises an out-of-range slice. hellish
+    # answers "how many elements the slice covers", which agrees with zsh
+    # everywhere the slice is in range. Pinned so the choice stays visible.
+    out, _ = run_zsh('a=(); echo "[${#a[1,1]}][${#a[1,2]}][${#a[2,3]}]"')
+    check("slice/empty-array-count-diverges-from-zsh", out, "[0][0][0]")
 
 
 def bash_cases():
@@ -187,10 +293,17 @@ def bad_subscript_cases():
 
     The same policy governs a readonly assignment, so it is pinned here too
     rather than left to be rediscovered from another plugin."""
+    # 127, not 1.  A refused assignment is the same fatal family as ${p:?w},
+    # `set -u` and readonly, and bash reports 127 for all four when the
+    # top-level shell of a -c string dies (1 in a subshell or a script) --
+    # `bash --posix -c 'unset a; a[-1]=x'` is 127, plain `bash -c` is 1, and
+    # bash --posix is what the golden suite grades against.  This row said 1
+    # because bad_subscript() hardcoded it while the other three used
+    # shell_fatal_status(); it now uses that too (#82 item 5).
     out, rc = run_bash_mode('unset a; a[-1]=x; echo REACHED')
     check("bad-sub/bash-negative-past-start",
           (rc, "REACHED" in out, "bad array subscript" in out),
-          (1, False, True))
+          (127, False, True))
     out, _ = run_zsh('a=(1 2 3); a[0]=(x); echo REACHED')
     check("bad-sub/zsh-a0-is-refused",
           ("REACHED" in out, "invalid subscript range" in out),
@@ -226,8 +339,27 @@ def churn_cases():
     check("churn/300-splices-clean", rc == 0 and "done" in out, True)
     check("churn/no-sanitizer-report",
           "AddressSanitizer" not in out and "LeakSanitizer" not in out, True)
+    # The same pressure through the SLICE, which reaches arr_splice over a
+    # range instead of one element and grows and shrinks the array by two
+    # every turn rather than staying the same size.
+    script = ("a=(0 1 2 3)\ni=0\n"
+              "while [ $i -lt 300 ]; do\n"
+              "  a[2,3]=($i $i x)\n"
+              "  a[1,2]=()\n"
+              "  a+=(p q)\n"
+              "  i=$((i+1))\n"
+              "done\n"
+              'echo "done n=$#a [${a[1,2]}]"\n')
+    out, rc = run_zsh(script)
+    check("churn/300-slice-splices-clean", rc == 0 and "done" in out, True)
+    check("churn/slice-no-sanitizer-report",
+          "AddressSanitizer" not in out and "LeakSanitizer" not in out, True)
     for bad in ('a=(1); a[]=()', 'a=(1); a[x]=()', 'a=(1); shift a a a a',
-                'a=(1); a[999999]=()', 'shift 1 2 3 4', 'a=(1); a[-99]=()'):
+                'a=(1); a[999999]=()', 'shift 1 2 3 4', 'a=(1); a[-99]=()',
+                'a=(1); echo "${a[,]}"', 'a=(1); echo "${a[1,]}"',
+                'a=(1); echo "${a[,2]}"', 'a=(1); echo "${a[1,2,3]}"',
+                'a=(1); echo "${a[-9,-9]}"', 'a=(1); a[,]=(x)',
+                'a=(1); a[999999,999999]=(x)', 'x=s; echo "${x[9,9]}"'):
         out, rc = run_zsh(bad + "; echo SURVIVED")
         check("churn/no-crash: " + bad[:26],
               "AddressSanitizer" not in out and rc in (0, 1, 2, 127), True)
@@ -238,6 +370,7 @@ def main():
         print("no shell at", SHELL)
         return 1
     zsh_cases()
+    slice_cases()
     bash_cases()
     localoptions_cases()
     bad_subscript_cases()

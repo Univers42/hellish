@@ -64,7 +64,7 @@ int	pretty_mode(t_shell *state, t_vec argv, int first)
 	while (t->name)
 		owned |= t++->bit;
 	state->shopt = (state->shopt & ~owned) | bits;
-	return (pretty_sync(state), 0);
+	return (glob_opts_sync(state), 0);
 }
 
 /* pretty [-p] -- what is on. Plain form is for reading; -p emits the exact
@@ -126,12 +126,6 @@ int	pretty_list(t_shell *state)
 	return (0);
 }
 
-/* Two of these bits are read through accessors by the glob expander rather
-   than off state->shopt, so they have to be pushed down after any change.
-   shopt does the same thing; this is the same call, not a second copy of
-   the rule. */
-void	pretty_sync(t_shell *state)
-{
-	*glob_nullglob_cell() = (state->shopt & SHOPT_NULLGLOB) != 0;
-	*glob_dotglob_cell() = (state->shopt & SHOPT_DOTGLOB) != 0;
-}
+/* The glob-option mirror this file used to keep half a copy of now lives in
+   builtin_shopt.c as glob_opts_sync -- one list, three writers. Its comment
+   records what the half-copy cost. */

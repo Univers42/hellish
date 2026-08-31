@@ -40,6 +40,36 @@ static bool	is_unset_or_null(const char *val)
 	return (val == NULL || *val == '\0');
 }
 
+/* Did the operator's WORD supply the result, rather than the variable?
+**
+** Asked in two places -- here, to build the value, and in expand_op_token,
+** to decide whether an EMPTY result is a field at all -- so it is one
+** function. bash draws that line exactly here:
+**
+**     x=;  ${x:-}      word used, but empty       no field
+**     x=;  ${x:-""}    word used, quoted empty    one empty field
+**     x=;  ${x:+""}    word NOT used              no field
+**     x=1; ${x:+""}    word used, quoted empty    one empty field
+**
+** Two copies of this predicate would eventually answer those four
+** differently, and the symptom -- an extra empty argument -- is invisible
+** until some program counts its arguments.
+*/
+bool	pf_op_word_used(char *val, t_pe_op o)
+{
+	bool	act;
+
+	if (o.colon)
+		act = is_unset_or_null(val);
+	else
+		act = (val == NULL);
+	if (o.opc == '-' || o.opc == '=')
+		return (act);
+	if (o.opc == '+')
+		return (!act);
+	return (false);
+}
+
 /* Handle the default/alternate family of parameter operators:
      ${p-w}  → w if p is UNSET,          else p
      ${p:-w} → w if p is UNSET OR EMPTY, else p
@@ -49,19 +79,9 @@ static bool	is_unset_or_null(const char *val)
    `val` is NULL for unset, "" for set-but-empty (pf_get_var_value contract). */
 char	*default_or_alt(t_shell *state, char *val, t_pe_op o)
 {
-	bool	act;
-
-	if (o.colon)
-		act = is_unset_or_null(val);
-	else
-		act = (val == NULL);
+	if (pf_op_word_used(val, o))
+		return (expand_param_word(state, o.word, o.wlen, o.dq));
 	if (o.opc == '-')
-	{
-		if (act)
-			return (expand_param_word(state, o.word, o.wlen, o.dq));
 		return (ft_strdup(val));
-	}
-	if (act)
-		return (ft_strdup(""));
-	return (expand_param_word(state, o.word, o.wlen, o.dq));
+	return (ft_strdup(""));
 }

@@ -22,10 +22,15 @@ void	replace_null_argv_with_empty(t_executable_cmd *cmd);
    visible inside the function body) then undone via restore_temp_assigns
    when it returns.  Redirects are saved/restored with prep_redir so the
    function's stderr/stdout don't bleed back into the caller.  The argv
-   and redirect resources belong to the cmd struct and are freed last. */
+   and redirect resources belong to the cmd struct and are freed last.
+     `fn` is passed in rather than looked up from argv[0] because
+   command_not_found_handle runs through this same path with a name that is
+   deliberately NOT argv[0] -- one call site for "run a function here",
+   so the redirect and temp-assign handling cannot diverge between them. */
 static t_execution_state	handle_func_call(t_shell *state,
 						t_executable_cmd *cmd,
-						t_executable_node *exe)
+						t_executable_node *exe,
+						t_shell_func *fn)
 {
 	t_execution_state	res;
 	int					bak[3];
@@ -35,8 +40,7 @@ static t_execution_state	handle_func_call(t_shell *state,
 	need = prep_redir(state, exe, bak, 0);
 	procsub_close_fds_parent(state);
 	saves = apply_temp_assigns(state, &cmd->pre_assigns);
-	res = execute_func_call(state,
-			func_lookup(state, ((char **)(cmd->argv.ctx))[0]), &cmd->argv);
+	res = execute_func_call(state, fn, &cmd->argv);
 	restore_temp_assigns(state, &saves);
 	if (need)
 		restore_backup_fds(bak, 0);
@@ -85,10 +89,15 @@ static t_execution_state	handle_assign_only(t_shell *state,
      variables, etc. -- they MUST run in parent, never in a fork)
    - builtin name  -> execute_builtin_cmd_fg IN PARENT (same reason: cd,
      export, read etc. modify parent state)
+   - not found     -> command_not_found_handle, if the user defined it
    - anything else -> execute_cmd_bg which forks and calls execve.
    The modify_parent_ctx guard for functions and builtins ensures that
    when they appear as non-last pipeline stages they still fork (the
-   pipeline executor cleared modify_parent_ctx for those). */
+   pipeline executor cleared modify_parent_ctx for those).
+     The not-found hook is DECIDED here and RUN in a fork (cnf_fork.c):
+   the message it replaces is printed by the exec child, so the choice must
+   be made before forking, while bash gives the handler a subshell -- it
+   carries no modify_parent_ctx guard because it never runs in the parent. */
 static t_execution_state	dispatch_cmd(t_shell *state,
 								t_executable_cmd *cmd,
 								t_executable_node *exe)
@@ -102,7 +111,7 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 		return (handle_empty_command(state, cmd, exe));
 	if (state->functions.len && func_lookup(state, argv0)
 		&& exe->modify_parent_ctx)
-		return (handle_func_call(state, cmd, exe));
+		return (handle_func_call(state, cmd, exe, func_lookup(state, argv0)));
 	if (builtin_func(argv0) && exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, cmd, exe));
 	prehash_external(state, argv0);

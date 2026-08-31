@@ -132,18 +132,22 @@ static void	open_cycle(t_shell *state)
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	state->rl.eof_refused = false;
+	state->cmd_no++;
 	state->exit_warned = state->exit_attempt;
 	state->exit_attempt = false;
 	get_g_sig()->should_unwind = 0;
 	update_notify_prompt(state);
 	if (state->metinp != INP_RL)
 		return ;
+	tty_snapshot_refresh();
 	pc = env_expand(state, "PROMPT_COMMAND");
-	if (!pc || !*pc)
-		return ;
-	saved = state->last_cmd_st_exe;
-	exec_string(state, pc);
-	set_cmd_status(state, saved);
+	if (pc && *pc)
+	{
+		saved = state->last_cmd_st_exe;
+		exec_string(state, pc);
+		set_cmd_status(state, saved);
+	}
+	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
 }
 
 /* The read-eval-print loop -- the beating heart of the shell. Each turn hands

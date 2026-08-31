@@ -14,17 +14,24 @@
 
 /* Find how many characters of s[0..] are consumed by a match of pat.
    Returns the match length (may be 0 for a pattern that matches empty), or
-   -1 if the pattern does not match at this position.  Literal patterns
-   (no * or ? wildcards) take an O(m) ft_strncmp fast path; wildcard patterns
-   try decreasing lengths until pat_match_pub succeeds (longest-match scan
+   -1 if the pattern does not match at this position.  Literal patterns (no
+   wildcards) take an O(m) ft_strncmp fast path; wildcard patterns try
+   decreasing lengths until pat_match_pub succeeds (longest-match scan
    needed because * can expand to varying amounts).  Shared with the
-   anchored #/% forms in expand_param_subst2.c. */
+   anchored #/% forms in expand_param_subst2.c.
+
+   `[` belongs in the metachar set and was not there: a bracket expression
+   took the literal path, so ${v//[X]/-} compared the three characters `[X]`
+   against the value and replaced nothing -- silently, because "no match" is
+   an ordinary answer here. A fast path has to know every character the
+   matcher treats as special, which is the standing cost of having one. */
 int	patsub_match_len(const char *pat, const char *s)
 {
 	int		k;
 	char	*sub;
 
-	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?') && !ft_strchr(pat, '\\'))
+	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?')
+		&& !ft_strchr(pat, '[') && !ft_strchr(pat, '\\'))
 	{
 		k = (int)ft_strlen(pat);
 		if (!ft_strncmp(pat, s, (size_t)k))

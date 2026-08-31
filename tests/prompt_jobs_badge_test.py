@@ -34,6 +34,20 @@ Three routes are covered, because they reach render_extras() differently:
   2. PS1='\B'       -- the shipped default, the one users actually run
   3. PS1='...\J...' -- the \J escape, which reads the job table directly
 
+WHY --norc, WHICH IS NOT COSMETIC
+
+This suite spawns an INTERACTIVE shell, so without --norc it reads the
+developer's ~/.hellishrc -- and a prompt module in there sets PS1
+unconditionally, throwing away the `ps1=` this file just asked for. Route 3
+then failed on any machine with a configured hellish and passed on a bare
+CI runner.
+
+The dangerous half is route 2. It kept PASSING under the same clobber,
+because "\B" is what a typical prompt module installs anyway -- so the two
+cases shared one oracle and the green one could not tell a working PS1 from
+an ignored one. A test that inherits ambient configuration is not testing
+the shell; --norc is what makes `ps1=` mean anything.
+
 Usage: python3 prompt_jobs_badge_test.py /path/to/hellish
 """
 import fcntl
@@ -83,7 +97,9 @@ def session(cmds, ps1=None, cols=120, settle=1.4):
     if pid == 0:
         os.environ.clear()
         os.environ.update(env)
-        os.execv(SHELL, [SHELL])
+        # --norc: pin the config. An inherited ~/.hellishrc can set PS1 or
+        # define names, and quietly decide what this test sees.
+        os.execv(SHELL, [SHELL, "--norc"])
         os._exit(127)
     fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 24, cols, 0, 0))
     time.sleep(0.8)

@@ -12,6 +12,21 @@
 
 #include "execution_private.h"
 
+bool	item_matches(t_shell *state, t_ast_node *item, const char *subj);
+
+/* Should this clause run? Either its patterns match, or the PREVIOUS clause
+** ended in `;&`, which falls into this body without testing anything --
+** the one case where a pattern that does not match still executes. */
+bool	case_wants(t_shell *state, t_ast_node *item, const char *subj,
+			char prev)
+{
+	if (item->node_type != AST_CASE_ITEM || item->children.len < 2)
+		return (false);
+	if (prev == ';')
+		return (true);
+	return (item_matches(state, item, subj));
+}
+
 /* A subtoken whose glob metacharacters must be matched literally: single- or
 ** double-quoted text, or the value of a double-quoted variable. */
 bool	is_quoted_tok(t_tt tt)

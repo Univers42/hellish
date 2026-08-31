@@ -106,11 +106,22 @@ static bool	ps1_escape_misc(t_shell *state, t_string *out, char c)
 	return (xfree(jobs), true);
 }
 
-/* Full escape dispatch. \g (git branch + dirty star) and \S ("✘N" after
-   a failure, empty after success) are hellish extensions: they expose
+/* Full escape dispatch, in four layers: the spans (\nnn octal, \D{fmt})
+   in ps1_escape_span, bash's core set here, the rest of bash's set in
+   ps1_escape_bash2 (prompt_ps1e.c), then hellish's own in
+   ps1_escape_ext. \g (git branch + dirty star) and \S ("✘N" after a
+   failure, empty after success) are the extensions that matter: they expose
    the built-in prompt's best segments to rc-file themes, which is what
-   makes a fully config-driven modern prompt possible. Unknown escapes
-   emit backslash + char literally, exactly like bash. */
+   makes a fully config-driven modern prompt possible.
+
+   Order is load-bearing at exactly one letter. \A is bash's 24-hour clock
+   AND hellish's animation frame; ps1_escape_ext runs last and answers it,
+   so hellish's meaning wins -- deliberately, because it shipped first.
+
+   A truly unknown escape emits backslash + char literally, exactly like
+   bash. That fallback is right for \Z and was WRONG for the eight escapes
+   prompt_ps1e.c now implements, which is a reminder that a correct default
+   makes a missing case look like a decision. */
 static void	ps1_escape(t_shell *state, t_string *out, const char *f, int *i)
 {
 	char	c;

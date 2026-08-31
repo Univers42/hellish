@@ -117,6 +117,7 @@ void	parse_and_execute_input(t_shell *state);
 char	*x_getcwd(void);
 /* release the pushd/popd dir stack at exit; builtins/builtin_dirstack.c */
 void	free_dirstack(t_shell *state);
+void	free_compspecs(t_shell *state);
 /* remember / recover a finished bg child's status; src/execution/bg_done.c */
 void	bg_done_record(t_shell *state, pid_t pid, int status);
 int		bg_done_take(t_shell *state, pid_t pid, int *status);
@@ -150,6 +151,21 @@ typedef struct s_procsub_entry
 }	t_procsub_entry;
 
 typedef t_vec	t_vec_procsub;
+
+/* One `complete` registration: what to offer when the user tabs an
+   argument of NAME.  Lives in state->compspecs.
+     `words` is -W (a literal word list), `func` is -F (a shell function
+   that fills COMPREPLY), `act` is the letter of -A/-f/-d/-c/-v/... and 0
+   for none, `opts` collects -o names verbatim.  A spec may carry several
+   at once; bash runs the function first and appends the rest. */
+typedef struct s_compspec
+{
+	char	*name;
+	char	*words;
+	char	*func;
+	char	*opts;
+	char	act;
+}	t_compspec;
 
 /* A user-defined shell function.  The body is the AST of the compound
    list between the braces, deep-cloned at definition time so the
@@ -308,7 +324,15 @@ typedef struct s_shell
 	long long			last_cmd_ms; /* wall-clock ms of last command */
 	/* --- history and session --- */
 	t_history			hist; /* readline history state */
+	int					cmd_no; /* PS1 \# : REPL turns this session, from 1.
+								   NOT \! -- history dedupes and survives
+								   the session; this counter does neither */
 	bool				should_exit; /* set by `exit` builtin */
+	bool				builtin_fatal; /* special builtin got a MALFORMED
+										  request, not merely a failing one:
+										  read and cleared by
+										  strict_builtin_failed() so the
+										  abort happens after teardown */
 	/* --- loop/function control flow --- */
 	int					loop_break; /* pending break depth (>0 = active) */
 	int					loop_continue; /* pending continue depth */
@@ -414,6 +438,7 @@ typedef struct s_shell
 	t_vec				arr_marks; /* live ${a[@]} deferral markers */
 	t_vec				var_attrs; /* declare -i/-n attribute table */
 	t_vec				dirstack; /* pushd/popd dir stack */
+	t_vec				compspecs; /* t_compspec: `complete` registrations */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */
 	t_hash				cmd_cache; /* command name -> resolved path cache */
@@ -436,10 +461,26 @@ typedef struct s_shell
 # define SHOPT_AUTOCD 0x100
 # define SHOPT_CDSPELL 0x200
 # define SHOPT_LITHIST 0x400
-/* progcomp is KNOWN but off, and stays off: hellish has no `complete`
-   builtin, so there is no programmable completion to switch on. It is
-   here so /etc/profile.d/bash_completion.sh's `shopt -q progcomp` gets a
-   truthful "no" instead of an error on every login -- issue #51. */
+/* progcomp arrived as a truthful "no": the bit existed, defaulted off, and
+** controlled nothing -- it was there so /etc/profile.d/bash_completion.sh's
+** `shopt -q progcomp` got an answer instead of an error on every login
+** (#51). It now MEANS what it says: src/completion/progcomp*.c reads it
+** before it will consult a `complete` spec, and `shopt -s progcomp` turns
+** on a dispatch that works end to end (#72 phase 4).
+**
+** It still defaults OFF, and bash defaults it on. That is the one place
+** hellish deliberately differs, and the reason is measured, not cautious:
+** the option is exactly the gate /etc/profile.d/bash_completion.sh checks,
+** so switching it on makes every Debian and Ubuntu login source a
+** 3800-line framework that hellish cannot yet run. The CI runner proved it
+** -- one `syntax error near unexpected token '('` at login, which is #51's
+** complaint arriving by the door #51 opened.
+**
+** The blocker is architectural: exec_string LEXES a whole sourced file
+** before executing any of it, so `shopt -s extglob` on line 47 has not run
+** when the extglob case pattern on line 1810 is tokenised. Lexing
+** incrementally would fix it and flip this default in one line.
+** tests/plugin_corpus_test.py carries the row that will notice. */
 # define SHOPT_PROGCOMP 0x800
 
 /* Directory matcher ctx for glob expansion */

@@ -81,15 +81,32 @@ char	*pf_assign_err(t_shell *state, t_pe_op o)
 }
 
 /* Token-level entry for the ${p-w} operator family: unlike the generic
-   expand_param_format path (arith, heredoc) this one knows the enclosing
-   token type, so it threads the double-quote context into the word
-   expansion and routes the @ and * aggregates to expand_positional_op: it
-   may need to re-emit one field per positional.  Returns false when the
-   token is not an operator form so expand_token falls through. */
+** expand_param_format path (arith, heredoc) this one knows the enclosing
+** token type, so it threads the double-quote context into the word
+** expansion and routes the @ and * aggregates to expand_positional_op: it
+** may need to re-emit one field per positional.  Returns false when the
+** token is not an operator form so expand_token falls through.
+**
+** THE EMPTY-RESULT GUARD. Retyping the token to TT_DQWORD says "this is one
+** field, do not IFS-split it" -- right for `${x:-"c d"}`, and wrong when
+** there is nothing there at all, because an unquoted expansion that comes
+** out empty contributes NO field in POSIX. Without the guard:
+**
+**     a=(); d=; git ${a:+"${a[@]}"} ${d:+--git-dir="$d"} --version
+**
+** ran git with two extra empty arguments. git errors, prints nothing, and
+** the completion function that called it returned an empty COMPREPLY --
+** which reads as "no completions", not as "the shell built the wrong argv".
+** That is git-completion's __git wrapper, verbatim.
+**
+** `used && o.wlen > 0` is the exception bash keeps: `${x:-""}` DID use its
+** word, the word was a quoted empty string, and that is a real field.
+*/
 bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 {
 	t_pe_op	o;
 	char	*fmt;
+	bool	used;
 
 	if (!find_param_op(tt->start, tt->len, &o))
 		return (false);
@@ -99,11 +116,13 @@ bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 		expand_positional_op(state, tt, o, split_ctx);
 		return (true);
 	}
+	used = pf_op_word_used(pf_get_var_value(state, o.name, o.name_len), o);
 	fmt = expand_param_op(state, o);
 	tt->start = fmt;
 	tt->len = (int)ft_strlen(fmt);
 	tt->allocated = true;
-	if (split_ctx && tt->tt == TT_ENVVAR && opword_no_split(o.word, o.wlen))
+	if (split_ctx && tt->tt == TT_ENVVAR && (tt->len > 0
+			|| (used && o.wlen > 0)) && opword_no_split(o.word, o.wlen))
 		tt->tt = TT_DQWORD;
 	parena_note_attach();
 	return (true);
