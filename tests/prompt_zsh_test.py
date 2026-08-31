@@ -109,11 +109,13 @@ def main():
           any("st=5" in l for l in got) and any("st=0" in l for l in got),
           "got %r" % got[:4])
 
-    # %% is a literal percent, and an unknown escape is left visible rather
-    # than silently eaten.
+    # %% is a literal percent, and an unknown escape is CONSUMED -- the
+    # first version of this check asserted %q "stays visible", which is
+    # what the manual suggests and not what zsh does: measured on the 5.9
+    # oracle, print -P '[%q]' is '[]'. The parity suite pins it.
     o = paint(["PROMPT='[a=100%% b=%q]'"], ["true"])
-    check("%% is a literal percent and %q stays visible",
-          any("a=100% b=%q" in l for l in marks(o, "a=")),
+    check("%% is a literal percent and an unknown escape is consumed",
+          any("a=100% b=]" in l for l in marks(o, "a=")),
           "got %r" % marks(o, "a=")[:2])
 
     # Colour goes through the same equivalence. Note the reset lands BETWEEN
@@ -121,8 +123,10 @@ def main():
     # when the prompt is perfectly correct -- an earlier version of this
     # check did that and reported a failure against working code. Comparing
     # the two spellings avoids guessing what the bytes should look like.
+    # The bytes are zsh 5.9's: a NAMED colour is the classic \e[32m (not
+    # 38;5;2) and %f is \e[39m (not a blanket reset) -- both measured.
     a = paint(["PROMPT='%F{green}ab%f>'"], ["true"])
-    b = paint([r"""PS1='\[\e[38;5;2m\]ab\[\e[0m\]>'"""], ["true"])
+    b = paint([r"""PS1='\[\e[32m\]ab\[\e[39m\]>'"""], ["true"])
     ma, mb = marks(a, "ab"), marks(b, "ab")
     check("%F{colour}/%f renders exactly like the \\[\\e[..m\\] form",
           bool(ma) and ma == mb, "zsh=%r bash=%r" % (ma[:1], mb[:1]))

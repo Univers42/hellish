@@ -170,6 +170,7 @@ void		ps1_duration(t_shell *state, t_string *out);
 void		ps1_jobs(t_shell *state, t_string *out);
 bool		ps1_escape_ext(t_shell *state, t_string *out, char c);
 bool		ps1_escape_bash2(t_shell *state, t_string *out, char c);
+bool		ps1_escape_span(t_string *out, const char *f, int *i);
 void		ps1_builtin(t_shell *state, t_string *out);
 t_panim		*anim_cells(void);
 void		ps1_anim(t_shell *state, t_string *out);
@@ -202,7 +203,32 @@ bool		ps1_is_special(char c);
    command substitution deliberately is not -- see the file comment. */
 bool		ps1_arith(t_shell *state, t_string *out, const char *f, int *i);
 void		ps1_srcfile(t_shell *state, t_string *out);
-t_string	zsh_to_ps1(const char *fmt);
+/* One `%` escape being read: f is the whole format, j the cursor (just
+   past the `%` and its numeric argument once zsh_num ran), n that numeric
+   argument and has_n whether one was written. Bundled because the 42 norm
+   caps functions at four parameters and every family needs all of it. */
+typedef struct s_zesc
+{
+	const char	*f;
+	int			j;
+	int			n;
+	bool		has_n;
+	char		dir;
+}	t_zesc;
+
+t_string	zsh_to_ps1(t_shell *state, const char *fmt);
 t_string	zsh_prompt(t_shell *state, char *fmt);
+void		zsh_num(t_zesc *z);
+int			zsh_color_code(const char *name, int len);
+bool		zsh_color(t_string *out, t_zesc *z, char c);
+bool		zsh_effects(t_string *out, char c);
+bool		zsh_time(t_string *out, t_zesc *z, char c);
+bool		zsh_ident(t_shell *state, t_string *out, t_zesc *z, char c);
+void		zsh_inject(t_string *out, const char *s);
+bool		zsh_cwd(t_shell *state, t_string *out, t_zesc *z, char c);
+void		zsh_path_abbrev(t_shell *state, char *buf);
+bool		zsh_color_hex(char *buf, size_t n, const char *s, int base);
+bool		zsh_cond(t_shell *state, t_string *out, t_zesc *z, char c);
+bool		zsh_trunc(t_shell *state, t_string *out, t_zesc *z, char c);
 
 #endif

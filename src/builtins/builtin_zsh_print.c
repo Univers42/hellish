@@ -77,19 +77,32 @@ static int	print_flags(t_shell *state, t_vec argv, t_pflags *f)
 
 /* One operand into the buffer.  -P first, then -r: prompt escapes are part
    of the text, and -r governs the BACKSLASH escapes, so `%F{red}` still
-   renders under -r while `\t` does not. */
+   renders under -r while `\t` does not.
+
+   The \001/\002 bytes are readline's zero-width markers, meaningful only
+   around a live prompt; zsh's print -P emits the escape sequences bare
+   (measured on the 5.9 oracle), so they are stripped here -- and the
+   parity test diffs the two outputs byte for byte.
+   HELLISH_DBG_PROMPT_MARKS keeps them: the width tests exist to see
+   exactly those bytes, and this is their only window. */
 static void	print_one(t_shell *state, t_pflags *f, t_string *out, char *s)
 {
 	t_string	r;
+	char		*p;
 
 	if (f->prompt)
 	{
 		r = zsh_prompt(state, s);
-		if (r.ctx)
+		p = (char *)r.ctx;
+		while (p && *p)
 		{
-			vec_push_str(out, (char *)r.ctx);
-			return ((void)xfree(r.ctx));
+			if ((*p != '\001' && *p != '\002')
+				|| getenv("HELLISH_DBG_PROMPT_MARKS"))
+				vec_push_char(out, *p);
+			p++;
 		}
+		if (r.ctx)
+			return ((void)xfree(r.ctx));
 	}
 	if (f->raw)
 		vec_push_str(out, s);

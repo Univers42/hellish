@@ -119,7 +119,7 @@ t_string	zsh_prompt(t_shell *state, char *fmt)
 	t_string	conv;
 	t_string	out;
 
-	conv = zsh_to_ps1(fmt);
+	conv = zsh_to_ps1(state, fmt);
 	out = ps1_animated(state, (char *)conv.ctx);
 	xfree(conv.ctx);
 	return (out);

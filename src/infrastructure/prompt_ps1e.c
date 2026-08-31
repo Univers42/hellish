@@ -13,6 +13,10 @@
 #include "prompt_private.h"
 #include "version.h"
 
+/* Longest \D{...} strftime format kept; named because norminette rejects
+   the (int)sizeof spelling. */
+#define PS1_FMT_CAP 127
+
 /* The tail of bash's escape set: \r \V \l \! \#.
 **
 ** These existed in bash for twenty years and were simply missing here, so
@@ -59,6 +63,8 @@ static void	ps1_histno(t_shell *state, t_string *out, char c)
 	size_t	n;
 	char	*s;
 
+	if (!state->hist.hist_active)
+		return ((void)vec_push_char(out, '0'));
 	n = state->hist.hist_cmds.len;
 	if (c == '#' && n >= state->hist.readmark)
 		n -= state->hist.readmark;
@@ -83,5 +89,52 @@ bool	ps1_escape_bash2(t_shell *state, t_string *out, char c)
 		return (ps1_tty(out), true);
 	if (c == '!' || c == '#')
 		return (ps1_histno(state, out, c), true);
+	return (false);
+}
+
+/* \D{format}: strftime with the user's own format, like bash. bash treats
+   an empty format as the locale's time representation, i.e. %X. The whole
+   zsh time family (%T %t %@ %* %D %W %w and %D{...}) is rewritten onto
+   this one escape, so both prompt languages share a single clock. */
+static void	ps1_strftime(t_string *out, const char *f, int *i)
+{
+	char		fmt[PS1_FMT_CAP + 1];
+	char		buf[256];
+	struct tm	tm;
+	time_t		now;
+	int			j;
+
+	j = *i + 3;
+	while (f[j] && f[j] != '}')
+	{
+		if (j - *i - 3 < PS1_FMT_CAP)
+			fmt[j - *i - 3] = f[j];
+		j++;
+	}
+	if (j - *i - 3 > PS1_FMT_CAP)
+		fmt[PS1_FMT_CAP] = '\0';
+	else
+		fmt[j - *i - 3] = '\0';
+	*i = j + (f[j] == '}');
+	if (!fmt[0])
+		ft_strlcpy(fmt, "%X", sizeof(fmt));
+	now = time(NULL);
+	localtime_r(&now, &tm);
+	if (strftime(buf, sizeof(buf), fmt, &tm) > 0)
+		vec_push_str(out, buf);
+}
+
+/* The escapes that consume MORE than two characters: \nnn octal and
+   \D{format}. Dispatched before the fixed `*i += 2` in ps1_escape, so
+   they manage the cursor themselves. */
+bool	ps1_escape_span(t_string *out, const char *f, int *i)
+{
+	char	c;
+
+	c = f[*i + 1];
+	if (c >= '0' && c <= '7')
+		return (ps1_octal(out, f, i), true);
+	if (c == 'D' && f[*i + 2] == '{')
+		return (ps1_strftime(out, f, i), true);
 	return (false);
 }

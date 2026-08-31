@@ -27,6 +27,7 @@ binary that still had the bug, so it was replaced rather than kept.
 Usage: python3 prompt_themes_test.py [/path/to/hellish]
 """
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -130,7 +131,10 @@ def render(name, env=None):
               + "prompt %s >/dev/null 2>&1\n" % name
               + 'if [ -n "${PROMPT:-}" ]; then print -rP "$PROMPT"; '
               + 'else print -rP "${PS1//%/%%}"; fi\n')
-    e = {"HELLISH_THEMES": THEMES}
+    # print -P strips the \001/\002 width guards by default, because zsh's
+    # print -P emits none (measured; the parity suite pins it). This test
+    # exists to SEE those bytes, so it asks for them by name.
+    e = {"HELLISH_THEMES": THEMES, "HELLISH_DBG_PROMPT_MARKS": "1"}
     if env:
         e.update(env)
     return run(script, e)
@@ -189,10 +193,52 @@ def double_width_cases():
               "delta=%d" % (with_it - without))
 
 
+def sgr_clean(text):
+    """Replay every SGR in the text and report whether any attribute is
+    still active at the end. This is what "no leak" actually means: %f
+    closes a colour with \\e[39m rather than a blanket reset -- the exact
+    bytes zsh emits -- and demanding a literal \\e[0m would fail themes
+    that are byte-perfect and visually clean."""
+    fg = bg = bold = ul = rev = False
+    for m in re.findall(r"\x1b\[([0-9;]*)m", text):
+        codes = [int(x or "0") for x in m.split(";")]
+        i = 0
+        while i < len(codes):
+            c = codes[i]
+            if c == 0:
+                fg = bg = bold = ul = rev = False
+            elif c == 1:
+                bold = True
+            elif c in (21, 22):
+                bold = False
+            elif c == 4:
+                ul = True
+            elif c == 24:
+                ul = False
+            elif c == 7:
+                rev = True
+            elif c == 27:
+                rev = False
+            elif 30 <= c <= 37 or 90 <= c <= 97:
+                fg = True
+            elif c == 39:
+                fg = False
+            elif 40 <= c <= 47 or 100 <= c <= 107:
+                bg = True
+            elif c == 49:
+                bg = False
+            elif c in (38, 48):
+                fg, bg = fg or c == 38, bg or c == 48
+                i += 2 if i + 1 < len(codes) and codes[i + 1] == 5 else 4
+            i += 1
+    return not (fg or bg or bold or ul or rev)
+
+
 def no_leak_cases():
-    """Every SGR sequence opened must be closed, or the text the user types
-    inherits the prompt's colour. Checked by requiring the rendered prompt
-    to end outside any colour: the last SGR, if any, is a reset."""
+    """Every SGR attribute opened must be closed, or the text the user
+    types inherits the prompt's styling. Checked by replaying the codes:
+    whatever was set must be cleared -- by a reset, or by the matching
+    39/49/22/24/27 the zsh escapes emit."""
     for name in theme_names():
         rc, out, _ = render(name)
         if rc != 0:
@@ -200,11 +246,9 @@ def no_leak_cases():
         text = out.decode("utf-8", "replace")
         if "\033[" not in text:
             continue
-        last = text.rsplit("\033[", 1)[1]
-        code = last.split("m")[0]
-        check("noleak/%s-ends-reset" % name,
-              code in ("0", "") or name in VARIABLE,
-              "trailing SGR=%r" % code)
+        check("noleak/%s-ends-clean" % name,
+              sgr_clean(text) or name in VARIABLE,
+              "an SGR attribute survives the prompt: %r" % text[-160:])
 
 
 def osc_cases():
