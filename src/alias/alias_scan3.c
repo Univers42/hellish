@@ -38,6 +38,8 @@ void	asc_op(t_ascan *a)
 	char		c;
 
 	s = &a->src[a->depth - 1];
+	if (asc_op_case(a, s))
+		return ;
 	c = s->s[s->pos];
 	vec_push(&a->out, &c);
 	s->pos++;

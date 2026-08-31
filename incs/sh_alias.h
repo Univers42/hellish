@@ -55,6 +55,17 @@ typedef struct s_ascan_src
 	bool		blank_end;
 }	t_ascan_src;
 
+/* Where the scan stands inside `case … esac` (cs_st, with cs_n the
+   nesting depth): the SUBJECT word, the `in` that follows it, the PATTERN
+   region (where `|`, `(`, newlines and `;;` must NOT re-arm command
+   position -- bash never alias-expands a pattern, issue #91), or the
+   command BODY after a `)`. */
+# define CS_NONE 0
+# define CS_SUBJ 1
+# define CS_IN 2
+# define CS_PAT 3
+# define CS_BODY 4
+
 typedef struct s_ascan
 {
 	t_ascan_src	src[ALIAS_SCAN_DEPTH];
@@ -65,6 +76,9 @@ typedef struct s_ascan
 	bool		chk_next;
 	bool		wstart;
 	bool		after_redir;
+	bool		was_cmd;
+	int			cs_n;
+	int			cs_st;
 	int			pend_hd;
 	char		*hd_delim[ALIAS_HD_MAX];
 	bool		hd_strip[ALIAS_HD_MAX];
@@ -88,6 +102,8 @@ bool	asc_active(t_ascan *a, const char *w, size_t len);
 void	asc_word(t_ascan *a);
 void	asc_op(t_ascan *a);
 void	asc_newline(t_ascan *a);
+bool	asc_case_word(t_ascan *a, const char *w, size_t len, bool plain);
+bool	asc_op_case(t_ascan *a, t_ascan_src *s);
 void	asc_comment(t_ascan *a);
 void	asc_hd_delim(t_ascan *a, const char *w, size_t len);
 void	asc_hd_drop(t_ascan *a);
