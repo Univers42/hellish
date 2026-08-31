@@ -1,0 +1,77 @@
+# ============================================================================
+# `curl | sh` on a machine we are allowed to break: install.sh end-to-end for
+# BOTH privilege worlds, against a local fake release channel.
+#
+#   make installer-test
+# or by hand (the plugins context is the hellishrc_plugins checkout):
+#   docker build -f docker/Dockerfile.installer \
+#       --build-context plugins=/path/to/hellishrc_plugins -t hellish:installer .
+#   docker run --rm hellish:installer
+#
+# Why a container: the sudo route edits /etc/shells and chsh's a login shell,
+# and detecting "no sudo" needs an account that genuinely has none -- machine
+# state no developer box should lend a test. Two humans live here:
+#
+#   maxine  in sudoers, NOPASSWD -- the "I have rights" world. NOPASSWD
+#           because THIS test is about routing, not about the password prompt;
+#           Dockerfile.my-shell owns the real-password drama.
+#   nora    no sudo at all -- the 42 school machine.
+#   nora2   same, for the interactive scenario, so A's leftovers cannot
+#           satisfy C's assertions.
+#
+# The "release" is a directory served by python3 -m http.server inside the
+# container: the static binary (built by `make static` before the image),
+# its sha256, the install bundle tarred by the same recipe release.yml uses,
+# and the plugin framework from the named build context. Only scenario E
+# touches the real network, and it skips cleanly without one.
+# ============================================================================
+FROM ubuntu:24.04
+
+# script(1) [util-linux] gives the interactive scenario its pty; passwd gives
+# chsh; python3 is the fake server and nothing else.
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		ca-certificates curl sudo passwd python3 util-linux git; \
+	rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash maxine \
+	&& useradd -m -s /bin/bash nora \
+	&& useradd -m -s /bin/bash nora2 \
+	&& printf 'maxine ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/maxine \
+	&& chmod 440 /etc/sudoers.d/maxine
+
+WORKDIR /hellish
+COPY . .
+
+# The plugin framework, from a named build context so the test can run
+# against a local working copy before it is even pushed.
+COPY --from=plugins . /srv/hellishrc_plugins
+
+# The fake release channel, laid out the way install.sh expects GitHub's
+# /releases/latest/download/ to answer. The bundle is built with the SAME
+# recipe as release.yml -- if the two drift, this test is where it shows.
+RUN set -eux; \
+	mkdir -p /srv/release/latest/download; \
+	# `make static` names by docker platform (amd64); the release renames to
+	# uname -m (x86_64). The fake channel mirrors the release, not the build.
+	cp dist/hellish-linux-amd64 /srv/release/latest/download/hellish-linux-x86_64; \
+	( cd /srv/release/latest/download && sha256sum hellish-linux-x86_64 \
+		> hellish-linux-x86_64.sha256 ); \
+	mkdir -p /tmp/bundle/tools; \
+	cp user-install.sh hellishrc.example /tmp/bundle/; \
+	cp tools/register_shell.sh tools/seed_hellishrc.sh /tmp/bundle/tools/; \
+	cp -R share /tmp/bundle/share; \
+	tar -czf /srv/release/latest/download/hellish-install-bundle.tar.gz \
+		-C /tmp/bundle .; \
+	tar -czf /srv/release/hellishrc_plugins.tar.gz \
+		-C /srv hellishrc_plugins; \
+	rm -rf /tmp/bundle; \
+	chmod +x install.sh tools/*.sh user-install.sh; \
+	# install.sh treats "a Makefile next to me" as a source checkout and
+	# skips the download path -- the very path this image exists to test.
+	rm -f Makefile; rm -rf dist
+
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
+
+CMD ["/bin/sh", "/hellish/tests/installer_suite.sh"]

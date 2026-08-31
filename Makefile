@@ -904,6 +904,22 @@ ssh-shell-test:  ## docker: hellish as a login shell (ssh/scp/rsync/git) vs bash
 	docker build -f docker/Dockerfile.sshd -t hellish:sshd .
 	docker run --rm hellish:sshd
 
+# install.sh end-to-end, both privilege worlds, in a container -- see
+# docker/Dockerfile.installer for who lives there and why. Needs the static
+# binary (it plays the role of the release asset) and the hellishrc_plugins
+# working copy: PLUGINS_DIR=path/to/checkout, or it clones from GitHub.
+PLUGINS_DIR ?=
+installer-test: static  ## docker: curl|sh installer, sudo AND no-sudo + plugin picks
+	@if [ -z "$(PLUGINS_DIR)" ]; then \
+		rm -rf build/hellishrc_plugins; \
+		git clone -q --depth 1 https://github.com/Univers42/hellishrc_plugins \
+			build/hellishrc_plugins; \
+	fi
+	docker build -f docker/Dockerfile.installer \
+		--build-context plugins=$(if $(PLUGINS_DIR),$(PLUGINS_DIR),build/hellishrc_plugins) \
+		-t hellish:installer .
+	docker run --rm hellish:installer
+
 # The same report `make my_shell` prints at the end, on demand. Answers the
 # two questions behind every "the update did nothing" report: WHICH hellish
 # does PATH actually reach, and can its directory be written to.
@@ -1206,7 +1222,8 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
-	my-shell-uninstall my-shell-purge ssh-shell-test agnostic-bench \
+	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
+	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
