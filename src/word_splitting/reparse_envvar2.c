@@ -16,10 +16,14 @@
    nesting depth. Quotes swallow their content so inner braces don't count
    (e.g. ${"}" is the variable named "}"). A backslash escapes the next
    character, so ${u-\"} does not open a quoted section and ${u-\}} does
-   not close the brace early — bash treats both as escaped literals. An
-   opening brace bumps depth; a closing brace that hits depth==0 stops the
+   not close the brace early — bash treats both as escaped literals. A
+   nested `${` bumps depth; a closing brace that hits depth==0 stops the
    scan (caller's loop exits on the next iteration). Everything else is
    consumed one character at a time.
+   `${` and not a bare `{`, matching advance_brace_param -- see the note
+   there for the bash-completion parse failure a bare one caused. The two
+   scanners run over the same bytes at different stages, so they cannot
+   hold different opinions about where the expansion ends.
    in_dq says the expansion sits inside a double-quoted word, where a '
    is an ORDINARY character: bash prints a'b for "${u:-a'b}" but calls
    ${u:-a'b} an unterminated quote. Treating it as a quote opener here
@@ -36,10 +40,11 @@ static void	scan_brace_depth(t_reparser *rp, int *depth, bool in_dq)
 		skip_quoted_in_brace(rp, c);
 		rp->i++;
 	}
-	else if (c == '{')
+	else if (c == '$' && rp->i + 1 < rp->current_token.len
+		&& rp->current_token.start[rp->i + 1] == '{')
 	{
 		(*depth)++;
-		rp->i++;
+		rp->i += 2;
 	}
 	else if (c == '}' && --(*depth) == 0)
 		return ;

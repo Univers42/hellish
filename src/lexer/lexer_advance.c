@@ -87,7 +87,20 @@ int	advance_dquoted(char **str)
    early — the same rule the reparser's scan_brace_depth applies. It
    has to be here too now that advance_dquoted recurses in: without it
    the \" of "${u-\"}" read as the start of a nested quote and
-   swallowed the rest of the line. */
+   swallowed the rest of the line.
+
+   ONLY `${` NESTS. A bare `{` inside the expansion is an ordinary
+   character to bash, and counting it as an opener meant the closing `}`
+   paid off a brace that was never open, so the scan ran to end of input:
+
+       echo ${x:-a{b}                 unexpected EOF, matching `}'
+       echo ${o%%[<{().[]*}           the same, on a bracket expression
+
+   The second is not a curiosity -- it is bash-completion's
+   _comp_compgen_help__parse, which is why 3800 lines of the most widely
+   installed completion framework in existence failed to parse at line 1757
+   and defined nothing. `${x:-${y}}` still nests, because that is a real
+   opener. */
 int	advance_brace_param(char **str, int in_dq)
 {
 	int	depth;
@@ -102,9 +115,13 @@ int	advance_brace_param(char **str, int in_dq)
 			advance_squoted(str);
 		else if (**str == '"')
 			advance_dquoted(str);
+		else if (**str == '$' && (*str)[1] == '{')
+		{
+			depth++;
+			(*str) += 2;
+		}
 		else
 		{
-			depth += (**str == '{');
 			depth -= (**str == '}');
 			(*str)++;
 		}
