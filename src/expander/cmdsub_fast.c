@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "sh_input.h"
+#include "sh_alias.h"
 #include <fcntl.h>
 
 int		exec_string(t_shell *state, char *cmd);
@@ -126,4 +127,23 @@ char	*cmdsub_fast(t_shell *state, const char *cmd)
 	dup2(save1, STDOUT_FILENO);
 	close(save1);
 	return (csf_collect(fd));
+}
+
+/* Is the fast path's command word shadowed by an alias? The old gate
+   bailed whenever ANY alias existed, which turned every `$(printf ...)`
+   in a theme prompt into a fork the moment an rc defined its first
+   alias -- ~270 forks per re-source of hellishrc_plugins' theme file,
+   the "source got slow again" of issue #108. Only an alias on THIS word
+   can change this body's meaning: eligibility already guarantees a
+   single simple command, so no other name in the body sits in command
+   position. */
+bool	csf_word_aliased(t_shell *state, const char *s, int len)
+{
+	char	buf[16];
+
+	if (len <= 0 || len >= (int) sizeof(buf))
+		return (true);
+	ft_memcpy(buf, s, len);
+	buf[len] = '\0';
+	return (alias_get(&state->aliases, buf) != NULL);
 }
