@@ -28,9 +28,18 @@
 # include <stddef.h>
 # include <stdbool.h>
 
-# define PARENA_MAX_CHUNKS 64
-# define PARENA_FIRST_CHUNK 262144
-# define PARENA_MAX_CHUNK 8388608
+/* Overridable so a stress build can shrink the chunks (e.g.
+   -DPARENA_FIRST_CHUNK=512) and turn rare chunk-boundary states into
+   the common case — tests/alloc_stress.sh builds exactly that. */
+# ifndef PARENA_MAX_CHUNKS
+#  define PARENA_MAX_CHUNKS 64
+# endif
+# ifndef PARENA_FIRST_CHUNK
+#  define PARENA_FIRST_CHUNK 262144
+# endif
+# ifndef PARENA_MAX_CHUNK
+#  define PARENA_MAX_CHUNK 8388608
+# endif
 
 /* Bump-allocation granularity is 8 bytes: every parse object is
    pointer-aligned, and small blocks waste half as much padding as the

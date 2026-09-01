@@ -419,6 +419,12 @@ jobs:
       # where xmalloc and readline's free() are the same allocator.
       - name: Tab completion on the ft_malloc heap
         run: make completion-test
+      # Rebuilds with 512-byte arena chunks so the allocator's rare states
+      # (chunk boundaries, registry-full heap fallback) happen every few
+      # nodes — the #94 double free could only ever fire in those states.
+      # Runs last: it leaves the object tree fclean'd.
+      - name: Arena chunk-boundary stress (ASan)
+        run: make arena-stress
 
   # ── Benchmarks: measured, reported, never a gate ─────────────────────────
   # Shared CI runners are noisy neighbours; timings there cannot decide

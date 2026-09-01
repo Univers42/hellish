@@ -18,7 +18,30 @@
    all children: parena_free is a no-op on arena blocks, so the "free it
    once per child" hazard that forced per-child copies cannot fire. With
    the gate closed (eval/source) each child still gets its own heap copy,
-   because there free_node really frees each pointer independently. */
+   because there free_node really frees each pointer independently.
+   The gate being open does NOT guarantee the block is arena-owned:
+   parena_alloc falls back to xmalloc once the chunk registry is full, and
+   a shared HEAP struct is freed once per child by the teardown walk — the
+   issue #94 double free. So the share is gated on parena_owns(), the same
+   test parena_free routes by; a fallback block goes back and each child
+   gets its own copy instead (tests/alloc_stress.sh keeps this honest). */
+static t_token_old	*full_word_shared_copy(t_token_old full_word)
+{
+	t_token_old	*shared;
+
+	if (!parena()->on)
+		return (NULL);
+	shared = parena_alloc(sizeof(t_token_old));
+	if (shared && !parena_owns(shared))
+	{
+		parena_free(shared);
+		return (NULL);
+	}
+	if (shared)
+		*shared = full_word;
+	return (shared);
+}
+
 static void	set_full_word_for_children(void *ctx, size_t len,
 				t_token_old full_word)
 {
@@ -26,13 +49,7 @@ static void	set_full_word_for_children(void *ctx, size_t len,
 	t_token_old	*p;
 	t_token_old	*shared;
 
-	shared = NULL;
-	if (parena()->on)
-	{
-		shared = parena_alloc(sizeof(t_token_old));
-		if (shared)
-			*shared = full_word;
-	}
+	shared = full_word_shared_copy(full_word);
 	i = 0;
 	while (i < len)
 	{
@@ -117,9 +134,12 @@ static void	reparse_children_words(t_ast_node *node)
    fully parsed subtoken tree from reparse_word(). The temp/new_ctx dance
    avoids a double-free when reparse_word returns the same backing allocation
    (it may reuse the child vec if it only adds one node). With the arena
-   gate open the outgrown raw child is simply DROPPED (its tokens borrow
-   the lexer buffer and its children array is arena — the walk would be a
-   pure no-op, and it ran 161k times on a 50k-line parse). The full_word
+   gate open and nothing heap-attached the outgrown raw child is simply
+   DROPPED (its tokens borrow the lexer buffer and its children array is
+   arena — the walk would be a pure no-op, and it ran 161k times on a
+   50k-line parse). Once the cycle has heap attached — which includes
+   parena_alloc's registry-full xmalloc fallback — the drop would leak any
+   heap-backed children arrays, so the subtree is walked. The full_word
    pointer is stamped on every new child so the expander can reconstruct
    the original text for error messages and ${!var} indirect references. */
 void	reparse_words(t_ast_node *node)
@@ -141,7 +161,8 @@ void	reparse_words(t_ast_node *node)
 		*node = reparse_word(tok, false);
 		new_ctx = node->children.ctx;
 		new_len = node->children.len;
-		if (temp.children.ctx != new_ctx && !parena()->on)
+		if (temp.children.ctx != new_ctx
+			&& (!parena()->on || parena()->attached))
 			free_ast(&temp);
 		set_full_word_for_children(new_ctx, new_len, full_word);
 	}
