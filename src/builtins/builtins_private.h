@@ -82,6 +82,9 @@ typedef struct s_cgopt
 {
 	char	*words;
 	char	act;
+	char	*xfilter;
+	char	*prefix;
+	char	*suffix;
 }	t_cgopt;
 
 /* complete's parsed options. All pointers borrow from argv; comp_store
@@ -191,12 +194,14 @@ bool	test_var_isset(t_shell *st, char *name);
 
 int		builtin_compgen(t_shell *state, t_vec argv);
 int		builtin_complete(t_shell *state, t_vec argv);
-int		cg_emit(const char *s, const char *pfx);
+int		cg_emit(t_cgopt *o, const char *s, const char *pfx);
 void	cg_add(t_vec *out, const char *s, const char *pfx);
-int		cg_flush(t_vec *out);
-int		cg_source(t_shell *st, char act, const char *pfx);
-int		cg_aliases(t_shell *st, const char *pfx);
-int		cg_glob_paths(char act, const char *pfx);
+int		cg_flush(t_cgopt *o, t_vec *out);
+int		cg_source(t_shell *st, t_cgopt *o, const char *pfx);
+int		cg_aliases(t_shell *st, t_cgopt *o, const char *pfx);
+int		cg_glob_paths(t_cgopt *o, const char *pfx);
+int		cg_print(t_cgopt *o, const char *cand);
+int		cg_emit_n(t_cgopt *o, const char *s, int n, const char *pfx);
 int		cg_is_dir(const char *path);
 char	*cg_join_prefix(const char *pfx, const char *name);
 char	cg_action_of(const char *name);

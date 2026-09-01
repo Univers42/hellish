@@ -72,16 +72,21 @@ static void	run_format(t_pf *pf, const char *fmt)
 
 /* Deliver the rendered output to stdout in one go. Returns printf's exit
    status — 1 if any conversion saw an invalid argument or directive,
-   else 0. */
+   else 0. The -v target goes through subscript_assign so
+   `printf -v "a[0]" ...` lands in the array element like bash, not in a
+   scalar literally NAMED a[0] — bash-completion's word assembly does
+   `printf -v "$2[$j]"` on every TAB (issue #105, wave 2). */
 static int	pf_finish(t_pf *pf)
 {
 	char	*val;
+	t_env	ev;
 
 	if (pf->vname)
 	{
 		val = ft_strndup((char *)pf->out->ctx, pf->out->len);
-		env_set(&pf->state->env, env_create(ft_strdup(pf->vname),
-				val, false));
+		ev = env_create(ft_strdup(pf->vname), val, false);
+		subscript_assign(pf->state, &ev);
+		env_set(&pf->state->env, ev);
 		return (xfree(pf->out->ctx), pf->err);
 	}
 	if (pf->out->len
