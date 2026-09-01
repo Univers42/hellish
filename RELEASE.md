@@ -8,6 +8,45 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.4 — *the fast-scripts release*
+
+Two field reports, one performance audit — and permanent detectors for
+all of it:
+
+- **Script files parse in linear time (#101, #102):** a script that is
+  one large compound command — a monolithic rc whose whole body is a
+  single `if`/`else`, like hellishrc_plugins' theme file — parsed in
+  O(n²): the batch reader only batched a cycle's *first* delivery, so one
+  hazard byte (the word "alias" in a comment sufficed) pushed the whole
+  remaining body onto the line-at-a-time path, and every appended line
+  re-lexed and re-parsed everything before it. 2242 real rc lines took
+  **5 seconds** where bash takes 7 ms — while *sourcing the same bytes*
+  took 14 ms, which is why nobody's startup felt slow. Continuation
+  rounds now batch too (heredoc cycles keep the exact line path, and a
+  failed batch still rewinds to the line-exact replay), taking that file
+  to **~15 ms**. This also resolves the audit's mystery of why repeating
+  a fragment was fast but the real file was slow: repetition makes many
+  *small* compounds, the real rc is one *large* one.
+  `tests/parse_scaling_test.py` now pins the shape — t(4N) must stay
+  near-linear over t(N) across the file, pipe, and monolith paths.
+- **`exit` with no `$HOME` no longer segfaults (#98):** with a
+  near-empty environment (`env -i`, some display managers, containers)
+  the history vector was never initialised, and its zero stride made
+  every append grow a phantom entry — the dedup check and the exit
+  teardown then read wild pointers. The vector is now valid before the
+  history file is even looked for. `tests/empty_env_test.py` sweeps the
+  whole class: bare exit, dedup, `history` builtins, `cd`/`~` with no
+  HOME, a HOME that doesn't exist, piped and `-c` runs, and PATH-less
+  absolute execution.
+- **The performance audit (#102)** found the rest healthy: startup is
+  the fastest of dash/bash/hellish (0.33 ms/spawn), execution beats bash
+  on most microbenchmarks, and hellish is the only one of the three that
+  doesn't fork for an all-builtin `$( )`. The one loss (`case` at scale)
+  is the static-musl build flavor, not the algorithm — the glibc build
+  beats bash on the same test.
+
+---
+
 ## v2.8.3 — *the four-bug-reports release*
 
 Four field reports, four root causes, and a detector for each so none of
