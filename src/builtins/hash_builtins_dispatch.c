@@ -50,6 +50,7 @@ static void	fill_builtin_hash1(t_hash *h)
 	hash_set(h, "false", (void *)builtin_false);
 	hash_set(h, "umask", (void *)builtin_umask);
 	hash_set(h, "command", (void *)builtin_command);
+	hash_set(h, "builtin", (void *)builtin_builtin);
 }
 
 static void	fill_builtin_hash2(t_hash *h)

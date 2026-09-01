@@ -57,6 +57,8 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "printf_length"
         "array_subscript" "declare_quoting" "procsub_assign"
         "longtail"
+        "issue95_case_cmdsub"
+        "issue96_trap_func"
     )
 fi
 

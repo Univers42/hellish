@@ -36,7 +36,7 @@ static void	subshell_child(t_shell *state, t_executable_node *exe)
 	set_unwind_sig();
 	xfree(state->traps[0]);
 	state->traps[0] = NULL;
-	trap_restore(state, (char *[3]){0});
+	pseudo_traps_quiet(state);
 	set_up_redirection(state, exe);
 	exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
 	free_executable_node(exe);
