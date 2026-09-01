@@ -45,6 +45,28 @@
    hidden from the byte scan (a function body calling shopt, invoked in
    the same chunk that then uses extglob) still lexes ahead. */
 
+/* Which bytes end a span. A chunk's FIRST span (open=false) clips at
+   every input hazard, so a top-level alias/shopt/source line always gets
+   its own chunk and executes before later text lexes. GROWTH spans
+   (open=true) are different: the parser has already demanded more, so we
+   are inside an open construct -- and a hazard line INSIDE a construct
+   cannot take effect before the whole construct executes in bash either
+   (bash parses the compound first, then runs its body). Clipping there
+   bought no correctness and cost a full re-splice/re-lex/re-parse of the
+   accumulated chunk per interior hazard word: the 2244-line theme rc,
+   one giant if/else with ~60 alias/source words inside, re-parsed ~80KB
+   dozens of times and `source ~/.hellishrc` visibly lagged bash. Only
+   `<<` still clips growth (heredoc consumption depends on delivery).
+   The overshoot a growth span can add past the construct's close is the
+   one divergence: a def-then-use pair landing in that tail lexes
+   together -- accepted, and the statement replay still bounds errors. */
+static bool	span_hazard(const char *s, size_t i, size_t n, bool open)
+{
+	if (!open)
+		return (input_hazard_at(s, i, n));
+	return (s[i] == '<' && i + 1 < n && s[i + 1] == '<');
+}
+
 /* Longest hazard-free run of COMPLETE lines starting at off; if a hazard
    sits in the very first line, that one LOGICAL line -- backslash-newline
    joins included. Ending a chunk between a trailing `\` and its
@@ -53,12 +75,12 @@
    line becomes a separate statement). The retreat loop cannot land on a
    joined newline: a backslash-newline is itself a hazard, so the scan
    already stopped at the first one. */
-static size_t	str_span(const char *s, size_t off, size_t n)
+static size_t	str_span(const char *s, size_t off, size_t n, bool open)
 {
 	size_t	clip;
 
 	clip = off;
-	while (clip < n && !input_hazard_at(s, clip, n))
+	while (clip < n && !span_hazard(s, clip, n, open))
 		clip++;
 	while (clip > off && s[clip - 1] != '\n')
 		clip--;
@@ -126,22 +148,6 @@ static void	chunk_open(t_shell *state, const char *at, size_t len,
 			c->start, c->end, c->parser.res, c->spliced);
 }
 
-/* Release everything a chunk owns: parsed trees (executed or not), the
-   parser scratch, the token deque, and both text buffers. */
-void	chunk_close(t_chunkctx *c)
-{
-	size_t	i;
-
-	i = 0;
-	while (i < c->asts.len)
-		free_ast((t_ast_node *)c->asts.ctx + i++);
-	xfree(c->asts.ctx);
-	xfree(c->parser.parse_stack.ctx);
-	xfree(c->tt.deqtok.buff);
-	xfree(c->spliced);
-	xfree(c->chunk);
-}
-
 /* Grow the chunk to the next hazard boundary and (re-)open it. Works for
    the FIRST open too: on a zeroed ctx with start == end, chunk_close only
    frees NULLs and the span extends from the chunk's start. Nothing of a
@@ -149,6 +155,6 @@ void	chunk_close(t_chunkctx *c)
 void	chunk_grow(t_shell *state, const char *s, size_t n, t_chunkctx *c)
 {
 	chunk_close(c);
-	c->end += str_span(s, c->end, n);
+	c->end += str_span(s, c->end, n, c->end > c->start);
 	chunk_open(state, s + c->start, c->end - c->start, c);
 }

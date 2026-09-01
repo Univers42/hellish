@@ -89,11 +89,14 @@ def write_tmp(text):
     return f.name
 
 
-def scaling_check(name, gen, via_stdin=False):
+def scaling_check(name, gen, via_stdin=False, via_source=False):
     small = write_tmp(gen(N_SMALL))
     big = write_tmp(gen(N_BIG))
     try:
-        if via_stdin:
+        if via_source:
+            t1 = timed([SHELL, "-c", ". " + small])
+            t4 = timed([SHELL, "-c", ". " + big])
+        elif via_stdin:
             t1 = timed([SHELL, "-n"], stdin_path=small)
             t4 = timed([SHELL, "-n"], stdin_path=big)
         else:
@@ -119,6 +122,31 @@ def main():
     scaling_check("hazard compound via piped stdin", hazard_compound,
                   via_stdin=True)
     scaling_check("themes-like monolith via -n FILE", themes_like)
+    scaling_check("themes-like monolith via source (v2.8.6: interior "
+                  "hazards must not re-parse the open construct)",
+                  themes_like, via_source=True)
+
+    # Re-sourcing an rc that installed aliases, functions and a DEBUG
+    # trap must stay as cheap as the first load: hellish once disabled
+    # the forkless $() path on the first alias and fired the DEBUG trap
+    # per sourced statement, so every re-source of a theme rc forked
+    # hundreds of times (issue #108, wave 3 -- "source got slow again").
+    rc = write_tmp("trap 'preexec_probe=$((${preexec_probe:-0}+1))' DEBUG\n"
+                   "alias _rp='echo rp'\n"
+                   + "".join("rf_%d(){ v=$(printf %d); }\n" % (i, i)
+                             for i in range(60))
+                   + "".join("x%d=$(printf a%d)\n" % (i, i)
+                             for i in range(120)))
+    try:
+        t1 = timed([SHELL, "-c", ". " + rc])
+        t5 = timed([SHELL, "-c", ". %s; . %s; . %s; . %s; . %s"
+                    % (rc, rc, rc, rc, rc)])
+        detail = "t1=%.2fs t5=%.2fs ratio=%.1f" % (t1, t5, t5 / max(t1, 0.005))
+        print("     re-source with aliases+DEBUG trap: " + detail)
+        check("re-source stays as cheap as first load",
+              t5 <= 1.0 or t5 / max(t1, 0.02) < 9.0, detail)
+    finally:
+        os.unlink(rc)
 
     linear = write_tmp("".join("echo l%d > /dev/null\n" % i
                                for i in range(20000)))
