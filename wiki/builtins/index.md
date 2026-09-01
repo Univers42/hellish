@@ -6,7 +6,7 @@
 > (tools/gen_builtins_md.py), never edit it by hand. The help
 > table itself is test-enforced against the dispatch table, so
 > neither this page nor `help` can drift from what actually
-> runs. 67 builtins; anything else on `$PATH` works as usual —
+> runs. 69 builtins; anything else on `$PATH` works as usual —
 > `type NAME` says which is which.
 
 ## navigation
@@ -248,6 +248,9 @@ Only reachable when the dialect is armed (`set -o zsh`, `emulate zsh`, or sourci
 **`bindkey`** — `bindkey [-M keymap] seq widget`
 <br>record a key binding for a zle widget
 
+**`colors`** — `colors`
+<br>define $fg[..] $bg[..] $fg_bold[..] $reset_color like zsh's colors
+
 **`compdef`** — `compdef [args ...]`
 <br>not supported: hellish has no zsh completion system
 
@@ -263,12 +266,15 @@ Only reachable when the dialect is armed (`set -o zsh`, `emulate zsh`, or sourci
 **`unsetopt`** — `unsetopt [name ...]`
 <br>turn off zsh-named shell options
 
+**`vcs_info`** — `vcs_info`
+<br>fill $vcs_info_msg_0_ with the git branch, zstyle formats honoured
+
 **`zle`** — `zle -N widget [fn] | zle widget`
 <br>register a line-editor widget; key dispatch is not wired yet
 
 **`zmodload`** — `zmodload [args ...]`
 <br>not supported: hellish has no loadable modules
 
-**`zstyle`** — `zstyle [args ...]`
-<br>not supported: hellish has no zsh completion system
+**`zstyle`** — `zstyle [pattern style value ...]`
+<br>vcs_info formats/actionformats are honoured; the rest is stubbed
 

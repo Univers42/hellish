@@ -92,6 +92,7 @@ int				builtin_true(t_shell *state, t_vec argv);
 int				builtin_false(t_shell *state, t_vec argv);
 int				builtin_umask(t_shell *state, t_vec argv);
 int				builtin_command(t_shell *state, t_vec argv);
+int				builtin_builtin(t_shell *state, t_vec argv);
 int				builtin_return(t_shell *state, t_vec argv);
 int				builtin_getopts(t_shell *state, t_vec argv);
 int				builtin_exec(t_shell *state, t_vec argv);
