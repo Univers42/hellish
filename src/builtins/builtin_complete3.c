@@ -55,8 +55,8 @@ static int	comp_one_opt(t_shell *st, t_vec argv, size_t i, t_cmpopt *o)
 	if (ft_strcmp(w, "-r") == 0)
 		return (o->remove = true, 0);
 	if (w[1] && !w[2] && ft_strchr("DEI", w[1]))
-		return (0);
-	if (w[1] && !w[2] && ft_strchr("abcdfkv", w[1]))
+		return (o->defsel = true, 0);
+	if (w[1] && !w[2] && ft_strchr("abcdefgjksuv", w[1]))
 		return (o->act = w[1], 0);
 	if (w[1] && !w[2] && ft_strchr("WFoAXPSCG", w[1]))
 		return (comp_val_opt(argv, i, o));
