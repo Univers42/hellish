@@ -26,15 +26,29 @@ int		extglob_ahead(const char *at);
    the dialect; in bash a leading `=` really is just a word character.
      extglob is the mirror case: `!(a)` and `*(a)` START with characters the
    catch-all would hand to the operator path, so the group has to be spotted
-   here as well as inside parse_lexeme's loop. */
-static char	*try_parse_lexeme(char **str, t_deque_tok *ret)
+   here as well as inside parse_lexeme's loop.
+     Inside [[ ]] the extglob cell is armed for the span of the lexeme:
+   bash recognises extglob groups in conditional operands whether or not
+   `shopt -s extglob` is set (4.1+), so `[[ $x == a@(b|z)c ]]` must lex the
+   group as one word -- unarmed, the group's `|` became a PIPE and the
+   conditional shattered (issue #105; the matcher's half of the same rule
+   is db_pattern_match). */
+static char	*try_parse_lexeme(char **str, t_deque_tok *ret, int in_db)
 {
+	char	*prompt;
+	int		saved;
+
 	if (glob_zsh() && (*str)[0] == '=' && (*str)[1] == '(')
 		return (0);
+	saved = *glob_extglob_cell();
+	if (in_db)
+		*glob_extglob_cell() = 1;
+	prompt = 0;
 	if (**str == '\'' || **str == '"' || **str == '$'
 		|| extglob_ahead(*str) || !(is_word_boundary(*str)))
-		return (parse_lexeme(ret, str));
-	return (0);
+		prompt = parse_lexeme(ret, str);
+	*glob_extglob_cell() = saved;
+	return (prompt);
 }
 
 /* Emit a single TT_NEWLINE token and advance past the '\n'. Newlines are
@@ -78,7 +92,7 @@ char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 		return (NULL);
 	if (**str == '[' || (*in_db && **str == ']'))
 		dbracket_toggle(*str, in_db);
-	prompt = try_parse_lexeme(str, ret);
+	prompt = try_parse_lexeme(str, ret, *in_db);
 	if (prompt)
 		return (prompt);
 	db_track_regex(ret, in_db);

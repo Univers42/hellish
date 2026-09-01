@@ -22,19 +22,24 @@
    line-at-a-time reading are the ones that can change how LATER lines are
    lexed or consumed: alias/unalias definitions and sourced files (alias
    splicing happens before the lexer), heredocs (bodies must not be parsed
-   as commands), and backslash-newline (line accounting). hazard_at() spots
-   those conservatively — a false positive only means we fall back to the
-   old, always-correct single-line path for that stretch. */
+   as commands), and backslash-newline (line accounting). input_hazard_at()
+   spots those conservatively — a false positive only means we fall back to
+   the old, always-correct single-line path for that stretch. */
 
 /* Every byte of the input passes through here, so the order of the tests is
-   load-bearing, not stylistic. Dispatching on s[i] FIRST turns the two
-   keyword probes from unconditional libc strncmp calls into a byte compare
-   that fails on ~95% of input: a strncmp against "alias" can only succeed
-   where s[i] is already 'a', so the gate is exact, not heuristic. Before it,
+   load-bearing, not stylistic. Dispatching on s[i] FIRST turns the keyword
+   probes from unconditional libc strncmp calls into a byte compare that
+   fails on ~95% of input: a strncmp against "alias" can only succeed where
+   s[i] is already 'a', so the gate is exact, not heuristic. Before it,
    scanning a 2MB script cost ~4M strncmp calls -- 17% of every instruction
    retired during a parse, spent proving that 'x' is not the start of
-   "source". */
-static bool	hazard_at(const char *s, size_t i, size_t n)
+   "source". `shopt` is a hazard for the same reason `alias` is: it can
+   change how LATER text lexes (`shopt -s extglob` arms extglob group
+   tokens), and bash-completion arms it on line 47 then relies on it ~1800
+   lines down -- lexing ahead of that execution broke every Debian login
+   (issue #105). Shared with exec_string's chunker, which needs the same
+   boundaries for the same reason. */
+bool	input_hazard_at(const char *s, size_t i, size_t n)
 {
 	const char	c = s[i];
 
@@ -45,6 +50,8 @@ static bool	hazard_at(const char *s, size_t i, size_t n)
 	if (c == 'a' && n - i >= 5 && ft_strncmp(s + i, "alias", 5) == 0)
 		return (true);
 	if (c == 's' && n - i >= 6 && ft_strncmp(s + i, "source", 6) == 0)
+		return (true);
+	if (c == 's' && n - i >= 5 && ft_strncmp(s + i, "shopt", 5) == 0)
 		return (true);
 	if (c == '.' && (i + 1 == n || s[i + 1] == ' ' || s[i + 1] == '\t')
 		&& (i == 0 || ft_strchr(" \t\n;&|", s[i - 1]) != NULL))
@@ -64,7 +71,7 @@ static size_t	batch_span(t_rl *l)
 	s = (const char *)l->buff.ctx + l->cursor;
 	n = l->buff.len - l->cursor;
 	clip = 0;
-	while (clip < n && !hazard_at(s, clip, n))
+	while (clip < n && !input_hazard_at(s, clip, n))
 		clip++;
 	while (clip > 0 && s[clip - 1] != '\n')
 		clip--;

@@ -101,7 +101,11 @@ static int	comp_print(t_shell *st, t_vec argv, size_t i)
 }
 
 /* complete [-abcdfkv] [-A action] [-W list] [-F func] [-o opt] [-pr] NAME…
-   With no NAME and no -p it prints every spec, like bash. */
+   With no NAME and no -p it prints every spec, like bash — EXCEPT when a
+   default-spec selector (-D/-E/-I) was given: `complete -D -F loader` is
+   how bash-completion installs its lazy loader, names none, and bash sets
+   the default spec silently. Falling into list mode there dumped every
+   registration to stdout at the end of `. bash_completion` (#105). */
 int	builtin_complete(t_shell *state, t_vec argv)
 {
 	t_cmpopt	o;
@@ -115,6 +119,8 @@ int	builtin_complete(t_shell *state, t_vec argv)
 		return (comp_print(state, argv, i));
 	if (o.remove)
 		return (comp_remove(state, argv, i));
+	if (i >= argv.len && o.defsel)
+		return (0);
 	if (i >= argv.len)
 		return (comp_print_all(state), 0);
 	while (i < argv.len)

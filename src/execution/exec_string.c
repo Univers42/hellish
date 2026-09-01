@@ -16,18 +16,19 @@
 #include "decomposer.h"
 #include "redir.h"
 
-int		run_parsed(t_shell *state, t_ast_node *ast);
-bool	must_stop(t_shell *state);
 void	report_parse_error(t_shell *state, t_parser *parser, t_deque_tok *tt);
 
-/* Lex `str` once, then parse + execute it one statement at a time (the REPL
-   normally feeds the parser one line at a time). Used by eval, command and the
-   dot/source builtin. `str` must stay valid for the whole call. */
+/* Parse + execute a string one statement at a time. Used by eval, command
+   and the dot/source builtin -- since issue #105 the string reaches the
+   parser in hazard-clipped chunks (exec_string3.c) so statements that
+   change how later text lexes take effect for the rest of the string;
+   run_one_stmt and skip_delimiters below are shared with that chunker's
+   error replay. `str` must stay valid for the whole call. */
 /* Drop any leading newline/semicolon tokens from the token queue before
    the next statement is parsed.  exec_string feeds multiple statements
    from a single token stream, so after each statement the queue may have
    stale statement-separators that would confuse the next parse call. */
-static void	skip_delimiters(t_deque_tok *tt)
+void	skip_delimiters(t_deque_tok *tt)
 {
 	t_tt	t;
 
@@ -54,7 +55,7 @@ static void	skip_delimiters(t_deque_tok *tt)
    about it is the worst possible answer, and it is what every plugin with a
    brace hellish could not parse was getting.  A plain RES_ERR already
    printed its own message during the parse. */
-static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
+int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 {
 	t_parser	parser;
 	t_ast_node	ast;
@@ -77,34 +78,13 @@ static int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
 	return (status);
 }
 
-/* Lex `str` once into a token queue, then parse + execute it statement
-   by statement until end-of-tokens or a stop condition.  Clearing
-   func_return at the end prevents a `return` inside eval from propagating
-   out of exec_string into the caller's function frame. */
-static int	exec_string_inner(t_shell *state, char *str)
-{
-	t_deque_tok	tt;
-	int			status;
-	bool		stop;
-
-	tt = (t_deque_tok){0};
-	deque_init(&tt.deqtok, 100, sizeof(t_ltoken));
-	tokenizer(str, &tt);
-	reclassify_keywords(&tt, zsh_mode(state));
-	status = 0;
-	stop = false;
-	skip_delimiters(&tt);
-	while (!stop && ((t_ltoken *)deque_peek(&tt.deqtok))->tt != TT_END)
-		status = run_one_stmt(state, &tt, &stop);
-	state->func_return = 0;
-	xfree(tt.deqtok.buff);
-	return (status);
-}
-
 /* Extract heredoc bodies up front (so they aren't parsed as commands),
    feed them to the heredoc reader via state->hd_src, and run the stripped
    text.  A string without << (or where splitting finds nothing) runs
-   as-is, under whatever hd_src the caller already installed. */
+   as-is, under whatever hd_src the caller already installed. Stripping
+   happens on the RAW text now that alias splicing is per-chunk (#105):
+   bodies are removed before any splice, so alias words inside a heredoc
+   body are never expanded -- which is also what bash does. */
 static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
 {
 	char	*stripped;
@@ -116,20 +96,32 @@ static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
 	{
 		state->hd_src = *bodies;
 		state->hd_pos = 0;
-		status = exec_string_inner(state, stripped);
+		status = exec_chunks(state, stripped);
 		xfree(stripped);
 	}
 	else
-		status = exec_string_inner(state, str);
+		status = exec_chunks(state, str);
 	return (status);
 }
 
-/* Alias-expand the line, then execute it, routing any heredoc bodies
-   aside first.  hd_src/hd_pos are saved/restored so nested command
-   substitutions each get their own body stream. */
+/* Execute the string, routing any heredoc bodies aside first.  Alias
+   expansion happens inside exec_chunks, one chunk at a time, so an alias
+   (or shopt, or dialect) set early in the string shapes the rest of it.
+   hd_src/hd_pos are saved/restored so nested command substitutions each
+   get their own body stream.
+
+   The private copy is load-bearing, not defensive fluff: callers pass
+   SHELL STATE as the string -- open_cycle hands over $PROMPT_COMMAND's
+   own env buffer -- and a statement inside can rewrite that variable
+   (bash-preexec's __bp_install does exactly this), freeing the buffer
+   mid-run. The chunker re-reads the source text after every executed
+   statement, so without the copy that free is a use-after-free the
+   fresh-install pty test catches under ASan. The old single-pass code
+   was immune only by accident: its up-front alias splice WAS the copy. */
 int	exec_string(t_shell *state, char *str)
 {
 	char	*bodies;
+	char	*own;
 	char	*prev_src;
 	size_t	prev_pos;
 	int		status;
@@ -137,9 +129,9 @@ int	exec_string(t_shell *state, char *str)
 	prev_src = state->hd_src;
 	prev_pos = state->hd_pos;
 	bodies = NULL;
-	str = alias_scan_line(&state->aliases, str);
-	status = exec_split_heredocs(state, str, &bodies);
-	xfree(str);
+	own = ft_strdup(str);
+	status = exec_split_heredocs(state, own, &bodies);
+	xfree(own);
 	xfree(bodies);
 	state->hd_src = prev_src;
 	state->hd_pos = prev_pos;

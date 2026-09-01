@@ -94,27 +94,20 @@ CORPUS = [
      "bash-preexec.sh", "loads", 15, ""),
     ("z", "https://raw.githubusercontent.com/rupa/z/master/z.sh", "loads", 1,
      ""),
-    # THE ROW THAT HOLDS progcomp's DEFAULT DOWN.
-    #
-    # /etc/profile.d/bash_completion.sh sources this when `shopt -q progcomp`
-    # says yes, so this file failing to parse is exactly why hellish leaves
-    # progcomp off by default while bash turns it on (incs/shell.h). The day
-    # this row can move to `loads`, that default can flip -- which is what a
-    # declared expectation is FOR.
-    #
-    # The blocker is architectural, not a missing feature: exec_string LEXES
-    # a whole sourced file before executing any of it, so `shopt -s extglob`
-    # on line 47 has not run when line 1810's `-?(\[)+([a-zA-Z0-9?]))` case
-    # pattern is tokenised -- and extglob patterns are gated on that option
-    # at lex time. bash reads and runs incrementally, so it has the option by
-    # then. Two real bugs found on the way here DID get fixed (a bare `{`
-    # inside ${...}, and a quoted right-hand side of [[ =~ ]]) and moved the
-    # failure from line 1425 to 1810.
+    # The row that HELD progcomp's default down, promoted to `loads` by
+    # issue #105. The blocker was architectural: exec_string lexed a whole
+    # sourced file before executing any of it, so `shopt -s extglob` on
+    # line 47 had not run when line 1810's `-?(\[)+([a-zA-Z0-9?]))` case
+    # pattern was tokenised -- every ssh login on a Debian box with
+    # bash-completion installed printed "syntax error near unexpected
+    # token `('" and lost the rest of ~/.profile (issue #105). exec_string
+    # now feeds the text through hazard-clipped chunks exactly like the
+    # main input driver, so options, aliases and dialect changes take
+    # effect for later lines of the same sourced file. progcomp's default
+    # (incs/shell.h) can be revisited now that this loads.
     ("bash-completion",
      "https://raw.githubusercontent.com/scop/bash-completion/main/"
-     "bash_completion", "unsupported", 0,
-     "whole-file lexing vs `shopt -s extglob` on line 47: the extglob case "
-     "pattern at line 1810 is tokenised before the option is set"),
+     "bash_completion", "loads", 80, ""),
 ]
 
 
@@ -149,8 +142,14 @@ def fetch(name, url):
 
 
 def run(script, timeout=45):
+    # BASH_COMPLETION_* pinned to nowhere: bash_completion sources every
+    # drop-in under /etc/bash_completion.d and ~/.bash_completion, so
+    # without this the row's verdict depends on what the machine happens
+    # to have installed there, not on the file under test.
     env = dict(os.environ, HELLISH_NO_BANNER="1",
-               HELLISH_NO_UPDATE_CHECK="1", HELLISH_NO_ANIM="1")
+               HELLISH_NO_UPDATE_CHECK="1", HELLISH_NO_ANIM="1",
+               BASH_COMPLETION_COMPAT_DIR="/nonexistent-hellish-corpus",
+               BASH_COMPLETION_USER_FILE="/nonexistent-hellish-corpus")
     try:
         p = subprocess.run([SHELL, "-c", script], capture_output=True,
                            timeout=timeout, env=env)
