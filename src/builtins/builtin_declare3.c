@@ -63,7 +63,11 @@ int	list_all(t_shell *state)
 }
 
 /* With operands: print each name that IS a function, and report 1 if any
-   named operand was not -- the status bash scripts branch on. */
+   named operand was not -- the status bash scripts branch on. A leading
+   `--` is the options terminator, not a name: bash-completion probes
+   every generator with `declare -F -- "$fn" &>/dev/null` and branching on
+   that status, so counting the terminator as a missing function turned
+   every TAB into "unrecognized generator" (issue #105, wave 2). */
 int	list_named(t_shell *state, t_vec argv, size_t i)
 {
 	int		missing;
