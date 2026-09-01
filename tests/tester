@@ -59,6 +59,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "longtail"
         "issue95_case_cmdsub"
         "issue96_trap_func"
+        "issue105_expansions"
     )
 fi
 
