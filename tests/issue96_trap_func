@@ -1,0 +1,11 @@
+f() { trap 'true' DEBUG; }; f; trap -p DEBUG
+trap 'true' DEBUG; f() { :; }; f; trap -p DEBUG
+f() { trap 'true' RETURN; }; f; trap -p RETURN
+h() { trap 'true' ERR; }; h; trap -p ERR
+f() { trap 'true' WINCH; }; f; trap -p WINCH
+f() { trap 'echo FIRED' DEBUG; }; f; echo one
+f() { trap 'echo FIRED' DEBUG; }; f; echo "DEBUG traps after f(): $(trap | grep -c DEBUG)"
+g() { trap 'true' WINCH; }; g; echo "WINCH traps after g(): $(trap | grep -c WINCH)"
+trap 'true' DEBUG; g() { trap 'echo INNER' DEBUG; }; g; trap -p DEBUG
+trap 'true' DEBUG; g() { trap - DEBUG; }; g; trap -p DEBUG
+outer() { inner() { trap 'true' DEBUG; }; inner; }; outer; trap -p DEBUG
