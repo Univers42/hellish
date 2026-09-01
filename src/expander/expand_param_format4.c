@@ -23,7 +23,7 @@
      Without the specials here, `${-#*e}` — the idiom every nvm.sh-style rc
    file uses to test a flag in $- — died as a bad substitution, which is
    fatal (127) in a non-interactive shell. */
-static int	pf_scan_scalar_name(const char *s, int slen)
+int	pf_scan_scalar_name(const char *s, int slen)
 {
 	int	i;
 
@@ -99,7 +99,7 @@ static char	*pf_tail_dispatch(t_shell *state, const char *s, int slen)
 
 /* Top-level ${...} dispatcher.  `s` is the raw text between the braces,
    `slen` its byte count.  Priority order — first match wins:
-     ${#v}      → length of v                  (expand_strlen)
+     zsh forms, ${#v}, ${!v...}                 (pf_head_dispatch)
      ${v:-w}    → default/alt operators        (find_param_op → expand_param_op)
      ${v#p} etc → trim operators               (find_trim_op → expand_trim)
      ${v/p/r}   → substitution                 (find_subst_op → expand_subst)
@@ -116,16 +116,9 @@ char	*expand_param_format(t_shell *state, const char *s, int slen, bool dq)
 
 	if (slen <= 0)
 		return (pf_bad_subst(state, s, slen));
-	op = zsh_param(state, s, slen);
+	op = pf_head_dispatch(state, s, slen, dq);
 	if (op)
 		return ((char *)op);
-	op = zsh_dispatch(state, s, slen, false);
-	if (op)
-		return ((char *)op);
-	if (s[0] == '#' && slen > 1)
-		return (expand_strlen(state, s + 1, slen - 1));
-	if (s[0] == '!' && slen > 1 && pf_is_indirect(s + 1, slen - 1))
-		return (expand_indirect(state, s + 1, slen - 1));
 	if (find_param_op(s, slen, &o))
 		return (o.dq = dq, expand_param_op(state, o));
 	op = find_trim_op(s, slen, &name_len);

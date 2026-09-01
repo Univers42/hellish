@@ -117,6 +117,9 @@ bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 		return (true);
 	}
 	used = pf_op_word_used(pf_get_var_value(state, o.name, o.name_len), o);
+	if (used && split_ctx
+		&& pf_op_word_at_fields(state, tt, o.word, o.wlen))
+		return (true);
 	fmt = expand_param_op(state, o);
 	tt->start = fmt;
 	tt->len = (int)ft_strlen(fmt);
