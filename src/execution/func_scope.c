@@ -15,6 +15,7 @@
 #include "ft_builtins.h"
 
 int		try_unset(t_shell *state, char *key);
+void	unset_raw(t_shell *state, char *key);
 
 /* Remember `key`'s current value so it can be restored when the current
    function returns (used for `local` and for the positional params $1..). */
@@ -50,7 +51,7 @@ void	restore_one(t_shell *state, t_scope_save *s)
 	}
 	else
 	{
-		try_unset(state, s->key);
+		unset_raw(state, s->key);
 		xfree(s->key);
 		xfree(s->value);
 	}

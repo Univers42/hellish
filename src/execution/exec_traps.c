@@ -40,9 +40,17 @@ static void	run_trap_body(t_shell *state, int slot, int code)
 }
 
 /* Before each simple command (bash's DEBUG trap). $? stays the previous
-   command's status while the body runs. */
+   command's status while the body runs. NOT fired for commands inside a
+   `.`/source run: bash treats the whole source as one DEBUG event while
+   eval fires per inner statement (both measured on 5.3.9). Firing per
+   sourced statement turned a theme rc's `trap hx_preexec DEBUG` into
+   ~100 `$(date)` forks on every re-source -- the "source got slow again"
+   of issue #108 -- because the hook ran before each of the file's own
+   lines. */
 void	fire_debug_trap(t_shell *state)
 {
+	if (state->source_depth)
+		return ;
 	run_trap_body(state, TRAP_DEBUG, state->last_cmd_st_exe.status);
 }
 
