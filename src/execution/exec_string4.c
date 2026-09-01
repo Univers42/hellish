@@ -15,6 +15,22 @@
 /* The chunk driver half of the #105 fix; the chunk mechanics and the
    design rationale live in exec_string3.c. */
 
+/* Release everything a chunk owns: parsed trees (executed or not), the
+   parser scratch, the token deque, and both text buffers. */
+void	chunk_close(t_chunkctx *c)
+{
+	size_t	i;
+
+	i = 0;
+	while (i < c->asts.len)
+		free_ast((t_ast_node *)c->asts.ctx + i++);
+	xfree(c->asts.ctx);
+	xfree(c->parser.parse_stack.ctx);
+	xfree(c->tt.deqtok.buff);
+	xfree(c->spliced);
+	xfree(c->chunk);
+}
+
 /* Execute the fully parsed statements of a chunk, in order, stopping on
    exit/return/errexit/unwind. Freeing is chunk_close's job so even the
    never-reached tail is reclaimed. */
