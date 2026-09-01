@@ -1124,6 +1124,15 @@ help-test: all  ## The help builtin — every dispatch-table entry must have one
 docs-builtins: all  ## Regenerate wiki/builtins/index.md from the help builtin
 	@python3 tools/gen_builtins_md.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The parse arena's rare states (chunk boundaries, registry-full heap
+# fallback) need hundreds of MB to reach at production chunk sizes — the
+# issue #94 double free lived there for months. This rebuilds with
+# 512-byte chunks so those states occur every few nodes, then runs an
+# rc-shaped corpus under ASan. NOTE: rebuilds twice (stress flags in, then
+# fclean — the object tree is not keyed on EXTRA_CFLAGS).
+arena-stress:  ## Arena chunk-boundary stress under ASan (issue #94 detector)
+	@sh $(TEST_DIR)/alloc_stress.sh
+
 # The update path end to end against a LOCAL fake release server: discovery,
 # download, sha256, atomic replace, and every rejection path (bad checksum,
 # truncated asset, unreachable source). Nothing is installed system-wide and
@@ -1236,7 +1245,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	readline-test anim-test git-prompt-test \
 	prompt-atomic-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
-	update-config-test update-test help-test test-release \
+	update-config-test update-test help-test test-release arena-stress \
 	conformance perf rss \
 	charts cli-opts-test net-redir-test login-test user-install-test \
 	geoman oracle docker-suite docker widechar-test \
