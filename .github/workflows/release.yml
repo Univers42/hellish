@@ -104,7 +104,19 @@ jobs:
             echo "NPM_TOKEN not set — skipping npm publish."; exit 0
           fi
           cd npm
-          npm version --no-git-tag-version --allow-same-version "${GITHUB_REF_NAME#v}"
+          ver="${GITHUB_REF_NAME#v}"
+          # Idempotent: a version already on the registry is the SUCCESS state,
+          # not a failure. release.yml re-runs whenever a tag is re-pushed (a
+          # history rewrite, a re-tag), and npm answers E403 "cannot publish
+          # over the previously published versions" on the second try -- which
+          # painted a green release red for a publish that had already
+          # succeeded. Check the registry first and skip cleanly if the exact
+          # version is there.
+          if npm view "hellish-shell@${ver}" version >/dev/null 2>&1; then
+            echo "hellish-shell@${ver} already on the registry — nothing to publish."
+            exit 0
+          fi
+          npm version --no-git-tag-version --allow-same-version "$ver"
           npm publish --access public
 
   # Docker Hub is a SECONDARY channel: GHCR already publishes the image from
