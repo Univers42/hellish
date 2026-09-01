@@ -34,6 +34,8 @@
 # include "expander.h"
 # include "sh_input.h"
 # include "executor_types.h"
+# include "lexer.h"
+# include "parser.h"
 
 # define MSG_REDIR_DATA_ERR "%s: internal error: redirects \
 							present but no redirect data\n"
@@ -221,5 +223,31 @@ t_execution_state	execute_brace_group(t_shell *state,
    several names, each brace-expanded. Returns how many were defined. */
 int					zfunc_define_all(t_shell *state, t_token *tok,
 						t_ast_node *body);
+
+/* Chunked exec_string (exec_string3.c / exec_string4.c, issue #105): one
+   in-flight chunk of an eval/source string. [start,end) index the ORIGINAL
+   text; spliced is this chunk's own alias expansion (each chunk is spliced
+   exactly once, so alias bodies are never re-expanded); asts holds the
+   fully parsed statements, executed only when the whole chunk parsed. */
+typedef struct s_chunkctx
+{
+	size_t			start;
+	size_t			end;
+	char			*chunk;
+	char			*spliced;
+	t_deque_tok		tt;
+	t_parser		parser;
+	t_vec			asts;
+}	t_chunkctx;
+
+void				chunk_close(t_chunkctx *c);
+void				chunk_grow(t_shell *state, const char *s, size_t n,
+						t_chunkctx *c);
+int					exec_chunks(t_shell *state, const char *str);
+void				skip_delimiters(t_deque_tok *tt);
+int					run_one_stmt(t_shell *state, t_deque_tok *tt,
+						bool *stop);
+int					run_parsed(t_shell *state, t_ast_node *ast);
+bool				must_stop(t_shell *state);
 
 #endif
