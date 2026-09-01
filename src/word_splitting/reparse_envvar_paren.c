@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "reparser_private.h"
+#include "casescan.h"
 
 /* Determine if we're entering $((  (depth 2) or $( (depth 1) and advance *i
    past the opening paren(s). The depth is what scan_until_matching uses to
@@ -54,23 +55,27 @@ static bool	skip_quoted_span(int *i, t_token t)
    arithmetic like $((a * (b + c))). At depth 1 a single ) closes; at depth 2
    only )) closes (single ) just opens a nested level). This correctly handles
    `echo $((1 + (2 * 3)))` without a separate arithmetic parser here.
-   Quoted spans are skipped wholesale — their parens do not count. */
+   Quoted spans are skipped wholesale — their parens do not count. The
+   single-paren steps go through the shared casescan automaton so a case
+   pattern's unbalanced `)` does not end the span (issue #95). */
 static void	scan_until_matching(int *i, t_token t, int *depth)
 {
+	t_casescan	cs;
+
+	casescan_init(&cs, t.len);
 	while (*i < t.len && *depth > 0)
 	{
 		if (skip_quoted_span(i, t))
+		{
+			cs.cmdpos = false;
 			continue ;
+		}
 		if (*depth == 2 && is_double_open_paren(t, *i))
 			consume_depth_idx(depth, i, 2, 2);
 		else if (*depth == 2 && is_double_close_paren(t, *i))
 			consume_depth_idx(depth, i, -2, 2);
-		else if (is_open_paren(t, *i))
-			consume_depth_idx(depth, i, 1, 1);
-		else if (is_close_paren(t, *i))
-			consume_depth_idx(depth, i, -1, 1);
 		else
-			(*i)++;
+			*depth += casescan_step(&cs, t.start, i, *depth);
 	}
 }
 

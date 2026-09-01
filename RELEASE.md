@@ -8,6 +8,40 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.3 — *the four-bug-reports release*
+
+Four field reports, four root causes, and a detector for each so none of
+them can quietly come back:
+
+- **The big one (#94):** a double free in AST teardown could SIGSEGV the
+  shell on large rc-shaped scripts. The parse arena's rare heap-fallback
+  handed the reparser a shared token it then freed once per word — a
+  state so deep it needed hundreds of MB of parse allocations to reach,
+  which is why no normal-size test ever saw it. Fixed at the root, and
+  `make arena-stress` now shrinks the arena chunks to 512 bytes so those
+  rare states happen every few nodes, under ASan, on every CI run.
+- **`$(case ...)` parses (#95):** a case pattern's unbalanced `)` no
+  longer ends the command substitution — so the idiomatic
+  `n=$(case "$x" in ''|*[!0-9]*) echo no ;; *) echo yes ;; esac)` works,
+  and one such line no longer silently disables the rest of your rc.
+- **Preexec hooks from functions (#96):** `trap 'my_preexec' DEBUG`
+  inside a function now persists after the function returns, exactly as
+  bash does — the canonical installable-hook shape works. Subshells got
+  bash's other half too: inherited DEBUG/RETURN/ERR traps stay listable
+  in `$( )` but never fire there. And because bash-preexec's hook could
+  now actually run, hellish gained the **`builtin`** builtin it calls
+  (`builtin history 1`) — 69 builtins now.
+- **`$COLUMNS` and `$LINES` (#97):** set at interactive startup and kept
+  current across resizes (honouring `shopt checkwinsize`), unexported,
+  like bash — a right prompt no longer needs to fork `tput cols`.
+
+Verified green across every layer: 4323 golden cases on both the ASan
+and release builds, whole-script + hard corpora, the pty suite (plus a
+new resize test), allocator parity on both heaps, the 13-plugin corpus,
+and the new arena stress.
+
+---
+
 ## v2.8.2 — *the customize-your-prompt release*
 
 Paste any zsh prompt tutorial into `~/.hellishrc` and it now just works

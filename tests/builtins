@@ -366,3 +366,8 @@ command /bin/sh -c 'exit 42'; echo "st=$?"
 command false; echo "st=$?"
 command -p /bin/echo "a b"
 command -v command
+builtin echo built-in-ok
+builtin; echo st=$?
+builtin nosuchbuiltin; echo st=$?
+echo() { printf "func\n"; }; echo x; builtin echo x
+builtin builtin echo deep

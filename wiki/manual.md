@@ -136,7 +136,7 @@ is the acceptance test. See [Architecture](architecture.md#the-zsh-dialect).
 
 ## SHELL BUILTINS
 
-67 names, documented one by one in the
+69 names, documented one by one in the
 **[builtins reference](builtins/index.md)** — generated from the shell's own
 `help` system, which is test-enforced against the dispatch table. From
 inside the shell: `help` for the grouped list, `help NAME` for one,
