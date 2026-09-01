@@ -27,11 +27,19 @@ void	exit_clean(t_shell *state, int code);
 
 /* Evaluate one substring field as arithmetic; empty text means 0 (so
    ${v::2} works).  On an arithmetic error the field falls back to 0 —
-   a garbage offset is not worth aborting the line for. */
+   a garbage offset is not worth aborting the line for.
+     The field is WORD-EXPANDED first, then evaluated — the same two
+   steps, in the same order, as an array subscript: bash accepts nested
+   expansions in the bounds, and `${cur:0:${#words[i]}}` is the exact
+   spelling bash-completion walks the cursor with (issue #105, wave 2:
+   the raw `${#w}` meant nothing to the arithmetic parser, the bound
+   fell back to 0, and every completion word came back empty). */
 static long long	ss_eval(t_shell *state, const char *s, int len)
 {
-	bool	err;
-	int		i;
+	bool		err;
+	char		*x;
+	long long	r;
+	int			i;
 
 	i = 0;
 	while (i < len && (s[i] == ' ' || s[i] == '\t'))
@@ -39,7 +47,11 @@ static long long	ss_eval(t_shell *state, const char *s, int len)
 	if (i == len)
 		return (0);
 	err = false;
-	return (arith_eval(state, s, len, &err));
+	x = expand_param_word(state, (char *)s, len, false);
+	if (!x)
+		return (arith_eval(state, s, len, &err));
+	r = arith_eval(state, x, (int)ft_strlen(x), &err);
+	return (xfree(x), r);
 }
 
 /* Locate the top-level ':' separating off from len (parens shield nested
