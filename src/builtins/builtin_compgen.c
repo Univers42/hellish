@@ -13,6 +13,11 @@
 #include "builtins_private.h"
 #include "env.h"
 
+#define CGW_VAR "__hellish_cgw"
+
+int	exec_string(t_shell *state, char *str);
+int	try_unset(t_shell *state, char *key);
+
 /* `compgen` -- ask the shell what it would offer as completions, and print
 ** the answers one per line.
 **
@@ -29,41 +34,47 @@
 
 /* Print `s` when it starts with `pfx`; returns 1 if it did, so the caller
    can accumulate "did anything match at all". */
-int	cg_emit(const char *s, const char *pfx)
+int	cg_emit(t_cgopt *o, const char *s, const char *pfx)
 {
 	if (ft_strncmp((char *)s, (char *)pfx, ft_strlen((char *)pfx)) != 0)
 		return (0);
-	ft_printf("%s\n", s);
-	return (1);
+	return (cg_print(o, s));
 }
 
-/* -W: the word list is split on IFS-ish whitespace and each field offered.
-** bash also EXPANDS the list before splitting it, and we do not. Stated
-** here rather than left to be discovered:
-**
-**     compgen -W "it's fine" -- it     bash: its fine      here: it's
-**     complete -W '$(git cmds)' git    bash: runs it       here: literal
-**
-** The common spellings are unaffected. `complete -W "$(...)" x` is expanded
-** by the shell when `complete` runs, long before the list is stored, and a
-** literal list of flags or subcommands -- what the corpus actually passes --
-** has nothing in it to expand. What is missing is the DEFERRED form, where
-** the list is single-quoted so that bash re-expands it at every TAB. */
-static int	cg_words(const char *list, const char *pfx)
+/* -W: bash EXPANDS the word list, then splits it into fields with the
+** shell's own rules -- quoting protects spaces, `$(...)` runs, and the
+** DEFERRED form (`-W '"${toks[@]}"'`, single-quoted so every TAB
+** re-expands it) yields the array's elements. That deferred spelling is
+** how bash-completion 2.16 feeds every generated candidate through
+** _comp_compgen, and offering the literal text instead put the string
+** "${toks[@]}" INTO the command line on TAB (issue #105, wave 2).
+** The list is evaluated as an array literal through exec_string -- the
+** exact machinery `x=(list)` already exercises -- into a scratch array
+** that is read back and removed. */
+static int	cg_words(t_shell *st, t_cgopt *o, const char *list,
+				const char *pfx)
 {
-	char	**w;
-	int		i;
-	int		hit;
+	const char	*v;
+	const char	*el;
+	char		*cmd;
+	long		idx;
+	int			nth[3];
 
-	w = ft_split((char *)list, ' ');
-	if (!w)
-		return (0);
-	i = 0;
-	hit = 0;
-	while (w[i])
-		hit += cg_emit(w[i++], pfx);
-	free_tab(w);
-	return (hit);
+	cmd = ft_asprintf("%s=(%s)", CGW_VAR, list);
+	exec_string(st, cmd);
+	xfree(cmd);
+	v = env_expand(st, CGW_VAR);
+	nth[0] = 0;
+	nth[2] = 0;
+	if (v && arr_is(v))
+	{
+		v++;
+		while (arr_next(&v, &idx, &el, &nth[1]))
+			nth[2] += cg_emit_n(o, el, nth[1], pfx);
+	}
+	else if (v)
+		nth[2] = cg_emit(o, v, pfx);
+	return (try_unset(st, CGW_VAR), nth[2]);
 }
 
 /* The action letter for -A NAME, so the two spellings share one path.
@@ -98,9 +109,9 @@ static int	cg_run(t_shell *st, t_cgopt *o, const char *pfx)
 
 	hit = 0;
 	if (o->words)
-		hit += cg_words(o->words, pfx);
+		hit += cg_words(st, o, o->words, pfx);
 	if (o->act)
-		hit += cg_source(st, o->act, pfx);
+		hit += cg_source(st, o, pfx);
 	return (hit);
 }
 

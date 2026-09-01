@@ -19,7 +19,7 @@
 
 /* -a: the alias table, walked the same way alias_print_all walks it and
    sorted -- a hash table has no order worth exposing. */
-int	cg_aliases(t_shell *st, const char *pfx)
+int	cg_aliases(t_shell *st, t_cgopt *o, const char *pfx)
 {
 	size_t			i;
 	t_hash_entry	*e;
@@ -34,7 +34,7 @@ int	cg_aliases(t_shell *st, const char *pfx)
 			cg_add(&out, e[i].key, pfx);
 		i++;
 	}
-	return (cg_flush(&out));
+	return (cg_flush(o, &out));
 }
 
 /* Split a prefix into the directory to read and the leading bytes an entry
@@ -59,7 +59,7 @@ static char	*cg_split_dir(const char *pfx, const char **tail)
 /* Print one directory entry as a completion: the caller's prefix path plus
    the name, so the answer can be pasted back on the command line. -d keeps
    only directories; -c keeps only what is executable. */
-static int	cg_entry(const char *pfx, const char *nm, char act, char *dir)
+static int	cg_entry(t_cgopt *o, const char *pfx, const char *nm, char *dir)
 {
 	char	*full;
 	char	*shown;
@@ -67,15 +67,16 @@ static int	cg_entry(const char *pfx, const char *nm, char act, char *dir)
 
 	full = ft_asprintf("%s/%s", dir, nm);
 	keep = 1;
-	if (act == 'd')
+	if (o->act == 'd')
 		keep = (cg_is_dir(full) != 0);
-	else if (act == 'c')
+	else if (o->act == 'c')
 		keep = (access(full, X_OK) == 0);
 	xfree(full);
 	if (!keep)
 		return (0);
 	shown = cg_join_prefix(pfx, nm);
-	ft_printf("%s\n", shown);
+	if (!cg_print(o, shown))
+		return (xfree(shown), 0);
 	return (xfree(shown), 1);
 }
 
@@ -83,7 +84,7 @@ static int	cg_entry(const char *pfx, const char *nm, char act, char *dir)
    and offer every entry that continues it. A hidden file is offered only
    when the prefix asks for the dot, which is what a user typing `.ba<TAB>`
    means and what stops a bare TAB from listing every dotfile. */
-int	cg_glob_paths(char act, const char *pfx)
+int	cg_glob_paths(t_cgopt *o, const char *pfx)
 {
 	DIR				*d;
 	struct dirent	*de;
@@ -101,7 +102,7 @@ int	cg_glob_paths(char act, const char *pfx)
 	{
 		if (ft_strncmp(de->d_name, (char *)tail, ft_strlen((char *)tail)) == 0
 			&& (tail[0] == '.' || de->d_name[0] != '.'))
-			hit += cg_entry(pfx, de->d_name, act, dir);
+			hit += cg_entry(o, pfx, de->d_name, dir);
 		de = readdir(d);
 	}
 	return (closedir(d), xfree(dir), hit);

@@ -55,6 +55,8 @@ static int	bodies_of(t_shell *state, t_vec argv, size_t i)
 
 int	declare_functions(t_shell *state, t_vec argv, size_t i, bool bodies)
 {
+	if (i < argv.len && ft_strcmp(((char **)argv.ctx)[i], "--") == 0)
+		i++;
 	if (bodies)
 		return (bodies_of(state, argv, i));
 	return (declare_names(state, argv, i));

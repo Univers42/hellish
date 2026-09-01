@@ -1,0 +1,39 @@
+ref=HOME; test -n "${!ref-}" && echo indirect-dash-ok
+ref=NOPE; echo "[${!ref-dflt}]"
+ref=NOPE; echo "[${!ref:-dflt}]"
+ref=HOME; echo "[${!ref:+set}]"
+set -- aa bb; n=2; echo "[${!n-x}]"
+a=(v0 v1); r="a[1]"; echo "[${!r}]"
+a=(v0 v1); r="a[1]"; echo "[${!r-d}]"
+a=(); r="a[0]"; echo "[${!r-d}]"
+declare -A m; m[k]=1; r="m[k]"; echo "[${!r}]"
+r="a[0]"; printf -v "$r" %s "hello"; echo "[${a[0]}]"
+printf -v plain %s world; echo "[$plain]"
+cur="cat li"; w=cat; echo "<${cur:0:${#w}}>"
+v=abcdef; n=2; echo "<${v:0:n}>"
+v=abcdef; o=2; echo "<${v:$o:3}>"
+v=abcdef; echo "<${v:1+1:2}>"
+set -- a b c d; printf "<%s>" "${@:2:2}"; echo
+set -- a b c d; arr=("${@:2:2}"); echo "${#arr[@]}:${arr[0]}:${arr[1]}"
+set -- p q r s; printf "<%s>" "${@:2}"; echo
+set -- p q; printf "<%s>" "${*:1:2}"; echo
+a=(p q r s); printf "<%s>" ${a[@]:1:2}; echo
+w=(cat li); printf "<%s>" ${w+"${w[@]}"}; echo
+set -- x y; printf "<%s>" ${1+"$@"}; echo
+w=("" li); printf "<%s>" ${w[@]+"${w[@]}"}; echo
+w=(a b); printf "<%s>" ${w[@]-"${w[@]}"}; echo
+w=(); printf "<%s>" ${w[@]+"${w[@]}"}; echo
+w=scalar; printf "<%s>" ${w+"${w[@]}"}; echo
+f(){ local a=(x y); local a; echo "${#a[@]}:<${a[0]-U}>"; }; f
+f(){ local v=hello; local v; echo "<$v>"; }; f
+outer(){ local x=A; mid; echo "outer=<$x>"; }; mid(){ local x=B; setter; echo "mid=<$x>"; }; setter(){ unset -v x; x=SET; }; outer
+outer(){ local x=A; setter; echo "outer=<$x>"; }; setter(){ unset -v x; x=SET; }; x=g; outer; echo "g=<$x>"
+x=g; f(){ local x=1; unset x; echo "<${x-U}>"; }; f; echo "<$x>"
+f(){ local v=1; unset v; v=2; echo "<$v>"; }; f; echo "<${v-U}>"
+f(){ :; }; declare -F -- f >/dev/null; echo rc=$?
+f(){ :; }; declare -f -- f >/dev/null; echo rc=$?
+compgen -W "aa ab ba" -X "b*" -- ""
+compgen -W "alpha beta gamma" -P "[" -S "]" -- b
+toks=(red green blue); compgen -W '"${toks[@]}"' -- g
+compgen -W "$(echo hey ho)" -- h
+eval -- "x5=55"; echo "$x5"

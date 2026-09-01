@@ -40,7 +40,11 @@ char	*cg_join_prefix(const char *pfx, const char *name)
 }
 
 /* One option word. Returns the number of extra argv slots consumed (the
-   value-takers -W and -A take one), or -1 on an unknown option. */
+   value-takers -W/-A/-X/-P/-S take one; -o is consumed and ignored), or
+   -1 on an unknown option. -X/-P/-S landed with issue #105 wave 2:
+   bash-completion filters every filedir batch through
+   `compgen -f -X '!pattern'` and prefixes partials with -P, so rejecting
+   them killed TAB before any candidate was generated. */
 static int	cg_one_opt(t_shell *st, t_vec argv, size_t i, t_cgopt *o)
 {
 	char	*w;
@@ -48,6 +52,14 @@ static int	cg_one_opt(t_shell *st, t_vec argv, size_t i, t_cgopt *o)
 	w = ((char **)argv.ctx)[i];
 	if (ft_strcmp(w, "-W") == 0 && i + 1 < argv.len)
 		return (o->words = ((char **)argv.ctx)[i + 1], 1);
+	if (ft_strcmp(w, "-X") == 0 && i + 1 < argv.len)
+		return (o->xfilter = ((char **)argv.ctx)[i + 1], 1);
+	if (ft_strcmp(w, "-P") == 0 && i + 1 < argv.len)
+		return (o->prefix = ((char **)argv.ctx)[i + 1], 1);
+	if (ft_strcmp(w, "-S") == 0 && i + 1 < argv.len)
+		return (o->suffix = ((char **)argv.ctx)[i + 1], 1);
+	if (ft_strcmp(w, "-o") == 0 && i + 1 < argv.len)
+		return (1);
 	if (ft_strcmp(w, "-A") == 0 && i + 1 < argv.len)
 	{
 		o->act = cg_action_of(((char **)argv.ctx)[i + 1]);
@@ -56,7 +68,7 @@ static int	cg_one_opt(t_shell *st, t_vec argv, size_t i, t_cgopt *o)
 					st->ctx, ((char **)argv.ctx)[i + 1]), -1);
 		return (1);
 	}
-	if (w[1] && !w[2] && ft_strchr("abcdfkv", w[1]))
+	if (w[1] && !w[2] && ft_strchr("abcdefgjksuv", w[1]))
 		return (o->act = w[1], 0);
 	return (ft_eprintf("%s: compgen: %s: invalid option\n", st->ctx, w), -1);
 }
