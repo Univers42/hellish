@@ -102,22 +102,39 @@ void	begin_cycle(t_shell *state, t_string *ret)
 	state->rl.ln_ptr = NULL;
 }
 
-/* Deliver every complete hazard-free line in one go. Only the FIRST
-   delivery of a cycle may batch: continuation rounds go line-by-line so a
-   command executed mid-construct (an alias definition pulled in whole by
-   round one) can never leak later lines into its own cycle. A cursor
-   below exact_until means a failed batched cycle was rewound for exact
-   replay — keep serving single lines until past the failure point. Line
-   accounting must match per-line delivery: bump rl.line once per newline
-   and refresh the "script: line N" error context once. Returns 4 (data
-   delivered) or 0 (caller must use the single-line path). */
+/* Deliver every complete hazard-free line in one go. Continuation rounds
+   (ret->len != 0: the parser wants more of an incomplete construct) batch
+   too — refusing them made a compound command that trips ONE hazard byte
+   go line-by-line for its whole remaining body, and every appended line
+   re-lexed and re-parsed the accumulated construct: O(n²), five seconds
+   for a 2242-line monolithic rc that bash parses in 7ms (issue #101).
+   The hazard scan still clips every span, so no batch ever contains
+   alias/source/heredoc/backslash-newline text, and a cycle whose input
+   already holds a heredoc operator (cycle_has_hd, set by the previous
+   parse attempt of this same cycle) keeps the exact line path: inline
+   heredoc bodies are the one construct whose CONSUMPTION depends on
+   delivery granularity. cycle_has_hd lags by one parse attempt, so the
+   raw accumulated input is scanned as well: a << delivered by the
+   single-line hazard path can precede the cycle's first parse (an open
+   quote keeps the tokenizer asking before the parser ever runs), and
+   that round must not batch either. A failed batched cycle is still
+   rewound and
+   replayed line-exact (try_replay_exact), so batching stays a pure
+   optimization layer over the always-correct single-line path. A cursor
+   below exact_until means such a replay is in progress — keep serving
+   single lines until past the failure point. Line accounting must match
+   per-line delivery: bump rl.line once per newline and refresh the
+   "script: line N" error context once. Returns 4 (data delivered) or 0
+   (caller must use the single-line path). */
 int	return_batch(t_shell *state, t_string *ret)
 {
 	t_rl	*l;
 	size_t	span;
 
 	l = &state->rl;
-	if (!l->has_line || !l->buff.ctx || l->line_exact || ret->len != 0
+	if (!l->has_line || !l->buff.ctx || l->line_exact
+		|| (ret->len != 0 && (state->cycle_has_hd
+				|| ft_strnstr((char *)ret->ctx, "<<", ret->len) != NULL))
 		|| l->cursor < l->exact_until)
 		return (0);
 	span = batch_span(l);

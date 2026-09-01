@@ -110,12 +110,24 @@ bool	worthy_of_being_remembered(t_shell *state)
 /* First-time history setup: zero the struct, open the file, load and cap the
    entries, and leave append_fd open for incremental writes.
 
+   The hist_cmds vector is made valid BEFORE parse_history_file runs, because
+   every early return in there (no HOME, unopenable file) used to leave the
+   zeroed struct as-is -- and a t_vec with elem_size 0 is a trap, not an empty
+   vector: vec_push memcpys 0 bytes but still bumps len, so the first command
+   grew a phantom entry and both the dedup check and the exit teardown then
+   read 8-byte pointers out of a zero-stride buffer (issue #98, a SEGV the
+   moment `exit` was typed under `env -i`). The success path replaces this
+   empty vector wholesale (parse_hist_file builds its own), which is fine:
+   nothing was allocated yet.
+
    readmark/appended start at what was just loaded: those entries are
    already both read and on disk, so a later `history -n` must not import
    them a second time and `history -a` must not re-append them. */
 void	init_history(t_shell *state)
 {
 	state->hist = (t_history){.append_fd = -1, .hist_active = true};
+	vec_init(&state->hist.hist_cmds);
+	state->hist.hist_cmds.elem_size = sizeof(char *);
 	parse_history_file(state);
 	state->hist.readmark = state->hist.hist_cmds.len;
 	state->hist.appended = state->hist.hist_cmds.len;
