@@ -8,6 +8,42 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.5 — *the login-chain release*
+
+One field report — `ssh` into a Debian 13 box printed
+`hellish: syntax error near unexpected token `('` at every login (#105) —
+unravelled into a family of "lexing ahead of execution" bugs, all fixed:
+
+- **`. bash_completion` works.** hellish sets `BASH_VERSION`, so the stock
+  Debian `~/.profile` sources `~/.bashrc`, which sources bash-completion —
+  a file that runs `shopt -s extglob` on line 47 and relies on it ~1800
+  lines down. `exec_string` (eval and the dot builtin) tokenized the whole
+  file before executing any of it, so the option never reached the lexer.
+  Sourced text now flows through hazard-clipped chunks exactly like the
+  main input driver: `shopt`, alias definitions and nested sources take
+  effect for the rest of the same file, on bash's own line-granular terms.
+  Both bash-completion 2.11 (Ubuntu 22.04) and 2.14 (24.04) now load
+  silently, and the plugin corpus row moved from `unsupported` to `loads`.
+- **`shopt` joined the batch hazards**, so the script/file path lexes
+  later lines after a top-level `shopt` executed, matching bash.
+- **Extglob inside `[[ ]]` without `shopt -s extglob`** — bash enables it
+  while parsing and matching the right side of == / != (4.1 semantics);
+  hellish's lexer and matcher now do too, so bash-completion's
+  `[[ $(bind -v) == *+([[:space:]])on* ]]` idiom matches.
+- **`eval -- "text"`** no longer runs `--` as a command;
+  **`complete`** learned the `-e/-g/-j/-s/-u` action letters and installs
+  `complete -D` default specs silently instead of dumping every
+  registration to stdout; **`shopt`** answers real-but-unimplemented bash
+  option names honestly (query/print say off, `-u` succeeds, `-s` refuses
+  loudly) instead of "invalid shell option name".
+
+Detectors, permanent: `tests/login_bashrc_chain_test.py` drives the whole
+profile→bashrc→completion chain in a pty; `tests/scripts/42–44` diff the
+extglob/alias/[[ shapes against bash 5.3.9 byte-for-byte; the corpus now
+*requires* bash-completion to load.
+
+---
+
 ## v2.8.4 — *the fast-scripts release*
 
 Two field reports, one performance audit — and permanent detectors for

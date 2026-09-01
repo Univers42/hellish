@@ -94,6 +94,7 @@ typedef struct s_cmpopt
 	char	act;
 	bool	print;
 	bool	remove;
+	bool	defsel;
 }	t_cmpopt;
 
 typedef struct s_getopts
@@ -320,6 +321,8 @@ typedef struct s_shopt_act
 
 size_t	shopt_flags(t_vec argv, char *act, int *quiet, int *use_o);
 int		shopt_setopt(t_shell *state, t_vec argv, size_t i, t_shopt_act a);
+int		shopt_unknown(t_shell *state, const char *name, char act,
+			int quiet);
 
 /* wait plumbing shared between builtin_proc.c and builtin_proc2.c */
 int		reaped_job_status(t_shell *state, pid_t pid);

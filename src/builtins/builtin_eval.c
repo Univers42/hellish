@@ -48,15 +48,22 @@ static char	*join_args(t_vec argv, size_t from)
 /* eval: concatenate the arguments (space-separated), then parse and execute
    the resulting string in the current shell context. Must be a builtin for
    the same reason as source: assignments, function definitions, and option
-   changes made inside eval must be visible to the caller. */
+   changes made inside eval must be visible to the caller. A leading `--`
+   is an options terminator, not text: bash-completion 2.14 writes
+   `eval -- "$1=()"` throughout, and joining the -- in made it a command
+   ("--: command not found" at every login, #105). */
 int	builtin_eval(t_shell *state, t_vec argv)
 {
 	char	*joined;
 	int		status;
+	size_t	from;
 
-	if (argv.len < 2)
+	from = 1;
+	if (argv.len > 1 && ft_strcmp(((char **)argv.ctx)[1], "--") == 0)
+		from = 2;
+	if (argv.len <= from)
 		return (0);
-	joined = join_args(argv, 1);
+	joined = join_args(argv, from);
 	status = exec_string(state, joined);
 	xfree(joined);
 	return (status);
