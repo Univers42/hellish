@@ -11,29 +11,33 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "casescan.h"
 
 /* Scan forward from s[2] (past the opening '$(') to find the matching ')'.
    Nested $(...) or plain (...) are tracked with `depth` so that
-   $(echo $(uname)) terminates at the outer ')' rather than the inner one.
+   $(echo $(uname)) terminates at the outer ')' rather than the inner one —
+   through the shared casescan automaton, so a case pattern's unbalanced
+   `)` does not end the span either (issue #95).
    Returns the index of the byte AFTER the closing ')', or -1 if unmatched
    (incomplete command substitution — just leave it unexpanded). */
 static int	find_cmd_sub_end(const char *s, int slen)
 {
-	int	depth;
-	int	j;
+	t_casescan	cs;
+	int			depth;
+	int			j;
 
+	casescan_init(&cs, slen);
 	depth = 1;
 	j = 2;
 	while (j < slen && depth > 0)
 	{
 		if (sh_skip_quoted(s, slen, j) != j)
+		{
 			j = sh_skip_quoted(s, slen, j);
-		else if (is_single_open_paren(s, j))
-			handle_single_open_paren(&depth, &j);
-		else if (is_single_close_paren(s, j))
-			handle_single_close_paren(&depth, &j);
+			cs.cmdpos = false;
+		}
 		else
-			j++;
+			depth += casescan_step(&cs, s, &j, depth);
 	}
 	if (depth != 0)
 		return (-1);

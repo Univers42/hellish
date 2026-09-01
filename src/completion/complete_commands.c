@@ -37,7 +37,8 @@
 char	*g_builtins[] = {
 	"echo", "export", "cd", "pushd", "popd", "[[", "exit", "pwd", "unset",
 	"type", "set", "shift", ":", "break", "continue", "eval", ".",
-	"source", "true", "false", "umask", "command", "return", "getopts",
+	"source", "true", "false", "umask", "command", "builtin", "return",
+	"getopts",
 	"exec", "wait", "times", "trap", "readonly", "read", "test", "[",
 	"alias", "unalias", "hash", "jobs", "fg", "bg", "fc", "history",
 	"let", "local", "kill", "printf", "ulimit", "update", "help",

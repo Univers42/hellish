@@ -21,12 +21,15 @@
    restored afterwards, so the surrounding script's status is undisturbed. */
 
 /* Run trap slot `slot` with $? presented as `code`, guarded against
-   re-entry. No-op when the slot is empty (the hot path for DEBUG). */
+   re-entry. No-op when the slot is empty (the hot path for DEBUG), and
+   when the trap was inherited by a subshell environment (traps_quiet —
+   bash never fires an inherited DEBUG/RETURN/ERR inside $() or ( )). */
 static void	run_trap_body(t_shell *state, int slot, int code)
 {
 	t_execution_state	saved;
 
-	if (!state->traps[slot] || state->trap_depth)
+	if (!state->traps[slot] || state->trap_depth
+		|| (state->traps_quiet & (1 << (slot - TRAP_DEBUG))))
 		return ;
 	saved = state->last_cmd_st_exe;
 	set_cmd_status(state, res_status(code));

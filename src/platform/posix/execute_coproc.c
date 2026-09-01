@@ -32,18 +32,13 @@ static char	*coproc_name(t_ast_node *node)
 /* Reset the traps a coprocess child must not inherit (bash without
    functrace/errtrace): the EXIT trap belongs to the parent, and DEBUG/
    RETURN/ERR would otherwise fire inside the child and leak their output
-   into the pipe. trap_restore frees the current pseudo-traps and installs
-   the blank set. */
+   into the pipe. The quiet mask silences the inherited pseudo-traps
+   while keeping them listable, as bash does in subshell environments. */
 static void	coproc_reset_traps(t_shell *state)
 {
-	char	*blank[3];
-
-	blank[0] = NULL;
-	blank[1] = NULL;
-	blank[2] = NULL;
 	xfree(state->traps[0]);
 	state->traps[0] = NULL;
-	trap_restore(state, blank);
+	pseudo_traps_quiet(state);
 }
 
 /* Child side: wire stdin<-inp[0], stdout->outp[1], drop every pipe end,

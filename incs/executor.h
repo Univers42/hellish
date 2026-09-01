@@ -78,6 +78,7 @@ void				fire_debug_trap(t_shell *state);
 void				fire_err_trap(t_shell *state, int code);
 void				fire_return_trap(t_shell *state, int code);
 void				trap_save_reset(t_shell *state, char **save);
+void				pseudo_traps_quiet(t_shell *state);
 void				trap_restore(t_shell *state, char **save);
 void				exe_res_set_status(t_shell *st, t_execution_state *res);
 int					find_cmd_path(t_shell *state, char *cmd_name,
