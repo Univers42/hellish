@@ -100,6 +100,8 @@ int	set_one_trap(t_shell *state, const char *action, int num)
 {
 	if (num < 0 || num >= SH_NTRAP)
 		return (1);
+	if (num >= TRAP_DEBUG)
+		state->traps_quiet &= ~(1 << (num - TRAP_DEBUG));
 	xfree(state->traps[num]);
 	state->traps[num] = NULL;
 	if (action[0] == '-')

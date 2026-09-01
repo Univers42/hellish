@@ -397,6 +397,13 @@ typedef struct s_shell
 	/* --- traps and readonly vars --- */
 	char				*traps[SH_NTRAP]; /* trap strings, by signal num */
 	int					trap_depth; /* >0 while a trap body runs */
+	/* Bit (slot - TRAP_DEBUG) set: that pseudo trap was inherited by a
+	   subshell environment (cmdsub, ( ), coproc) and must not FIRE there,
+	   though it stays listable — bash 5.3 keeps `trap -p DEBUG` working
+	   inside $() while never running the inherited trap. Setting or
+	   resetting the slot clears its bit, so a trap installed inside the
+	   child fires normally. */
+	int					traps_quiet;
 	/* >0 while a prompt is being rendered. An error raised in there must
 	   never end the session: a prompt redraws on every keystroke, and a
 	   shell that exits because of a typo in PS1 gives the user no way back
