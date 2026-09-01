@@ -119,7 +119,7 @@ static void	init_rl_buffer(t_shell *state)
    source. The PRNG is seeded from pid^time like bash seeds $RANDOM: two
    shells started in the same second must not share a sequence (that also
    de-collides the PRNG-named heredoc tmp files). bg_job_count starts at
-   0 -- it is the counter for the unique job IDs we hand out.
+   0 via shell_init's zeroing -- the counter for the job IDs we hand out.
 
    $0 defaults to argv[0] verbatim, exactly as bash does -- not the basename
    used for diagnostics. It has to be seeded here, before cli_dispatch(),
@@ -149,8 +149,8 @@ void	on(t_shell *state, char **argv, char **envp)
 	init_tables(state);
 	cli_dispatch(state, &cli);
 	interactive_job_signals(state->metinp == INP_RL);
+	update_winsize_vars(state);
 	prng_initialize_state(&state->prng,
 		(uint32_t)(getpid() * 2654435761u ^ time(NULL)));
 	state->start_sec = (long long)time(NULL);
-	state->bg_job_count = 0;
 }

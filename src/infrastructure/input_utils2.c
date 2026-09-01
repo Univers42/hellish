@@ -13,6 +13,7 @@
 #include "input_private.h"
 #include "prompt_private.h"
 #include "parena.h"
+#include "env.h"
 
 /* Initialise the parser, token deque, and prompt string for one command cycle.
    For an interactive session (INP_RL) we build the coloured prompt via
@@ -42,6 +43,23 @@ static void	prepare_parser_and_prompt(t_shell *state,
 	tt->looking_for = 0;
 }
 
+/* Run one settled tree: refresh COLUMNS/LINES first (bash checkwinsize —
+   a resize is visible to the very next command), then execute and reclaim
+   the cycle tree (walked only when heap is attached; a pure-arena tree is
+   dropped wholesale for parena_reset). */
+static void	execute_settled_tree(t_shell *state)
+{
+	if (state->shopt & SHOPT_CHECKWINSIZE)
+		update_winsize_vars(state);
+	run_preexec(state);
+	execute_top_level(state);
+	(*git_scan_gen())++;
+	if (parena()->attached)
+		free_ast(&state->tree);
+	else
+		state->tree = (t_ast_node){0};
+}
+
 /* After the parse loop settles: execute the tree if parsing succeeded, handle
    any lingering signal cancellation, save history, and free all scratch
    allocations. should_exit is also updated here: a non-interactive interrupt
@@ -52,15 +70,7 @@ static void	finalize_parser_and_cleanup(t_shell *state,
 										char *prompt)
 {
 	if (parser->res == RES_OK && !state->cycle_streamed)
-	{
-		run_preexec(state);
-		execute_top_level(state);
-		(*git_scan_gen())++;
-		if (parena()->attached)
-			free_ast(&state->tree);
-		else
-			state->tree = (t_ast_node){0};
-	}
+		execute_settled_tree(state);
 	if (get_g_sig()->should_unwind)
 		set_cmd_status(state, create_exec_state(CANCELED, true));
 	manage_history(state);
