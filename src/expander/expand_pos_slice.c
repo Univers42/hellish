@@ -106,9 +106,42 @@ static void	pos_slice_range(t_shell *state, t_token *tt, int *off, int *to)
 		*to = *off + arith_num(state, tt->start + ol + 1, tt->len - ol - 1);
 }
 
+/* Quoted "${@:off:len}" in a split context: one verbatim field per
+   positional, like "$@" — bash-completion's _comp_upvars builds its word
+   arrays with `("${@:3:N}")` and a joined single field mis-counted every
+   TAB (issue #105, wave 2). The elements are computed here and parked in
+   the deferral registry as an ENCODED VALUE (the same ARR_MAGIC trick zsh
+   flagged expansions use), so the splitter emits them exactly. */
+bool	pos_mark_fields(t_shell *state, t_token *tt, int off, int to)
+{
+	t_vec	elems;
+	char	*enc;
+	char	*k;
+	char	*v;
+
+	vec_init(&elems);
+	elems.elem_size = sizeof(char *);
+	while (off < to)
+	{
+		k = ft_itoa(off++);
+		v = env_expand(state, k);
+		xfree(k);
+		if (v)
+			vec_push(&elems, &v);
+	}
+	enc = arr_from_elems((char **)elems.ctx, (int)elems.len, NULL);
+	xfree(elems.ctx);
+	tt->start = arr_mark_push(state, enc, (int)ft_strlen(enc));
+	tt->len = (int)ft_strlen(tt->start);
+	tt->allocated = false;
+	return (xfree(enc), true);
+}
+
 /* Recognise "@:..." / "*:..." and emit the slice. tt->start[0] is @ or *,
-   [1] is ':'. Returns false otherwise. */
-bool	expand_pos_slice(t_shell *state, t_token *tt)
+   [1] is ':'. Returns false otherwise. Quoted @ slices in a split context
+   keep per-element fields; everything else joins as before ("$*" always
+   joins, and an unquoted slice is IFS-resplit downstream anyway). */
+bool	expand_pos_slice(t_shell *state, t_token *tt, bool split_ctx)
 {
 	int	off;
 	int	to;
@@ -120,6 +153,8 @@ bool	expand_pos_slice(t_shell *state, t_token *tt)
 		|| tt->start[2] == '=' || tt->start[2] == '?')
 		return (false);
 	pos_slice_range(state, tt, &off, &to);
+	if (split_ctx && tt->start[0] == '@' && tt->tt == TT_DQENVVAR)
+		return (pos_mark_fields(state, tt, off, to));
 	tt->start = pos_join(state, off, to);
 	tt->len = (int)ft_strlen(tt->start);
 	tt->allocated = true;

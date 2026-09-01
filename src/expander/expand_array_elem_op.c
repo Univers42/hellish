@@ -137,7 +137,7 @@ static char	*elem_apply(t_shell *state, const char *op, int oplen, char *elem)
 	return (res);
 }
 
-bool	expand_array_elem_op(t_shell *state, t_token *tt)
+bool	expand_array_elem_op(t_shell *state, t_token *tt, bool split)
 {
 	char	*elem;
 	char	*res;
@@ -150,7 +150,12 @@ bool	expand_array_elem_op(t_shell *state, t_token *tt)
 	if (sub[1] >= tt->len)
 		return (false);
 	if (sub[0] == 1 && (tt->start[nl + 1] == '@' || tt->start[nl + 1] == '*'))
+	{
 		elem = at_value(state, tt->start, nl);
+		if (split && tt->start[nl + 1] == '@'
+			&& at_op_word_fields(state, tt, elem, sub[1]))
+			return (xfree(elem), true);
+	}
 	else
 		elem = elem_value(state, tt->start, nl, sub[0]);
 	res = elem_apply(state, tt->start + sub[1], tt->len - sub[1], elem);

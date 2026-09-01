@@ -189,6 +189,14 @@ char		*expand_xform(t_shell *state, const char *s, int name_len, char op);
 bool		find_xform_op(const char *s, int slen, int *nl, char *op);
 bool		pf_is_indirect(const char *s, int n);
 char		*expand_indirect(t_shell *state, const char *s, int n);
+char		*pf_indirect(t_shell *state, const char *s, int n, bool dq);
+int			pf_scan_scalar_name(const char *s, int slen);
+bool		pos_mark_fields(t_shell *state, t_token *tt, int off, int to);
+bool		csf_word_aliased(t_shell *state, const char *s, int len);
+bool		pf_op_word_at_fields(t_shell *state, t_token *tt, const char *w,
+				int n);
+bool		at_op_word_fields(t_shell *state, t_token *tt, char *elem,
+				int off);
 char		*err_or_assign(t_shell *state, char *val, t_pe_op o);
 char		*expand_param_op(t_shell *state, t_pe_op o);
 char		*pf_err_word(t_shell *state, char *val, t_pe_op o);
@@ -210,6 +218,7 @@ int			subst_anchor(t_trim_ctx ctx, int g);
 char		*patsub_prefix(const char *val, const char *pat, const char *rep);
 char		*patsub_suffix(const char *val, const char *pat, const char *rep);
 bool		pf_valid_plain(const char *s, int n);
+char		*pf_head_dispatch(t_shell *state, const char *s, int slen, bool dq);
 char		*pf_trim_or_subst(t_shell *state, t_trim_ctx ctx);
 t_trim_ctx	pf_make_ctx(const char *s, int slen, const char *op, int nlen);
 char		*cmdsub_fast(t_shell *state, const char *cmd);
@@ -321,9 +330,9 @@ typedef struct s_slice_ctx
 }	t_slice_ctx;
 
 bool		expand_array_ext(t_shell *state, t_token *tt, bool split_ctx);
-bool		expand_pos_slice(t_shell *state, t_token *tt);
+bool		expand_pos_slice(t_shell *state, t_token *tt, bool split_ctx);
 bool		expand_array_op(t_shell *state, t_token *tt);
-bool		expand_array_elem_op(t_shell *state, t_token *tt);
+bool		expand_array_elem_op(t_shell *state, t_token *tt, bool split);
 bool		arr_keys(t_shell *state, t_token *tt, bool split_ctx);
 bool		arr_prefix_names(t_shell *state, t_token *tt, bool split_ctx);
 bool		arr_emit(t_token *tt, char *owned);
