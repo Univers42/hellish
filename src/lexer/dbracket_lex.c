@@ -70,3 +70,35 @@ int	emit_dbracket_word(char **str, t_deque_tok *ret)
 	*str += len;
 	return (1);
 }
+
+/* Inside [[ ]], a newline is whitespace exactly where bash's conditional
+   grammar tolerates one: after the [[ itself, after && / || / ( / !, and
+   before ]] / && / || / ). Anywhere else it stays a real token, so
+   `[[ $x\n== y ]]` still fails like bash. bash-completion 2.16 writes
+   `[[ a != @(...) &&\n -f b ]]` in its compat-dir loop, and emitting that
+   newline cut the conditional in half: "[[: missing ]]" once per drop-in
+   file at every Debian 13 login, then the orphaned tail ran as commands
+   ("-f: command not found") -- issue #105's second wave. `after` points
+   just past the newline. */
+bool	db_newline_skippable(t_deque_tok *ret, const char *after)
+{
+	t_ltoken	*last;
+	char		*s;
+
+	while (*after == ' ' || *after == '\t')
+		after++;
+	if ((after[0] == ']' && after[1] == ']')
+		|| (after[0] == '&' && after[1] == '&')
+		|| (after[0] == '|' && after[1] == '|') || after[0] == ')')
+		return (true);
+	if (ret->deqtok.len == 0)
+		return (false);
+	last = (t_ltoken *)deque_idx(&ret->deqtok, ret->deqtok.len - 1);
+	s = ret->base + last->off;
+	if (last->len == 2 && ((s[0] == '[' && s[1] == '[')
+			|| (s[0] == '&' && s[1] == '&') || (s[0] == '|' && s[1] == '|')))
+		return (true);
+	if (last->len == 1 && (s[0] == '(' || s[0] == '!'))
+		return (true);
+	return (false);
+}

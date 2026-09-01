@@ -79,6 +79,31 @@ static int	local_nameref(t_shell *state, t_vec argv, size_t i)
 	return (0);
 }
 
+/* Is a bare `local name` a re-declaration of something ALREADY local at
+   this depth? bash keeps the value then -- and bash-completion counts on
+   it: `local "$2" "$3" "$4"` re-locals the caller-named out-parameters
+   its helpers have already filled, so wiping them emptied every word
+   list between assembly and _comp_upvars (issue #105, wave 2). Only the
+   valueless form is a no-op; `local x=v` still assigns. */
+static bool	local_already(t_shell *state, const char *name, char *eq)
+{
+	size_t			i;
+	t_scope_save	*s;
+
+	if (eq || state->local_saves.elem_size == 0)
+		return (false);
+	i = 0;
+	while (i < state->local_saves.len)
+	{
+		s = (t_scope_save *)state->local_saves.ctx + i;
+		if (s->depth == state->func_depth
+			&& ft_strcmp(s->key, name) == 0)
+			return (true);
+		i++;
+	}
+	return (false);
+}
+
 /* The ordinary operand loop: name, or name=value. */
 static int	local_plain(t_shell *state, t_vec argv, size_t i)
 {
@@ -94,6 +119,12 @@ static int	local_plain(t_shell *state, t_vec argv, size_t i)
 			key = ft_strndup(av[i], eq - av[i]);
 		else
 			key = ft_strdup(av[i]);
+		if (local_already(state, key, eq))
+		{
+			xfree(key);
+			i++;
+			continue ;
+		}
 		scope_save(state, key);
 		local_set_var(state, key, eq);
 		i++;

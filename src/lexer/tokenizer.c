@@ -96,7 +96,9 @@ char	*tokenize_step(char **str, t_deque_tok *ret, int *in_db)
 	if (prompt)
 		return (prompt);
 	db_track_regex(ret, in_db);
-	if (**str == '\n')
+	if (**str == '\n' && *in_db && db_newline_skippable(ret, *str + 1))
+		(*str)++;
+	else if (**str == '\n')
 		emit_newline(str, ret);
 	else if (is_space(**str))
 		(*str)++;
