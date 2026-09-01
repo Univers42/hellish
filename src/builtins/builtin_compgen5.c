@@ -51,7 +51,7 @@ void	cg_add(t_vec *out, const char *s, const char *pfx)
 
 /* Sort, print, release; returns how many were printed so the caller can
    keep accumulating "did anything match at all". */
-int	cg_flush(t_vec *out)
+int	cg_flush(t_cgopt *o, t_vec *out)
 {
 	size_t	i;
 	int		n;
@@ -59,13 +59,13 @@ int	cg_flush(t_vec *out)
 	if (out->len > 1)
 		ft_quicksort(out);
 	i = 0;
+	n = 0;
 	while (i < out->len)
 	{
-		ft_printf("%s\n", ((char **)out->ctx)[i]);
+		n += cg_print(o, ((char **)out->ctx)[i]);
 		xfree(((char **)out->ctx)[i]);
 		i++;
 	}
-	n = (int)out->len;
 	xfree(out->ctx);
 	return (n);
 }
