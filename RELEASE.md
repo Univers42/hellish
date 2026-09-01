@@ -8,6 +8,65 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.6 — *the TAB release*
+
+v2.8.5 made bash-completion LOAD; the first real TAB on a Debian 13 box
+then ran its completion functions and hit the next stratum. All fixed,
+with a detector that presses TAB for real:
+
+- **`[[ ]]` continues across newlines** where bash's grammar allows it
+  (after `[[`, after `&&`/`||`, before `]]`) — bash-completion's
+  compat-dir loop spells its test `[[ a != @(...) &&` ⏎ `-f b ]]`, and
+  the split conditional printed `[[: missing ]]` once per drop-in file
+  at every login.
+- **Indirection composes**: `${!ref-}`, `${!ref:-x}` — and the target
+  may be an array element (`ref="words[0]"`), which is how
+  _comp_get_words assembles every completion word. `printf -v "a[0]"`
+  writes the element, not a scalar named `a[0]`.
+- **Substring bounds expand**: `${cur:0:${#words[i]}}` — the exact
+  spelling the cursor walk uses.
+- **bash's upvar rule**: `unset -v x` from a deeper frame pops the
+  caller's local cell so a following assignment writes the revealed
+  scope — the documented trick `_comp_upvars` returns values with. A
+  bare `local x` re-declaration keeps the value, like bash.
+- **Quoted slices keep fields**: `"${@:3:N}"` is one field per
+  positional (so `words=("${@:3:N}")` counts right), and the
+  set-guarded pass-through `${w+"${w[@]}"}` / `${w[@]+"${w[@]}"}` keeps
+  per-element fields, empties included.
+- **`compgen` grew `-X` filter / `-P` prefix / `-S` suffix**, the
+  `-e/-g/-j/-s/-u` action letters, and **expands its `-W` list** — the
+  deferred `-W '"${toks[@]}"'` spelling every generator uses now yields
+  elements instead of pasting `"${toks[@]}"` into the command line.
+  **`declare -F -- name`** answers 0 like bash.
+
+And the third wave — "source ~/.hellishrc got slow again":
+
+- **Re-sourcing an rc is as cheap as the first load.** Two multipliers
+  stacked: the forkless `$(...)` fast path turned itself off the moment
+  ANY alias existed (now it only bails when the command word itself is
+  aliased), and the DEBUG trap fired before every statement *inside* a
+  sourced file where bash fires once for the whole `.` run (eval keeps
+  its per-statement fires — both measured on 5.3.9). A theme rc that
+  installs `trap hx_preexec DEBUG` plus a dozen aliases forked ~370
+  extra times per re-source; it now re-sources *faster than bash*
+  (0.35s vs 0.43s for nine loads of the 1225-line theme file).
+- **Sourcing a construct with interior hazard words is linear**: growth
+  spans stop re-clipping at alias/source/shopt words once the parser has
+  demanded more — a hazard line inside an open construct cannot take
+  effect before the construct executes in bash either. The 2244-line
+  monolithic rc: 0.21 s → 0.005 s on the reporting machine.
+
+Detectors, permanent: `tests/tab_completion_chain_test.py` sources the
+real bash-completion 2.16 with a POPULATED compat dir on a pty and
+presses TAB, asserting no error of any class and that a filename
+actually completes; `tests/issue105_expansions` (39 golden lines),
+`tests/scripts/45_dbracket_newline.sh` and
+`tests/scripts/46_debug_trap_source.sh` pin every construct against
+bash 5.3.9; `tests/parse_scaling_test.py` now also caps the re-source
+ratio with aliases + a DEBUG trap installed.
+
+---
+
 ## v2.8.5 — *the login-chain release*
 
 One field report — `ssh` into a Debian 13 box printed
