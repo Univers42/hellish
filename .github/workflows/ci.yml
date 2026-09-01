@@ -46,10 +46,16 @@ jobs:
           echo "clean"
       - name: Shell scripts parse (bash -n, main repo any depth)
         run: |
+          # A script may declare "# bash-n: skip -- <reason>" when it cannot
+          # parse under -n BY DESIGN: a file that arms `shopt -s extglob` at
+          # runtime and then uses extglob patterns fails bash -n in real bash
+          # too (so does /usr/share/bash-completion/bash_completion). The
+          # marker keeps the exemption in the file, next to its reason.
           bad=0
           for f in $(find . -name '*.sh' -not -path '*/vendor/*' -not -path '*/.git/*' -not -path '*/.claude/*' 2>/dev/null); do
             head -1 "$f" | grep -q python && continue
             grep -qE '^[[:space:]]*(import |def |class )' "$f" && continue
+            grep -q '^# bash-n: skip' "$f" && continue
             bash -n "$f" 2>/dev/null || { echo "::error::parse error: $f"; bad=1; }
           done
           [ "$bad" = 0 ] && echo "all .sh parse clean"

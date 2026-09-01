@@ -1,4 +1,8 @@
 #!/bin/bash
+# bash-n: skip -- this file CANNOT parse under bash -n, by design: -n never
+# executes the `shopt -s extglob` below, so the extglob patterns after it
+# are syntax errors to a parse-only pass (real bash -n rejects this file
+# AND /usr/share/bash-completion/bash_completion for the same reason).
 # `shopt -s extglob` must arm the lexer for LATER lines of the same input
 # (bash reads and runs incrementally, so line N+1 lexes with whatever
 # line N set). hellish tokenized ahead of execution, and bash-completion
