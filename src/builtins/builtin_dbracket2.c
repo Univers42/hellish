@@ -13,7 +13,26 @@
 #include "builtins_private.h"
 #include "env.h"
 
+#include "ft_glob.h"
+
 bool	case_match(const char *s, const char *p);
+
+/* bash enables extglob while the right side of == / = / != inside [[ ]]
+   is parsed and matched (since 4.1), `shopt -s extglob` or not --
+   bash-completion's _rl_enabled does `[[ $(bind -v) == *+([[:space:]])on* ]]`
+   with nothing armed, and it must match (issue #105). Arm the glob cell
+   for just this match and put it back; `=~` is regex land and untouched. */
+static bool	db_pattern_match(const char *s, const char *p)
+{
+	int		saved;
+	bool	r;
+
+	saved = *glob_extglob_cell();
+	*glob_extglob_cell() = 1;
+	r = case_match(s, p);
+	*glob_extglob_cell() = saved;
+	return (r);
+}
 
 /* Flat [[ ]] primary.  bash semantics: the right side of ==, = and != is
    a PATTERN (the expander escaped its quoted metacharacters, so quoting
@@ -41,9 +60,9 @@ int	db_eval_flat(char **av, int n)
 
 	if (n == 3 && (ft_strcmp(av[1], "==") == 0
 			|| ft_strcmp(av[1], "=") == 0))
-		return (case_match(av[0], av[2]) == false);
+		return (db_pattern_match(av[0], av[2]) == false);
 	if (n == 3 && ft_strcmp(av[1], "!=") == 0)
-		return (case_match(av[0], av[2]) == true);
+		return (db_pattern_match(av[0], av[2]) == true);
 	if (n == 3 && ft_strcmp(av[1], "=~") == 0)
 		return (db_regex_match(av[0], av[2]));
 	r = db_isset(av, n);

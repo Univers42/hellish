@@ -85,8 +85,7 @@ static int	shopt_one(t_shell *state, const char *name, char act, int quiet)
 
 	bit = shopt_bit(name);
 	if (bit == 0)
-		return (ft_eprintf("%s: shopt: %s: invalid shell option name\n",
-				state->ctx, name), 1);
+		return (shopt_unknown(state, name, act, quiet));
 	if (act == 's' || act == 'u')
 	{
 		if (act == 's')
