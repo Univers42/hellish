@@ -141,7 +141,8 @@ if [ -z "$BIN" ]; then
 	OS="$(uname -s)"; ARCH="$(uname -m)"
 	if [ "$OS" != "Linux" ] || [ "$ARCH" != "x86_64" ]; then
 		warn "no prebuilt binary for $OS/$ARCH yet -- build from source:"
-		warn "  git clone --recursive https://github.com/$REPO && cd hellish && make OPT=1 all"
+		warn "  git -c http.version=HTTP/1.1 clone --recursive https://github.com/$REPO"
+		warn "  cd hellish && make OPT=1 all"
 		exit 1
 	fi
 	if [ -n "$VERSION" ]; then DL="$RELEASE_BASE/download/$VERSION"
@@ -261,12 +262,22 @@ if [ "$want_framework" = "1" ]; then
 	*.tar.gz|*.tgz)
 		fetch "$PLUGINS_SRC" "$WORK/fw.tgz" || die "could not fetch $PLUGINS_SRC"
 		mkdir -p "$FW" && tar -xzf "$WORK/fw.tgz" -C "$FW" --strip-components=1 ;;
-	*)	if command -v git >/dev/null 2>&1; then
-			git clone -q --depth 1 "$PLUGINS_SRC" "$FW" \
-				|| die "could not clone $PLUGINS_SRC"
-		else
-			fetch "$PLUGINS_SRC/archive/refs/heads/main.tar.gz" "$WORK/fw.tgz" \
-				|| die "could not fetch the framework"
+	*)	fw_ok=0
+		# HTTP/1.1 on purpose: git before 2.35 speaking HTTP/2 takes a
+		# spurious 401 on the git-upload-pack POST even for public repos
+		# (the 42 image ships 2.34.1). Harmless on newer git.
+		if command -v git >/dev/null 2>&1 &&
+			git -c http.version=HTTP/1.1 clone -q --depth 1 \
+				"$PLUGINS_SRC" "$FW" 2>/dev/null
+		then
+			fw_ok=1
+		fi
+		if [ "$fw_ok" = 0 ]; then
+			# No git, or the clone failed anyway. The tarball rides plain
+			# HTTPS with no git transport, so it survives both cases.
+			rm -rf "$FW"
+			fetch "${PLUGINS_SRC%.git}/archive/refs/heads/main.tar.gz" \
+				"$WORK/fw.tgz" || die "could not fetch the framework"
 			mkdir -p "$FW" && tar -xzf "$WORK/fw.tgz" -C "$FW" --strip-components=1
 		fi ;;
 	esac
