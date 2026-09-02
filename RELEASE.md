@@ -8,6 +8,64 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.7 — *the school release*
+
+Two field reports from 42 Madrid, the same afternoon, one install each:
+
+- **`curl | sh` no longer stops at `Username for 'https://github.com':`
+  (#111).** The school image's git 2.34 takes a 401 from GitHub over
+  HTTP/2 and, with a terminal attached, *asks* instead of failing. The
+  clone now speaks HTTP/1.1 and runs with `GIT_TERMINAL_PROMPT=0` and no
+  credential helper — a public repo never needs a password, so any request
+  for one is a failure, and failing is what lets the tarball fallback
+  install the plugin framework anyway.
+- **A zsh config works as a hellish config (#112).** `~/.hellishrc` is a
+  bash-dialect file, and the first zsh idiom in every prompt tutorial —
+  `precmd() { vcs_info }` — closes its group with a bare `}` that bash
+  reads as an argument; the rest of the file was swallowed and the only
+  word was "unexpected end of file". Now:
+  - **`emulate zsh` / `set -o zsh` on line 1 governs the rest of the
+    file** — sourced or run as a script. The dialect switch joins
+    `shopt`, `alias` and `source` as a lexing hazard, so the lines after
+    it are tokenised *after* it ran (the #105 family, one member short).
+  - **`~/.config/hellish/rc.d/NN-name.zsh` loads in the zsh dialect**,
+    sorted in with the `.hsh` modules — the marker-free home for a zsh
+    file. The installer offers to write one that loads your whole
+    `~/.zshrc` when your login shell is zsh.
+  - **The unmarked paste names the cure**: the bash dialect stays bash
+    (`echo }` prints a brace, as the golden suite pins), but the error
+    now says which line's `}` is zsh-only and points at `emulate zsh`.
+  - **vcs_info matches zsh 5.9** byte for byte: `%c`/`%u` from
+    `stagedstr`/`unstagedstr` under `check-for-changes` (index vs work
+    tree, untracked never counts), `%r`/`%R`, `%%`, and prompt escapes
+    inside a format (`%F{242}`) pass *through* to the prompt instead of
+    being eaten. `zstyle ':vcs_info:*' enable git` and every other
+    vcs_info key are accepted silently — no more "not supported" at
+    every shell start.
+  - **PROMPT expands in zsh's order**: parameters first, then `%F{..}`
+    over the result — so `${vcs_info_msg_0_}` carrying colours renders
+    them instead of printing `%F{magenta}`.
+- **The plugin framework's `forge lint` works on a user-mode install**
+  (the 42 machine): it linted with a hardcoded `/usr/bin/hellish` and
+  failed all seven builtin plugins; it now uses the hellish running it,
+  and the framework's own suite is 94/94 on a `~/.local/bin` install.
+  The framework's `rc.d` loads `*.zsh` modules too.
+- **CI: the Tumbleweed rung survives an image/mirror skew** (the image
+  shipped glibc 2.44 while the mirrors' gcc16 wanted 2.43): a refused
+  install now falls back to `zypper dup`, the documented way to bring a
+  rolling container in line with its repositories.
+
+Detectors, permanent: `tests/zsh_dialect_switch_test.py` (the verbatim
+#112 rc under every route, the hint, `.zsh` under rc.d, scope of `-L`);
+`tests/vcs_info_zstyle_test.py` (state by state against a real zsh);
+`tests/installer_suite.sh` grew scenario F (a fake GitHub that answers
+git with 401, on a real pty, bounded by a timeout), scenario G (a zsh
+login shell with the #112 `~/.zshrc`, imported and running with no
+parse error) and runs the framework's own suite after every user
+install; `tests/helpers/fake_release_server.py` is the 401-capable channel.
+
+---
+
 ## v2.8.6 — *the TAB release*
 
 v2.8.5 made bash-completion LOAD; the first real TAB on a Debian 13 box
