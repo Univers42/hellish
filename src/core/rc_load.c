@@ -26,13 +26,20 @@ int		exec_string(t_shell *state, char *content);
 ** `# >>> managed by ... >>>` marker convention had to exist at all. There was
 ** nowhere else to put anything.
 **
-**     /etc/hellish/rc.d/ *.hsh                system-wide, lexical order
-**     $XDG_CONFIG_HOME/hellish/rc.d/ *.hsh    yours, lexical order
+**     /etc/hellish/rc.d/ *.hsh *.zsh          system-wide, lexical order
+**     $XDG_CONFIG_HOME/hellish/rc.d/ *.hsh *.zsh    yours, lexical order
 **     $XDG_CONFIG_HOME/hellish/plugins/ * /plugin.hsh
 **     ~/.hellishrc                            LAST, so it always wins
 **
 ** Lexical order is why the convention is 10-env, 20-aliases, 30-prompt: it is
 ** the one ordering rule a user can see from `ls` without reading any code.
+**
+** A .zsh module is read in the zsh dialect -- the rule `source` already
+** applies to the extension (zsh_path) -- and sorted in with the .hsh ones by
+** name. That is the marker-free home for a zsh-flavoured config: the rc a
+** 42 student pastes from ~/.zshrc (issue #112) needs no `emulate zsh` line
+** when it is saved as rc.d/50-mine.zsh. The dialect is restored when the
+** file ends, exactly as for a sourced plugin.
 **
 ** ~/.hellishrc keeping the last slot is deliberate. It is the file people
 ** already have and already edit; a loader that let a dropped-in plugin
@@ -70,7 +77,10 @@ static void	add_root(t_shell *state, const char *root, t_vec *files)
 	dir = path_join(root, "rc.d");
 	first = files->len;
 	if (dir)
+	{
 		collect(dir, ".hsh", files);
+		collect(dir, ".zsh", files);
+	}
 	xfree(dir);
 	sort_strvec(files, first);
 	dir = path_join(root, "plugins");

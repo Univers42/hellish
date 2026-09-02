@@ -4,6 +4,26 @@
 #  hellish (never by scripts, -c, or piped input — tests stay clean).
 # ═══════════════════════════════════════════════════════════════════════
 
+# ── 0. COMING FROM ZSH? ───────────────────────────────────────────────
+# This file is read with bash rules. A zsh config pasted in as-is breaks
+# on the very first zsh idiom -- `precmd() { vcs_info }` closes its group
+# with a bare `}` in zsh, but in bash that `}` is an ARGUMENT and the
+# rest of the file is swallowed ("syntax error: unexpected end of file",
+# issue #112). Two ways to keep zsh syntax, both without a rewrite:
+#
+#   emulate zsh          as the FIRST LINE of this file: everything after
+#                        it is read with zsh rules (set -o zsh works too)
+#   ~/.config/hellish/rc.d/50-mine.zsh
+#                        a module with a .zsh extension is read with zsh
+#                        rules automatically -- no marker needed. The
+#                        installer offers to write one that loads your
+#                        whole ~/.zshrc (rc.d/90-zshrc.zsh).
+#
+# vcs_info, zstyle ':vcs_info:*' (formats, stagedstr, unstagedstr,
+# check-for-changes), PROMPT, RPROMPT, precmd/preexec, autoload, colors:
+# all of that works, and PROMPT is expanded in zsh's own order (parameters
+# first, then %F{...} and friends over the result).
+
 # ── 1. PROMPT ──────────────────────────────────────────────────────────
 # Unconfigured, hellish shows zsh's own default -- "hostname% " -- plus
 # the ⬆ badge when an update is pending. The rich two-row theme is one

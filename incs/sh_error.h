@@ -23,5 +23,6 @@ void				err_1_errno(t_shell *state, char *p1);
 void				err_2(t_shell *state, char *p1, char *p2);
 t_ast_node			unexpected(t_shell *state, t_parser *parser,
 						t_ast_node ret, t_deque_tok *tokens);
+void				zsh_brace_hint(t_shell *state, t_deque_tok *tt);
 
 #endif

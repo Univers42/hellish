@@ -119,23 +119,28 @@ static void	drop_check(t_dcache *c)
    with none means clean — and now that the scanner sits in its own process
    group, EOF really does mean the scan ran to completion rather than "the
    prompt's Ctrl-C killed it and this sample proves nothing".
+   The porcelain lines are read (up to one buffer, git_drain) rather than
+   sampled by one byte, because their first two columns say whether the
+   change sits in the index or the work tree -- vcs_info's %c and %u
+   (issue #112). A first read that says EAGAIN means the scan is still
+   running: not done, try at the next render.
    Slow repos (scan >= 1s) stretch the TTL so git is not re-run near
    continuously; the checks are async either way. */
 static int	poll_done(t_dcache *c, int wait_ms)
 {
 	struct pollfd	p;
-	ssize_t			n;
-	char			ch;
+	ssize_t			got;
+	char			buf[4096];
 
 	p.fd = c->fd;
 	p.events = POLLIN;
 	if (poll(&p, 1, wait_ms) <= 0)
 		return (0);
-	n = read(c->fd, &ch, 1);
-	if (n < 0)
+	got = git_drain(c->fd, buf, sizeof(buf));
+	if (got < 0)
 		return (0);
 	drop_check(c);
-	c->dirty = (n > 0);
+	c->dirty = git_status_bits(buf, got);
 	c->at = time(NULL);
 	c->ttl = 3;
 	if (c->at - c->spawned >= 1)

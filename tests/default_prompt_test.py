@@ -115,7 +115,10 @@ def main():
               "\x1b[48;5;24" in text,
               "got %r -- an unstyled or built-in prompt means rc.d lost to "
               "~/.hellishrc" % text[:180])
-        for part in (os.environ.get("USER", ""), os.uname().nodename):
+        # \h is the hostname up to the first dot, as in bash; a 42 machine
+        # reports its FQDN (c1r17s4.42madrid.com) and the prompt shows c1r17s4.
+        host = os.uname().nodename.split(".")[0]
+        for part in (os.environ.get("USER", ""), host):
             if part:
                 check("the prompt shows %r" % part, part in text,
                       "got %r" % text[:180])

@@ -49,8 +49,25 @@ void	brace_step(t_ltoken *t, const char *base, int *depth, bool zsh)
 	if (zsh && *depth > 0 && t->tt == TT_WORD && t->len == 1
 		&& base[t->off] == '}')
 		t->tt = TT_RBRACE;
+	else if (!zsh && *depth > 0 && t->tt == TT_WORD && t->len == 1
+		&& base[t->off] == '}' && *zsh_brace_cell() < 0)
+		*zsh_brace_cell() = (long)t->off;
 	if (t->tt == TT_LBRACE)
 		(*depth)++;
 	else if (t->tt == TT_RBRACE && *depth > 0)
 		(*depth)--;
+}
+
+/* Where the BASH dialect last saw a bare `}` word inside an open group, as
+   an offset into the lexed text, or -1. Set by brace_step above and cleared
+   by reclassify_keywords at the start of every pass, so it always describes
+   the most recent lex of the cycle. The parser pops tokens as it consumes
+   them, so by the time "unexpected end of file" is reported the deque is
+   empty and only this cell still knows -- it is what lets the error say
+   "line 3: a bare `}' closes a group only in zsh" (issue #112). */
+long	*zsh_brace_cell(void)
+{
+	static long	off = -1;
+
+	return (&off);
 }

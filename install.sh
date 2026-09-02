@@ -28,11 +28,14 @@
 #   --version vX.Y.Z         install that release instead of the latest
 #   --no-login-shell         system mode: install the binary, skip chsh
 #   --prefix DIR             user mode: install under DIR (default ~/.local)
+#   --zshrc | --no-zshrc     load your ~/.zshrc inside hellish (asked when
+#                            your login shell is zsh and the file exists)
 #   --uninstall              undo a user-mode install (system: make my-shell-uninstall)
 #
 # Environment (mainly for tests -- docker/Dockerfile.installer drives these):
 #   HELLISH_INSTALL_MODE     user|system         same as --user/--system
 #   HELLISH_INSTALL_PLUGINS  all|none|LIST       same as --plugins
+#   HELLISH_IMPORT_ZSHRC     yes|no              same as --zshrc/--no-zshrc
 #   HELLISH_RELEASE_BASE     base URL for release downloads
 #                            (default https://github.com/Univers42/hellish/releases)
 #   HELLISH_RAW_BASE         base URL for raw-file fallback
@@ -52,6 +55,7 @@ PLUGINS_SRC="${HELLISH_PLUGINS_SRC:-https://github.com/Univers42/hellishrc_plugi
 
 MODE="${HELLISH_INSTALL_MODE:-}"
 PLUGINS="${HELLISH_INSTALL_PLUGINS:-}"
+ZSHRC="${HELLISH_IMPORT_ZSHRC:-}"
 ASSUME_YES=0
 VERSION=""
 LOGIN_SHELL=1
@@ -72,8 +76,10 @@ while [ $# -gt 0 ]; do
 	--version)   shift; [ $# -gt 0 ] || die "--version needs a tag"; VERSION="$1" ;;
 	--no-login-shell) LOGIN_SHELL=0 ;;
 	--prefix) shift; [ $# -gt 0 ] || die "--prefix needs a directory"; UPREFIX="$1" ;;
+	--zshrc) ZSHRC="yes" ;;
+	--no-zshrc) ZSHRC="no" ;;
 	--uninstall) ACTION="uninstall" ;;
-	-h|--help) sed -n '2,45p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'; exit 0 ;;
+	-h|--help) sed -n '2,48p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'; exit 0 ;;
 	*) die "unknown argument '$1' (try --help)" ;;
 	esac
 	shift
@@ -230,6 +236,72 @@ else
 	( cd "$SRC_ROOT" && sh user-install.sh --bin "$BIN" --prefix "$UPREFIX" )
 fi
 
+# ── your zsh configuration ──────────────────────────────────────────────────
+# Every 42 account logs into zsh, and most have a ~/.zshrc they already like.
+# hellish reads ~/.hellishrc, not ~/.zshrc, so that config used to stay
+# behind -- and pasting it across is what produced issue #112: zsh syntax
+# (`precmd() { vcs_info }`) in a bash-dialect file. The bridge is an rc.d
+# module with a .zsh EXTENSION: hellish loads it, and everything it sources,
+# in the zsh dialect, so the file can simply source ~/.zshrc as written.
+#
+# Asked only when it applies (login shell is zsh, ~/.zshrc exists). The
+# default is yes -- unless the file loads oh-my-zsh itself, whose core needs
+# zsh's completion system and would only print what it cannot do.
+login_shell_name() {
+	_ls=""
+	if command -v getent >/dev/null 2>&1; then
+		_ls="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)"
+	fi
+	[ -n "$_ls" ] || _ls="${SHELL:-/bin/sh}"
+	basename "$_ls"
+}
+case "${XDG_CONFIG_HOME:-}" in
+"$HOME"/*) XDG="$XDG_CONFIG_HOME/hellish" ;;
+*) XDG="$HOME/.config/hellish" ;;
+esac
+ZSHRC_MODULE="$XDG/rc.d/90-zshrc.zsh"
+if [ "$ZSHRC" != "no" ] && [ -f "$HOME/.zshrc" ] \
+	&& { [ "$ZSHRC" = "yes" ] || [ "$(login_shell_name)" = "zsh" ]; }; then
+	if [ "$ZSHRC" != "yes" ]; then
+		_dflt=y
+		grep -q 'oh-my-zsh' "$HOME/.zshrc" 2>/dev/null && _dflt=n
+		if [ -e "$ZSHRC_MODULE" ]; then
+			ZSHRC="keep"
+		elif { [ "$INTERACTIVE" = "1" ] || [ "$ASSUME_YES" = "1" ]; } \
+			&& ask "Load your ~/.zshrc inside hellish too (aliases, functions, prompt)?" "$_dflt"; then
+			ZSHRC="yes"
+		else
+			ZSHRC="no"
+		fi
+	fi
+	if [ "$ZSHRC" = "yes" ]; then
+		mkdir -p "$XDG/rc.d"
+		cat > "$ZSHRC_MODULE" <<'EOF'
+# ~/.config/hellish/rc.d/90-zshrc.zsh -- written by hellish's installer.
+#
+# Loads your ~/.zshrc inside hellish. The .zsh extension is what makes it
+# work: hellish reads this file -- and everything it sources -- in the zsh
+# dialect, so `precmd() { vcs_info }`, zstyle, PROMPT/RPROMPT and the rest
+# of a zsh config run exactly as written. Anything zsh-only that hellish
+# cannot do (compinit, zle widgets) is reported once and skipped.
+#
+# Delete this file to stop loading ~/.zshrc; or replace the `source` with
+# the lines you actually want, and keep the .zsh name.
+if [ -f "$HOME/.zshrc" ]; then
+	# The block the installer appended to ~/.zshrc execs hellish from an
+	# interactive zsh. This marker is what tells it not to do so again
+	# from inside hellish itself.
+	HELLISH_EXECD=1
+	export HELLISH_EXECD
+	source "$HOME/.zshrc"
+fi
+EOF
+		say "your ~/.zshrc will load inside hellish (zsh dialect): $ZSHRC_MODULE"
+	elif [ "$ZSHRC" = "keep" ]; then
+		say "keeping $ZSHRC_MODULE"
+	fi
+fi
+
 # ── plugins ─────────────────────────────────────────────────────────────────
 # The framework repo owns the catalog and its own installer; this script only
 # asks the coarse questions and hands the answer down, so adding a plugin to
@@ -266,9 +338,16 @@ if [ "$want_framework" = "1" ]; then
 		# HTTP/1.1 on purpose: git before 2.35 speaking HTTP/2 takes a
 		# spurious 401 on the git-upload-pack POST even for public repos
 		# (the 42 image ships 2.34.1). Harmless on newer git.
+		#   GIT_TERMINAL_PROMPT=0 is the other half of issue #111: on that
+		# 401 git ASKED for a username -- and `curl | sh` has a terminal to
+		# ask on, so the install sat there until Ctrl-C. A public repo never
+		# needs credentials; any request for them is a failure, and failing
+		# is what lets the tarball fallback below run. The empty
+		# credential.helper keeps a configured helper from popping a GUI.
 		if command -v git >/dev/null 2>&1 &&
-			git -c http.version=HTTP/1.1 clone -q --depth 1 \
-				"$PLUGINS_SRC" "$FW" 2>/dev/null
+			GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=/bin/true \
+			git -c http.version=HTTP/1.1 -c credential.helper= \
+				clone -q --depth 1 "$PLUGINS_SRC" "$FW" 2>/dev/null </dev/null
 		then
 			fw_ok=1
 		fi

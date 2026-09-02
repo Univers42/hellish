@@ -112,6 +112,7 @@ void	reclassify_keywords(t_deque_tok *tokens, bool zsh)
 	flags[2] = false;
 	flags[3] = zsh;
 	depth = 0;
+	*zsh_brace_cell() = -1;
 	i = 0;
 	while (i < tokens->deqtok.len)
 	{

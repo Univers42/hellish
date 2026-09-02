@@ -43,6 +43,7 @@ typedef enum e_metinp
 
 bool	ends_with_bs_nl(t_string s);
 bool	input_hazard_at(const char *s, size_t i, size_t n);
+bool	dialect_hazard_at(const char *s, size_t i, size_t n);
 void	extend_bs(t_shell *state);
 int		get_more_tokens(t_shell *state, char **prompt, t_deque_tok *tt);
 void	parse_and_execute_input(t_shell *state);

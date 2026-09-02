@@ -34,6 +34,19 @@ SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else os.path.join(ROOT, "build", "bin", "hellish"))
 FAILS = []
 
+
+def oracle_bash():
+    """The bash the golden suite is defined against (5.3.9, built by `make
+    oracle`), when it is there; the box's own bash otherwise. `echo .*`
+    is where the two disagree: 5.2 turned globskipdots on, so a 22.04 box
+    with bash 5.1 answers `. .. .hidden` and blames hellish for agreeing
+    with 5.3."""
+    env = os.environ.get("HELLISH_ORACLE")
+    if env and os.path.exists(env):
+        return env
+    home = os.path.expanduser("~/bash-5.3.9/bin/bash")
+    return home if os.path.exists(home) else "bash"
+
 CASES = [
     # ---- } always { } ------------------------------------------------
     ("always-runs", """{ echo body } always { echo cleanup }"""),
@@ -169,7 +182,7 @@ def gate_cases():
     # matching bash's recovery, not its grammar.
     for script in GATED[1:]:
         _, _, err = run([SHELL, "-c", script])
-        _, _, berr = run(["bash", "-c", script])
+        _, _, berr = run([oracle_bash(), "-c", script])
         tok = berr.split(b"unexpected token ")[-1].split(b"\n")[0]
         check("gate/names-the-same-token: %s" % script[:24],
               tok in err, "hellish=%r bash-token=%r" % (err[:80], tok))

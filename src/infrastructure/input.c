@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "input_private.h"
+#include "sh_error.h"
 #include "helpers.h"
 #include "redir.h"
 #include "job_control.h"
@@ -53,8 +54,11 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 			"matching `%c'\n",
 			state->ctx, tt->looking_for);
 	else if (state->input.len)
+	{
 		ft_eprintf("%s: syntax error: unexpected end of file\n",
 			state->ctx);
+		zsh_brace_hint(state, tt);
+	}
 	if (state->metinp == INP_RL)
 		ft_eprintf("exit\n");
 	if (!state->last_cmd_st_exe.status && state->input.len)

@@ -32,6 +32,18 @@ typedef struct s_pflags
 	bool	prompt;
 }	t_pflags;
 
+/* vcs_info's per-call state (builtin_zsh_vcs.c): the branch and root from
+   the prompt's cached git reader, the captured stagedstr/unstagedstr
+   styles, and the GIT_* bits deciding whether %c / %u render. */
+typedef struct s_vcs
+{
+	const char	*branch;
+	const char	*root;
+	const char	*staged;
+	const char	*unstaged;
+	int			bits;
+}	t_vcs;
+
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \
 				No such file or directory\n"

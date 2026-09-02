@@ -121,7 +121,9 @@ static void	zsh_escape(t_shell *state, t_string *out, t_zesc *z)
    syntax was used. Re-entrant on purpose: conditionals and truncation
    hand their chosen sub-text back through here, strictness included.
    The mixed reader copies $-expansion and \D{...} spans through
-   verbatim first, so their strftime percents never reach the escapes. */
+   verbatim first, so their strftime percents never reach the escapes;
+   the strict reader substitutes simple parameters first and converts
+   their values too, which is zsh's PROMPT_SUBST order (prompt_zsh8.c). */
 t_string	zsh_to_ps1(t_shell *state, const char *fmt, bool strict)
 {
 	t_string	out;
@@ -133,7 +135,8 @@ t_string	zsh_to_ps1(t_shell *state, const char *fmt, bool strict)
 	i = 0;
 	while (fmt[i])
 	{
-		if (!strict && zsh_span_copy(&out, fmt, &i))
+		if ((!strict && zsh_span_copy(&out, fmt, &i))
+			|| (strict && zsh_param_subst(state, &out, fmt, &i)))
 			continue ;
 		if (fmt[i] == '%' && fmt[i + 1])
 		{

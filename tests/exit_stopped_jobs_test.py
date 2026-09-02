@@ -183,10 +183,17 @@ def main():
 
     # 6. Nothing left frozen on the tty once we do leave. A stopped job that
     #    outlives a nested shell holds the terminal forever.
+    #    Only `cat`s that APPEARED during this case count: the box running
+    #    the suite has its own (a developer's browser keeps one as a helper),
+    #    and a machine-wide pgrep blamed the shell for them.
+    before = set(subprocess.run(
+        ["pgrep", "-f", "^cat$"], capture_output=True, text=True)
+        .stdout.split())
     txt, alive, _ = drive(SHELL, [b"cat &\n", b"exit\n", b"exit\n"])
     time.sleep(0.4)
-    leftover = subprocess.run(
-        ["pgrep", "-f", "^cat$"], capture_output=True, text=True).stdout.split()
+    leftover = [p for p in subprocess.run(
+        ["pgrep", "-f", "^cat$"], capture_output=True, text=True)
+        .stdout.split() if p not in before]
     check("no stopped job is left behind holding the terminal",
           not leftover, "still running: %r" % leftover)
 

@@ -151,6 +151,8 @@ const char	*pal(int id);
 int			pal_truecolor(void);
 t_gitloc	*repo_locate(void);
 int			git_dirty_cached(const char *root);
+int			git_status_bits(const char *buf, ssize_t n);
+ssize_t		git_drain(int fd, char *buf, ssize_t cap);
 char		*branch_for_dir(const char *dir);
 void		push_user_seg(t_string *ret, t_prompt *p);
 void		push_cwd_seg(t_string *ret, t_prompt *p);
@@ -237,6 +239,8 @@ bool		zsh_color_hex(char *buf, size_t n, const char *s, int base);
 const char	*zsh_simple(char c);
 int			zsh_span_dollar(const char *f, int i);
 bool		zsh_span_copy(t_string *out, const char *f, int *i);
+bool		zsh_param_subst(t_shell *state, t_string *out, const char *fmt,
+				int *i);
 void		zsh_lit(t_string *out, t_zesc *z);
 int			zsh_cond_comps(t_shell *state, bool tilde);
 bool		zsh_cond(t_shell *state, t_string *out, t_zesc *z, char c);

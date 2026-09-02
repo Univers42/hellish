@@ -33,7 +33,15 @@ typedef struct s_shell	t_shell;
    heap-owned by the caller, dirty is the TTL-throttled `git status`
    answer. Public because vcs_info (builtin_zsh_prompt.c) reports the
    same repository state the \g escape renders. */
+/* get_git_info's dirty word is a bitmask, and a plain `if (dirty)` still
+   reads it: GIT_DIRTY means tracked changes of any kind (the \g star),
+   the other two say WHERE -- what zsh's vcs_info renders as %c and %u. */
+# define GIT_DIRTY 1
+# define GIT_STAGED 2
+# define GIT_UNSTAGED 4
+
 void		get_git_info(char **branch, int *dirty);
+const char	*git_repo_root(void);
 
 // buff_readline.c
 typedef struct s_rl

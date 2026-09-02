@@ -48,6 +48,19 @@ SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else os.path.join(ROOT, "build", "bin", "hellish"))
 FAILS = []
 
+
+def oracle_bash():
+    """The bash the golden suite is defined against (5.3.9, built by `make
+    oracle`), when it is there; the box's own bash otherwise. `echo .*`
+    is where the two disagree: 5.2 turned globskipdots on, so a 22.04 box
+    with bash 5.1 answers `. .. .hidden` and blames hellish for agreeing
+    with 5.3."""
+    env = os.environ.get("HELLISH_ORACLE")
+    if env and os.path.exists(env):
+        return env
+    home = os.path.expanduser("~/bash-5.3.9/bin/bash")
+    return home if os.path.exists(home) else "bash"
+
 # Diffed against zsh, run from the fixture directory so both shells see the
 # same entries. A `.hidden`, a symlink, a directory and three plain files.
 QUAL_CASES = [
@@ -156,7 +169,7 @@ def dotglob_cases(d):
                    'shopt -s dotglob; case .x in *) echo m ;; esac',
                    'case .x in *) echo m ;; esac'):
         _, hout, _ = run([SHELL, "-c", script], cwd=d)
-        _, bout, _ = run(["bash", "-c", script], cwd=d)
+        _, bout, _ = run([oracle_bash(), "-c", script], cwd=d)
         check("dotglob/%s" % script[:34], hout == bout,
               "hellish=%r bash=%r" % (hout, bout))
 
@@ -211,7 +224,7 @@ def nomatch_divergence(d):
           hout.strip() == b"nomatch*(.)",
           "got %r -- if this is now an error, zsh nomatch was adopted "
           "and the note needs updating" % hout)
-    _, bout, _ = run(["bash", "-c", "echo nomatch*"], cwd=d)
+    _, bout, _ = run([oracle_bash(), "-c", "echo nomatch*"], cwd=d)
     check("nomatch/bash-is-literal-too", bout.strip() == b"nomatch*",
           "bash changed: %r" % bout)
 
@@ -241,7 +254,7 @@ def known_gap_cases(d):
     check("procsub-in-assignment/attaches-now",
           b"/dev/fd/" in out and b"No such file" not in err,
           "regressed to the #83 behaviour -- out=%r err=%r" % (out, err[:120]))
-    _, bout, _ = run(["bash", "-c", 'f=<(echo hi); echo "[$f]"'], cwd=d)
+    _, bout, _ = run([oracle_bash(), "-c", 'f=<(echo hi); echo "[$f]"'], cwd=d)
     check("procsub-in-assignment/bash-agrees", b"/dev/fd/" in bout,
           "bash changed: %r" % bout)
 
@@ -249,13 +262,13 @@ def known_gap_cases(d):
 def gate_cases(d):
     for script in BASH_SAME:
         _, hout, _ = run([SHELL, "-c", script], cwd=d)
-        _, bout, _ = run(["bash", "-c", script], cwd=d)
+        _, bout, _ = run([oracle_bash(), "-c", script], cwd=d)
         check("gate/matches-bash: %s" % script[:30], hout == bout,
               "hellish=%r bash=%r" % (hout, bout))
     # `=(` is only an operator in the dialect; in bash it is a syntax error,
     # and it must STAY one.
     rc, _, err = run([SHELL, "-c", "cat =(echo hi)"], cwd=d)
-    _, _, berr = run(["bash", "-c", "cat =(echo hi)"], cwd=d)
+    _, _, berr = run([oracle_bash(), "-c", "cat =(echo hi)"], cwd=d)
     check("gate/eqsub-is-a-syntax-error-in-bash",
           b"syntax error" in err and b"syntax error" in berr,
           "hellish=%r bash=%r" % (err[:90], berr[:90]))

@@ -37,8 +37,10 @@
    change how LATER text lexes (`shopt -s extglob` arms extglob group
    tokens), and bash-completion arms it on line 47 then relies on it ~1800
    lines down -- lexing ahead of that execution broke every Debian login
-   (issue #105). Shared with exec_string's chunker, which needs the same
-   boundaries for the same reason. */
+   (issue #105). The dialect switch (`emulate zsh`, `set -o zsh`) is the
+   same shape of hazard and lives in dialect_hazard_at (issue #112).
+   Shared with exec_string's chunker, which needs the same boundaries for
+   the same reason. */
 bool	input_hazard_at(const char *s, size_t i, size_t n)
 {
 	const char	c = s[i];
@@ -55,6 +57,8 @@ bool	input_hazard_at(const char *s, size_t i, size_t n)
 		return (true);
 	if (c == '.' && (i + 1 == n || s[i + 1] == ' ' || s[i + 1] == '\t')
 		&& (i == 0 || ft_strchr(" \t\n;&|", s[i - 1]) != NULL))
+		return (true);
+	if ((c == 'e' || c == 's') && dialect_hazard_at(s, i, n))
 		return (true);
 	return (false);
 }

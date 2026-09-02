@@ -18,6 +18,9 @@
 #   nora    no sudo at all -- the 42 school machine.
 #   nora2   same, for the interactive scenario, so A's leftovers cannot
 #           satisfy C's assertions.
+#   nora3   same, for the credential-prompt scenario (issue #111).
+#   ines    no sudo, and her login shell is ZSH with a zsh-flavoured
+#           ~/.zshrc -- the 42 account, exactly as issued.
 #
 # The "release" is a directory served by python3 -m http.server inside the
 # container: the static binary (built by `make static` before the image),
@@ -27,17 +30,19 @@
 # ============================================================================
 FROM ubuntu:24.04
 
-# script(1) [util-linux] gives the interactive scenario its pty; passwd gives
-# chsh; python3 is the fake server and nothing else.
+# script(1) [util-linux] gives the interactive scenarios their pty; passwd
+# gives chsh; python3 is the fake server; zsh is ines's login shell.
 RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
-		ca-certificates curl sudo passwd python3 util-linux git; \
+		ca-certificates curl sudo passwd python3 util-linux git zsh; \
 	rm -rf /var/lib/apt/lists/*
 
 RUN useradd -m -s /bin/bash maxine \
 	&& useradd -m -s /bin/bash nora \
 	&& useradd -m -s /bin/bash nora2 \
+	&& useradd -m -s /bin/bash nora3 \
+	&& useradd -m -s /bin/zsh ines \
 	&& printf 'maxine ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/maxine \
 	&& chmod 440 /etc/sudoers.d/maxine
 
@@ -66,6 +71,17 @@ RUN set -eux; \
 		-C /tmp/bundle .; \
 	tar -czf /srv/release/hellishrc_plugins.tar.gz \
 		-C /srv hellishrc_plugins; \
+	# The framework laid out like a GitHub repo whose git endpoint wants a
+	# password (scenario F): the archive tarball beside it is what the
+	# installer must fall back to. See tests/helpers/fake_release_server.py.
+	mkdir -p /srv/release/private/hellishrc_plugins/archive/refs/heads; \
+	cp /srv/release/hellishrc_plugins.tar.gz \
+		/srv/release/private/hellishrc_plugins/archive/refs/heads/main.tar.gz; \
+	# ines's ~/.zshrc: the verbatim rc from issue #112 plus one alias of
+	# her own, so scenario G can tell "loaded" from "parsed".
+	{ cat tests/fixtures/issue112.zshrc; \
+	  printf '\nalias hello="echo from-zshrc"\n'; } > /home/ines/.zshrc; \
+	chown ines:ines /home/ines/.zshrc; \
 	rm -rf /tmp/bundle; \
 	chmod +x install.sh tools/*.sh user-install.sh; \
 	# install.sh treats "a Makefile next to me" as a source checkout and

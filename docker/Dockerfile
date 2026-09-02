@@ -26,6 +26,14 @@ FROM ${BASE}
 # The compiler is a build arg so the same image recipe covers gcc AND clang
 # on every distro -- a warning is a build failure here (-Werror), and the two
 # front ends do not warn about the same things.
+#
+# Tumbleweed is a rolling release, and its container image and its mirrors
+# move independently: the image shipped glibc 2.44 while the mirrors' gcc16
+# and clang22 still required 2.43, so a plain `zypper install` proposed a
+# glibc downgrade -- and, non-interactive, answered its own question with
+# "cancel" (exit 4). `zypper dup` is the documented way to bring a Tumbleweed
+# system in line with the repositories, downgrades included; it runs only
+# when the plain install refuses, so the fast path stays fast.
 ARG CC=cc
 
 RUN set -eux; \
@@ -47,9 +55,12 @@ RUN set -eux; \
 		dnf clean all; \
 	elif command -v zypper >/dev/null 2>&1; then \
 		zypper --non-interactive --gpg-auto-import-keys refresh; \
-		zypper --non-interactive install gcc clang make readline-devel \
-			ncurses-devel git-core bash python3 tar gzip which \
-			findutils diffutils; \
+		pkgs="gcc clang make readline-devel ncurses-devel git-core bash \
+			python3 tar gzip which findutils diffutils"; \
+		if ! zypper --non-interactive install $pkgs; then \
+			zypper --non-interactive dup --no-recommends; \
+			zypper --non-interactive install $pkgs; \
+		fi; \
 		zypper clean --all; \
 	elif command -v xbps-install >/dev/null 2>&1; then \
 		xbps-install -Suy xbps; \

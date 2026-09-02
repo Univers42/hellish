@@ -53,6 +53,7 @@ static void	stream_finish(t_shell *state, t_parser *parser, t_deque_tok *tt)
 	{
 		ft_eprintf("%s: syntax error: unexpected end of file\n",
 			state->ctx);
+		zsh_brace_hint(state, tt);
 		parser->res = RES_ERR;
 	}
 	else if (parser->res == RES_ERR && !parser->reported)

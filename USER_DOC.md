@@ -57,7 +57,7 @@ curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh |
 | path | what it holds |
 |---|---|
 | `~/.hellishrc` | your startup file (aliases, exports, `shopt`, PS1) — sourced by **interactive** shells only, never by scripts. Seeded from `hellishrc.example`, never overwritten |
-| `$XDG_CONFIG_HOME/hellish/rc.d/` | drop-in config fragments, sourced in order |
+| `$XDG_CONFIG_HOME/hellish/rc.d/` | drop-in config fragments, sourced in order — `*.hsh` with bash rules, `*.zsh` with zsh rules |
 | `$XDG_CONFIG_HOME/hellish/themes/` | the 29 prompt themes (yours to edit; edited ones are never clobbered by reinstall) |
 | `$XDG_CONFIG_HOME/hellish/plugins/` | plugins as `<name>/plugin.hsh` |
 | `~/.hellish/` | the plugin framework (`conf`, `hxp`, its plugins and state) |
@@ -66,6 +66,17 @@ curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh |
 
 No passwords or credentials are stored anywhere — hellish has none to manage.
 The files above are the complete list of what an install touches.
+
+**Coming from zsh** (every 42 account does): `~/.hellishrc` is read with
+bash rules, so a zsh config pasted in breaks on its first zsh idiom —
+`precmd() { vcs_info }` — and the rest of the file is swallowed. Keep the
+zsh syntax instead: put `emulate zsh` on the first line of `~/.hellishrc`,
+or save the config as `~/.config/hellish/rc.d/50-mine.zsh` (the `.zsh`
+extension is the whole marker). The installer offers a third option when
+your login shell is zsh: a module that loads your existing `~/.zshrc`
+inside hellish (`rc.d/90-zshrc.zsh`; delete it to stop). `vcs_info`,
+`zstyle ':vcs_info:*'`, `PROMPT`/`RPROMPT`, `precmd`/`preexec`, `autoload`
+and `colors` all work, and the prompt is expanded in zsh's order.
 
 ## Check that it works
 

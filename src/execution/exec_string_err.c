@@ -24,7 +24,10 @@ void	report_parse_error(t_shell *state, t_parser *parser,
 				t_deque_tok *tt)
 {
 	if (parser->res == RES_GETMOREINPUT)
+	{
 		ft_eprintf("%s: syntax error: unexpected end of file\n", state->ctx);
+		zsh_brace_hint(state, tt);
+	}
 	else if (!parser->reported)
 		unexpected(state, parser, (t_ast_node){0}, tt);
 	set_cmd_status(state, res_status(2));
