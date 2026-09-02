@@ -1,7 +1,7 @@
 
 [submodule "vendor/libft"]
 	path = vendor/libft
-	url = https://github.com/Univers42/libft.git
+	url = ../libft.git
 [submodule "vendor/scripts"]
 	path = vendor/scripts
-	url = https://github.com/Univers42/scripts.git
+	url = ../scripts.git
