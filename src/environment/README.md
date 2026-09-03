@@ -1,575 +1,237 @@
-# Environment Module Documentation
+# Environment Module
 
-## 1. Concept: Environment in a Shell
+## 1. Concept
 
-In POSIX shells, the **environment** is a mapping of `KEY=VALUE` strings that is:
+In a POSIX shell the **environment** is the `KEY=VALUE` mapping that is
+inherited from the parent (`envp`), mutated by `export`/`unset`/`cd`/plain
+assignment, handed to children on `execve`, and read by the shell itself
+(`HOME`, `PATH`, `PWD`, `IFS`, `SHLVL`).
 
-- Inherited from the parent process on startup (`envp`),
-- Modified by builtins like `export`/`unset`/`cd`,
-- Passed to child processes when executing external commands,
-- Read by the shell itself for behavior (e.g. `HOME`, `PATH`, `PWD`, `SHLVL`).
+`src/environment/` provides:
 
-This module (`src/environment/`) provides:
+- the structured store (`t_env`, `t_vec_env`) and its O(1) name index;
+- conversion between `char **envp` and that store, in both directions;
+- lookup and mutation primitives (`env_get`, `env_nget`, `env_set`,
+  `env_unexport`, `env_extend`);
+- expansion of `$NAME` and the special variables (`$?`, `$$`, `$!`, `$-`,
+  `$#`, `$0`, `$1..$N`, `$LINENO`, `$RANDOM`, ...);
+- the startup defaults (`PATH`, `SHLVL`, `PWD`, `_`, `OPTIND`, `PS1`, ...);
+- the encodings for indexed arrays, associative arrays and `declare`
+  attributes, which the rest of the env lifecycle never has to know about.
 
-- A **structured representation** of the environment (`t_env`, `t_vec_env`),
-- Conversion between `char **envp` and that internal representation,
-- Environment **lookup and mutation** primitives (`env_get`, `env_set`, `env_create`),
-- **Expansion** logic for `$VAR`, `$?`, `$$`, etc.,
-- Initialization of essential variables (`HOME`, `PATH`, `SHLVL`, `IFS`, `PWD`, `_`),
-- Helpers for applying temporary assignment lists and building `char **envp` for exec.
+The store lives in `t_shell` as `state->env`, one view for the whole shell.
 
-The environment is directly integrated with `t_shell` via the `t_vec_env env` field. This ensures a single, consistent view of the environment for the entire shell.
-
----
-
-## 2. Core Data Structures
-
-### 2.1 `t_env` – single environment entry
-
-Defined in `env.h` (used across this module):
-
-```c
-// ...existing code...
-typedef struct s_env
-{
-    bool   exported;  // should this entry be visible to child processes?
-    char  *key;       // variable name (e.g., "PATH")
-    char  *value;     // variable value (e.g., "/usr/bin:/bin")
-}   t_env;
-// ...existing code...
-```
-
-Semantics:
-
-- `key` and `value` are heap‑allocated C strings owned by the environment vector.
-- `exported` controls whether the entry should be present in the `char **envp` given to `execve()` and similar.
-- A `t_env` can represent both **shell variables** (non‑exported) and standard environment variables (exported).
-
-### 2.2 `t_vec_env` – dynamic array of `t_env`
-
-The environment is stored as a `t_vec_env` (a `t_vec` specialized for `t_env`):
-
-```c
-// ...existing code...
-typedef t_vec  t_vec_env;   // vector with elem_size = sizeof(t_env)
-// ...existing code...
-```
-
-Properties and expectations:
-
-- `env.len` is the number of entries.
-- `env.ctx` points to a contiguous array of `t_env` elements.
-- Vector operations (`vec_init`, `vec_push`, `vec_pop`, etc.) are used to manage capacity and length.
-- Entries are logically ordered but order is not semantically important.
-
-### 2.3 `t_shell.env` – global environment for the shell
-
-In `t_shell` (see `core/README.md`), `env` is used as the **canonical** environment state:
-
-```c
-// ...existing code...
-typedef struct s_shell
-{
-    t_vec_env env;
-    // ...existing fields...
-}   t_shell;
-// ...existing code...
-```
-
-- All environment‑related operations (builtins, expansion, initialization) act on this vector.
-- When spawning a child process, `get_envp(state, exe_path)` converts `env` to `char **`.
+Public API: `incs/env.h` (a second, older `incs/public/env.h` carries the
+init-setter prototypes).
 
 ---
 
-## 3. Converting Between `envp` and `t_vec_env` (`conv.c`)
+## 2. Data structures
 
-### 3.1 `str_to_env` – parse `KEY=VALUE` string
+`t_env` (`incs/env.h`): `bool exported`, `char *key`, `char *value`. The
+rule that everything else follows from: **a `t_env` owns its key and value
+strings; never alias them.** `exported` decides whether the entry reaches
+`execve`; a shell-local variable is the same struct with the flag off.
 
-```c
-// ...existing code...
-t_env str_to_env(char *str)
-{
-    t_env   ret;
-    char   *eq;
-    size_t  keylen;
+`t_vec_env` is a `t_vec` with `elem_size = sizeof(t_env)`. Order carries no
+meaning, and lookups do not scan it (section 4). `free_env` is an inline in
+`env.h`; it is *not* part of `free_all_state`, so callers free the env first
+(`off()`, `exit_clean()`).
 
-    eq = ft_strchr(str, '=');
-    ft_assert(eq != 0);
-    keylen = (size_t)(eq - str);
-    ret.exported = true;
-    ret.key = ft_strndup(str, keylen);
-    ret.value = ft_strdup(eq + 1);
-    return (ret);
-}
-// ...existing code...
-```
+Three encodings hide inside an ordinary `value` string:
 
-Algorithm:
+- an **indexed array** starts with `ARR_MAGIC` and holds `index<US>value`
+  records joined by `RS`, kept sorted by index (sparse indices allowed);
+- an **associative array** starts with `ARR_ASSOC_MAGIC`, same records but
+  the subscript is a literal key and order is insertion order;
+- `declare -i` / `-n` live in a separate tiny table, `t_var_attr` in
+  `state->var_attrs`, empty unless a script uses them.
 
-1. Find the first `=` in the string.
-2. Split into `key` and `value` by position of `=`.
-3. Duplicate both parts on the heap:
-   - `key = str[0..eq-1]`
-   - `value = eq+1 .. end`
-4. Mark the entry as `exported = true` (since `envp` only contains exported variables).
-
-Assumptions:
-
-- Input is always valid `KEY=VALUE` – enforced by `ft_assert(eq != 0)`.
-
-### 3.2 `env_to_vec_env` – initial environment construction
-
-```c
-// ...existing code...
-t_vec_env env_to_vec_env(t_shell *state, char **envp)
-{
-    t_vec_env   ret;
-    t_env       tmp;
-
-    vec_init(&ret);
-    ret.elem_size = sizeof(t_env);
-    while (*envp)
-    {
-        tmp = str_to_env(*envp);
-        vec_push(&ret, &tmp);
-        envp++;
-    }
-    if (state->cwd.len)
-        env_set(&ret, env_create(ft_strdup("PWD"),
-                ft_strdup((char *)state->cwd.ctx), true));
-    if (state->cwd.len)
-        env_set(&ret, env_create(ft_strdup("IFS"),
-                ft_strdup(" \t\n"), false));
-    return (ret);
-}
-// ...existing code...
-```
-
-Responsibilities:
-
-1. **Import parent `envp`** into the internal vector using `str_to_env`.
-2. Ensure that **`PWD`** and **`IFS`** are present and consistent with shell expectations:
-   - If `state->cwd.len` is set:
-     - Override or create `PWD` with the shell’s cached `cwd`.
-     - Define `IFS` (internal field separator) as `" \t\n"` if not present, marked non‑exported (`exported = false`).
-
-Design goals:
-
-- Normalize the environment at startup into a predictable internal representation.
-- Decouple from the raw `envp` pointer and allow controlled mutation via `env_set`.
+Nothing in set/copy/free/fork knows about these; only the array helpers,
+the expander and the two listing sites (`declare -p`, `set`) do. Arrays are
+never exported to `execve`, as in bash.
 
 ---
 
-## 4. Environment Lookup and Mutation (`utils.c`, `helpers.c`)
+## 3. Bootstrap (`conv.c`)
 
-### 4.1 `env_create` – convenience constructor
+`t_env str_to_env(char *str)` splits `KEY=VALUE` at the first `=`,
+duplicates both halves and marks the entry exported -- everything in `envp`
+is exported by definition. A missing `=` trips an `ft_assert`: a malformed
+`envp` is a host bug, and crashing early beats misreading it.
 
-```c
-// ...existing code...
-t_env env_create(char *key, char *value, bool exported)
-{
-    t_env e;
-
-    e.key = key;
-    e.value = value;
-    e.exported = exported;
-    return (e);
-}
-// ...existing code...
-```
-
-This wraps the raw struct initialization and makes ownership explicit: the caller must pass heap‑allocated `key` and `value`.
-
-### 4.2 `env_get` and `env_nget` – lookup
-
-```c
-// ...existing code...
-t_env *env_get(t_vec_env *env, char *key)
-{
-    t_env   *curr;
-    size_t   i;
-
-    i = -1;
-    while (++i < env->len)
-    {
-        curr = &((t_env *)env->ctx)[i];
-        if (ft_strcmp(key, curr->key) == 0)
-            return (curr);
-    }
-    return (0);
-}
-// ...existing code...
-
-t_env *env_nget(t_vec_env *env, char *key, int len)
-{
-    t_env *curr;
-    int    i;
-
-    i = env->len - 1;
-    while (i >= 0)
-    {
-        curr = vec_idx(env, i);
-        if (ft_strncmp(key, curr->key, len) == 0
-            && curr->key[len] == 0)
-            return (curr);
-        i--;
-    }
-    return (0);
-}
-// ...existing code...
-```
-
-- `env_get`: exact string match, forward scan.
-- `env_nget`: prefix/length match, backward scan (used by expansion).
-
-Design note:
-
-- Backward scan in `env_nget` ensures that most recently set variables shadow earlier ones (important when environment is updated repeatedly).
-
-### 4.3 `env_set` – insert or update
-
-```c
-// ...existing code...
-int env_set(t_vec_env *env, t_env el)
-{
-    t_env *old;
-
-    ft_assert(el.key != 0);
-    old = env_get(env, el.key);
-    if (old)
-    {
-        free(old->value);
-        free(el.key);
-        old->value = el.value;
-        old->exported = el.exported;
-    }
-    else
-    {
-        if (vec_push(env, &el))
-            return (0);
-        else
-            return (1);
-    }
-    return (0);
-}
-// ...existing code...
-```
-
-Algorithm:
-
-1. Look up existing entry by key.
-2. If found:
-   - Free the old value,
-   - Free the new key (we reuse the existing key string),
-   - Replace `value` and `exported` flag.
-3. If not found:
-   - Append the new `t_env` to the vector.
-
-Ownership rules:
-
-- On update, the caller’s `key` is freed and the old key is kept.
-- On insert, the `key` and `value` become owned by the vector.
-
-This is important for builtins like `export`, which often build temporary `t_env` objects.
+`t_vec_env env_to_vec_env(t_shell *state, char **envp)` imports every entry,
+marks the index dirty, then, when `state->cwd` is known, overrides `PWD`
+with the real cwd (a parent that chdir'd after setting it would hand us a
+stale value) and force-sets `IFS` to `" \t\n"`, non-exported, so word
+splitting has a sane default even if the parent cleared it.
 
 ---
 
-## 5. Expansion Logic (`expand.c`)
+## 4. Lookup and mutation (`utils.c`, `helpers.c`, `env_export.c`, `env_index*.c`)
 
-The expansion layer answers the question: *“Given a variable name, what is its value in the current shell state?”*
+- `t_env env_create(key, value, exported)` -- wraps three fields; the caller
+  passes heap strings that `env_set` will eventually own.
+- `t_env *env_get(env, key)` and `t_env *env_nget(env, key, len)` -- both go
+  through the index; `env_nget` takes an explicit length so expansion can
+  look up a name inside a larger string without copying. The returned pointer
+  is valid until the next `env_set`/unset that could realloc the vector.
+- `int env_set(env, el)` -- upsert. Existing key: free the old value, free
+  the *new* key (the old string is kept), install the value. New key: push
+  and tell the index. Returns 0, or 1 when the push fails. **The export
+  attribute is sticky**: `old->exported = old->exported || el.exported`.
+  Every plain assignment arrives with `exported=false`, and the previous
+  overwrite meant `PATH="$PATH:/x"` silently un-exported `PATH` -- nvm does
+  exactly that before its own `export PATH`, and every login that loaded it
+  printed `manpath: warning: $PATH not set`.
+- `int env_unexport(env, key)` (`env_export.c`) -- the only way the
+  attribute comes off short of `unset`: `export -n`, `declare +x`,
+  `typeset +x`. The value stays for the shell.
+- `env_extend(dest, src, export)` (`expand.c`) -- drain `src` into `dest`,
+  overriding each entry's flag; used for assignment-only commands.
 
-### 5.1 `env_expand_n` – core expansion
+### 4.1 The index (`env_index.c`, `env_index2.c`, `env_private.h`)
 
-```c
-// ...existing code...
-char *env_expand_n(t_shell *state, char *key, int len)
-{
-    t_env *curr;
+A lazy open-addressing hash table from name to vector position. The vector
+stays the source of truth: every probe re-checks the key bytes in the
+vector, so a collision or a stale slot can never return the wrong variable
+-- worst case it falls through to -1. `env_index_add` follows an append;
+`env_index_mark_dirty` is the escape hatch for anything that shuffles
+entries (`unset`, bulk import), and the next `env_index_find` rebuilds
+(`env_index_reset`). Staying dirty is always correct, just slower.
 
-    if (ft_strncmp(key, "?", len) == 0 && len == 1)
-        return (state->last_cmd_st);
-    else if (ft_strncmp(key, "$", len) == 0 && state->pid && len == 1)
-        return (state->pid);
-    else if (len == 0)
-        return ("");
-    curr = env_nget(&state->env, key, len);
-    if (curr == 0 || curr->key == 0)
-        return (0);
-    return (curr->value);
-}
-// ...existing code...
-```
-
-Special cases:
-
-- `$?` → string form of the last command status (`state->last_cmd_st`).
-- `$$` → PID of the shell (`state->pid`).
-- Empty name (like `$""` or malformed cases) → empty string.
-
-Otherwise, lookup is performed via `env_nget`, which supports name length information (useful when parsing from a larger string).
-
-Return value semantics:
-
-- Returns a pointer directly to the environment value (no duplication).
-- Caller should **not free** the returned pointer.
-- Returns `NULL` if the variable does not exist.
-
-### 5.2 `env_expand` – convenience wrapper
-
-```c
-// ...existing code...
-char *env_expand(t_shell *state, char *key)
-{
-    return (env_expand_n(state, key, ft_strlen(key)));
-}
-// ...existing code...
-```
-
-Used when the entire `key` string is exactly the variable name.
-
-### 5.3 `env_extend` and `env_apply_cmd_assigns`
-
-These helpers support shell features like `VAR=val cmd` (temporary assignments for a single command) and merging local environments.
-
-```c
-// ...existing code...
-void env_extend(t_vec_env *dest, t_vec_env *src, bool export)
-{
-    t_env curr;
-
-    while (src->len)
-    {
-        curr = *(t_env *)vec_pop(src);
-        if (!curr.key)
-            continue ;
-        curr.exported = export;
-        env_set(dest, curr);
-    }
-    free(src->ctx);
-    vec_init(src);
-}
-// ...existing code...
-```
-
-- Moves all entries from `src` into `dest`, optionally marking them all as exported or not.
-- Consumes `src`: vector is cleared and its storage freed.
-
-```c
-// ...existing code...
-void env_apply_cmd_assigns(t_shell *state,
-            t_executable_cmd *src, bool export)
-{
-    size_t  i;
-    t_env  *el;
-
-    if (!state || !src)
-        return ;
-    i = 0;
-    while (i < src->pre_assigns.len)
-    {
-        el = &((t_env *)src->pre_assigns.ctx)[i];
-        if (!el->key)
-        {
-            i++;
-            continue ;
-        }
-        el->exported = export;
-        env_set(&state->env, *el);
-        el->key = NULL;
-        el->value = NULL;
-        i++;
-    }
-}
-// ...existing code...
-```
-
-- Applies a vector of assignment `t_env` entries (`src->pre_assigns`) to the global environment.
-- After each entry is inserted, `key` and `value` pointers in the source entry are nulled to avoid double free when `pre_assigns` is later cleaned up.
+The table is four file-scope globals (`g_tab`, `g_cap`, `g_count`,
+`g_dirty`) rather than a member of `t_shell` -- a legacy that the `TODO` at
+the top of `env_index.c` names as a cleanup target. `env_index_free` runs
+from `free_all_state`, after the last lookup.
 
 ---
 
-## 6. Initializing and Maintaining Essential Variables (`helpers.c`, `init_dft_env.c`, `utils2.c`)
-
-### 6.1 Current working directory (`init_cwd`, `set_cwd`)
+## 5. Expansion (`expand.c`, `expand2.c`, `expand_zsh0.c`)
 
 ```c
-// ...existing code...
-void init_cwd(t_shell *state)
-{
-    char *cwd;
-
-    vec_init(&state->cwd);
-    cwd = getcwd(NULL, 0);
-    if (cwd)
-        vec_push_str(&state->cwd, cwd);
-    else
-        ft_eprintf(MSG_GETCWD_SHINIT);
-    free(cwd);
-}
-// ...existing code...
+char	*env_expand_n(t_shell *state, char *key, int len);
+char	*env_expand(t_shell *state, char *key);   /* len = strlen(key) */
 ```
 
-- Initializes `state->cwd` with the result of `getcwd()` if available.
-- On error, prints a diagnostic but leaves the vector empty.
+`env_expand_n` is the hot path, called thousands of times per script, and
+its contract is the important part: it returns a **borrowed** pointer into
+`state` or the vector -- never free it -- and it distinguishes `NULL`
+(unset) from `""` (set but empty), which `${v:?}` and `set -u` depend on.
+Resolution order:
 
-`set_cwd` in the current code re‑calls `init_cwd` and `getcwd()`, but `init_cwd` is already used by `on()`; the key idea is that `state->cwd` always reflects the shell’s logical working directory.
+1. `expand_special`: the `FUNCNAME`/`BASH_SOURCE` rebuild hook
+   (`frames_sync`, deferred until the first read after a call); `$?`
+   (`state->last_cmd_st`); `$$` (`state->pid`); `$!` (`last_bg_pid` or
+   `""`); the empty name -> `""`; one-character names via
+   `expand_special_1` (`$-` from `build_flagstr`, `$0` inside a zsh
+   function via `zsh_arg_zero`, `$#` from `pos.cnt_str`); then
+   `expand_special_dyn` (`expand2.c`): `$LINENO`, `$RANDOM` (session PRNG
+   masked to 15 bits), `$SECONDS`, `$EPOCHSECONDS`, all formatted into
+   `state->linebuf`. A user assignment to these names does not shadow them
+   (accepted divergence).
+2. a nameref (`attr_target`) -> recurse on the target;
+3. a positional index (`pos_index`; `$0` is not positional, it is a plain
+   variable);
+4. `env_nget` on the store.
 
-### 6.2 `HOME`, `PATH`, `SHLVL`, `_`, `PWD`, `IFS`
-
-`init_dft_env.c` and `helpers.c` ensure that essential vars exist and have sane values:
-
-- `HOME` is **not** synthesised. Like bash, it comes only from the inherited
-  environment, so `cd` with `HOME` unset errors (`cd: HOME not set`) and a bare
-  `~` falls back to the passwd home dir (`tilde_home_dir` in the expander).
-- `set_path(state)`:
-  - If `PATH` is missing or empty, set it to `DFT_PATH`.
-- `set_shlvl(state)`:
-  - Reads `SHLVL`, parses it as an int (with `ft_checked_atoi`), increments it or resets to `1`.
-- `set_underscore(state)`:
-  - Ensures `_` (ultimate argument) is set; uses `state->ctx` or `MINISHELL`.
-- `ensure_essential_env_vars(state)` ties them together and ensures `PWD` exists:
-
-```c
-// ...existing code...
-void ensure_essential_env_vars(t_shell *state)
-{
-    char *cwd;
-    t_env *e;
-
-    cwd = NULL;
-    set_path(state);
-    set_shlvl(state);
-    set_underscore(state);
-    e = env_get(&state->env, PWD);
-    if (!e || !e->value || !e->value[0])
-    {
-        cwd = getcwd(NULL, 0);
-        if (!cwd)
-            cwd = ft_strdup(TMP_DIR);
-        env_set(&state->env, env_create(ft_strdup(PWD),
-                ft_strdup(cwd), true));
-        free(cwd);
-    }
-}
-// ...existing code...
-```
-
-- This function is called during core initialization (`on()`), after `env_to_vec_env`.
-- Goal: a predictable environment even when parent `envp` is incomplete or weird.
-
-### 6.3 `update_pwd_vars` – sync `PWD`/`OLDPWD` with `cwd`
-
-```c
-// ...existing code...
-void update_pwd_vars(t_shell *state)
-{
-    t_env *pwd;
-
-    pwd = env_get(&state->env, PWD_NAME);
-    if (pwd == NULL)
-        try_unset(state, OLDPWD_NAME);
-    else
-        env_set(&state->env, env_create(ft_strdup(OLDPWD_NAME),
-                ft_strdup(pwd->value), pwd->exported));
-    env_set(&state->env, env_create(ft_strdup(PWD_NAME),
-            ft_strdup((char *)state->cwd.ctx), true));
-}
-// ...existing code...
-```
-
-This function (currently in `environment/utils2.c`, used by `cd`) keeps:
-
-- `OLDPWD` = previous `PWD` (or unset if there was no `PWD`),
-- `PWD` = `state->cwd` after a successful directory change.
-
-This is essential for POSIX `cd` semantics (`cd -`, prompts, etc.).
+`env_apply_cmd_assigns(state, cmd, export)` (`expand2.c`) applies the
+`NAME=val` words that prefixed a simple command, moving each `t_env` into the
+store and NULLing the source's `key`/`value` so the caller's free path knows
+ownership moved. A read-only target prints the error and, outside an
+interactive shell, exits with `shell_fatal_status` (127 for the top-level
+`-c` shell, 1 otherwise, like bash).
 
 ---
 
-## 7. Building `char **envp` for Exec (`utils.c`)
+## 6. Startup defaults and maintenance
 
-### 7.1 `env_to_str` – serialize `t_env` back to `KEY=VALUE`
+`helpers.c`, `init_dft_env.c`, `init_ps1.c`, `winsize.c`, `utils2.c`. The
+pattern is uniform: patch a gap the parent left, never override a value it
+gave us.
 
-```c
-// ...existing code...
-static char *env_to_str(t_env *e)
-{
-    t_string s;
-    char     ch;
-
-    vec_init(&s);
-    s.elem_size = 1;
-    vec_push_str(&s, e->key);
-    ch = EQ;
-    vec_push(&s, &ch);
-    vec_push_str(&s, e->value);
-    return ((char *)s.ctx);
-}
-// ...existing code...
-```
-
-- Builds a new `t_string` vector,
-- Appends `key`, then `=`, then `value`,
-- Returns the underlying `char *` (caller owns and must eventually free).
-
-### 7.2 `get_envp` – materialize environment for a child
-
-```c
-// ...existing code...
-char **get_envp(t_shell *state, char *exe_path)
-{
-    char   **ret;
-    size_t   i;
-    size_t   j;
-    t_env   *e;
-
-    (void)exe_path;
-    ret = ft_calloc(state->env.len + 1, sizeof(char *));
-    i = -1;
-    j = 0;
-    while (++i < state->env.len)
-    {
-        e = &((t_env *)state->env.ctx)[i];
-        if (e->exported)
-            ret[j++] = env_to_str(e);
-    }
-    return (ret);
-}
-// ...existing code...
-```
-
-Algorithm:
-
-1. Allocate an array big enough for all entries + terminating `NULL`.
-2. Iterate over the environment vector.
-3. For each `exported` entry, serialize it via `env_to_str` and append to the result.
-4. Return the array for use with `execve()`.
-
-Design notes:
-
-- `exe_path` is currently unused but could be used in the future for ctx‑specific env manipulations.
-- Only `exported` entries are visible to children, matching POSIX behavior of `export`.
+- `init_cwd` seeds `state->cwd` via `x_getcwd()` (or warns with
+  `MSG_GETCWD_SHINIT` and leaves it empty); `set_cwd` is the same plus a
+  second push, kept decoupled for subshell init paths.
+- `HOME` is **not** synthesised. Like bash it comes only from the parent, so
+  `cd` with `HOME` unset errors and a bare `~` falls back to the passwd home
+  (`tilde_home_dir` in the expander).
+- `set_path`: an absent or empty `PATH` becomes `DFT_PATH` (`incs/sys.h`).
+- `set_shlvl`: parse with `ft_checked_atoi(..., 42)` and increment; missing
+  or non-numeric -> `1`.
+- `set_shell_var`: `$SHELL` from the passwd login shell only when entirely
+  absent, and un-exported, as bash does.
+- `set_underscore`: seeds `$_` when absent. Gotcha: it sets it from
+  `state->ctx` and then -- the second `env_set` is not in an `else` --
+  overwrites it with the `MINISHELL` macro (`"./minishell"` in
+  `incs/sys.h`, a leftover from the project's old name). Parents almost
+  always export `_`, so the fallback is rarely observed; both the macro and
+  the missing `else` are cleanup targets.
+- `set_optind` resets `OPTIND` to `1` (keeping the parent's export flag);
+  `set_id_vars` adds non-exported `UID`, `EUID`, `HOSTNAME`, `OSTYPE`,
+  `BASH_VERSION`, `BASH_VERSINFO`.
+- `ensure_essential_env_vars` (called from `on()` after `env_to_vec_env`)
+  runs all of the above, adds `PPID`, and creates `PWD` from `x_getcwd()`
+  (or `TMP_DIR`) if still absent.
+- `set_default_ps1` (interactive only): `HELLISH_PS1_DEFAULT`
+  (`incs/prompt.h`), un-exported, filled in only if `PS1` is unset. Shipping
+  a value at all is what lets a Python virtualenv's `deactivate` restore the
+  prompt (issue #39).
+- `update_winsize_vars`: `COLUMNS`/`LINES` for interactive shells, refreshed
+  before each top-level execution so a resize is visible to the next command
+  (issue #97); `set_winsize_var` preserves a user export.
+- `update_pwd_vars` (`utils2.c`, called by `cd`, `pushd`, `popd` after a
+  successful chdir): rotate `PWD` into `OLDPWD` -- or unset `OLDPWD` if
+  there was no `PWD` (POSIX 2.5.3) -- then set `PWD` from `state->cwd`.
 
 ---
 
-## 8. Why This Design Matters
+## 7. `envp` for `execve` (`utils.c`, `utils2.c`)
 
-### 8.1 Separation of concerns
+`char *env_to_str(t_env *e)` serialises one entry to `KEY=VALUE` with a
+single sized allocation (it runs once per exported variable per external
+command; the old vector-growth path paid three reallocs each).
 
-- The environment is kept as a **first‑class data structure** (`t_vec_env`), not just raw `char **`.
-- Builtins, expansion, and initialization operate on this structured view.
-- Conversion to/from `char **envp` only happens at well‑defined boundaries (startup and exec).
+`char **get_envp(t_shell *state, char *exe_path)` builds the NULL-terminated
+array from entries with `exported == true` and a non-array value; the caller
+owns the array and every element. `exe_path` is unused. It is what
+`src/execution/run.c` and `exec` pass to `execve`.
 
-### 8.2 Shell correctness and POSIX behavior
+`get_envp_all` includes non-exported shell variables too: process
+substitutions run as subshells that inherit the parent's shell variables, so
+`<(echo "$local_var")` must see them (`src/platform/posix/procsub_input.c`).
 
-- Proper handling of `HOME`, `PATH`, `SHLVL`, `PWD`, `OLDPWD`, `_`, `IFS` is crucial for shell scripts to behave as expected.
-- Expansion of `$?` and `$$` is implemented in terms of `t_shell`’s last status and PID, matching typical shell semantics.
-- `exported` flags exactly control which variables are visible to children, mirroring POSIX `export`.
+---
 
-### 8.3 Extensibility
+## 8. Arrays, associative arrays, attributes, quoting
 
-- New special variables can be added by extending `env_expand_n` with more cases (e.g. `$RANDOM`, `$UID`).
-- New default environment rules can be implemented by enhancing `ensure_essential_env_vars`.
-- Because everything funnels through `env_set`/`env_get`, the invariants and memory ownership remain consistent.
+- `env_array.c`..`env_array4.c` -- the `arr_*` family: `arr_is`, `arr_next`
+  (record iterator), `arr_count`, `arr_get_idx`, `arr_join`/`arr_join_range`
+  (`t_slice`, zsh's `a[lo,hi]` resolved to 0-based inclusive bounds),
+  `arr_with_set`, `arr_without`, `arr_splice`, `arr_from_elems`,
+  `arr_max_idx`, `arr_format` (the `[i]="v"` display form). Every mutation
+  builds a fresh encoded string and lets `env_set` free the old one.
+- `env_assoc.c`..`env_assoc3.c` -- the `assoc_*` family with the
+  `t_assoc_it` streaming iterator (`assoc_it_init`, `assoc_next`), plus
+  `assoc_get`, `assoc_with_set`, `assoc_without`, `assoc_keys`,
+  `assoc_values`, `assoc_format`.
+- `env_attr.c` -- `attr_kind`, `attr_target`, `attr_set`, `attr_clear`:
+  linear scans over a table that is empty unless `declare -i/-n` was used,
+  so the assignment and read hot paths pay nothing.
+- `env_quote.c` -- `vec_push_dquoted` / `dquote_str` escape the four
+  characters that stay special inside double quotes (`"`, `$`, `` ` ``,
+  `\`) so `declare -p`, `export -p` and `set` output reads back as what it
+  describes; `assoc_key_quoted` decides when an assoc key needs quoting.
 
-In short, the environment module forms the backbone of shell state communication: between parent and child processes, between builtins and the core, and between the user and the execution environment. Understanding these structures and algorithms is key when extending or debugging the shell’s behavior.
+---
+
+## 9. Why this design
+
+- The environment is a first-class structure, and `char **` exists only at
+  the two boundaries: startup import and `execve`.
+- Everything funnels through `env_set`/`env_get`, so ownership and the
+  index invariant are enforced in one place; the sticky export attribute and
+  the verify-on-probe index are both consequences of that.
+- Special variables are computed at read time from `t_shell`, in one
+  ordered chain, so adding one is one branch in `expand_special*` and no new
+  state.

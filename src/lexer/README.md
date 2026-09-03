@@ -1,286 +1,205 @@
-# Lexer Module – Conceptual Documentation
+# Lexer Module
 
-The lexer is the **first semantic step** after raw input. It turns a plain byte
-string into a structured stream of tokens (`TT_WORD`, `TT_PIPE`, `TT_HEREDOC`,
-`TT_ENVVAR`, etc.) that the parser can consume.
+The lexer is the **first semantic step** after raw input. It turns a byte
+string into an ordered stream of tokens (`TT_WORD`, `TT_PIPE`, `TT_HEREDOC`,
+`TT_AND`, ...) that the parser consumes. The design is deliberately small
+and hand-written: a cursor over a C string, tiny *advance* helpers for
+quotes and nested constructs, one word machine, and a clear contract with
+the layer above -- "I give you tokens, you tell me when you need more input".
 
-The design here was strongly inspired by how the **Crast interpreter** handles
-lexing:
-
-- A small, focused lexer that works on a *simple cursor over a C string*.
-- Explicit, hand‑written logic for quotes, subshells, and operators.
-- A clear **contract** with the parser: “I give you an ordered token stream,
-  you tell me when you need more input.”
-- Rich **debug tooling** to inspect tokens visually.
-
-The goal is a lexer that is **predictable**, easy to debug, and tolerant of
-incomplete input (multiline commands, open quotes, unfinished subshells).
+Public API and structs: `incs/lexer.h`; token types: `incs/public/token.h`.
 
 ---
 
-## 1. Role and Contract
+## 1. Role and contract
 
-From the parser’s perspective, the lexer is a function:
+```c
+char	*tokenizer(char *str, t_deque_tok *ret);
+```
 
-> `tokenizer(char *input, t_deque_tok *out) -> optional prompt string`
+- Scans `str`, which the input layer owns and must keep alive as long as the
+  deque: tokens are *slices*, not copies.
+- Clears `ret->deqtok`, sets `ret->base = str`, fills the deque, and always
+  terminates it with a `TT_END` token.
+- Returns `NULL` when the stream is complete, or a continuation prompt
+  (`"squote> "`, `"dquote> "`, `"subshell> "`, `"bquote> "`, `"param> "`,
+  `"quote> "`) when the input ends inside an unterminated construct, also
+  recording the missing closer in `ret->looking_for`.
 
-It:
+`lex_line()` (`tokenizer2.c`) is the resumable variant for the streaming
+path: it lexes one logical line at a time (stops after a top-level
+`TT_NEWLINE`), neither clears the deque nor pushes `TT_END`, and stores
+offsets against the whole cycle buffer so a construct spanning several calls
+keeps coherent slices.
 
-- Scans the `input` buffer owned by the infrastructure layer.
-- Fills `out->deqtok` with `t_token` objects terminated by a `TT_END` token.
-- Sets `out->looking_for` when the input ends in an *incomplete construct*
-  (unclosed quote / subshell), so the infrastructure can build a more‑input
-  prompt.
-- Returns `NULL` when the token stream is complete, or a small prompt string
-  like `"quote> "` / `"arith> "` when more input is required.
-
-The parser then decides whether:
-
-- It can parse a full command (`RES_OK`),
-- It needs more tokens (`RES_GETMOREINPUT`),
-- Or the stream is syntactically invalid (`RES_ERR`).
-
-The lexer never allocates or frees AST nodes; it only manipulates `t_token`
-structures and simple C pointers.
-
----
-
-## 2. Token Model and Operator Table
-
-### 2.1 `t_token` and `t_tt`
-
-Each token is:
-
-- A **type** `t_tt` (token tag), e.g. `TT_WORD`, `TT_PIPE`, `TT_HEREDOC`,
-  `TT_ENVVAR`, `TT_DQWORD`, etc.
-- A `start` pointer into the original input buffer.
-- A `len` (number of bytes).
-- A small `allocated` flag for cases where the token owns its text.
-
-Using slices instead of copies follows the Crast style: parsing is done
-entirely in terms of *views* into the original string, with minimal
-allocation.
-
-### 2.2 Operator recognition via tables
-
-Shell operators are recognized by a small **op table** (`t_op_map`) and a
-“longest match” search:
-
-- `helper3.c` defines arrays of `{string, token_type}` mappings:
-  - group1: `|`, `<<`, `<<-`, `<`, `(`, `((`, …
-  - group2: `)`, `<(`, `>(`, `>>`, …
-  - group3: `>`, `&&`, `&`, `||`, `;`, `>&`, `<&`, …
-
-- `longest_matching_str` scans this table and returns the operator whose
-  string is the longest prefix of the current input position.
-
-- `parse_op` then:
-  - first checks for **FD‑prefixed redirects** (`2>`, `3>>`, `10<`, etc.) via
-    `check_fd_redirect`,
-  - else looks up the operator and emits a token of the right type.
-
-This “longest match” approach is similar to Crast’s operator handling:
-centralized, data‑driven, and avoids a big chain of `if`/`else if` tests.
+The parser then reports `RES_OK`, `RES_GETMOREINPUT` or `RES_ERR`; the lexer
+never touches AST nodes.
 
 ---
 
-## 3. Word Lexing, Quotes, and Subshells
+## 2. Token model
 
-The lexer’s core is **word lexing**: everything that isn’t whitespace, comment,
-newline, or an operator is treated as part of a `TT_WORD` or related token.
+`t_token` (`incs/public/token.h`) is `tt` (a `t_tt` packed into one byte),
+`allocated`, `split_eligible`, `len`, `start`, plus two back-references the
+parser and expander use (`full_word`, `arith_cache`). Packing keeps it at 32
+bytes; it is embedded in every AST node.
 
-### 3.1 Word boundaries
+Inside the deque the slot is the leaner `t_ltoken`: a 32-bit `off` from
+`t_deque_tok.base` instead of a pointer, `len` in 24 bits, `tt` in 7. That
+halves the slot (a 50k-line parse holds ~310k tokens) and works because the
+lexer never sets `allocated` -- only the expander does, on AST tokens. The
+conversion lives in exactly two inline helpers: `push_ltok()` packs on push
+(`tok2ltok`), `pop_tok()` lifts on pop (`ltok2tok`).
 
-`is_word_boundary` decides when a word should end. It returns true if:
+`t_deque_tok` is `{ deqtok, looking_for, base }`.
 
-- The current character is a shell **special** (`|`, `>`, `<`, `&`, `;`, etc.),
-- Or it starts a FD redirect (`2>`),
-- Or it’s plain whitespace (`' '`, `\t`).
-
-Anything else is considered part of a word, including `$`, letters, digits,
-`_`, and most punctuation. This yields the usual shell behavior where `foo=bar`
-or `$HOME/bin` are single lexemes.
-
-### 3.2 Quotes
-
-Quotes are handled using **small, dedicated advance functions**:
-
-- `advance_squoted` walks until the matching `'` or end of string.
-- `advance_dquoted` walks until the matching `"`, but treats `\"` specially
-  (escaped double quotes in double‑quoted segments).
-
-These follow the Crast style: *advance functions* move `char **str` forward
-until a matching terminator or error state, and return a status code instead of
-calling the parser.
-
-`parse_quote` wraps both and also sets `tokens->looking_for` and returns a
-prompt string (`LEXER_SQUOTE_PROMPT`, `LEXER_DQUOTE_PROMPT`) if an unclosed
-quote is found. The infrastructure layer will then prompt the user for more
-input with a suitable secondary prompt.
-
-### 3.3 Subshells: `$(...)` with nesting
-
-`parse_subshell.c` implements `tokenize_subshell`, which consumes a full
-`$(...)` segment inside a word:
-
-- When `parse_lexeme` sees `"$("`, it calls `tokenize_subshell`.
-- `tokenize_subshell` uses a simple **depth counter**:
-  - It increments depth on `(`,
-  - Decrements on `)`,
-  - Stops when depth returns to 0.
-- It also delegates to `advance_bs` and `parse_quote` so that escaped or quoted
-  parentheses do not disturb the balancing.
-
-This is similar to how Crast handles nested constructs: minimal state, small
-helper, no recursion into the full parser at lexing time.
-
-If a subshell is never closed before the end of input, `parse_quote`/prompt
-mechanism kicks in, causing `tokenizer` to return a more‑input prompt rather
-than emitting broken tokens.
-
-### 3.4 `parse_lexeme` – the word machine
-
-`parse_lexeme` is the central state machine for a word:
-
-- It remembers `start = *str`.
-- Repeatedly calls `handle_next_chunk`, which:
-  - handles subshell `$(...)`,
-  - handles backslashes / word continuation via `parse_generic`,
-  - handles entering quotes (`parse_quote`).
-- Stops when a word boundary or error is seen.
-- Emits a single `TT_WORD` from `start` to the stopping point.
-
-This mirrors Crast’s practice of having a single **word parser** that delegates
-special cases to tiny helpers, keeping the main loop readable and easy to
-extend.
+The lexer emits `TT_WORD` for every word; the finer variants in `t_tt`
+(`TT_SQWORD`, `TT_DQWORD`, `TT_ENVVAR`, `TT_DQENVVAR`) are assigned later,
+when the expander re-lexes a word. Keyword types (`TT_IF`, `TT_DO`,
+`TT_LBRACE`, ...) come from a second pass (section 5).
 
 ---
 
-## 4. Comments, Newlines, and End‑of‑Stream
+## 3. Operators (`helper3.c`, `helper4.c`)
 
-`tokenizer` is the top‑level function that orchestrates lexing a full input
-buffer:
+Operator recognition used to walk a table on every call, with dozens of
+`ft_strlen`/`ft_strncmp` per token; it is now a **first-character dispatch**.
+`parse_op()`:
 
-1. It clears the token deque and resets `prompt = NULL`.
-2. Uses a simple `while (str && *str)` loop to process the input.
-3. For each step:
-   - If the current char is `#`, it uses `skip_shell_comment` to skip to the
-     end of line.
-   - Else it tries to parse a word via `try_parse_lexeme`:
-     - if that returns a prompt string (incomplete construct), it stops and
-       returns it.
-   - Else if it sees a `\n`, it emits a `TT_NEWLINE`.
-   - Else if it sees whitespace, it just advances.
-   - Otherwise, it parses an operator via `parse_op`.
-4. Finally, it emits a terminating `TT_END` token.
+1. tries `check_fd_redirect()` (`helper4.c`) for the fd-prefixed forms
+   (`2>`, `10<`, `3>&`, `2>>`), with `fd_redir_type` picking the longest
+   form first;
+2. otherwise routes on the leading byte to `op_left` (`<` family: `<<<`,
+   `<<-`, `<<`, `<(`, `<&`, `<>`, `<`), `op_right` (`>>`, `>(`, `>&`, `>|`,
+   `>`), or `op_other` (`||`, `|`, the `&` family via `op_amp` -- `&&`,
+   `&>>`, `&>`, `&` -- `;;&`, `;;`, `;&`, `;`, `((`, `(`, `)`, and zsh's
+   `=(` as `TT_PROC_SUB_FILE`, gated on the dialect).
 
-The parser and input infrastructure treat `TT_NEWLINE` and `TT_END` specially
-(e.g. `is_empty_token_list`), but the lexer itself stays agnostic.
-
----
-
-## 5. Debugging and Visualization
-
-Inspired by Crast’s emphasis on visibility, this lexer includes a rich set of
-**debug tools**:
-
-### 5.1 Token names and colors
-
-- `get_tt_names` lazily initializes an array mapping `t_tt` values to constant
-  strings like `"TT_PIPE"`, `"TT_HEREDOC"`.
-- `get_color_map` builds a small hash table that maps token names to ANSI color
-  codes (`ASCII_GREEN` for words, `ASCII_YELLOW` for redirections, etc.).
-
-`token_color(tt)` uses these to pick a color for each printed token type.
-
-### 5.2 Visible lexeme length and printing
-
-To print readable debug tables, the lexer defines:
-
-- `visible_lexeme_len` – counts how many characters will be *displayed* when a
-  lexeme is printed, treating `\n` as `"\n"`, `\t` as `"\t"`, etc.
-- `print_visible_lexeme_noquotes` – prints the lexeme with those escapes.
-
-This allows dynamic column width calculation:
-
-- `compute_columns` scans all tokens, computing:
-  - max width of type name column,
-  - max width of length column (by counting digits),
-  - max width of lexeme column (using `visible_lexeme_len`).
-
-### 5.3 Pretty tables
-
-- `print_table_header` / `print_table_footer` draw an ASCII/Unicode frame.
-- `print_tokens` uses all of the above to print each token row as:
-
-  - type (colored),
-  - length, right‑aligned,
-  - lexeme, escaped and padded.
-
-There is also special logic in `get_token_display_name` for distinguishing
-plain `TT_WORD` from quoted versions (e.g. `TOKEN_DQ` for double‑quoted
-words), making debug output more informative.
-
-This table output is used by the **debug lexer loop** in the infrastructure
-layer (`debug_lexer_loop`), giving an experience similar to Crast’s rich
-interactive debugging.
+Each matcher checks the longest spelling first (POSIX maximal munch), and
+`ft_assert(len > 0)` guards the invariant that `is_word_boundary` never
+routes a plain word byte here. Reading `&>` byte by byte once made
+`cmd &>f` a background job with stderr on the terminal; that is why `op_amp`
+exists.
 
 ---
 
-## 6. Interaction with the Rest of the Shell
+## 4. Words, quotes, and nested spans
 
-The lexer intentionally stays **dumb about ASTs** and higher‑level constructs:
+### 4.1 Boundaries (`helper2.c`)
 
-- It does not allocate AST nodes, it only fills a `t_deque_tok` with tokens.
-- It doesn’t know about precedence or grammar rules; it simply categorizes
-  lexemes and operators.
-- It exposes minimal additional state (`looking_for` and an optional prompt
-  string) to let the infrastructure build more‑input prompts.
+`is_word_boundary(s)` consults a 256-entry character-class table (`g_cl`:
+metacharacter / blank / digit bits) instead of an `ft_strchr` walk -- these
+predicates run over a million times on a large parse. A word ends on a
+metacharacter, a blank (space or tab only; newline is a token), or a
+fd-redirect start (`is_fd_redirect_start`: one or two digits then `<`/`>`),
+so `echo2>file` is `echo` + `2>` + `file`. `is_space` and
+`is_special_char` read the same table.
 
-The **input layer** (`get_more_tokens`) calls:
+### 4.2 The word machine (`parse_lexeme.c`)
 
-- `readline_cmd` / `buff_readline` to fill `state->input` with bytes,
-- `tokenizer` to convert those bytes into tokens,
-- uses the returned prompt/mode to decide whether to:
-  - ask for more input (open quotes, partial lines),
-  - or hand tokens over to the parser.
+`parse_lexeme(tokens, &str)` remembers `start` and loops over
+`handle_next_chunk`, which tries, in priority order:
 
-The **parser** then consumes tokens from `t_deque_tok` and pushes its own state
-(operators, expected closures) into `parser->parse_stack`. When it needs more
-input, it sets `RES_GETMOREINPUT`, which in turn affects the next prompt.
+- `$'...'` -> `advance_ansic` (`lexer_advance2.c`; escapes are live, so
+  `\'` does not close it);
+- `handle_special`: `$(` -> `tokenize_subshell`; backtick ->
+  `advance_backtick`; `${` -> `advance_brace_param`;
+- `parse_generic`: a backslash pair (`advance_bs`) or any non-boundary byte;
+- `'` / `"` -> `parse_quote` (`helper5.c`) -> `advance_squoted` /
+  `advance_dquoted` (`lexer_advance.c`).
+
+Each helper returns a status; on unterminated input the chunk handler sets
+`tokens->looking_for` and hands back the prompt string, and `parse_lexeme`
+returns it without pushing a token. Otherwise `push_word_token` emits one
+`TT_WORD` from `start` to the stop point -- a slice, no copy.
+
+`advance_dquoted` recurses into `$(...)`, `${...}` and backticks, because a
+`"` inside them is not the outer quote's end (autoconf's `x="`... "" ...`"`,
+and bash-completion's `"${u:-"a b"}"`). `advance_brace_param` tracks `${`
+nesting only, so a stray `{` inside `${x:-a{b}` does not deepen it.
+
+Two zsh-only breaks are gated on the dialect: `word_group_ahead`
+(`lex_extglob.c`) swallows an extglob group `@(a|b)` or a zsh glob
+qualifier `(DN)` (`glob_qual_ahead`, `lex_glob_qual.c`) *into* the word so
+its `(` does not open a subshell, and `zsh_eqsub_break` ends a word before
+a second `=` so `f==(:)` lexes as `f=` plus `=(`.
+
+### 4.3 Subshells (`parse_subshell.c`)
+
+`tokenize_subshell` consumes a `$(...)` span without tokenising its
+interior; the expander re-lexes it later. Nesting, backslashes and quoted
+spans are honoured, and the paren depth itself is owned by the shared
+`casescan` automaton (`incs/casescan.h`, `src/helpers/casescan.c`, issue
+#95): a `case` pattern's closing `)` is unbalanced by design, and every
+scanner that just counted parens ended the substitution at the first
+pattern. If the `)` never arrives, `looking_for = ')'` and `"subshell> "`
+is returned.
 
 ---
 
-## 7. Why This Lexer Looks Like This
+## 5. The top-level loop and the keyword pass
 
-The design borrows several ideas from the Crast interpreter’s style:
+`tokenizer()` (`tokenizer.c`) loops `skip_noise` (comments, and
+backslash-newline continuations -- removed here rather than tokenised, or a
+sourced function body would gain a spurious argument) then `tokenize_step`:
 
-- **Small helpers instead of giant state machines**:
-  - quotes, subshells, backslashes, and operators are handled by tiny
-    functions; `parse_lexeme` remains short and understandable.
+1. `[[ ... ]]` handling: `db_regex_word`, `dbracket_toggle`,
+   `db_track_regex`, `db_newline_skippable`, `emit_dbracket_word`
+   (`dbracket_lex.c`, `dbracket_lex2.c`). Inside `[[ ]]`, `&&`, `||`, `(`,
+   `)`, `<` and `>` are emitted as `TT_WORD` so the conditional is not split,
+   and the extglob cell is armed for the operand (issue #105).
+2. `try_parse_lexeme` -> `parse_lexeme` for anything that starts a word
+   (quote, `$`, an extglob group, or any non-boundary byte);
+3. `\n` -> `emit_newline` (`TT_NEWLINE` is a real token: the grammar uses it
+   as a separator inside compound commands);
+4. blank -> skip; otherwise `parse_op`.
 
-- **Clear separation between lexing and parsing**:
-  - the lexer is purely concerned with categorizing characters and sequences;
-    it doesn’t try to enforce grammar rules.
+Keywords are **not** decided during tokenisation. `reclassify_keywords(tokens,
+zsh)` (`keywords2.c`) is a second, linear pass the input layer runs after
+`tokenizer()` (see `try_parse_tokens` in `src/infrastructure/input_utils4.c`
+and the `exec_string*` paths): it tracks command position (`is_cmd_position`,
+`keywords.c`), skips redirect targets and the `for` variable name, latches
+one extra position after `function NAME` (`is_function_kw`) and `coproc`,
+and upgrades a `TT_WORD` in command position via `reclassify_word` ->
+`match_kw_part1`/`match_kw_part2`. `keywords_zsh.c` adds the dialect cases:
+`} always {` (`is_always_kw`) and a `}` that closes a group without being at
+command position (`brace_step`, what oh-my-zsh's one-line functions need).
+Two passes keep the tokenizer context-free and the keyword rules in one
+place.
 
-- **Good tooling built‑in**:
-  - colorized token tables and readable lexeme printing are first‑class,
-    making it easy to see what the lexer is doing on tricky inputs.
+---
 
-- **Graceful handling of incomplete input**:
-  - instead of erroring out on open quotes or partial subshells, the lexer
-    signals that it needs more input and hands control back to the input
-    service.
+## 6. Debug tooling
 
-Because it is self‑contained and API‑like, the lexer can be extended fairly
-safely:
+`--debug=lexer` runs `debug_lexer_loop` (`src/infrastructure/
+input_get_more.c`), which never parses and just prints the token stream:
 
-- Adding a new operator mostly means adding an entry in the `t_op_map` table.
-- Adding a new token type involves updating `t_tt`, `get_tt_names`, and the
-  color map.
-- Adjusting word boundaries or quote rules is localized to a few helpers.
+- `get_tt_names()` / `get_color_map()` (`singletons.c`, `singletons_kw.c`)
+  are lazily built name and ANSI-colour tables; `tt_to_str()` and
+  `token_color()` (`debug.c`) read them.
+- `visible_lexeme_len()` and `print_visible_lexeme_noquotes()` (`debug.c`)
+  render `\n`/`\t` as two characters so columns line up.
+- `compute_columns()` (`tables_utils.c`), `print_table_header()` /
+  `print_table_footer()` (`tables.c`) and `print_tokens()`
+  (`print_tokens.c`) draw the table. `get_token_display_name()`
+  (`print_tokens_utils.c`) shows a fully quoted word as `TOKEN_DQ` /
+  `TOKEN_SQ` (`incs/sys.h`) instead of `TT_WORD`, which makes quoting
+  mistakes visible at a glance.
 
-Overall, the lexer is a **small, testable, and debuggable front end** between
-raw input bytes and the parser’s notion of “tokens”, following the same
-principles that made the Crast interpreter’s lexing strategy easy to reason
-about and extend.
+Adding a token type means updating `t_tt`, the name table and the colour
+map; the debug table needs nothing else.
+
+---
+
+## 7. Interaction with the rest of the shell
+
+The **input layer** (`src/infrastructure/`) fills `state->input` via
+`readline_cmd` / `buff_readline`, splices aliases into `state->alias_exp`,
+calls `tokenizer()`, drops empty streams (`is_empty_token_list`), extracts
+heredoc bodies, runs `reclassify_keywords()`, and only then calls the
+parser. The **parser** pops with `pop_tok()` and keeps its own bookkeeping
+in `parser->parse_stack`; when it returns `RES_GETMOREINPUT` the prompt
+comes from the parser, not the lexer.
+
+The lexer exposes nothing else: no AST, no grammar, no precedence -- just a
+categorised, slice-based stream and one byte saying what it is waiting for.

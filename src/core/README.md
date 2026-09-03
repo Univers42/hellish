@@ -1,521 +1,301 @@
-# Core Module and `t_shell` Structure Documentation
+# Core Module and `t_shell`
 
 ## 1. Overview
 
-The `core/` directory implements the high-level lifecycle of the shell:
+`src/core/` owns the lifecycle of one shell process:
 
-- Program entry (`shell.c` / `main`)
-- Global shell state initialization (`on.c` + `init.c` + `helpers.c`)
-- Command‑line option parsing (`opt.c`)
-- Integration with environment, history, prompt, lexer, parser and executor
+- entry and the REPL (`shell.c`: `main`, `repl_shell`, `off`);
+- bootstrap (`on.c`), with the input-source initialisers in `init.c`,
+  `init2.c` and `helpers.c`;
+- command-line options (`opt.c`, `opt2.c`, the `t_cli` scan);
+- configuration loading (`profile.c`, `rc_load.c`, `rc_load_scan.c`,
+  `rc_load_utils.c`) and the rc hook points (`hooks.c`, `hooks2.c`);
+- the zsh dialect gate (`zsh_mode.c`, `zsh_mode2.c`);
+- `shell2.c`, a stub pair (`setup_output_buffer` returns -1, output
+  buffering was removed) kept so the REPL call sites need not change.
 
-At the center of this design is the `t_shell` structure defined in `incs/shell.h`. It is the *single source of truth* for the running shell instance: all subsystems read or modify this state.
+`core.h` is the module-private header; nothing outside `core/` includes it.
 
-```c
-// ...existing code...
-typedef struct s_shell
-{
-		/* fields described in detail below */
-}   t_shell;
-// ...existing code...
+At the centre is `t_shell`, defined in `incs/shell.h` (roughly lines
+306-456, about a hundred fields). It is the single source of truth for the
+running instance: every subsystem reads or mutates it, and nothing outlives
+it. `shell_init()`, a `static inline` at the bottom of the same header,
+returns `(t_shell){0}`; every non-zero default is set explicitly in `on()`.
+
+---
+
+## 2. `t_shell` by group
+
+The struct is commented in groups; this follows them. Field names are the
+real ones -- grep `incs/shell.h` for the rest.
+
+**I/O and input.** `input` is the raw line buffer for the current cycle;
+`alias_exp` is the alias-expanded copy fed to the lexer (`alias_exp_owned`
+says whether it is its own allocation or a borrow of `input.ctx`). `tree` is
+the parsed AST. `metinp` is the input mode (`INP_RL`, `INP_FILE`, `INP_ARG`,
+`INP_NOTTY` from `incs/sh_input.h`). `rl` (`t_rl`, `incs/prompt.h`) is the
+unified line buffer for tty, file, `-c` string and pipe; `rl.should_update_ctx`
+tells the prompt to recompute, `rl.no_compact` disables multi-line joining
+for sources that are already complete. `rcfile` borrows `--rcfile=FILE`
+from argv.
+
+**Diagnostics.** `dft_ctx` and `ctx` are the name in error messages: the
+basename of `argv[0]` at startup (`shell_basename`), replaced by the script
+path in file mode (`update_ctx_from_file`).
+
+**Special variables.** `pid` is `$$` as a string, set once in `on()` from
+`ft_itoa(getpid())`; `last_bg_pid` is `$!`; `last_cmd_st` is `$?` and
+points into the `statbuf` scratch (never freed); `last_cmd_st_exe` is the
+structured `t_execution_state` (`status`, `pid`, `ctrl_c`;
+`incs/public/executor_types.h`). `flagbuf`, `linebuf`, `statbuf` are small
+in-struct scratch buffers so `$-`, `$LINENO`/`$RANDOM` and `$?` never
+allocate. `start_sec` backs `$SECONDS`.
+
+**Session.** `hist` (`t_history`), `cmd_no` (PS1's `\#`), `should_exit`,
+`builtin_fatal` (a special builtin got a malformed request; read after
+teardown by `strict_builtin_failed`), the `exit_warned`/`exit_attempt`
+pair (stopped-job exit warning, issue #58), and `edit_mode`.
+
+**Control flow.** `loop_break`, `loop_continue`, `loop_depth`,
+`func_return`, `func_depth`, `source_depth`; `call_frames` is the
+`t_call_frame` stack behind `FUNCNAME`/`BASH_SOURCE` (`frames_dirty` defers
+the rebuild to the next read); `functions` + `func_index` (name -> slot,
+O(1)) + `dead_funcs` (bodies unset during their own call).
+
+**Positional parameters and scopes.** `pos` (`t_pos`: `$1..$N`, `$#`),
+`local_saves` (the `t_scope_save` stack behind `local`), `for_snapshot`
+(a live `"$@"` copy while a `for` runs), `getopts_pos`/`getopts_ref`.
+
+**Options.** One `bool` per `set` letter (`opt_errexit`, `opt_nounset`,
+`opt_xtrace`, `opt_noglob`, `opt_noclobber`, `opt_allexport`, `opt_noexec`,
+`opt_verbose`, `opt_pipefail`, `opt_posix`, `opt_interactive`), the
+`setopt` bitset (`enum e_setopt`: braceexpand, the zsh dialect bit
+`SETOPT_ZSH`, ...), the `shopt` bitset (`SHOPT_*`), `errexit_off`, and
+`option_flags` (`enum e_opt_flag`, section 4). The roster and
+letter<->name mapping live in `src/builtins/set_opts4.c`.
+
+**Environment.** `env` (`t_vec_env`, see `src/environment/README.md`),
+`cwd` (cached logical directory, so `pwd` works in a deleted directory),
+`path_dirs`/`path_dirs_src` (split-`$PATH` cache validated against the
+exact PATH string), `readonly_vars`, `var_attrs` (`declare -i/-n`),
+`arr_marks`, `dirstack`, `compspecs`, `aliases`, `cmd_cache`.
+
+**Traps.** `traps[SH_NTRAP]` (handler strings, freed in
+`free_all_state`), `trap_depth`, `traps_quiet` (pseudo traps inherited by a
+subshell are listable but must not fire), `prompt_depth` (an error while
+rendering PS1 must never end the session).
+
+**Heredocs.** `redirects` (`t_vec_redir`, per command), `heredoc_idx`,
+`hd_defer`, `cycle_has_hd`, `cycle_streamed`, `hd_src`/`hd_pos`/
+`hd_stripped`, `gather_in_func`, `gathering_compound`.
+
+**Expansion state.** `input_expanded`, `last_cmdsub_status` (`$?` inside
+`$(...)`), `cmdsub_in_place` and `bg_exec_node` (the one command a
+disposable `$( )` body or `cmd &` child may `execve` without forking again;
+the latter is the AST node's address so a nested fork cannot mistake itself
+for the authorised command -- issue #13).
+
+**Jobs and processes.** `bg_job_count`, the `bg_done` ring, `proc_subs`
+(`t_procsub_entry`: `pid`, `fd`, and the `/proc/self/fd/<fd>` `path`
+handed to the command), `job_table`, `shell_pid`/`shell_pgid`/`fg_pgid`,
+`jobctl`, `pal_procs`. `prng` is the `$RANDOM` generator, seeded in `on()`
+from `getpid() * 2654435761u ^ time(NULL)` so two shells started in the
+same second diverge.
+
+**Allocation.** `argv_pool[ARGV_POOL_DEPTH]` + `argv_pool_depth`: the
+zero-malloc argv backing for simple commands (`src/helpers/free_utils2.c`).
+
+---
+
+## 3. Lifecycle: `main` -> `on` -> `repl_shell` -> `off`
+
+**`main()` (`shell.c`).** A login shell arrives with `argv[0]` starting
+with `-`; the dash is stripped but remembered, and `OPT_FLAG_LOGIN` is OR-ed
+in *after* `on()` so option parsing cannot clear it. Then, in order:
+`on()`, `tty_snapshot_save()`, `set_default_ps1()`, `source_profile()`,
+`source_hellishrc()`, `maybe_spawn_update_check()`, `show_welcome()`,
+`repl_shell()`, `off()`. There is no `return`: `off()` exits with the last
+status.
+
+**`on()` (`on.c`).** Order matters and the comment above it says why:
+
+1. `set_unwind_sig()` -- Ctrl-C must be safe before anything reads input.
+2. `*state = shell_init()`, then the non-zero defaults:
+   `shopt = SHOPT_CHECKWINSIZE`.
+3. `cli_parse()` fills a `t_cli`; `cli_early_exit()` handles `--version`
+   and `--help` (exit 0) and an unrecognised option (`invalid option`,
+   exit 2 like bash and dash), freeing state first so sanitizers stay quiet.
+4. `init_rl_buffer()`: `buff_readline_init`, byte-granular `rl.buff`,
+   `rl.edit_mode = 1` (emacs).
+5. `pid`, `ctx`/`dft_ctx`, `set_cmd_status(state, res_status(0))`.
+6. `init_cwd()`, `env = env_to_vec_env(state, envp)`,
+   `ensure_essential_env_vars()`, and `$0 = argv[0]` verbatim (seeded here
+   because only two of the four input modes assign it -- issue #14).
+7. `init_tables()`: `jc_init`, `redirects`, `proc_subs`, `functions` +
+   `func_index_init`, `call_frames`, `dead_funcs`, `job_table_init`,
+   `alias_table_init`, `cmd_hash_init`, `edit_mode = 1`.
+8. `cli_dispatch()` picks the input source (section 5).
+9. `interactive_job_signals()`, `update_winsize_vars()`, the PRNG seed,
+   `start_sec`.
+
+**`repl_shell()` (`shell.c`).** While `!should_exit`: `open_cycle()`
+(fresh `input`, `cmd_no++`, age the two exit flags, clear the unwind flag,
+and -- interactively only -- run `$PROMPT_COMMAND` with `$?` restored
+afterwards, then `HELLISH_PRECMD_FUNCS` and zsh `precmd` hooks);
+`job_notify()`; `parse_and_execute_input()`
+(`src/infrastructure/input_utils2.c`: one full read+lex+parse+execute
+cycle); `run_pending_traps()`; then the per-cycle frees -- `free_redirects`,
+`free_ast(&state->tree)`, `input`, `alias_exp`, `hd_src`, `hd_stripped`.
+That pile of frees is the whole trick to staying leak-flat over an
+hour-long script.
+
+**`off()` (`shell.c`).** Snapshot `last_cmd_st_exe` *before* the EXIT trap
+(POSIX: the shell exits with the status it had on reaching the trap, not
+the trap body's), `run_exit_trap()`, `jobs_hangup_on_exit()`,
+`tty_snapshot_restore()`, `free_env(&state->env)`, `free_all_state()`,
+`forward_exit_status(final)`. The env is freed *after* the trap because the
+trap may still read variables; `exit_clean()` in `src/builtins/exit.c`
+follows the same order.
+
+**Executor entry.** `parse_and_execute_input` hands the tree to
+`execute_top_level()` (`src/execution/execute_top_level.c`), which builds
+the root node with `create_exe_node(0, 1, &state->tree, true)`, pre-gathers
+heredocs, calls `execute_tree_node()`, cleans up process substitutions and
+stores `last_cmd_st_exe`/`last_cmd_ms`. `set_cmd_status()`
+(`src/helpers/utils.c`) is what keeps `last_cmd_st` in step with it.
+
+---
+
+## 4. Command-line options (`opt.c`, `opt2.c`)
+
+`option_flags` is a `uint32_t` of `enum e_opt_flag` bits (`incs/shell.h`):
+
+```
+OPT_FLAG_HELP  OPT_FLAG_VERBOSE  OPT_FLAG_POSIX  OPT_FLAG_LOGIN  OPT_FLAG_VERSION
+OPT_FLAG_DEBUG_LEXER  OPT_FLAG_DEBUG_PARSER  OPT_FLAG_DEBUG_AST  OPT_FLAG_NORC
 ```
 
-Everything in `core/` is built around creating, initializing, using and finally cleaning up a single `t_shell` instance.
+`cli_parse()` -> `cli_scan()` walks argv once and stops at the first
+operand, leaving `cli->i` on it:
+
+- `--` ends options; a lone `-` goes to `cli_lone_dash`.
+- `--word` -> `cli_long_word`: `--posix`, `--verbose`, `--help`,
+  `--debug=lexer|parser|ast`, `--login`, `--version`, `--norc`,
+  `--rcfile=FILE` (stored in `state->rcfile`). Anything else sets
+  `cli->err = 2`.
+- `-xyz` / `+xyz` -> `cli_opt_word`: each letter is validated by
+  `cli_known_short` against the `set` builtin's roster (`setopt_find`) plus
+  the invocation-only `c`, `i`, `l`, and applied by `cli_apply_short` through
+  the same `apply_flag_letters` the builtin uses. An `o` consumes the next
+  argv word (`cli_take_o` -> `set_long_option`), so `-oo a b` sets two.
+
+So `hellish -e -c '...'`, `hellish -o errexit script.sh` and
+`hellish --debug=parser --debug=lexer --verbose script.sh` all parse like
+`bash --posix ...`; flags are independent and simply OR together. `--posix`
+sets `OPT_FLAG_POSIX` and `state->opt_posix` (also toggleable at runtime
+with `set -o posix`), which disables extensions such as `cd old new`.
+
+`cli_dispatch()` then routes: `-c` -> `init_arg`; an operand ->
+`init_file`; `!isatty(0)` -> `init_stdin_notty`; otherwise `init_history`
+(interactive). The argv pointer is biased so `init_arg`/`init_file` see the
+string/script where they expect it regardless of how many option words came
+first.
 
 ---
 
-## 2. `t_shell` – Global Shell State
+## 5. Input modes (`init.c`, `init2.c`, `helpers.c`)
 
-```c
-typedef struct s_shell
-{
-	 t_string        input;
-	 t_vec_env       env;
-	 t_string        cwd;
-	 t_ast_node      tree;
-	 int             metinp;
-	 char            *dft_ctx;
-	 char            *ctx;
-	 char            *pid;
-	 char            *last_cmd_st;
-	 t_execution_state       last_cmd_st_exe;
-	 t_history       hist;
-	 bool            should_exit;
-	 t_vec_redir     redirects;
-	 int             heredoc_idx;
-	 t_rl rl;
-	 t_prng    prng;
-	 uint32_t        option_flags;
-	 int             bg_job_count;
-	 t_vec_procsub   proc_subs;
-}   t_shell;
+- `INP_ARG` -- `init_arg`: `argv[2]` is pushed into `rl.buff`, an optional
+  `argv[3]` becomes `$0` and `argv[4..]` become `$1..$N`
+  (`set_argv_params`). Missing string -> usage error.
+- `INP_FILE` -- `init_file`: open, `read_file_to_buffer` (appends a
+  trailing `\n` so a last line without one does not stall the parser),
+  `update_ctx_from_file` (ctx = script path; a `.zsh` path arms the zsh
+  dialect, the same rule `source` and the rc loader use). Open failure ->
+  `handle_file_open_error`: `EISDIR` exits 127, otherwise
+  `EXE_BASE_ERROR + errno`, like bash.
+- `INP_NOTTY` -- `init_stdin_notty`: piped or redirected stdin, no prompts.
+- `INP_RL` -- interactive readline with history.
+
+`metinp` gates everything that differs between them: prompts, history, rc
+loading, `exit` printing "exit", `COLUMNS`/`LINES`, hooks.
+
+---
+
+## 6. Configuration and hooks
+
+`source_profile()` (`profile.c`) runs the login profile (e.g. `~/.profile`)
+through `read_file` + `exec_string`; a missing file is not an error.
+`source_hellishrc()` (`shell.c`) runs only under `INP_RL` -- `-c`, scripts
+and piped input must never inherit your dotfile -- and loads, in order
+(issue #70):
+
+```
+/etc/hellish/rc.d/*.hsh *.zsh                system-wide, lexical order
+$XDG_CONFIG_HOME/hellish/rc.d/*.hsh *.zsh    yours, lexical order
+$XDG_CONFIG_HOME/hellish/plugins/*/plugin.hsh
+~/.hellishrc                                 LAST, so it always wins
 ```
 
-### 2.1 `input` – Raw user/program input buffer
+`rc_load_all` (`rc_load.c`) owns the first three; `collect`/
+`collect_plugins` (`rc_load_scan.c`) sort directory entries because
+`readdir` order differs per machine. A `.zsh` module is read in the zsh
+dialect and restored when it ends. `--norc` or `--rcfile=FILE` skips
+`~/.hellishrc`. Every file is sourced with `frame_push`, so
+`${BASH_SOURCE[0]}` names the file itself.
 
-- **Type:** `t_string` (a `t_vec`-like growable byte buffer)
-- **Owner:** `repl_shell()` in `shell.c`
-- **Usage:**
-  - Stores the current command line or script chunk about to be parsed
-  - Filled by the input subsystem (readline or file/buffer)
-  - Consumed by `parse_and_execute_input(state)`
-- **Lifecycle:**
-  - Reinitialized each loop iteration in `repl_shell()`
-  - Freed after every command round to avoid leaks
-
-Expectation: after input collection, `input` contains exactly the bytes which the lexer/parser will consume. No other subsystem should modify it concurrently.
-
----
-
-### 2.2 `env` – Environment vector
-
-- **Type:** `t_vec_env` (vector of `t_env`)
-- **Owner:** `on()` (core init) and builtin env management (`export`, `unset`, etc.)
-- **Usage:**
-  - Represents the shell’s view of the environment (`KEY`, `VALUE`, `exported` flag)
-  - Initialized from `envp` via `env_to_vec_env()` in `on.c`
-  - Mutated by builtins like `export`, `unset`, and `cd` (PWD/OLDPWD)
-- **Guarantees:**
-  - Centralized, single representation – executors and child processes derive their env from here
-  - No direct dependency on global `environ`, easier to test and reason about
+Hooks (`hooks.c`, `hooks2.c`): `HELLISH_PRECMD_FUNCS` and
+`HELLISH_PREEXEC_FUNCS` are arrays of function *names*, not code strings,
+so two plugins can both attach without one overwriting the other (#72).
+zsh's own `precmd`/`preexec` functions and `precmd_functions`/
+`preexec_functions` arrays are honoured too (#91), except when bash-preexec
+is loaded and owns the convention. Interactive only.
 
 ---
 
-### 2.3 `cwd` – Current working directory cache
+## 7. The zsh dialect gate (`zsh_mode.c`, `zsh_mode2.c`)
 
-- **Type:** `t_string`
-- **Role:** Cache of the logical current directory
-- **Usage:**
-  - Filled by `init_cwd(state)` at startup
-  - Updated by `cd` builtin (`update_pwd_vars`, `cd_refresh_cwd`)
-  - Used by `pwd` builtin and possibly the prompt system
-- **Why cache?**
-  - Avoid repeated `getcwd()` calls (expensive on deep trees or slow FS)
-  - Maintain a consistent logical path even if underlying directories are deleted (matches shell behavior when `getcwd` fails)
+zsh syntax (`${(f)x}`, `print -P`, `} always {`, unbraced `$arr[i]`) means
+something else, or nothing, in the language the golden suite pins, so none
+of it is reachable unless something arms `SETOPT_ZSH`. Exactly three things
+can: `set -o zsh` / `set +o zsh`, `emulate zsh`, and sourcing (or running)
+a `.zsh` path -- `zsh_path()` matches `.zsh`, `.zshrc`, `.zshenv`; `.sh`,
+`.bash` and no extension are bash. Nothing is a heuristic on file content.
 
----
-
-### 2.4 `tree` – Parsed AST of the current input
-
-- **Type:** `t_ast_node`
-- **Owner:** Parser and executor
-- **Usage:**
-  - `parse_and_execute_input()` lexes `input`, builds an AST into `tree`, then executes it
-  - Freed on each REPL iteration with `free_ast(&state->tree)`
-
-Expectation: at any given time, `tree` either represents the AST for the *current* input or is empty/cleared.
+- `zsh_mode(state)` -- the predicate.
+- `zsh_mode_swap(state, on)` -- set and return the previous value; also
+  mirrors the bit into the glob layer's cell, so the mirror cannot be
+  forgotten. The automatic arming from a `.zsh` file uses this and is
+  restored when the file ends.
+- `zsh_mode_pin(state, on)` -- an explicit request (`set -o zsh`, `emulate
+  zsh` without `-L`) also rewrites the saved bit in every open frame, so no
+  pending `frame_pop` can undo what was asked for by name.
+- `zsh_mode_req(state, on, local)` -- what `emulate` calls.
+- `zsh_arrays()` / `sub_to_index()` -- 1-based subscripts, unless
+  `SETOPT_KSHARRAYS`.
 
 ---
 
-### 2.5 `metinp` – Input source mode
-
-- **Type:** `int` (values from `sh_input.h`, e.g. `INP_RL`, `INP_FILE`, `INP_ARG`, `INP_NOTTY`)
-- **Set by:** `cli_dispatch()` in `opt.c`, via helpers in `init.c`
-- **Modes:**
-  - `INP_RL` – Interactive terminal (history, prompts)
-  - `INP_FILE` – Script file execution
-  - `INP_ARG` – `-c "command string"` mode
-  - `INP_NOTTY` – Non‑TTY stdin (pipes, redirections)
-- **Why it matters:**
-  - Controls prompt behavior, history integration, and some builtin behaviors (e.g. `exit` prints "exit" only when using readline)
-
----
-
-### 2.6 `dft_ctx` and `ctx` – Error/reporting ctx strings
-
-- **Type:** `char *`
-- **Ownership:** Allocated with `ft_strdup`, freed in `free_all_state()`
-- **Roles:**
-  - `dft_ctx`: original identifier of the shell (argv[0] at startup)
-  - `ctx`: mutable display name used in error messages
-    - Updated for scripts: `update_ctx_from_file()` sets it to the filename
-    - Used in error reporting throughout the code (`ft_eprintf("%s: ...", state->ctx, ...)`)
-
-Expectation: all user‑visible diagnostics use `ctx` so that errors correctly refer to the current script or shell name.
-
----
-
-### 2.7 `pid` – Stringified PID of the main shell process
-
-- **Type:** `char *`
-- **Set by:** `on()` using `xgetpid()`
-- **Usage:**
-  - Used in `exit_clean()` to decide whether we are in the *original* shell process
-  - When a child process calls builtin `exit`, we **do not** want to free global state or history
-- **Behavior:**
-  - If current PID string matches `state->pid`, `exit_clean()` will:
-    - `manage_history(state)`
-    - `free_all_state(state)`
-  - Otherwise, the child process exits without trampling parent state
-
----
-
-### 2.8 `last_cmd_st` and `last_cmd_st_exe`
-
-- **Types:**
-  - `last_cmd_st`: textual representation (e.g. `$?` string form)
-  - `last_cmd_st_exe`: structured execution result `t_execution_state`
-- **Set by:** `set_cmd_status(state, res_status(...))` and executor code
-- **Used by:**
-  - `exit` builtin when no explicit code is given
-  - Prompt, scripting constructs and error reporting
-
-Expectation: after each command or pipeline, `last_cmd_st_exe` accurately reflects the final status, and `last_cmd_st` (if used) maintains a printable form.
-
----
-
-### 2.9 `hist` – Command history
-
-- **Type:** `t_history`
-- **Initialized by:** `init_history(state)` (from `on.c`) in interactive mode
-- **Usage:**
-  - Stores previous commands when using readline
-  - Saved/restored during `exit_clean()` for the main shell only
-
----
-
-### 2.10 `should_exit` – REPL termination flag
-
-- **Type:** `bool`
-- **Owned by:** Builtins and signal/unwind logic
-- **Usage:**
-  - `repl_shell()` loops while `!state->should_exit`
-  - Builtins can set `should_exit = true` to break out of the loop (e.g. `exit` builtin)
-
-This design allows a clean, controlled shutdown without forcing immediate `exit()` from deep inside subsystems, except where explicitly desired (e.g. non‑interactive fatal errors).
-
----
-
-### 2.11 `redirects` – Active redirections for current command
-
-- **Type:** `t_vec_redir`
-- **Usage:**
-  - Collected during parsing
-  - Consumed by executor to set up file descriptor redirections
-  - Freed after each command with `free_redirects(&state->redirects)` in `repl_shell()`
-
-Expectation: `redirects` only contains entries for *current* input; it is cleared each loop to avoid leaking old redirections into new commands.
-
----
-
-### 2.12 `heredoc_idx` – Index for heredoc processing
-
-- **Type:** `int`
-- **Role:**
-  - Tracks which heredoc is being processed when the parser/executor handle multiple heredocs
-  - Used to map heredoc placeholders in the AST to real temporary files or pipes
-
----
-
-### 2.13 `rl` – Buffered input for readline/FILE/STDIN
-
-- **Type:** `t_rl`
-- **Filled by:**
-  - `buff_readline_init()` and `vec_init()` in `on()`
-  - `read_file_to_buffer()` in `init.c` for file mode
-  - stdin/tty reading in the input subsystem
-- **Usage:**
-  - Acts as unified buffer for various input methods
-  - `should_update_ctx` flag indicates when the prompt/ctx should be recalculated
-
-Design goal: have one abstraction for "a stream of lines" regardless of whether they come from a TTY, a file, a string (`-c`) or a pipe.
-
----
-
-### 2.14 `prng` – Pseudo‑random number generator state
-
-- **Type:** `t_prng`
-- **Initialized by:** `prng_initialize_state(&state->prng, 19650218UL)` in `on()`
-- **Usage:**
-  - Provides deterministic PRNG state for shell features (e.g., `$RANDOM`‑like behavior, job IDs, or other future features)
-- **Benefits:**
-  - No reliance on global RNG state
-  - Easy to reproduce sessions for debugging by keeping the seed known
-
----
-
-### 2.15 `option_flags` – Global runtime options
-
-- **Type:** `uint32_t` bitmask
-- **Filled by:** `cli_parse()` / `cli_scan()` in `opt.c`+`opt2.c`
-- **Bits:**
-  - `OPT_FLAG_HELP`
-  - `OPT_FLAG_VERBOSE`
-  - `OPT_FLAG_POSIX`
-  - `OPT_FLAG_DEBUG_LEXER`
-  - `OPT_FLAG_DEBUG_PARSER`
-  - `OPT_FLAG_DEBUG_AST`
-- **Short‑circuit option design:**
-  - Command‑line parsing is simple and linear; for each argument we update the bitmask:
-    - `--help` / `-h` → `OPT_FLAG_HELP`
-    - `--verbose` or `-c` → `OPT_FLAG_VERBOSE` (note: currently `-c` also enables verbose)
-    - `--posix` → `OPT_FLAG_POSIX` (start in POSIX mode; sets `state->opt_posix`, also toggleable at runtime with `set -o posix` / `set +o posix`). Disables non-POSIX extensions such as the zsh-style two-argument `cd old new`.
-    - `--debug=lexer` → `OPT_FLAG_DEBUG_LEXER`
-    - `--debug=parser` → `OPT_FLAG_DEBUG_PARSER`
-    - `--debug=ast` → `OPT_FLAG_DEBUG_AST`
-  - Options are **composable**: `--debug=parser --debug=lexer` simply sets multiple bits.
-  - `cli_scan()` applies every option (short `-eux`/`+o`, long `-o name`, `--posix`, `-c`, `-i`, `--`/`-`) and leaves `cli->i` at the first operand, so `hellish -e -c '...'`, `hellish -o errexit script.sh` and `hellish -c -x 'cmd'` all parse like `bash --posix ...`; an unknown option aborts with status 2.
-
-This short‑circuit approach avoids complex parsing: each option is independent, and combining them is trivial bitwise OR.
-
----
-
-### 2.16 `bg_job_count` – Background jobs tracking
-
-- **Type:** `int`
-- **Usage:**
-  - Counts how many background jobs are currently known to the shell
-  - Updated by executor when spawning jobs with `&` or process‑substitutions
-- **Future extensions:**
-  - Can be used for job control display, wait logic, or clean shutdown checks
-
----
-
-### 2.17 `proc_subs` – Process substitution tracking
-
-- **Type:** `t_vec_procsub` (vector of `s_procsub_entry`)
-- **Each entry:**
-  - `pid` – child process ID performing the substitution
-  - `fd` – file descriptor connected to that process
-  - `path` – associated path, if any (e.g. `/dev/fd/*` or named pipes)
-- **Usage:**
-  - Allows the executor to remember which process substitutions are active
-  - Ensures proper closing and waiting for substituted processes
-
----
-
-## 3. Lifecycle: From `main` to REPL and back
-
-1. **`main()` in `shell.c`**
-   - Normalizes login shell name (removes leading `-`)
-   - Declares a single `t_shell state;`
-   - Calls `on(&state, argv, envp);`
-   - Enters `repl_shell(&state);`
-   - On exit, calls `off(&state);`
-
-2. **`on()` in `on.c`**
-   - Sets signal handling via `set_unwind_sig()`
-   - Initializes `state` to zero with `shell_init()` (inline in `shell.h`)
-   - Parses command‑line options with `cli_parse()` (scan in `cli_scan`, dispatch in `cli_dispatch`)
-   - Initializes readline buffer, PID, ctx, cwd, environment and vectors
-   - Decides input method (`-c`, file, stdin, TTY) and prepares corresponding buffers
-   - Seeds PRNG and sets `bg_job_count = 0`
-
-3. **`repl_shell()`**
-   - While `!should_exit`:
-     - Initializes `state->input`
-     - Calls `parse_and_execute_input(state)`
-     - Frees `redirects`, AST, and `input`
-
-4. **`off()`**
-   - Frees environment and all remaining state
-   - Forwards the last command status as process exit code
-
-This lifecycle ensures one well‑defined `t_shell` that lives for the duration of the program.
-
----
-
-## 4. Thread Safety and POSIX Compliance
-
-### 4.1 Single‑threaded design for safety
-
-- The shell is designed to run a **single `t_shell` instance on a single thread**.
-- All global process‑wide interactions (signals, PIDs, file descriptors) are inherently non‑thread‑safe; POSIX shells are typically single‑threaded.
-- By *not* sharing `t_shell` across threads and by avoiding concurrent mutation, we get thread safety by design:
-  - No locks or atomics are needed inside `t_shell`.
-  - All accesses are serialized by the REPL loop.
-
-In other words, the shell is "thread‑safe" in the sense that there is no unsynchronized shared mutable state *between* threads, because we intentionally avoid multi‑threaded access to `t_shell`.
-
-### 4.2 POSIX‑style behavior
-
-The core adheres to POSIX shell expectations:
-
-- **Environment:** `env_to_vec_env()` initializes `env` from `envp`, and builtins modify this view as POSIX specifies.
-- **Exit status:** `last_cmd_st_exe` follows standard 0–255 exit codes and is used for `$?` and `exit` default.
-- **Input modes:**
-  - Interactive vs non‑interactive behavior is distinguished via `isatty(0)` and `metinp`.
-  - `exit` printing behavior (`print_exit_if_readline`) mimics POSIX shells printing `exit` only in interactive sessions.
-- **Signals:** `set_unwind_sig()` and `get_g_sig()` integrate with POSIX signal handling; unwinding behavior is centralized and respects typical shell expectations (e.g., interrupting the current command but not killing the entire shell inappropriately).
-- **Redirections and heredocs:** handled via `redirects`, `heredoc_idx` and the AST, providing POSIX redirection semantics.
-
-### 4.3 Globals vs state
-
-- The design minimizes use of raw global variables: instead, `t_shell` carries nearly all logical state.
-- Where C or POSIX APIs force some global behavior (signals, process IDs, file descriptors), the shell encapsulates it via helper functions but keeps logical decisions in `t_shell`.
-
----
-
-## 5. Option / Debug Flag Design (`cli_parse` / `cli_scan`)
-
-The option system in `opt.c` is intentionally **simple and composable**:
-
-- Each argument is scanned once.
-- `cli_scan()` walks argv once; `cli_long_word()` sets the `uint32_t option_flags` bitmask (posix/verbose/help/debug), while short flags and `-o name` fold straight into the `set`-builtin option fields via `apply_flag_word()` / `set_long_option()`.
-- Flags are independent; there is no complex state machine.
-
-Example:
-
-```sh
-sh42 --debug=parser --debug=lexer --verbose script.sh
-```
-
-This will set:
-
-- `OPT_FLAG_DEBUG_PARSER`
-- `OPT_FLAG_DEBUG_LEXER`
-- `OPT_FLAG_VERBOSE`
-
-and then execution continues normally. There is no requirement that these options appear in any particular order; the logic short‑circuits per token only (i.e., once an argument is recognized and processed, we move on), but the *combination* is simply a bitwise OR of all requested flags.
-
-Benefits:
-
-1. **Simplicity:** Easy to extend with new debug targets (`--debug=ast`, `--debug=exec`, etc.) without rewriting the parser.
-2. **Composability:** Multiple `--debug=*` flags can be chained; each sets its own bit.
-3. **Low overhead:** Only string comparisons and a few bitwise operations at startup.
-4. **Clarity:** Runtime consumers check `if (state->option_flags & OPT_FLAG_DEBUG_LEXER)` instead of parsing strings repeatedly.
-
----
-
-## 6. Summary
-
-- `t_shell` is the central structure that models the entire state of the running shell.
-- Each field has a clearly defined responsibility (input, env, cwd, AST, history, redirects, PRNG, options, etc.).
-- The `core/` module wires this structure to the outside world: command‑line, environment, signals, and REPL.
-- The design favors:
-  - **Single‑threaded safety**,
-  - **POSIX‑like behavior**, and
-  - **Composability** (especially in options/debug flags and subsystems).
-
-Understanding `t_shell` and the core lifecycle is key to extending the shell safely—for example, adding new debug flags, new input modes, or new executor features without breaking global invariants.
-
----
-
-## 7. Practical Code Examples
-
-### 7.1 Using `last_cmd_st_exe` for `$?` and `exit`
-
-The executor is responsible for updating the last command status after each top‑level evaluation:
-
-```c
-void some_executor_entry(t_shell *state, t_ast_node *root)
-{
-    t_execution_state res;
-
-    res = execute_ast(root, state);
-    set_cmd_status(state, res_status(res.status));
-    state->last_cmd_st_exe = res;
-}
-```
-
-A builtin that needs the default exit status (like `exit` with no argument) simply reads from `state->last_cmd_st_exe`:
-
-```c
-int builtin_exit(t_shell *state, t_vec argv)
-{
-    int ret;
-
-    // No explicit code: use last command status
-    if (argv.len == 1)
-        exit_clean(state, state->last_cmd_st_exe.status);
-    // ...existing numeric parsing and error logic...
-}
-```
-
-Similarly, an expansion implementation for `$?` can be written as:
-
-```c
-char *expand_last_status(t_shell *state)
-{
-    // Convert last status to string if needed
-    if (!state->last_cmd_st)
-        state->last_cmd_st = ft_itoa(state->last_cmd_st_exe.status);
-    return (ft_strdup(state->last_cmd_st));
-}
-```
-
-This shows the intended pattern: the *numeric* truth lives in `last_cmd_st_exe.status`, while the string form is derived on demand.
-
-### 7.2 How `pid` controls cleanup in `exit`
-
-The `exit` builtin uses `exit_clean()` (see `src/builtins/exit.c`). That helper compares the current PID against `state->pid`:
-
-```c
-void exit_clean(t_shell *state, int code)
-{
-    char *pid_s;
-
-    pid_s = xgetpid();
-    if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
-    {
-        // We are in the original shell process: full cleanup
-        manage_history(state);
-        free_all_state(state);
-    }
-    free(pid_s);
-    exit(code);
-}
-```
-
-Implications:
-
-- In the **main shell process**, calling `exit` will:
-  - Save history,
-  - Free global state,
-  - Then terminate.
-- In a **child process** that inherited `t_shell` but has a different PID:
-  - `ft_strcmp(state->pid, pid_s)` fails,
-  - No global cleanup is performed,
-  - Only `exit(code)` is executed.
-
-This prevents child processes from corrupting or double‑freeing parent state.
-
----
-
-## 8. How to Extend `t_shell` Safely
-
-When adding new fields to `t_shell`, keep these invariants and guidelines in mind:
-
-1. **Initialization must be explicit**
-   - `shell_init()` returns a zero‑initialized struct:
-     ```c
-     static inline t_shell shell_init(void)
-     {
-         return ((t_shell){0});
-     }
-     ```
-   - Any non‑zero / non‑NULL default must be set explicitly in `on()` (or a dedicated initializer).
-
-2. **Define clear ownership and lifetime**
-   - If your field points to heap memory (`char *`, `t_vec`, custom struct), decide:
-     - Who allocates it,
-     - Who frees it,
-     - At what stage in the lifecycle (per‑command, per‑session, on exit only).
-   - Add the corresponding `free_*` calls to `free_all_state()` (or the appropriate per‑loop cleanup) so there are no leaks.
-
-3. **Avoid hidden global state**
-   - Prefer storing logical state inside `t_shell` instead of in global variables.
-   - If you must interact with global APIs (signals, FDs), keep the *policy* in `t_shell` and make helper functions thin wrappers.
-
-4. **Respect the REPL loop boundaries**
-   - Fields that are **per command** (e.g., AST, redirects, temporary vectors) must be reset or freed in `repl_shell()` on each iteration.
-   - Fields that are **per session** (history, env, options, PRNG, pid) should only be initialized in `on()` and freed in `off()` / `exit_clean()`.
-
-5. **Consider input modes and POSIX semantics**
-   - If your new field affects user‑visible behavior (e.g. prompts, logging, debug info), think about:
-     - Interactive vs non‑interactive (`metinp`),
-     - Script file vs `-c` vs stdin.
-   - Try to mirror how POSIX shells differ between these modes.
-
-6. **Integrate with `option_flags` when appropriate**
-   - If you add a new debug or verbose feature, add a new bit in `enum e_opt_flag` and set it in `cli_long_word()`.
-   - Use bit checks (`state->option_flags & NEW_FLAG`) instead of parsing strings at runtime.
-
-7. **Document the field in `core/README.md`**
-   - For every new member, update this README with:
-     - Type,
-     - Who owns it,
-     - When it is initialized and freed,
-     - How it interacts with existing parts of the shell.
-
-By following these rules, you keep `t_shell` coherent, prevent subtle lifetime bugs, and make it easier for future contributors (or your future self) to reason about the shell’s behavior.
+## 8. Extending `t_shell` safely
+
+1. **Initialisation is explicit.** `shell_init()` zeroes everything; a
+   non-zero default belongs in `on()` (see `init_rl_buffer`, `init_tables`).
+2. **Decide ownership and lifetime.** Per-command fields are freed at the
+   bottom of `repl_shell`; per-session fields are freed in
+   `free_all_state()` (`src/helpers/free_utils.c`) -- add your `free_*`
+   there, in the documented order. Note that `env` is *not* part of it:
+   `off()` and `exit_clean()` call `free_env` first.
+3. **Remember the fork.** A child inherits a copy of `t_shell`.
+   `exit_clean()` compares `getpid()` with `state->pid` and only the
+   original process runs the teardown; anything you add that must not run
+   twice needs the same guard.
+4. **Avoid hidden globals.** A few legacy process-wide statics remain (the
+   env index, the parse arena, the word slab, the ZLE tables) and are known
+   cleanup targets; do not add more.
+5. **Respect the input modes.** If a field changes user-visible behaviour,
+   check `metinp` and mirror how bash differs between interactive, script,
+   `-c` and piped input.
+6. **New startup flags** get a bit in `enum e_opt_flag` and a branch in
+   `cli_long_word`; runtime `set -o` options go through the roster in
+   `src/builtins/set_opts4.c` instead, so the command line inherits them.
+7. **Document it here.**
