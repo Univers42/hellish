@@ -83,26 +83,23 @@ static int	declare_print(t_shell *state, t_vec argv, size_t first)
 static size_t	declare_scan(t_vec argv, int *flags, char *term)
 {
 	size_t	i;
+	char	*w;
 
 	*flags = 0;
 	*term = 0;
 	i = 1;
-	while (i < argv.len && ((char **)argv.ctx)[i][0] == '-'
-		&& ((char **)argv.ctx)[i][1])
+	while (i < argv.len)
 	{
-		if (ft_strchr(((char **)argv.ctx)[i], 'p'))
-			*flags |= 1;
-		if (ft_strchr(((char **)argv.ctx)[i], 'x'))
-			*flags |= 2;
-		if (ft_strchr(((char **)argv.ctx)[i], 'A'))
-			*flags |= 4;
-		if (ft_strchr(((char **)argv.ctx)[i], 't')
-			|| ft_strchr(((char **)argv.ctx)[i], 'r')
-			|| ft_strchr(((char **)argv.ctx)[i], 'g'))
-			*flags |= 8;
-		*term = scan_term(((char **)argv.ctx)[i]);
-		if (*term)
-			return (i);
+		w = ((char **)argv.ctx)[i];
+		if (!w[1] || !ft_strchr("-+", w[0]))
+			break ;
+		*flags |= declare_flag_bits(w);
+		if (w[0] == '-')
+		{
+			*term = scan_term(w);
+			if (*term)
+				return (i);
+		}
 		i++;
 	}
 	return (i);
@@ -128,6 +125,8 @@ int	builtin_declare(t_shell *state, t_vec argv)
 		return (declare_assoc(state, argv, i));
 	if (flags & 1)
 		return (declare_print(state, argv, i));
+	if (flags & 16)
+		return (declare_unexport(state, argv, i));
 	while (i < argv.len)
 		declare_assign(state, ((char **)argv.ctx)[i++], (flags & 2) != 0);
 	return (0);

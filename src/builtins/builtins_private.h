@@ -44,6 +44,12 @@ typedef struct s_vcs
 	int			bits;
 }	t_vcs;
 
+/* un-export (export_helpers3.c, builtin_declare5.c) */
+bool	export_wants_unexport(t_vec av, size_t first_operand);
+int		export_unexport_arg(t_shell *st, const char *word);
+int		declare_unexport(t_shell *state, t_vec argv, size_t i);
+int		declare_flag_bits(const char *w);
+
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \
 				No such file or directory\n"

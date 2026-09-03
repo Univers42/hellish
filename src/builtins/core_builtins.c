@@ -53,16 +53,21 @@ int	builtin_export(t_shell *st, t_vec av)
 {
 	size_t	i;
 	int		status;
+	bool	unexp;
 
 	i = export_skip_opts(st, av, &status);
 	if (status)
 		return (2);
 	if (i >= av.len)
 		return (collect_and_print_exported(st), 0);
+	unexp = export_wants_unexport(av, i);
 	status = 0;
 	while (i < av.len)
 	{
-		status = process_arg(st, av, (int)i) || status;
+		if (unexp)
+			status = export_unexport_arg(st, ((char **)av.ctx)[i]) || status;
+		else
+			status = process_arg(st, av, (int)i) || status;
 		i++;
 	}
 	if (status)

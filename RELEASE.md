@@ -8,6 +8,33 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.9 — *the export release*
+
+The first 42 account to load its real `~/.zshrc` inside hellish saw
+`manpath: warning: $PATH not set` at every prompt. nvm was the messenger,
+not the bug: `nvm_use` reassigns `PATH="$(nvm_change_path …)"`, runs
+`$(manpath)`, and only then says `export PATH` — and in hellish **a plain
+assignment to an exported variable dropped its export attribute**, so the
+child ran with no PATH. `PATH="$PATH:/x"` has un-exported PATH in every
+release so far; nothing in 4362 golden cases assigned to an exported
+variable and then looked at a child.
+
+- **The export attribute is sticky**, as in every POSIX shell: only
+  `unset`, `export -n` and `declare +x` take it away.
+- **`export -n`, `declare +x`, `typeset +x` actually un-export** — the
+  option was accepted and ignored, and nothing could ever un-export a
+  variable.
+- `tests/export_attr`: 29 cases diffed against bash 5.3.9 — reassignment
+  in functions, through `$(...)`, `+=`, `for`, subshells, groups; every
+  un-export spelling; `unset` then reassign; and the exact nvm shape.
+- `tests/rc_realworld_test.py`: a 42-style `~/.zshrc` (Homebrew, the nvm
+  block, `~/.local/bin`, aliases) loaded through the installer's import
+  module, on a pty, with a vendored stand-in for the nvm pattern so it
+  runs everywhere — no warning, the alias works, children see PATH, first
+  prompt under two seconds.
+
+---
+
 ## v2.8.8 — *the re-run release*
 
 One line in one install log — `generated ~/.hellishrc would not parse —

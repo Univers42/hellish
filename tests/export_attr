@@ -1,0 +1,29 @@
+export X=1; X=2; sh -c 'echo "[$X]"'
+export X=1; X="$(echo 3)"; sh -c 'echo "[$X]"'
+export X=1; f() { X=4; sh -c 'echo "[$X]"'; }; f
+export X=1; f() { local Y; X=5; sh -c 'echo "[$X]"'; }; f
+export X=1; X=6; printenv X
+export X=1; X=; sh -c 'echo "[$X]"'
+export X=1; X=2; X=3; env | grep '^X='
+X=1; sh -c 'echo "[$X]"'
+X=1; X=2; sh -c 'echo "[$X]"'
+export X=1; unset X; X=2; sh -c 'echo "[$X]"'
+export X=1; unset X; sh -c 'echo "[$X]"'
+export X=1; export -n X; sh -c 'echo "[$X]"'
+export X=1; export -n X; echo "$X"
+export X=1; export -n X; X=2; sh -c 'echo "[$X]"'
+export X=1; declare +x X; sh -c 'echo "[$X]"'
+export X=1; declare +x X; echo "$X"
+export X=1; typeset +x X; sh -c 'echo "[$X]"'
+export X=1; export -n X; export X; sh -c 'echo "[$X]"'
+export X=1 Y=2; export -n X Y; sh -c 'echo "[$X$Y]"'
+export -n NOSUCH; echo "st=$?"
+export X=1; readonly X; sh -c 'echo "[$X]"'
+PATH="$PATH"; sh -c 'echo "${PATH:+set}"'
+PATH="$PATH:/nonexistent-tail"; sh -c 'echo "${PATH:+set}"'
+f() { PATH="$(printf %s "$PATH")"; sh -c 'echo "${PATH:+set}"'; }; f
+export MANPATH=/a; f() { MANPATH="$(echo /b)"; sh -c 'echo "[$MANPATH]"'; }; f
+export X=1; for X in a b; do :; done; sh -c 'echo "[$X]"'
+export X=1; X+=2; sh -c 'echo "[$X]"'
+export X=1; { X=9; }; sh -c 'echo "[$X]"'
+export X=1; (X=8; sh -c 'echo "[$X]"'); sh -c 'echo "[$X]"'

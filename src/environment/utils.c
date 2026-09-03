@@ -32,10 +32,20 @@ t_env	env_create(char *key, char *value, bool exported)
 	return (e);
 }
 
-/* Upsert: if key already exists, replace value (freeing old) and update
-   exported flag; consume el.key (freeing the duplicate).  If new, push
-   the whole entry and tell the index about the new slot.  Returns 0 on
-   success, 1 if vec_push failed (OOM). */
+/* Upsert: if key already exists, replace value (freeing old); consume
+   el.key (freeing the duplicate).  If new, push the whole entry and tell
+   the index about the new slot.  Returns 0 on success, 1 if vec_push
+   failed (OOM).
+
+   The export attribute is STICKY: a plain assignment to a variable that
+   is already exported keeps it exported, as in every POSIX shell.  This
+   used to be `old->exported = el.exported`, and every assignment arrives
+   here with exported=false -- so `PATH="$PATH:/x"` silently un-exported
+   PATH, and any child run before the next `export PATH` started with no
+   PATH at all.  nvm.sh does exactly that (PATH="$(nvm_change_path ..)",
+   then $(manpath), then export PATH), and every 42 login that loads nvm
+   printed "manpath: warning: $PATH not set".  Only `unset`, `export -n`
+   and `declare +x` take the attribute away, through env_unexport(). */
 int	env_set(t_vec_env *env, t_env el)
 {
 	t_env	*old;
@@ -47,7 +57,7 @@ int	env_set(t_vec_env *env, t_env el)
 		xfree(old->value);
 		xfree(el.key);
 		old->value = el.value;
-		old->exported = el.exported;
+		old->exported = old->exported || el.exported;
 	}
 	else
 	{

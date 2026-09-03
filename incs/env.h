@@ -137,6 +137,7 @@ bool		assoc_key_quoted(const char *k, int len);
 char		*dquote_str(const char *s);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
+int			env_unexport(t_vec_env *v, char *key);
 t_env		*env_get(t_vec_env *env, char *key);
 char		**get_envp(t_shell *state, char *exe_path);
 char		**get_envp_all(t_shell *state, char *exe_path);
