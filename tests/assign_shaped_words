@@ -1,0 +1,46 @@
+for x in A=1 B=2; do echo $x; done
+for x in a A=1 b; do echo "$x"; done
+V="1 2"; for x in A=$V; do echo "[$x]"; done
+for x in A="b c"; do echo "[$x]"; done
+for x in a=b=c A+=1 A[0]=1 1A=1 _a=1 a1=x; do echo "$x"; done
+for x in A=~ A=~/x B=:~; do echo "$x"; done
+for x in A=1; do echo $x; done; for x in A=1; do echo $x; done
+for i in 1 2; do for x in A=$i B=$((i+1)); do echo $x; done; done
+for x in A=$(echo hi) B=`echo yo`; do echo "$x"; done
+for x in A=* B=?; do echo "$x"; done
+set -- A=1 B=2; for x in "$@"; do echo "$x"; done
+for x in A=\$HOME "B=$HOME"; do [ "$x" = "A=\$HOME" ] || [ "$x" = "B=$HOME" ] && echo ok; done
+e=( A=1 ); echo "${e[@]}"
+e=( A=1 B=2 ); echo ${#e[@]} "${e[1]}"
+e=(); e+=( A=1 ); echo "${e[@]}"
+e=( x A=1 y ); echo "${e[@]}" ${#e[@]}
+e=( A=$HOME ); [ "${e[0]}" = "A=$HOME" ] && echo ok
+e=( A="x y" ); echo ${#e[@]} "${e[0]}"
+e=( A='x y' ); echo ${#e[@]} "${e[0]}"
+V="1 2"; e=( A=$V ); echo ${#e[@]} "${e[0]}" "${e[1]}"
+V="1 2"; e=( "A=$V" ); echo ${#e[@]} "${e[0]}"
+e=( a=b=c A+=1 A[0]=1 1A=1 ); echo "${e[@]}"
+e=( A=~ ); echo "${e[@]}"
+e=( A=* ); echo "${e[@]}"
+e=( A=$(echo hi) ); echo "${e[@]}"
+declare -a e=( A=1 ); echo "${e[@]}"
+f() { local -a e=( A=1 ); echo "${e[@]}"; }; f
+f() { local -a e; e+=( "A=${1}" ); e+=( B=$2 ); echo "${e[@]}"; }; f x y
+f() { local -a e; local k v; k=mb; v=x; e+=( "LESS_TERMCAP_${k}=${v}" ); e+=( PAGER="${NOPE:-less}" ); e+=( GROFF_NO_SGR=1 ); printf "%s\n" "${e[@]}"; }; f
+e=( A=1 ); env "${e[@]}" sh -c 'echo $A'
+env=(); env+=( PAGER="${NOPE:-cat}" ); env+=( GROFF_NO_SGR=1 ); command env "${env[@]}" sh -c 'echo $PAGER $GROFF_NO_SGR'
+e=( [0]=A=1 ); echo "${e[@]}"
+e=( A=1 ) ; e+=( B=2 ) ; echo "${!e[@]}" "${e[@]}"
+for x in A=1; do :; done; echo "$x"
+i=0; for x in A=1 B=2 C=3; do i=$((i+1)); done; echo $i
+case A=1 in A=1) echo yes;; esac
+[[ A=1 == A=1 ]] && echo eq
+echo A=1 B=2
+printf "%s\n" A=1 B=2
+A=1 e=( B=$A ); echo "${e[@]}"
+A=1 e=( B=$A ) f=( C=${e[0]} ); echo "${e[@]}" "${f[@]}"
+e=( A=1 ) f=( B=${e[0]} ); echo "${f[@]}"
+x=5 e=( $x $((x+1)) ); echo "${e[@]}"
+A=old; A=new e=( B=$A ); echo "${e[@]}" "$A"
+A=1 e=( B=$A ) sh -c 'echo "$A" "$B"'
+A=1 e=( B=$A ) true; echo "[$A]" "[${e[*]}]"

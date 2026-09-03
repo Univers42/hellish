@@ -68,3 +68,26 @@ void	assignment_word_to_word(t_ast_node *node)
 	parena_free(node->children.ctx);
 	*node = ret;
 }
+
+/* A private, expandable copy of any word the read-only drivers get.
+**
+** reparse_assignment_words promotes EVERY `NAME=value` word in the tree,
+** wherever it stands: `for x in A=1`, `arr=( PAGER=less )`, `e+=( K=$v )`.
+** Only a simple command's own children were ever converted back, so
+** those other positions handed an AST_ASSIGNMENT_WORD -- a two-child node
+** whose second child is itself a word -- to split_words, which asserts
+** that every child is a token.  That assert was the segfault behind
+** oh-my-zsh's colored-man-pages: its `man` wrapper does
+** `environment+=( PAGER="${commands[less]:-$PAGER}" )`, and `man bash`
+** took the interactive shell down with it.  bash treats such a word as a
+** plain word (`for x in A=$V` splits and globs like any other), which is
+** exactly what flattening it here gives. */
+t_ast_node	clone_as_word(t_ast_node *src)
+{
+	t_ast_node	scratch;
+
+	scratch = clone_ast(src);
+	if (scratch.node_type == AST_ASSIGNMENT_WORD)
+		assignment_word_to_word(&scratch);
+	return (scratch);
+}

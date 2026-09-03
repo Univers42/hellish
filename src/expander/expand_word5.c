@@ -30,6 +30,8 @@ static char	*fast_path_expand(t_shell *state, t_ast_node *src,
 {
 	char	*v;
 
+	if (src->node_type == AST_ASSIGNMENT_WORD)
+		return (NULL);
 	v = push_plain_literal(src, args);
 	if (v)
 		return (v);
@@ -55,7 +57,11 @@ static char	*fast_path_expand(t_shell *state, t_ast_node *src,
    intact.  This is required anywhere a node is reused across iterations
    (for-loop variable words, redirect targets in loops).  The fast paths in
    fast_path_expand are tried first; if they fire, no clone is needed at all.
-   Only on the slow path do we pay for clone_ast. */
+   Only on the slow path do we pay for clone_ast.
+     The clone goes through clone_as_word: a `NAME=value` word outside
+   command position (a for-list word, an array element) arrives as an
+   AST_ASSIGNMENT_WORD and must be flattened back to a plain word first --
+   the fast paths and split_words only understand token children. */
 void	expand_word_ro(t_shell *state, t_ast_node *src,
 			t_vec *args, bool keep_as_one)
 {
@@ -63,7 +69,7 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 
 	if (fast_path_expand(state, src, args, keep_as_one))
 		return ;
-	scratch = clone_ast(src);
+	scratch = clone_as_word(src);
 	expand_word(state, &scratch, args, keep_as_one);
 }
 
@@ -84,7 +90,7 @@ void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 		word_slab_push(o);
 		return ;
 	}
-	scratch = clone_ast(src);
+	scratch = clone_as_word(src);
 	expand_word_glob_ctl(state, &scratch, args, EW_KEEP_AS_ONE | EW_NO_GLOB);
 	word_slab_push(o);
 }
@@ -111,7 +117,7 @@ void	expand_word_elem_ro(t_shell *state, t_ast_node *src, t_vec *args)
 	int			o;
 
 	o = word_slab_push(0);
-	scratch = clone_ast(src);
+	scratch = clone_as_word(src);
 	expand_word_glob_ctl(state, &scratch, args, 0);
 	word_slab_push(o);
 }

@@ -14,6 +14,8 @@
 #include "env.h"
 
 void	scope_save(t_shell *state, const char *key);
+t_vec	apply_temp_assigns(t_shell *state, t_vec *pre);
+void	restore_temp_assigns(t_shell *state, t_vec *saves);
 
 /* Apply an AST_ARRAY_ASSIGN node: arr=(a b c) rebuilds the array from
    scratch, arr+=(d e) keeps the existing records and appends after the
@@ -22,7 +24,11 @@ void	scope_save(t_shell *state, const char *key);
    match. This used to use assignment semantics (one field, no glob), which
    silently produced a one-element array holding the unsplit string.
    The result rides the normal pre_assigns path, so `arr=(1 2) cmd` scopes
-   exactly like VAR=v cmd. */
+   exactly like VAR=v cmd.
+     The elements expand with the earlier pre-assignments of the same
+   command applied, the way expand_simple_cmd_assignment does for scalars:
+   POSIX wants `A=1 e=( B=$A )` to see A, and without the temporary apply
+   it saw the OLD environment and stored `B=`. */
 
 /* Expand children [1..] (the element words) into heap strings. */
 static void	expand_elems(t_shell *state, t_ast_node *node, t_vec *args)
@@ -80,11 +86,14 @@ int	handle_array_assign(t_shell *state, t_expander_simple_cmd *exp,
 	t_token			key;
 	t_env			ev;
 	t_arr_assign	aa;
+	t_vec			saves;
 
 	key = ((t_ast_node *)exp->curr->children.ctx)[0].token;
 	vec_init(&args);
 	args.elem_size = sizeof(char *);
+	saves = apply_temp_assigns(state, &ret->pre_assigns);
 	expand_elems(state, exp->curr, &args);
+	restore_temp_assigns(state, &saves);
 	aa.append = (key.len >= 2 && key.start[key.len - 2] == '+');
 	ev.key = ft_strndup(key.start, key.len - 1 - aa.append);
 	ev.exported = state->opt_allexport;
