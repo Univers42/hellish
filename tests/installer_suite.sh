@@ -71,6 +71,18 @@ check "A: framework loads with 0 errors" \
 	su nora -c "$NH/.local/bin/hellish -c '. ~/.hellishrc >/dev/null 2>&1; [ \${#HX_ERRORS[@]} -eq 0 ]'"
 check "A: conf sees git on" \
 	su nora -c "$NH/.local/bin/hellish -c '. ~/.hellishrc >/dev/null 2>&1; conf list' | grep -q 'on  git'"
+# A RE-RUN over the framework's own rc. ~/.hellishrc is now the loader,
+# whose `HX_LOADED=()` is bash syntax; the seeder used to validate the rc
+# with `sh -n` (dash), refuse its PATH block, and -- under the caller's
+# set -e -- stop the whole install right there, binary copied and nothing
+# hooked or asked. The second install must run to the end.
+su nora -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=none" \
+	> /tmp/A-rerun.log 2>&1 && ok "A: a re-run over the framework rc completes" \
+	|| bad "A: a re-run over the framework rc completes" "exit $? -- $(grep -E 'would not parse|error' /tmp/A-rerun.log | head -1)"
+check "A: ...and the PATH block is written into it" \
+	sh -c "grep -q 'hellish path >>>' $NH/.hellishrc"
+check "A: ...the rc hook is still in place"  grep -q "^# >>> hellish >>>" "$NH/.bashrc"
+check "A: ...and the framework is still there" test -d "$NH/.hellish/lib"
 # The framework ships its own suite (~/.hellish/test/run.hsh); a user-mode
 # install -- the 42 machine -- is where it must pass, because that is the
 # install with no /usr/bin/hellish for anything to hardcode.

@@ -8,6 +8,30 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.8 — *the re-run release*
+
+One line in one install log — `generated ~/.hellishrc would not parse —
+left untouched` — and the install stopped there: binary copied, nothing
+hooked, no plugin question. The seeder validated the rc with `sh -n`, and
+`/bin/sh` is dash on Debian/Ubuntu, which rejects `HX_LOADED=()` — the
+plugin framework's own loader, bash syntax hellish reads happily. So every
+**re-run** of the installer over a framework-managed `~/.hellishrc` died
+under the callers' `set -e`.
+
+- The seeder now asks **the hellish it just installed** (then bash) whether
+  the rc parses, refuses its PATH block only when the block itself broke a
+  file that parsed before, and a refusal is a warning — the install carries
+  on to the smoke test, the hook and the framework.
+- The seeder ships in the install bundle, which is why this is a release
+  and not a push: `curl | sh` takes `tools/seed_hellishrc.sh` from the
+  latest release, not from `main`.
+
+Detector: the installer suite re-runs `install.sh` over the framework rc
+after scenario A and requires it to finish, write the block, and leave the
+hook and framework in place.
+
+---
+
 ## v2.8.7 — *the school release*
 
 Two field reports from 42 Madrid, the same afternoon, one install each:

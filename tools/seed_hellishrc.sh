@@ -232,14 +232,44 @@ EOF
 
 	# Refuse to leave behind an rc that will not parse: this file is sourced
 	# by every interactive hellish, and this script is the one that wrote it.
-	if ! sh -n "$RC.new" 2>/dev/null; then
-		rm -f "$RC.new"
-		printf '  \033[1;33m!\033[0m  generated %s would not parse — left untouched\n' \
+	#
+	# Asked of the shell that READS the file. This used to be `sh -n`, and
+	# /bin/sh is dash on Debian and Ubuntu: it rejects `HX_LOADED=()` -- the
+	# plugin framework's own loader, bash syntax hellish accepts -- so every
+	# re-run over a framework rc refused the block, returned 1, and the
+	# caller's `set -e` turned "left untouched" into an install that stopped
+	# right there: binary copied, nothing hooked, no framework question.
+	#
+	# And only OUR change can be refused. When the file did not parse before
+	# the block went in either, that is the user's rc, not this script's
+	# doing; hellish reports rc errors and carries on, so the block is added
+	# and the state of the rest is reported rather than made a blocker.
+	if ! rc_parses "$RC.new"; then
+		if rc_parses "$RC"; then
+			rm -f "$RC.new"
+			printf '  \033[1;33m!\033[0m  generated %s would not parse — left untouched\n' \
+				"$RC" >&2
+			return 1
+		fi
+		printf '  \033[1;33m!\033[0m  %s does not parse as it is; the PATH block is added anyway\n' \
 			"$RC" >&2
-		return 1
 	fi
 	mv -f "$RC.new" "$RC" || return 1
 	printf '  \033[1;32m✓\033[0m  %s puts %s on PATH\n' "$RC" "$_dir"
+}
+
+# rc_parses FILE -> 0 when the shell that will source FILE accepts it: the
+# hellish this install just put in place, else bash (whose syntax hellish
+# reads), else, for want of anything better, sh.
+rc_parses() {
+	if [ -n "$PATH_DIR" ] && [ -x "$PATH_DIR/hellish" ]; then
+		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
+			"$PATH_DIR/hellish" -n "$1" >/dev/null 2>&1
+	elif command -v bash >/dev/null 2>&1; then
+		bash -n "$1" >/dev/null 2>&1
+	else
+		sh -n "$1" >/dev/null 2>&1
+	fi
 }
 
 remove_path_block() {
@@ -258,7 +288,10 @@ fi
 seed_rc || exit 1
 seed_prompt || exit 1
 seed_themes || exit 1
+# A refused block is a warning, not a failed install: the shell starts
+# without it (the hook execs an absolute path), and the message above says
+# what is missing. Exiting 1 here killed the caller under set -e.
 if [ -n "$PATH_DIR" ]; then
-	write_path_block "$PATH_DIR" || exit 1
+	write_path_block "$PATH_DIR" || true
 fi
 exit 0
