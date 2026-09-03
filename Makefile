@@ -1006,11 +1006,19 @@ plugin-corpus: ## Real plugins vs release AND ASan — the compatibility matrix
 	@$(MAKE) --no-print-directory MODE=release all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: release\033[0m\n" >&2
 	@python3 $(TEST_DIR)/plugin_corpus_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mframework: release\033[0m\n" >&2
+	@python3 $(TEST_DIR)/hxp_framework_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
 	@$(MAKE) --no-print-directory all
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mcorpus: debug + ASan\033[0m\n" >&2
 	@ASAN_OPTIONS=detect_leaks=1 python3 $(TEST_DIR)/plugin_corpus_test.py \
 		$(BIN_DIR)/$(BAPTIZE_SHELL)
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mframework: debug + ASan\033[0m\n" >&2
+	@ASAN_OPTIONS=detect_leaks=1 python3 $(TEST_DIR)/hxp_framework_test.py \
+		$(BIN_DIR)/$(BAPTIZE_SHELL)
+
+hxp-test: all  ## The plugin framework (hxp) end to end: install, load, use every plugin
+	@python3 $(TEST_DIR)/hxp_framework_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Non-ASCII in the PROMPT (the shortened cwd) and in TYPED INPUT (a wrapping
 # line that starts with a two-byte, one-column character, plus an edit made

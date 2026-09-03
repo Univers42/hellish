@@ -202,6 +202,11 @@ jobs:
           if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
+      # Same framework gate on the ASan heap (the allocator job runs it on
+      # ft_malloc): the crash it guards was a NULL write the sanitizer
+      # reports first and best.
+      - name: The plugin framework, end to end (ASan)
+        run: ASAN_OPTIONS=detect_leaks=1 python3 tests/hxp_framework_test.py build/bin/hellish
       # The same cases against what we SHIP. The job above builds debug+ASan,
       # so until this existed nothing ran the golden suite against a release
       # binary -- and a heap bug the sanitizer happened to render benign
@@ -377,6 +382,13 @@ jobs:
       # bonus on a connected runner and never a flake on one without.
       - name: Real third-party plugins
         run: python3 tests/plugin_corpus_test.py build/bin/hellish
+      # The configuration a user ends up with, not one file at a time: the
+      # framework's installer into a throwaway HOME, its own suite, every
+      # management command, then USING what the plugins define. `man bash`
+      # segfaulted a fresh install while every plugin row above was green,
+      # because loading a wrapper is not running it.
+      - name: The plugin framework, end to end
+        run: python3 tests/hxp_framework_test.py build/bin/hellish
 
   # ── Update path and network-shaped redirections ──────────────────────────
   # Both bring up their own local peer; neither touches the network. The
