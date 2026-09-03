@@ -80,6 +80,19 @@ RUN set -eux; \
 	mkdir -p /srv/release/private/hellishrc_plugins/archive/refs/heads; \
 	cp /srv/release/hellishrc_plugins.tar.gz \
 		/srv/release/private/hellishrc_plugins/archive/refs/heads/main.tar.gz; \
+	# A second, STALE channel (scenario I): the same release, but its bundle
+	# carries a seeder from before a fix -- marked, so the log can tell whose
+	# seeder ran. install.sh must take its drivers from RAW_BASE (main) on top
+	# of any bundle; /srv/release/raw stands in for raw.githubusercontent.
+	mkdir -p /srv/release/old/latest/download /tmp/oldbundle; \
+	cp /srv/release/latest/download/hellish-linux-x86_64* /srv/release/old/latest/download/; \
+	tar -xzf /srv/release/latest/download/hellish-install-bundle.tar.gz -C /tmp/oldbundle; \
+	sed -i '2i echo "OLD-BUNDLE-SEEDER" >\&2' /tmp/oldbundle/tools/seed_hellishrc.sh; \
+	tar -czf /srv/release/old/latest/download/hellish-install-bundle.tar.gz -C /tmp/oldbundle .; \
+	rm -rf /tmp/oldbundle; \
+	mkdir -p /srv/release/raw/tools; \
+	cp user-install.sh hellishrc.example /srv/release/raw/; \
+	cp tools/register_shell.sh tools/seed_hellishrc.sh /srv/release/raw/tools/; \
 	# ines's ~/.zshrc: the verbatim rc from issue #112 plus one alias of
 	# her own, so scenario G can tell "loaded" from "parsed".
 	{ cat tests/fixtures/issue112.zshrc; \

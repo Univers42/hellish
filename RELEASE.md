@@ -22,13 +22,20 @@ under the callers' `set -e`.
   the rc parses, refuses its PATH block only when the block itself broke a
   file that parsed before, and a refusal is a warning — the install carries
   on to the smoke test, the hook and the framework.
-- The seeder ships in the install bundle, which is why this is a release
-  and not a push: `curl | sh` takes `tools/seed_hellishrc.sh` from the
-  latest release, not from `main`.
+- The seeder ships in the install bundle, which is why this was cut as a
+  release — and why the same failure reproduced once more *after* the fix
+  was on `main`: `curl | sh` took `tools/seed_hellishrc.sh` from the
+  latest release's bundle. **`install.sh` now refreshes its driver scripts
+  from `main` on top of whatever bundle it downloaded** (themes still come
+  from the bundle; an unreachable `main` falls back to the bundle's copies
+  and says so). A fix to the install path is live the moment it is pushed,
+  for every release, old ones included.
 
-Detector: the installer suite re-runs `install.sh` over the framework rc
+Detectors: the installer suite re-runs `install.sh` over the framework rc
 after scenario A and requires it to finish, write the block, and leave the
-hook and framework in place.
+hook and framework in place; scenario I serves a release whose bundle
+carries a marked, stale seeder and requires `main`'s drivers to run
+instead — and the bundle's only when `main` is unreachable.
 
 ---
 

@@ -19,6 +19,9 @@
 #   H  nora4  `curl | sh` from INSIDE a stale checkout, and `sh install.sh`
 #                                          of one: the release wins over an
 #                                          old build/bin/hellish, always
+#   I  nora4  a release whose bundle has an OLD seeder: the drivers come
+#                                          from main; the bundle's only when
+#                                          main is unreachable
 #
 # Everything hermetic: the "release" is a local server started here, serving
 # the binary, its sha256, the install bundle and the plugin framework built
@@ -237,6 +240,33 @@ su nora4 -c "cd /tmp && PATH=$NH4/bin:\$PATH $ENV_COMMON sh /hellish/install.sh 
 check "H3: an older hellish ahead on PATH is called out" \
 	grep -q "AHEAD of $NH4/.local/bin/hellish on your PATH: $NH4/bin/hellish (2.3.2)" /tmp/H3.log
 rm -f "$NH4/bin/hellish"
+
+# ── I: the drivers come from main, not from the release's bundle ─────────────
+# install.sh is fetched from main; the bundle's scripts are frozen at the
+# release. A seeder fix on main was therefore unreachable: every
+# `curl | sh` still ran the latest release's broken copy, and the user who
+# reported it saw the same failure again after the fix was pushed. The
+# stale channel here ships a bundle whose seeder announces itself; with
+# raw reachable it must NOT run, without raw it is the fallback that does.
+echo "--- I: nora4, a release whose bundle carries an old seeder"
+su nora4 -c "cd /tmp && sh /hellish/install.sh --uninstall" >/dev/null 2>&1
+su nora4 -c "cd /tmp && HELLISH_RELEASE_BASE=http://127.0.0.1:8377/old \
+HELLISH_RAW_BASE=http://127.0.0.1:8377/raw \
+HELLISH_PLUGINS_SRC=http://127.0.0.1:8377/hellishrc_plugins.tar.gz \
+HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
+sh /hellish/install.sh --yes --plugins=none" > /tmp/I1.log 2>&1 || bad "I1: install exited $?"
+check "I1: the bundle's stale seeder did not run"  sh -c "! grep -q OLD-BUNDLE-SEEDER /tmp/I1.log"
+check "I1: ...main's drivers did (the block was written)" grep -q "puts /home/nora4/.local/bin on PATH" /tmp/I1.log
+check "I1: no warning about unreachable scripts" sh -c "! grep -q 'could not refresh' /tmp/I1.log"
+su nora4 -c "cd /tmp && sh /hellish/install.sh --uninstall" >/dev/null 2>&1
+su nora4 -c "cd /tmp && HELLISH_RELEASE_BASE=http://127.0.0.1:8377/old \
+HELLISH_RAW_BASE=http://127.0.0.1:1/raw \
+HELLISH_PLUGINS_SRC=http://127.0.0.1:8377/hellishrc_plugins.tar.gz \
+HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
+sh /hellish/install.sh --yes --plugins=none" > /tmp/I2.log 2>&1 || bad "I2: install exited $?"
+check "I2: with main unreachable, the bundle's seeder is the fallback" grep -q OLD-BUNDLE-SEEDER /tmp/I2.log
+check "I2: ...and the installer said so" grep -q "could not refresh" /tmp/I2.log
+check "I2: ...and still installed the shell" test -x /home/nora4/.local/bin/hellish
 
 printf '\n%d ok, %d failed\n' "$PASS" "$FAILS"
 [ "$FAILS" -eq 0 ]

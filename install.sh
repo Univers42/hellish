@@ -214,6 +214,27 @@ if [ -z "$SRC_ROOT" ]; then
 		done
 		chmod +x "$WORK/user-install.sh" "$WORK"/tools/*.sh
 	fi
+	# The drivers are refreshed from main ON TOP of the bundle, every time.
+	# This script is fetched from main, so main's drivers are the ones it
+	# was written against; the bundle's are frozen at the release. A seeder
+	# fix landed on main and every `curl | sh` still ran the broken copy
+	# from the latest release's bundle -- the fix was unreachable without
+	# cutting a release, and the release took longer than the next report.
+	# Best effort: no network to raw (a mirror, an offline box) keeps the
+	# bundle's copies, and the themes always come from the bundle.
+	_fresh=0
+	for f in user-install.sh tools/register_shell.sh tools/seed_hellishrc.sh \
+		hellishrc.example; do
+		if fetch "$RAW_BASE/$f" "$WORK/$f.main" 2>/dev/null \
+			&& [ -s "$WORK/$f.main" ] && head -1 "$WORK/$f.main" | grep -q '^#'; then
+			mv -f "$WORK/$f.main" "$WORK/$f"
+			_fresh=$((_fresh + 1))
+		else
+			rm -f "$WORK/$f.main"
+		fi
+	done
+	chmod +x "$WORK/user-install.sh" "$WORK"/tools/*.sh 2>/dev/null || true
+	[ "$_fresh" = 4 ] || warn "could not refresh all install scripts from main -- using the release's copies"
 	SRC_ROOT="$WORK"
 fi
 
