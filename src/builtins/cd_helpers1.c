@@ -24,8 +24,14 @@ int	cd_invalid_opt(t_shell *state, const char *arg)
 
 /* Apply one bundled option word (the chars after the leading '-'): -L picks
    logical resolution, -P physical (last of the two wins), -e/-@ are accepted
-   for bash parity. Any other character makes the whole word invalid. */
-static int	cd_parse_flags(const char *s, t_cdopt *o)
+   for bash parity. Any other character makes the whole word invalid.
+     -q is zsh's, and is therefore accepted ONLY in the zsh dialect: it moves
+   without firing the chpwd hooks. bash rejects it and so must we in bash
+   mode, or the golden suite stops describing bash. It is not cosmetic --
+   oh-my-zsh's extract plugin (shipped on by default) runs `builtin cd -q`
+   four times, including the one that returns you to the directory you
+   started in, so without this `extract` errors on every archive. */
+static int	cd_parse_flags(const char *s, t_cdopt *o, bool zsh)
 {
 	int	i;
 
@@ -40,6 +46,8 @@ static int	cd_parse_flags(const char *s, t_cdopt *o)
 			o->eflag = true;
 		else if (s[i] == '@')
 			o->atflag = true;
+		else if (s[i] == 'q' && zsh)
+			o->quiet = true;
 		else
 			return (1);
 		i++;
@@ -67,7 +75,7 @@ int	cd_parse_opts(t_shell *state, t_vec argv, t_cdopt *o, size_t *first)
 			i++;
 			break ;
 		}
-		if (cd_parse_flags(a + 1, o))
+		if (cd_parse_flags(a + 1, o, zsh_mode(state)))
 			return (cd_invalid_opt(state, a));
 		i++;
 	}

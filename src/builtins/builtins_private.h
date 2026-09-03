@@ -247,13 +247,15 @@ int		umask_report(mode_t m, int flags);
 int		umask_sym_parse(const char *s, int initial);
 
 /* cd: options (-L logical default / -P physical, -e, -@), parsed before the
-   operand. echo => print the destination (CDPATH hit, `cd -`, or `cd a b`). */
+   operand. echo => print the destination (CDPATH hit, `cd -`, or `cd a b`).
+   quiet => zsh's -q: the move happens but the chpwd hooks do not fire. */
 typedef struct s_cdopt
 {
 	bool	physical;
 	bool	eflag;
 	bool	atflag;
 	bool	echo;
+	bool	quiet;
 }	t_cdopt;
 
 int		cd_invalid_opt(t_shell *state, const char *arg);
