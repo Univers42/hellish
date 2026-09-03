@@ -52,8 +52,10 @@ void	job_print(t_job *job, int current, int prev, bool show_pid)
 
 /* Called before each prompt.  Polls all running jobs, then prints and
    removes any that finished.  The notified flag is set to true just
-   before removal so the loop can't double-print if job_remove shifts
-   the count.  Interactive shells only: bash never announces job state
+   The whole batch is printed BEFORE any job is retired: removing one
+   re-elects the current job, and bash prints "[1]- Done" "[2]+ Done" with
+   the markers as they stood, not "[2]   Done" after job 1's removal
+   emptied the election.  Interactive shells only: bash never announces job state
    changes in scripts — there, finished jobs stay in the table until a
    `jobs` or `wait` reports them (job_purge_done). */
 void	job_notify(t_shell *state)
@@ -73,10 +75,10 @@ void	job_notify(t_shell *state)
 		{
 			job_print(&jt->jobs[i], jt->current, jt->previous, false);
 			jt->jobs[i].notified = true;
-			job_remove(jt, jt->jobs[i].id);
 		}
 		i++;
 	}
+	job_purge_reported(jt);
 }
 
 /* Promote `id` to current job, demoting the old current to previous.

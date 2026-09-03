@@ -8,6 +8,36 @@ shows you how to drive the shell.
 
 ---
 
+## v2.8.10 — *the wait release*
+
+The arm64 rung kept failing one golden case after 2.8.9's process-group
+fix, and the reason was a second, older divergence: what a bare `wait`
+leaves behind for `jobs`. bash reaps in its SIGCHLD handler, walks its
+jobs in table order, and afterwards retires every dead job **except the
+one `$!` names** (`mark_dead_jobs_as_notified` skips
+`last_asynchronous_pid` in a script). hellish's `wait` retired everything
+it could see, so `sleep 0.3 & kill %1; wait; jobs` said nothing where bash
+prints `Terminated` — on the fast side of the race only, which is why it
+showed up on arm64 and not here.
+
+- **`wait` follows bash's accounting**: already-dead children are drained
+  first (the handler's work, done late), the jobs are waited for in order
+  and only the one being waited on counts as `wait`'s own, then every dead
+  job but `$!`'s is retired. Interactive shells retire nothing in `wait`
+  — the prompt notifier prints `[1]+ Done` for all of them, as bash does.
+- **Markers survive a listing**: `jobs` and the prompt notifier print the
+  whole batch before retiring any job, so `[1]- Done` `[2]+ Done` comes
+  out as in bash instead of `[2]   Done`; and a re-election after a
+  removal considers stopped and running jobs only, never a dead one.
+- `tests/wait_reports`: 13 bash-diffed cases (dead-before vs dead-during
+  `wait`, one job vs several, killed vs exited, listings). The two golden
+  cases that raced `kill %1` straight into `wait` — a coin toss in bash
+  itself — now settle the job first, and `tests/bg_kill_race_test.py`
+  keeps the race covered under load.
+- The Tumbleweed rung retries `zypper refresh` on a mirror timeout.
+
+---
+
 ## v2.8.9 — *the export release*
 
 The first 42 account to load its real `~/.zshrc` inside hellish saw

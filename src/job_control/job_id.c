@@ -73,19 +73,24 @@ int	job_highest_id(t_job_table *jt, int except)
    that no longer existed, so `sleep 9 & sleep 0 & wait %2; jobs` printed the
    survivor with NO marker where bash prints '+'.  Called from job_remove so
    every removal path -- wait, jobs, the interactive notifier -- gets it. */
+/* bash's reset_current, on the removal of the current or previous job: a
+   stopped current job keeps `+`; otherwise the highest stopped job, else
+   the highest running one, is elected; with neither, both markers go --
+   a dead job is never elected. Removing a job that was neither leaves the
+   markers alone. */
 void	job_reelect(t_job_table *jt, int gone)
 {
-	if (jt->current == gone)
-	{
-		jt->current = jt->previous;
+	t_job	*cur;
+
+	if (jt->current != gone && jt->previous != gone)
+		return ;
+	cur = job_find_id(jt, jt->current);
+	if (jt->current == gone || !cur || cur->status != JOB_STOPPED)
+		jt->current = job_live_id(jt, -1);
+	if (jt->current < 0)
 		jt->previous = -1;
-	}
-	else if (jt->previous == gone)
-		jt->previous = -1;
-	if (!job_find_id(jt, jt->current))
-		jt->current = job_highest_id(jt, -1);
-	if (!job_find_id(jt, jt->previous) || jt->previous == jt->current)
-		jt->previous = job_highest_id(jt, jt->current);
+	else if (!job_find_id(jt, jt->previous) || jt->previous == jt->current)
+		jt->previous = job_live_id(jt, jt->current);
 }
 
 /* Smallest live job number strictly greater than `after`, or 0 when there is

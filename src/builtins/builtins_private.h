@@ -49,6 +49,8 @@ bool	export_wants_unexport(t_vec av, size_t first_operand);
 int		export_unexport_arg(t_shell *st, const char *word);
 int		declare_unexport(t_shell *state, t_vec argv, size_t i);
 int		declare_flag_bits(const char *w);
+/* a bare `wait`, bash's reporting rules (builtin_wait2.c) */
+int		wait_all(t_shell *state);
 
 # define CD_ERROR "cd: error retrieving current directory: getcwd: \
 				cannot access parent directories: \

@@ -10,7 +10,7 @@ sleep 0.05 & p=$!; wait $p; echo "sleep_rc=$?"; jobs
 ( exit 130 ) & sleep 0.1; jobs > j.txt; sed "s/\[1\][+-]*/[1]/" j.txt | tr -s " "; rm -f j.txt; wait
 i=0; while [ $i -lt 4 ]; do (exit $i) & eval "q$i=\$!"; i=$((i+1)); done; wait $q1; echo "q1=$?"; wait $q3; echo "q3=$?"
 ( exit 3 ) & p=$!; sleep 0.1; wait $p; echo "rc=$?"; jobs
-sleep 0.3 & kill %1; wait 2>/dev/null; jobs; echo "done=$?"
+sleep 0.3 & kill %1; sleep 0.15; wait 2>/dev/null; jobs; echo "done=$?"
 sleep 0.3 & kill -TERM %1; wait 2>/dev/null; echo "term=$?"
 sleep 0.3 & p=$!; kill $p; wait $p 2>/dev/null; echo "sig=$?"
 (exit 2) & p=$!; sleep 0.1; jobs > /dev/null; jobs > /dev/null; wait $p; echo "twice=$?"

@@ -110,9 +110,7 @@ int	reaped_job_status(t_shell *state, pid_t pid)
 int	builtin_wait(t_shell *state, t_vec argv)
 {
 	int		status;
-	int		drop;
 	size_t	i;
-	pid_t	pid;
 
 	if (argv.len >= 2 && ft_strcmp(((char **)argv.ctx)[1], "-n") == 0)
 		return (wait_n(state));
@@ -124,14 +122,7 @@ int	builtin_wait(t_shell *state, t_vec argv)
 			status = wait_one(state, ((char **)argv.ctx)[i++]);
 		return (status);
 	}
-	pid = pal_wait_any(state, &status, 0);
-	while (pid > 0)
-	{
-		bg_done_record(state, pid, status);
-		bg_done_take(state, pid, &drop);
-		pid = pal_wait_any(state, &status, 0);
-	}
-	return (job_purge_done(&state->job_table), 0);
+	return (wait_all(state));
 }
 
 /* builtin_times moved to builtin_proc2.c to keep this file within the

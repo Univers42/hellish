@@ -37,7 +37,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "pipes" "redirects" "extras" "echo_edge_cases" "advanced_edge_cases"
         "regress_hellish" "regress_combos" "cd_posix" "torture"
         "alias_posix" "builtins_posix" "cmd_not_found_handle" "pattern_class"
-        "issue12_export" "export_attr" "issue14_dollar0"
+        "issue12_export" "export_attr" "wait_reports" "issue14_dollar0"
         "issue15_colon_question" "issue11_cmdsub_brace"
         "issue8_set_options"
         "issue18_job_numbers"

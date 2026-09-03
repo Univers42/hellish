@@ -34,6 +34,11 @@ FROM ${BASE}
 # "cancel" (exit 4). `zypper dup` is the documented way to bring a Tumbleweed
 # system in line with the repositories, downgrades included; it runs only
 # when the plain install refuses, so the fast path stays fast.
+# The refresh itself is retried: download.opensuse.org answered one CI
+# run with "Timeout reached Curl error (28)" on the Oss repo metadata,
+# and under set -e that alone was a red rung. Four attempts, 20s apart,
+# then the install proceeds with whatever refreshed (it re-fetches what
+# it needs) rather than failing the build on a mirror hiccup.
 ARG CC=cc
 
 RUN set -eux; \
@@ -54,7 +59,8 @@ RUN set -eux; \
 			bash python3 diffutils findutils which; \
 		dnf clean all; \
 	elif command -v zypper >/dev/null 2>&1; then \
-		zypper --non-interactive --gpg-auto-import-keys refresh; \
+		n=0; until zypper --non-interactive --gpg-auto-import-keys refresh; do \
+			n=$((n + 1)); [ "$n" -ge 4 ] && break; sleep 20; done; \
 		pkgs="gcc clang make readline-devel ncurses-devel git-core bash \
 			python3 tar gzip which findutils diffutils"; \
 		if ! zypper --non-interactive install $pkgs; then \

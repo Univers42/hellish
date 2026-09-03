@@ -34,12 +34,31 @@ static void	parse_jobs_flags(char **av, int ac, bool *show_pid, bool *long_fmt)
 
 /* A finished job that has just been listed is over as far as the table is
    concerned: park its exit status in the bg_done ring so `wait` can still
-   answer for it, then drop the entry so its NUMBER goes back into use. */
+   answer for it, and mark it reported. The entry itself is dropped only
+   once the WHOLE listing is out (job_purge_reported below): removing it
+   here re-elected the current job mid-listing, and the next line came
+   out as "[2]   Done" where bash prints "[2]+  Done" -- bash prints the
+   batch with the markers as they stood, then deletes. */
 static void	retire_reported(t_shell *state, t_job *job)
 {
 	job->notified = true;
 	bg_done_record(state, job->pgid, job->raw_status);
-	job_remove(&state->job_table, job->id);
+}
+
+/* One line of the listing: the pgid alone under -p, else the full row;
+   a finished job is marked reported on the way out (retired after the
+   whole listing, see retire_reported). */
+static void	list_one(t_shell *state, t_job *job, bool show_pid, bool long_fmt)
+{
+	t_job_table	*jt;
+
+	jt = &state->job_table;
+	if (show_pid)
+		ft_printf("%d\n", job->pgid);
+	else
+		job_print(job, jt->current, jt->previous, long_fmt);
+	if (job_finished(job) && !show_pid)
+		retire_reported(state, job);
 }
 
 /* jobs [-l] [-p]: list background (and stopped) jobs. We update statuses
@@ -78,14 +97,10 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	{
 		job = job_find_id(jt, i);
 		i = job_next_after(jt, i);
-		if (job_finished(job) && job->notified)
-			continue ;
-		if (show_pid)
-			ft_printf("%d\n", job->pgid);
-		else
-			job_print(job, jt->current, jt->previous, long_fmt);
-		if (job_finished(job) && !show_pid)
-			retire_reported(state, job);
+		if (!(job_finished(job) && job->notified))
+			list_one(state, job, show_pid, long_fmt);
 	}
+	if (!show_pid)
+		job_purge_reported(jt);
 	return (0);
 }
