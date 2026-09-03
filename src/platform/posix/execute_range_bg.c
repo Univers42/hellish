@@ -161,6 +161,13 @@ static void	bg_job_label(t_shell *state, t_ast_node *node, char *buf,
 	buf[len] = '\0';
 }
 
+/* The parent puts the child in its own process group too, exactly as
+   jc_parent does for a foreground job: either side may be scheduled
+   first, and `kill %1` signals the GROUP (-pid). When the parent ran
+   before the child's own setpgid(0, 0), that group did not exist yet and
+   `sleep 0.3 & kill %1` failed with "No such process" -- 1 run in 150
+   idle, 1 in 15 under load, and the arm64 CI runner every other push.
+   Whichever call loses the race fails harmlessly; unchecked on purpose. */
 /* Fork a background job, register it in the job table (this is what makes
    jobs/fg/bg/kill %1 see it), record $! (last_bg_pid), and print
    "[id] pid" if running interactively -- AND only in the original shell
@@ -183,6 +190,7 @@ t_execution_state	execute_range_background(t_shell *state,
 		bg_child_body(state, exe, start, end);
 	if (pid < 0)
 		critical_error_errno_ctx("fork");
+	setpgid(pid, pid);
 	procsub_close_fds_parent(state);
 	state->bg_job_count++;
 	xfree(state->last_bg_pid);

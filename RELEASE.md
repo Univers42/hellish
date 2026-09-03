@@ -32,6 +32,13 @@ variable and then looked at a child.
   module, on a pty, with a vendored stand-in for the nvm pattern so it
   runs everywhere — no warning, the alias works, children see PATH, first
   prompt under two seconds.
+- **`cmd & kill %1` no longer races the job's own process group.** The
+  arm64 rung failed `sleep 0.3 & kill %1; wait; jobs` every other push
+  (and an x86 box under load, one run in fifteen): the shell signals the
+  job's group, but only the child created it, so a parent that reached
+  `kill` first got `No such process` and the job ran on. The parent now
+  calls `setpgid` too, as it already did for foreground jobs.
+  `tests/bg_kill_race_test.py` runs the case 200 times under contention.
 
 ---
 
