@@ -103,6 +103,8 @@ int			emit_dbracket_word(char **str, t_deque_tok *ret);
 bool		db_newline_skippable(t_deque_tok *ret, const char *after);
 void		db_track_regex(t_deque_tok *ret, int *in_db);
 int			db_regex_word(char **str, t_deque_tok *ret, int *in_db);
+int			*db_front_cell(void);
+int			db_front_group(const char *at);
 void		reclassify_keywords(t_deque_tok *tokens, bool zsh);
 long		*zsh_brace_cell(void);
 

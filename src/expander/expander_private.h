@@ -175,6 +175,9 @@ int			try_create_redir(t_shell *state, t_ast_node *curr,
 				t_tt tt, int src_fd);
 char		*expand_param_word(t_shell *state, const char *word, int wlen,
 				bool dq);
+bool		zsh_aliases_assign(t_shell *state, t_env *ev, const char *sub,
+				t_vec *args);
+bool		zsh_aliases_scalar(t_shell *state, t_env *ret);
 char		*expand_param_word_dq(t_shell *state, const char *word, int wlen);
 char		*pf_word_pipeline(t_shell *state, const char *word, int wlen,
 				bool no_sq);

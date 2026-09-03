@@ -66,6 +66,7 @@ char	*xdg_config_hellish(t_shell *state, const char *home);
 void	collect(const char *dir, const char *suffix, t_vec *out);
 void	collect_plugins(const char *dir, t_vec *out);
 void	rc_load_all(t_shell *state, const char *home);
+void	rc_load_after(t_shell *state, const char *home);
 
 /* Composable rc hooks (src/core/hooks*.c). */
 void	run_hook_funcs(t_shell *state, char *var, const char *arg);

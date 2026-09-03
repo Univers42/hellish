@@ -107,6 +107,10 @@ bool	zsh_mode_swap(t_shell *state, bool on);
 void	zsh_mode_pin(t_shell *state, bool on);
 int		zsh_mode_req(t_shell *state, bool on, bool local);
 bool	zsh_path(const char *path);
+/* `source .../oh-my-zsh.sh` from inside hellish (src/core/omz_shim.c):
+   the plugins it names load, its guard never runs. */
+bool	omz_loader_path(const char *path);
+int		omz_shim(t_shell *state, const char *path);
 /* True when arrays count from 1 -- zsh mode with ksh_arrays not set. */
 bool	zsh_arrays(t_shell *state);
 /* One written subscript -> the 0-based index the array store uses. */
@@ -340,6 +344,15 @@ typedef struct s_shell
 	int					func_return; /* pending return value from `return` */
 	int					func_depth; /* current function call depth */
 	int					source_depth; /* nesting depth of `.`/`source` runs */
+	/* The file whose text exec_string is running, so a parse error can say
+	   "FILE: line N" the way bash does (error_where.c); NULL for eval,
+	   traps, -c and the REPL, whose ctx already says where.  err_line is
+	   the file line the chunk under replay starts on. */
+	const char			*err_src;
+	int					err_line;
+	/* Silence the "not supported" notes while oh-my-zsh's plugins load
+	   through the shim (omz_shim.c): the user did not write those lines. */
+	bool				zunsup_quiet;
 	/* --rcfile=FILE, else NULL (borrowed from argv) */
 	char				*rcfile;
 	/* t_call_frame stack backing FUNCNAME and BASH_SOURCE */

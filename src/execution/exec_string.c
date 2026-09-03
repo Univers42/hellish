@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/06/02 00:00:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/06/02 00:00:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/09/03 12:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,13 @@
 #include "decomposer.h"
 #include "redir.h"
 
-void	report_parse_error(t_shell *state, t_parser *parser, t_deque_tok *tt);
-
 /* Parse + execute a string one statement at a time. Used by eval, command
    and the dot/source builtin -- since issue #105 the string reaches the
    parser in hazard-clipped chunks (exec_string3.c) so statements that
    change how later text lexes take effect for the rest of the string;
-   run_one_stmt and skip_delimiters below are shared with that chunker's
-   error replay. `str` must stay valid for the whole call. */
+   run_one_stmt (exec_string_err.c) and skip_delimiters below are shared
+   with that chunker's error replay. `str` must stay valid for the whole
+   call. */
 /* Drop any leading newline/semicolon tokens from the token queue before
    the next statement is parsed.  exec_string feeds multiple statements
    from a single token stream, so after each statement the queue may have
@@ -38,44 +37,6 @@ void	skip_delimiters(t_deque_tok *tt)
 		(void)deque_pop_start(&tt->deqtok);
 		t = ((t_ltoken *)deque_peek(&tt->deqtok))->tt;
 	}
-}
-
-/* Parse and execute one statement from the token queue.  On a parse error
-   we set $? to 2 (syntax error) and signal stop so the caller breaks out
-   of the loop.  The AST is freed unconditionally -- it is a per-statement
-   allocation and must not escape this function.  *stop is also set when
-   the shell hits an unconditional-exit condition (break outside loop,
-   return outside function, exit, SIGTERM unwind).
-
-   RES_GETMOREINPUT means an unterminated construct with no more input to
-   come, and it has to be REPORTED here.  stream_finish() does it for the
-   main input path (input_stream.c), but eval and source come through this
-   function instead -- so `source file` on a file ending mid-`{` set $? to 2
-   and printed nothing at all.  A file that fails to load and says nothing
-   about it is the worst possible answer, and it is what every plugin with a
-   brace hellish could not parse was getting.  A plain RES_ERR already
-   printed its own message during the parse. */
-int	run_one_stmt(t_shell *state, t_deque_tok *tt, bool *stop)
-{
-	t_parser	parser;
-	t_ast_node	ast;
-	int			status;
-
-	parser = (t_parser){.res = RES_OK};
-	vec_init(&parser.parse_stack);
-	parser.parse_stack.elem_size = sizeof(int);
-	ast = parse_simple_list(state, &parser, tt);
-	status = 2;
-	if (parser.res == RES_OK)
-		status = run_parsed(state, &ast);
-	else
-		report_parse_error(state, &parser, tt);
-	free_ast(&ast);
-	xfree(parser.parse_stack.ctx);
-	*stop = (parser.res != RES_OK || must_stop(state));
-	if (!*stop)
-		skip_delimiters(tt);
-	return (status);
 }
 
 /* Extract heredoc bodies up front (so they aren't parsed as commands),
@@ -117,14 +78,19 @@ static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
    mid-run. The chunker re-reads the source text after every executed
    statement, so without the copy that free is a use-after-free the
    fresh-install pty test catches under ASan. The old single-pass code
-   was immune only by accident: its up-front alias splice WAS the copy. */
-int	exec_string(t_shell *state, char *str)
+   was immune only by accident: its up-front alias splice WAS the copy.
+
+   The two entry points below differ only in state->err_src, the file a
+   parse error is reported against (error_where.c). It is saved and
+   restored around every run so an eval inside a sourced file reports
+   against ITS text rather than the file's line count. */
+static int	exec_string_own(t_shell *state, char *str)
 {
-	char	*bodies;
-	char	*own;
-	char	*prev_src;
-	size_t	prev_pos;
-	int		status;
+	char		*bodies;
+	char		*own;
+	char		*prev_src;
+	size_t		prev_pos;
+	int			status;
 
 	prev_src = state->hd_src;
 	prev_pos = state->hd_pos;
@@ -135,5 +101,38 @@ int	exec_string(t_shell *state, char *str)
 	xfree(bodies);
 	state->hd_src = prev_src;
 	state->hd_pos = prev_pos;
+	return (status);
+}
+
+/* eval, traps, PROMPT_COMMAND, -c strings: no file to name. */
+int	exec_string(t_shell *state, char *str)
+{
+	const char	*saved_src;
+	int			saved_line;
+	int			status;
+
+	saved_src = state->err_src;
+	saved_line = state->err_line;
+	state->err_src = NULL;
+	status = exec_string_own(state, str);
+	state->err_src = saved_src;
+	state->err_line = saved_line;
+	return (status);
+}
+
+/* `source FILE` and the rc loader: parse errors name FILE and the line. */
+int	exec_file_string(t_shell *state, char *str, const char *src)
+{
+	const char	*saved_src;
+	int			saved_line;
+	int			status;
+
+	saved_src = state->err_src;
+	saved_line = state->err_line;
+	state->err_src = src;
+	state->err_line = 1;
+	status = exec_string_own(state, str);
+	state->err_src = saved_src;
+	state->err_line = saved_line;
 	return (status);
 }

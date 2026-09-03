@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "execution_private.h"
+#include "prompt.h"
 
 /* The chunk driver half of the #105 fix; the chunk mechanics and the
    design rationale live in exec_string3.c. */
@@ -96,7 +97,11 @@ static int	run_chunk(t_shell *state, const char *s, size_t *off,
 	if (c.parser.res == RES_OK)
 		status = run_stmt_list(state, &c, stop);
 	else
+	{
+		if (state->err_src)
+			state->err_line = 1 + nl_count(s, c.start);
 		status = replay_chunk(state, &c, stop);
+	}
 	chunk_close(&c);
 	*off = c.end;
 	return (status);

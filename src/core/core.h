@@ -42,6 +42,18 @@ typedef struct s_cli
 	int		err;
 }	t_cli;
 
+/* Where an oh-my-zsh lives, for the shim (omz_shim.c, omz_shim2.c). */
+typedef struct s_omz
+{
+	char	*zsh;
+	char	*custom;
+}	t_omz;
+
+void		omz_source(t_shell *state, char *path);
+bool		omz_zle_only(const char *name);
+char		*omz_plugin_file(t_omz *o, const char *name);
+void		omz_custom(t_shell *state, t_omz *o);
+
 void		cli_parse(t_shell *state, char **argv, t_cli *cli);
 void		cli_scan(t_shell *state, t_cli *cli);
 void		cli_dispatch(t_shell *state, t_cli *cli);

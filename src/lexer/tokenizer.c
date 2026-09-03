@@ -32,7 +32,10 @@ int		extglob_ahead(const char *at);
    `shopt -s extglob` is set (4.1+), so `[[ $x == a@(b|z)c ]]` must lex the
    group as one word -- unarmed, the group's `|` became a PIPE and the
    conditional shattered (issue #105; the matcher's half of the same rule
-   is db_pattern_match). */
+   is db_pattern_match).
+     The same span arms db_front_cell, so zsh's bare group may OPEN the
+   operand: `[[ $TERM == (xterm*|screen*) ]]` is one word there and a
+   subshell anywhere else (dbracket_lex2.c, db_front_group). */
 static char	*try_parse_lexeme(char **str, t_deque_tok *ret, int in_db)
 {
 	char	*prompt;
@@ -43,11 +46,14 @@ static char	*try_parse_lexeme(char **str, t_deque_tok *ret, int in_db)
 	saved = *glob_extglob_cell();
 	if (in_db)
 		*glob_extglob_cell() = 1;
+	*db_front_cell() = in_db;
 	prompt = 0;
 	if (**str == '\'' || **str == '"' || **str == '$'
-		|| extglob_ahead(*str) || !(is_word_boundary(*str)))
+		|| extglob_ahead(*str) || db_front_group(*str)
+		|| !(is_word_boundary(*str)))
 		prompt = parse_lexeme(ret, str);
 	*glob_extglob_cell() = saved;
+	*db_front_cell() = 0;
 	return (prompt);
 }
 

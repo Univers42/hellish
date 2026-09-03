@@ -75,11 +75,15 @@ bool	is_function_def(t_deque_tok *tokens)
 /* Parse the function body after `name()`. Shared with the anonymous
    form (parse_func_anon.c): `() { ... }` has no name and no other
    difference, so it must not grow a second body parser.
-     Parse the function body after `name()`. If it starts with TT_LBRACE
-   we enter the explicit `{ compound_list }` path and consume the braces.
-   Otherwise (e.g. a compound command like `while ... done`) we hand off
-   directly to parse_compound_list. The TT_RBRACE-vs-TT_END check prevents
-   an infinite-input prompt when the user types `f() {` and forgets `}`. */
+     If it starts with TT_LBRACE we enter the explicit `{ compound_list }`
+   path and consume the braces. The TT_RBRACE-vs-TT_END check prevents an
+   infinite-input prompt when the user types `f() {` and forgets `}`.
+     Any other body is ONE compound command, which is bash's grammar:
+   `f() ( ... )`, `f() while ...; done`, `f() if ...; fi`, `f() (( ... ))`.
+   These went to parse_compound_list, which wants a list closed by a
+   keyword and so reported end-of-file -- or, from -c, nothing at all --
+   for every one of them. conda's shell hook is `__conda_exe() ( ... )`
+   and it was the difference between a working conda and a dead rc. */
 t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 				t_deque_tok *tokens)
 {
@@ -102,6 +106,8 @@ t_ast_node	parse_func_body(t_shell *state, t_parser *parser,
 		else
 			return (unexpected(state, parser, body, tokens));
 	}
+	else if (next == TT_BRACE_LEFT || is_compound_start(next))
+		body = parse_body_pipeline(state, parser, tokens);
 	else
 		body = parse_compound_list(state, parser, tokens);
 	return (body);

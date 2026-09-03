@@ -106,6 +106,7 @@ static void	parse_all(t_shell *state, t_chunkctx *c)
 	t_ast_node	ast;
 
 	skip_delimiters(&c->tt);
+	c->parser.quiet = true;
 	while (((t_ltoken *)deque_peek(&c->tt.deqtok))->tt != TT_END)
 	{
 		c->parser.res = RES_OK;

@@ -57,7 +57,8 @@ curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh |
 | path | what it holds |
 |---|---|
 | `~/.hellishrc` | your startup file (aliases, exports, `shopt`, PS1) — sourced by **interactive** shells only, never by scripts. Seeded from `hellishrc.example`, never overwritten |
-| `$XDG_CONFIG_HOME/hellish/rc.d/` | drop-in config fragments, sourced in order — `*.hsh` with bash rules, `*.zsh` with zsh rules |
+| `$XDG_CONFIG_HOME/hellish/rc.d/` | drop-in config fragments, sourced in order **before** `~/.hellishrc` — `*.hsh` with bash rules, `*.zsh` with zsh rules |
+| `$XDG_CONFIG_HOME/hellish/after.d/` | the same, sourced **after** `~/.hellishrc` and the plugin framework — where the installer puts your imported `~/.zshrc`, so your own config has the last word |
 | `$XDG_CONFIG_HOME/hellish/themes/` | the 29 prompt themes (yours to edit; edited ones are never clobbered by reinstall) |
 | `$XDG_CONFIG_HOME/hellish/plugins/` | plugins as `<name>/plugin.hsh` |
 | `~/.hellish/` | the plugin framework (`conf`, `hxp`, its plugins and state) |
@@ -67,16 +68,34 @@ curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh |
 No passwords or credentials are stored anywhere — hellish has none to manage.
 The files above are the complete list of what an install touches.
 
-**Coming from zsh** (every 42 account does): `~/.hellishrc` is read with
-bash rules, so a zsh config pasted in breaks on its first zsh idiom —
-`precmd() { vcs_info }` — and the rest of the file is swallowed. Keep the
-zsh syntax instead: put `emulate zsh` on the first line of `~/.hellishrc`,
-or save the config as `~/.config/hellish/rc.d/50-mine.zsh` (the `.zsh`
-extension is the whole marker). The installer offers a third option when
-your login shell is zsh: a module that loads your existing `~/.zshrc`
-inside hellish (`rc.d/90-zshrc.zsh`; delete it to stop). `vcs_info`,
-`zstyle ':vcs_info:*'`, `PROMPT`/`RPROMPT`, `precmd`/`preexec`, `autoload`
-and `colors` all work, and the prompt is expanded in zsh's order.
+**Coming from zsh** (every 42 account does): **hellish does not run your
+`~/.zshrc`**. It is code written for zsh — one began with `exec /bin/bash`,
+one ran `compinit` and twenty `zstyle`s — and a shell that is not zsh has
+no business executing it. The installer only appends its hook block to it
+(the `# >>> hellish >>>` … `# <<< hellish <<<` lines that hand the
+terminal over); everything else in that file stays zsh's. Bring across
+the lines you want: aliases and exports go in `~/.hellishrc` as they are;
+a zsh-flavoured snippet (`precmd() { vcs_info }`, `zstyle`,
+`PROMPT`/`RPROMPT`) goes in `~/.config/hellish/rc.d/50-mine.zsh` — the
+`.zsh` extension makes hellish read it with zsh rules — or under an
+`emulate zsh` first line in `~/.hellishrc`. `vcs_info`, `zstyle
+':vcs_info:*'`, `precmd`/`preexec`, `autoload` and `colors` all work there.
+
+If you want the whole file loaded anyway, ask for it by name:
+`sh install.sh --zshrc` writes `~/.config/hellish/after.d/90-zshrc.zsh`,
+which sources `~/.zshrc` in the zsh dialect, best effort, **after**
+`~/.hellishrc` so your zsh config keeps the last word. A plain re-run of the
+installer switches it off again (kept as `.off`). In that mode
+`source $ZSH/oh-my-zsh.sh` is understood: hellish loads the plugins your
+`plugins=(…)` names and your `$ZSH_CUSTOM/*.zsh` — `gst`, `gco` and the
+rest of the git plugin work — skips what needs zsh's line editor
+(autosuggestions, syntax highlighting) silently, and keeps its own prompt
+(`prompt` picks one of 29); themes, `lib/` and the completion system stay
+zsh's.
+
+A syntax error in any file hellish loads is reported once, with the file
+and line, and the line itself — the same two lines bash prints — and the
+lines before it still run.
 
 ## Check that it works
 

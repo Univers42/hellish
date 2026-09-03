@@ -116,7 +116,7 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 	if (!is_for_word(next))
 		return (parser->res = RES_ERR, ret);
 	ret.token = pop_tok(tokens);
-	if (!for_head(state, parser, tokens, &ret))
+	if (for_head(state, parser, tokens, &ret) != 1)
 		return (ret);
 	if (!expect_for_kw(state, parser, tokens, TT_DO))
 		return (ret);

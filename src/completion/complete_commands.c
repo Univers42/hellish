@@ -44,6 +44,7 @@ char	*g_builtins[] = {
 	"let", "local", "kill", "printf", "ulimit", "update", "help",
 	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	"dirs", "setopt", "unsetopt", "emulate", "print", "autoload",
+	"is-at-least",
 	"zmodload", "zstyle", "compdef", "zle", "bindkey", "add-zsh-hook",
 	"compgen", "complete", "colors", "vcs_info",
 	NULL

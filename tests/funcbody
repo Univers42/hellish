@@ -1,0 +1,15 @@
+f() ( echo sub ); f
+f() (echo sub2); f; echo after
+f() while false; do :; done; f; echo w-ok
+f() if true; then echo t; fi; f
+f() for x in 1 2; do echo $x; done; f
+f() (( 1 )); f; echo $?
+f() (( 0 )); f; echo $?
+f() case a in a) echo ca;; esac; f
+f() ( exit 3 ); f; echo $?
+f() ( cd /; pwd ); f; pwd | grep -c /
+f() until true; do :; done; f; echo u-ok
+f() { echo brace; }; f
+f() ( echo one ) ; g() { echo two; }; f; g
+true | nonexist *; echo $?
+nonexist * | true; echo $?

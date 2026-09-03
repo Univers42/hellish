@@ -96,6 +96,7 @@ static void	fill_builtin_hash3(t_hash *h)
 	hash_set(h, "shopt", (void *)builtin_shopt);
 	hash_set(h, "pretty", (void *)builtin_pretty);
 	hash_set(h, "dirs", (void *)builtin_dirs);
+	hash_set(h, "is-at-least", (void *)builtin_is_at_least);
 	fill_builtin_hash4(h);
 }
 

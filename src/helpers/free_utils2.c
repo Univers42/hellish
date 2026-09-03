@@ -17,7 +17,15 @@
 
 /* Borrow this command's argv backing from the depth-indexed pool: reuse the
    slot's array (just reset its length) so a simple command does no per-command
-   malloc. Past ARGV_POOL_DEPTH (deep recursion) fall back to a fresh vector. */
+   malloc. Past ARGV_POOL_DEPTH (deep recursion) fall back to a fresh vector.
+     The slot is EMPTIED while the array is out.  It used to keep pointing at
+   the buffer it lent, and the borrower may realloc that buffer -- a glob
+   that expands to more words than the array held does -- after which the
+   slot held a freed pointer.  Nothing read it until the shell tore down
+   with the command still in flight: a pipeline child whose command was not
+   found (`true | nosuch *.md`) freed the pool on its way out and died of a
+   double free instead of exiting 127.  With the slot empty until release,
+   the pool only ever frees what it actually holds. */
 void	argv_pool_acquire(t_shell *state, t_executable_cmd *cmd)
 {
 	t_vec	*slot;
@@ -29,6 +37,8 @@ void	argv_pool_acquire(t_shell *state, t_executable_cmd *cmd)
 		slot->elem_size = sizeof(char *);
 		cmd->argv = *slot;
 		cmd->pooled = true;
+		slot->ctx = NULL;
+		slot->cap = 0;
 		state->argv_pool_depth++;
 	}
 	else
@@ -59,7 +69,8 @@ void	argv_pool_release(t_shell *state, t_executable_cmd *cmd)
 	slot->elem_size = sizeof(char *);
 }
 
-/* Free every backing array held by the pool (once, at shutdown). */
+/* Free every backing array PARKED in the pool (once, at shutdown).  An
+   array still out on loan belongs to its command and is not here. */
 void	free_argv_pool(t_shell *state)
 {
 	int	i;

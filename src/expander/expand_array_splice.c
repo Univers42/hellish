@@ -129,6 +129,8 @@ bool	splice_elem_assign(t_shell *state, t_env *ev, t_vec *args)
 	if (!br)
 		return (false);
 	*br = '\0';
+	if (zsh_aliases_assign(state, ev, br + 1, args))
+		return (true);
 	old = env_expand(state, ev->key);
 	r = target_slice(state, br + 1, old);
 	if (assoc_is(old) || r.lo < 0)

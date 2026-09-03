@@ -77,30 +77,39 @@ int	builtin_eval(t_shell *state, t_vec argv)
 /* Run the sourced text, temporarily binding extra arguments as $1..$N
    the way bash/ksh/zsh do: `. file a b` gives the file its own
    positionals and RESTORES the caller's afterwards; with no extra args
-   the file shares the caller's parameters (and `set` inside persists). */
-static int	run_source(t_shell *state, char *content, t_vec argv)
+   the file shares the caller's parameters (and `set` inside persists).
+   exec_file_string rather than exec_string so a parse error in the file
+   names the file and the line (error_where.c). */
+static int	run_source_pos(t_shell *state, char *content, t_vec argv)
 {
 	t_pos	saved;
+	int		status;
+
+	if (argv.len <= 2)
+		return (exec_file_string(state, content, ((char **)argv.ctx)[1]));
+	saved = state->pos;
+	state->pos = (t_pos){0};
+	pos_build(&state->pos, (char **)argv.ctx + 2, argv.len - 2);
+	status = exec_file_string(state, content, ((char **)argv.ctx)[1]);
+	pos_free(&state->pos);
+	state->pos = saved;
+	pos_set_cnt(&state->pos);
+	return (status);
+}
+
+static int	run_source(t_shell *state, char *content, t_vec argv)
+{
+	char	*path;
 	char	*zero;
 	int		status;
 
+	path = ((char **)argv.ctx)[1];
 	state->source_depth++;
-	frame_push(state, NULL, ((char **)argv.ctx)[1]);
-	if (zsh_path(((char **)argv.ctx)[1]))
+	frame_push(state, NULL, path);
+	if (zsh_path(path))
 		zsh_mode_swap(state, true);
-	zero = zsh_zero_bind(state, ((char **)argv.ctx)[1]);
-	if (argv.len > 2)
-	{
-		saved = state->pos;
-		state->pos = (t_pos){0};
-		pos_build(&state->pos, (char **)argv.ctx + 2, argv.len - 2);
-		status = exec_string(state, content);
-		pos_free(&state->pos);
-		state->pos = saved;
-		pos_set_cnt(&state->pos);
-	}
-	else
-		status = exec_string(state, content);
+	zero = zsh_zero_bind(state, path);
+	status = run_source_pos(state, content, argv);
 	zsh_zero_restore(state, zero);
 	frame_pop(state);
 	state->source_depth--;
@@ -123,6 +132,8 @@ int	builtin_source(t_shell *state, t_vec argv)
 	if (fd < 0)
 		return (ft_eprintf("%s: .: %s: No such file or directory\n",
 				state->ctx, av[1]), 1);
+	if (omz_loader_path(av[1]))
+		return (close(fd), omz_shim(state, av[1]));
 	vec_init(&buf);
 	buf.elem_size = 1;
 	vec_append_fd(fd, &buf);

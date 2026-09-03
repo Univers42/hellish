@@ -48,7 +48,13 @@ sleep 1
 check "fake release server answers" \
 	curl -fsS -o /dev/null http://127.0.0.1:8377/latest/download/hellish-linux-x86_64
 
+# HELLISH_RAW_BASE too: install.sh refreshes its drivers (user-install.sh
+# and friends) from raw.githubusercontent on top of the bundle, so with the
+# network up every scenario was quietly running MAIN's scripts, not this
+# tree's -- a fix in user-install.sh could not pass here until it was
+# already pushed. The fake channel serves the tree's copies under /raw.
 ENV_COMMON="HELLISH_RELEASE_BASE=http://127.0.0.1:8377 \
+HELLISH_RAW_BASE=http://127.0.0.1:8377/raw \
 HELLISH_PLUGINS_SRC=http://127.0.0.1:8377/hellishrc_plugins.tar.gz \
 HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1"
 
@@ -119,9 +125,15 @@ check "C: framework declined -> absent" test ! -d /home/nora2/.hellish
 
 # ── D: both uninstall routes ────────────────────────────────────────────────
 echo "--- D: uninstall puts both worlds back"
-su nora -c "cd /tmp && sh /hellish/install.sh --uninstall" >/dev/null 2>&1 \
+# A 2.7.x install left its own hook generation behind (issue #116): both
+# older marker pairs, in both rc files, must go with the uninstall too.
+su nora -c "printf '# >>> hellish-default >>>\nexec /old/hellish\n# <<< hellish-default <<<\n' >> $NH/.bashrc; printf '# >>> hellish-user-default >>>\nexec /old/hellish\n# <<< hellish-user-default <<<\n' >> $NH/.zshrc"
+su nora -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --uninstall" >/dev/null 2>&1 \
 	|| bad "D: user uninstall exited $?"
 check "D: rc hook gone"                 sh -c "! grep -q '^# >>> hellish >>>' $NH/.bashrc"
+check "D: 2.7.x hooks gone from both rc files" \
+	sh -c "! grep -q 'hellish-default\|hellish-user-default' $NH/.bashrc $NH/.zshrc"
+check "D: ...with backups beside them" test -f "$NH/.bashrc.hellish-legacy-bak"
 check "D: user binary gone"             test ! -e "$NH/.local/bin/hellish"
 # NOT wrapped in sudo: the script escalates internally (as_root), and a
 # blanket sudo would swap $HOME away from the .hellish-previous-shell
@@ -165,23 +177,40 @@ check "F: chosen plugins wired"          grep -q "^feature git *on" /home/nora3/
 # ── G: the 42 world -- zsh login shell, a zsh-flavoured ~/.zshrc ────────────
 # ines logs into zsh (as every 42 account does) and has a ~/.zshrc written
 # in zsh: vcs_info, `precmd() { vcs_info }`, zstyle, PROMPT/RPROMPT -- the
-# verbatim rc from issue #112 -- plus an alias of her own. Three questions
-# reach her: sudo (no), load ~/.zshrc inside hellish (yes), the framework
-# (no). Then an interactive hellish must run her alias with no parse error
-# and no "not supported" noise: that rc is the one every prompt tutorial
-# hands out, and the one a student pastes first.
-echo "--- G: ines, zsh login shell, ~/.zshrc imported"
-printf 'n\ny\nn\n' | timeout 120 su ines -c \
+# verbatim rc from issue #112 -- plus an alias of her own. Two questions
+# reach her: sudo (no) and the framework (no). ~/.zshrc is zsh's file and
+# the default install does not touch it: no import is written, and her
+# shell starts with hellish's own config (issues #114-#116 are what the
+# old default did). The import is `--zshrc`, opt-in and best effort: with
+# it, an interactive hellish must run her alias with no parse error and no
+# "not supported" noise. A re-run WITHOUT the flag then switches the
+# import off, keeping the file as .off, and says so.
+echo "--- G: ines, zsh login shell: no import by default, --zshrc opts in"
+printf 'n\nn\n' | timeout 120 su ines -c \
 	"cd /tmp && script -qec '$ENV_COMMON sh /hellish/install.sh' /dev/null" \
 	> /tmp/G.log 2>&1 || bad "G: interactive install exited $?"
 IH=/home/ines
 check "G: ~/.zshrc got the exec hook"     grep -q "^# >>> hellish >>>" "$IH/.zshrc"
 check "G: hook parses under zsh"          su ines -c "zsh -n $IH/.zshrc"
-check "G: the import module was written" test -f "$IH/.config/hellish/rc.d/90-zshrc.zsh"
+check "G: the default install writes NO ~/.zshrc import" \
+	sh -c "test ! -e $IH/.config/hellish/after.d/90-zshrc.zsh && test ! -e $IH/.config/hellish/rc.d/90-zshrc.zsh"
+check "G: ...and says the zsh config stays zsh's" \
+	grep -q "stays zsh's" /tmp/G.log
+printf 'alias hello\necho started\nexit\n' | timeout 60 su ines -c \
+	"cd $IH && script -qec '$ENV_COMMON $IH/.local/bin/hellish' /dev/null" \
+	> /tmp/G-shell0.log 2>&1
+check "G: without the import, her zsh alias is NOT in hellish" \
+	sh -c "! grep -q 'from-zshrc' /tmp/G-shell0.log"
+check "G: ...and the shell started clean" \
+	sh -c "grep -q 'started' /tmp/G-shell0.log && ! grep -qiE 'syntax error|not supported' /tmp/G-shell0.log"
+su ines -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=none --zshrc" \
+	> /tmp/G2.log 2>&1 || bad "G: --zshrc install exited $?"
+check "G: --zshrc writes the import, in after.d" \
+	test -f "$IH/.config/hellish/after.d/90-zshrc.zsh"
 printf 'hello\nexit\n' | timeout 60 su ines -c \
 	"cd $IH && script -qec '$ENV_COMMON $IH/.local/bin/hellish' /dev/null" \
 	> /tmp/G-shell.log 2>&1
-check "G: her alias from ~/.zshrc works inside hellish" \
+check "G: with --zshrc, her alias from ~/.zshrc works inside hellish" \
 	grep -q "from-zshrc" /tmp/G-shell.log
 check "G: the zsh rc loads with no syntax error" \
 	sh -c "! grep -qi 'syntax error' /tmp/G-shell.log"
@@ -189,9 +218,20 @@ check "G: ...and with no 'not supported' noise" \
 	sh -c "! grep -q 'not supported' /tmp/G-shell.log"
 check "G: the hook did not re-exec inside hellish (no loop)" \
 	sh -c "[ \$(grep -c 'from-zshrc' /tmp/G-shell.log) -le 2 ]"
-# A declined import leaves nothing behind (nora2 said no to everything).
-check "G: declining the import writes no module" \
-	test ! -e /home/nora2/.config/hellish/rc.d/90-zshrc.zsh
+# An earlier import, then a plain re-run: switched off, kept as .off, told.
+su ines -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=none" \
+	> /tmp/G3.log 2>&1 || bad "G: re-run install exited $?"
+check "G: a plain re-run switches the import off" \
+	sh -c "test ! -e $IH/.config/hellish/after.d/90-zshrc.zsh && test -e $IH/.config/hellish/after.d/90-zshrc.zsh.off"
+check "G: ...and says so" grep -q "no longer loaded" /tmp/G3.log
+# A legacy rc.d import from 2.8.x is switched off the same way.
+su ines -c "mkdir -p $IH/.config/hellish/rc.d && printf 'source ~/.zshrc\n' > $IH/.config/hellish/rc.d/90-zshrc.zsh"
+su ines -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=none" >/dev/null 2>&1
+check "G: a 2.8.x rc.d import is switched off too" \
+	sh -c "test ! -e $IH/.config/hellish/rc.d/90-zshrc.zsh && test -e $IH/.config/hellish/rc.d/90-zshrc.zsh.off"
+# nora2 said no to everything: nothing written either.
+check "G: declining everything writes no module" \
+	test ! -e /home/nora2/.config/hellish/after.d/90-zshrc.zsh
 
 # ── H: an old checkout must never win over the release ──────────────────────
 # `update --now` runs the one-liner in the shell's cwd. Under `curl | sh`

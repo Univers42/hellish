@@ -71,6 +71,36 @@ so a real oh-my-zsh plugin parses as zsh without any shim. Installing
 `git-completion` also arms `shopt -s progcomp`, because choosing a
 completion plugin *is* answering that question.
 
+## Coming from zsh, or oh-my-zsh
+
+Every 42 account logs into zsh. **hellish does not run your `~/.zshrc`**:
+it is code written for zsh — one began with `exec /bin/bash`, one ran
+`compinit` and twenty `zstyle`s — and a shell that is not zsh has no
+business executing it. Your aliases and git shortcuts come to hellish
+through the framework above and `~/.hellishrc`; the zsh config stays
+zsh's. (For three releases the installer imported it by default; issues
+#113–#116 are what that produced.)
+
+If you want it anyway, ask for it by name — `sh install.sh --zshrc` — and
+the file loads inside hellish in the zsh dialect, best effort, from
+`~/.config/hellish/after.d/90-zshrc.zsh`. `after.d` is sourced **after**
+`~/.hellishrc` and the framework, so your zsh config keeps the last word.
+In that mode `source $ZSH/oh-my-zsh.sh` is understood rather than refused:
+
+- the plugins your `plugins=(…)` names load, from `$ZSH_CUSTOM/plugins`
+  first and `$ZSH/plugins` second, in order — `gst`, `gco`, `gwip` and the
+  rest of the git plugin, `extract`, `sudo`, `z`…;
+- `$ZSH_CUSTOM/*.zsh` load after them, as in oh-my-zsh;
+- plugins that *are* the zsh line editor (`zsh-autosuggestions`,
+  `zsh-syntax-highlighting`, `history-substring-search`, `vi-mode`…) are
+  skipped silently — nothing in them can work without ZLE;
+- themes, `lib/` and `compinit` are zsh's own and are not loaded. The
+  prompt is hellish's: `prompt` lists the 29 themes it ships.
+
+A plain re-run of the installer switches the import off again (the file is
+kept as `.off`). Any syntax error in that chain is reported once, with the
+file and line, and the line itself.
+
 ## Daily driving
 
 ```

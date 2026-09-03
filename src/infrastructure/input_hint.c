@@ -49,17 +49,22 @@ static int	brace_line(t_deque_tok *tt)
 
 void	zsh_brace_hint(t_shell *state, t_deque_tok *tt)
 {
-	int	line;
+	int		line;
+	char	*where;
 
 	if (!tt || !tt->base || zsh_mode(state))
 		return ;
 	line = brace_line(tt);
 	if (line <= 0)
 		return ;
-	ft_eprintf("%s: line %d: a bare `}' closes a group only in zsh; "
-		"in bash it is an argument, and the group stayed open\n",
-		state->ctx, line);
+	if (state->err_src)
+		where = parse_err_ctx(state, tt, tt->base + *zsh_brace_cell());
+	else
+		where = ft_asprintf("%s: line %d", state->ctx, line);
+	ft_eprintf("%s: a bare `}' closes a group only in zsh; "
+		"in bash it is an argument, and the group stayed open\n", where);
 	ft_eprintf("%s: hint: this looks like zsh -- start the file with "
 		"`emulate zsh', or save it as ~/.config/hellish/rc.d/NN-name.zsh\n",
-		state->ctx);
+		state->dft_ctx);
+	xfree(where);
 }

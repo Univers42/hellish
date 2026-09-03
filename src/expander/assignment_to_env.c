@@ -132,6 +132,7 @@ t_env	assignment_to_env(t_shell *state, t_ast_node *node)
 	}
 	apply_var_attrs(state, &ret);
 	scalar_append(state, &ret);
-	subscript_assign(state, &ret);
+	if (!zsh_aliases_scalar(state, &ret))
+		subscript_assign(state, &ret);
 	return (xfree(args.ctx), ret);
 }

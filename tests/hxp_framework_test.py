@@ -86,7 +86,7 @@ def sandbox_env(home):
     """A HOME of our own and nothing inherited that could steer the load:
     the developer's HX_* registry, HELLISH_EXECD, a PAGER that waits for a
     keypress. XDG_CONFIG_HOME points inside the sandbox so hellish's own
-    rc.d (90-zshrc.zsh would source the real ~/.zshrc) stays out."""
+    rc.d and after.d (90-zshrc.zsh would source the real ~/.zshrc) stay out."""
     return {
         "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "TERM": "xterm", "LC_ALL": "C", "USER": os.environ.get("USER", "u"),
