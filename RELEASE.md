@@ -55,6 +55,18 @@ Two field reports from 42 Madrid, the same afternoon, one install each:
   install now falls back to `zypper dup`, the documented way to bring a
   rolling container in line with its repositories.
 
+**Installer follow-up, on `main` (every version fetches `install.sh` from
+there):** piped through `sh`, the script has no file of its own, and
+`dirname "$0"` was the *current directory* — so `update --now` typed inside
+any hellish checkout treated that checkout as the source tree and
+installed its `build/bin/hellish`, however old, without downloading
+anything. A 2.3.2 came back that way onto a machine whose channel said
+2.8.7. Now only a real script path counts as a checkout, a checkout build
+is used only when it matches `incs/version.h` (a stale one is refused by
+name and the release fetched), and an older `hellish` sitting ahead on
+`PATH` is called out at the end. Scenario H of the installer suite pins
+all three.
+
 Detectors, permanent: `tests/zsh_dialect_switch_test.py` (the verbatim
 #112 rc under every route, the hint, `.zsh` under rc.d, scope of `-L`);
 `tests/vcs_info_zstyle_test.py` (state by state against a real zsh);

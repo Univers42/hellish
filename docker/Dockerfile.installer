@@ -19,6 +19,8 @@
 #   nora2   same, for the interactive scenario, so A's leftovers cannot
 #           satisfy C's assertions.
 #   nora3   same, for the credential-prompt scenario (issue #111).
+#   nora4   same, for the stale-checkout scenario: an update typed inside
+#           an old checkout must still install the RELEASE.
 #   ines    no sudo, and her login shell is ZSH with a zsh-flavoured
 #           ~/.zshrc -- the 42 account, exactly as issued.
 #
@@ -42,6 +44,7 @@ RUN useradd -m -s /bin/bash maxine \
 	&& useradd -m -s /bin/bash nora \
 	&& useradd -m -s /bin/bash nora2 \
 	&& useradd -m -s /bin/bash nora3 \
+	&& useradd -m -s /bin/bash nora4 \
 	&& useradd -m -s /bin/zsh ines \
 	&& printf 'maxine ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/maxine \
 	&& chmod 440 /etc/sudoers.d/maxine

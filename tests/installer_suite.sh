@@ -16,6 +16,9 @@
 #                                          (issue #111, on a real pty)
 #   G  ines   zsh login shell + a zsh ~/.zshrc  the 42 world: hooked, imported,
 #                                          and running with no parse error
+#   H  nora4  `curl | sh` from INSIDE a stale checkout, and `sh install.sh`
+#                                          of one: the release wins over an
+#                                          old build/bin/hellish, always
 #
 # Everything hermetic: the "release" is a local server started here, serving
 # the binary, its sha256, the install bundle and the plugin framework built
@@ -174,6 +177,54 @@ check "G: the hook did not re-exec inside hellish (no loop)" \
 # A declined import leaves nothing behind (nora2 said no to everything).
 check "G: declining the import writes no module" \
 	test ! -e /home/nora2/.config/hellish/rc.d/90-zshrc.zsh
+
+# ── H: an old checkout must never win over the release ──────────────────────
+# `update --now` runs the one-liner in the shell's cwd. Under `curl | sh`
+# there is no script file, so $0 is "sh" and dirname("sh") is "." -- and the
+# installer took the cwd for a source checkout, installing ITS
+# build/bin/hellish. A developer who typed `update --now` inside an August
+# checkout got 2.3.2 back on a machine whose release channel said 2.8.7.
+# Two shapes, both against a fake checkout whose build claims to be 2.3.2:
+# piped from inside it (must download, not even look at the build), and
+# `sh install.sh` of it (a build that disagrees with incs/version.h is
+# refused and the release fetched instead).
+echo "--- H: nora4, an update from inside a stale checkout"
+SC=/home/nora4/old-checkout
+mkdir -p "$SC/build/bin" "$SC/incs" "$SC/tools"
+cp /hellish/install.sh /hellish/user-install.sh /hellish/hellishrc.example "$SC/"
+cp /hellish/tools/register_shell.sh /hellish/tools/seed_hellishrc.sh "$SC/tools/"
+cp -R /hellish/share "$SC/share"
+: > "$SC/Makefile"
+printf '#!/bin/sh\ncase "$1" in --version) echo "hellish, version 2.3.2 (stale)";; -c) shift; eval "$1";; esac\n' \
+	> "$SC/build/bin/hellish"
+chmod +x "$SC/build/bin/hellish" "$SC/tools/"*.sh "$SC/"*.sh
+printf '# define HELLISH_VERSION "9.9.9"\n' > "$SC/incs/version.h"
+chown -R nora4:nora4 "$SC"
+REL_SUM="$(sha256sum /srv/release/latest/download/hellish-linux-x86_64 | cut -d' ' -f1)"
+NH4=/home/nora4
+# H1: piped, cwd = the stale checkout
+su nora4 -c "cd $SC && cat /hellish/install.sh | $ENV_COMMON sh -s -- --yes --plugins=none" \
+	> /tmp/H1.log 2>&1 || bad "H1: piped install exited $?"
+check "H1: piped from inside a checkout still downloads" grep -q "downloading" /tmp/H1.log
+check "H1: ...and installs the RELEASE binary, not the checkout's" \
+	sh -c "[ \"\$(sha256sum $NH4/.local/bin/hellish | cut -d' ' -f1)\" = '$REL_SUM' ]"
+su nora4 -c "cd /tmp && sh /hellish/install.sh --uninstall" >/dev/null 2>&1
+# H2: sh install.sh of the checkout, whose build disagrees with version.h
+su nora4 -c "cd /tmp && $ENV_COMMON sh $SC/install.sh --yes --plugins=none" \
+	> /tmp/H2.log 2>&1 || bad "H2: checkout install exited $?"
+check "H2: a stale checkout build is refused, by name" grep -q "not installing it" /tmp/H2.log
+check "H2: ...and the release is installed instead" \
+	sh -c "[ \"\$(sha256sum $NH4/.local/bin/hellish | cut -d' ' -f1)\" = '$REL_SUM' ]"
+check "H2: the installed shell is the release version" \
+	su nora4 -c "$NH4/.local/bin/hellish --version | grep -qv stale"
+# H3: a forgotten old hellish EARLIER on PATH than the install directory
+# is named, loudly -- it is what keeps answering `hellish` afterwards.
+mkdir -p "$NH4/bin" && cp "$SC/build/bin/hellish" "$NH4/bin/hellish" && chown -R nora4:nora4 "$NH4/bin"
+su nora4 -c "cd /tmp && PATH=$NH4/bin:\$PATH $ENV_COMMON sh /hellish/install.sh --yes --plugins=none" \
+	> /tmp/H3.log 2>&1 || bad "H3: install exited $?"
+check "H3: an older hellish ahead on PATH is called out" \
+	grep -q "AHEAD of $NH4/.local/bin/hellish on your PATH: $NH4/bin/hellish (2.3.2)" /tmp/H3.log
+rm -f "$NH4/bin/hellish"
 
 printf '\n%d ok, %d failed\n' "$PASS" "$FAILS"
 [ "$FAILS" -eq 0 ]

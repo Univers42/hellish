@@ -124,21 +124,48 @@ fetch() { # fetch URL DEST -> 0/1
 }
 
 # ── where do the pieces come from? ──────────────────────────────────────────
-HERE="$(cd "$(dirname "$0")" && pwd)"
+# Only a REAL script path can mean "a source checkout". Under `curl | sh`
+# there is no script file: $0 is "sh", dirname("sh") is ".", and the old
+# `HERE=$(dirname "$0")` made whatever directory you happened to be in the
+# checkout. `update --now` runs this one-liner in the shell's cwd -- so an
+# update typed inside any hellish checkout installed THAT checkout's
+# build/bin/hellish, however old, and never downloaded a thing. A 2.3.2
+# came back that way onto a machine that had 2.8.7 in the release channel.
+HERE=""
+if [ -f "$0" ] && grep -q '^# hellish installer' "$0" 2>/dev/null; then
+	HERE="$(cd "$(dirname "$0")" && pwd)"
+fi
 WORK=""
 cleanup() { [ -n "$WORK" ] && rm -rf "$WORK"; }
 trap cleanup EXIT INT TERM
 
-if [ -f "$HERE/Makefile" ] && [ -x "$HERE/tools/register_shell.sh" ]; then
-	# A source checkout: the drivers are right here, and a built binary wins
-	# over a download.
+# The version a checkout SAYS it is, and the version its build actually IS.
+# They drift the moment someone pulls without rebuilding.
+checkout_version() { sed -n 's/^# *define HELLISH_VERSION "\([^"]*\)".*/\1/p' "$1/incs/version.h" 2>/dev/null; }
+binary_version() {
+	HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 "$1" --version 2>/dev/null \
+		| sed -n 's/^hellish, version \([^ ]*\).*/\1/p'
+}
+
+SRC_ROOT=""
+BIN=""
+if [ -n "$HERE" ] && [ -f "$HERE/Makefile" ] && [ -x "$HERE/tools/register_shell.sh" ]; then
+	# A source checkout: the drivers are right here. Its built binary wins
+	# over a download ONLY if it is the version the checkout claims -- a
+	# stale build/bin/hellish left over from an old branch is exactly what
+	# must never be installed by a script whose job is "give me the latest".
 	SRC_ROOT="$HERE"
-	BIN=""
-	[ -x "$HERE/build/bin/hellish" ] && BIN="$HERE/build/bin/hellish"
-	[ -z "$BIN" ] && [ -x "$HERE/dist/$ASSET" ] && BIN="$HERE/dist/$ASSET"
-else
-	SRC_ROOT=""
-	BIN=""
+	_want="$(checkout_version "$HERE")"
+	for _cand in "$HERE/build/bin/hellish" "$HERE/dist/$ASSET"; do
+		[ -x "$_cand" ] || continue
+		_have="$(binary_version "$_cand")"
+		if [ -z "$_want" ] || [ "$_have" = "$_want" ]; then
+			BIN="$_cand"
+			break
+		fi
+		warn "$_cand is ${_have:-an unversioned build} but this checkout is $_want -- not installing it"
+		warn "  (run 'make OPT=1' to rebuild it; fetching the release instead)"
+	done
 fi
 
 WORK="$(mktemp -d)"
@@ -167,6 +194,8 @@ if [ -z "$BIN" ]; then
 	chmod +x "$WORK/hellish"
 	BIN="$WORK/hellish"
 fi
+[ -n "$SRC_ROOT" ] && [ "$BIN" = "$SRC_ROOT/build/bin/hellish" ] \
+	&& say "using the checkout's own build ($(binary_version "$BIN"))"
 
 if [ -z "$SRC_ROOT" ]; then
 	# The drivers travel as a bundle beside the binary. A release too old to
@@ -368,6 +397,24 @@ if [ "$MODE" = "system" ]; then DEST="/usr/bin/hellish"
 else DEST="$UPREFIX/bin/hellish"; fi
 say "done. installed -> $DEST"
 "$DEST" --version 2>/dev/null | head -1 || true
+
+# Another hellish on PATH is how a fresh install still greets you with an
+# old banner: a 2.3.2 forgotten in ~/bin, ahead of ~/.local/bin, answered
+# `hellish` on a machine that had just installed 2.8.7. Name every other
+# copy, and shout about the ones that come FIRST.
+_seen=0
+IFS=:; for _d in $PATH; do
+	unset IFS
+	[ -n "$_d" ] && [ -x "$_d/hellish" ] || continue
+	[ "$_d/hellish" -ef "$DEST" ] && { _seen=1; continue; }
+	_v="$(binary_version "$_d/hellish")"
+	if [ "$_seen" = "0" ]; then
+		warn "another hellish is AHEAD of $DEST on your PATH: $_d/hellish (${_v:-unknown version})"
+		warn "  \`hellish\` will keep running that one -- remove it, or move $(dirname "$DEST") before $_d in PATH"
+	else
+		say "note: another hellish on PATH: $_d/hellish (${_v:-unknown version})"
+	fi
+done; unset IFS
 if [ "$MODE" = "user" ]; then
 	say "open a new terminal to land in hellish (or run: $DEST)"
 	say "undo any time:  sh install.sh --uninstall"
