@@ -8,6 +8,82 @@ shows you how to drive the shell.
 
 ---
 
+## v2.9.0 — *the plugin release*
+
+`man bash` killed the shell. Not an edge case anyone contrived: a stock
+install with the default plugins on, the first time you read a manual
+page. oh-my-zsh's colored-man-pages wraps `man` in a function that builds
+an environment array — `environment+=( PAGER="${commands[less]:-$PAGER}" )`
+— and hellish took a SIGSEGV on the array element, took the interactive
+shell down with it, and left the user at exit 139.
+
+The plugin was innocent, and so was zsh. The bug was that
+`reparse_assignment_words` promotes **every** word shaped like
+`NAME=value` to an assignment node, wherever it stands, but only a simple
+command's own children were ever converted back to plain words. A word in
+a `for` list or inside an array literal therefore reached `split_words`
+still shaped as an assignment — a node whose second child is another word,
+where the splitter asserts every child is a token. `for x in A=1`,
+`e=( A=1 )` and `arr+=( K=$v )` all crashed, in both dialects, on both
+allocators, for as long as array literals have split like bash.
+
+- **An assignment-shaped word outside command position is a plain word**,
+  which is what bash has always made of it: `for x in A=$V` splits and
+  globs like any other word. One helper, `clone_as_word`, flattens the
+  node on the way into the three read-only expansion drivers, and the
+  fast path no longer reaches inside a node it cannot read.
+- **`A=1 e=( B=$A )` sees `A`.** Array elements now expand with the
+  command's earlier pre-assignments temporarily applied, exactly as the
+  scalar path already did; before, they read the old environment and
+  stored `B=`.
+- **`cd -q` works in the zsh dialect.** It is zsh's flag for moving
+  without firing the chpwd hooks, and extract — also on by default — runs
+  `builtin cd -q` four times, including the one that returns you to the
+  directory you started in. Every archive it opened printed
+  `cd: -q: invalid option`. It stays rejected in bash mode, because bash
+  rejects it and the golden suite exists to say so.
+
+### The gap that let it ship
+
+The plugin corpus said colored-man-pages was fine, and it was right: the
+file *loaded*, silently, defining its four functions. Nothing ever
+**ran** what it defined. Sourcing a wrapper is not calling it, and the
+whole point of that plugin is the `man` you type afterwards.
+
+- `tests/assign_shaped_words`: 46 bash-diffed cases — for-lists, array
+  literals, append, quoting, globs, tildes, command substitution,
+  `local -a`, `declare -a`, pre-assignment visibility, and the exact
+  idiom the plugin uses.
+- `tests/hxp_framework_test.py`: the configuration a user actually ends
+  up with, not one file at a time. It installs the framework into a
+  throwaway `HOME` (from a checkout, an installed `~/.hellish`, or a
+  cached tarball — and skips out loud when it has none), loads it, runs
+  its own suite, answers every management command, then **uses** what the
+  plugins define. It fails on the old binary with SIGSEGV, four ways.
+- The plugin corpus grew an exercise step: a row may now name one command
+  that goes through the code the plugin left behind, skipped by name when
+  the external it needs is missing rather than passing in silence.
+- `cd -q` is covered on both sides: the bash-mode rejection in the golden
+  suite, the zsh behaviour (including that `-q` suppresses chpwd while a
+  plain `cd` does not) against a real zsh in `make cd-zsh-test`.
+- `make hxp-test` runs the framework gate on its own; `make
+  plugin-corpus` and CI run it on both the release and the ASan build.
+
+### Also here
+
+- The dead `incs/sh_state.h` is gone: a second, 22-field `t_shell` that
+  nothing had included for a long time, and that a reader could easily
+  mistake for the real one in `incs/shell.h`.
+- Five module READMEs (`builtins`, `core`, `environment`, `helpers`,
+  `lexer`) match the code again. They still called the project sh42,
+  listed seven builtins where the table registers around seventy, claimed
+  `env` was one, quoted the obsolete struct, and named functions
+  (`execute_ast`, `xgetpid`, `longest_matching_str`) that no longer
+  exist. `helpers` said nothing at all about the parse arena or the word
+  slab, which is most of what that directory is.
+
+---
+
 ## v2.8.10 — *the wait release*
 
 The arm64 rung kept failing one golden case after 2.8.9's process-group
