@@ -75,7 +75,7 @@ bool	try_cmd_sub_ctx(t_word_token_ctx *ctx)
 }
 
 /* Inside `..`, backslash keeps its literal meaning except before `, $ or \. */
-static char	*unescape_backtick(const char *s, int len)
+char	*unescape_backtick(const char *s, int len)
 {
 	char	*out;
 	int		i;

@@ -302,6 +302,7 @@ void		process_word_token(t_shell *state, t_token *tok);
 bool		try_arith_sub_ctx(t_word_token_ctx *ctx);
 bool		try_cmd_sub_ctx(t_word_token_ctx *ctx);
 bool		try_backtick_ctx(t_word_token_ctx *ctx);
+char		*unescape_backtick(const char *s, int len);
 void		push_single_char_ctx(t_word_token_ctx *ctx);
 void		init_word_node(t_ast_node *n);
 void		push_token_node(t_ast_node *curr_node, t_ast_node *child);
