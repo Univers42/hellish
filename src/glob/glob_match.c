@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "glob_private.h"
+#include "mbchar.h"
 
 /* Match a G_LITERAL token against the start of `name`. Returns the number of
    characters consumed (g->len) on success, or -1 on mismatch. The caller
@@ -35,26 +36,37 @@ int	match_literal(const char *name, t_glob *g)
 ** bug of its own, found because zsh's `(D)` qualifier needs the same switch
 ** and there was nothing to switch. */
 
-/* Match '?': exactly one non-NUL character. */
+/* Match '?': exactly one non-NUL CHARACTER -- all of its bytes under a
+   multibyte locale (issue #120: `caf?` has to match café). */
 int	match_question(const char *name, bool is_first)
 {
 	if (*name == '\0')
 		return (-1);
 	if (is_first && *name == '.' && !glob_dotglob())
 		return (-1);
-	return (1);
+	return ((int)mb_len0(name));
 }
 
 /* Match a G_BRACKET token: the current character must be in the pre-expanded
    char_set (or excluded from it if BRACKET_NEGATED). The same leading-dot
    rule applies as for '?': hidden files are never matched by a bracket that
-   appears at the start of a path component. */
+   appears at the start of a path component. A multibyte character is
+   matched as a whole against the bracket's members (glob_mb_in_class). */
 int	match_bracket(const char *name, t_glob *g, bool is_first)
 {
+	size_t	n;
+
 	if (*name == '\0')
 		return (-1);
 	if (is_first && *name == '.' && !glob_dotglob())
 		return (-1);
+	n = mb_len0(name);
+	if (n > 1)
+	{
+		if (glob_mb_in_class(name, n, g))
+			return ((int)n);
+		return (-1);
+	}
 	if (!glob_char_in_class(*name, g))
 		return (-1);
 	return (1);

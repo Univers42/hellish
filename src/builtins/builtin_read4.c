@@ -84,8 +84,9 @@ static void	consume_char(t_string *buf, char ch, t_rdopt *o, bool *bs)
 }
 
 /* Read one logical line. Returns NULL only at EOF with no data.
-     -n N stops after N bytes or at the delimiter, whichever comes first;
-     -N N stops only after N bytes or at EOF, delimiter included as data;
+     -n N stops after N characters or at the delimiter, whichever comes
+       first (characters, not bytes: rd_count, issue #120);
+     -N N stops only after N characters or at EOF, delimiter included as data;
      -d C replaces the newline as the delimiter.
    The count is checked AFTER the byte lands, never before fetching the next
    one: `read -n 2` must not block waiting for a third byte that an
@@ -95,22 +96,22 @@ char	*read_one_line(t_rdopt *o, int *eof)
 	char		ch;
 	t_string	buf;
 	ssize_t		n;
-	bool		bs;
 	t_rdbuf		rb;
+	t_rdcount	cnt;
 
 	rb = (t_rdbuf){.len = 0, .pos = 0,
 		.seekable = (lseek(STDIN_FILENO, 0, SEEK_CUR) != -1)};
 	vec_init(&buf);
 	buf.elem_size = 1;
-	bs = false;
 	ch = '\0';
 	n = 1;
+	cnt = (t_rdcount){0};
 	if (o->nchars != 0)
 		n = rb_next(&rb, &ch);
-	while (n > 0 && o->nchars != 0 && !rd_at_delim(ch, o, bs))
+	while (n > 0 && o->nchars != 0 && !rd_at_delim(ch, o, cnt.bs))
 	{
-		consume_char(&buf, ch, o, &bs);
-		if (o->nchars > 0 && (long)buf.len >= o->nchars)
+		consume_char(&buf, ch, o, &cnt.bs);
+		if (o->nchars > 0 && rd_count(&cnt, ch) >= o->nchars)
 			break ;
 		n = rb_next(&rb, &ch);
 	}

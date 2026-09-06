@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "glob_private.h"
+#include "mbchar.h"
 
 /* Match '*': zero or more characters within a single path component. The
    leading-dot guard prevents "*.c" from matching ".hidden.c". The loop walks
@@ -51,47 +52,56 @@ size_t	match_g_asterisk(char *name, t_vec_glob patt, size_t offset,
 	return (0);
 }
 
-/* Match '?': exactly one non-NUL character (not a leading dot). If this is
-   the last token in the segment (finished_pattern), the character after the
-   matched one must be NUL. Otherwise recurse on offset+1 with the rest of
-   the name. */
+/* Match '?': exactly one non-NUL CHARACTER (not a leading dot) -- every
+   byte of it under a multibyte locale (issue #120: `caf?` matches café,
+   ${x%?} removes the whole é). If this is the last token in the segment
+   (finished_pattern), what follows the matched character must be NUL.
+   Otherwise recurse on offset+1 with the rest of the name. */
 size_t	match_g_question(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
+	size_t	n;
+
 	if (*name == '\0')
 		return (0);
 	if (first && *name == '.' && !glob_dotglob())
 		return (0);
+	n = mb_len0(name);
 	if (finished_pattern(patt, offset))
 	{
-		if (name[1] == '\0')
+		if (name[n] == '\0')
 			return (offset + 1);
 		return (0);
 	}
-	return (matches_pattern(name + 1, patt, offset + 1, false));
+	return (matches_pattern(name + n, patt, offset + 1, false));
 }
 
 /* Match a bracket expression: the current character must satisfy the class
-   (honoring BRACKET_NEGATED). Leading-dot and NUL guards come first.
-   On success, if the bracket is the last token in the segment the next char
-   must be NUL; otherwise recurse to match the rest. */
+   (honoring BRACKET_NEGATED); a multibyte one is matched whole against the
+   bracket's members. Leading-dot and NUL guards come first. On success, if
+   the bracket is the last token in the segment the next char must be NUL;
+   otherwise recurse to match the rest. */
 size_t	match_g_bracket(char *name, t_vec_glob patt, size_t offset,
 							bool first)
 {
 	t_glob	*g;
+	size_t	n;
 
 	if (*name == '\0')
 		return (0);
 	if (first && *name == '.' && !glob_dotglob())
 		return (0);
 	g = &((t_glob *)patt.ctx)[offset];
-	if (!glob_char_in_class(*name, g))
+	n = mb_len0(name);
+	if (n == 1 && !glob_char_in_class(*name, g))
+		return (0);
+	if (n > 1 && !glob_mb_in_class(name, n, g))
 		return (0);
 	if (finished_pattern(patt, offset))
 	{
-		if (name[1] == '\0')
+		if (name[n] == '\0')
 			return (offset + 1);
 		return (0);
 	}
-	return (matches_pattern(name + 1, patt, offset + 1, false));
+	return (matches_pattern(name + n, patt, offset + 1, false));
 }

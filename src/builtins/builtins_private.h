@@ -13,6 +13,7 @@
 #ifndef BUILTINS_PRIVATE_H
 # define BUILTINS_PRIVATE_H
 
+# include <wchar.h>
 # include "shell.h"
 # include "pal.h"
 # include "env.h"
@@ -160,6 +161,20 @@ typedef struct s_rdbuf
 	ssize_t	pos;
 	bool	seekable;
 }	t_rdbuf;
+
+/* read's per-line scan state (builtin_read4.c / builtin_read6.c): the
+   pending-backslash flag of the line-continuation rule, and the -n/-N
+   character counter -- its conversion state spans the bytes of one
+   multibyte character, so the count moves once per CHARACTER, as bash's
+   does: `read -n 2` on héllo takes the whole é. */
+typedef struct s_rdcount
+{
+	mbstate_t	st;
+	long		chars;
+	bool		bs;
+}	t_rdcount;
+
+long	rd_count(t_rdcount *c, char ch);
 
 int		try_unset(t_shell *state, char *key);
 int		confirm_update(void);

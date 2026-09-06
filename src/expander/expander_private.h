@@ -188,6 +188,7 @@ char		*expand_strlen(t_shell *state, const char *s, int slen);
 char		*default_or_alt(t_shell *state, char *val, t_pe_op o);
 bool		pf_op_word_used(char *val, t_pe_op o);
 char		*expand_case(t_shell *state, const char *s, int slen, int name_len);
+char		*case_body(const char *val, char op, bool all);
 bool		find_case_op(const char *s, int slen, int *nl);
 char		*expand_xform(t_shell *state, const char *s, int name_len, char op);
 bool		find_xform_op(const char *s, int slen, int *nl, char *op);

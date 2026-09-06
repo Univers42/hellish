@@ -1,0 +1,12 @@
+x=café; echo ${#x}
+x=café; echo "${x:1:2}|${x:3}|${x: -1}" | od -c | head -1
+x=café; echo "${x%?}|${x#?}" | od -c | head -1
+x=café; case $x in caf?) echo yes;; *) echo no;; esac
+x=café; [[ $x == caf?? ]] && echo yes || echo no
+x=café; echo "${x^^}|${x@U}"
+a=(café thé); echo "${#a[0]} ${#a[1]}"
+printf 'héllo' | { read -n 2 x; echo "$x" | od -c | head -1; }
+x=abc; echo "${#x} ${x:1:1} ${x%?} ${x^^} ${x/?/_}"
+x=abc; [[ $x == a[b-c]c ]] && echo range || echo norange
+case b in [[:alpha:]]) echo alpha;; *) echo no;; esac
+case 5 in [[:digit:]]) echo digit;; *) echo no;; esac

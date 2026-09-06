@@ -93,10 +93,11 @@ bool	cm_class_skip(const char **q)
 	return (true);
 }
 
-/* Match c against the "[:name:]" at *pp and advance past it. The
-   unterminated case mirrors cm_class_skip: the '[' is an ordinary member,
-   so it matches a literal '[' and only that. */
-bool	cm_class_match(char c, const char **pp)
+/* Match the character c (n bytes) against the "[:name:]" at *pp and
+   advance past it. A multibyte character is classified by the wide tables
+   (cm_class_has_w). The unterminated case mirrors cm_class_skip: the '['
+   is an ordinary member, so it matches a literal '[' and only that. */
+bool	cm_class_match(const char *c, size_t n, const char **pp)
 {
 	const char	*name;
 	const char	*p;
@@ -106,7 +107,9 @@ bool	cm_class_match(char c, const char **pp)
 	while (*p && !(p[0] == ':' && p[1] == ']'))
 		p++;
 	if (!*p)
-		return ((*pp)++, c == '[');
+		return ((*pp)++, n == 1 && *c == '[');
 	*pp = p + 2;
-	return (cm_class_has(name, p - name, c));
+	if (n > 1)
+		return (cm_class_has_w(name, (int)(p - name), c, n));
+	return (cm_class_has(name, (int)(p - name), *c));
 }

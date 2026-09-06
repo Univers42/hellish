@@ -101,3 +101,30 @@ bool	glob_char_in_class(char c, t_glob *bracket)
 		return (!found);
 	return (found);
 }
+
+/* A multibyte character against the bracket: its byte sequence has to
+   appear as such in the raw bracket text -- `[é]`, `[aé]`, `[^é]` -- which
+   is membership by explicit member.  A range with multibyte endpoints is
+   not resolved (bash orders those by collation, a different problem), so
+   `[à-ü]` matches none of them rather than the wrong ones.  Negation flips
+   the answer like the single-byte case. */
+bool	glob_mb_in_class(const char *c, size_t n, t_glob *bracket)
+{
+	int		i;
+	bool	found;
+
+	found = false;
+	i = 0;
+	while (i + (int)n <= bracket->len)
+	{
+		if (ft_memcmp(bracket->start + i, c, n) == 0)
+		{
+			found = true;
+			break ;
+		}
+		i++;
+	}
+	if (bracket->flags & BRACKET_NEGATED)
+		return (!found);
+	return (found);
+}

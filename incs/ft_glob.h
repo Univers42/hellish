@@ -90,6 +90,7 @@ int			glob_dots_arm(t_gqual *q);
 bool		glob_match(const char *name, t_vec_glob *pattern);
 bool		glob_match_at(const char *name, t_vec_glob *pattern, size_t offset);
 bool		glob_char_in_class(char c, t_glob *bracket);
+bool		glob_mb_in_class(const char *c, size_t n, t_glob *bracket);
 char		*glob_expand_bracket(const char *start, int len, int *out_len);
 
 /*

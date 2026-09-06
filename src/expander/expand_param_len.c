@@ -13,6 +13,7 @@
 #include "expander_private.h"
 #include "env.h"
 #include "parena.h"
+#include "mbchar.h"
 
 /* The ${#...} family.  Together in one file because the three of them are
    one question -- "how long is this?" -- asked of a scalar, an array and an
@@ -31,7 +32,7 @@ static char	*strlen_of_first(char *val)
 	elem = arr_get_idx(val, 0);
 	if (!elem)
 		return (ft_strdup("0"));
-	result = ft_itoa(ft_strlen(elem));
+	result = ft_itoa((int)mb_count(elem, ft_strlen(elem)));
 	xfree(elem);
 	return (result);
 }
@@ -64,6 +65,7 @@ static char	*strlen_of_slice(t_shell *state, const char *s, int slen)
 static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
 {
 	t_token	tok;
+	int		n;
 
 	tok = (t_token){.tt = TT_ENVVAR, .start = (char *)s, .len = slen};
 	if (slen > 3 && s[slen - 1] == ']' && (s[slen - 2] == '@'
@@ -78,14 +80,17 @@ static char	*expand_strlen_arr(t_shell *state, const char *s, int slen)
 	}
 	if (!expand_array_token(state, &tok, false))
 		return (NULL);
+	n = (int)mb_count(tok.start, (size_t)tok.len);
 	if (tok.allocated)
 		parena_free((char *)tok.start);
-	return (ft_itoa(tok.len));
+	return (ft_itoa(n));
 }
 
 /* ${#param} — return the length of the variable's value as a decimal string.
    An unset variable counts as length 0 rather than an error (unless set -u).
    The result is always a fresh malloc'd string (ft_itoa allocates).
+   Length is in CHARACTERS under a multibyte locale (mb_count), bytes in
+   the C locale -- bash's rule, issue #120.
 
    On an ARRAY the two dialects answer different questions: bash gives the
    length of element 0, zsh gives the ELEMENT COUNT.  `[[ $#stack -gt 0 ]]`
@@ -119,5 +124,5 @@ char	*expand_strlen(t_shell *state, const char *s, int slen)
 		return (ft_itoa(arr_count(val)));
 	if (arr_is(val))
 		return (strlen_of_first(val));
-	return (ft_itoa(ft_strlen(val)));
+	return (ft_itoa((int)mb_count(val, ft_strlen(val))));
 }
