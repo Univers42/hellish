@@ -91,9 +91,10 @@ rendering PS1 must never end the session).
 
 **Expansion state.** `input_expanded`, `last_cmdsub_status` (`$?` inside
 `$(...)`), `cmdsub_in_place` and `bg_exec_node` (the one command a
-disposable `$( )` body or `cmd &` child may `execve` without forking again;
-the latter is the AST node's address so a nested fork cannot mistake itself
-for the authorised command -- issue #13).
+disposable `$( )` body or `cmd &` child may `execve` without forking again,
+or the lone `( ... )` whose body a `&` child runs in place so the traps it
+sets live in `$!`; the latter is the AST node's address so a nested fork
+cannot mistake itself for the authorised command -- issue #13).
 
 **Jobs and processes.** `bg_job_count`, the `bg_done` ring, `proc_subs`
 (`t_procsub_entry`: `pid`, `fd`, and the `/proc/self/fd/<fd>` `path`

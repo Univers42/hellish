@@ -53,12 +53,25 @@ void	async_child_signals(void)
    may not even have, and nothing there can be stopped by a tty it does not
    own. */
 
-/* The one AST shape a background child may execve in place: the range is a
-   single pipeline, that pipeline is a single command, and that command is a
-   lone AST_SIMPLE_COMMAND.  Anything else -- a real pipeline, a subshell, a
-   brace group, if/for/while, `!` negation, or several &&-joined commands --
-   still has work to do after the command returns, and exec is irreversible,
-   so the scan errs toward the extra fork exactly like cs_single_cmd does.
+/* The AST shapes a background child may run in place: the range is a
+   single pipeline, that pipeline is a single command, and that command is
+   a lone AST_SIMPLE_COMMAND (execve'd by execute_cmd_bg) or a lone
+   AST_SUBSHELL (its body run by execute_subshell without a second fork),
+   the latter with or without redirections of its own -- those hang off
+   the AST_COMMAND wrapper and execute_command collects them before the
+   subshell applies them, forked or not.  Anything else -- a real pipeline,
+   a brace group, if/for/while, `!` negation, or several &&-joined commands
+   -- still has work to do after the command returns, and exec is
+   irreversible, so the scan errs toward the extra fork exactly like
+   cs_single_cmd does.
+
+   The subshell case matters for traps: `( trap 'exit 0' TERM; ... ) &`
+   installs its trap in whichever process runs the body.  With a second
+   fork that was a grandchild, while $! named a middle process with the
+   default disposition -- so `kill $!` killed it outright, `wait $!` said
+   143 where bash says 0, and the body ran on as an orphan.  born2root's
+   VirtualBox orchestrator (a spinner subshell stopped with kill/wait under
+   `set -e`) died of exactly that.
 
    The negate check is not paranoia: `! cmd &` must invert the status, which
    only happens after the command returns.
@@ -70,6 +83,8 @@ static t_ast_node	*bg_lone_command(t_ast_node *list, size_t start,
 {
 	t_ast_node	*pipe;
 	t_ast_node	*cmd;
+	t_ast_node	*sub;
+	size_t		i;
 
 	if (end - start != 1)
 		return (NULL);
@@ -78,12 +93,18 @@ static t_ast_node	*bg_lone_command(t_ast_node *list, size_t start,
 		|| pipe->negate)
 		return (NULL);
 	cmd = &((t_ast_node *)pipe->children.ctx)[0];
-	if (cmd->node_type != AST_COMMAND || cmd->children.len != 1)
+	if (cmd->node_type != AST_COMMAND || cmd->children.len < 1)
 		return (NULL);
-	cmd = &((t_ast_node *)cmd->children.ctx)[0];
-	if (cmd->node_type != AST_SIMPLE_COMMAND)
+	sub = &((t_ast_node *)cmd->children.ctx)[0];
+	if (sub->node_type == AST_SIMPLE_COMMAND && cmd->children.len == 1)
+		return (sub);
+	if (sub->node_type != AST_SUBSHELL)
 		return (NULL);
-	return (cmd);
+	i = cmd->children.len;
+	while (--i > 0)
+		if (((t_ast_node *)cmd->children.ctx)[i].node_type != AST_REDIRECT)
+			return (NULL);
+	return (sub);
 }
 
 static void	bg_child_body(t_shell *state, t_executable_node *exe,

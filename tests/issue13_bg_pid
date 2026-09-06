@@ -34,3 +34,9 @@ nosuchcmd12345 & wait $!; echo "missing=$?"
 /nonexistent/path & wait $!; echo "nopath=$?"
 sleep 0.1 & p1=$!; sleep 0.1 & p2=$!; wait $p1; r1=$?; wait $p2; echo "$r1 $?"
 sleep 30 & p=$!; sleep 0.4; kill -0 $p; echo "alive=$?"; kill -9 $p 2>/dev/null; wait 2>/dev/null
+rm -f bg13_ready_a; ( trap 'echo T; exit 0' TERM; : > bg13_ready_a; while :; do sleep 0.1; done ) & p=$!; while [ ! -f bg13_ready_a ]; do sleep 0.05; done; kill $p; wait $p; echo "sub_term=$?"; rm -f bg13_ready_a
+rm -f bg13_ready_b; ( trap 'echo U; exit 3' USR1; : > bg13_ready_b; while :; do sleep 0.1; done ) & p=$!; while [ ! -f bg13_ready_b ]; do sleep 0.05; done; kill -USR1 $p; wait $p; echo "sub_usr1=$?"; rm -f bg13_ready_b
+rm -f bg13_ready_c bg13_out_c; ( trap 'echo R; exit 0' TERM; : > bg13_ready_c; while :; do sleep 0.1; done ) > bg13_out_c & p=$!; while [ ! -f bg13_ready_c ]; do sleep 0.05; done; kill $p; wait $p; echo "sub_redir=$?"; cat bg13_out_c; rm -f bg13_ready_c bg13_out_c
+rm -f bg13_pid_d; ( sh -c 'echo $PPID' > bg13_pid_d; : ) & p=$!; wait $p; [ "$(cat bg13_pid_d)" = "$p" ] && echo one-fork || echo "two-forks"; rm -f bg13_pid_d
+( sleep 30 ) & p=$!; sleep 0.3; kill $p; wait $p; echo "sub_notrap=$?"
+( exit 5 ) & wait $!; echo "sub_st=$?"
