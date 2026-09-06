@@ -131,19 +131,30 @@ void	execute_pipeline_children(t_shell *state,
 /* Top-level pipeline executor.  Runs all children, closes any lingering
    process-substitution fds in the parent (they were opened for the
    children and would otherwise never close), then collects the exit
-   status.  A leading `!` (node->negate) flips the status between 0 and
-   1 and clears the pid so callers treat it as an immediate status not a
-   background job.  pipefail vs last-stage logic lives in pipeline_status.
-   The results vec is freed here -- each element was either already waited
-   (pipefail_scan) or is a pid that pipeline_status just waitpid'd. */
+   status.  pipefail vs last-stage logic lives in pipeline_status.  The
+   results vec is freed here -- each element was either already waited
+   (pipefail_scan) or is a pid that pipeline_status just waitpid'd.
+
+   A ONE-stage pipeline takes pipeline_single whether or not it is
+   negated.  `!` used to send it through the multi-stage path, whose
+   per-stage template clears modify_parent_ctx, so `! f` ran the function
+   in a forked child: every variable it set was lost, `! exit 3` did not
+   exit, and `if ! fetch_ca_cert` in born2root's host-access script threw
+   away the CA_FILE the function had just fetched -- certutil was then
+   asked to import "" and Firefox kept its certificate warning, while the
+   un-negated `fetch_ca_cert || return` on the Chrome path worked.  bash
+   runs `! cmd` in the current shell like any simple command; only the
+   status is touched -- and set -e is suspended for the command's whole
+   run, function body included, the same way it is inside an if or while
+   condition (errexit_off), so `set -e; f() { false; }; ! f` goes on. */
 t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 {
 	t_vec_exe_res		results;
 	t_execution_state	res;
 
 	jc_begin(state);
-	if (exe->node->children.len == 1 && !exe->node->negate)
-		return (execute_pipeline_one(state, exe));
+	if (exe->node->children.len == 1)
+		return (pipeline_single(state, exe));
 	results = (t_vec_exe_res){0};
 	vec_init(&results);
 	results.elem_size = sizeof(t_execution_state);
@@ -155,10 +166,7 @@ t_execution_state	execute_pipeline(t_shell *state, t_executable_node *exe)
 		res = res_status(0);
 	jc_end(state);
 	if (exe->node->negate)
-	{
-		res.status = !res.status;
-		res.pid = -1;
-	}
+		res = negate_status(state, res);
 	xfree(results.ctx);
 	return (res);
 }

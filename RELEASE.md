@@ -78,6 +78,17 @@ and a generated Makefile that was 4666 lines of `0`.
   the way getopt reads it; and `declare -f` keeps the whole body, leading
   keyword included (`f() { for x in a; do :; done; }` printed without the
   `for`, and did not re-parse).
+- **`! cmd` runs in the current shell.** A negated single command went
+  through the multi-stage pipeline path, which forks every stage, so a
+  function called as `if ! f` ran in a child and every variable it set
+  was lost. born2root's `make inception` fetched the Inception CA from
+  the guest in `fetch_ca_cert`, called as `if ! fetch_ca_cert` for
+  Firefox and as `fetch_ca_cert || return` for Chrome: Chrome got the
+  certificate, Firefox got `certutil -A -i ""` and kept its warning, and
+  the run ended `2 check(s) failed`. With it: `! return 1` and `! exit 3`
+  keep their status (the unwind happens before the negation, so
+  `f() { ! return 1; }` returns 1), and `set -e` is suspended for the
+  whole run of a negated command, function body included, as bash does.
 - **musl builds again**: `<wchar.h>` was included before the project
   headers, which on Alpine lost `strlcpy` in every builtin.
 
@@ -93,7 +104,8 @@ built from hellish with hellish as its login shell, then Inception
 deployed from hellish, its eight containers with hellish as `/bin/sh`,
 and its compliance suite run under `hellish.real` and under `/bin/sh` and
 diffed. In the golden suite: `heredoc_backquote`, `heredoc_lone_dollar`,
-`printf_length`, `printf_escapes`, `issue13_bg_pid`, `issue119_procsub_inherit`,
+`printf_length`, `printf_escapes`, `negate_inline`, `issue13_bg_pid`,
+`issue119_procsub_inherit`,
 `issue121_errexit_andor`, `issue122_{select,mapfile,printf_time,read_opts}`;
 `tests/scripts/48_heredoc_backquote.sh` (the autoconf idiom end to end)
 and `49_fd_hygiene.sh`; `select_menu_test.py`, `born2root_dashboard_test.py` and

@@ -50,3 +50,36 @@ t_execution_state	execute_pipeline_one(t_shell *state,
 	set_pipestatus_one(state, res.status);
 	return (res);
 }
+
+/* A leading `!` flips the status between 0 and 1 and clears the pid so
+   callers treat it as an immediate status, not a background job.
+   PIPESTATUS keeps the command's own status: bash records `! false` as 1
+   there and answers 0 to $?.  A command that is UNWINDING -- `! return 1`,
+   `! exit 3`, `! break` -- keeps its status untouched: bash's return and
+   exit leave before the negation is applied, so `f() { ! return 1; }`
+   returns 1, not 0. */
+t_execution_state	negate_status(t_shell *state, t_execution_state res)
+{
+	if (state->should_exit || state->func_return || state->loop_break
+		|| state->loop_continue)
+		return (res);
+	res.status = !res.status;
+	res.pid = -1;
+	return (res);
+}
+
+/* The one-stage pipeline, negated or not.  set -e is suspended for the
+   whole run of a negated command, function body included, the same way
+   it is inside an if or while condition (errexit_off): bash goes on
+   after `set -e; f() { false; }; ! f`. */
+t_execution_state	pipeline_single(t_shell *state, t_executable_node *exe)
+{
+	t_execution_state	res;
+
+	state->errexit_off += exe->node->negate;
+	res = execute_pipeline_one(state, exe);
+	state->errexit_off -= exe->node->negate;
+	if (exe->node->negate)
+		return (negate_status(state, res));
+	return (res);
+}

@@ -152,6 +152,8 @@ void				set_pipestatus(t_shell *state, t_vec_exe_res *results);
 void				set_pipestatus_one(t_shell *state, int status);
 t_execution_state	execute_pipeline_one(t_shell *state,
 						t_executable_node *exe);
+t_execution_state	negate_status(t_shell *state, t_execution_state res);
+t_execution_state	pipeline_single(t_shell *state, t_executable_node *exe);
 int					actually_run(t_shell *state, t_vec *args);
 void				update_underscore_var(t_shell *state,
 						t_executable_cmd *cmd);
