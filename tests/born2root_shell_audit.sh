@@ -122,7 +122,7 @@ run() {
 	# An ASan build of hellish (CI's debug job) refuses to start with a
 	# non-ASan library preloaded unless told otherwise; leaks are not this
 	# check's subject.
-	( cd "$B2R" && PATH="$pre$PATH" HOME="$OUT/home" NO_COLOR=1 LD_PRELOAD="$SO" EXECLOG="$log" \
+	( cd "$B2R" && PATH="$pre$PATH" HOME="$RUN_HOME" NO_COLOR=1 LD_PRELOAD="$SO" EXECLOG="$log" \
 		ASAN_OPTIONS="verify_asan_link_order=0:detect_leaks=0${ASAN_OPTIONS:+:$ASAN_OPTIONS}" \
 		"$sh" -c "make $*; echo rc=\$?" > "$OUT/$label.out" 2>&1 )
 	[ -s "$log" ] || { : > "$log"; printf 'warn  %s: no exec was logged -- did %s start at all? first lines of its output:\n' "$label" "$sh"; head -3 "$OUT/$label.out" | sed 's/^/        /'; }
@@ -192,10 +192,13 @@ PY
 }
 
 mkdir -p "$OUT/home"
+# The default targets run under a throwaway HOME so nothing of yours is
+# touched. An invocation of your own is a real one (a deploy writes the
+# browser CA, the proxy's user unit) and runs with your HOME, as you do.
 if [ "$#" -gt 0 ]; then
-	TARGETS=("$*"); STRICT_OUT=0
+	TARGETS=("$*"); STRICT_OUT=0; RUN_HOME="$HOME"
 else
-	TARGETS=("help" "status" "backend BACKEND=auto" "check_system" "-n all" "list_vms" "qemu_status" "qemu_list"); STRICT_OUT=1
+	TARGETS=("help" "status" "backend BACKEND=auto" "check_system" "-n all" "list_vms" "qemu_status" "qemu_list"); STRICT_OUT=1; RUN_HOME="$OUT/home"
 fi
 for t in "${TARGETS[@]}"; do
 	n=$(printf '%s' "$t" | tr -c 'A-Za-z0-9' '_')

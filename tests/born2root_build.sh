@@ -330,8 +330,13 @@ run_backend() { # run_backend qemu|virtualbox
 	case "$out" in *hellish*" 42 2 "*) ok "hellish.real -c in the guest: $out" ;; *) ko "[$be] hellish.real -c in the guest: '$out'" ;; esac
 	wrap="$(guest 'readlink /usr/bin/hellish; x=$(readlink /proc/$$/exe); echo "$x"; echo $0' 2>/dev/null | tr '\n' ' ')"
 	case "$wrap" in "/usr/bin/hellish.real /usr/bin/hellish.real hellish "*) ok "ssh commands run hellish.real, behind the link (no bash wrapper)" ;; *) ko "[$be] ssh command shell: '$wrap' (wanted link -> hellish.real, exe hellish.real, \$0 hellish)" ;; esac
-	ilog="$(printf 'echo INTERACTIVE-$0-$((6*7))\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes -o ConnectTimeout=15 b2b 2>/dev/null | tr -d '\r' | grep -o 'INTERACTIVE-/[^[:space:]]*' | head -1)"
-	case "$ilog" in *hellish*-42) ok "interactive login runs hellish: $ilog" ;; *) ko "[$be] interactive login: '$ilog'" ;; esac
+	# sshd starts the login shell as `-hellish`; $0 is then `hellish` (the
+	# wrapper of old exec'd the binary by path, which is why this once
+	# expected a slash). The exe is asked for as well, through the pty.
+	ilog="$(printf 'echo INTERACTIVE-$0-$((6*7))-$(readlink /proc/$$/exe)\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes -o ConnectTimeout=15 b2b 2>/dev/null | tr -d '\r' | grep -o 'INTERACTIVE-[^$[:space:]]*-42-[^[:space:]]*' | head -1)"
+	# (the pty echoes the typed line too, with its $0 and $(...) unexpanded;
+	# the pattern wants the expanded -42-, so only the answer matches)
+	case "$ilog" in INTERACTIVE-*hellish*-42-/usr/bin/hellish.real) ok "interactive login runs hellish: $ilog" ;; *) ko "[$be] interactive login: '$ilog'" ;; esac
 	tmpf="$WORK/roundtrip.txt"; printf 'born2root %s\n' "$(date +%s)" >"$tmpf"
 	if "$WORK/bin/scp" -q "$tmpf" b2b:/tmp/roundtrip.txt 2>/dev/null \
 		&& "$WORK/bin/scp" -q b2b:/tmp/roundtrip.txt "$tmpf.back" 2>/dev/null \
