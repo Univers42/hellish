@@ -167,6 +167,11 @@ fi
 
 # Every command below is `sh -c '...'` from inside the submodule: that is how
 # a person runs it, and it is what makes born2root's probe see the launcher.
+# env -i is deliberate -- a hermetic environment, so the run does not depend
+# on the caller's -- so anything make needs must be named here. VM_RAM_MB is
+# one: it caps the guest's RAM, and inside the docker job the container sees
+# the whole host, so without it a VirtualBox guest takes a quarter of the
+# host and the job is killed for memory. Empty means "let born2root size it".
 EXTRA_ENV=()
 run_from() { # run_from <shell> <command string>
 	local sh="$1"; shift
@@ -175,6 +180,7 @@ run_from() { # run_from <shell> <command string>
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 		ASAN_OPTIONS="detect_leaks=1:abort_on_error=0:exitcode=0" LSAN_OPTIONS="exitcode=0" \
 		VBOX_USER_HOME="$FAKE/.config/VirtualBox" VBOX_IPC_SOCKETID=born2root-build \
+		VM_RAM_MB="${VM_RAM_MB:-}" \
 		BORN2ROOT_TRIPWIRE="${BORN2ROOT_TRIPWIRE_LOG:+1}" BORN2ROOT_TRIPWIRE_LOG="${BORN2ROOT_TRIPWIRE_LOG:-}" \
 		"${EXTRA_ENV[@]}" "$sh" -c "$*" </dev/null )
 }

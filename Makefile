@@ -1158,6 +1158,12 @@ born2root-vm: all  ## born2root end to end: build the VM from hellish (BORN2ROOT
 BORN2ROOT_BACKEND ?= qemu
 B2R_KVM_GID  := $(shell stat -c %g /dev/kvm 2>/dev/null || echo 994)
 B2R_VBOX_GID := $(shell stat -c %g /dev/vboxdrvu 2>/dev/null || echo 114)
+# A container sees the HOST's RAM, so born2root's "a quarter of it, at least
+# 2 GB" would size a VirtualBox guest for the laptop it sits on (7.7 GB of a
+# 31 GB host, next to everything else running there -- the job was killed
+# for memory). Pin what the QEMU path already uses; a 7 GB CI runner
+# floors at 2048 anyway. Override with VM_RAM_MB=... for a bigger guest.
+B2R_VM_RAM_MB ?= 2048
 B2R_VBOX     := $(shell if VBoxManage --version 2>/dev/null | grep -qE '^7\.1'; then echo oracle; \
 	elif VBoxManage --version >/dev/null 2>&1; then echo distro; else echo none; fi)
 B2R_CACHE    ?= $(HOME)/.cache/born2root
@@ -1173,6 +1179,7 @@ born2root-docker:  ## docker: born2root + Inception built from hellish as login 
 	esac; \
 	docker run --rm $$dev -v $(B2R_CACHE):/cache \
 		-e BORN2ROOT_BACKEND=$(BORN2ROOT_BACKEND) -e BORN2ROOT_INCEPTION \
+		-e VM_RAM_MB=$(B2R_VM_RAM_MB) \
 		-e BORN2ROOT_SKIP_ISO_PARITY hellish:born2root
 
 # Inception (tests/inception, a submodule) is what born2root's VM runs: a
