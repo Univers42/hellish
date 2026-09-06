@@ -202,6 +202,13 @@ jobs:
           if-no-files-found: ignore
       - name: Script corpus vs bash --posix + leak check
         run: tests/run_scripts.sh
+      # born2root (tests/born2root) is a real project of ~145 bash scripts
+      # that builds a Debian VM with hellish as the guest's shell -- the
+      # acceptance corpus for the bash dialect (issues #118-#122 came out of
+      # it). Every script must parse like bash, and its self-contained unit
+      # tests and host helpers must print the same under both shells.
+      - name: born2root corpus parses and runs like bash
+        run: tests/born2root_check.sh
       # Same framework gate on the ASan heap (the allocator job runs it on
       # ft_malloc): the crash it guards was a NULL write the sanitizer
       # reports first and best.

@@ -7,4 +7,4 @@
 	url = ../scripts.git
 [submodule "tests/born2root"]
 	path = tests/born2root
-	url = git@github.com:Univers42/born2root.git
+	url = ../born2root.git
