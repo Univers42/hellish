@@ -8,6 +8,39 @@ shows you how to drive the shell.
 
 ---
 
+## Unreleased
+
+- **born2root is hellish throughout, and an exec log says so.** Launched
+  from hellish, born2root still ran bash or sh in four places its Makefile
+  could not see: make's own recipe lines and `$(shell)` calls (no
+  `SHELL :=`), the guest's `/usr/bin/hellish` — a bash script that sent
+  every `ssh b2b '<cmd>'`, scp, and with them the whole host-driven pipeline
+  to bash — what the guest starts on its own (monitoring.sh from cron, two
+  systemd helpers, first boot and its seven provisioners, all `#!/bin/bash`),
+  and the installer's `in-target /bin/bash` steps. The corpus now sets
+  `SHELL := $(SCRIPT_SH)`, finds its launcher through `/proc` with no shell
+  at all (make execs a metacharacter-free `$(shell)` line directly; each
+  candidate runs a probe script itself, one at a time, and zsh — which
+  passed the old probe and then died on the first unmatched glob — is
+  refused), links `/usr/bin/hellish` to `hellish.real` in the guest, pins
+  `hellish.real` as the interpreter of everything the guest runs itself,
+  runs the installer's steps under the baked binary, and every one of its
+  147 scripts declares `#!/usr/bin/env hellish`. Inception's Makefile got
+  the same shell-free probe.
+- **`make born2root-audit`** (tests/born2root_shell_audit.sh) is the proof,
+  from the outside: the host-side targets are run from hellish with
+  tests/tools/execlog preloaded — an LD_PRELOAD exec logger that records
+  every exec with its caller and the shebang the kernel will honour, and
+  hooks `posix_spawn`, which is how GNU make starts every recipe shell —
+  and every script must have been interpreted by hellish with no bash, sh
+  or dash started by born2root anywhere in the process tree; then the same
+  targets from bash, which must run the same scripts under bash with the
+  same output. Third-party launchers that are sh scripts themselves
+  (VBoxManage, code) are reported as foreign, not charged to the corpus.
+  Inside the guest, `make verify_guest` now prints the interpreters: the
+  link, `/proc/$$/exe` of an ssh command, the shebangs, the live main pid
+  of both units.
+
 ## v2.10.0 — *the corpus release*
 
 Two real projects now run under hellish end to end, and they are the

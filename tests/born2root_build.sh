@@ -319,16 +319,17 @@ run_backend() { # run_backend qemu|virtualbox
 	guest true 2>/dev/null && ok "ssh b2b answers" || { ko "[$be] ssh b2b never answered"; return 1; }
 	gsh="$(guest 'getent passwd $(id -un) | cut -d: -f7' 2>/dev/null)"
 	case "$gsh" in */hellish) ok "login shell in the guest: $gsh" ;; *) ko "[$be] login shell in the guest: '$gsh'" ;; esac
-	# born2root's guest installs /usr/bin/hellish as a bash wrapper: interactive
-	# logins exec /usr/bin/hellish.real, non-interactive ssh commands go to bash
-	# (preseeds/b2b-setup.sh, for VS Code's Remote-SSH bootstrap). So the baked
-	# binary is asked directly, and the interactive path through a pty.
+	# born2root's guest installs /usr/bin/hellish as a link to hellish.real,
+	# the ELF (preseeds/b2b-setup.sh): interactive logins and non-interactive
+	# ssh commands alike run hellish. The baked binary is asked directly, then
+	# the ssh command path (what every host-side script uses), then the
+	# interactive path through a pty.
 	gver="$(guest '/usr/bin/hellish.real --version 2>&1 | head -1' 2>/dev/null)"
 	case "$gver" in hellish,*) ok "baked binary in the guest: $gver" ;; *) ko "[$be] baked binary in the guest: '$gver'" ;; esac
 	out="$(guest '/usr/bin/hellish.real -c "echo \$0; echo \$((6*7)); echo a b | wc -w"' 2>/dev/null | tr '\n' ' ')"
 	case "$out" in *hellish*" 42 2 "*) ok "hellish.real -c in the guest: $out" ;; *) ko "[$be] hellish.real -c in the guest: '$out'" ;; esac
-	wrap="$(guest 'head -1 /usr/bin/hellish; echo $0' 2>/dev/null | tr '\n' ' ')"
-	case "$wrap" in "#!/bin/bash /bin/bash "*) ok "ssh wrapper as born2root installs it (non-interactive -> bash)" ;; *) ko "[$be] ssh wrapper: '$wrap'" ;; esac
+	wrap="$(guest 'readlink /usr/bin/hellish; readlink /proc/$$/exe; echo $0' 2>/dev/null | tr '\n' ' ')"
+	case "$wrap" in "/usr/bin/hellish.real /usr/bin/hellish.real hellish "*) ok "ssh commands run hellish.real, behind the link (no bash wrapper)" ;; *) ko "[$be] ssh command shell: '$wrap' (wanted link -> hellish.real, exe hellish.real, \$0 hellish)" ;; esac
 	ilog="$(printf 'echo INTERACTIVE-$0-$((6*7))\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes -o ConnectTimeout=15 b2b 2>/dev/null | tr -d '\r' | grep -o 'INTERACTIVE-/[^[:space:]]*' | head -1)"
 	case "$ilog" in *hellish*-42) ok "interactive login runs hellish: $ilog" ;; *) ko "[$be] interactive login: '$ilog'" ;; esac
 	tmpf="$WORK/roundtrip.txt"; printf 'born2root %s\n' "$(date +%s)" >"$tmpf"

@@ -580,10 +580,12 @@ bench:  ## Speed vs bash --posix (always rebuilds OPT=1)
 
 # tests/born2root is a submodule of someone else's scripts; its C files are
 # not 42-norm and not ours to reformat, so the tests/ sweep leaves it out.
+# tests/tools/execlog_spawn.c is left out by name: it interposes posix_spawn,
+# whose six parameters are libc's signature, not a choice (TOO_MANY_ARGS).
 norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
 	output="$$( \
-	    norminette src incs $$(find tests -name '*.[ch]' -not -path '*/born2root/*') \
+	    norminette src incs $$(find tests -name '*.[ch]' -not -path '*/born2root/*' -not -name execlog_spawn.c) \
 	        2>&1 | grep -v 'OK!' | grep -v 'US' \
 	        | grep -v 'Notice:' & \
 	    pid=$$!; \
@@ -1135,6 +1137,14 @@ help-test: all  ## The help builtin — every dispatch-table entry must have one
 # script parses like bash, and its self-contained unit tests print the same.
 born2root-test: all  ## born2root corpus: every script parses like bash, its unit tests print the same
 	@bash $(TEST_DIR)/born2root_check.sh
+
+# What interpreted what: born2root's host-side targets are run from hellish
+# with an exec logger preloaded (tests/tools/execlog.c), and every script in
+# the run must have been interpreted by hellish, with no bash, sh or dash
+# started by born2root's own code anywhere in the process tree; then the same
+# targets from bash, which must run the same scripts, all under bash.
+born2root-audit: all  ## born2root corpus: from hellish, every script ran under hellish and nothing started another shell
+	@bash $(TEST_DIR)/born2root_shell_audit.sh
 
 # The rest of born2root: `make all` launched from hellish builds the Debian
 # guest for real, with hellish baked in as its login shell, then asks the
