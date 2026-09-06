@@ -1,0 +1,65 @@
+# born2root, end to end: `make all BACKEND=qemu` launched FROM hellish builds
+# the Debian guest for real on the runner's KVM, with a static hellish from
+# this tree baked in as the guest's login shell, then asks the guest the
+# ssh-contract questions and shuts it down (tests/born2root_build.sh).
+#
+# Half an hour and a Debian mirror per run, so this is not part of `ci.yml`:
+# it runs weekly and on demand. The per-push gate is `born2root_check.sh`
+# in the CI tests job (parse sweep, unit tests, `make -n all`).
+name: born2root VM
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'   # Mondays 03:17 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  vm:
+    name: build the guest from hellish (QEMU/KVM)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Host deps (the same list born2root's `make deps` checks)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libreadline-dev \
+            qemu-system-x86 qemu-utils xorriso cpio python3 openssh-client
+      - name: KVM for the runner user
+        # GitHub's Linux runners expose /dev/kvm; only the mode is missing.
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      - name: Build hellish (debug + ASan drives the scripts)
+        run: make all
+      - name: Static hellish for the guest
+        run: make static
+      - name: Cache the Debian netinst ISO
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/born2root
+          key: debian-netinst-${{ runner.os }}-v1
+      - name: make all BACKEND=qemu, from hellish
+        run: |
+          mkdir -p ~/.cache/born2root
+          tests/born2root_build.sh
+          # keep the netinst for the next run (the builder hardlinked it in)
+          cp -n tests/born2root/debian-*-amd64-netinst.iso ~/.cache/born2root/ 2>/dev/null || true
+      - name: Logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: born2root-vm-logs
+          path: |
+            build/born2root/*.log
+            build/born2root/*.txt
+            build/born2root/vm/debian/serial.log
+          if-no-files-found: ignore

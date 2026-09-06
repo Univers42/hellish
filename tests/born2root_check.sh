@@ -25,6 +25,10 @@
 #
 # Skips cleanly (exit 0, with a notice) when the submodule is not checked out:
 #     git submodule update --init tests/born2root
+#
+# The rest -- `make all` from hellish building the guest for real on KVM --
+# is tests/born2root_build.sh (`make born2root-vm`), run by hand or by the
+# weekly born2root-vm workflow.
 # ============================================================================
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

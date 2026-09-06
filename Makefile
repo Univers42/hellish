@@ -1136,6 +1136,16 @@ help-test: all  ## The help builtin — every dispatch-table entry must have one
 born2root-test: all  ## born2root corpus: every script parses like bash, its unit tests print the same
 	@bash $(TEST_DIR)/born2root_check.sh
 
+# The rest of born2root: `make all` launched from hellish builds the Debian
+# guest for real, with hellish baked in as its login shell, then asks the
+# guest the ssh-contract questions and shuts it down. Ten to thirty minutes
+# per backend; the ISO is first built under bash and under hellish and the
+# two trees diffed byte for byte. QEMU needs /dev/kvm, VirtualBox needs
+# /dev/vboxdrv (BORN2ROOT_BACKEND=qemu|virtualbox|both, default qemu).
+# Manual -- see tests/born2root_build.sh.
+born2root-vm: all  ## born2root end to end: build the VM from hellish (BORN2ROOT_BACKEND=qemu|virtualbox|both)
+	@bash $(TEST_DIR)/born2root_build.sh
+
 # The builtins page of the docs site IS `help` output (help-test above is
 # what stops it drifting from the dispatch table). Regenerate + commit after
 # adding or changing a builtin; the site build needs no compiler this way.
@@ -1255,7 +1265,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
-	docs-builtins \
+	docs-builtins born2root-test born2root-vm \
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
