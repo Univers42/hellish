@@ -143,6 +143,39 @@ def main():
           and p.returncode == 0,
           "got %r rc=%d" % (p.stdout.strip(), p.returncode))
 
+    # 9. Run AS A FILE -- issue #118.  `hellish script.sh` set nothing, so
+    #    `dirname "${BASH_SOURCE[0]}"` was `.` and the run/source guard
+    #    `[ "${BASH_SOURCE[0]}" = "$0" ]` was false: the whole action block
+    #    of a dispatcher script silently did not run.  bash: element 0 IS $0.
+    script = write(tmp, "run/me.sh",
+                   'echo "src=${BASH_SOURCE[0]} zero=$0 n=${#BASH_SOURCE[@]}"\n'
+                   'here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+                   'echo "here=$here"\n'
+                   'if [ "${BASH_SOURCE[0]}" = "$0" ]; then echo run; '
+                   'else echo sourced; fi\n'
+                   'f() { echo "fn=${BASH_SOURCE[0]} n=${#BASH_SOURCE[@]}"; }; '
+                   'f\n')
+    p = subprocess.run([SHELL, script], capture_output=True, text=True,
+                       env=ENV, timeout=30)
+    lines = p.stdout.split("\n")
+    check("run as a file: BASH_SOURCE[0] is the script path, equal to $0",
+          lines[0] == "src=%s zero=%s n=1" % (script, script),
+          "got %r" % lines[0])
+    check("run as a file: the dirname idiom finds the script's directory",
+          lines[1] == "here=" + os.path.join(tmp, "run"), "got %r" % lines[1])
+    check("run as a file: the run-vs-source guard says run",
+          lines[2] == "run", "got %r" % lines[2])
+    check("run as a file: a function defined there reports the script",
+          lines[3] == "fn=%s n=2" % script, "got %r" % lines[3])
+    p = subprocess.run([SHELL, "run/me.sh"], capture_output=True, text=True,
+                       env=ENV, timeout=30, cwd=tmp)
+    check("run as a file: a relative path stays as typed, like $0",
+          p.stdout.split("\n")[0] == "src=run/me.sh zero=run/me.sh n=1",
+          "got %r" % p.stdout.split("\n")[0])
+    p = run('echo "[${BASH_SOURCE[0]:-UNSET}]"')
+    check("-c mode still has no BASH_SOURCE, as in bash",
+          p.stdout.strip() == "[UNSET]", "got %r" % p.stdout.strip())
+
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 
