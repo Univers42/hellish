@@ -77,6 +77,7 @@ int			pf_conv_str(t_pf *pf, char *fmt, const char *arg, t_pfbuf *b);
 typedef unsigned long long	t_ull;
 
 void		pf_err_num(t_pf *pf, const char *arg);
+bool		pf_conv_time(t_pf *pf, t_spec *sp, const char *fmt, int *i);
 char		pf_escape(const char *s, int *i, bool *stop);
 char		*pf_quote(const char *arg);
 void		pq_ansi(t_string *out, const char *s);
