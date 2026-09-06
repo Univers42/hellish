@@ -211,7 +211,11 @@ first.
 - `INP_FILE` -- `init_file`: open, `read_file_to_buffer` (appends a
   trailing `\n` so a last line without one does not stall the parser),
   `update_ctx_from_file` (ctx = script path; a `.zsh` path arms the zsh
-  dialect, the same rule `source` and the rc loader use). Open failure ->
+  dialect, the same rule `source` and the rc loader use), then `frame_push`
+  with the script path as typed, so `${BASH_SOURCE[0]}` equals `$0` the way
+  bash's does and a function defined by the script records it as its origin
+  (issue #118; the frame is the bottom of the stack for the life of the
+  process). `-c` and piped input push nothing, as in bash. Open failure ->
   `handle_file_open_error`: `EISDIR` exits 127, otherwise
   `EXE_BASE_ERROR + errno`, like bash.
 - `INP_NOTTY` -- `init_stdin_notty`: piped or redirected stdin, no prompts.
