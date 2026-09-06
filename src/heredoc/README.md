@@ -164,11 +164,25 @@ The module implements these rules as follows:
 
 - For each input line:
   - If tab stripping is enabled, leading tabs are removed before processing.
-  - If expansion is enabled:
-    - `$VAR`‑like patterns are replaced via the environment module
+  - If expansion is enabled (`expand_line` in `helpers.c`):
+    - `$VAR` / `${...}` are replaced via the environment module
       (`env_expand_n`), similar to how command‑line variables are expanded.
-    - Certain backslash escapes are interpreted so that you can control when
-      characters like `$` or `\` are taken literally.
+      A `$` that no name follows (`$ 0`, `5$`, a `$` ending the line) is
+      emitted as a literal `$` and the byte after it is left to the loop --
+      autoconf's config.status is written from a heredoc holding
+      `line = $ 0`, and a shell that eats that byte produces a Makefile of
+      `0` lines.
+    - `$(...)`, `$((...))` **and** `` `...` `` are command / arithmetic
+      substitutions, through the expander's `expand_dollar_sub` and
+      `expand_backquote_sub`. Backquotes matter in practice: autoconf's
+      `#define \`$as_echo "HAVE_$ac_header" | $as_tr_cpp\` 1` lands in
+      `confdefs.h` through a heredoc, and a body that keeps the backquotes
+      literal makes every later header check fail to compile. Inside the
+      backquotes only `` \` ``, `\$` and `\\` are escapes, exactly as in a
+      word; an unclosed backquote stays literal. A substitution must close
+      on the line it opened -- bodies are expanded line by line.
+    - Only `\$`, `` \` `` and `\\` are backslash escapes; every other
+      `\x` keeps its backslash, and `\<newline>` joins lines.
   - If expansion is disabled, lines are copied as‑is.
 
 The result is appended to the heredoc’s `full_file` buffer, preserving
