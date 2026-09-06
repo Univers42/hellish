@@ -343,6 +343,63 @@ run_backend() { # run_backend qemu|virtualbox
 		sleep 10
 	done
 	[ "$quiet" -ge 2 ] && ok "first boot finished" || ko "[$be] first-boot-setup.sh still running after 15 min"
+	# ORDER MATTERS: this runs only once first boot has FINISHED (the wait
+	# just above). First boot keeps provisioning after sshd answers, and its
+	# upstream hellish installer is one of the LATE steps -- refreshing right
+	# after `ssh b2b answers` (as this once did, in step 3) won the race for a
+	# moment, passed its own size check, and was then clobbered back to the
+	# release by first boot before `make inception` baked the shell into the
+	# containers. So it sits here: the last hand on hellish.real before 4b.
+	# born2root's first boot installs the PUBLISHED hellish release over the
+	# ISO-baked binary (setup/install/hellish/install_hellish_upstream.sh runs
+	# `curl .../install.sh | sh`). The corpus exists to test THIS tree, so put
+	# the binary this run built back as /usr/bin/hellish.real -- exactly what a
+	# developer validating a fix does by hand. Without it the guest would run
+	# whatever is released, and a bug fixed on the branch (e.g. the escaped
+	# backtick in a heredoc that broke Inception's mariadb bootstrap under
+	# 2.9.1) would still fail here. sudo wants a tty and a password (requiretty);
+	# the password is the dlesieur account password the preseed set.
+	if [ -f "$GUEST" ]; then
+		gpass="$(awk '$1=="d-i" && $2=="passwd/user-password" {print $4; exit}' "$B2R/preseeds/preseed.cfg" 2>/dev/null)"
+		want=$(wc -c <"$GUEST")
+		# Replace EVERY hellish.real on the guest, on EVERY mount. The upstream
+		# installer (install_hellish_upstream.sh, run with HOME=/home/<user>)
+		# scatters copies -- /usr/bin, /usr/local/bin, and ~/.local/bin which the
+		# login PATH puts first -- and Inception's `make setup` picks the shell
+		# baked into the containers via `command -v hellish.real`, so one missed
+		# copy means the images run the released binary (its heredoc escaped-
+		# backtick bug then breaks mariadb's bootstrap). GOTCHA: born2root puts
+		# /home on its own LVM volume, so `find / -xdev` (as this used to) stays
+		# on / and never touches ~/.local/bin/hellish.real -- exactly the copy
+		# the deploy's login shell resolves. So find PER MOUNT (an -xdev find
+		# rooted at each mountpoint from /proc/mounts) to cover them all, and
+		# also swap any ELF binary literally named `hellish` (the real binary,
+		# never the #! bash wrapper) so the recipe interpreter is this tree too.
+		if [ -n "$gpass" ] && "$WORK/bin/scp" -q "$GUEST" b2b:/tmp/hellish.new 2>/dev/null \
+			&& printf '%s\n' "$gpass" | "$WORK/bin/ssh" -tt b2b \
+				"sudo -S -p '' sh -c 'n=/tmp/hellish.new; for mp in \$(cut -d\" \" -f2 /proc/mounts | sort -u); do find \"\$mp\" -xdev -name hellish.real -type f 2>/dev/null; done | while IFS= read -r f; do install -m 755 \"\$n\" \"\$f\"; done; install -m 755 \"\$n\" /usr/bin/hellish.real; for mp in \$(cut -d\" \" -f2 /proc/mounts | sort -u); do find \"\$mp\" -xdev -name hellish -type f 2>/dev/null; done | while IFS= read -r f; do head -c4 \"\$f\" | grep -qa ELF && install -m 755 \"\$n\" \"\$f\"; done; rm -f \"\$n\"'" >/dev/null 2>&1; then
+			got=$(guest 'command -v hellish.real >/dev/null && wc -c < "$(command -v hellish.real)"' 2>/dev/null | tr -d '\r')
+			# also check the login shell's own resolution (its PATH differs).
+			# Over `ssh -tt` that shell is interactive, so hellish prints its
+			# startup banner+animation before our stdin runs -- and it is out
+			# already, so it can't be silenced from stdin. Wrap the size in a
+			# marker and grep it, exactly as the ilog check below does; require a
+			# digit after `=` so the pty's echo of our own input line (which
+			# reads LGOTMARK=$(...)) cannot match.
+			lgot=$(printf 'echo "LGOTMARK=$(wc -c < "$(command -v hellish.real)")."\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes b2b 2>/dev/null | tr -d '\r' | grep -o 'LGOTMARK=[0-9][0-9]*' | head -1 | tr -dc '0-9')
+			# and assert EVERY hellish.real is now this tree -- not just the one
+			# command -v happens to resolve. The old check trusted a single
+			# `command -v` whose non-tty PATH found the refreshed /usr/bin copy
+			# and reported a MATCH while a published copy on /home slid into the
+			# containers. Distinct sizes across all mounts must be exactly want.
+			sizes=$(guest 'for mp in $(cut -d" " -f2 /proc/mounts | sort -u); do find "$mp" -xdev -name hellish.real -type f 2>/dev/null; done | while IFS= read -r f; do wc -c < "$f"; done | sort -u | tr "\n" ","' 2>/dev/null | tr -d '\r')
+			if [ "$got" = "$want" ] && [ "$lgot" = "$want" ] && [ "$sizes" = "$want," ]; then
+				ok "guest hellish.real refreshed to the binary under test everywhere ($(basename "$GUEST"), $want bytes; command -v, login, and all copies agree)"
+			else ko "[$be] refresh incomplete: command -v=$got login=$lgot copies=[$sizes], wanted every hellish.real = $want"; fi
+		else
+			ko "[$be] could not refresh the guest's hellish.real -- it would run the released binary, not this tree"
+		fi
+	fi
 	run_from "$H" "make verify_guest BACKEND=$be VM_PATH=$VM_PATH" >"$WORK/verify_guest.$be.txt" 2>&1 \
 		&& ok "verify_guest: $(grep -oE '[0-9]+/[0-9]+ checks passed' "$WORK/verify_guest.$be.txt" | head -1) -> $WORK/verify_guest.$be.txt" \
 		|| { ko "[$be] verify_guest"; grep -E '✗|failed' "$WORK/verify_guest.$be.txt" | head -6 | sed 's/^/   /'; }
@@ -356,10 +413,18 @@ run_backend() { # run_backend qemu|virtualbox
 	if [ "${BORN2ROOT_INCEPTION:-1}" != 0 ] && [ -f "$ROOT/tests/inception/Makefile" ]; then
 		say "[$be] 4b. make inception (SRC=tests/inception), launched from hellish"
 		t0=$(date +%s)
-		run_from "$H" "make inception VM_NAME=$VM_NAME SRC=$ROOT/tests/inception" >"$WORK/inception.$be.log" 2>&1; rc=$?
+		run_from "$H" "make inception VM_NAME=$VM_NAME VM_PATH=$VM_PATH SRC=$ROOT/tests/inception" >"$WORK/inception.$be.log" 2>&1; rc=$?
 		echo "   rc=$rc in $(( ( $(date +%s) - t0 ) / 60 )) min"
 		grep -aE '✓|✗|⚠|→' "$WORK/inception.$be.log" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/^/   | /' | tail -14
 		[ "$rc" = 0 ] && ok "make inception finished" || { ko "[$be] make inception exited $rc"; tail -15 "$WORK/inception.$be.log"; }
+		# On any Inception trouble, capture what the guest's own containers say:
+		# a health/state table plus the logs of the ones that gate the rest, so
+		# a CI failure carries its cause instead of just "dependency failed".
+		if [ "$rc" != 0 ]; then
+			guest 'echo "=== hellish binaries on the guest ==="; echo "command -v hellish.real=$(command -v hellish.real)"; for f in $(find / -xdev -name "hellish.real" 2>/dev/null); do printf "%s  %s bytes  %s\n" "$f" "$(wc -c <"$f")" "$(md5sum "$f" 2>/dev/null | cut -d" " -f1)"; done; echo "srcs/shell/sh: $(md5sum ~/Documents/inception/srcs/shell/sh 2>/dev/null | cut -d" " -f1) ($(wc -c <~/Documents/inception/srcs/shell/sh 2>/dev/null) bytes)"; docker ps -a --format "{{.Names}}\t{{.Status}}"; for c in mariadb wordpress nginx; do echo "=== docker logs $c (tail) ==="; docker logs "$c" 2>&1 | tail -30; echo "=== $c /bin/sh ==="; docker exec "$c" sh -c "readlink -f /bin/sh; md5sum /bin/sh 2>/dev/null; sh --version 2>&1 | head -1" 2>&1; done' \
+				>"$WORK/inception_containers.$be.txt" 2>&1 || true
+			sed 's/^/   guest: /' "$WORK/inception_containers.$be.txt" | tail -50
+		fi
 		grep -qa 'the stack builds under /usr/bin/hellish.real' "$WORK/inception.$be.log" \
 			&& ok "the guest built the stack under hellish.real" || ko "[$be] the guest did not build under hellish.real"
 		# "hellish only" inside the containers too: Inception's make setup

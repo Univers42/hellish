@@ -82,6 +82,7 @@ echo "---- parse: $((total - bad)) ok / $bad mismatch (of $total scripts) ----"
 # root, no hypervisor, no writes outside mktemp.
 cases=(
 	"tests/test_host_ports.sh"
+	"tests/test_inception_vm_path.sh"
 	"tests/test_make_pull.sh"
 	"tests/test_qemu_ports.sh"
 	"tests/test_qemu_stop.sh"
