@@ -95,7 +95,17 @@ void	init_arg(t_shell *state, char **argv)
 /* Script-file mode: open argv[1] and read it into the readline buffer. We
    separate the open+error step from the buffer-fill step so handle_file_open_
    error() can do the right exit code without the buffer state being half-set.
-   no_compact mirrors -c mode (the file is already the full source). */
+   no_compact mirrors -c mode (the file is already the full source).
+
+   The frame is what makes ${BASH_SOURCE[0]} name the script -- issue #118.
+   `source`, the rc files and eval each push one, but a script run as a
+   file never did, so element 0 was unset: `dirname "${BASH_SOURCE[0]}"`
+   resolved to `.` and the run-vs-source guard `[ "${BASH_SOURCE[0]}" =
+   "$0" ]` was false, which skipped every action block of a dispatcher
+   script.  bash puts the script path there, equal to $0, as typed.  The
+   frame is never popped: it is the bottom of the stack for the life of the
+   process, and free_all_state releases it with the rest.  -c and piped
+   input push nothing, which is also bash (BASH_SOURCE is empty there). */
 void	init_file(t_shell *state, char **argv)
 {
 	int	fd;
@@ -110,4 +120,5 @@ void	init_file(t_shell *state, char **argv)
 	update_ctx_from_file(state, argv);
 	state->rl.no_compact = true;
 	set_argv_params(state, argv, 2, argv[1]);
+	frame_push(state, NULL, argv[1]);
 }
