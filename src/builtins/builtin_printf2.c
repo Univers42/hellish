@@ -29,10 +29,10 @@ static void	pf_bad_fmt(t_pf *pf, char c)
 			pf->ctx, c);
 }
 
-/* Single pass through the format string: handle backslash escapes (passed
-   to pf_escape with no stop channel — bash honours \c only inside %b
-   arguments), % conversions (parse spec, then pf_conv), and literal
-   characters.
+/* Single pass through the format string: handle backslash escapes (pf_escape
+   is told this is the FORMAT, not a %b argument: \c is literal here and
+   \0nnn is the three-digit C form), % conversions (parse spec, then
+   pf_conv), and literal characters.
 
    Length modifiers (l, ll, h, hh, j, z, t, L) are skipped and discarded
    between the spec and the conversion byte. bash accepts them and ignores
@@ -80,7 +80,7 @@ static void	run_format(t_pf *pf, const char *fmt)
 	while (fmt[i] && !pf->stop)
 	{
 		if (fmt[i] == '\\' && fmt[i + 1])
-			vec_push_char(pf->out, pf_escape(fmt, &i, NULL));
+			vec_push_char(pf->out, pf_escape(pf, fmt, &i, false));
 		else if (fmt[i] == '%')
 		{
 			i++;

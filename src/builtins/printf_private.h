@@ -78,7 +78,7 @@ typedef unsigned long long	t_ull;
 
 void		pf_err_num(t_pf *pf, const char *arg);
 bool		pf_conv_time(t_pf *pf, t_spec *sp, const char *fmt, int *i);
-char		pf_escape(const char *s, int *i, bool *stop);
+char		pf_escape(t_pf *pf, const char *s, int *i, bool in_b);
 char		*pf_quote(const char *arg);
 void		pq_ansi(t_string *out, const char *s);
 void		pq_ansi_char(t_string *out, unsigned char c);
@@ -86,7 +86,7 @@ void		pf_conv_quote(t_pf *pf, t_spec *sp, const char *arg);
 long long	pf_num(t_pf *pf, const char *arg);
 void		pf_conv_float(t_pf *pf, char *fmt, const char *arg,
 				t_pfbuf *b);
-void		pf_emit_b(t_string *out, const char *arg, bool *stop);
+void		pf_emit_b(t_pf *pf, t_string *out, const char *arg);
 t_ull		pf_unum(t_pf *pf, const char *arg);
 void		pf_conv(t_pf *pf, t_spec *sp, char conv);
 void		pf_parse_spec(t_pf *pf, const char *fmt, int *i, t_spec *sp);

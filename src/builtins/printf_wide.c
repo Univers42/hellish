@@ -106,32 +106,3 @@ void	pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg)
 	vec_push_str(pf->out, b.p);
 	pf_buf_close(&b, stack);
 }
-
-/* %b with a field width. pf_emit_b expands backslash escapes straight into
-   the output, so the spec never reached it and `printf "%10b" ab` printed
-   "ab" where bash prints "        ab". Expand into a scratch string first,
-   then pad it exactly like every other conversion.
-**
-** \c inside the argument aborts the whole printf, so a stopped expansion is
-   emitted as-is and never padded -- padding output that was cut short would
-   invent characters the format asked to stop before. */
-void	pf_emit_b_padded(t_pf *pf, t_spec *sp, const char *arg)
-{
-	char		stack[PF_STACK_BUF];
-	char		fmt[80];
-	t_string	raw;
-	t_pfbuf		b;
-
-	vec_init(&raw);
-	raw.elem_size = 1;
-	pf_emit_b(&raw, arg, &pf->stop);
-	vec_push_char(&raw, '\0');
-	if (!sp->has_width || pf->stop)
-		return (vec_push_str(pf->out, (char *)raw.ctx), (void)xfree(raw.ctx));
-	pf_build_spec(fmt, sp, 's');
-	pf_buf_open(sp, &b, stack, raw.len);
-	snprintf(b.p, b.cap, fmt, (char *)raw.ctx);
-	vec_push_str(pf->out, b.p);
-	pf_buf_close(&b, stack);
-	xfree(raw.ctx);
-}

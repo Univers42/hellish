@@ -146,6 +146,23 @@ drops the newline. `parse_numeric_escape` owns those digit caps.
 zsh's `print` prints `d`): one decoder serves both `echo` and
 `builtin_print` rather than two escape tables kept in step.
 
+`printf` decodes the same letters but counts octal digits differently on
+either side of a `%b`, and the difference is not cosmetic. In the FORMAT
+string `\NNN` is C's form -- one to three octal digits, a leading zero
+counting as one of them -- so `printf '\0337'` is ESC then `7`, the
+terminal's save-cursor. In a `%b` ARGUMENT the leading zero is a marker
+with up to three digits after it, `echo -e`'s form, so `printf '%b'
+'\0337'` is the single byte `0337`. `pf_escape`'s `in_b` flag picks
+between them, and it also gates `\c`, which stops all output in an
+argument and is literal text in a format. Reading the format as `\0nnn`
+put a raw `0xDF` on the terminal wherever a TUI saved the cursor;
+born2root's build dashboard does that before every spinner frame.
+
+A `%b` argument is also the one conversion whose bytes can legitimately
+include a NUL (`printf '%b' 'a\0b'` is three bytes), so `printf_bytes.c`
+pads and truncates it BY COUNT rather than handing the decoded string to
+`snprintf("%s")`, which would measure with `strlen` and stop at the NUL.
+
 ## CD
 
 `builtin_cd` (`core_builtins2.c`) is a thin orchestrator over six helper

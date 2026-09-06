@@ -75,31 +75,55 @@ void	ansic_utf8(t_ansic *a, long cp)
 	}
 }
 
-/* Numeric escapes: \xHH (up to 2 hex), \nnn (up to 3 octal, the first
-   digit already at i+1), \uHHHH / \UHHHHHHHH (UTF-8 encoded). The digit
-   run may stop early at any non-digit, exactly like bash. */
-void	ansic_num(t_ansic *a, char kind)
+/* Consume up to `left` digits of `kind` at a->i into *v.  Returns how
+   many were read, which is what tells \x, \u and \U with no digit at all
+   apart from a real escape. */
+static int	ansic_digits(t_ansic *a, char kind, int left, long *v)
 {
-	long	v;
-	int		left;
-	int		d;
+	int	d;
+	int	n;
 
-	a->i += 2;
-	if (kind == 'o')
-		a->i -= 1;
-	left = 2 + (kind == 'o') + 2 * (kind == 'u') + 6 * (kind == 'U');
-	v = 0;
+	n = 0;
 	while (left > 0 && a->i < a->len)
 	{
 		d = ansic_digit(a->s[a->i], kind);
 		if (d < 0)
 			break ;
 		if (kind == 'o')
-			v = v * 8 + d;
+			*v = *v * 8 + d;
 		else
-			v = v * 16 + d;
+			*v = *v * 16 + d;
 		a->i++;
 		left--;
+		n++;
+	}
+	return (n);
+}
+
+/* Numeric escapes: \xHH (up to 2 hex), \nnn (up to 3 octal, the first
+   digit already at i+1), \uHHHH / \UHHHHHHHH (UTF-8 encoded). The digit
+   run may stop early at any non-digit, exactly like bash.
+
+   A \x, \u or \U with NO digit behind it is not an escape: bash keeps the
+   backslash and the letter -- $'\xg' is the three characters \xg.  This
+   used to emit a NUL for it, and since the decoded word is a C string, a
+   NUL there ended the word: $'\xg' was empty, and so was everything after
+   it. */
+void	ansic_num(t_ansic *a, char kind)
+{
+	long	v;
+	int		left;
+
+	a->i += 2;
+	if (kind == 'o')
+		a->i -= 1;
+	left = 2 + (kind == 'o') + 2 * (kind == 'u') + 6 * (kind == 'U');
+	v = 0;
+	if (ansic_digits(a, kind, left, &v) == 0)
+	{
+		a->dst[a->n++] = '\\';
+		a->dst[a->n++] = kind;
+		return ;
 	}
 	if (kind == 'u' || kind == 'U')
 		return (ansic_utf8(a, v));

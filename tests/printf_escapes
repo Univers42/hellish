@@ -1,0 +1,34 @@
+printf '\0337' | od -An -c
+printf '\0338' | od -An -c
+printf '\01234' | od -An -c
+printf '\0007' | od -An -c
+printf '\0101\101' | od -An -c
+printf '\1012' | od -An -c
+printf '\12\1\0\00\000' | od -An -c
+printf '\8\9' | od -An -c
+printf '\777' | od -An -c
+printf '\0337\033[%dA\r\033[5C\033[1;34m%s\033[0m\0338' 3 X | od -An -c
+printf '%b' '\0337' | od -An -c
+printf '%b' '\01234' | od -An -c
+printf '%b' '\1234' | od -An -c
+printf '%b' '\0\00\8' | od -An -c
+printf '%b' 'a\0b' | od -An -c
+printf '%b\n' '\0' | od -An -c
+printf '%-6b|' 'a\0b' | od -An -c
+printf '%6b|' 'a\0b' | od -An -c
+printf '%.2b|' 'a\0bc' | od -An -c
+printf '%.2b|%-5.1b|' abc xyz | od -An -c
+printf '%-6b|' 'ab\c' zz | od -An -c
+printf '%6b|' 'ab\c' | od -An -c
+printf '%.1b|' 'ab\c' | od -An -c
+printf '%b' '\0337\033[1A\r\033[5C%s\0338' | od -An -c
+printf '\x41\x4\xg' 2>/dev/null | od -An -c
+printf '\x' 2>/dev/null | od -An -c
+printf '%b' '\x41\xg\x' 2>/dev/null | od -An -c
+printf '\xg' 2>/dev/null; echo " st=$?"
+printf '%s|' "$(printf '\xg' 2>&1 >/dev/null | sed 's/.*printf: //')"
+printf '%s|' $'\xg' | od -An -c
+printf '%s|' $'\xgé' | od -An -c
+printf '%s|' $'\ug\Ug\u' | od -An -c
+printf '%s|' $'\x41\x4142\0337\101\12' | od -An -c
+echo -e '\0337\101\0' | od -An -c
