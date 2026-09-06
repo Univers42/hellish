@@ -65,8 +65,8 @@ typedef struct s_spec
 }	t_spec;
 
 const char	*pf_arg(t_pf *pf);
-size_t		pf_render_size(t_spec *sp);
-void		pf_buf_open(t_spec *sp, t_pfbuf *b, char *stack);
+size_t		pf_render_size(t_spec *sp, size_t arglen);
+void		pf_buf_open(t_spec *sp, t_pfbuf *b, char *stack, size_t arglen);
 void		pf_buf_close(t_pfbuf *b, char *stack);
 void		pf_emit_b_padded(t_pf *pf, t_spec *sp, const char *arg);
 void		pf_emit_sized(t_pf *pf, t_spec *sp, char *fmt, const char *arg);

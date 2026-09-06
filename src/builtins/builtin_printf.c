@@ -73,7 +73,7 @@ static void	pf_conv_char(t_pf *pf, t_spec *sp, const char *arg)
 		i = (unsigned char)arg[0];
 	sp->has_prec = false;
 	pf_build_spec(fmt, sp, 'c');
-	pf_buf_open(sp, &b, stack);
+	pf_buf_open(sp, &b, stack, 0);
 	n = snprintf(b.p, b.cap, fmt, i);
 	if (n >= (int)b.cap)
 		n = (int)b.cap - 1;

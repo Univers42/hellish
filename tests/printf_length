@@ -44,3 +44,13 @@ printf "%#x\n" 18446744073709551615
 printf "%020u\n" 18446744073709551615
 printf "%u\n" 18446744073709551615; echo "st=$?"
 printf "%d\n" -9223372036854775808
+v=$(head -c 5000 /dev/zero | tr '\0' a); printf '%s\n' "$v" | wc -c
+v=$(head -c 4096 /dev/zero | tr '\0' a); printf '%s' "$v" | wc -c
+v=$(head -c 20000 /dev/zero | tr '\0' a); printf '%s|%s\n' "$v" "$v" | wc -c
+v=$(head -c 5000 /dev/zero | tr '\0' a); printf '%.10s\n' "$v"
+v=$(head -c 5000 /dev/zero | tr '\0' a); printf '%b\n' "$v" | wc -c
+v=$(head -c 5000 /dev/zero | tr '\0' a); printf '%6000s\n' "$v" | wc -c
+v=$(head -c 5000 /dev/zero | tr '\0' a); printf '%-10b|\n' "$v" | wc -c
+v=$(head -c 3000 /dev/zero | tr '\0' a | sed 's/a/é/g'); printf '%s\n' "$v" | wc -c
+v=$(awk 'BEGIN{for(i=0;i<300;i++)print "line " i}'); printf '%s\n' "$v" | wc -l
+v=$(awk 'BEGIN{for(i=0;i<300;i++)print "line " i}'); printf '%s\n' "$v" | grep -c '^line 2'
