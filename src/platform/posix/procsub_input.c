@@ -11,45 +11,34 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "executor.h"
+#include "ft_builtins.h"
 #include "sys.h"
 
-/* Re-exec THIS shell to run `cmd`, in an already-forked child.  Never
-   returns: it execs, or exits 127 the way any failed exec would.
+/* The child half of <(cmd) and >(cmd): run `cmd` IN THIS PROCESS, the
+   fork's copy of the shell being the subshell.  Never returns.
 
-   Both halves of process substitution used to exec the literal
-   "/proc/self/exe" -- twice, under two names that expanded to the same
-   string, so the second attempt was dead code -- and that path exists on
-   Linux and nowhere else.  On macOS every <(cmd) and >(cmd) exec'd
-   something that was not there and produced nothing.  self_exe_path()
-   asks the kernel, and has an answer on Darwin too.
-
-   A NULL from it means the kernel will not say where we are.  There is
-   nothing sensible to exec at that point, and inventing a path would run
-   the WRONG shell rather than fail, so the child just exits. */
-void	procsub_exec_self(t_shell *state, const char *cmd)
+   Both halves used to re-exec the shell binary with `-c cmd`, and a fresh
+   process knows nothing the parent defined: no functions, no arrays, no
+   `local`s, its own $$.  `while read -r x; do ...; done < <(some_function)`
+   and `mapfile -t a < <(some_function)` said "command not found" and
+   iterated zero times -- issue #119.  The command-substitution child
+   (capture_subshell_output.c) already runs in process for exactly this
+   reason; this is the same body.  Traps reset the way a subshell's do,
+   so the parent's EXIT trap cannot fire from here.  cmdsub_in_place lets a
+   body that is one external command execve without a second fork, so
+   `cat <(seq 3)` costs one clone plus one exec, where the re-exec cost a
+   whole shell start-up on top. */
+void	procsub_run_child(t_shell *state, const char *cmd)
 {
-	char	*self;
-	char	*argv[4];
-	char	**envp;
-
-	self = self_exe_path();
-	if (self)
-	{
-		argv[0] = self;
-		argv[1] = (char *)CMD_OPT;
-		argv[2] = (char *)cmd;
-		argv[3] = NULL;
-		envp = get_envp_all(state, self);
-		execve(self, argv, envp);
-		if (envp)
-			free_tab(envp);
-	}
-	exit(127);
+	reset_traps_child(state);
+	state->cmdsub_in_place = cs_single_cmd(state, cmd);
+	exit(exec_string(state, (char *)cmd) & 0xFF);
 }
 
 /* Fork a child for a <(cmd) process substitution.  The child connects its
-   stdout to pipefd[1] and re-execs the shell. */
-static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
+   stdout to pipefd[1] and runs the body in place. */
+static pid_t	fork_and_run_procsub_input(t_shell *state, int pipefd[2],
 						const char *cmd)
 {
 	pid_t	pid;
@@ -62,7 +51,7 @@ static pid_t	fork_and_exec_procsub_input(t_shell *state, int pipefd[2],
 		close(pipefd[0]);
 		dup2(pipefd[1], STDOUT_FILENO);
 		close(pipefd[1]);
-		procsub_exec_self(state, cmd);
+		procsub_run_child(state, cmd);
 	}
 	return (pid);
 }
@@ -82,7 +71,7 @@ char	*create_procsub_input(t_shell *state, const char *cmd)
 		return (ft_strdup(BLACK_HOLE));
 	if (pipe(pipefd) == -1)
 		return (NULL);
-	pid = fork_and_exec_procsub_input(state, pipefd, cmd);
+	pid = fork_and_run_procsub_input(state, pipefd, cmd);
 	if (pid == -1)
 	{
 		close(pipefd[0]);

@@ -140,7 +140,6 @@ int			env_set(t_vec_env *v, t_env el);
 int			env_unexport(t_vec_env *v, char *key);
 t_env		*env_get(t_vec_env *env, char *key);
 char		**get_envp(t_shell *state, char *exe_path);
-char		**get_envp_all(t_shell *state, char *exe_path);
 char		*env_to_str(t_env *e);
 t_env		*env_nget(t_vec_env *env, char *key, int len);
 void		set_shlvl(t_shell *state);
