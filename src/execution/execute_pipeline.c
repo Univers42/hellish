@@ -80,7 +80,7 @@ static void	finalize_child_parent(t_exec_child_ctx *c)
 		c->prev_infd = -1;
 	else
 		c->prev_infd = (*c->pp)[0];
-	free_executable_node(c->curr_exe);
+	free_executable_node(c->state, c->curr_exe);
 }
 
 /* Drive the pipeline loop: one iteration per AST_COMMAND child.  Each

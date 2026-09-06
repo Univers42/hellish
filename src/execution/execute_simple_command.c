@@ -45,7 +45,7 @@ static t_execution_state	handle_func_call(t_shell *state,
 	if (need)
 		restore_backup_fds(bak, 0);
 	free_executable_cmd(state, *cmd);
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	return (res);
 }
 
@@ -60,7 +60,7 @@ static t_execution_state	handle_empty_command(t_shell *state,
 	ft_eprintf("%s: command not found\n", state->ctx);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	return (res_status(COMMAND_NOT_FOUND));
 }
 
@@ -78,7 +78,7 @@ static t_execution_state	handle_assign_only(t_shell *state,
 		env_extend(&state->env, &cmd->pre_assigns, state->opt_allexport);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	return (res_status(state->last_cmdsub_status));
 }
 
@@ -140,7 +140,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 		fatal = redir_err_is_fatal(state, &cmd);
 		procsub_close_fds_parent(state);
 		free_executable_cmd(state, cmd);
-		free_executable_node(exe);
+		free_executable_node(state, exe);
 		if (get_g_sig()->should_unwind)
 			return (res_status(CANCELED));
 		if (fatal)

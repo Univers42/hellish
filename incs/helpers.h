@@ -29,7 +29,7 @@ typedef struct s_execution_state	t_execution_state;
 void	free_redirects(t_vec_redir *v);
 void	free_all_state(t_shell *state);
 void	free_executable_cmd(t_shell *state, t_executable_cmd cmd);
-void	free_executable_node(t_executable_node *node);
+void	free_executable_node(t_shell *state, t_executable_node *node);
 void	free_tab(char **tab);
 int		write_to_file(char *str, int fd);
 void	forward_exit_status(t_execution_state res);

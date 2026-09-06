@@ -66,9 +66,17 @@ static void	apply_redir_now(t_redir redir)
 /* Look up the t_redir at index `idx` in state->redirects and apply it.
    Out-of-range access is an internal bug (the parser or heredoc collector
    produced a bad index) so we print an error and exit rather than silently
-   reading garbage memory. */
+   reading garbage memory.
+     Once applied, an owned entry is marked consumed (fd = -1) right here.
+   The normal path closed the scratch fd it dup2'd from, and when the
+   parked fd already IS the target (`exec 10>a`: parking starts at 10) the
+   apply was a no-op and that fd now belongs to the script.  Either way
+   free_executable_node and the end-of-cycle free_redirects must not close
+   that NUMBER again -- for `exec 10>a` that tore the redirection down. */
 void	apply_redir(t_shell *state, int idx)
 {
+	t_redir	*r;
+
 	if (idx < 0 || !state->redirects.ctx
 		|| (size_t)idx >= state->redirects.len)
 	{
@@ -78,7 +86,10 @@ void	apply_redir(t_shell *state, int idx)
 			ft_eprintf(MSG_INT_ERR_REDIR_IDX, NAME, idx);
 		exit(EXIT_GENERAL_ERR);
 	}
-	apply_redir_now(((t_redir *)state->redirects.ctx)[(size_t)idx]);
+	r = &((t_redir *)state->redirects.ctx)[(size_t)idx];
+	apply_redir_now(*r);
+	if (!r->close_fd && !r->is_dup)
+		r->fd = -1;
 }
 
 /* Apply all redirects whose indices are stored in exe->redirs (the
