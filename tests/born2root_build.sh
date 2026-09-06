@@ -328,7 +328,7 @@ run_backend() { # run_backend qemu|virtualbox
 	case "$gver" in hellish,*) ok "baked binary in the guest: $gver" ;; *) ko "[$be] baked binary in the guest: '$gver'" ;; esac
 	out="$(guest '/usr/bin/hellish.real -c "echo \$0; echo \$((6*7)); echo a b | wc -w"' 2>/dev/null | tr '\n' ' ')"
 	case "$out" in *hellish*" 42 2 "*) ok "hellish.real -c in the guest: $out" ;; *) ko "[$be] hellish.real -c in the guest: '$out'" ;; esac
-	wrap="$(guest 'readlink /usr/bin/hellish; readlink /proc/$$/exe; echo $0' 2>/dev/null | tr '\n' ' ')"
+	wrap="$(guest 'readlink /usr/bin/hellish; x=$(readlink /proc/$$/exe); echo "$x"; echo $0' 2>/dev/null | tr '\n' ' ')"
 	case "$wrap" in "/usr/bin/hellish.real /usr/bin/hellish.real hellish "*) ok "ssh commands run hellish.real, behind the link (no bash wrapper)" ;; *) ko "[$be] ssh command shell: '$wrap' (wanted link -> hellish.real, exe hellish.real, \$0 hellish)" ;; esac
 	ilog="$(printf 'echo INTERACTIVE-$0-$((6*7))\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes -o ConnectTimeout=15 b2b 2>/dev/null | tr -d '\r' | grep -o 'INTERACTIVE-/[^[:space:]]*' | head -1)"
 	case "$ilog" in *hellish*-42) ok "interactive login runs hellish: $ilog" ;; *) ko "[$be] interactive login: '$ilog'" ;; esac

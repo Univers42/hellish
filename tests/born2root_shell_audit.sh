@@ -119,8 +119,13 @@ fi
 run() {
 	local label="$1" sh="$2" pre="$3"; shift 3
 	local log="$OUT/$label.exec"
+	# An ASan build of hellish (CI's debug job) refuses to start with a
+	# non-ASan library preloaded unless told otherwise; leaks are not this
+	# check's subject.
 	( cd "$B2R" && PATH="$pre$PATH" HOME="$OUT/home" NO_COLOR=1 LD_PRELOAD="$SO" EXECLOG="$log" \
+		ASAN_OPTIONS="verify_asan_link_order=0:detect_leaks=0${ASAN_OPTIONS:+:$ASAN_OPTIONS}" \
 		"$sh" -c "make $*; echo rc=\$?" > "$OUT/$label.out" 2>&1 )
+	[ -s "$log" ] || { : > "$log"; printf 'warn  %s: no exec was logged -- did %s start at all? first lines of its output:\n' "$label" "$sh"; head -3 "$OUT/$label.out" | sed 's/^/        /'; }
 	# One line per exec: pid, caller image, path, shebang, argv. The
 	# interpreter of a file is what its shebang says (env X -> X), else the file
 	# itself. A shell is an offender when born2root's own code started it: a
