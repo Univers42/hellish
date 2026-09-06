@@ -1126,6 +1126,13 @@ update-config-test:  ## Offline gate: version, GitHub slug, install.sh, npm and 
 help-test: all  ## The help builtin — every dispatch-table entry must have one
 	@bash $(TEST_DIR)/help_test.sh $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# born2root is the acceptance corpus for the bash dialect: a real project of
+# ~145 scripts (tests/born2root, a submodule) that builds a Debian VM with
+# hellish as the guest's shell. Everything short of building the VM: every
+# script parses like bash, and its self-contained unit tests print the same.
+born2root-test: all  ## born2root corpus: every script parses like bash, its unit tests print the same
+	@bash $(TEST_DIR)/born2root_check.sh
+
 # The builtins page of the docs site IS `help` output (help-test above is
 # what stops it drifting from the dispatch table). Regenerate + commit after
 # adding or changing a builtin; the site build needs no compiler this way.
