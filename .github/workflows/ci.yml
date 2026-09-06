@@ -209,6 +209,12 @@ jobs:
       # tests and host helpers must print the same under both shells.
       - name: born2root corpus parses and runs like bash
         run: tests/born2root_check.sh
+      # Inception (tests/inception) is the project that VM runs: POSIX sh.
+      # Its scripts must parse like dash and bash, its 1400-line compliance
+      # suite must print the same report under dash and hellish, and `make`
+      # launched from hellish must pick hellish as the Makefile's shell.
+      - name: Inception corpus parses and runs like sh
+        run: sudo apt-get install -y dash >/dev/null 2>&1 || true; tests/inception_check.sh
       # Same framework gate on the ASan heap (the allocator job runs it on
       # ft_malloc): the crash it guards was a NULL write the sanitizer
       # reports first and best.

@@ -1146,6 +1146,14 @@ born2root-test: all  ## born2root corpus: every script parses like bash, its uni
 born2root-vm: all  ## born2root end to end: build the VM from hellish (BORN2ROOT_BACKEND=qemu|virtualbox|both)
 	@bash $(TEST_DIR)/born2root_build.sh
 
+# Inception (tests/inception, a submodule) is what born2root's VM runs: a
+# POSIX-sh Makefile, container entrypoints and a 1400-line compliance suite.
+# Every script must parse like dash and bash, the suite must print the same
+# report under dash and hellish, and `make` launched from hellish must pick
+# hellish as the Makefile's shell. Found printf's 4096-byte %s truncation.
+inception-test: all  ## Inception corpus: scripts parse like sh, its compliance suite prints the same
+	@bash $(TEST_DIR)/inception_check.sh
+
 # The builtins page of the docs site IS `help` output (help-test above is
 # what stops it drifting from the dispatch table). Regenerate + commit after
 # adding or changing a builtin; the site build needs no compiler this way.
@@ -1265,7 +1273,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
-	docs-builtins born2root-test born2root-vm \
+	docs-builtins born2root-test born2root-vm inception-test \
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \

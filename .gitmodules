@@ -8,3 +8,7 @@
 [submodule "tests/born2root"]
 	path = tests/born2root
 	url = ../born2root.git
+[submodule "tests/inception"]
+	path = tests/inception
+	url = ../Inception.git
+	branch = feat/scripts-run-with-launching-shell
