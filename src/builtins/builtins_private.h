@@ -96,6 +96,25 @@ typedef struct s_rdopt
 	long	tmo_ms;
 }	t_rdopt;
 
+/* mapfile's parsed options (builtin_mapfile2.c).  origin -1 means "no -O":
+   the array is replaced from index 0 rather than written into from an
+   index with the rest kept.  err carries the exit status a failed parse
+   asks for: 1 for a bad value, 2 for an option error, like bash. */
+typedef struct s_mfopt
+{
+	char	delim;
+	bool	strip;
+	bool	named;
+	long	max;
+	long	origin;
+	long	skip;
+	int		fd;
+	int		err;
+	char	*name;
+}	t_mfopt;
+
+int		mapfile_parse(t_shell *state, t_vec argv, t_mfopt *o);
+
 /* compgen's parsed options: -W's list (borrowed from argv) and the single
    action letter -A/-f/-d/... resolves to. */
 typedef struct s_cgopt
