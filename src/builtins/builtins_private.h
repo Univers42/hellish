@@ -13,13 +13,13 @@
 #ifndef BUILTINS_PRIVATE_H
 # define BUILTINS_PRIVATE_H
 
-# include <wchar.h>
 # include "shell.h"
 # include "pal.h"
 # include "env.h"
 # include "libft.h"
 # include "ft_builtins.h"
 # include <stdlib.h>
+# include <wchar.h>
 # include "helpers.h"
 # include "sh_input.h"
 
