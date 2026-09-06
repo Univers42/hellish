@@ -89,6 +89,15 @@ and a generated Makefile that was 4666 lines of `0`.
   keep their status (the unwind happens before the negation, so
   `f() { ! return 1; }` returns 1), and `set -e` is suspended for the
   whole run of a negated command, function body included, as bash does.
+- **`command -v` and `type` name a PATH match that is not executable**,
+  the way bash does outside `--posix` (its `file_to_lose_on`): a 42
+  workstation's `/usr/bin/sudo` is `4750 root:sudo`, and for anyone
+  outside that group `command -v sudo` printed nothing here where bash
+  prints the path, so born2root's `vm_path.sh` printed its no-sudo recipe
+  and its unit test failed. Running the file is still `Permission
+  denied`, 126; `hash` still refuses it; `hellish --posix` behaves as
+  `bash --posix`. `command -v a b` now reports every name and exits 0
+  when any was found, and `command -V` gives `type`'s description.
 - **musl builds again**: `<wchar.h>` was included before the project
   headers, which on Alpine lost `strlcpy` in every builtin.
 
@@ -104,11 +113,12 @@ built from hellish with hellish as its login shell, then Inception
 deployed from hellish, its eight containers with hellish as `/bin/sh`,
 and its compliance suite run under `hellish.real` and under `/bin/sh` and
 diffed. In the golden suite: `heredoc_backquote`, `heredoc_lone_dollar`,
-`printf_length`, `printf_escapes`, `negate_inline`, `issue13_bg_pid`,
+`printf_length`, `printf_escapes`, `negate_inline`, `command_v`, `issue13_bg_pid`,
 `issue119_procsub_inherit`,
 `issue121_errexit_andor`, `issue122_{select,mapfile,printf_time,read_opts}`;
 `tests/scripts/48_heredoc_backquote.sh` (the autoconf idiom end to end)
-and `49_fd_hygiene.sh`; `select_menu_test.py`, `born2root_dashboard_test.py` and
+and `49_fd_hygiene.sh`; `make path-lookup-test` (a non-executable file on
+PATH, against bash and against `bash --posix`); `select_menu_test.py`, `born2root_dashboard_test.py` and
 `declare_introspect_test.py` in the pty suite.
 
 ---

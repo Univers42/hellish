@@ -306,6 +306,7 @@ int		cd_two_arg(t_shell *state, t_cdopt *o, char *old, char *neww);
 int		parse_redir_len(const char *arg);
 bool	redir_needs_next(const char *arg);
 char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied);
+char	*exe_path_preferred(char **path_dirs, char *exe_name, bool posix);
 
 int		list_traps(t_shell *state);
 int		set_one_trap(t_shell *state, const char *action, int num);

@@ -1,0 +1,22 @@
+command -v if; echo "st=$?"
+command -V if
+command -v echo; echo "st=$?"
+command -V echo
+f() { echo hi; }; command -v f; echo "st=$?"
+command -v ls | sed 's#.*/##'; echo "st=$?"
+command -V ls | sed 's# /.*##'
+command -v missing; echo "st=$?"
+command -V missing 2>/dev/null; echo "st=$?"
+command -v missing ls | sed 's#.*/##'; echo "st=$?"
+command -v ls missing | sed 's#.*/##'; echo "st=$?"
+command -v missing missing2; echo "st=$?"
+command -V missing ls 2>/dev/null | sed 's# /.*##'; echo "st=$?"
+command -v if echo; echo "st=$?"
+command -v; echo "st=$?"
+command -V; echo "st=$?"
+command -p -v if; echo "st=$?"
+command -v -p echo 2>/dev/null; echo "st=$?"
+f() { :; }; command -v f if echo missing | tr '\n' ' '; echo "st=$?"
+command -v /bin/sh; echo "st=$?"
+command -v /nonexistent/x; echo "st=$?"
+command -V /bin/sh

@@ -279,6 +279,8 @@ jobs:
         run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
       - name: Startup argv parsing (-e, -o name, +c, --, $-, --version)
         run: make cli-opts-test
+      - name: command -v / type on a non-executable PATH match
+        run: make path-lookup-test
       - name: Login shell startup file order
         run: make login-test
       # The no-sudo install route, against a temporary $HOME. It installed the

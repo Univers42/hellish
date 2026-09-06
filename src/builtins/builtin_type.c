@@ -44,7 +44,6 @@ int	type_find_in_path(t_shell *state, const char *name, char **out)
 {
 	char	*path;
 	char	**dirs;
-	int		perm;
 
 	path = env_expand(state, "PATH");
 	if (!path)
@@ -52,8 +51,7 @@ int	type_find_in_path(t_shell *state, const char *name, char **out)
 	dirs = ft_split(path, ':');
 	if (!dirs)
 		return (0);
-	perm = 0;
-	*out = exe_path(dirs, (char *)name, &perm);
+	*out = exe_path_preferred(dirs, (char *)name, state->opt_posix);
 	free_tab(dirs);
 	return (*out != NULL);
 }

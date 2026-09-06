@@ -1249,6 +1249,15 @@ cli-opts-test: all  ## The shell's own argv parsing (-e, -o name, +c, --, $-)
 	@chmod +x $(TEST_DIR)/cli_opts_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cli_opts_compare.sh
 
+# What `command -v`, `type` and `hash` name when the only file of that name
+# on PATH is not executable: bash names it (and exits 0) outside --posix,
+# refuses it under --posix. The golden suite grades against bash --posix and
+# so cannot see the first half; born2root's vm_path.sh depends on it (a 42
+# workstation's sudo is 4750 root:sudo). See tests/path_lookup_compare.sh.
+path-lookup-test: all  ## command -v / type on a non-executable PATH match, vs bash and bash --posix
+	@chmod +x $(TEST_DIR)/path_lookup_compare.sh
+	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/path_lookup_compare.sh
+
 # Login-shell startup files: a login hellish must source /etc/profile (which
 # runs the /etc/profile.d snippets) and then ~/.profile, exactly as bash does,
 # and a non-login one must source neither. The golden -c harness only ever

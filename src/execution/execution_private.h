@@ -85,6 +85,8 @@ int					no_such_file_or_dir(t_shell *state,
 						char *cmd_name, char *path_of_exe);
 char				*exe_path(char **path_dirs, char *exe_name,
 						int *perm_denied);
+char				*exe_path_preferred(char **path_dirs, char *exe_name,
+						bool posix);
 t_execution_state	execute_builtin_cmd_fg(t_shell *state,
 						t_executable_cmd *cmd, t_executable_node *exe);
 t_execution_state	execute_command(t_shell *state, t_executable_node *exe);

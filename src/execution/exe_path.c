@@ -59,3 +59,48 @@ char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied)
 	}
 	return (xfree(temp.ctx), NULL);
 }
+
+/* The first plain file of that name on PATH, runnable or not: bash's
+   file_to_lose_on (findcmd.c, under FS_EXEC_PREFERRED).  Directories are
+   skipped as they are in exe_path. */
+static char	*first_plain_file(char **path_dirs, char *exe_name)
+{
+	t_string	temp;
+	int			i;
+	struct stat	st;
+
+	vec_init(&temp);
+	i = -1;
+	while (path_dirs && path_dirs[++i])
+	{
+		reset_string(&temp, path_dirs[i], exe_name);
+		if (stat((char *)temp.ctx, &st) == 0 && !S_ISDIR(st.st_mode))
+			return ((char *)temp.ctx);
+	}
+	return (xfree(temp.ctx), NULL);
+}
+
+/* What `command -v`, `type` and `type -P` name: the executable match, and
+   failing that -- in bash, not in bash --posix -- the first plain file of
+   that name even though it cannot be run.  On a 42 workstation
+   /usr/bin/sudo is 4750 root:sudo, so for anyone outside the group plain
+   bash prints /usr/bin/sudo and exits 0 where dash and zsh say nothing;
+   born2root's vm_path.sh reads `command -v sudo` as "sudo exists" and
+   prints its sudo recipe, and its unit test checks that text.  We said
+   "not found" and printed the no-sudo recipe instead.  Running the file
+   is another matter: the executor keeps exe_path, which refuses it, so
+   the answer there stays "Permission denied", 126 -- bash's too.  `hash`
+   also keeps exe_path: bash's hash is exec-only.  bash --posix drops the
+   fallback (type.def tests FS_EXECABLE under posixly_correct), and so
+   does hellish --posix. */
+char	*exe_path_preferred(char **path_dirs, char *exe_name, bool posix)
+{
+	char	*path;
+	int		perm;
+
+	perm = 0;
+	path = exe_path(path_dirs, exe_name, &perm);
+	if (path || !perm || posix)
+		return (path);
+	return (first_plain_file(path_dirs, exe_name));
+}
