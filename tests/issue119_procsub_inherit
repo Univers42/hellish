@@ -1,0 +1,24 @@
+gen() { printf 'a\nb\nc\n'; }; while read -r x; do echo "got $x"; done < <(gen)
+gen() { printf 'a\nb\nc\n'; }; mapfile -t arr < <(gen); echo "count=${#arr[@]} last=${arr[2]}"
+f() { echo in-f; }; cat <(f)
+v=42; cat <(echo "v=$v")
+f() { local l=7; cat <(echo "l=$l"); }; f
+cat <(cat <(echo nested))
+[ "$(cat <(echo $$))" = "$$" ] && echo same-pid
+trap 'echo EXIT-TRAP' EXIT; cat <(echo body); echo after
+cat <(exit 3); echo "rc=$?"
+g() { tr a-z A-Z; }; cat < <(echo hi | g)
+f() { echo one; echo two; }; diff <(f) <(printf 'one\ntwo\n') && echo same
+h() { echo "args=$#:$*"; }; cat <(h a b)
+x=outer; f() { x=inner; cat <(echo "x=$x"); }; f; echo "x=$x"
+set -u; f() { echo ok; }; cat <(f)
+fn() { echo "fn=${FUNCNAME[0]}"; }; cat <(fn)
+arr=(p q r); cat <(echo "${arr[1]} ${#arr[@]}")
+f() { while read -r l; do echo "[$l]"; done; }; printf 'a\nb\n' > >(f); sleep 1
+g() { tr a-z A-Z; }; echo hi > >(g); sleep 1
+f() { echo x; }; cat <(f) <(f) <(f)
+f() { echo "$1"; }; while read -r w; do echo "w=$w"; done < <(f one; f two)
+n=0; f() { n=$((n+1)); echo "in=$n"; }; cat <(f); echo "out=$n"
+f() { echo hi; }; cat <(f) | tr a-z A-Z
+f() { echo "$SHLVL" >/dev/null; echo ok; }; cat <(f; exit 2); echo "rc=$?"
+cd /tmp; f() { pwd; }; cat <(f)

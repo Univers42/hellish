@@ -197,9 +197,10 @@ array from entries with `exported == true` and a non-array value; the caller
 owns the array and every element. `exe_path` is unused. It is what
 `src/execution/run.c` and `exec` pass to `execve`.
 
-`get_envp_all` includes non-exported shell variables too: process
-substitutions run as subshells that inherit the parent's shell variables, so
-`<(echo "$local_var")` must see them (`src/platform/posix/procsub_input.c`).
+Process substitutions no longer need a variant that includes non-exported
+variables: `<(cmd)` / `>(cmd)` run their body in the forked child in process,
+the same way `$(cmd)` does, so the child simply inherits the whole shell
+state -- functions and arrays included (`src/platform/posix/procsub_input.c`).
 
 ---
 

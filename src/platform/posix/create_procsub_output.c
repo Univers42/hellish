@@ -14,9 +14,9 @@
 #include "sys.h"
 
 /* Fork a child for a >(cmd) process substitution.  The child reads from
-   pipefd[0] and re-execs the shell; see procsub_exec_self for why that is
-   not "/proc/self/exe" any more. */
-static pid_t	fork_and_exec_procsub(t_shell *state,
+   pipefd[0] and runs the body in place; procsub_run_child (procsub_input.c)
+   says why it is no longer a re-exec of the shell. */
+static pid_t	fork_and_run_procsub(t_shell *state,
 								int pipefd[2],
 								const char *cmd)
 {
@@ -30,7 +30,7 @@ static pid_t	fork_and_exec_procsub(t_shell *state,
 		close(pipefd[1]);
 		dup2(pipefd[0], STDIN_FILENO);
 		close(pipefd[0]);
-		procsub_exec_self(state, cmd);
+		procsub_run_child(state, cmd);
 	}
 	return (pid);
 }
@@ -51,7 +51,7 @@ char	*create_procsub_output(t_shell *state, const char *cmd)
 		return (ft_strdup(BLACK_HOLE));
 	if (pipe(pipefd) == -1)
 		return (NULL);
-	pid = fork_and_exec_procsub(state, pipefd, cmd);
+	pid = fork_and_run_procsub(state, pipefd, cmd);
 	if (pid == -1)
 	{
 		close(pipefd[0]);

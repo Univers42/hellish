@@ -158,7 +158,7 @@ t_env		assignment_to_env(t_shell *state, t_ast_node *node);
 t_env		assignment_to_env(t_shell *state, t_ast_node *node);
 void		assignment_word_to_word(t_ast_node *node);
 t_ast_node	clone_as_word(t_ast_node *src);
-void		procsub_exec_self(t_shell *state, const char *cmd);
+void		procsub_run_child(t_shell *state, const char *cmd);
 char		*create_procsub_input(t_shell *state, const char *cmd);
 char		*create_procsub_output(t_shell *state, const char *cmd);
 char		*create_procsub_file(t_shell *state, const char *cmd);
