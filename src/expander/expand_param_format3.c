@@ -11,11 +11,14 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "mbchar.h"
 
 /* ${val%pattern} — remove the SHORTEST suffix of `val` that matches
    `pattern`.  We scan from the end of val backwards until we find the
    rightmost position where pat_match_pub(pattern, val+i) succeeds.
-   Shortest means we try from the end first and stop at the first match. */
+   Shortest means we try from the end first and stop at the first match.
+   Every candidate starts on a CHARACTER boundary (mb_back, issue #120):
+   tried byte by byte, `?` matched the last byte of an é and cut it. */
 char	*trim_suffix_shortest(const char *val, const char *pattern)
 {
 	int	vlen;
@@ -27,7 +30,9 @@ char	*trim_suffix_shortest(const char *val, const char *pattern)
 	{
 		if (pat_match_pub(pattern, val + i))
 			return (ft_strndup(val, i));
-		i--;
+		if (i == 0)
+			break ;
+		i = (int)mb_back(val, (size_t)i);
 	}
 	return (ft_strdup(val));
 }
@@ -37,14 +42,16 @@ char	*trim_suffix_shortest(const char *val, const char *pattern)
    of val matches the pattern gives the longest possible suffix to remove. */
 char	*trim_suffix_longest(const char *val, const char *pattern)
 {
+	int	vlen;
 	int	i;
 
+	vlen = ft_strlen(val);
 	i = 0;
 	while (val[i])
 	{
 		if (pat_match_pub(pattern, val + i))
 			return (ft_strndup(val, i));
-		i++;
+		i += (int)mb_len(val + i, (size_t)(vlen - i));
 	}
 	return (ft_strdup(val));
 }
@@ -69,7 +76,9 @@ char	*trim_prefix_shortest(const char *val, const char *pattern)
 			return (ft_strdup(val + i));
 		}
 		xfree(sub);
-		i++;
+		if (i == vlen)
+			break ;
+		i += (int)mb_len(val + i, (size_t)(vlen - i));
 	}
 	return (ft_strdup(val));
 }
@@ -94,7 +103,9 @@ char	*trim_prefix_longest(const char *val, const char *pattern)
 			return (ft_strdup(val + i));
 		}
 		xfree(sub);
-		i--;
+		if (i == 0)
+			break ;
+		i = (int)mb_back(val, (size_t)i);
 	}
 	return (ft_strdup(val));
 }

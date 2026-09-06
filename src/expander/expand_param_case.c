@@ -12,6 +12,8 @@
 
 #include "expander_private.h"
 #include "env.h"
+#include "mbchar.h"
+#include <limits.h>
 
 /* ${v^} ${v^^} ${v,} ${v,,} ${v~} ${v~~}: bash case conversion.
    ^ upper, , lower, ~ toggle. Doubled operator converts the whole
@@ -31,32 +33,63 @@ static char	case_conv(char c, char op)
 	return ((char)ft_toupper((unsigned char)c));
 }
 
-/* Apply the operator to an owned copy of the value: `all` converts every
-   char, else just the first. */
+/* One character of the value under op, appended to out: ASCII through the
+   byte table, a multibyte character decoded, converted and re-encoded
+   (mb_conv, issue #120: ${x^^} on café is CAFÉ), kept as written when it
+   does not decode. */
+static void	case_push(t_string *out, const char *s, size_t n, char op)
+{
+	char	buf[MB_LEN_MAX];
+	size_t	w;
+
+	if (n == 1)
+		return ((void)vec_push_char(out, case_conv(*s, op)));
+	w = mb_conv(s, n, op, buf);
+	if (w == 0)
+		return ((void)vec_push_nstr(out, (char *)s, n));
+	vec_push_nstr(out, buf, w);
+}
+
+/* Apply the operator to a fresh copy of the value: `all` converts every
+   character, else just the first; the rest is copied as is.  Shared with
+   ${v@U} / ${v@L} / ${v@u} (expand_param_xform.c), the same three shapes
+   under other spellings. */
+char	*case_body(const char *val, char op, bool all)
+{
+	t_string	out;
+	size_t		i;
+	size_t		n;
+
+	vec_init(&out);
+	out.elem_size = 1;
+	i = 0;
+	while (val[i])
+	{
+		n = mb_len0(val + i);
+		if (i == 0 || all)
+			case_push(&out, val + i, n, op);
+		else
+			vec_push_nstr(&out, (char *)val + i, n);
+		i += n;
+	}
+	vec_push_char(&out, '\0');
+	return ((char *)out.ctx);
+}
+
 char	*expand_case(t_shell *state, const char *s, int slen, int name_len)
 {
 	char	op;
-	int		all;
+	bool	all;
 	char	*val;
-	int		i;
 
 	op = s[name_len];
 	all = (name_len + 1 < slen && s[name_len + 1] == op);
 	val = pf_get_var_value(state, s, name_len);
 	if (!val)
 		return (ft_strdup(""));
-	val = ft_strdup(val);
-	if (!val || arr_is(val))
-		return (val);
-	i = 0;
-	while (val[i])
-	{
-		val[i] = case_conv(val[i], op);
-		if (!all)
-			break ;
-		i++;
-	}
-	return (val);
+	if (arr_is(val))
+		return (ft_strdup(val));
+	return (case_body(val, op, all));
 }
 
 /* Is s a ${name^...} / ${name,...} / ${name~...} form? Sets *nl to the

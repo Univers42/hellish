@@ -24,27 +24,15 @@
    dispatcher, which quotes the word under the cursor for the same reason:
    both hand text back to the parser and need it to come out unchanged. */
 
-/* @U/@L/@u case transforms into a fresh buffer. */
+/* @U/@L/@u case transforms into a fresh buffer -- the same three shapes
+   as ${v^^}, ${v,,} and ${v^}, through the same multibyte-aware body. */
 static char	*xform_case(const char *val, char op)
 {
-	char	*r;
-	int		i;
-
-	r = ft_strdup(val);
-	if (!r)
-		return (NULL);
-	i = 0;
-	while (r[i])
-	{
-		if (op == 'U')
-			r[i] = (char)ft_toupper((unsigned char)r[i]);
-		else if (op == 'L')
-			r[i] = (char)ft_tolower((unsigned char)r[i]);
-		else if (op == 'u' && i == 0)
-			r[i] = (char)ft_toupper((unsigned char)r[i]);
-		i++;
-	}
-	return (r);
+	if (op == 'U')
+		return (case_body(val, '^', true));
+	if (op == 'L')
+		return (case_body(val, ',', true));
+	return (case_body(val, '^', false));
 }
 
 /* @A: "name='value'" assignment form (single-quoted value). */

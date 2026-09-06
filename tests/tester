@@ -64,6 +64,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue119_procsub_inherit"
         "issue122_read_opts" "issue122_mapfile" "issue122_printf_time"
         "issue122_select"
+        "issue120_bytes_c"
         "assign_shaped_words"
         "funcbody"
     )

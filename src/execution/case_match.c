@@ -12,73 +12,44 @@
 
 #include "libft.h"
 #include "case_match.h"
-
-/* Where does the bracket expression starting at p (p points at '[') close?
-** NULL when it never does -- and that is not an error, it is a character:
-** POSIX says a '[' introducing no valid bracket expression is an ordinary
-** '['. Both directions were wrong without this:
-**
-**     case "["  in [)     bash: matches.    here: did not
-**     case "a"  in [abc)  bash: no match.   here: matched, on the 'a'
-**
-** The second is the dangerous one: a pattern that matches things it does
-** not name. `${line#[}`, stripping a literal bracket off an INI section
-** header, is the shape that found it.
-**
-** A ']' as the FIRST member is a literal member and not the close, so
-** `[]abc]` is a four-character class. */
-static const char	*bracket_close(const char *p)
-{
-	const char	*q;
-
-	q = p + 1;
-	if (*q == '!' || *q == '^')
-		q++;
-	if (*q == ']')
-		q++;
-	while (*q && *q != ']')
-	{
-		if (q[0] == '[' && q[1] == ':')
-			cm_class_skip(&q);
-		else
-			q++;
-	}
-	if (*q == ']')
-		return (q);
-	return (NULL);
-}
+#include "mbchar.h"
 
 /* Walk the members between the (optional) leading ']' and the closing one,
-   accumulating whether `c` matched any: [:class:]es, X-Y ranges, then
-   single characters. Returns where the walk stopped -- the closing ']' or
-   the NUL of an expression bracket_close should have rejected. */
-static const char	*cm_members(char c, const char *p, bool *hit)
+   accumulating whether the character c (n bytes) matched any: [:class:]es,
+   X-Y ranges, then single characters -- each member stepped as a whole
+   character, so `[é]` is one member and `[à-ü]` a range of code points
+   (issue #120). Returns where the walk stopped -- the closing ']' or the
+   NUL of an expression bracket_close should have rejected. */
+static const char	*cm_members(const char *c, size_t n, const char *p,
+					bool *hit)
 {
+	size_t	m;
+
 	while (*p && *p != ']')
 	{
+		m = mb_len0(p);
 		if (p[0] == '[' && p[1] == ':')
-			*hit = cm_class_match(c, &p) || *hit;
-		else if (p[1] == '-' && p[2] && p[2] != ']')
+			*hit = cm_class_match(c, n, &p) || *hit;
+		else if (p[m] == '-' && p[m + 1] && p[m + 1] != ']')
 		{
-			*hit = *hit || ((unsigned char)c >= (unsigned char)p[0]
-					&& (unsigned char)c <= (unsigned char)p[2]);
-			p += 3;
+			*hit = *hit || cm_in_range(c, n, p, p + m + 1);
+			p += m + 1 + mb_len0(p + m + 1);
 		}
 		else
 		{
-			*hit = *hit || (c == *p);
-			p++;
+			*hit = *hit || (m == n && ft_memcmp(p, c, n) == 0);
+			p += m;
 		}
 	}
 	return (p);
 }
 
-/* Match the single char `c` against a [...] bracket expression starting at
-   *pp (which points at '['). Advances *pp past the closing ']'.
+/* Match the single character c (n bytes) against a [...] bracket expression
+   starting at *pp (which points at '['). Advances *pp past the closing ']'.
    The leading-']' rule is bracket_close's, applied again here: in `[]]`
    the first ']' is a MEMBER, so it has to be consumed as one rather than
    ending the scan before anything is collected. */
-static bool	match_bracket(char c, const char **pp)
+static bool	match_bracket(const char *c, size_t n, const char **pp)
 {
 	const char	*p;
 	bool		neg;
@@ -87,46 +58,54 @@ static bool	match_bracket(char c, const char **pp)
 	p = *pp + 1;
 	neg = (*p == '!' || *p == '^');
 	p += neg;
-	hit = (*p == ']' && c == ']');
+	hit = (*p == ']' && n == 1 && *c == ']');
 	p += (*p == ']');
-	p = cm_members(c, p, &hit);
+	p = cm_members(c, n, p, &hit);
 	*pp = p + (*p == ']');
 	return (hit != neg);
 }
 
-/* Try to match exactly one character of *s against the non-'*' pattern
-   at *p (?, [...], '\x', or a literal char).  Returns true and advances
-   both pointers if it matched, false (leaving both unchanged) if not.
-   The '\' case handles quoted metacharacters: `\*` in the pattern (placed
-   there by append_pat_tok) must match a literal asterisk in the string.
-   A '[' that bracket_close does not accept falls through to the literal
-   arm, which is what makes an unterminated one an ordinary character. */
-static bool	advance_one(const char **s, const char **p)
+/* The single-byte arms of advance_one: `\\x` for a quoted metacharacter
+   (append_pat_tok puts it there; it must match a literal x) and a plain
+   literal byte.  A multibyte literal in the pattern comes through here
+   once per byte, which lands on the same answer. */
+static bool	advance_byte(const char **s, const char **p)
 {
-	if (**p == '?' && **s)
-	{
-		(*s)++;
-		(*p)++;
-	}
-	else if (**p == '[' && bracket_close(*p))
-	{
-		if (!**s || !match_bracket(**s, p))
-			return (false);
-		(*s)++;
-	}
-	else if (**p == '\\' && (*p)[1] == **s && **s)
-	{
-		(*s)++;
+	if (**p == '\\' && (*p)[1] == **s && **s)
 		(*p) += 2;
-	}
 	else if (**p != '?' && **p != '\\' && **p == **s && **s)
-	{
-		(*s)++;
 		(*p)++;
-	}
 	else
 		return (false);
+	(*s)++;
 	return (true);
+}
+
+/* Try to match exactly one CHARACTER of *s -- all of its bytes under a
+   multibyte locale, issue #120 -- against the non-'*' pattern at *p (?,
+   [...], '\\x', or a literal char).  Returns true and advances both
+   pointers if it matched, false (leaving both unchanged) if not.  A '['
+   that bracket_close does not accept falls through to the literal arm,
+   which is what makes an unterminated one an ordinary character. */
+static bool	advance_one(const char **s, const char **p)
+{
+	size_t	n;
+
+	n = mb_len0(*s);
+	if (**p == '?' && **s)
+	{
+		(*s) += n;
+		(*p)++;
+		return (true);
+	}
+	if (**p == '[' && bracket_close(*p))
+	{
+		if (!**s || !match_bracket(*s, n, p))
+			return (false);
+		(*s) += n;
+		return (true);
+	}
+	return (advance_byte(s, p));
 }
 
 /* fnmatch-style glob match used by `case` patterns: '*' '?' '[..]' '\',

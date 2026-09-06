@@ -29,7 +29,16 @@ bool		case_match(const char *s, const char *p);
    whole [:name:] (false = unterminated, treat '[' as a member); match
    tests one character against it and advances the same way. */
 bool		cm_class_skip(const char **q);
-bool		cm_class_match(char c, const char **pp);
+bool		cm_class_match(const char *c, size_t n, const char **pp);
+const char	*bracket_close(const char *p);
+
+/* Multibyte members (case_match3.c): a range compared by code point --
+   bash's default globasciiranges order -- and the classes answered by the
+   wide-character tables for a character that is not a single byte. */
+bool		cm_in_range(const char *c, size_t n, const char *lo,
+				const char *hi);
+bool		cm_class_has_w(const char *name, int len, const char *c,
+				size_t n);
 
 /* extglob (case_match_ext*.c): xg_start says a group begins here,
    xg_match matches the group PLUS the rest of the pattern. */

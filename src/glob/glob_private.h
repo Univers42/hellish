@@ -109,6 +109,7 @@ char		*glob_expand_bracket(const char *start, int len, int *out_len);
 int			expand_range(char start, char end, char *buf, int buf_pos);
 int			check_posix_class(const char *s, int len, char *buf, int *buf_pos);
 bool		glob_char_in_class(char c, t_glob *bracket);
+bool		glob_mb_in_class(const char *c, size_t n, t_glob *bracket);
 int			match_literal(const char *name, t_glob *g);
 int			match_question(const char *name, bool is_first);
 int			match_bracket(const char *name, t_glob *g, bool is_first);

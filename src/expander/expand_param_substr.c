@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "mbchar.h"
 #include "sh_input.h"
 #include "arith.h"
 #include <limits.h>
@@ -74,16 +75,32 @@ static int	ss_len_sep(const char *s, int slen, int from)
 	return (slen);
 }
 
+/* Characters [off, end) of val as a fresh string: the character indices
+   settled by ss_build are mapped to byte offsets here, once. */
+static char	*ss_slice(const char *val, long long off, long long end)
+{
+	size_t	n;
+	size_t	bo;
+	size_t	eo;
+
+	n = ft_strlen(val);
+	bo = mb_skip(val, n, (size_t)off);
+	eo = mb_skip(val, n, (size_t)end);
+	return (ft_strndup(val + bo, eo - bo));
+}
+
 /* Normalise off/len against the value and duplicate the slice.  Order
    matters: off is resolved first (negative = from the end), then len is
-   applied relative to the resolved off (>= 0) or the end (< 0). */
+   applied relative to the resolved off (>= 0) or the end (< 0).  The
+   arithmetic is in CHARACTERS (issue #120): "café" is four of them, so
+   ${x: -1} is é and ${x:0:-1} is caf, as in bash. */
 static char	*ss_build(t_shell *state, const char *val, long long off,
 			long long len)
 {
 	long long	l;
 	long long	end;
 
-	l = (long long)ft_strlen(val);
+	l = (long long)mb_count(val, ft_strlen(val));
 	if (off < 0)
 		off = l + off;
 	if (off < 0 || off > l)
@@ -104,7 +121,7 @@ static char	*ss_build(t_shell *state, const char *val, long long off,
 			exit_clean(state, 1);
 		return (ft_strdup(""));
 	}
-	return (ft_strndup(val + off, (size_t)(end - off)));
+	return (ss_slice(val, off, end));
 }
 
 /* Entry: s[0..name_len) is the parameter, s[name_len] the ':'. */
