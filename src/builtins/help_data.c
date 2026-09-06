@@ -42,7 +42,7 @@ static const t_help	g_help_1[] = {
 	"printf [-v var] format [arg ...]",
 	"format and print, like printf(3)"},
 {"read", "output",
-	"read [-r] [-p prompt] [-n n] [-t sec] [name ...]",
+	"read [-r] [-a arr] [-d delim] [-n n] [-N n] [-p str] [-t s] [name ...]",
 	"read one line into variables"},
 {"mapfile", "output",
 	"mapfile [-t] [-n n] [-O i] [-s n] [-u fd] [array]",

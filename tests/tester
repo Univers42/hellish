@@ -60,6 +60,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue95_case_cmdsub"
         "issue96_trap_func"
         "issue105_expansions"
+        "issue122_read_opts"
         "assign_shaped_words"
         "funcbody"
     )
