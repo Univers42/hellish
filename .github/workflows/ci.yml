@@ -52,7 +52,7 @@ jobs:
           # too (so does /usr/share/bash-completion/bash_completion). The
           # marker keeps the exemption in the file, next to its reason.
           bad=0
-          for f in $(find . -name '*.sh' -not -path '*/vendor/*' -not -path '*/.git/*' -not -path '*/.claude/*' 2>/dev/null); do
+          for f in $(find . -name '*.sh' -type f -not -path '*/vendor/*' -not -path '*/.git/*' -not -path '*/.claude/*' 2>/dev/null); do
             head -1 "$f" | grep -q python && continue
             grep -qE '^[[:space:]]*(import |def |class )' "$f" && continue
             grep -q '^# bash-n: skip' "$f" && continue
