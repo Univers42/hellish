@@ -16,14 +16,32 @@
 /* declare -f: print definitions. Split from builtin_declare3.c only
    because the 42 norm caps a file at five functions. */
 
-/* -f: the definition itself. bash ends each with a newline; the captured
-   span does not include one, so add it. */
+/* -f: the definition itself, the text between the braces as written,
+   minus the blank space on either side -- the span now starts right after
+   `{` (parse_function.c), so a body written on its own lines would
+   otherwise print with an empty first and last line. bash ends each
+   definition with a newline; add it. */
 static void	print_body(t_shell *state, t_shell_func *fn)
 {
-	if (fn->text)
-		return ((void)ft_printf("%s ()\n{\n%s\n}\n", fn->name, fn->text));
-	ft_eprintf("%s: declare: %s: source text unavailable "
-		"(defined by eval?)\n", state->ctx, fn->name);
+	const char	*t;
+	size_t		n;
+	char		*body;
+
+	if (!fn->text)
+	{
+		ft_eprintf("%s: declare: %s: source text unavailable "
+			"(defined by eval?)\n", state->ctx, fn->name);
+		return ;
+	}
+	t = fn->text;
+	while (*t == ' ' || *t == '\t' || *t == '\n')
+		t++;
+	n = ft_strlen(t);
+	while (n > 0 && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n'))
+		n--;
+	body = ft_strndup(t, n);
+	ft_printf("%s ()\n{\n%s\n}\n", fn->name, body);
+	xfree(body);
 }
 
 static int	bodies_of(t_shell *state, t_vec argv, size_t i)

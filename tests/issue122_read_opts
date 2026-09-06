@@ -1,0 +1,23 @@
+printf 'a:b:c' | { read -d: x; echo "[$x]"; }
+printf 'a:b:c' | { read -d : x; echo "[$x]"; }
+printf 'hello' | { read -N3 x; echo "[$x]"; }
+printf 'hello' | { read -n3 x; echo "[$x]"; }
+printf 'hello' | { read -rn3 x; echo "[$x]"; }
+printf 'hel\\lo' | { read -rN5 x; echo "[$x]"; }
+printf 'a\nb\0c' | { read -rd '' x; echo "[$x]"; }
+printf 'a\nb\0c' | { read -rd "" x; echo "[$x]"; }
+printf 'one two\n' | { read -a arr; echo "${#arr[@]}:${arr[1]}"; }
+printf 'one two\n' | { read -aarr; echo "${#arr[@]}:${arr[1]}"; }
+printf 'hi\n' | { read -t5 x; echo "[$x]"; }
+printf 'hi\n' | { read -t 5 x; echo "[$x]"; }
+printf 'hi\n' | { read -pPrompt x; echo "[$x]"; }
+printf 'hi\n' | { read -p Prompt x; echo "[$x]"; }
+printf 'a:b\n' | { read -rd: -n1 x; echo "[$x]"; }
+printf 'abc\n' | { read -n1 -d: x; echo "[$x]"; }
+printf 'x y\n' | { read -u0 a b; echo "[$a][$b]"; }
+printf 'ab' | { read -N1 x; read -N1 y; echo "[$x][$y]"; }
+printf 'aXbXc' | { while read -d X -r p; do echo "p=$p"; done; }
+printf 'aXbXc' | { while read -dX -r p; do echo "p=$p"; done; }
+printf 'k=v\n' | { IFS== read -r k v; echo "$k|$v"; }
+printf 'ab\ncd\n' | { read -N4 x; echo "[$x]"; }
+printf 'abcdef' | { read -n 2 x; read -n 2 y; echo "[$x][$y]"; }

@@ -12,31 +12,6 @@
 
 #include "parser_private.h"
 
-/* Same "require this keyword or signal incomplete/error" logic as in the
-   while/if parsers. Separate copy so parse_for.c stays self-contained and
-   within the per-function line limit. */
-static bool	expect_for_kw(t_shell *state, t_parser *parser,
-						t_deque_tok *tokens, t_tt expected)
-{
-	t_tt	next;
-
-	(void)state;
-	skip_newlines(tokens);
-	next = (*(t_ltoken *)deque_peek(&tokens->deqtok)).tt;
-	if (next == TT_END)
-	{
-		parser->res = RES_GETMOREINPUT;
-		return (false);
-	}
-	if (next != expected)
-	{
-		parser->res = RES_ERR;
-		return (false);
-	}
-	(void)deque_pop_start(&tokens->deqtok);
-	return (true);
-}
-
 /* True for any of the five token types that represent a shell word (bare,
    single-quoted, double-quoted, env-var). Used to validate the for-variable
    name and to collect the optional `in wordlist` items. */
@@ -98,7 +73,10 @@ bool	for_in_clause(t_shell *state, t_parser *parser,
 /* Parse: for NAME [in wordlist [;|\n]] do compound_list done
    AST_FOR: ret.token = the NAME word, children = optional word items from
    the in-clause followed by the body compound_list. The body always comes
-   last so the executor can distinguish words from the body by position. */
+   last so the executor can distinguish words from the body by position.
+   Everything after the keyword is parse_for_tail (parse_select.c), which
+   `select` shares: the two differ only in node type and in what the
+   executor does with the words. */
 t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 							t_deque_tok *tokens)
 {
@@ -111,20 +89,5 @@ t_ast_node	parse_for_command(t_shell *state, t_parser *parser,
 	if (next == TT_ARITH_START)
 		return (free_ast(&ret), parse_for_arith(state, parser, tokens));
 	vec_push_int(&parser->parse_stack, TT_FOR);
-	if (next == TT_END)
-		return (parser->res = RES_GETMOREINPUT, ret);
-	if (!is_for_word(next))
-		return (parser->res = RES_ERR, ret);
-	ret.token = pop_tok(tokens);
-	if (for_head(state, parser, tokens, &ret) != 1)
-		return (ret);
-	if (!expect_for_kw(state, parser, tokens, TT_DO))
-		return (ret);
-	push_parsed_compound_list(state, parser, tokens, &ret);
-	if (parser->res != RES_OK)
-		return (ret);
-	if (!expect_for_kw(state, parser, tokens, TT_DONE))
-		return (ret);
-	vec_pop(&parser->parse_stack);
-	return (ret);
+	return (parse_for_tail(state, parser, tokens, ret));
 }

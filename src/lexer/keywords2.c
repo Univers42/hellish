@@ -72,8 +72,9 @@ static bool	is_function_kw(t_ltoken *t, const char *base)
 		&& ft_strncmp(base + t->off, "function", 8) == 0);
 }
 
-/* Carry the context flags to the next token.  flags[1] latches `for` (its
-   variable name must not become TT_DO), flags[2] latches `function` and
+/* Carry the context flags to the next token.  flags[1] latches `for` and
+   `select` (their variable name must not become TT_DO), flags[2] latches
+   `function` and
    `coproc` (the token AFTER the name is still a command position), and
    flags[3] is the dialect, read by is_always_kw.  Bundled in the array the
    loop already keeps rather than passed one by one, which is also how they
@@ -90,7 +91,7 @@ static bool	is_function_kw(t_ltoken *t, const char *base)
    one. Gated on the dialect: bash has no such form. */
 static void	advance(t_ltoken *t, const char *base, bool *cmd_pos, bool *flags)
 {
-	flags[1] = (t->tt == TT_FOR);
+	flags[1] = (t->tt == TT_FOR || t->tt == TT_SELECT);
 	*cmd_pos = is_cmd_position(t->tt);
 	if ((flags[2] && t->tt == TT_WORD) || is_always_kw(t, base, flags[3]))
 		*cmd_pos = true;

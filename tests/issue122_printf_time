@@ -1,0 +1,20 @@
+TZ=UTC printf '%(%Y-%m-%d %H:%M:%S)T\n' 0
+export TZ=UTC; printf '%(%Y-%m-%d %H:%M:%S)T\n' 86400
+TZ=UTC printf '[%12(%Y)T][%-8(%Y)T][%.2(%Y)T]\n' 0
+TZ=UTC printf '%(%Y)T %(%m)T\n' 0 0
+TZ=UTC printf '%(%Y)T\n' 0 31536000
+TZ=UTC printf '%(%s)T\n' 12345
+TZ=UTC printf '%(%Y)T\n' abc; echo "rc=$?"
+printf '%(%Y\n' 0; echo "rc=$?"
+printf '%(%Y)X\n' 0; echo "rc=$?"
+[ "$(printf '%(%Y)T')" = "$(date +%Y)" ] && echo now-ok
+[ "$(printf '%(%Y)T' -1)" = "$(date +%Y)" ] && echo minus1-ok
+s=$(printf '%(%s)T' -2); n=$(date +%s); [ "$s" -le "$n" ] && [ "$s" -gt $((n-3600)) ] && echo minus2-ok
+TZ=UTC printf '%()T\n' 0
+TZ=UTC printf '%(%(nested)T\n' 0; echo "rc=$?"
+TZ=UTC printf 'a%(%H)Tb\n' 3600
+TZ=UTC printf -v v '%(%Y)T' 0; echo "v=$v"
+TZ=Europe/Paris printf '%(%H:%M %Z)T\n' 0
+TZ=UTC printf '%(%Y)T|%s\n' 0 rest
+TZ=UTC printf '%5(%Y)T|%-5(%Y)T|\n' 0 0
+TZ=UTC printf '%(%%)T\n' 0

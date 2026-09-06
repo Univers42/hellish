@@ -35,6 +35,8 @@ static const char	*prompt_label(t_tt curr)
 		return ("until");
 	if (curr == TT_FOR)
 		return ("for");
+	if (curr == TT_SELECT)
+		return ("select");
 	return (NULL);
 }
 

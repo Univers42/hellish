@@ -32,6 +32,8 @@ t_execution_state	run_compound(t_shell *state,
 		return (execute_while(state, exe));
 	if (t == AST_FOR)
 		return (execute_for(state, exe));
+	if (t == AST_SELECT)
+		return (execute_select(state, exe));
 	if (t == AST_FOR_ARITH)
 		return (execute_for_arith(state, exe));
 	if (t == AST_ARITH_CMD)

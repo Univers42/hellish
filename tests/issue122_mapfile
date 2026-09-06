@@ -1,0 +1,32 @@
+mapfile -t a <<< x; echo ${#a[@]}
+readarray -t a <<< $'x\ny'; echo "${#a[@]}:${a[1]}"
+mapfile -t a < <(printf 'x\ny\n'); echo "${a[1]}"
+printf 'p\nq\n' | { mapfile -t a; echo "${#a[@]}"; }
+mapfile -d '' a < <(printf 'p\0q\0'); echo "${#a[@]}:${a[1]}"
+f() { mapfile -t lines <<< "$1"; echo "${#lines[@]}"; }; f $'1\n2\n3'
+set -e; mapfile -t a <<< x; echo "${a[0]}"
+mapfile -d '' a < <(printf 'p\0q\0'); echo "${#a[@]}:${a[1]}"
+mapfile -d : a <<< 'x:y:z'; echo "${#a[@]}:${a[0]}:${a[2]}"
+mapfile -d: -t a <<< 'x:y:z'; echo "${#a[@]}:${a[0]}:[${a[2]}]"
+mapfile -t -n 2 a < <(printf '1\n2\n3\n'); echo "${#a[@]}:${a[1]}"
+mapfile -t -n 0 a < <(printf '1\n2\n3\n'); echo "${#a[@]}"
+mapfile -t -s 1 a < <(printf '1\n2\n3\n'); echo "${#a[@]}:${a[0]}"
+mapfile -t -s 5 a < <(printf '1\n2\n3\n'); echo "${#a[@]}"
+a=(z z z z); mapfile -t -O 2 a < <(printf '1\n2\n'); echo "${#a[@]}:${a[0]}:${a[2]}:${a[3]}"
+a=(z z); mapfile -t a < <(printf '1\n'); echo "${#a[@]}:${a[0]}"
+a=(z z z); mapfile -t -O 5 a < <(printf '1\n'); echo "${#a[@]}:${!a[*]}"
+printf 'u1\nu2\n' > mf_u.txt; mapfile -t -u 3 a 3< mf_u.txt; echo "${#a[@]}:${a[1]}"; rm -f mf_u.txt
+mapfile -t a < <(printf 'no-newline'); echo "${#a[@]}:${a[0]}"
+mapfile a < <(printf 'k\n'); printf '%s' "${a[0]}" | od -c | head -1
+mapfile -t a < /dev/null; echo "${#a[@]}"
+readarray -t -d , a <<< 'a,b,c'; echo "${#a[@]}:${a[2]}"
+mapfile -t -n 1 -s 1 a < <(printf '1\n2\n3\n'); echo "${#a[@]}:${a[0]}"
+mapfile -tn2 a < <(printf '1\n2\n3\n'); echo "${#a[@]}"
+mapfile -t; echo "${#MAPFILE[@]}"
+printf 'l1\nl2\n' | { mapfile -t -O 1 a; echo "${#a[@]}:${!a[*]}"; }
+mapfile a b <<< x; echo "rc=$? ${#a[@]}"
+mapfile -n -1 a <<< x; echo "rc=$?"
+mapfile -u 9 a; echo "rc=$?"
+mapfile -x a <<< x; echo "rc=$?"
+mapfile -d <<< x; echo "rc=$?"
+mapfile -t -s 1 -n 1 a < <(printf '1\n2\n3\n'); echo "${a[0]}"

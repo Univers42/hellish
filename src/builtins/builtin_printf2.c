@@ -44,10 +44,37 @@ static void	pf_bad_fmt(t_pf *pf, char c)
    pf->stop aborts both this pass and the outer loop in
    builtin_printf immediately: it is set by \c inside a %b argument, or by
    a bad directive (which also sets err so the builtin exits 1). */
+/* One %-directive, *i on the byte after the '%'.  A '(' opens the strftime
+   form %(fmt)T (printf_time.c); when that spec is malformed bash prints the
+   '%' literally and resumes right after it, so the flags and the paren come
+   out as text, which is what rewinding *i to pct does here. */
+static void	run_directive(t_pf *pf, const char *fmt, int *i)
+{
+	t_spec	sp;
+	int		pct;
+
+	pct = *i;
+	pf_parse_spec(pf, fmt, i, &sp);
+	while (fmt[*i] && ft_strchr("lhjztL", fmt[*i]))
+		(*i)++;
+	if (fmt[*i] == '(')
+	{
+		if (!pf_conv_time(pf, &sp, fmt, i))
+		{
+			vec_push_char(pf->out, '%');
+			*i = pct;
+		}
+		return ;
+	}
+	if (!fmt[*i] || !ft_strchr("diouxXeEfgGaAcsbq%", fmt[*i]))
+		return (pf_bad_fmt(pf, fmt[*i]));
+	pf_conv(pf, &sp, fmt[*i]);
+	(*i)++;
+}
+
 static void	run_format(t_pf *pf, const char *fmt)
 {
 	int		i;
-	t_spec	sp;
 
 	i = 0;
 	while (fmt[i] && !pf->stop)
@@ -57,13 +84,7 @@ static void	run_format(t_pf *pf, const char *fmt)
 		else if (fmt[i] == '%')
 		{
 			i++;
-			pf_parse_spec(pf, fmt, &i, &sp);
-			while (fmt[i] && ft_strchr("lhjztL", fmt[i]))
-				i++;
-			if (!fmt[i] || !ft_strchr("diouxXeEfgGaAcsbq%", fmt[i]))
-				return (pf_bad_fmt(pf, fmt[i]));
-			pf_conv(pf, &sp, fmt[i]);
-			i++;
+			run_directive(pf, fmt, &i);
 		}
 		else
 			vec_push_char(pf->out, fmt[i++]);

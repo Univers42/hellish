@@ -112,7 +112,8 @@ int	gather_heredocs(t_shell *state, t_ast_node *node, bool in_pipeline)
 	}
 	saved_in_func = state->gather_in_func;
 	if (node->node_type == AST_FUNCTION_DEF || node->node_type == AST_FOR
-		|| node->node_type == AST_WHILE || node->node_type == AST_UNTIL)
+		|| node->node_type == AST_WHILE || node->node_type == AST_UNTIL
+		|| node->node_type == AST_SELECT)
 		state->gather_in_func = true;
 	i = 0;
 	while (i < node->children.len && !get_g_sig()->should_unwind)

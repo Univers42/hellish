@@ -62,6 +62,8 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue105_expansions"
         "issue121_errexit_andor"
         "issue119_procsub_inherit"
+        "issue122_read_opts" "issue122_mapfile" "issue122_printf_time"
+        "issue122_select"
         "assign_shaped_words"
         "funcbody"
     )

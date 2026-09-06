@@ -67,8 +67,8 @@ Everything bash accepts in the common core: pipelines (`|`, `|&`), lists
 (`;`, `&&`, `||`, `&`), subshells `( )`, brace groups `{ }`,
 `if/elif/else/fi`, `for`, `for ((;;))`, `while`, `until`, `case` (with `;;`,
 `;;&`, `;&`), functions (`name()` and `function name`), `[[ … ]]` with
-pattern and `=~` regex matching, `(( ))`, coprocesses, and `select`-free
-honesty about what is not there. `help <keyword>` explains each form from
+pattern and `=~` regex matching, `(( ))`, coprocesses, and `select` menus.
+`help <keyword>` explains each form from
 inside the shell; the [builtins reference](builtins/index.md#syntax) lists
 them all.
 

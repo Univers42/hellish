@@ -21,7 +21,7 @@ bool	is_compound_start(t_tt tt)
 {
 	return (tt == TT_IF || tt == TT_WHILE || tt == TT_UNTIL
 		|| tt == TT_FOR || tt == TT_CASE || tt == TT_LBRACE
-		|| tt == TT_BANG || tt == TT_ARITH_START);
+		|| tt == TT_BANG || tt == TT_ARITH_START || tt == TT_SELECT);
 }
 
 /* The three case-clause terminators: `;;` stops, `;;&` resumes testing the

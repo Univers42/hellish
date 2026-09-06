@@ -45,10 +45,14 @@ static void	rd_set_opt(t_rdopt *o, char c, char *val)
 	}
 }
 
-/* read option scanner, generation 3: -r as before, plus the value-taking
-   options. Value-takers grab the following argument in the order their
-   letters appear, so `read -rn 2 v` and `read -rp "> " v` both work like
-   bash. Unknown letters are still ignored silently. */
+/* read option scanner, generation 4: -r as before, plus the value-taking
+   options with getopt's rule for where the value lives.  A value-taker
+   ENDS the word: whatever follows it in the same word is the value
+   (`-d:`, `-N3`, `-t5`, `-pPrompt`), and only an empty rest reaches for the
+   next argument (`-d :`, `-rd ''`).  Generation 3 always took the next
+   argument, so `read -d: x` set the delimiter to the first byte of "x",
+   left no variable to assign, and read nothing at all -- issue #122.
+   Unknown letters are still ignored silently. */
 static size_t	take_values(t_vec argv, size_t i, const char *word, t_rdopt *o)
 {
 	int	j;
@@ -58,10 +62,13 @@ static size_t	take_values(t_vec argv, size_t i, const char *word, t_rdopt *o)
 	{
 		if (word[j] == 'r')
 			o->raw = true;
-		if (rd_takes_value(word[j]) && i + 1 < argv.len)
+		if (rd_takes_value(word[j]))
 		{
-			i++;
-			rd_set_opt(o, word[j], ((char **)argv.ctx)[i]);
+			if (word[j + 1])
+				rd_set_opt(o, word[j], (char *)word + j + 1);
+			else if (i + 1 < argv.len)
+				rd_set_opt(o, word[j], ((char **)argv.ctx)[++i]);
+			return (i);
 		}
 		j++;
 	}

@@ -59,6 +59,8 @@ static t_tt	match_kw_part2(const char *s, int len)
 		return (TT_BANG);
 	if (len == 6 && kw_eq(s, "coproc", 6))
 		return (TT_COPROC);
+	if (len == 6 && kw_eq(s, "select", 6))
+		return (TT_SELECT);
 	return (TT_END);
 }
 

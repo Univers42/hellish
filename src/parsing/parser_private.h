@@ -152,6 +152,10 @@ t_ast_node	parse_for_arith(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_token		collect_arith_span(t_parser *parser, t_deque_tok *tokens);
 bool		push_arith_slices(t_ast_node *ret, t_token span);
+t_ast_node	parse_select_command(t_shell *state,
+				t_parser *parser, t_deque_tok *tokens);
+t_ast_node	parse_for_tail(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node ret);
 t_ast_node	parse_case_command(t_shell *state,
 				t_parser *parser, t_deque_tok *tokens);
 t_ast_node	parse_case_item(t_shell *state, t_parser *parser,

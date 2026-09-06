@@ -1,0 +1,30 @@
+printf '2\n' | { select o in a b c; do echo "[$o][$REPLY]"; break; done; echo "rc=$?"; }
+select o in a b; do :; done </dev/null; echo "rc=$?"
+printf '\n9\nx\n1\n' | { select o in a b; do echo "[$o][$REPLY]"; done; echo "rc=$?"; }
+set -- x y; printf '2\n' | { select o; do echo "[$o]"; break; done; }
+select o in; do echo never; done; echo "rc=$?"
+printf '1\n1\n' | { select o in a; do echo x; continue; done; echo "rc=$?"; }
+f() { select o in a; do return 5; done; }; printf '1\n' | f; echo "rc=$?"
+printf '  2  \n' | { select o in a b; do echo "[$o][$REPLY]"; break; done; }
+printf '+1\n' | { select o in a b; do echo "[$o]"; break; done; }
+printf '01\n' | { select o in a b; do echo "[$o]"; break; done; }
+printf '1\n' | { select o in "a b" c; do echo "[$o]"; break; done; }
+printf '2\n' | { x="p q"; select o in $x; do echo "[$o]"; break; done; }
+printf '1\n' | { select o in a; do echo "n=$#"; break; done; }
+printf '3\n' | { select o in a b c; do echo "[$o]"; done; echo "rc=$?"; }
+printf '1\n' | { select o in a b; do echo "[$o]"; false; break; done; echo "rc=$?"; }
+printf '1\n2\n' | { select o in a b; do echo "[$o]"; [ "$o" = b ] && break; done; echo "rc=$?"; }
+printf 'q\n' | { select o in a b; do echo "[$o][$REPLY]"; break; done; }
+printf '1\n' | { select item in one two; do echo "$item"; break; done; echo "after=$item"; }
+printf '2\n' | { select o in a b; do echo "$o"; break; done 2>/dev/null; }
+printf '1\n' | { select o in a; do echo one; break; done; echo "REPLY=$REPLY"; }
+printf 'x\n\n1\n' | { select o in a; do echo "[$o][$REPLY]"; break; done; }
+printf '1\n' | { PS3='pick: '; select o in a; do echo "[$o]"; break; done; }
+printf '1\n' | { select o in a; do echo "[$o]"; break; done; echo "end=$?"; }
+{ printf '1\n'; } | { select o in a; do echo "[$o]"; done; echo "eof-rc=$?"; }
+printf '1\n' | { select o in a; do select p in b; do echo "$o$p"; break 2; done; done; echo "rc=$?"; }
+printf '1\n2\n' | { for i in 1; do select o in a b; do echo "[$o]"; continue 2; done; done; echo "rc=$?"; }
+printf '1\n' | { select o in a; do echo "${#o}"; break; done; }
+printf '1\n' | { select o in a; do echo hi; done | cat; echo "rc=$?"; }
+printf '2\n' | { f() { select o in a b; do echo "[$o]"; break; done; }; f; }
+printf '1\n' | { select o in a; do echo "[$o]"; break; done >&2 2>/dev/null; echo done; }
