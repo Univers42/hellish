@@ -98,6 +98,12 @@ and a generated Makefile that was 4666 lines of `0`.
   denied`, 126; `hash` still refuses it; `hellish --posix` behaves as
   `bash --posix`. `command -v a b` now reports every name and exits 0
   when any was found, and `command -V` gives `type`'s description.
+- **`. /dev/null` no longer segfaults.** An empty file read into an
+  unallocated buffer, and `ft_strndup(NULL, 0)` handed the parser a
+  NULL. Every release had it; `tests/builtins_posix2` had the case, and
+  along with `builtins_posix3` had never been in the suite's list, so it
+  never ran. Both run now.
+
 - **musl builds again**: `<wchar.h>` was included before the project
   headers, which on Alpine lost `strlcpy` in every builtin.
 
@@ -113,7 +119,8 @@ built from hellish with hellish as its login shell, then Inception
 deployed from hellish, its eight containers with hellish as `/bin/sh`,
 and its compliance suite run under `hellish.real` and under `/bin/sh` and
 diffed. In the golden suite: `heredoc_backquote`, `heredoc_lone_dollar`,
-`printf_length`, `printf_escapes`, `negate_inline`, `command_v`, `issue13_bg_pid`,
+`printf_length`, `printf_escapes`, `negate_inline`, `command_v`,
+`builtins_posix2`, `builtins_posix3`, `issue13_bg_pid`,
 `issue119_procsub_inherit`,
 `issue121_errexit_andor`, `issue122_{select,mapfile,printf_time,read_opts}`;
 `tests/scripts/48_heredoc_backquote.sh` (the autoconf idiom end to end)

@@ -79,12 +79,21 @@ int	builtin_eval(t_shell *state, t_vec argv)
    positionals and RESTORES the caller's afterwards; with no extra args
    the file shares the caller's parameters (and `set` inside persists).
    exec_file_string rather than exec_string so a parse error in the file
-   names the file and the line (error_where.c). */
+   names the file and the line (error_where.c).
+
+   A NULL content is an EMPTY file: nothing was read, so the vector in
+   builtin_source never allocated and ft_strndup(NULL, 0) handed back
+   NULL, which the parser then walked off.  `. /dev/null` is not a
+   curiosity -- it is how a script sources an optional config that may
+   not exist yet -- and it took the shell down with SIGSEGV, in every
+   release.  An empty file sources to nothing, status 0, as in bash. */
 static int	run_source_pos(t_shell *state, char *content, t_vec argv)
 {
 	t_pos	saved;
 	int		status;
 
+	if (!content)
+		return (0);
 	if (argv.len <= 2)
 		return (exec_file_string(state, content, ((char **)argv.ctx)[1]));
 	saved = state->pos;
