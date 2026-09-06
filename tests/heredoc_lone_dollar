@@ -1,0 +1,8 @@
+eval $'cat << EOF\nline = $ 0\nEOF'
+eval $'cat << EOF\nz = $\nEOF'
+eval $'cat << EOF\nw = $%\nEOF'
+eval $'cat << EOF\ncost: 5$ or $5 or $ 5\nEOF'
+eval $'cat << EOF\n$\nEOF'
+eval $'cat << EOF\n$ $ $\nEOF'
+eval $'cat << EOF\nescaped: \\$ 0 and \\$HOME\nEOF'
+eval $'cat << EOF\ntab:\t$\tend\nEOF'

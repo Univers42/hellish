@@ -60,7 +60,7 @@ static t_execution_state	finish_builtin(t_shell *state,
 	fatal = strict_builtin_failed(state, cmd, status);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	if (fatal)
 		exit_clean(state, status);
 	return (res_status(status));

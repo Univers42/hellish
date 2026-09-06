@@ -24,8 +24,11 @@ static int	special_param_len(char c)
 /* Expand a $ that was not followed by '(' (command substitution already
    handled by the caller).  Braced form ${...} -> expand_braced; plain
    name or special param -> env_expand_n; lone $ (no valid name follows)
-   -> emit the $ character literally.  *i is advanced past whatever was
-   consumed. */
+   -> emit the $ character literally and leave the byte after it to the
+   caller (it used to be pushed here AND by the loop, so `$ 0` came out as
+   `  0` -- which is the `line = $ 0` in every autoconf config.status, and
+   turned the generated Makefile into 4666 lines of `0`).  *i is advanced
+   past whatever was consumed. */
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
@@ -48,19 +51,22 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 			vec_push_nstr(full_file, "", 0);
 	}
 	else
-		vec_push(full_file, &line[*i]);
+		vec_push(full_file, &line[*i - 1]);
 	*i += len;
 }
 
 /* Handle one character following a backslash inside a non-quoted heredoc
    body.  POSIX: inside a heredoc only `\$`, `\`` and `\\` are special --
    other `\x` pairs keep the backslash.  A `\<newline>` (line continuation)
-   is simply dropped (the backslash and the newline disappear). */
+   is simply dropped (the backslash and the newline disappear).  The
+   backquote is checked here rather than in libft's is_escapable: that
+   predicate is the generic $/backslash pair, and the backquote only became
+   an escape once expand_line started running `...` in bodies. */
 void	expand_bs(int *i, t_string *full_file, char *line)
 {
 	char	tmp;
 
-	if (is_escapable(line[*i]))
+	if (is_escapable(line[*i]) || line[*i] == '`')
 		vec_push(full_file, &line[*i]);
 	else if (line[*i] != '\n')
 	{
@@ -72,30 +78,34 @@ void	expand_bs(int *i, t_string *full_file, char *line)
 	(*i)++;
 }
 
-/* Dispatch a '$' character: first try expand_dollar_sub for command/
-   arithmetic substitution ($(...) and $((...)) ); if that returns 0
-   consumed bytes, fall through to the simpler expand_dolar for plain
-   parameter expansion. */
-static bool	expand_dollar_char(t_shell *state, t_string *ff,
-				char *line, int *i)
+/* Dispatch a '$' or a '`': $(...) / $((...)) and `...` go through the
+   expander's substitution entries; a '$' they do not claim falls through to
+   plain parameter expansion, and an unclosed backquote stays literal. */
+static void	expand_sub_char(t_shell *state, t_string *ff, char *line, int *i)
 {
 	int	consumed;
 
-	consumed = expand_dollar_sub(state, line + *i,
-			(int)ft_strlen(line + *i), ff);
+	if (line[*i] == '`')
+		consumed = expand_backquote_sub(state, line + *i, ff);
+	else
+		consumed = expand_dollar_sub(state, line + *i,
+				(int)ft_strlen(line + *i), ff);
 	if (consumed > 0)
-	{
 		*i += consumed;
-		return (true);
-	}
-	expand_dolar(state, i, ff, line);
-	return (true);
+	else if (line[*i] == '`')
+		vec_push(ff, &line[(*i)++]);
+	else
+		expand_dolar(state, i, ff, line);
 }
 
 /* Expand one heredoc body line into full_file.  A backslash arms a
    one-character escape (bs=true), which is then handled by expand_bs on
-   the next iteration.  A '$' kicks off parameter/command substitution.
-   Any other character is appended verbatim.  The result is accumulated in
+   the next iteration.  A '$' kicks off parameter/command substitution and
+   a '`' a backquoted one -- autoconf writes `$as_echo ... | $as_tr_cpp`
+   into confdefs.h from a heredoc, and a body that keeps the backquotes
+   literal turns every later header check into a compile error.  An
+   unclosed backquote stays literal.  Any other character is appended
+   verbatim.  The result is accumulated in
    full_file (a t_string / vec of bytes) rather than printed immediately so
    write_heredoc can write the whole body in one shot. */
 void	expand_line(t_shell *state, t_string *full_file, char *line)
@@ -112,8 +122,8 @@ void	expand_line(t_shell *state, t_string *full_file, char *line)
 			expand_bs(&i, full_file, line);
 			bs = false;
 		}
-		else if (line[i] == '$')
-			expand_dollar_char(state, full_file, line, &i);
+		else if (line[i] == '$' || line[i] == '`')
+			expand_sub_char(state, full_file, line, &i);
 		else if (line[i] == '\\')
 			bs = (i++, true);
 		else

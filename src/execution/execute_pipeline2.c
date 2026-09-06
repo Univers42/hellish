@@ -42,7 +42,7 @@ t_execution_state	execute_pipeline_one(t_shell *state,
 		close(curr.outfd);
 	if (curr.infd >= 0 && curr.infd != STDIN_FILENO)
 		close(curr.infd);
-	free_executable_node(&curr);
+	free_executable_node(state, &curr);
 	procsub_close_fds_parent(state);
 	if (res.pid != -1)
 		exe_res_set_status(state, &res);

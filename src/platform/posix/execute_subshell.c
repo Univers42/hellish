@@ -39,7 +39,7 @@ static void	subshell_child(t_shell *state, t_executable_node *exe)
 	pseudo_traps_quiet(state);
 	set_up_redirection(state, exe);
 	exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	exe->outfd = 1;
 	exe->infd = 0;
 	res = execute_tree_node(state, exe);
@@ -59,6 +59,6 @@ t_execution_state	execute_subshell(t_shell *state, t_executable_node *exe)
 		critical_error_errno_ctx("fork");
 	jc_parent(state, pid);
 	procsub_close_fds_parent(state);
-	free_executable_node(exe);
+	free_executable_node(state, exe);
 	return (res_pid(pid));
 }

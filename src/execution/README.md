@@ -214,6 +214,19 @@ For a simple command, execution follows roughly this logic:
 3. **Handle redirections**:
    - For builtins in the current process, temporarily adjust file descriptors, run the builtin, then restore the original FDs.
    - For external commands, perform redirections in the child process before the `execve` call.
+   - Every redirection is *resolved* (file opened, parked at fd >= 10) in the parent
+     before any fork, as an entry in `state->redirects`; `exe->redirs` holds the
+     indices. The descriptor's life is the command's, not the input cycle's:
+     `apply_redir` marks an entry consumed (`fd = -1`) once this process has
+     dup2'd it, and `free_executable_node(state, exe)` -- the last thing every
+     command path does in the parent -- closes the entries the parent never
+     applied (the ones opened for a forked child). Before that release existed a
+     loop of `cmd 2>/dev/null` held one open fd per iteration until the whole
+     batch ended; every child inherited them all and autoconf's
+     `fcntl(F_DUPFD_CLOEXEC, 10)` probe found fd 10 taken. `free_redirects` at
+     the end of the cycle is now only the safety net (and the heredoc tmpfile
+     unlink). Entries the shell does not own (`n>&m` dups, `n>&-`) are never
+     closed by either.
 
 4. **Return status**:
    - Builtins: return the integer code they report.

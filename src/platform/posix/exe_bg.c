@@ -103,5 +103,5 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 	jc_parent(state, pid);
 	procsub_close_fds_parent(state);
 	free_executable_cmd(state, *cmd);
-	return (free_executable_node(exe), res_pid(pid));
+	return (free_executable_node(state, exe), res_pid(pid));
 }

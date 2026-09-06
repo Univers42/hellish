@@ -108,11 +108,37 @@ void	free_executable_cmd(t_shell *state, t_executable_cmd cmd)
 	argv_pool_release(state, &cmd);
 }
 
-/* Release the redirect list embedded in an executable AST node. The node itself
-   is stack-allocated by the executor, so only its heap-allocated children
-   (redirs.ctx) need freeing. vec_init resets it to a safe empty state. */
-void	free_executable_node(t_executable_node *node)
+/* Release the redirect list embedded in an executable AST node, and the
+   descriptors the parent resolved for it.  Every entry a command opened --
+   a file, a /dev/fd dup, a heredoc backing -- used to sit open in
+   state->redirects until the END OF THE INPUT CYCLE, and for a script
+   batch or one big compound that is thousands of commands: configure ran
+   with hundreds of stray fds that every child inherited, and its
+   fcntl(F_DUPFD_CLOEXEC, 10) probe found fd 10 taken.  An entry the parent
+   applied itself was consumed by apply_redir (fd = -1); the rest were only
+   ever for a forked child and are closed here, the moment the command is
+   over.  Entries we do not own (a dup of the user's fd, a close request)
+   are left alone.  The node itself is stack-allocated by the executor, so
+   only its heap-allocated children (redirs.ctx) need freeing. */
+void	free_executable_node(t_shell *state, t_executable_node *node)
 {
+	size_t	i;
+	int		idx;
+	t_redir	*r;
+
+	i = 0;
+	while (i < node->redirs.len)
+	{
+		idx = ((int *)node->redirs.ctx)[i++];
+		if (idx < 0 || (size_t)idx >= state->redirects.len)
+			continue ;
+		r = &((t_redir *)state->redirects.ctx)[idx];
+		if (r->is_dup || r->close_fd)
+			continue ;
+		if (r->fd > STDERR_FILENO)
+			close(r->fd);
+		r->fd = -1;
+	}
 	xfree(node->redirs.ctx);
 	vec_init(&node->redirs);
 }

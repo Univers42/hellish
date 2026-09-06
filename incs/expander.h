@@ -74,6 +74,8 @@ int			redirect_from_ast_redir(t_shell *state, t_ast_node *curr,
    command/arith substitution). Used by the heredoc expander. */
 int			expand_dollar_sub(t_shell *state, const char *s, int slen,
 				t_string *outbuf);
+int			expand_backquote_sub(t_shell *state, const char *s,
+				t_string *outbuf);
 
 /* Expand the body of a ${...} (the bytes between the braces): handles operator
    (${v:-w}), length (${#v}) and trim (${v#p}) forms, NULL otherwise. Used by
