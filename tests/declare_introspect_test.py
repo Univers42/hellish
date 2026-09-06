@@ -116,6 +116,40 @@ def main():
           "got %r %r" % (p.stdout.strip(), p.stderr.strip()[:120]))
 
     #    an unknown name is still status 1, not a crash
+    # A body whose FIRST statement opens with a keyword the parser consumes
+    # (for, select, while, if, case, {, (, !) used to print without it --
+    # `x in a; do :; done;` -- which does not re-parse (issue #122 found it
+    # through `select`).  The span is now pinned to the text between the
+    # braces, so every one of these comes back exactly as written and
+    # survives eval.
+    for body in ["for x in a; do echo $x; done",
+                 "select x in a; do echo $x; break; done",
+                 "while false; do :; done",
+                 "until true; do :; done",
+                 "if true; then echo t; fi",
+                 "case a in a) echo ca;; esac",
+                 "{ echo grp; }",
+                 "( echo sub )",
+                 "! false",
+                 "(( 1 ))",
+                 "coproc :"]:
+        p = run("f() { %s; }; declare -f f" % body)
+        check("declare -f keeps the leading keyword of: " + body,
+              p.stdout.split("\n")[2] == body + ";",
+              "got %r" % p.stdout.split("\n")[:4])
+    p = run('f() { for x in a b; do echo $x; done; }; b=$(declare -f f); '
+            'unset -f f; eval "$b"; f')
+    check("a for body round-trips through eval",
+          p.stdout.split() == ["a", "b"], "got %r" % p.stdout)
+    p = run('f() {\n  echo hi\n  echo yo\n}\ndeclare -f f')
+    check("a multi-line body keeps its lines and gains no blank ones",
+          p.stdout == "f ()\n{\necho hi\n  echo yo\n}\n",
+          "got %r" % p.stdout)
+    p = run('f() ( echo sub ); declare -f f')
+    check("a subshell body prints whole, parens included",
+          p.stdout.split("\n")[2] == "( echo sub )",
+          "got %r" % p.stdout.split("\n")[:4])
+
     p = run('declare -f nope; echo "rc=$?"')
     check("declare -f on an undefined name reports 1",
           p.stdout.split() == ["rc=1"], "got %r" % (p.stdout.split(),))
