@@ -1,0 +1,15 @@
+set -e; f() { p=; if [ -z "$p" ] && [ -e /nonexistent ]; then p=x; fi; false; }; f || echo "f failed ok"; echo end
+set -e; f() { local p=; if [ -z "$p" ] && [ -e /nonexistent ]; then p=x; fi; [ -n "$p" ] && printf x; }; g() { f >/dev/null 2>&1; }; echo "[$(if g; then echo yes; else echo no; fi)]"
+set -e; f() { if true && true && false; then :; fi; if false; then :; fi; false; }; if f; then echo yes; else echo no; fi; echo end
+set -e; if true && false; then :; fi; false; echo NOT_REACHED
+set -e; f() { if [ 1 ] && [ 0 ]; then :; fi; false; }; f && echo yes; echo end
+set -e; f() { while [ -z "$p" ] && [ -e /nonexistent ]; do p=x; done; false; }; f || echo caught
+set -e; f() { until [ -n "$p" ] || [ -e /nonexistent ]; do p=x; done; false; }; f || echo caught
+set -e; f() { if ! true && ! false; then :; fi; false; }; f || echo caught
+set -e; g() { if true && false; then :; fi; }; f() { g; false; }; f || echo caught
+set -e; f() { if true; then if true && false; then :; fi; fi; false; }; f || echo caught
+set -e; f() { if true && false; then :; fi; false; }; f || echo caught; false; echo NOT_REACHED
+set -e; f() { if true && false; then :; fi; false; }; ! f; echo "neg=$?"
+set -e; f() { if true && false; then :; fi; false; }; while f; do :; done; echo loopdone
+set -e; f() { if false || false; then :; fi; false; }; f || echo caught
+set -e; f() { if true && false; then :; fi; false; }; g() { f && echo no; echo g-end; }; g || echo caught
