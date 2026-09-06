@@ -25,15 +25,15 @@ static t_execution_state	run_body(t_shell *state, t_ast_node *body)
 	return (execute_tree_node(state, &body_exe));
 }
 
-/* Expand all word-list children of the for node (indices 0..wc-1) into a
-   flat list of strings, with field splitting and glob expansion.  We push
+/* Expand all word-list children of the for (or select) node (indices
+   0..wc-1) into a flat list of strings, with field splitting and glob
+   expansion.  We push
    a fresh word-slab frame first (word_slab_push) so the expanded strings
    are allocated there and released in one shot with a matching pop, which
    avoids any per-word xfree in for_word_loop.  The returned vec's strings
    still need individual xfree because they were strdup'd by expand_word_ro
    from the slab. */
-static t_vec	expand_for_words(t_shell *state,
-		t_ast_node *node, size_t wc)
+t_vec	for_expand_words(t_shell *state, t_ast_node *node, size_t wc)
 {
 	t_vec	words;
 	size_t	i;
@@ -66,7 +66,7 @@ static t_execution_state	for_word_loop(t_shell *state,
 	t_vec				words;
 	size_t				i[2];
 
-	words = expand_for_words(state, node, wc);
+	words = for_expand_words(state, node, wc);
 	status = res_status(0);
 	i[1] = for_stride(node);
 	i[0] = 0;

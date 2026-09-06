@@ -25,8 +25,8 @@ int	type_is_builtin(const char *name)
 int	type_is_keyword(const char *name)
 {
 	static const char	*kw[] = {"!", "{", "}", "case", "do", "done",
-		"elif", "else", "esac", "fi", "for", "if", "in", "then",
-		"until", "while", NULL};
+		"elif", "else", "esac", "fi", "for", "if", "in", "select",
+		"then", "until", "while", NULL};
 	int					i;
 
 	i = 0;

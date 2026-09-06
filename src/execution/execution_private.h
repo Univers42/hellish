@@ -250,4 +250,44 @@ int					run_one_stmt(t_shell *state, t_deque_tok *tt,
 int					run_parsed(t_shell *state, t_ast_node *ast);
 bool				must_stop(t_shell *state);
 
+/* select's loop state (execute_select.c): the expanded words, the body
+   wrapped once, the loop variable, whether the next round reprints the
+   menu, and the status the loop ends with. */
+typedef struct s_select
+{
+	t_vec				words;
+	t_executable_node	body;
+	char				*name;
+	bool				menu;
+	t_execution_state	status;
+}	t_select;
+
+/* One menu rendering (execute_select2.c / execute_select3.c), bash's
+   print_select_list geometry: max_len is the cell width (the widest
+   "N) word" plus two), idx_len the digits of the item count, first_len
+   the digits of the row count (the first column's index field), rows the
+   row count. */
+typedef struct s_selmenu
+{
+	t_vec		*words;
+	t_string	*out;
+	int			max_len;
+	int			idx_len;
+	int			first_len;
+	int			rows;
+}	t_selmenu;
+
+t_execution_state	execute_select(t_shell *state, t_executable_node *exe);
+t_vec				for_expand_words(t_shell *state, t_ast_node *node,
+						size_t wc);
+void				select_print_menu(t_shell *state, t_vec *words);
+int					sel_columns(t_shell *state);
+void				sel_indent(t_string *out, int from, int to);
+int					sel_item(t_selmenu *m, int ind, int il);
+int					sel_displen(const char *s);
+int					sel_numlen(int n);
+bool				sel_number(const char *s, long *n);
+void				sel_write(int fd, const char *s, size_t n);
+void				sel_geometry(t_selmenu *m, int width);
+
 #endif

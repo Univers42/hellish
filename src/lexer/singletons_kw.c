@@ -38,6 +38,7 @@ void	init_tt_names_kw2(const char **names)
 	names[TT_RBRACE] = "TT_RBRACE";
 	names[TT_BANG] = "TT_BANG";
 	names[TT_DSEMI] = "TT_DSEMI";
+	names[TT_SELECT] = "TT_SELECT";
 }
 
 /* Map all keyword token names to the magenta colour so they stand out in the
@@ -62,4 +63,5 @@ void	init_color_map_kw(t_hash *map)
 	hash_set(map, "TT_RBRACE", (void *)ASCII_MAGENTA);
 	hash_set(map, "TT_BANG", (void *)ASCII_MAGENTA);
 	hash_set(map, "TT_DSEMI", (void *)ASCII_MAGENTA);
+	hash_set(map, "TT_SELECT", (void *)ASCII_MAGENTA);
 }

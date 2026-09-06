@@ -13,8 +13,9 @@
 #include "ast_private.h"
 
 /* Second half of the node_name dispatch: compound commands (if/while/for/case
-   and their substructure). ft_assert(0) at the bottom is a guard; every valid
-   t_ast_type must have been handled by here or by node_name in ast_utils.c. */
+   and their substructure).  The types added once this dispatch had used up
+   its line budget live in node_name_late, which carries the ft_assert(0)
+   guard: every valid t_ast_type must be handled by one of the three. */
 char	*node_name_compound(t_ast_type tn)
 {
 	if (tn == AST_IF)
@@ -39,8 +40,7 @@ char	*node_name_compound(t_ast_type tn)
 		return ("AST_ARITH_CMD");
 	if (tn == AST_FOR_ARITH)
 		return ("AST_FOR_ARITH");
-	ft_assert(0);
-	return (0);
+	return (node_name_late(tn));
 }
 
 /* Recurse into every child of node in order, updating depth_stack[depth] to

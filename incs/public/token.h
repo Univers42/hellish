@@ -77,7 +77,8 @@ typedef enum e_tt
 	TT_AMP_REDIR,
 	TT_AMP_APPEND,
 	TT_DSEMI_FALL,
-	TT_SEMI_FALL
+	TT_SEMI_FALL,
+	TT_SELECT
 }	t_tt;
 
 /* Memoized arithmetic lex, attached to a pure-$((...)) word token so a loop
