@@ -272,7 +272,7 @@ fi
 
 # ---- 2..5, once per backend ------------------------------------------------
 run_backend() { # run_backend qemu|virtualbox
-	local be="$1" VM_PATH LOG rc t0 reuse=0 gsh gver out wrap ilog tmpf quiet st
+	local be="$1" VM_PATH LOG rc t0 reuse=0 gsh gver out wrap ilog tmpf quiet st fbmax
 	VM_PATH="$WORK/vm-$be"; LOG="$WORK/make_all.$be.log"
 	mkdir -p "$VM_PATH"
 	if [ "${BORN2ROOT_REUSE_VM:-0}" = 1 ]; then
@@ -340,15 +340,21 @@ run_backend() { # run_backend qemu|virtualbox
 	# -- 4. the parity table, then the status page, both from hellish --------
 	say "[$be] 4. verify_guest and the status page, launched from hellish"
 	# First boot keeps provisioning after sshd is up (ufw rules, the hellishrc
-	# plugins); the parity table checks those, so wait for it to finish. The
-	# bracket keeps pgrep from matching the ssh command that carries the name.
+	# plugins, the upstream hellish install); the parity table checks those
+	# AND the refresh below must land after it, so wait for it to finish. A
+	# RAM-capped VirtualBox guest is much slower here than QEMU -- 2 GB of
+	# `curl | sh` plus the plugin framework ran past 15 min -- so the ceiling
+	# is backend-aware. The loop breaks the moment first boot is quiet, so a
+	# fast guest pays nothing for the larger cap. The bracket keeps pgrep from
+	# matching the ssh command that carries the name.
+	case "$be" in virtualbox) fbmax=210 ;; *) fbmax=90 ;; esac
 	quiet=0
-	for _ in $(seq 1 90); do
+	for _ in $(seq 1 "$fbmax"); do
 		if guest 'pgrep -f "first[-]boot-setup" >/dev/null' 2>/dev/null; then quiet=0; else quiet=$((quiet + 1)); fi
 		[ "$quiet" -ge 2 ] && break
 		sleep 10
 	done
-	[ "$quiet" -ge 2 ] && ok "first boot finished" || ko "[$be] first-boot-setup.sh still running after 15 min"
+	[ "$quiet" -ge 2 ] && ok "first boot finished" || ko "[$be] first-boot-setup.sh still running after $((fbmax / 6)) min"
 	# ORDER MATTERS: this runs only once first boot has FINISHED (the wait
 	# just above). First boot keeps provisioning after sshd answers, and its
 	# upstream hellish installer is one of the LATE steps -- refreshing right
