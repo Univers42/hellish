@@ -8,6 +8,99 @@ shows you how to drive the shell.
 
 ---
 
+## v2.10.0 — *the corpus release*
+
+Two real projects now run under hellish end to end, and they are the
+release's test. born2root (Univers42) is ~145 bash scripts that build a
+Debian VM on QEMU or VirtualBox; Inception is a POSIX-sh Makefile, eight
+container entrypoints and a 1400-line compliance suite. Both run with
+hellish as the shell `make` was launched from, as the guest's login shell,
+and — for Inception — as `/bin/sh` inside every container, where the
+containers build and run the stack. Issues #118–#122 all came out of the
+first runs, and GNU hello's `configure` under the benchmark found the
+heredoc and descriptor bugs below: a `config.h` 428 lines away from bash's,
+and a generated Makefile that was 4666 lines of `0`.
+
+- **Backquoted command substitutions run in unquoted heredoc bodies.**
+  `$var`, `$(…)` and `$((…))` expanded but `` `…` `` stayed literal and
+  `` \` `` kept its backslash. autoconf writes every successful header
+  check as ``#define `$as_echo … | $as_tr_cpp` 1`` from a heredoc, so the
+  first check corrupted `confdefs.h` and twenty more answered "no"; and
+  Inception's mariadb bootstrap fed ``CREATE DATABASE `wordpress`;`` to
+  the server as a literal backslash-backtick — SQL error 1064, container
+  unhealthy, stack half up. A backquote now runs through the same scan and
+  unescape rule words use; `` \` `` in a body is the escape POSIX lists.
+- **A lone `$` in a heredoc body stays a `$`** and leaves the next byte
+  alone: `line = $ 0` came out as `line =   0`. That line is config.status's
+  awk program.
+- **A command's redirect descriptors close when the command ends.** Every
+  redirection was kept open until the end of the input cycle, so
+  `cmd 2>/dev/null` in a loop held one descriptor per iteration and every
+  child inherited all of them — configure's `fcntl(F_DUPFD_CLOEXEC, 10)`
+  probe found fd 10 taken. And in 2.9.1 `exec 10>a` followed by `echo >&10`
+  on the next line failed with EBADF: the sweep closed that number again.
+- **A lone `( … ) &` forks once**, so the traps it sets live in `$!`. The
+  body ran in a grandchild; `kill $!` killed a middle process outright and
+  `wait $!` answered 143. born2root's VirtualBox orchestrator stops its
+  spinner subshell with exactly that pair under `set -e`, and died of it.
+- **`printf` sizes its render buffer by the argument, not only the
+  width**: `printf '%s\n' "$v"` was cut at 4096 bytes whenever the
+  argument was that long. Inception's compliance suite counted 7 services
+  where dash and bash count 8.
+- **`printf` reads `\NNN` in a format the way C does** (leading zero
+  counts, one to three octal digits), so `\0337` is ESC then `7` -- the
+  DECSC a TUI uses to save the cursor -- not the single byte `0xDF`.
+  born2root's `make all` dashboard, drawn with `\0337 … \0338`, came back
+  as `?` glyphs and a cursor jumping about because no cursor was ever
+  saved. `\x` with no hex digit stays literal text (bash warns) instead of
+  a NUL, and a NUL inside a `%b` argument no longer truncates it -- `%b` is
+  laid out by byte count.
+- **`set -e` survives an `A && B` inside an if-condition** (#121). The one
+  site that suppresses `-e` for the left side of `&&`/`||` restored a
+  boolean where the suppression is a depth, so a failing command later in
+  the function exited the shell.
+- **String operations count characters in a multibyte locale** (#120).
+  `${#var}` measured bytes ("café" was 5), `${var:off:len}` cut é in half,
+  `caf?` did not match café in `case`, `[[ == ]]` or a glob, `${x^^}`
+  could not upper-case it and `read -n 2` stopped inside the character.
+  The rule is bash's — characters under a multibyte locale, bytes under
+  C — and it lives once, in `src/helpers/mbchar.c`, for every site.
+- **Process substitution runs in the forked child, not a re-exec** (#119).
+  `<(cmd)` exec'd the shell again, so `while read x; do …; done < <(f)`
+  and `mapfile -t a < <(f)` saw no functions, arrays or locals and printed
+  "command not found". `cat <(seq 3)` is now one clone and one exec.
+- **`BASH_SOURCE[0]` names a script run as a file** (#118).
+- **The bash-compat gaps of #122**: the `select` loop, with bash's menu
+  byte for byte (column-major cells, `PS3`, `REPLY`, EOF's newline);
+  `printf '%(fmt)T'` (`-1` is now, `-2` the shell's start, `TZ` honoured);
+  `mapfile -d -n -O -s -u` (`-u 3` slurped fd 0 and `-d ''` read one
+  element); `read -d: x`, `-N3`, `-t5`, `-pP` — an attached option value
+  the way getopt reads it; and `declare -f` keeps the whole body, leading
+  keyword included (`f() { for x in a; do :; done; }` printed without the
+  `for`, and did not re-parse).
+- **musl builds again**: `<wchar.h>` was included before the project
+  headers, which on Alpine lost `strlcpy` in every builtin.
+
+Detectors, permanent: `make born2root-test` (145 scripts parse under
+`hellish -n` exactly when they parse under bash; born2root's own unit
+tests, help renderer and backend probe print the same under both shells;
+`make -n all` launched from hellish is bash's plan and the probe picked
+hellish), `make inception-test` (the same three for Inception's scripts,
+compliance suite and `make -n up`), and the VM harness `make born2root-vm`
+/ `make born2root-docker` on QEMU and on VirtualBox: the preseeded ISO
+built under bash and under hellish and diffed byte for byte, the guest
+built from hellish with hellish as its login shell, then Inception
+deployed from hellish, its eight containers with hellish as `/bin/sh`,
+and its compliance suite run under `hellish.real` and under `/bin/sh` and
+diffed. In the golden suite: `heredoc_backquote`, `heredoc_lone_dollar`,
+`printf_length`, `printf_escapes`, `issue13_bg_pid`, `issue119_procsub_inherit`,
+`issue121_errexit_andor`, `issue122_{select,mapfile,printf_time,read_opts}`;
+`tests/scripts/48_heredoc_backquote.sh` (the autoconf idiom end to end)
+and `49_fd_hygiene.sh`; `select_menu_test.py`, `born2root_dashboard_test.py` and
+`declare_introspect_test.py` in the pty suite.
+
+---
+
 ## v2.9.1 — *your zshrc is zsh's*
 
 Four 42 students installed hellish on a fresh account — the one-liner and
