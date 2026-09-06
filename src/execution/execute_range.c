@@ -51,18 +51,19 @@ static bool	next_is_andor(t_ast_node *node, size_t i, size_t end)
 		&& (c->token.tt == TT_AND || c->token.tt == TT_OR));
 }
 
-/* execute_then with errexit suppressed for the duration — the save/
-   restore keeps nesting correct when and-or lists sit inside conditions
-   that already set errexit_off. */
+/* execute_then with errexit suppressed for the duration.  errexit_off is
+   a DEPTH, not a flag: this used to save it into a bool and write back
+   `true`, so an `A && B` inside an if-condition (depth 2) restored depth 1,
+   the condition's own decrement then reached 0, and the next failing
+   command in the same function exited a shell that was still inside a
+   suppressed `f || ...` -- issue #121.  Nesting composes only if every
+   site pairs ++ with --, the way run_condition and the loops already do. */
 static void	execute_lhs(t_executable_node *exe, t_ast_node *child,
 				t_shell *state, t_execution_state *status)
 {
-	bool	saved;
-
-	saved = state->errexit_off;
-	state->errexit_off = true;
+	state->errexit_off++;
 	execute_then(exe, child, state, status);
-	state->errexit_off = saved;
+	state->errexit_off--;
 }
 
 /* An AST_TOKEN child carries the list operator (&&, ||, ;, newline).
