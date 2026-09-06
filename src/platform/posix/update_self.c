@@ -16,7 +16,12 @@
 
 /* Human wording for each way update_apply can refuse. Every one of them
    leaves the installed binary untouched, so the message says what stopped
-   rather than warning about damage that did not happen. */
+   rather than warning about damage that did not happen.  The failure
+   report ends with the installer one-liner: a 2.7.x updater cannot stage
+   its download beside a root-owned /usr/bin (fixed in 2.8.0, #75), so the
+   `update --now` those shells run always ends here, and `sudo update` is
+   not a thing -- update is a builtin.  The one-liner is the route that
+   works from every version (issue #117). */
 static const char	*apply_error(int code)
 {
 	if (code == 1)
@@ -79,8 +84,9 @@ int	update_selfupdate(t_origin o, const char *tag)
 	rc = update_apply(tag, target, sudo);
 	if (rc != 0)
 		return (ft_eprintf("hellish: update failed — %s\n"
-				"  the installed binary is unchanged.\n",
-				apply_error(rc)), 1);
+				"  the installed binary is unchanged.\n"
+				"  fallback: curl -fsSL https://raw.githubusercontent.com/"
+				HELLISH_REPO "/main/install.sh | sh\n", apply_error(rc)), 1);
 	update_mark_notified();
 	ft_printf("\033[32m✓\033[0m updated %s → %s\n", HELLISH_VERSION, tag);
 	ft_printf("  restart hellish (or open a new shell) to run it.\n");

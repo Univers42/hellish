@@ -3,8 +3,8 @@
 
 The rc a 42 account actually has is not the one hellishrc.example ships:
 it is a ~/.zshrc that puts Homebrew on PATH, loads nvm, adds ~/.local/bin
-and defines a few aliases -- and the installer now offers to load that
-file inside hellish (rc.d/90-zshrc.zsh). The first person to say yes got
+and defines a few aliases -- and `install.sh --zshrc` (opt-in) loads that
+file inside hellish (after.d/90-zshrc.zsh). The first person to say yes got
 
     manpath: warning: $PATH not set
 
@@ -149,7 +149,7 @@ def main():
     home = tempfile.mkdtemp(prefix="rcreal-")
     write(os.path.join(home, ".zshrc"), ZSHRC)
     write(os.path.join(home, "fake_nvm.sh"), FAKE_NVM)
-    write(os.path.join(home, ".config", "hellish", "rc.d", "90-zshrc.zsh"),
+    write(os.path.join(home, ".config", "hellish", "after.d", "90-zshrc.zsh"),
           IMPORT)
     # A known prompt, so "first prompt" is a byte we can wait for: unset,
     # hellish shows zsh's `host% `, which no fixed pattern should assume.

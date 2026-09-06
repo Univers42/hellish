@@ -8,6 +8,160 @@ shows you how to drive the shell.
 
 ---
 
+## v2.9.1 — *your zshrc is zsh's*
+
+Four 42 students installed hellish on a fresh account — the one-liner and
+the plugin framework, nothing of their own — and the first prompt came
+with red above it. `Error: Oh My Zsh can't be loaded from: hellish` and a
+process tree (#114); `syntax error near unexpected token `('`, twice,
+with no file and no line to go to (#113); `promptinit`, `compinit` and
+twenty `zstyle`s complaining (#115); and one whose hellish turned into
+bash the moment it started (#116). One root: for three releases the
+installer loaded `~/.zshrc` inside hellish by default, and a `.zshrc` is
+code written for zsh — that last one began with `exec /bin/bash`, so
+hellish did exactly what it was told.
+
+- **hellish no longer runs `~/.zshrc`.** The installer writes no import
+  and asks no question about it; your aliases and git shortcuts come
+  through the plugin framework and `~/.hellishrc`, and the zsh config
+  stays zsh's. An import left by 2.8.7–2.9.0 is switched off on the next
+  run of the one-liner (kept as `.off`, and said out loud). The one thing
+  the installer still touches in `~/.zshrc` is its own hook block, and it
+  now also removes the 2.7.x generations of that block (`hellish-default`,
+  `hellish-user-default`) that #116 had stacked three deep — on uninstall
+  from every rc file, on install from the one it rewrites.
+- **`install.sh --zshrc` is the opt-in**, best effort, by name: the file
+  loads in the zsh dialect from the new `~/.config/hellish/after.d/`,
+  which is sourced *after* `~/.hellishrc` and the framework so the zsh
+  config keeps the last word (in `rc.d` it ran first, and oh-my-zsh's
+  `gwip` alias broke the framework's `gwip()` function at every start). In
+  that mode `source $ZSH/oh-my-zsh.sh` is understood rather than refused:
+  the plugins your `plugins=(…)` names load from `$ZSH_CUSTOM/plugins`
+  then `$ZSH/plugins`, then `$ZSH_CUSTOM/*.zsh`; ZLE-only plugins
+  (autosuggestions, syntax highlighting, vi-mode…) are skipped silently;
+  themes, `lib/` and `compinit` stay zsh's; nothing "not supported" is
+  printed for lines you did not write. `is-at-least` is a builtin (the git
+  plugin's version checks were three `command not found` a start) and
+  `aliases[name]=value` defines an alias as it does in zsh.
+- **A syntax error in a sourced file says where it is.** One report,
+  `hellish: FILE: line N: syntax error near unexpected token …` and the
+  line itself under it — the two lines bash prints — and the lines before
+  it still run. The chunked source path reported once from its parse-all
+  pass and again from the replay, and the replay swallowed everything up to
+  the error as one list, so line 1 never ran when line 2 was broken. An
+  `eval` inside a sourced file reports against its own text; an
+  unterminated group names the line bash names; the issue-112 hint keeps
+  pointing at its `}` line. This covers `source`, every `rc.d`/`after.d`
+  module, every plugin, and `~/.hellishrc` — where `return` now ends the
+  file as it ends `~/.bashrc`.
+- **The dialect closes the gaps a tutorial rc hits**, for the snippets you
+  bring across: `[[ $TERM == (xterm*|screen*) ]]` (a bare alternation
+  opening a `[[` operand shattered into `[[: missing ]]` and commands named
+  after the alternatives), `for x (a b) cmd` and `for x (a b) { … }`,
+  `local` at file scope, `alias -g` / `alias -s`, and every real zsh
+  option in `setopt`/`unsetopt` (`unsetopt beep` was "no such option").
+- **`f() ( … )`, `f() while …; done`, `f() if …; fi`.** Every non-brace
+  function body failed — silently from `-c`, "unexpected end of file" from
+  a file — in both dialects. conda's shell hook is `__conda_exe() ( … )`.
+- **A pipeline child whose command was not found no longer double-frees**
+  its argv when a glob expanded it: `true | nosuch *.md` died of `free():
+  double free` (exit 134) instead of exiting 127.
+- **`update --now` names the way out when it fails** (#117). A shell still
+  on 2.7.x cannot stage its download beside a root-owned `/usr/bin` — that
+  updater was fixed in 2.8.0 — so its `update --now` always ends in "the
+  download failed", and `sudo update` is not a thing (update is a builtin).
+  Every failure now ends with the installer one-liner, which works from
+  any version and takes the sudo route itself.
+
+Detectors, permanent: the installer suite's 42 scenario (no import by
+default, `--zshrc` opts in, a re-run switches it off, 2.7.x hooks go with
+the uninstall), `tests/source_diag_test.py`, `tests/omz_bridge_test.py` (a
+fake `$ZSH` tree, plus the real oh-my-zsh when `OMZ_SRC` points at a
+checkout), `tests/zsh_rc_syntax_test.py` (each construct diffed against zsh
+when one is on PATH), and `tests/funcbody` in the golden suite.
+
+**If you installed 2.8.7–2.9.0 on a 42 account: re-run the one-liner.** It
+installs this release and switches the `~/.zshrc` import off; `update
+--now` alone replaces the binary and leaves the import in place.
+
+---
+
+## v2.9.0 — *the plugin release*
+
+`man bash` killed the shell. Not an edge case anyone contrived: a stock
+install with the default plugins on, the first time you read a manual
+page. oh-my-zsh's colored-man-pages wraps `man` in a function that builds
+an environment array — `environment+=( PAGER="${commands[less]:-$PAGER}" )`
+— and hellish took a SIGSEGV on the array element, took the interactive
+shell down with it, and left the user at exit 139.
+
+The plugin was innocent, and so was zsh. The bug was that
+`reparse_assignment_words` promotes **every** word shaped like
+`NAME=value` to an assignment node, wherever it stands, but only a simple
+command's own children were ever converted back to plain words. A word in
+a `for` list or inside an array literal therefore reached `split_words`
+still shaped as an assignment — a node whose second child is another word,
+where the splitter asserts every child is a token. `for x in A=1`,
+`e=( A=1 )` and `arr+=( K=$v )` all crashed, in both dialects, on both
+allocators, for as long as array literals have split like bash.
+
+- **An assignment-shaped word outside command position is a plain word**,
+  which is what bash has always made of it: `for x in A=$V` splits and
+  globs like any other word. One helper, `clone_as_word`, flattens the
+  node on the way into the three read-only expansion drivers, and the
+  fast path no longer reaches inside a node it cannot read.
+- **`A=1 e=( B=$A )` sees `A`.** Array elements now expand with the
+  command's earlier pre-assignments temporarily applied, exactly as the
+  scalar path already did; before, they read the old environment and
+  stored `B=`.
+- **`cd -q` works in the zsh dialect.** It is zsh's flag for moving
+  without firing the chpwd hooks, and extract — also on by default — runs
+  `builtin cd -q` four times, including the one that returns you to the
+  directory you started in. Every archive it opened printed
+  `cd: -q: invalid option`. It stays rejected in bash mode, because bash
+  rejects it and the golden suite exists to say so.
+
+### The gap that let it ship
+
+The plugin corpus said colored-man-pages was fine, and it was right: the
+file *loaded*, silently, defining its four functions. Nothing ever
+**ran** what it defined. Sourcing a wrapper is not calling it, and the
+whole point of that plugin is the `man` you type afterwards.
+
+- `tests/assign_shaped_words`: 46 bash-diffed cases — for-lists, array
+  literals, append, quoting, globs, tildes, command substitution,
+  `local -a`, `declare -a`, pre-assignment visibility, and the exact
+  idiom the plugin uses.
+- `tests/hxp_framework_test.py`: the configuration a user actually ends
+  up with, not one file at a time. It installs the framework into a
+  throwaway `HOME` (from a checkout, an installed `~/.hellish`, or a
+  cached tarball — and skips out loud when it has none), loads it, runs
+  its own suite, answers every management command, then **uses** what the
+  plugins define. It fails on the old binary with SIGSEGV, four ways.
+- The plugin corpus grew an exercise step: a row may now name one command
+  that goes through the code the plugin left behind, skipped by name when
+  the external it needs is missing rather than passing in silence.
+- `cd -q` is covered on both sides: the bash-mode rejection in the golden
+  suite, the zsh behaviour (including that `-q` suppresses chpwd while a
+  plain `cd` does not) against a real zsh in `make cd-zsh-test`.
+- `make hxp-test` runs the framework gate on its own; `make
+  plugin-corpus` and CI run it on both the release and the ASan build.
+
+### Also here
+
+- The dead `incs/sh_state.h` is gone: a second, 22-field `t_shell` that
+  nothing had included for a long time, and that a reader could easily
+  mistake for the real one in `incs/shell.h`.
+- Five module READMEs (`builtins`, `core`, `environment`, `helpers`,
+  `lexer`) match the code again. They still called the project sh42,
+  listed seven builtins where the table registers around seventy, claimed
+  `env` was one, quoted the obsolete struct, and named functions
+  (`execute_ast`, `xgetpid`, `longest_matching_str`) that no longer
+  exist. `helpers` said nothing at all about the parse arena or the word
+  slab, which is most of what that directory is.
+
+---
+
 ## v2.8.10 — *the wait release*
 
 The arm64 rung kept failing one golden case after 2.8.9's process-group

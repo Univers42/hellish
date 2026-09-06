@@ -196,6 +196,9 @@ static const t_help	g_help_2[] = {
 {"add-zsh-hook", "zsh",
 	"add-zsh-hook hook function",
 	"run a function on an event; only chpwd fires here"},
+{"is-at-least", "zsh",
+	"is-at-least need [have]",
+	"0 when version have (default $ZSH_VERSION) is need or newer"},
 {NULL, NULL, NULL, NULL}
 };
 

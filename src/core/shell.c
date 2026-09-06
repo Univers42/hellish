@@ -26,57 +26,14 @@
 void		on(t_shell *state, char **argv, char **envp);
 void		run_pending_traps(t_shell *state);
 void		run_exit_trap(t_shell *state);
-int			exec_string(t_shell *state, char *str);
 char		*env_expand(t_shell *state, char *key);
 int			setup_output_buffer(t_shell *state, int *bak);
 void		flush_output_buffer(int buf_fd, int bak);
 static void	repl_shell(t_shell *state);
 static void	off(t_shell *state);
-char		*read_file(const char *path);
+void		source_hellishrc(t_shell *state);
 void		source_profile(t_shell *state);
 void		set_default_ps1(t_shell *state);
-
-/* Interactive startup only: load the configuration. The `metinp != INP_RL`
-   guard is the part that matters: -c, scripts and piped input must NOT read
-   it, or every test run would silently inherit your dotfile and you'd chase
-   ghosts for an afternoon. Absent files or no $HOME? Just shrug and carry on.
-**
-** Order (rc_load.c owns the first three, this owns the last):
-**
-**     /etc/hellish/rc.d/          system-wide
-**     $XDG_CONFIG_HOME/hellish/rc.d/
-**     $XDG_CONFIG_HOME/hellish/plugins/<name>/plugin.hsh
-**     ~/.hellishrc                LAST, so your own file always wins
-**
-** ~/.hellishrc going last is the compatibility promise: it is the file people
-** already have, and a loader that let a dropped-in plugin override it is a
-** loader people switch off. */
-static void	source_hellishrc(t_shell *state)
-{
-	char	*home;
-	char	*path;
-	char	*content;
-
-	if (state->metinp != INP_RL)
-		return ;
-	home = env_expand(state, "HOME");
-	rc_load_all(state, home);
-	if (state->option_flags & OPT_FLAG_NORC || state->rcfile)
-		return ;
-	if (!home || !*home)
-		return ;
-	path = ft_strjoin(home, "/.hellishrc");
-	if (!path)
-		return ;
-	content = read_file(path);
-	if (!content)
-		return (xfree(path));
-	frame_push(state, NULL, path);
-	exec_string(state, content);
-	frame_pop(state);
-	xfree(path);
-	xfree(content);
-}
 
 /* Entry point. A login shell is started with argv[0] beginning with '-' (the
    old getty convention -- "-bash", "-hellish"); we strip that dash so $0 looks

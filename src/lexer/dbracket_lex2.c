@@ -12,6 +12,7 @@
 
 #include "lexer.h"
 #include "helpers.h"
+#include "case_match.h"
 
 /* Regex-word mode for [[ x =~ ERE ]]. In conditional mode the lexer
    normally emits ( and ) as grouping words, which would shred a regex
@@ -75,4 +76,43 @@ int	db_regex_word(char **str, t_deque_tok *ret, int *in_db)
 	push_ltok(ret, tmp);
 	*in_db = 1;
 	return (1);
+}
+
+/* Armed for the span of one lexeme inside [[ ]] (tokenizer.c) so a zsh
+   alternation may OPEN the word: `[[ $TERM == (xterm*|screen*) ]]`.
+   Everywhere else a `(` at the front of a word is a subshell or a
+   function header, and zsh_alt_ahead keeps refusing it
+   (case_match_ext3.c).  A cell rather than a parameter for the reason
+   the extglob cell is one: the word lexer has no [[ state of its own,
+   and every path into zsh_alt_ahead would otherwise grow an argument
+   it does not understand. */
+int	*db_front_cell(void)
+{
+	static int	on;
+
+	return (&on);
+}
+
+/* The alternation a [[ operand may open with, or 0.  Only while the cell
+   is armed, and only a group with no blank inside: `( $x == a || $y )` is
+   [['s own grouping, and a pattern never holds an unquoted space.  This
+   was the "[[: missing `]]'" every `[[ $x == (a|b) ]]` in a zsh rc got:
+   the `(` became its own word, the `|` a pipe, and the conditional
+   shattered into commands named after the alternatives. */
+int	db_front_group(const char *at)
+{
+	int	n;
+	int	i;
+
+	if (!*db_front_cell())
+		return (0);
+	n = xg_alt_group(at);
+	i = 0;
+	while (i < n)
+	{
+		if (at[i] == ' ' || at[i] == '\t' || at[i] == '\n')
+			return (0);
+		i++;
+	}
+	return (n);
 }

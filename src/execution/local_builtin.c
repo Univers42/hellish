@@ -133,7 +133,9 @@ static int	local_plain(t_shell *state, t_vec argv, size_t i)
 }
 
 /* local [-n] name[=value] ... : make each name local to the current
-   function. */
+   function.  Outside one, zsh's local is typeset -- a plain declaration
+   -- and oh-my-zsh themes write `local` at file scope (fino, agnoster),
+   so in the dialect it goes to declare instead of failing. */
 int	builtin_local(t_shell *state, t_vec argv)
 {
 	size_t	i;
@@ -141,6 +143,8 @@ int	builtin_local(t_shell *state, t_vec argv)
 
 	if (state->func_depth <= 0)
 	{
+		if (zsh_mode(state))
+			return (builtin_declare(state, argv));
 		ft_eprintf("%s: local: can only be used in a function\n", state->ctx);
 		return (1);
 	}

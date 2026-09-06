@@ -158,6 +158,30 @@ has_block() {
 	[ -f "$1" ] && grep -qxF "$BEGIN_MARK" "$1"
 }
 
+# Two older generations of this block exist in the wild -- `hellish-default`
+# in ~/.bashrc and `hellish-user-default` in ~/.zshrc, from the 2.7.x
+# installers, with a HELLISH_STARTED guard of their own. A machine that has
+# seen three installs carries all three (issue #116), and `make
+# user-uninstall` left the old ones behind, so hellish kept coming up after
+# it was "removed". They are ours, so they go: exact marker pairs only.
+LEGACY_RE='^# (>>>|<<<) hellish-(user-)?default (>>>|<<<)$'
+strip_legacy_blocks() {
+	awk 'BEGIN { skip = 0 }
+	     /^# <<< hellish-(user-)?default <<<$/ { skip = 0; next }
+	     /^# >>> hellish-(user-)?default >>>$/ { skip = 1 }
+	     skip    { next }
+	     { print }'
+}
+
+# Remove every legacy block from FILE, with a backup beside it.
+drop_legacy_hooks() {
+	[ -f "$1" ] && grep -qE "$LEGACY_RE" "$1" || return 0
+	cp -p "$1" "$1.hellish-legacy-bak"
+	strip_legacy_blocks < "$1.hellish-legacy-bak" | trim_trailing_blanks > "$1.tmp"
+	mv "$1.tmp" "$1"
+	grn "removed an older hellish hook from $1 (backup: $1.hellish-legacy-bak)"
+}
+
 # Drop trailing blank lines. We insert a blank line ahead of the block, so
 # without this an install/uninstall/install cycle would slowly grow a gap at
 # the end of the rc file. Interior blank lines are preserved.
@@ -178,6 +202,9 @@ if [ "$ACTION" = "uninstall" ]; then
 	else
 		inf "no hook found in $RC_TARGET — nothing to undo there"
 	fi
+	for _rc in "$RC_TARGET" "$HOME/.bashrc" "$HOME/.zshrc"; do
+		drop_legacy_hooks "$_rc"
+	done
 	if [ -e "$DEST" ]; then
 		rm -f "$DEST"
 		grn "removed $DEST"
@@ -241,7 +268,12 @@ if [ -f "$HOME/.hellishrc" ]; then
 fi
 
 # ── 4. write the hook ─────────────────────────────────────────────────────
+# The rc being hooked loses any 2.7.x block first: the one written below
+# supersedes it. Other rc files keep theirs until uninstall -- a hook in
+# ~/.bashrc may be the only reason a zsh user who execs bash ever reaches
+# hellish (issue #116), and that is their arrangement to change.
 [ -e "$RC_TARGET" ] || : > "$RC_TARGET"
+drop_legacy_hooks "$RC_TARGET"
 cp -p "$RC_TARGET" "$RC_TARGET.hellish-bak"
 strip_block < "$RC_TARGET.hellish-bak" | trim_trailing_blanks > "$RC_TARGET.tmp"
 

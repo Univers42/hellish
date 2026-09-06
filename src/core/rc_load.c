@@ -17,7 +17,7 @@
 #include <sys/stat.h>
 
 char	*read_file(const char *path);
-int		exec_string(t_shell *state, char *content);
+int		exec_file_string(t_shell *state, char *content, const char *src);
 
 /* The configuration load path (issue #70).
 **
@@ -29,7 +29,8 @@ int		exec_string(t_shell *state, char *content);
 **     /etc/hellish/rc.d/ *.hsh *.zsh          system-wide, lexical order
 **     $XDG_CONFIG_HOME/hellish/rc.d/ *.hsh *.zsh    yours, lexical order
 **     $XDG_CONFIG_HOME/hellish/plugins/ * /plugin.hsh
-**     ~/.hellishrc                            LAST, so it always wins
+**     ~/.hellishrc                            so it wins over the above
+**     $XDG_CONFIG_HOME/hellish/after.d/ *.hsh *.zsh  the late slot, below
 **
 ** Lexical order is why the convention is 10-env, 20-aliases, 30-prompt: it is
 ** the one ordering rule a user can see from `ls` without reading any code.
@@ -61,7 +62,9 @@ static void	source_one(t_shell *state, const char *path)
 	if (zsh_path(path))
 		zsh_mode_swap(state, true);
 	zero = zsh_zero_bind(state, path);
-	exec_string(state, content);
+	state->source_depth++;
+	exec_file_string(state, content, path);
+	state->source_depth--;
 	zsh_zero_restore(state, zero);
 	frame_pop(state);
 	xfree(content);
@@ -118,4 +121,58 @@ void	rc_load_all(t_shell *state, const char *home)
 		xfree(((char **)files.ctx)[i++]);
 	}
 	xfree(files.ctx);
+}
+
+/* The late slot: after.d, sourced AFTER ~/.hellishrc (issue #114).
+**
+** It exists for one file, the `install.sh --zshrc` opt-in import of
+** ~/.zshrc (after.d/90-zshrc.zsh), and the reason is ordering.  The
+** plugin framework lives in ~/.hellishrc and its git plugin defines
+** gwip() as a FUNCTION; oh-my-zsh's git plugin, which the import loads,
+** defines gwip as an ALIAS.  Alias first, function second is a syntax
+** error in every shell -- the alias expands inside the definition -- and
+** rc.d loads first, so the import there broke the framework at every
+** start.  A user's own zsh config is the last word in zsh (~/.zshrc IS
+** the last file read), so it is the last word here too: the alias simply
+** wins, and nothing errors.  Same rules as rc.d otherwise: .hsh and .zsh,
+** lexical order, --norc and --rcfile skip it.
+**
+** Why an opt-in and not the default: a .zshrc is code written for zsh.
+** One began with `exec /bin/bash` and hellish replaced itself with bash
+** at every start (#116); one ran promptinit and compinit (#115).  The
+** shell does not run another shell's rc unless asked, by name. */
+static void	source_dir(t_shell *state, const char *dir)
+{
+	t_vec	files;
+	size_t	i;
+
+	vec_init(&files);
+	files.elem_size = sizeof(char *);
+	collect(dir, ".hsh", &files);
+	collect(dir, ".zsh", &files);
+	sort_strvec(&files, 0);
+	i = 0;
+	while (i < files.len)
+	{
+		source_one(state, ((char **)files.ctx)[i]);
+		xfree(((char **)files.ctx)[i++]);
+	}
+	xfree(files.ctx);
+}
+
+void	rc_load_after(t_shell *state, const char *home)
+{
+	char	*xdg;
+	char	*dir;
+
+	if (state->option_flags & OPT_FLAG_NORC || state->rcfile)
+		return ;
+	xdg = xdg_config_hellish(state, home);
+	if (!xdg)
+		return ;
+	dir = path_join(xdg, "after.d");
+	if (dir)
+		source_dir(state, dir);
+	xfree(dir);
+	xfree(xdg);
 }

@@ -1,308 +1,302 @@
-# Builtins Module - Shell Built-in Commands Implementation
+# Builtins Module
 
 ## Overview
 
-The `builtins` directory implements the core built-in commands for the sh42 shell. This module provides a complete set of POSIX-compliant shell built-ins with advanced features like redirection parsing, sophisticated argument handling, and optimized dispatch mechanisms.
+`src/builtins/` implements the commands hellish runs without an `execve`.
+The module has grown far past the original seven: the dispatch table now
+registers seventy names, covering the POSIX special builtins, most of bash's,
+a set of zsh's, and two that are hellish's own (`pretty`, `update`). This file
+explains how a name reaches its C function, when that function runs in the
+parent versus a fork, how to add one, and the design of the core builtins
+whose helpers are spread across many files.
 
-## Architecture
+## File organisation
 
-### Core Design Principles
+There are ~150 files here, so a grouped map beats a tree:
 
-1. **Modular Architecture**: Each builtin is split into logical components (core logic, helpers, utilities)
-2. **Hash-based Dispatch**: O(1) command lookup using a hash table for optimal performance
-3. **Unified Argument Processing**: Consistent handling of redirections and argument parsing across all builtins
-4. **Memory Safety**: Proper cleanup and error handling throughout
-5. **POSIX Compliance**: Faithful implementation of POSIX shell built-in behaviors
+- `hash_builtins_dispatch.c`, `hash_builtins_zsh.c` -- the dispatch table.
+- `core_builtins.c` (`export`, `exit`, `:`, `echo`) and `core_builtins2.c`
+  (`unset`, `pwd`, `cd`) -- the original core, thin over their helpers:
+  `echo_flags.c`, `echo_help.c`; `exit.c`, `exit_helpers.c`, `exit_jobs.c`;
+  `export_helpers.c`..`export_helpers3.c`, `collect_and_print_exported.c`;
+  `cd_helpers1.c`..`cd_helpers6.c`; `try_unset.c`; `utils2.c`.
+- `builtin_<name>*.c` -- one family per builtin (`builtin_read*.c`,
+  `builtin_declare*.c`, `builtin_test*.c`, `builtin_zsh_*.c`, ...). Numeric
+  suffixes exist only for the 42-norm five-functions-per-file cap.
+- `set_opts*.c` -- the `set -o` roster, which the command-line parser in
+  `src/core/opt2.c` reuses so the two can never disagree.
+- `help.h`, `help_data.c`, `help_data2.c`, `help_list.c` -- the `help` index.
+- `builtins_private.h` -- module-internal prototypes and the per-builtin
+  option structs (`t_cdopt`, `t_rdopt`, `t_getopts`, ...). Public prototypes
+  live in `incs/ft_builtins.h`.
 
-### File Organization
-
-```
-builtins/
-├── builtins_private.h          # Internal API definitions and constants
-├── hash_builtins_dispatch.c    # Command dispatch system
-├── core_builtins.c            # Main builtin implementations (export, exit, echo, env, unset)
-├── core_builtins2.c           # Additional builtins (pwd, cd)
-├── echo_flags.c               # Echo flag parsing and processing
-├── echo_help.c                # Echo escape sequence handling
-├── exit_helpers.c             # Exit command argument validation
-├── exit.c                     # Exit cleanup and process management
-├── export_helpers.c           # Export argument parsing and validation
-├── export_helpers2.c          # Export identifier handling and expansion
-├── collect_and_print_exported.c  # Export variable display functionality
-├── cd_helpers1.c              # CD option parsing (-L/-P/-e/-@, --, invalid)
-├── cd_helpers2.c              # CD operand collection + HOME/OLDPWD targets
-├── cd_helpers3.c              # CD logical-path canonicalisation (-L)
-├── cd_helpers4.c              # CD chdir (logical/physical) + $PWD refresh
-├── cd_helpers5.c              # CD CDPATH search + echo
-├── cd_helpers6.c              # CD zsh-style two-argument substitution
-├── try_unset.c                # Environment variable removal
-└── utils2.c                   # Redirection parsing utilities
-```
-
-## Dispatch System
-
-### Hash-based Command Lookup
-
-The builtin dispatch uses a hash table for O(1) command resolution:
+## Dispatch
 
 ```c
-typedef int (*t_builtin_fn)(t_shell *state, t_vec argv);
+typedef int	(*t_builtin_fn)(t_shell *state, t_vec argv);      /* incs/ft_builtins.h */
+int			(*builtin_func(char *name))(t_shell *state, t_vec argv);
 ```
 
-**Optimization Strategy:**
-- Static hash table initialization on first access
-- Function pointers stored directly in hash slots
-- No string comparisons during command execution
-- Lazy initialization reduces startup time
+`builtin_func(name)` in `hash_builtins_dispatch.c` owns a `static t_hash`
+that is filled exactly once, on the first call (the `!h.ctx` guard), by
+`init_builtin_hash` -> `fill_builtin_hash1..3`. `fill_builtin_hash3` chains
+into `fill_builtin_hash4` in `hash_builtins_zsh.c`, which chains into
+`fill_builtin_hash5`. The split is purely the 25-line norm ceiling: all five
+fill the same table, and new names go wherever there is room. Function
+pointers are stored as `void *` and cast back on retrieval -- ugly but
+correct on the targets we build for. `NULL` means "not a builtin", which is
+what the executor branches on to decide whether to fork.
 
-**Supported Commands:**
-- `echo` - Text output with escape sequences
-- `export` - Environment variable management  
-- `cd` - Directory navigation
-- `exit` - Shell termination
-- `pwd` - Current directory display
-- `env` - Environment variable listing
-- `unset` - Environment variable removal
+Registered names (one `hash_set` line each):
 
-## Echo Implementation Deep Dive
+- `fill_builtin_hash1`: `echo export cd pushd popd [[ exit pwd unset type
+  set shift : break continue eval . source true false umask command builtin`
+- `fill_builtin_hash2`: `return getopts exec wait times trap readonly read
+  test [ alias unalias hash jobs fg bg fc history let local kill printf
+  ulimit update help`
+- `fill_builtin_hash3`: `mapfile readarray declare typeset shopt pretty dirs`
+- `fill_builtin_hash4` (zsh dialect): `setopt unsetopt emulate print autoload
+  zmodload zstyle compdef colors vcs_info zle bindkey add-zsh-hook`
+  (`zmodload` and `compdef` map to `builtin_zunsupported`)
+- `fill_builtin_hash5`: `compgen complete` (programmable completion, #72)
 
-### Architecture
+Two things worth knowing about that list.
 
-The echo builtin is implemented across two files with sophisticated flag and escape sequence processing:
+**`env` is deliberately not a builtin.** Real `env` execs its argument
+(`env cmd`, `env -i cmd`) and prints the environment with no arguments;
+`/usr/bin/env` does both, and registering a builtin only broke `env cmd`.
+A `builtin_env` prototype lingers in `ft_builtins.h`; nothing defines or
+registers it.
 
-#### Flag Processing (`echo_flags.c`)
+**The zsh names are registered unconditionally**, not behind `zsh_mode()`.
+The reasoning in `hash_builtins_zsh.c`: a new NAME is additive -- a bash
+script that never says `setopt` cannot tell it exists -- whereas a changed
+MEANING for syntax that already parses is what has to be gated, which is why
+the expander's zsh flags are gated and these are not.
 
-**Algorithm:**
-1. **Token-by-token parsing**: Each argument starting with `-` is analyzed
-2. **Character validation**: Only `n`, `e`, `E` flags are valid
-3. **State accumulation**: Flags modify global state (`-n` suppresses newline, `-e` enables escapes)
-4. **Early termination**: Invalid flag characters stop processing
+### Adding a builtin
 
-**Key Functions:**
-- `parse_flags()`: Returns index of first non-flag argument
-- `process_flag_token()`: Validates and applies flag characters
-- `apply_flag_char()`: Updates state for individual flags
+1. Implement `int builtin_x(t_shell *state, t_vec argv)` returning the exit
+   status. `argv.ctx` is a `char **`; `argv[0]` is the command name.
+2. Prototype it in `incs/ft_builtins.h`.
+3. Add `hash_set(h, "x", (void *)builtin_x);` to whichever
+   `fill_builtin_hash*` still has room under 25 lines.
+4. Add a `t_help` entry (name, group, synopsis, summary) to `help_data.c`
+   or `help_data2.c`. Not optional: `make help-test` (`tests/help_test.sh`)
+   derives the expected set from the `hash_set` lines in
+   `hash_builtins_dispatch.c` and fails on any name without an entry.
+   `make docs-builtins` regenerates the wiki page from `help` output.
 
-#### Escape Sequence Processing (`echo_help.c`)
+## In-process or forked?
 
-**Supported Escapes:**
-- Standard: `\n`, `\t`, `\r`, `\b`, `\f`, `\v`, `\a`, `\\`
-- ANSI: `\e` (escape character for terminal control)
-- Octal: `\0nnn` (3-digit octal values)
-- Hex: `\xHH` (2-digit hexadecimal values)
-- Control: `\c` (stop processing immediately)
+Whether a builtin (or a shell function) runs in the parent is decided by one
+flag on the executable node: `modify_parent_ctx`, a field of
+`t_executable_node` (`incs/executor.h`), set at construction by
+`create_exe_node(infd, outfd, node, modify_parent_ctx)` in
+`src/execution/execution_private.h`. The top-level tree, loop bodies, `if`
+branches and function bodies are all created with it `true`.
 
-**Parsing Algorithm:**
-1. **Character-by-character scanning**
-2. **Backslash detection** triggers escape processing
-3. **Numeric escape handling** with base detection (8 or 16)
-4. **Immediate termination** on `\c` control sequence
+The pipeline executor is where it gets cleared. `prepare_child_exec` in
+`src/execution/execute_pipeline.c` stamps every stage of a multi-stage
+pipeline with `modify_parent_ctx = false` (its comment says "kept for the
+last stage", but the assignment is unconditional), so `x | cd /tmp` forks
+its `cd` exactly like bash without `lastpipe`. The single-stage fast path
+`execute_pipeline_one` (`execute_pipeline2.c`) copies the template
+unchanged, which is how a bare `cd` keeps running in the parent.
 
-### Advanced Features
+`dispatch_cmd` in `src/execution/execute_simple_command.c` then applies the
+lookup order:
 
-**Numeric Escape Processing:**
-- Automatic base detection (octal vs hexadecimal)
-- Proper bounds checking and type conversion
-- Support for partial sequences
+1. no command word -> `handle_assign_only` (the assignments persist only
+   when `modify_parent_ctx` is set);
+2. `argv[0] == ""` -> error;
+3. a shell function (`func_lookup`) -> `handle_func_call` in the parent,
+   only if `modify_parent_ctx`;
+4. a builtin (`builtin_func`) -> `execute_builtin_cmd_fg`
+   (`execute_builtin.c`) in the parent, only if `modify_parent_ctx`;
+5. otherwise `execute_cmd_bg`, which forks and execs. A function or builtin
+   whose flag was cleared falls through here and runs in the child like any
+   external command.
 
-## CD Implementation
+`execute_builtin_cmd_fg` saves fds 0/1/2, applies the node's redirections,
+applies `NAME=val` prefixes temporarily (`apply_temp_assigns` /
+`restore_temp_assigns`), calls the function, then restores -- except for a
+bare `exec`, whose whole point is that the redirections persist. A special
+builtin that received a malformed request sets `state->builtin_fatal`;
+`strict_builtin_failed` reads it after teardown and `exit_clean`s a
+non-interactive shell, as POSIX requires.
 
-`builtin_cd` (in `core_builtins2.c`) is a thin orchestrator over six helper
+## Echo
+
+`builtin_echo` (`core_builtins.c`) is two files.
+
+`echo_flags.c` -- `parse_flags(argv, &n, &e)` returns the index of the first
+non-flag word. It walks each leading `-xyz` word through
+`process_flag_token`, which validates every character with `is_flag_char`
+(only `n`, `e`, `E`) before `apply_flag_char` commits any of them, so a word
+with one bad letter (`-nq`) is printed as text, as in bash. `print_args`
+writes the rest.
+
+`echo_help.c` -- `e_parser(out, s, drop_unknown)` decodes `-e` escapes into a
+buffer: `\n \t \r \b \f \v \a \\ \e`; `\0NNN` (at most three octal digits,
+values above 0xFF wrap); `\xHH` (one or two hex digits; with none the `\x`
+stays literal); and `\c`, which returns 1 so the caller stops output and
+drops the newline. `parse_numeric_escape` owns those digit caps.
+`drop_unknown` is the one bash/zsh difference (`echo -e '\d'` prints `\d`,
+zsh's `print` prints `d`): one decoder serves both `echo` and
+`builtin_print` rather than two escape tables kept in step.
+
+## CD
+
+`builtin_cd` (`core_builtins2.c`) is a thin orchestrator over six helper
 files. It is a near-complete `cd`: options, the `--` terminator, logical vs
-physical resolution, CDPATH, plus a zsh-style two-argument extension. Behaviour
-is diffed against `bash --posix` (`tests/cd_posix`) and, for the extension,
-against real zsh in Docker (`tests/cd_zsh_compare.sh`, `make cd-zsh-test`).
+physical resolution, CDPATH, plus a zsh-style two-argument extension.
+Behaviour is diffed against `bash --posix` (`tests/cd_posix`) and, for the
+extension, against real zsh in Docker (`tests/cd_zsh_compare.sh`,
+`make cd-zsh-test`).
 
 ### Pipeline
 
 ```
-cd_parse_opts → cd_collect_ops → { cd_one | cd_two_arg } → cd_apply
+cd_parse_opts -> cd_collect_ops -> { cd_one | cd_two_arg } -> cd_apply
 ```
 
-1. **Options (`cd_helpers1.c`)** — `cd_parse_opts` consumes leading `-X` words
-   (bundled, e.g. `-LP`; last of `-L`/`-P` wins), accepts `-e`/`-@`, stops at
-   `--` or the first operand, and on an unknown letter prints `invalid option`
-   + a usage line and returns exit status **2** (bash parity).
-2. **Operands (`cd_helpers2.c`)** — `cd_collect_ops` counts operand words (still
-   defensively skipping any stray redirection tokens) and records the first two.
-   0 → `$HOME` (`cd_target_home`, errors if unset), `-` → `$OLDPWD`
-   (`cd_target_dash`, echoes the destination), `""` → POSIX no-op success.
-3. **Resolution** — a plain name is looked up through **CDPATH**
-   (`cd_helpers5.c`); a hit via a non-empty component echoes the destination.
-4. **Move (`cd_helpers4.c`)** — `cd_apply` performs the chdir:
-   - **logical (`-L`, default)**: `cd_logical_path`/`cd_canonicalize`
+1. **Options (`cd_helpers1.c`)** -- `cd_parse_opts` fills a `t_cdopt` from
+   leading `-X` words (bundled, e.g. `-LP`; last of `-L`/`-P` wins), accepts
+   `-e`/`-@`, stops at `--` or the first operand, and on an unknown letter
+   (`cd_invalid_opt`) prints `invalid option` plus a usage line and returns
+   exit status **2** (bash parity).
+2. **Operands (`cd_helpers2.c`)** -- `cd_collect_ops` counts operand words
+   (defensively skipping any stray redirection tokens) and records the first
+   two. 0 -> `$HOME` (`cd_target_home`, errors if unset), `-` -> `$OLDPWD`
+   (`cd_target_dash`, echoes the destination), `""` -> POSIX no-op success.
+3. **Resolution** -- `cd_one` (static in `core_builtins2.c`) looks a plain
+   name up through **CDPATH** (`cd_cdpath`, `cd_helpers5.c`); a hit via a
+   non-empty component echoes the destination.
+4. **Move (`cd_helpers4.c`)** -- `cd_apply` performs the chdir:
+   - **logical (`-L`, default)**: `cd_logical_path` / `cd_canonicalize`
      (`cd_helpers3.c`) anchor the operand to `$PWD` and collapse `.`/`..`
-     *textually*, so `cd link; cd ..` returns to where you started rather than
-     to the symlink's physical parent; `$PWD` keeps the path as typed.
+     *textually*, so `cd link; cd ..` returns to where you started rather
+     than to the symlink's physical parent; `$PWD` keeps the path as typed.
    - **physical (`-P`)**: chdir straight to the operand, then `getcwd()`.
-   Then `$PWD`/`$OLDPWD` are rotated via `update_pwd_vars`.
+   Then `$PWD`/`$OLDPWD` are rotated via `update_pwd_vars`
+   (`src/environment/utils2.c`), and `run_chpwd_hooks` fires zsh's
+   `chpwd_functions`.
+
+`pwd` prints the cached `state->cwd` rather than calling `getcwd()`, so it
+still answers after the directory has been deleted; `cd`, `pushd` and `popd`
+keep the cache current.
 
 ### Two-argument extension (`cd_helpers6.c`)
 
-`cd old new` (a zsh feature, **not** POSIX/bash) replaces the first occurrence
-of `old` with `new` in `$PWD` and cds there; `old` absent from `$PWD` is an
-error (`string not in pwd`). Three or more operands remain the bash
-`too many arguments` error (exit 1). Verified against zsh, not bash.
+`cd old new` (a zsh feature, **not** POSIX/bash) replaces the first
+occurrence of `old` with `new` in `$PWD` and cds there; `old` absent from
+`$PWD` is an error (`string not in pwd`). Three or more operands remain the
+bash `too many arguments` error (exit 1). Verified against zsh, not bash.
 
-In **POSIX mode** (`hellish --posix`, or `set -o posix` at runtime) this
+In **POSIX mode** (`hellish --posix`, or `set -o posix` at runtime) the
 extension is disabled: two operands produce the bash `too many arguments`
-error (exit 1) like every other shell. Normal mode is unchanged. The gate is
-`state->opt_posix`, checked in `builtin_cd` (`core_builtins2.c`); POSIX-mode
-behaviour is diffed against `bash --posix` via `tests/cd_posix` (the
-`set -o posix; ...` lines) and `make cd-posix-test`.
+error (exit 1) like every other shell. The gate is `state->opt_posix`,
+checked in `builtin_cd`; POSIX-mode behaviour is diffed against
+`bash --posix` via `tests/cd_posix` and `make cd-posix-test`.
 
-## Export Implementation
+## Export
 
-### Multi-stage Processing Pipeline
+`builtin_export` (`core_builtins.c`): `export_skip_opts` consumes `-p`/`-n`/
+`-f` and `--` (`bad_opt_word` rejects anything else with status 2). No
+operands -> `collect_and_print_exported`. With `-n` (`export_wants_unexport`,
+`export_helpers3.c`) each name goes through `export_unexport_arg` ->
+`env_unexport`. Otherwise every word goes through `process_arg`, one at a
+time -- operands are never read pairwise, so `export A B C` marks three
+variables and rewrites none. Errors accumulate but do not stop the loop.
 
-The export builtin uses a sophisticated multi-stage processing pipeline:
+- `export_helpers.c`: `parse_export_arg` splits at the first `=`;
+  `ft_is_valid_ident` enforces `[A-Za-z_][A-Za-z0-9_]*`;
+  `strip_surrounding_quotes` removes a matching outer quote pair and returns
+  the quote character so the caller knows whether to expand.
+- `export_helpers2.c`: `process_arg` -> `handle_identifier`.
+  `export_apply_append` handles `NAME+=value` (the parser hands over
+  `id="NAME+"`; the `+` is stripped and the old value spliced in front).
+  Values are expanded by `expand_export_value` (`src/expander/`) unless they
+  were single-quoted. A bare `NAME` just flips the flag on an existing entry.
+- `collect_and_print_exported.c`: `collect_exported_list` formats each
+  exported entry as `export KEY="value"` with `dquote_str` escaping so the
+  output reads back; `sort_export_list` runs `ft_quicksort` (bash sorts
+  `export -p`, and order-insensitive diffs are worth it);
+  `print_and_free_list` prints and releases.
 
-#### Stage 1: Argument Parsing (`export_helpers.c`)
+The export attribute is sticky: `env_set` keeps `exported` across a plain
+reassignment, and only `unset`, `export -n` and `declare +x` remove it. See
+`src/environment/README.md` for why that mattered (nvm's `PATH=` dance).
 
-**Features:**
-- Identifier/value separation at `=` character
-- Quote stripping with quote-type tracking
-- Following-argument consumption for standalone values
-- Variable expansion with quote-awareness
+## Exit
 
-#### Stage 2: Validation and Processing (`export_helpers2.c`)
+`builtin_exit` (`core_builtins.c`), helpers in `exit_helpers.c`:
 
-**Identifier Validation:**
-- POSIX-compliant variable name checking
-- First character: letter or underscore only
-- Subsequent characters: letters, digits, underscores
+1. `exit_stopped_guard` (`exit_jobs.c`): an interactive shell with a stopped
+   job refuses the first attempt and says so (issue #41); the
+   `exit_warned`/`exit_attempt` pair in `t_shell` is what makes "twice"
+   mean twice *in a row* (issue #58).
+2. `print_exit_if_readline` prints `exit` to stderr only under `INP_RL`.
+3. `handle_no_args` -> leave with `$?`; `handle_double_dash` skips `--`;
+   `handle_non_numeric` / `exit_parse_ll` parse a `long long` with overflow
+   detection.
+4. The status is masked to 8 bits (`code & 0xFF`).
 
-**Value Processing:**
-- Single-quote strings: no expansion
-- Double-quote strings: full expansion
-- Unquoted strings: full expansion
+Error handling is mode-dependent, matching bash: under `-c` (`INP_ARG`) a
+bad operand exits the shell (too many arguments -> 1, non-numeric -> 2);
+from a script, pipe or tty it prints the error and returns 2 so the shell
+keeps running.
 
-#### Stage 3: Display (`collect_and_print_exported.c`)
+`exit_clean(state, code)` in `exit.c` is the single leave-the-process path
+(fatal errors use it too). It runs the EXIT trap (`run_exit_trap`, once),
+then compares `ft_itoa(getpid())` against `state->pid` and only in the
+original process persists history (`manage_history`), calls `free_env`, then
+`free_all_state`. A subshell that inherited the `t_shell` copy has a
+different pid and skips the teardown, so it can never double-free or rewrite
+the history file. `free_env` before `free_all_state` mirrors `off()`: the env
+is not part of `free_all_state`, and forgetting it leaked ~9.6 KB per `exit`
+that only the `HELLISH_ALLOC_STATS` oracle (#78) could see.
+`shell_fatal_status` uses the same pid test to return bash's 127 (top-level
+`-c` shell) or 1.
 
-**Algorithm:**
-1. **Collection**: Extract all exported variables into vector
-2. **Sorting**: Alphabetical sort using quicksort
-3. **Formatting**: POSIX-compliant `export NAME="VALUE"` format
-4. **Memory Management**: Proper cleanup of temporary strings
+## Unset
 
-## Exit Implementation
+`builtin_unset` (`core_builtins2.c`) accepts standalone `-v`/`-f` words and
+`--`, then hands the names to `unset_operands` (`utils2.c`), which ORs the
+statuses: a read-only refusal must survive the rest of the list because
+`unset` is a special builtin that aborts a non-interactive shell afterwards.
+`-f` routes to `unset_function`.
 
-### Comprehensive Argument Validation
+`try_unset` (`try_unset.c`) is the variable path, and it is no longer a
+plain linear scan:
 
-The exit builtin implements bash-compatible argument processing:
+- read-only names are refused with status 1;
+- `scope_pop_upvar` implements bash's upvar rule: unsetting a name whose
+  newest `local` cell belongs to a *caller* pops that cell, which is how
+  `_comp_upvars` returns values (issue #105);
+- `unset_array_elem` handles `unset arr[i]`, rebuilding the encoded value;
+- `env_drop_entry` shifts the vector down and calls `env_index_mark_dirty`
+  so the lookup index rebuilds on the next probe.
 
-**Validation Pipeline:**
-1. **Argument Count**: 0-1 arguments allowed
-2. **Double-dash Handling**: Optional `--` separator support
-3. **Numeric Validation**: Strict integer parsing with overflow detection
-4. **Error Reporting**: ctx-aware error messages
+`unset_raw` skips the upvar rule; scope unwinding uses it to avoid a
+`restore_one`/`try_unset` ping-pong.
 
-**Exit Code Logic:**
-- No arguments: Use last command status
-- Numeric argument: Modulo 256 for 8-bit exit codes
-- Invalid argument: Exit with code 2 (bash compatibility)
-- Too many arguments: Exit with code 1
+## Redirection-aware argv helpers (`utils2.c`)
 
-### Process Management
+Redirection words can leak into a builtin's argv. `parse_redir_len` measures
+the operator prefix (`[n]<`, `[n]>`, `[n]>>`, `[n]<<`), `redir_needs_next`
+says whether the target is the following word, and `is_redir_operator` is the
+cheap "starts like one" test. `cd_collect_ops` uses them to skip such tokens
+when counting operands.
 
-**Cleanup Strategy:**
-- PID verification before cleanup (prevent cleanup in child processes)
-- History management for interactive sessions
-- Complete state deallocation
-- Proper signal handling
+## Conventions
 
-## Unset Implementation
-
-### Environment Variable Removal
-
-**Algorithm:**
-- Linear search through environment array
-- In-place removal with element shifting
-- Proper memory deallocation for keys and values
-- Length adjustment for vector consistency
-
-**Safety Features:**
-- Null pointer checking
-- Bounds validation
-- No-op for non-existent variables
-
-## Utility Functions
-
-### Redirection-Aware Parsing
-
-**Core Innovation**: All builtins support shell redirections transparently
-
-**Parsing Algorithm (`utils2.c`):**
-1. **Pattern Recognition**: Detect `[n]<`, `[n]>`, `[n]>>`, `[n]<<` patterns
-2. **Lookahead Logic**: Determine if redirection needs following argument
-3. **Skip Management**: Track tokens to ignore during argument processing
-
-**Supported Patterns:**
-- `>file`, `>>file`, `<file`
-- `2>file`, `1>>file` (file descriptor redirections)
-- `2>&1`, `1>&2` (descriptor duplication)
-
-These helpers (`is_redir_operator`, `redir_needs_next`, `parse_redir_len`) are
-used by CD's operand scan (`cd_collect_ops`) to ignore any redirection tokens
-that might leak into a builtin's argv.
-
-## Optimization Strategies
-
-### Memory Management
-
-1. **String Interning**: Reuse of common strings where possible
-2. **Lazy Allocation**: Hash table initialized only when needed
-3. **Efficient Cleanup**: Proper deallocation ordering to prevent leaks
-4. **Stack Allocation**: Use stack variables for temporary data
-
-### Performance Optimizations
-
-1. **Hash Dispatch**: O(1) command lookup vs O(n) string comparisons
-2. **Short-circuit Evaluation**: Early returns in validation functions
-3. **Minimal Allocations**: Reuse existing buffers where safe
-4. **Efficient Sorting**: Quicksort for export variable display
-
-### Error Handling
-
-1. **Graceful Degradation**: Continue operation when possible
-2. **ctx Preservation**: Maintain error ctx for debugging
-3. **Resource Cleanup**: Ensure cleanup on all error paths
-4. **User-friendly Messages**: Clear, actionable error messages
-
-## POSIX Compliance Notes
-
-### Standards Adherence
-
-- **Echo**: Full POSIX escape sequence support with `-e` flag
-- **Export**: Proper identifier validation and display format
-- **CD**: Standard directory navigation with OLDPWD support
-- **Exit**: Bash-compatible argument processing and error codes
-- **PWD**: Simple current directory display
-- **Env**: Standard environment variable listing
-- **Unset**: Proper variable removal without errors for missing vars
-
-### Extensions and Enhancements
-
-1. **Redirection Support**: All builtins handle shell redirections
-2. **Advanced Error Reporting**: Detailed, ctx-aware error messages
-3. **Memory Safety**: Comprehensive bounds checking and cleanup
-4. **Performance**: Hash-based dispatch and optimized algorithms
-
-## Integration Points
-
-### Shell State Management
-
-All builtins operate on the central `t_shell` state structure:
-- **Environment**: Direct manipulation of environment vector
-- **Current Directory**: PWD/OLDPWD maintenance
-- **Exit Status**: Proper status code propagation
-- **Error ctx**: Consistent error reporting with shell ctx
-
-### Vector and Hash Utilities
-
-Leverages shell's core data structures:
-- `t_vec`: Dynamic arrays for arguments and environment
-- `t_hash`: High-performance hash table for dispatch
-- Memory management through shell allocators
-
-This builtin module provides a robust, efficient, and standards-compliant implementation of essential shell commands with advanced features like redirection awareness and optimized dispatch.
+- A builtin returns its exit status; the executor stores it via
+  `set_cmd_status`. Diagnostics go to stderr prefixed with `state->ctx`.
+- Anything that must be visible after the call (variables, cwd, fds, traps)
+  is only reachable because the builtin ran in the parent; see the
+  `modify_parent_ctx` rule above before assuming that.
+- The `t_shell` state, the environment API (`incs/env.h`) and the `t_vec` /
+  `t_hash` containers are the only shared structures; there is no per-builtin
+  global state except the dispatch table itself.

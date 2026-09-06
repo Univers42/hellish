@@ -47,3 +47,13 @@ cd "$PWD" nosuchsubdir_zz 2>/dev/null && echo moved; echo rc=$?
 # tilde operand are both plain failures (exit 1) with no stdout.
 unset OLDPWD; cd - 2>/dev/null; echo rc=$?
 cd ~nosuchuser_xyz 2>/dev/null; echo rc=$?
+# cd -q is zsh's and must stay REJECTED in bash mode: accepting it
+# unconditionally to please oh-my-zsh would make `cd -q dir` silently
+# succeed where bash fails (see src/builtins/cd_helpers1.c).
+cd -q /tmp 2>/dev/null; echo $?
+cd -q 2>/dev/null; echo $?
+cd -Pq /tmp 2>/dev/null; echo $?
+cd -qL /tmp 2>/dev/null; echo $?
+cd -- -q 2>/dev/null; echo $?
+cd -q -- /tmp 2>/dev/null; echo $?
+q=1; cd /tmp 2>/dev/null && echo moved

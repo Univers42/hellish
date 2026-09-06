@@ -39,6 +39,7 @@ Usage: python3 plugin_corpus_test.py [/path/to/hellish]
        OFFLINE=1            never touch the network
 """
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -109,6 +110,27 @@ CORPUS = [
      "https://raw.githubusercontent.com/scop/bash-completion/main/"
      "bash_completion", "loads", 80, ""),
 ]
+
+
+# name -> (needs, script, expected stdout substring)
+#
+# Loading a plugin proves the parser accepted it; it proves nothing about
+# the code the plugin left behind, which only runs when the user types the
+# command it wrapped. That is how colored-man-pages shipped broken in the
+# framework: it sourced clean (4 definitions, no stderr) and every `man`
+# afterwards segfaulted the interactive shell, because its wrapper does
+# `environment+=( PAGER="${commands[less]:-$PAGER}" )` and an array element
+# shaped like an assignment took down the expander. So each row that CAN be
+# exercised offline names one command that goes through the code it
+# defines. `needs` is an external the exercise depends on; when it is not
+# on PATH the exercise is skipped, never silently passed. The expected
+# substring is deliberately loose -- it proves the wrapped command ran and
+# returned, not what version of it the machine has.
+EXERCISE = {
+    "omz-colored-man": ("man",
+                        "PAGER=cat MANPAGER=cat man --version 2>&1",
+                        "man"),
+}
 
 
 def check(name, ok, detail=""):
@@ -229,6 +251,19 @@ def one(name, url, expect, min_defs, note):
         n = defines(path)
         check("%s/defines-at-least-%d" % (name, min_defs), n >= min_defs,
               "defined %d" % n)
+
+    # 4. Run something the plugin DEFINED. Sourcing is not using.
+    if name in EXERCISE:
+        needs, script, want = EXERCISE[name]
+        if needs and not shutil.which(needs):
+            print("skip %-18s exercise (no %s on PATH)" % (name, needs))
+            return
+        rc, out, err = run("source %s >/dev/null 2>&1\n%s" % (path, script))
+        bad = crash_words(err, rc)
+        check("%s/exercise-no-crash" % name, not bad,
+              "%s; err=%r" % (bad, err[:200]))
+        check("%s/exercise-runs" % name, rc == 0 and want.encode() in out,
+              "rc=%d out=%r err=%r" % (rc, out[:120], err[:120]))
 
 
 def main():

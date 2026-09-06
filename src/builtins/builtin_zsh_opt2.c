@@ -146,5 +146,5 @@ bool	zopt_inert(const char *n)
 	while (t[++i])
 		if (!ft_strcmp(t[i], n))
 			return (true);
-	return (false);
+	return (zopt_roster(n));
 }

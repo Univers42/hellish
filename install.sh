@@ -28,8 +28,11 @@
 #   --version vX.Y.Z         install that release instead of the latest
 #   --no-login-shell         system mode: install the binary, skip chsh
 #   --prefix DIR             user mode: install under DIR (default ~/.local)
-#   --zshrc | --no-zshrc     load your ~/.zshrc inside hellish (asked when
-#                            your login shell is zsh and the file exists)
+#   --zshrc                  ALSO load your ~/.zshrc inside hellish, in the
+#                            zsh dialect (opt-in, best effort; off by default
+#                            -- a .zshrc is code written for zsh)
+#   --no-zshrc               switch an earlier install's import off without
+#                            asking
 #   --uninstall              undo a user-mode install (system: make my-shell-uninstall)
 #
 # Environment (mainly for tests -- docker/Dockerfile.installer drives these):
@@ -286,17 +289,24 @@ else
 	( cd "$SRC_ROOT" && sh user-install.sh --bin "$BIN" --prefix "$UPREFIX" )
 fi
 
-# ── your zsh configuration ──────────────────────────────────────────────────
-# Every 42 account logs into zsh, and most have a ~/.zshrc they already like.
-# hellish reads ~/.hellishrc, not ~/.zshrc, so that config used to stay
-# behind -- and pasting it across is what produced issue #112: zsh syntax
-# (`precmd() { vcs_info }`) in a bash-dialect file. The bridge is an rc.d
-# module with a .zsh EXTENSION: hellish loads it, and everything it sources,
-# in the zsh dialect, so the file can simply source ~/.zshrc as written.
+# ── your zsh configuration stays zsh's ──────────────────────────────────────
+# ~/.zshrc is code written for zsh, and hellish does not run it. It did, for
+# three releases (2.8.7 to 2.9.0): the installer offered to load the file
+# inside hellish in the zsh dialect, defaulted to yes, and every 42 account
+# said yes. One .zshrc began with `exec /bin/bash`, so hellish replaced
+# itself with bash on every start (#116); one ran promptinit, compinit and
+# twenty zstyles (#115); one loaded oh-my-zsh, whose guard refuses any shell
+# that is not zsh (#114); one had a line hellish could not parse (#113).
+# Each was a config that worked in zsh, run by a shell that is not zsh.
+# Aliases and git shortcuts come to hellish through the plugin framework
+# and ~/.hellishrc; the zsh config is left to zsh.
 #
-# Asked only when it applies (login shell is zsh, ~/.zshrc exists). The
-# default is yes -- unless the file loads oh-my-zsh itself, whose core needs
-# zsh's completion system and would only print what it cannot do.
+# --zshrc is the explicit, best-effort opt-in: the file is loaded in the
+# zsh dialect from after.d, AFTER ~/.hellishrc, so it keeps the last word
+# over the framework (an alias there beats a function here, not the other
+# way round). An import left by the earlier default is switched off on
+# re-run -- renamed .off, never deleted -- unless --zshrc says to keep it,
+# and either way the user is told.
 login_shell_name() {
 	_ls=""
 	if command -v getent >/dev/null 2>&1; then
@@ -309,34 +319,34 @@ case "${XDG_CONFIG_HOME:-}" in
 "$HOME"/*) XDG="$XDG_CONFIG_HOME/hellish" ;;
 *) XDG="$HOME/.config/hellish" ;;
 esac
-ZSHRC_MODULE="$XDG/rc.d/90-zshrc.zsh"
-if [ "$ZSHRC" != "no" ] && [ -f "$HOME/.zshrc" ] \
-	&& { [ "$ZSHRC" = "yes" ] || [ "$(login_shell_name)" = "zsh" ]; }; then
-	if [ "$ZSHRC" != "yes" ]; then
-		_dflt=y
-		grep -q 'oh-my-zsh' "$HOME/.zshrc" 2>/dev/null && _dflt=n
-		if [ -e "$ZSHRC_MODULE" ]; then
-			ZSHRC="keep"
-		elif { [ "$INTERACTIVE" = "1" ] || [ "$ASSUME_YES" = "1" ]; } \
-			&& ask "Load your ~/.zshrc inside hellish too (aliases, functions, prompt)?" "$_dflt"; then
-			ZSHRC="yes"
-		else
-			ZSHRC="no"
-		fi
+ZSHRC_MODULE="$XDG/after.d/90-zshrc.zsh"
+LEGACY_MODULE="$XDG/rc.d/90-zshrc.zsh"
+if [ "$ZSHRC" = "yes" ]; then
+	mkdir -p "$XDG/after.d"
+	if [ -e "$LEGACY_MODULE" ] && [ ! -e "$ZSHRC_MODULE" ]; then
+		mv "$LEGACY_MODULE" "$ZSHRC_MODULE"
+		say "moved the ~/.zshrc import to after.d, so it loads after ~/.hellishrc"
 	fi
-	if [ "$ZSHRC" = "yes" ]; then
-		mkdir -p "$XDG/rc.d"
+	[ -e "$LEGACY_MODULE" ] && mv "$LEGACY_MODULE" "$LEGACY_MODULE.off"
+	if [ -e "$ZSHRC_MODULE" ]; then
+		say "keeping $ZSHRC_MODULE"
+	else
 		cat > "$ZSHRC_MODULE" <<'EOF'
-# ~/.config/hellish/rc.d/90-zshrc.zsh -- written by hellish's installer.
+# ~/.config/hellish/after.d/90-zshrc.zsh -- written by `install.sh --zshrc`.
 #
-# Loads your ~/.zshrc inside hellish. The .zsh extension is what makes it
-# work: hellish reads this file -- and everything it sources -- in the zsh
-# dialect, so `precmd() { vcs_info }`, zstyle, PROMPT/RPROMPT and the rest
-# of a zsh config run exactly as written. Anything zsh-only that hellish
-# cannot do (compinit, zle widgets) is reported once and skipped.
+# Loads your ~/.zshrc inside hellish, BEST EFFORT. The .zsh extension is
+# what makes it work at all: hellish reads this file -- and everything it
+# sources -- in the zsh dialect, so `precmd() { vcs_info }`, zstyle,
+# PROMPT/RPROMPT and the rest of a zsh config run as written. Anything
+# zsh-only that hellish cannot do (compinit, zle widgets) is reported once
+# and skipped; `source $ZSH/oh-my-zsh.sh` loads the plugins your
+# `plugins=(...)` names and keeps hellish's prompt. A .zshrc is still code
+# written for another shell: if it misbehaves here, delete this file (or
+# re-run the installer, which switches it off) and copy the lines you want
+# into ~/.hellishrc instead.
 #
-# Delete this file to stop loading ~/.zshrc; or replace the `source` with
-# the lines you actually want, and keep the .zsh name.
+# after.d is sourced AFTER ~/.hellishrc and the plugin framework, so what
+# you set here has the last word, exactly as ~/.zshrc does in zsh.
 if [ -f "$HOME/.zshrc" ]; then
 	# The block the installer appended to ~/.zshrc execs hellish from an
 	# interactive zsh. This marker is what tells it not to do so again
@@ -346,9 +356,27 @@ if [ -f "$HOME/.zshrc" ]; then
 	source "$HOME/.zshrc"
 fi
 EOF
-		say "your ~/.zshrc will load inside hellish (zsh dialect): $ZSHRC_MODULE"
-	elif [ "$ZSHRC" = "keep" ]; then
-		say "keeping $ZSHRC_MODULE"
+		say "your ~/.zshrc will load inside hellish (zsh dialect, best effort): $ZSHRC_MODULE"
+	fi
+else
+	for _m in "$LEGACY_MODULE" "$ZSHRC_MODULE"; do
+		[ -e "$_m" ] || continue
+		if [ "$ZSHRC" != "no" ] && [ "$INTERACTIVE" = "1" ] \
+			&& ask "An earlier install loads your ~/.zshrc inside hellish (best effort). Keep that?" n; then
+			if [ "$_m" = "$LEGACY_MODULE" ]; then
+				mkdir -p "$XDG/after.d"
+				mv "$_m" "$ZSHRC_MODULE"
+				say "moved the ~/.zshrc import to after.d, so it loads after ~/.hellishrc"
+			else
+				say "keeping $_m"
+			fi
+		else
+			mv "$_m" "$_m.off"
+			say "~/.zshrc is no longer loaded inside hellish: $_m -> .off  (opt back in: install.sh --zshrc)"
+		fi
+	done
+	if [ -f "$HOME/.zshrc" ] && [ "$(login_shell_name)" = "zsh" ]; then
+		say "your ~/.zshrc stays zsh's; aliases you want in hellish go in ~/.hellishrc"
 	fi
 fi
 

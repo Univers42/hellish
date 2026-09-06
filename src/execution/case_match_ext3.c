@@ -13,6 +13,7 @@
 #include "libft.h"
 #include "ft_glob.h"
 #include "case_match.h"
+#include "lexer.h"
 
 /* Three small answers the rest of the extglob code kept spelling out for
 ** itself, and one of them was spelled wrong.
@@ -93,7 +94,9 @@ int	xg_alt_group(const char *at)
 ** and why the glob walker calls xg_alt_group directly. */
 int	zsh_alt_ahead(const char *start, const char *at)
 {
-	if (at == start || at[-1] == '=')
+	if (at == start)
+		return (db_front_group(at));
+	if (at[-1] == '=')
 		return (0);
 	return (xg_alt_group(at));
 }

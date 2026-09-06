@@ -15,6 +15,7 @@
 #include <string.h>
 #include "lexer.h"
 #include "parser.h"
+#include "sh_error.h"
 
 /* These helpers centralise the exact wording of runtime error messages so the
    whole shell speaks with one voice. The format always starts with state->ctx
@@ -56,15 +57,21 @@ t_ast_node	unexpected(t_shell *state, t_parser *parser,
 	t_ast_node ret, t_deque_tok *tokens)
 {
 	t_token	t;
+	char	*where;
 
 	t = ltok2tok(*(t_ltoken *)deque_peek(&tokens->deqtok), tokens->base);
+	parser->res = RES_ERR;
+	parser->reported = !parser->quiet;
+	if (parser->quiet)
+		return (ret);
+	where = parse_err_ctx(state, tokens, t.start);
 	if (ft_strncmp(t.start, "\n", t.len) == 0)
 		ft_eprintf("%s: syntax error near unexpected token `newline'\n",
-			state->ctx);
+			where);
 	else
 		ft_eprintf("%s: syntax error near unexpected token `%.*s'\n",
-			state->ctx, t.len, t.start);
-	parser->res = RES_ERR;
-	parser->reported = true;
+			where, t.len, t.start);
+	xfree(where);
+	parse_err_echo(state, tokens, t.start);
 	return (ret);
 }

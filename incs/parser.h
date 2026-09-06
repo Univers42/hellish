@@ -39,6 +39,12 @@ typedef struct s_parser
 	   fail with status 2 and complete silence.  One flag beats a message
 	   at each of those sites, and it also covers the next one added. */
 	bool			reported;
+	/* Fail silently: set res and reported, print nothing.  The chunker's
+	   parse-all pass runs under it (exec_string3.c) -- a chunk that does
+	   not parse is replayed statement by statement and the replay is the
+	   one that speaks, with the file and line.  Without this the same
+	   error was printed twice (issue #113). */
+	bool			quiet;
 }	t_parser;
 
 /* Token classification helpers: is this token a redirect operator?

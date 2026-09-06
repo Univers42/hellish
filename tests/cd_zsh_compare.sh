@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================================
-# cd_zsh_compare.sh -- verify hellish's zsh-style two-argument `cd old new`
-# extension against the shell it is modelled on: zsh. The bash suite cannot
+# cd_zsh_compare.sh -- verify hellish's zsh-only `cd` behaviour (the
+# two-argument `cd old new` extension, and -q) against the shell it is
+# modelled on: zsh. The bash suite cannot
 # cover this form (bash rejects two operands as "too many arguments"), so this
 # is its dedicated oracle. It is meant to run INSIDE the docker image built
 # from docker/Dockerfile.zsh, where both hellish and zsh exist; the host has
@@ -40,6 +41,20 @@ cases=(
   "$SB/s/a/a|||cd a b && pwd"
   "$SB/aaa|||cd aaa bbb ccc; echo rc=\$?"
   "$SB/aaa/x|||cd aaa bbb && pwd"
+  # -q: zsh moves quietly. `emulate zsh` is what arms hellish's dialect and
+  # is a no-op in zsh itself, so one string still describes both shells.
+  # oh-my-zsh's extract plugin runs `builtin cd -q` four times; before this
+  # was accepted, every archive it opened printed "cd: -q: invalid option"
+  # and the final restore of the caller's directory failed.
+  "$SB/aaa|||emulate zsh; cd -q ../bbb && pwd"
+  "$SB/aaa|||emulate zsh; cd -q ../bbb; echo rc=$?"
+  "$SB/aaa|||emulate zsh; cd -qP ../bbb && pwd"
+  "$SB/aaa|||emulate zsh; cd -Pq ../bbb && pwd"
+  "$SB/aaa|||emulate zsh; cd -q -- ../bbb && pwd"
+  "$SB/aaa|||emulate zsh; cd -q ../nope; echo rc=$?"
+  "$SB/aaa|||emulate zsh; cd -qz ../bbb; echo rc=$?"
+  # -q suppresses the chpwd hook; a plain cd still fires it.
+  "$SB/aaa|||emulate zsh; chpwd() { echo HOOK; }; cd ../bbb; cd -q ../aaa"
 )
 
 pass=0; fail=0

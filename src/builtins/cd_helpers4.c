@@ -79,6 +79,7 @@ int	cd_apply(t_shell *state, t_cdopt *o, char *target)
 	if (o->echo)
 		ft_printf("%s\n", (char *)state->cwd.ctx);
 	update_pwd_vars(state);
-	run_chpwd_hooks(state);
+	if (!o->quiet)
+		run_chpwd_hooks(state);
 	return (0);
 }

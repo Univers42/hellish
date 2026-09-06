@@ -157,7 +157,7 @@ int	builtin_zunsupported(t_shell *state, t_vec argv)
 	int			slot;
 
 	slot = zunsup_slot(((char **)argv.ctx)[0], &why);
-	if (!said[slot])
+	if (!said[slot] && !state->zunsup_quiet)
 	{
 		said[slot] = true;
 		ft_eprintf("%s: %s: not supported (needs %s); "

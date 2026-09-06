@@ -39,6 +39,11 @@ FROM ${BASE}
 # and under set -e that alone was a red rung. Four attempts, 20s apart,
 # then the install proceeds with whatever refreshed (it re-fetches what
 # it needs) rather than failing the build on a mirror hiccup.
+# The install and the dup get the same treatment: a dup pulls hundreds of
+# packages through the same mirrors, and one curl timeout fourteen minutes
+# in was a red rung on a commit the rung had built fine an hour earlier.
+# A mirror that keeps failing four times still fails the build -- it is
+# the transient, not the broken, that is retried.
 ARG CC=cc
 
 RUN set -eux; \
@@ -59,13 +64,14 @@ RUN set -eux; \
 			bash python3 diffutils findutils which; \
 		dnf clean all; \
 	elif command -v zypper >/dev/null 2>&1; then \
-		n=0; until zypper --non-interactive --gpg-auto-import-keys refresh; do \
-			n=$((n + 1)); [ "$n" -ge 4 ] && break; sleep 20; done; \
+		zretry() { n=0; until "$@"; do n=$((n + 1)); \
+			[ "$n" -ge 4 ] && return 1; sleep 20; done; }; \
+		zretry zypper --non-interactive --gpg-auto-import-keys refresh || true; \
 		pkgs="gcc clang make readline-devel ncurses-devel git-core bash \
 			python3 tar gzip which findutils diffutils"; \
-		if ! zypper --non-interactive install $pkgs; then \
-			zypper --non-interactive dup --no-recommends; \
-			zypper --non-interactive install $pkgs; \
+		if ! zretry zypper --non-interactive install $pkgs; then \
+			zretry zypper --non-interactive dup --no-recommends; \
+			zretry zypper --non-interactive install $pkgs; \
 		fi; \
 		zypper clean --all; \
 	elif command -v xbps-install >/dev/null 2>&1; then \
