@@ -34,8 +34,10 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHELL = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    ROOT, "build", "bin", "hellish")
+# Absolute on purpose: the run-as-a-file cases start the shell from another
+# directory, and the pty suite hands us build/bin/hellish relative to ROOT.
+SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(
+    ROOT, "build", "bin", "hellish"))
 ENV = dict(os.environ, HELLISH_NO_BANNER="1", HELLISH_NO_UPDATE_CHECK="1",
            HELLISH_NO_ANIM="1")
 FAILS = []
