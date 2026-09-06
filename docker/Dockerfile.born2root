@@ -93,4 +93,8 @@ VOLUME ["/cache"]
 # `su -` makes the run start from b2r's login shell -- hellish -- so the
 # harness, born2root's probe and everything below sit under it.
 USER root
-CMD ["/bin/bash.real", "-c", "mkdir -p /work /cache; chown b2r:b2r /work /cache; exec su - b2r -c 'cd /hellish && tests/born2root_build.sh'"]
+# `su -` resets the environment, so the BORN2ROOT_* knobs `docker run -e` sets
+# for root were dropped before the harness read them: BORN2ROOT_BACKEND fell
+# back to its default and the VirtualBox job ran the QEMU preflight, which
+# then failed on the /dev/kvm it was never given. -w keeps exactly those.
+CMD ["/bin/bash.real", "-c", "mkdir -p /work /cache; chown b2r:b2r /work /cache; exec su - -w BORN2ROOT_BACKEND,BORN2ROOT_INCEPTION,BORN2ROOT_SKIP_ISO_PARITY b2r -c 'cd /hellish && tests/born2root_build.sh'"]
