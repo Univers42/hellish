@@ -20,6 +20,14 @@
 # throwaway HOME (VBOX_USER_HOME + its own VBoxSVC), so nothing is registered
 # in the real user's VirtualBox.
 #
+# Then Inception, the project that VM exists to run: `make inception` from
+# hellish uploads tests/inception into the guest and builds the docker stack
+# there, with Inception's Makefile running its recipes under hellish.real
+# (the guest's real login shell). Inception's own compliance suite is then
+# run against the live stack twice inside the guest -- under hellish.real
+# and under /bin/sh -- and the two reports are diffed; born2root's
+# verify_access closes the loop from the host.
+#
 # Before the VM, the one host-side step whose output is a file -- the
 # preseeded ISO -- is built under bash too, and the two ISO trees are diffed
 # byte for byte (initrd.gz compared decompressed with cpio's per-run header
@@ -51,6 +59,12 @@
 #   BORN2ROOT_REUSE_VM=1   a guest already built under BORN2ROOT_WORK is
 #                          booted (from hellish) instead of rebuilt: the
 #                          guest checks alone, in a few minutes
+#   BORN2ROOT_INCEPTION=0  skip the Inception deployment (on by default when
+#                          tests/inception is checked out)
+#   BORN2ROOT_TRIPWIRE_LOG a file /bin/bash appends to for every invocation
+#                          made under BORN2ROOT_TRIPWIRE (docker/Dockerfile
+#                          .born2root installs such a bash); when set, a
+#                          non-empty log after a phase is a failure
 #   --purge                delete the work dir (and unregister the VirtualBox
 #                          VM) after a clean run
 # ============================================================================
@@ -161,7 +175,21 @@ run_from() { # run_from <shell> <command string>
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 		ASAN_OPTIONS="detect_leaks=1:abort_on_error=0:exitcode=0" LSAN_OPTIONS="exitcode=0" \
 		VBOX_USER_HOME="$FAKE/.config/VirtualBox" VBOX_IPC_SOCKETID=born2root-build \
+		BORN2ROOT_TRIPWIRE="${BORN2ROOT_TRIPWIRE_LOG:+1}" BORN2ROOT_TRIPWIRE_LOG="${BORN2ROOT_TRIPWIRE_LOG:-}" \
 		"${EXTRA_ENV[@]}" "$sh" -c "$*" </dev/null )
+}
+# "hellish only": docker/Dockerfile.born2root makes /bin/bash log every
+# invocation made while BORN2ROOT_TRIPWIRE is set -- run_from sets it, so
+# the log holds exactly what born2root and Inception ran under bash during
+# this run. Empty is the requirement; anything else names the offender.
+tripwire_report() { # tripwire_report <label>
+	[ -n "${BORN2ROOT_TRIPWIRE_LOG:-}" ] && [ -f "$BORN2ROOT_TRIPWIRE_LOG" ] || return 0
+	if [ ! -s "$BORN2ROOT_TRIPWIRE_LOG" ]; then ok "$1: nothing ran under bash (tripwire log empty)"
+	else
+		ko "$1: $(wc -l <"$BORN2ROOT_TRIPWIRE_LOG") bash invocation(s) during the run"
+		sed 's/^/   bash: /' "$BORN2ROOT_TRIPWIRE_LOG" | head -12
+	fi
+	: >"$BORN2ROOT_TRIPWIRE_LOG"
 }
 vbox() { VBOX_USER_HOME="$FAKE/.config/VirtualBox" VBOX_IPC_SOCKETID=born2root-build VBoxManage "$@"; }
 vbox_state() { vbox showvminfo "$VM_NAME" --machinereadable 2>/dev/null | awk -F'"' '$1=="VMState="{print $2}'; }
@@ -174,6 +202,7 @@ say "0. which shell does born2root's Makefile pick when hellish launches make?"
 picked="$(run_from "$H" 'make -n backend' 2>/dev/null \
 	| grep -m1 -oE '[^ ]+ setup/host/select_backend.sh' | cut -d' ' -f1)"
 if [ "$picked" = "$H" ]; then ok "SCRIPT_SH = $picked"; else ko "SCRIPT_SH = ${picked:-nothing} (wanted $H)"; exit 1; fi
+[ -n "${BORN2ROOT_TRIPWIRE_LOG:-}" ] && : >"$BORN2ROOT_TRIPWIRE_LOG"
 
 # ---- 1. the ISO: hellish's tree == bash's tree ----------------------------
 if [ "${BORN2ROOT_SKIP_ISO_PARITY:-0}" != 1 ] && [ "${BORN2ROOT_REUSE_VM:-0}" != 1 ]; then
@@ -231,6 +260,8 @@ sys.stdout.buffer.write(bytes(out))'
 	done
 	[ "$fail" = 0 ] || { echo "   (both trees kept under $WORK for a look)"; exit 1; }
 	rm -rf "$WORK/tree.bash" "$WORK/tree.hellish" "$WORK/iso_extract.bash" "$WORK/preseed.bash.iso"
+	# the bash-built reference ISO is bash by design; only the hellish build counts
+	[ -n "${BORN2ROOT_TRIPWIRE_LOG:-}" ] && : >"$BORN2ROOT_TRIPWIRE_LOG"
 fi
 
 # ---- 2..5, once per backend ------------------------------------------------
@@ -270,6 +301,7 @@ run_backend() { # run_backend qemu|virtualbox
 	if [ "$rc" != 0 ]; then ko "[$be] make exited $rc"; tail -20 "$LOG"; return 1; fi
 	ok "[$be] the guest is up"
 	grep -qaE 'AddressSanitizer|LeakSanitizer' "$LOG" && ko "[$be] sanitizer report in the log"
+	tripwire_report "[$be] make all"
 
 	# -- 3. the guest, over the ssh config born2root wrote --------------------
 	say "[$be] 3. the guest answers, and hellish is its login shell"
@@ -320,7 +352,65 @@ run_backend() { # run_backend qemu|virtualbox
 	esac
 	sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/^/   | /' "$WORK/status.$be.txt" | grep -v '^   | *$' | head -14
 
+	# -- 4b. Inception: deploy from hellish, audit under hellish in the guest -
+	if [ "${BORN2ROOT_INCEPTION:-1}" != 0 ] && [ -f "$ROOT/tests/inception/Makefile" ]; then
+		say "[$be] 4b. make inception (SRC=tests/inception), launched from hellish"
+		t0=$(date +%s)
+		run_from "$H" "make inception VM_NAME=$VM_NAME SRC=$ROOT/tests/inception" >"$WORK/inception.$be.log" 2>&1; rc=$?
+		echo "   rc=$rc in $(( ( $(date +%s) - t0 ) / 60 )) min"
+		grep -aE '✓|✗|⚠|→' "$WORK/inception.$be.log" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/^/   | /' | tail -14
+		[ "$rc" = 0 ] && ok "make inception finished" || { ko "[$be] make inception exited $rc"; tail -15 "$WORK/inception.$be.log"; }
+		grep -qa 'the stack builds under /usr/bin/hellish.real' "$WORK/inception.$be.log" \
+			&& ok "the guest built the stack under hellish.real" || ko "[$be] the guest did not build under hellish.real"
+		# "hellish only" inside the containers too: Inception's make setup
+		# copies the static shell it was launched from into its images as
+		# /bin/sh (its srcs/shell/README.md), so every entrypoint, healthcheck
+		# and `docker exec ... sh` in the guest must answer as hellish.
+		out=$(guest 'for c in $(docker ps --format "{{.Names}}"); do printf "%s %s\n" "$c" "$(docker exec "$c" sh -c "sh --version 2>/dev/null | head -1")"; done' 2>/dev/null | tr -d '\r')
+		n=$(printf '%s\n' "$out" | grep -c .); h=$(printf '%s\n' "$out" | grep -c 'hellish, version')
+		if [ "$n" -gt 0 ] && [ "$n" = "$h" ]; then ok "/bin/sh in all $n containers is $(printf '%s\n' "$out" | head -1 | cut -d' ' -f2-)"
+		else ko "[$be] /bin/sh is not hellish in every container ($h of $n)"; printf '%s\n' "$out" | sed 's/^/   /'; fi
+		# The compliance suite against the live stack, under hellish.real and
+		# under /bin/sh, from the same login-shell path the deploy used. The
+		# site is live between the two runs, so byte counts, post counts and
+		# backup stamps move; those are masked, every verdict is compared.
+		for gsh in /usr/bin/hellish.real /bin/sh; do
+			tag=$(basename "$gsh")
+			"$WORK/bin/ssh" -tt -o BatchMode=yes b2b "cd ~/Documents/inception && NO_COLOR=1 make test SCRIPT_SH=$gsh" 2>/dev/null \
+				| tr -d '\r' | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' >"$WORK/compliance.$be.$tag.txt"
+			sed -E 's/[0-9]+ bytes/N bytes/g; s/[0-9]+ posts/N posts/g; s/[0-9]{8}-[0-9]{6}/STAMP/g' \
+				"$WORK/compliance.$be.$tag.txt" >"$WORK/compliance.$be.$tag.norm"
+			echo "   $tag: $(grep -E 'Summary' "$WORK/compliance.$be.$tag.txt" | tail -1 | sed 's/^ *//')"
+		done
+		if cmp -s "$WORK/compliance.$be.hellish.real.norm" "$WORK/compliance.$be.sh.norm"; then
+			ok "compliance suite: same report under hellish.real and /bin/sh ($(wc -l <"$WORK/compliance.$be.sh.txt") lines)"
+		else
+			ko "[$be] compliance suite differs between hellish.real and /bin/sh"
+			diff "$WORK/compliance.$be.sh.norm" "$WORK/compliance.$be.hellish.real.norm" | head -12 | sed 's/^/   /'
+		fi
+		# Every verdict about the stack must be a pass. The [P] section judges
+		# the repository's submission state (is this tree on the remote's
+		# default branch?), which a build from a feature branch fails for
+		# reasons that have nothing to do with the shell; it stays visible
+		# above, and out of this gate.
+		bad=$(awk '/^\[P\]/{p=1} /^\[[A-OQ-Z]\]/{p=0} !p && /✘/' "$WORK/compliance.$be.sh.txt")
+		if [ -n "$bad" ]; then
+			ko "[$be] compliance suite: failed checks outside [P]"; printf '%s\n' "$bad" | head -8 | sed 's/^/   /'
+		else
+			ok "compliance suite: every check on the stack passes ([P] excluded: repository state)"
+		fi
+		run_from "$H" "make verify_access VM_NAME=$VM_NAME" >"$WORK/verify_access.$be.txt" 2>&1 \
+			&& ok "verify_access from the host" || { ko "[$be] verify_access"; grep -aE '✗|FAIL' "$WORK/verify_access.$be.txt" | head -6 | sed 's/^/   /'; }
+		tripwire_report "[$be] make inception + verify_access"
+	fi
+
 	# -- 5. shut it down, from hellish ---------------------------------------
+	# host_access left a proxy behind (a detached process here: no systemd
+	# --user under a substitute HOME); its own undo is the way to stop it.
+	if [ "${BORN2ROOT_INCEPTION:-1}" != 0 ] && [ -f "$ROOT/tests/inception/Makefile" ]; then
+		run_from "$H" "make host_access_undo VM_NAME=$VM_NAME" >"$WORK/host_access_undo.$be.txt" 2>&1 \
+			&& ok "host_access_undo" || { ko "[$be] host_access_undo"; tail -3 "$WORK/host_access_undo.$be.txt"; }
+	fi
 	case "$be" in
 	qemu)
 		say "[$be] 5. make qemu_stop, launched from hellish"

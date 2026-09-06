@@ -128,6 +128,7 @@ for sh in "$BASH_BIN" "$H"; do
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 		timeout 180 "$sh" -c 'make -n all' </dev/null ) 2>"$OUT/mk.err" \
 		| sed -E -e 's#(/[A-Za-z0-9_./-]+/)?(hellish|bash) (setup|utils|generate)/#$SH \3/#g' \
+			-e "s#(/[A-Za-z0-9_./-]+/)?(hellish|bash) -c#\$SH -c#g" \
 			-e 's#/tmp/tmp\.[A-Za-z0-9_]+#/tmp/tmp.X#g' >"$OUT/mk.$(basename "$sh")"
 	echo "${PIPESTATUS[0]}" >"$OUT/mk.$(basename "$sh").rc"
 done

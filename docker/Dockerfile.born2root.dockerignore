@@ -1,0 +1,12 @@
+# Build context for docker/Dockerfile.born2root: the sources, the checked-out
+# submodules (born2root, Inception) and the test scripts, never host build
+# artifacts, git internals or a previous run's ISO and disks.
+.git
+**/.git
+build/
+vendor/libft/build
+bench/suites/
+tests/born2root/disk_images/
+tests/born2root/*.iso
+tests/born2root/debian_iso_extract/
+tests/born2root/dist/

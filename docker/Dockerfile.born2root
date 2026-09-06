@@ -1,0 +1,96 @@
+# ============================================================================
+# born2root + Inception, built on a hypervisor FROM hellish, in a container.
+#
+# The host-side proof that hellish can be the shell of a whole project: a
+# human whose login shell is hellish types `make all` in born2root and gets a
+# Debian guest with hellish inside, then `make inception` deploys the docker
+# stack in that guest, and Inception's own compliance suite runs there under
+# hellish. tests/born2root_build.sh drives it; this image is the machine it
+# runs on, so CI and a laptop see the same one.
+#
+# A container cannot load kernel modules, so the hypervisor's driver is the
+# host's, passed in as a device:
+#   qemu        --device /dev/kvm
+#   virtualbox  --device /dev/vboxdrv --device /dev/vboxdrvu, and the userland
+#               in the image must match the host's module: VBOX=distro takes
+#               Ubuntu's package (what a GitHub runner installs), VBOX=oracle
+#               takes Oracle's virtualbox-7.1 (what this repo's developers run)
+# The group ids of those devices differ per host, so KVM_GID/VBOX_GID are
+# build arguments (make born2root-docker reads them off /dev). Never both
+# hypervisors in one run: they cannot share VT-x, so the matrix serialises.
+#
+# "hellish only": /bin/bash is a tripwire. It still runs bash, but every
+# invocation made while BORN2ROOT_TRIPWIRE is set -- i.e. by born2root or by
+# Inception during the build -- is logged, and the harness fails the run if
+# the log is not empty. Scripts reach bash by name or by shebang; both land
+# here, so nothing can quietly fall back to bash.
+#
+#   make born2root-docker                      # BORN2ROOT_BACKEND=qemu
+#   make born2root-docker BORN2ROOT_BACKEND=virtualbox
+# ============================================================================
+FROM ubuntu:24.04
+ARG VBOX=none
+ARG KVM_GID=994
+ARG VBOX_GID=114
+ENV DEBIAN_FRONTEND=noninteractive
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		build-essential libreadline-dev ca-certificates curl wget gnupg git \
+		sudo passwd python3 coreutils procps kmod openssh-client rsync \
+		qemu-system-x86 qemu-utils xorriso cpio gzip file make dash \
+		iproute2 netcat-openbsd; \
+	if [ "$VBOX" = oracle ]; then \
+		wget -qO- https://www.virtualbox.org/download/oracle_vbox_2016.asc \
+			| gpg --dearmor -o /usr/share/keyrings/oracle-virtualbox-2016.gpg; \
+		echo "deb [arch=amd64 signed-by=/usr/share/keyrings/oracle-virtualbox-2016.gpg] https://download.virtualbox.org/virtualbox/debian noble contrib" \
+			> /etc/apt/sources.list.d/virtualbox.list; \
+		apt-get update; \
+		apt-get install -y --no-install-recommends virtualbox-7.1 || true; \
+	elif [ "$VBOX" = distro ]; then \
+		apt-get install -y --no-install-recommends virtualbox || true; \
+	fi; \
+	rm -rf /var/lib/apt/lists/*
+# The human. Groups carry the HOST's device gids so /dev/kvm and /dev/vboxdrvu
+# are usable without root; vboxusers is what the VirtualBox package created.
+RUN set -eux; \
+	useradd -m -s /bin/bash -G sudo b2r; \
+	for pair in "hostkvm:$KVM_GID" "hostvbox:$VBOX_GID"; do \
+		g="${pair%%:*}"; gid="${pair##*:}"; \
+		[ "$gid" -gt 0 ] || continue; \
+		getent group "$gid" >/dev/null || groupadd -g "$gid" "$g"; \
+		usermod -aG "$(getent group "$gid" | cut -d: -f1)" b2r; \
+	done; \
+	getent group vboxusers >/dev/null && usermod -aG vboxusers b2r || true; \
+	echo 'b2r ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/b2r; chmod 440 /etc/sudoers.d/b2r
+# The bash tripwire: bash stays bash, but a run that must be "hellish only"
+# leaves a trace for every bash it started.
+RUN set -eux; \
+	mv /bin/bash /bin/bash.real; \
+	printf '%s\n' '#!/bin/bash.real' \
+		'if [ -n "${BORN2ROOT_TRIPWIRE:-}" ]; then' \
+		'  printf "%s\n" "$$ ppid=$PPID cwd=$PWD :: $0 $*" >> "${BORN2ROOT_TRIPWIRE_LOG:-/tmp/bash-tripwire.log}" 2>/dev/null' \
+		'fi' \
+		'exec /bin/bash.real "$@"' > /bin/bash; \
+	chmod 755 /bin/bash; \
+	touch /tmp/bash-tripwire.log; chmod 666 /tmp/bash-tripwire.log
+WORKDIR /hellish
+COPY . .
+RUN chown -R b2r:b2r /hellish
+# hellish: built here, and installed as b2r's LOGIN shell the way a person
+# does it (make my_shell: /usr/bin, /etc/shells, chsh). dist/ may carry a
+# static hellish for the guest (make static on the host); otherwise the
+# guest gets born2root's usual published release.
+USER b2r
+RUN make all >/tmp/build.log 2>&1 || { tail -30 /tmp/build.log; exit 1; }
+RUN HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 \
+	make my_shell >/tmp/my_shell.log 2>&1 || { tail -30 /tmp/my_shell.log; exit 1; }; \
+	getent passwd b2r | cut -d: -f7 | grep -q hellish
+ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 \
+	BORN2ROOT_WORK=/work BORN2ROOT_ISO_CACHE=/cache \
+	BORN2ROOT_TRIPWIRE_LOG=/tmp/bash-tripwire.log
+VOLUME ["/cache"]
+# `su -` makes the run start from b2r's login shell -- hellish -- so the
+# harness, born2root's probe and everything below sit under it.
+USER root
+CMD ["/bin/bash.real", "-c", "mkdir -p /work /cache; chown b2r:b2r /work /cache; exec su - b2r -c 'cd /hellish && tests/born2root_build.sh'"]

@@ -61,7 +61,10 @@ while IFS= read -r f; do
 		echo "PARSE MISMATCH  dash=$drc bash=$brc hellish=$hrc  ${f#$INC/}"
 		head -3 "$OUT/perr" | sed 's/^/    /'
 	fi
-done < <(find "$INC" -name '*.sh' -type f -not -path '*/.git/*' | sort)
+# vendor/ is Inception's own vendored dev tooling (a nested submodule), not
+# Inception's scripts -- CI checks it out recursively, so exclude it or the
+# sweep judges third-party code that was never ours to parse.
+	done < <(find "$INC" -name '*.sh' -type f -not -path '*/.git/*' -not -path '*/vendor/*' | sort)
 echo "---- parse: $((total - bad)) ok / $bad mismatch (of $total scripts) ----"
 [ "$bad" -eq 0 ] || fail=1
 
@@ -92,13 +95,16 @@ else
 fi
 
 # ---- 3. the Makefile's shell probe, launched from hellish ------------------
-# The test recipe spells out the shell it picked, so that word is normalised
-# before the plans are compared; which shell hellish's launch picked is
-# asserted separately below.
+# The test recipe spells out the shell it picked, and setup spells out the
+# static shell it will copy into the images (INCEPTION_SHELL) -- both are
+# launcher-dependent by design, so both are pinned before the plans are
+# compared. INCEPTION_SHELL is fixed to one value for both launches so the
+# setup block is exercised and identical; which shell hellish's launch picks
+# for each is asserted separately below.
 for tgt in up test; do
-	run_in "$BASH_BIN" "" -c "make -n $tgt" 2>&1 \
+	run_in "$BASH_BIN" "" -c "make -n $tgt INCEPTION_SHELL=/bin/sh" 2>&1 \
 		| sed -E 's#^/[^ ]+ tests/(compliance|bench)\.sh#$SH tests/\1.sh#' >"$OUT/mk.$tgt.b"
-	run_in "$H" "$(dirname "$H"):" -c "make -n $tgt" 2>&1 \
+	run_in "$H" "$(dirname "$H"):" -c "make -n $tgt INCEPTION_SHELL=/bin/sh" 2>&1 \
 		| sed -E 's#^/[^ ]+ tests/(compliance|bench)\.sh#$SH tests/\1.sh#' >"$OUT/mk.$tgt.h"
 	if cmp -s "$OUT/mk.$tgt.b" "$OUT/mk.$tgt.h"; then
 		ok=$((ok + 1)); printf 'ok    %-44s (%s lines)\n' "make -n $tgt, same plan from both shells" "$(wc -l <"$OUT/mk.$tgt.h")"

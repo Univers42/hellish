@@ -1146,6 +1146,35 @@ born2root-test: all  ## born2root corpus: every script parses like bash, its uni
 born2root-vm: all  ## born2root end to end: build the VM from hellish (BORN2ROOT_BACKEND=qemu|virtualbox|both)
 	@bash $(TEST_DIR)/born2root_build.sh
 
+# The same build, in a container whose human has hellish as LOGIN shell --
+# the machine CI uses, reproducible on a laptop. The hypervisor's driver is
+# the host's (a container cannot load modules): /dev/kvm for qemu,
+# /dev/vboxdrv{,u} plus a matching VirtualBox userland for virtualbox
+# (Oracle 7.1 when the host runs that, Ubuntu's package otherwise). /bin/bash
+# in the image is a tripwire, so the run fails if born2root or Inception ran
+# anything under bash. One hypervisor per run: they cannot share VT-x.
+#   make born2root-docker                              # qemu
+#   make born2root-docker BORN2ROOT_BACKEND=virtualbox
+BORN2ROOT_BACKEND ?= qemu
+B2R_KVM_GID  := $(shell stat -c %g /dev/kvm 2>/dev/null || echo 994)
+B2R_VBOX_GID := $(shell stat -c %g /dev/vboxdrvu 2>/dev/null || echo 114)
+B2R_VBOX     := $(shell if VBoxManage --version 2>/dev/null | grep -qE '^7\.1'; then echo oracle; \
+	elif VBoxManage --version >/dev/null 2>&1; then echo distro; else echo none; fi)
+B2R_CACHE    ?= $(HOME)/.cache/born2root
+born2root-docker:  ## docker: born2root + Inception built from hellish as login shell (BORN2ROOT_BACKEND=qemu|virtualbox)
+	@mkdir -p $(B2R_CACHE)
+	docker build -f docker/Dockerfile.born2root -t hellish:born2root \
+		--build-arg VBOX=$(B2R_VBOX) --build-arg KVM_GID=$(B2R_KVM_GID) \
+		--build-arg VBOX_GID=$(B2R_VBOX_GID) .
+	@case "$(BORN2ROOT_BACKEND)" in \
+	qemu) dev="--device /dev/kvm" ;; \
+	virtualbox) dev="--device /dev/vboxdrv --device /dev/vboxdrvu" ;; \
+	*) echo "BORN2ROOT_BACKEND must be qemu or virtualbox (one hypervisor per run)"; exit 2 ;; \
+	esac; \
+	docker run --rm $$dev -v $(B2R_CACHE):/cache \
+		-e BORN2ROOT_BACKEND=$(BORN2ROOT_BACKEND) -e BORN2ROOT_INCEPTION \
+		-e BORN2ROOT_SKIP_ISO_PARITY hellish:born2root
+
 # Inception (tests/inception, a submodule) is what born2root's VM runs: a
 # POSIX-sh Makefile, container entrypoints and a 1400-line compliance suite.
 # Every script must parse like dash and bash, the suite must print the same
@@ -1273,7 +1302,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	docker-build docker-test docker-alpine docker-debian docker-ubuntu \
 	docker-arch docker-fedora docker-rocky docker-opensuse docker-void \
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
-	docs-builtins born2root-test born2root-vm inception-test \
+	docs-builtins born2root-test born2root-vm born2root-docker inception-test \
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
