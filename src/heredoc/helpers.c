@@ -24,8 +24,11 @@ static int	special_param_len(char c)
 /* Expand a $ that was not followed by '(' (command substitution already
    handled by the caller).  Braced form ${...} -> expand_braced; plain
    name or special param -> env_expand_n; lone $ (no valid name follows)
-   -> emit the $ character literally.  *i is advanced past whatever was
-   consumed. */
+   -> emit the $ character literally and leave the byte after it to the
+   caller (it used to be pushed here AND by the loop, so `$ 0` came out as
+   `  0` -- which is the `line = $ 0` in every autoconf config.status, and
+   turned the generated Makefile into 4666 lines of `0`).  *i is advanced
+   past whatever was consumed. */
 void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 {
 	int		len;
@@ -48,7 +51,7 @@ void	expand_dolar(t_shell *state, int *i, t_string *full_file, char *line)
 			vec_push_nstr(full_file, "", 0);
 	}
 	else
-		vec_push(full_file, &line[*i]);
+		vec_push(full_file, &line[*i - 1]);
 	*i += len;
 }
 

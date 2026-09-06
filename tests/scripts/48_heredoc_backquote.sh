@@ -29,3 +29,14 @@ cat <<- EOF
 	tab: `echo stripped`
 	EOF
 echo "status=$?"
+
+# A lone $ (no name after it) must stay a $ and must not eat the next byte:
+# config.status's awk program is written from a heredoc as `line = $ 0`, and
+# a shell that turns that into `line =   0` prints "0" for every Makefile line.
+cat << EOF
+  line = $ 0
+  n = split(line, field, "@")
+  z = $
+  w = $%
+  price: 5$ each
+EOF
