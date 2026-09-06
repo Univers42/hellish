@@ -578,10 +578,13 @@ bench:  ## Speed vs bash --posix (always rebuilds OPT=1)
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBenchmarking hellish vs bash --posix\033[0m\n\n" >&2
 	@(cd $(TEST_DIR); ROUNDS=$(ROUNDS) TIMEOUT_S=$(TIMEOUT_S) /bin/bash benchmark $(BENCH))
 
+# tests/born2root is a submodule of someone else's scripts; its C files are
+# not 42-norm and not ours to reformat, so the tests/ sweep leaves it out.
 norm:  ## 42 norminette over src/ incs/ tests/ (reports only, always exits 0)
 	@printf "\n  \033[1;36m▸\033[0m Running norminette" >&2; \
 	output="$$( \
-	    norminette src incs tests 2>&1 | grep -v 'OK!' | grep -v 'US' \
+	    norminette src incs $$(find tests -name '*.[ch]' -not -path '*/born2root/*') \
+	        2>&1 | grep -v 'OK!' | grep -v 'US' \
 	        | grep -v 'Notice:' & \
 	    pid=$$!; \
 	    while kill -0 $$pid 2>/dev/null; do \
