@@ -61,6 +61,17 @@
 #                          guest checks alone, in a few minutes
 #   BORN2ROOT_INCEPTION=0  skip the Inception deployment (on by default when
 #                          tests/inception is checked out)
+#   BORN2ROOT_EXECLOG=0    do not preload tests/tools/execlog*.c into the
+#                          make invocations. On by default when cc exists:
+#                          every exec of every phase (the ISO, `make all`,
+#                          verify_guest, `make inception`, the stop) is
+#                          logged and classified by tests/tools/execlog_
+#                          classify.py -- a born2root script under anything
+#                          but hellish, or a bash/sh/dash started by
+#                          born2root's own code, fails that phase. Static
+#                          binaries (the guest's hellish.real) and setuid
+#                          programs (sudo) do not load it: the guest side is
+#                          verify_guest's job.
 #   BORN2ROOT_TRIPWIRE_LOG a file /bin/bash appends to for every invocation
 #                          made under BORN2ROOT_TRIPWIRE (docker/Dockerfile
 #                          .born2root installs such a bash); when set, a
@@ -116,6 +127,15 @@ for b in $BACKENDS; do
 	esac
 done
 H="$(cd "$(dirname "$H")" && pwd)/$(basename "$H")"
+EXECLOG_SO=""; EXECLOG_FILE=""
+if [ "${BORN2ROOT_EXECLOG:-1}" != 0 ] && command -v cc >/dev/null 2>&1; then
+	mkdir -p "$ROOT/build"
+	if cc -shared -fPIC -O2 -o "$ROOT/build/execlog.so" "$ROOT"/tests/tools/execlog*.c -ldl 2>"$ROOT/build/execlog.cc.err"; then
+		EXECLOG_SO="$ROOT/build/execlog.so"; EXECLOG_FILE="$WORK/exec.log"
+	else
+		echo "warn: tests/tools/execlog*.c did not compile; the exec log is off ($(head -1 "$ROOT/build/execlog.cc.err"))"
+	fi
+fi
 
 # ---- a home of its own -----------------------------------------------------
 # born2root writes ~/.ssh/config, and the last step of `make all` configures
@@ -132,10 +152,13 @@ touch "$FAKE/.ssh/config"; chmod 600 "$FAKE/.ssh/config"
 # OpenSSH finds ~/.ssh through the passwd entry, not $HOME, so the config
 # born2root writes into the fake home would never be read and the key baked
 # into the ISO never offered. These wrappers, first on PATH, point every
-# `ssh b2b` the scripts (and this file) run at the fake home.
+# `ssh b2b` the scripts (and this file) run at the fake home. Their
+# interpreter is the hellish under test: they are the one piece of this
+# harness that born2root's scripts exec, and "nothing but hellish" includes
+# them.
 for t in ssh scp sftp; do
-	printf '#!/bin/sh\nexec /usr/bin/%s -F "%s/.ssh/config" -i "%s/.ssh/id_ed25519" "$@"\n' \
-		"$t" "$FAKE" "$FAKE" >"$WORK/bin/$t"
+	printf '#!%s\nexec /usr/bin/%s -F "%s/.ssh/config" -i "%s/.ssh/id_ed25519" "$@"\n' \
+		"$H" "$t" "$FAKE" "$FAKE" >"$WORK/bin/$t"
 	chmod 755 "$WORK/bin/$t"
 done
 
@@ -178,7 +201,8 @@ run_from() { # run_from <shell> <command string>
 	( cd "$B2R" && env -i PATH="$WORK/bin:$(dirname "$H"):$PATH" HOME="$FAKE" \
 		USER="$(id -un)" LOGNAME="$(id -un)" TERM=dumb NO_COLOR=1 LC_ALL=C \
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
-		ASAN_OPTIONS="detect_leaks=1:abort_on_error=0:exitcode=0" LSAN_OPTIONS="exitcode=0" \
+		ASAN_OPTIONS="detect_leaks=1:abort_on_error=0:exitcode=0:verify_asan_link_order=0" LSAN_OPTIONS="exitcode=0" \
+		${EXECLOG_SO:+LD_PRELOAD="$EXECLOG_SO" EXECLOG="$EXECLOG_FILE"} \
 		VBOX_USER_HOME="$FAKE/.config/VirtualBox" VBOX_IPC_SOCKETID=born2root-build \
 		VM_RAM_MB="${VM_RAM_MB:-}" \
 		BORN2ROOT_TRIPWIRE="${BORN2ROOT_TRIPWIRE_LOG:+1}" BORN2ROOT_TRIPWIRE_LOG="${BORN2ROOT_TRIPWIRE_LOG:-}" \
@@ -188,6 +212,8 @@ run_from() { # run_from <shell> <command string>
 # invocation made while BORN2ROOT_TRIPWIRE is set -- run_from sets it, so
 # the log holds exactly what born2root and Inception ran under bash during
 # this run. Empty is the requirement; anything else names the offender.
+# (verify_asan_link_order=0: an ASan hellish refuses to start with the
+# non-ASan logger preloaded otherwise.)
 tripwire_report() { # tripwire_report <label>
 	[ -n "${BORN2ROOT_TRIPWIRE_LOG:-}" ] && [ -f "$BORN2ROOT_TRIPWIRE_LOG" ] || return 0
 	if [ ! -s "$BORN2ROOT_TRIPWIRE_LOG" ]; then ok "$1: nothing ran under bash (tripwire log empty)"
@@ -196,6 +222,31 @@ tripwire_report() { # tripwire_report <label>
 		sed 's/^/   bash: /' "$BORN2ROOT_TRIPWIRE_LOG" | head -12
 	fi
 	: >"$BORN2ROOT_TRIPWIRE_LOG"
+}
+# The exec log of everything run_from launched since the last report,
+# classified: which born2root files ran and under what, which shells the
+# corpus started. Then the log starts over for the next phase.
+execlog_n=0
+execlog_report() { # execlog_report <label>
+	[ -n "$EXECLOG_SO" ] || return 0
+	local tag out
+	execlog_n=$((execlog_n + 1)); tag="$(printf '%s' "$1" | tr -c 'A-Za-z0-9' '_' | cut -c1-40)"
+	out="$WORK/execlog.$execlog_n.$tag"
+	[ -s "$EXECLOG_FILE" ] || { ko "$1: no exec was logged -- did hellish load the logger?"; return 0; }
+	python3 "$ROOT/tests/tools/execlog_classify.py" "$EXECLOG_FILE" "$out" "$B2R" "$H"
+	local nsc nex
+	nsc=$(cut -f1 "$out.scripts" | grep -c .)
+	nex=$(awk -F'\t' '$1=="hellish"{print $2}' "$out.interp"); nex=${nex:-0}
+	if [ -s "$out.offenders" ]; then
+		ko "$1: $(wc -l <"$out.offenders") shell(s) started by born2root itself"
+		cut -c1-150 "$out.offenders" | sed 's/^/   /' | head -8
+	elif awk -F'\t' '$2 != "hellish" {bad = 1} END {exit !bad}' "$out.scripts"; then
+		ko "$1: a born2root file ran under something other than hellish"; sed 's/^/   /' "$out.scripts" | head -8
+	else
+		ok "$1: $nsc born2root file(s) all under hellish, $nex hellish exec(s), no bash/sh/dash started by born2root ($(wc -l <"$EXECLOG_FILE") execs logged)"
+	fi
+	[ -s "$out.foreign" ] && printf '   foreign (third-party programs that are or start sh): %s\n' "$(cut -f1 "$out.foreign" | sort -u | tr '\n' ' ')"
+	: >"$EXECLOG_FILE"
 }
 vbox() { VBOX_USER_HOME="$FAKE/.config/VirtualBox" VBOX_IPC_SOCKETID=born2root-build VBoxManage "$@"; }
 vbox_state() { vbox showvminfo "$VM_NAME" --machinereadable 2>/dev/null | awk -F'"' '$1=="VMState="{print $2}'; }
@@ -209,6 +260,7 @@ picked="$(run_from "$H" 'make -n backend' 2>/dev/null \
 	| grep -m1 -oE '[^ ]+ setup/host/select_backend.sh' | cut -d' ' -f1)"
 if [ "$picked" = "$H" ]; then ok "SCRIPT_SH = $picked"; else ko "SCRIPT_SH = ${picked:-nothing} (wanted $H)"; exit 1; fi
 [ -n "${BORN2ROOT_TRIPWIRE_LOG:-}" ] && : >"$BORN2ROOT_TRIPWIRE_LOG"
+[ -n "$EXECLOG_FILE" ] && : >"$EXECLOG_FILE"
 
 # ---- 1. the ISO: hellish's tree == bash's tree ----------------------------
 if [ "${BORN2ROOT_SKIP_ISO_PARITY:-0}" != 1 ] && [ "${BORN2ROOT_REUSE_VM:-0}" != 1 ]; then
@@ -220,6 +272,8 @@ if [ "${BORN2ROOT_SKIP_ISO_PARITY:-0}" != 1 ] && [ "${BORN2ROOT_REUSE_VM:-0}" !=
 		run_from "$sh" "make gen_iso ${SHELL_ARGS[*]}" >"$WORK/gen_iso.$tag.log" 2>&1; rc=$?
 		echo "   $tag: rc=$rc in $(( $(date +%s) - t0 ))s"
 		[ "$rc" = 0 ] || { ko "make gen_iso under $tag (see $WORK/gen_iso.$tag.log)"; tail -5 "$WORK/gen_iso.$tag.log"; }
+		# The bash run is the oracle: what it exec'd is not the question.
+		if [ "$sh" = "$H" ]; then execlog_report "make gen_iso from hellish"; elif [ -n "$EXECLOG_FILE" ]; then : >"$EXECLOG_FILE"; fi
 		rm -rf "$WORK/tree.$tag"; mkdir -p "$WORK/tree.$tag"
 		xorriso -osirrox on -indev "$WORK/preseed.$tag.iso" -extract / "$WORK/tree.$tag" >/dev/null 2>&1
 		chmod -R u+w "$WORK/tree.$tag"
@@ -308,6 +362,7 @@ run_backend() { # run_backend qemu|virtualbox
 	ok "[$be] the guest is up"
 	grep -qaE 'AddressSanitizer|LeakSanitizer' "$LOG" && ko "[$be] sanitizer report in the log"
 	tripwire_report "[$be] make all"
+	execlog_report "[$be] $( [ "$reuse" = 1 ] && echo "boot" || echo "make all" ) from hellish"
 
 	# -- 3. the guest, over the ssh config born2root wrote --------------------
 	say "[$be] 3. the guest answers, and hellish is its login shell"
@@ -426,6 +481,7 @@ run_backend() { # run_backend qemu|virtualbox
 	virtualbox) run_from "$H" "make status VM_PATH=$VM_PATH" >"$WORK/status.$be.txt" 2>&1 && ok "status" || ko "[$be] status" ;;
 	esac
 	sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/^/   | /' "$WORK/status.$be.txt" | grep -v '^   | *$' | head -14
+	execlog_report "[$be] verify_guest + status from hellish"
 
 	# -- 4b. Inception: deploy from hellish, audit under hellish in the guest -
 	if [ "${BORN2ROOT_INCEPTION:-1}" != 0 ] && [ -f "$ROOT/tests/inception/Makefile" ]; then
@@ -485,6 +541,7 @@ run_backend() { # run_backend qemu|virtualbox
 		run_from "$H" "make verify_access VM_NAME=$VM_NAME" >"$WORK/verify_access.$be.txt" 2>&1 \
 			&& ok "verify_access from the host" || { ko "[$be] verify_access"; grep -aE '✗|FAIL' "$WORK/verify_access.$be.txt" | head -6 | sed 's/^/   /'; }
 		tripwire_report "[$be] make inception + verify_access"
+		execlog_report "[$be] make inception + verify_access from hellish"
 	fi
 
 	# -- 5. shut it down, from hellish ---------------------------------------
@@ -516,8 +573,18 @@ run_backend() { # run_backend qemu|virtualbox
 
 for be in $BACKENDS; do
 	run_backend "$be"
+	execlog_report "[$be] stop from hellish"
 	[ "$fail" = 0 ] || break
 done
+
+# The inventory, once, for the reader: every born2root file the hellish-
+# launched phases executed, with its interpreter, and every image exec'd.
+if [ -n "$EXECLOG_SO" ] && ls "$WORK"/execlog.*.scripts >/dev/null 2>&1; then
+	printf '\n%s\n' "born2root files executed by the hellish-launched phases, with their interpreter:"
+	cat "$WORK"/execlog.*.scripts | sort -u | sed 's/^/   /'
+	printf '%s\n' "every image exec'd by those phases, with a count:"
+	cat "$WORK"/execlog.*.interp | awk -F'\t' '{c[$1]+=$2} END {for (k in c) printf "   %-28s %d\n", k, c[k]}' | sort
+fi
 
 say "$( [ "$fail" = 0 ] && echo "born2root built and verified under hellish ($BACKENDS)" || echo "born2root: FAILURES above" )"
 [ "$PURGE" = 1 ] && [ "$fail" = 0 ] && rm -rf "$WORK"

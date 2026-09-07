@@ -40,6 +40,17 @@ shows you how to drive the shell.
   Inside the guest, `make verify_guest` now prints the interpreters: the
   link, `/proc/$$/exe` of an ssh command, the shebangs, the live main pid
   of both units.
+- **tests/born2root_build.sh runs the whole thing under that logger.** The
+  quick targets were audited; the VM's creation was not. The build script
+  now preloads tests/tools/execlog into every `make` it launches — the ISO,
+  `make all` (the installer, the guest's first boot from the host side),
+  `make verify_guest`, `make inception`, the stop — and classifies each
+  phase with tests/tools/execlog_classify.py, the same rules as the audit:
+  a born2root file under anything but hellish, or a bash, sh or dash
+  started by born2root's own code, fails that phase. Its own ssh wrappers
+  are interpreted by the hellish under test too. `BORN2ROOT_EXECLOG=0`
+  turns it off. What a static binary or a setuid program execs is not
+  visible to a preload; the guest side stays `make verify_guest`'s job.
 
 ## v2.10.0 — *the corpus release*
 
