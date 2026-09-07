@@ -8,7 +8,7 @@ shows you how to drive the shell.
 
 ---
 
-## Unreleased
+## v2.10.1 — *the whole VM under the logger*
 
 - **born2root is hellish throughout, and an exec log says so.** Launched
   from hellish, born2root still ran bash or sh in four places its Makefile
@@ -51,6 +51,17 @@ shows you how to drive the shell.
   are interpreted by the hellish under test too. `BORN2ROOT_EXECLOG=0`
   turns it off. What a static binary or a setuid program execs is not
   visible to a preload; the guest side stays `make verify_guest`'s job.
+- **Two more places the guest still passed through another shell,** found
+  by asking a live VM the logger's questions: cron ran born2root's
+  monitoring job and its first-boot hook as `/bin/sh -c` — Debian's dash,
+  for the milliseconds before each script's own shebang — so the install
+  and the conversion of an old guest now set the crontab's `SHELL` to the
+  guest shell (parity row "cron SHELL"); and an Inception stack deployed
+  from its `main` branch kept busybox as `/bin/sh` in every container,
+  because the shell-aware images lived on a branch — merged now. The
+  parity table's unit rows also wait out a restart (sshd-watchdog is bound
+  to sshd with `Requires=`) instead of reporting "(none)" for a unit that
+  was about to be back.
 
 ## v2.10.0 — *the corpus release*
 
