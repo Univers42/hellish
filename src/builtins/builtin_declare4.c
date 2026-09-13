@@ -20,7 +20,9 @@
    minus the blank space on either side -- the span now starts right after
    `{` (parse_function.c), so a body written on its own lines would
    otherwise print with an empty first and last line. bash ends each
-   definition with a newline; add it. */
+   definition with a newline; add it. A body defined with redirects
+   (`f() { ...; } 2>/dev/null`, an AST_COMMAND) already ends in its own
+   `} 2>/dev/null`, so the closing brace is not added a second time. */
 static void	print_body(t_shell *state, t_shell_func *fn)
 {
 	const char	*t;
@@ -40,7 +42,10 @@ static void	print_body(t_shell *state, t_shell_func *fn)
 	while (n > 0 && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n'))
 		n--;
 	body = ft_strndup(t, n);
-	ft_printf("%s ()\n{\n%s\n}\n", fn->name, body);
+	if (fn->body.node_type == AST_COMMAND)
+		ft_printf("%s ()\n{\n%s\n", fn->name, body);
+	else
+		ft_printf("%s ()\n{\n%s\n}\n", fn->name, body);
 	xfree(body);
 }
 

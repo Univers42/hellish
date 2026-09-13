@@ -135,7 +135,10 @@ t_execution_state	execute_command(t_shell *state, t_executable_node *exe)
    table lives in one place (state->redirects) and children can share an
    entry if the same redirect appears twice.  The redirs vec is created
    lazily on first use: an exe inherited from an enclosing command may
-   already carry redirect indices we must append to, never clobber. */
+   already carry redirect indices we must append to, never clobber.
+   While they resolve, state->pending_redirs points at the indices so far:
+   nothing is applied until all of them are, so `cmd 5<f <&5` has to learn
+   from that list, not from the shell's own fd table, that 5 will be open. */
 static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe)
 {
 	size_t		i;
@@ -148,13 +151,15 @@ static int	collect_redirects_from_ast(t_shell *state, t_executable_node *exe)
 		exe->redirs.elem_size = sizeof(int);
 	}
 	i = 0;
+	state->pending_redirs = &exe->redirs;
 	while (++i < exe->node->children.len)
 	{
 		curr = vec_idx(&exe->node->children, i);
 		ft_assert(curr->node_type == AST_REDIRECT);
 		if (redirect_from_ast_redir(state, curr, &redir_idx))
-			return (AMBIGUOUS_REDIRECT);
+			return (state->pending_redirs = NULL, AMBIGUOUS_REDIRECT);
 		vec_push_int(&exe->redirs, redir_idx);
 	}
+	state->pending_redirs = NULL;
 	return (0);
 }

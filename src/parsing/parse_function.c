@@ -100,6 +100,42 @@ static t_token	pop_func_head(t_shell *state, t_deque_tok *tokens)
 	return (name_tok);
 }
 
+/* POSIX: function_body : compound_command [redirect_list].  The redirects
+   belong to the body and apply at every call, not at the definition:
+   `f() { echo x; } 2>/dev/null` silences f each time it runs.  They are
+   parsed exactly like `{ ...; } >out` -- an AST_COMMAND whose children[0]
+   is the compound (a `{ }` body becomes the AST_BRACE_GROUP the parser
+   builds there) and children[1..] its redirects -- so a call runs them
+   through the same collector, which re-resolves a file and re-materialises
+   a heredoc on every call.  hellish used to stop at the body and report the
+   first redirect as a syntax error. */
+static t_ast_node	wrap_body_redirects(t_shell *state, t_parser *parser,
+				t_deque_tok *tokens, t_ast_node body)
+{
+	t_ast_node	cmd;
+	t_ast_node	redir;
+
+	if (parser->res != RES_OK
+		|| !is_redirect((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt))
+		return (body);
+	cmd = (t_ast_node){.node_type = AST_BRACE_GROUP};
+	vec_init(&cmd.children);
+	cmd.children.elem_size = sizeof(t_ast_node);
+	if (body.node_type == AST_COMPOUND_LIST)
+		(ast_push_child(&cmd, &body), body = cmd);
+	cmd = (t_ast_node){.node_type = AST_COMMAND, .token = body.token};
+	vec_init(&cmd.children);
+	cmd.children.elem_size = sizeof(t_ast_node);
+	ast_push_child(&cmd, &body);
+	while (parser->res == RES_OK
+		&& is_redirect((*(t_ltoken *)deque_peek(&tokens->deqtok)).tt))
+	{
+		redir = parse_redirect(state, parser, tokens);
+		ast_push_child(&cmd, &redir);
+	}
+	return (cmd);
+}
+
 /* Parse a function definition: name() { compound_list }
    Pops the three guaranteed tokens (name, `(`, `)`) before doing anything
    else, then skips newlines. If input ends right after `)` we return early
@@ -120,7 +156,8 @@ t_ast_node	parse_function_def(t_shell *state, t_parser *parser,
 		parser->res = RES_GETMOREINPUT;
 		return (ret);
 	}
-	body = parse_func_body(state, parser, tokens);
+	body = wrap_body_redirects(state, parser, tokens,
+			parse_func_body(state, parser, tokens));
 	ret = create_node_tok(AST_FUNCTION_DEF, name_tok);
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);

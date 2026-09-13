@@ -26,7 +26,9 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe);
    parser ever emits a type we forgot to handle, we crash loudly instead
    of silently returning 0 and hiding the bug. */
 /* Dispatch extension for node types added after the if-chain below filled
-   its norm line budget: the arithmetic command and the C-style for. */
+   its norm line budget: the arithmetic command, the C-style for, and a bare
+   AST_COMMAND -- the body of a function defined with redirects
+   (`f() { ...; } >log`), which a call runs directly, not via a pipeline. */
 t_execution_state	execute_tree_node_ext(t_shell *state,
 						t_executable_node *exe, t_ast_type t)
 {
@@ -34,6 +36,8 @@ t_execution_state	execute_tree_node_ext(t_shell *state,
 		return (execute_arith_cmd(state, exe));
 	if (t == AST_FOR_ARITH)
 		return (execute_for_arith(state, exe));
+	if (t == AST_COMMAND)
+		return (execute_command(state, exe));
 	ft_assert(0);
 	return (res_status(0));
 }

@@ -425,6 +425,7 @@ typedef struct s_shell
 	t_vec				readonly_vars; /* names that cannot be reassigned */
 	/* --- heredoc runtime state --- */
 	t_vec_redir			redirects; /* active redirections for current cmd */
+	t_vec				*pending_redirs; /* indices resolved, not applied */
 	int					heredoc_idx; /* next slot in the redirect vector */
 	bool				hd_defer; /* gather heredocs per top-level range */
 	t_vec				*for_snapshot; /* live "$@" copy of a running for */

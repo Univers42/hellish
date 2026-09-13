@@ -41,6 +41,7 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	int				wr;
 	t_string		sep;
 	t_hdoc			req;
+	char			*op;
 
 	if (try_defer_heredoc(state, curr, is_pipeline))
 		return (-1);
@@ -57,10 +58,10 @@ static int	create_heredoc_tempfile(t_shell *state, t_ast_node *curr,
 	if (!vec_ensure_space_n(&sep, 1))
 		return (xfree(sep.ctx), -1);
 	((char *)sep.ctx)[sep.len] = '\0';
+	op = ((t_ast_node *)curr->children.ctx)[0].token.start;
 	req = create_heredoc((char *)sep.ctx,
 			!contains_quotes(((t_ast_node *)curr->children.ctx)[1]),
-			ft_strncmp(((t_ast_node *)curr->children.ctx)[0].token.start,
-				"<<-", 3) == 0, is_pipeline);
+			heredoc_op_strips(op), is_pipeline);
 	return (write_heredoc(state, wr, &req), xfree(sep.ctx), curr->redir_idx);
 }
 

@@ -1,0 +1,26 @@
+echo five > fdr1; f() { cat; } <fdr1; f; f; rm -f fdr1
+f() { echo in; } >fdr2; f; cat fdr2; rm -f fdr2
+f() { echo x >&2; } 2>/dev/null; f; echo done
+f() { echo a; echo b >&2; } >fdr3 2>&1; f; f; cat fdr3; rm -f fdr3
+f() { echo "$1"; } >>fdr4; f one; f two; cat fdr4; rm -f fdr4
+function g { echo g; } >fdr5; g; cat fdr5; rm -f fdr5
+function g() { echo g2; } >fdr6; g; cat fdr6; rm -f fdr6
+f() ( echo sub ) >fdr7; f; cat fdr7; rm -f fdr7
+f() if true; then echo if; fi >fdr8; f; cat fdr8; rm -f fdr8
+f() for i in 1 2; do echo "$i"; done >fdr9; f; cat fdr9; rm -f fdr9
+f() { return 3; } >/dev/null; f; echo "rc=$?"
+f() { cat; } <fdr_missing; f; echo "rc=$?"; echo after
+f() { f2() { echo inner; } >fdr10; }; f; f2; cat fdr10; rm -f fdr10
+f() { echo line >&3; } 3>fdr11; f; f; cat fdr11; rm -f fdr11
+f() { cd /; } >/dev/null; f; pwd
+f() { x=1; } 2>/dev/null; f; echo "x=$x"
+f() { echo in; } >/dev/null; f | cat; echo "piped rc=$?"
+f() { echo in; } >fdr12; out=$(f); echo "[$out]"; cat fdr12; rm -f fdr12
+f() { echo x; } 2>/dev/null; eval "$(declare -f f)"; f
+f() { local v=loc; echo "$v"; } >fdr13; f; cat fdr13; rm -f fdr13
+eval $'f() { cat; } <<EOF\nbody\nEOF\nf; f'
+eval $'f() { cat <&3; } 3<<EOF\nfd three\nEOF\nf; f'
+eval $'f() { cat; } <<EOF\n$x\nEOF\nx=a; f; x=b; f'
+eval $'f() { cat; } <<\'EOF\'\n$x stays\nEOF\nx=a; f'
+eval $'f() { while read -r l; do echo "[$l]"; done; } <<EOF\none\ntwo\nEOF\nf'
+eval $'f() { cat; } <<-EOF\n\ttabbed\n\tEOF\nf; echo after'

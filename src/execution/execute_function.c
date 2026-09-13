@@ -118,7 +118,9 @@ t_execution_state	execute_func_def(t_shell *state, t_executable_node *exe)
 ** mutates the shared body AST, which makes repeated and recursive calls safe.
 ** Redirects re-resolve every call (commit_redir for non-heredocs, fresh
 ** materialize_heredoc for heredocs), so the per-node redir cache is never read
-** stale across calls.
+** stale across calls. A body defined with its own redirects (`f() { } >log`)
+** is an AST_COMMAND whose collector fills body_exe.redirs; that index list is
+** freed after every call, or each call leaked it.
 */
 t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 						t_vec *argv)
@@ -138,6 +140,7 @@ t_execution_state	execute_func_call(t_shell *state, t_shell_func *fn,
 	body = fn->body;
 	body_exe = create_exe_node(STDIN_FILENO, STDOUT_FILENO, &body, true);
 	status = execute_tree_node(state, &body_exe);
+	xfree(body_exe.redirs.ctx);
 	fire_return_trap(state, status.status);
 	trap_restore(state, tsave);
 	state->func_return = 0;

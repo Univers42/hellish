@@ -20,20 +20,33 @@
 #include "heredoc_private.h"
 #include "lexer.h"
 #include "redir.h"
+#include "sys.h"
 
 char	*hd_delim(t_ltoken *t, char *base);
 void	skip_one_body(const char **p, size_t *line, t_hd *s);
 
-/* Record one heredoc spec (line + literal delimiter) from a `<<word` pair. */
+/* Does this heredoc operator token ask for tab stripping (`<<-`)?  The token
+   of `3<<-EOF` starts at the fd digits, so they are skipped first: every
+   check that compared the token's first bytes with "<<-" missed the dash
+   whenever an fd was given, and the tab-indented delimiter never matched. */
+bool	heredoc_op_strips(const char *op)
+{
+	while (op && ft_isdigit((unsigned char)*op))
+		op++;
+	return (op && ft_strncmp(op, STRIP_HEREDOC, 3) == 0);
+}
+
+/* Record one heredoc spec (line + literal delimiter) from a `<<word` pair.
+   `<<-` is read from the operator's LAST byte: `3<<-EOF` starts with the fd
+   digits, so looking at byte 2 missed the dash, the tab-indented delimiter
+   never matched, and the body swallowed the rest of the script. */
 static void	push_spec(t_vec *v, t_deque_tok *tt, size_t i, size_t line)
 {
-	t_hd	sp;
+	t_hd		sp;
+	t_ltoken	*op;
 
-	sp.dash = false;
-	if (((t_ltoken *)deque_idx(&tt->deqtok, i))->len >= 3
-		&& (tt->base
-			+ ((t_ltoken *)deque_idx(&tt->deqtok, i))->off)[2] == '-')
-		sp.dash = true;
+	op = (t_ltoken *)deque_idx(&tt->deqtok, i);
+	sp.dash = (op->len >= 3 && (tt->base + op->off)[op->len - 1] == '-');
 	sp.line = line;
 	sp.delim = hd_delim((t_ltoken *)deque_idx(&tt->deqtok, i + 1), tt->base);
 	vec_push(v, &sp);

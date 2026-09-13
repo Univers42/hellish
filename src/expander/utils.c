@@ -48,13 +48,18 @@ bool	is_export(t_ast_node word)
 /* Expand and register a redirect node from a simple command's child list.
    On error, clears should_unwind (the error is handled by returning the
    AMBIGUOUS_REDIRECT sentinel, not by propagating a signal-style unwind)
-   and pushes the index into the caller's redirects list on success. */
+   and pushes the index into the caller's redirects list on success.  The
+   list so far is the pending one a `<&N` may refer to (dup_of_pending). */
 int	expand_simple_cmd_redir(t_shell *state,
 		t_expander_simple_cmd *exp, t_vec_int *redirects)
 {
 	int			redir_idx;
+	int			rc;
 
-	if (redirect_from_ast_redir(state, exp->curr, &redir_idx))
+	state->pending_redirs = redirects;
+	rc = redirect_from_ast_redir(state, exp->curr, &redir_idx);
+	state->pending_redirs = NULL;
+	if (rc)
 	{
 		get_g_sig()->should_unwind = 0;
 		return (AMBIGUOUS_REDIRECT);

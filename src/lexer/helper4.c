@@ -24,7 +24,9 @@ int	create_token_consume(char *start, int fd_len, t_tt tt, t_token *out)
 /* Given that str[0..fd_len-1] are digits and p points at the redirect char,
    pick the right token type (including two-char forms like >& and <<) and
    return the total span length. Longer forms are checked first so `>>`
-   wins over `>` when fd_len digits precede the `>>`. */
+   wins over `>` when fd_len digits precede the `>>`, and `<<-` over `<<`:
+   without it `3<<-EOF` lexed as `3<<` and the delimiter `-EOF`, so the body
+   ran to end of file. */
 static int	fd_redir_type(char *str, char *p, int fd_len, t_token *out)
 {
 	if (*p == '>' && *(p + 1) == '&')
@@ -39,6 +41,8 @@ static int	fd_redir_type(char *str, char *p, int fd_len, t_token *out)
 		return (create_token_consume(str, fd_len + 1, TT_REDIRECT_RIGHT, out));
 	if (*p == '<' && *(p + 1) == '<' && *(p + 2) == '<')
 		return (create_token_consume(str, fd_len + 3, TT_HERESTRING, out));
+	if (*p == '<' && *(p + 1) == '<' && *(p + 2) == '-')
+		return (create_token_consume(str, fd_len + 3, TT_HEREDOC, out));
 	if (*p == '<' && *(p + 1) == '<')
 		return (create_token_consume(str, fd_len + 2, TT_HEREDOC, out));
 	if (*p == '<' && *(p + 1) == '>')

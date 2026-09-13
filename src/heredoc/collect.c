@@ -100,8 +100,7 @@ bool	capture_heredoc_to_node(t_shell *state, t_ast_node *node)
 	if (!state->hd_src)
 		return (false);
 	sep = word_to_hrdoc_string(((t_ast_node *)node->children.ctx)[1]);
-	dash = (ft_strncmp(((t_ast_node *)node->children.ctx)[0].token.start,
-				STRIP_HEREDOC, 3) == 0);
+	dash = heredoc_op_strips(((t_ast_node *)node->children.ctx)[0].token.start);
 	end = scan_to_delim(state->hd_src + state->hd_pos, &sep, dash);
 	vec_init(&body);
 	body.elem_size = 1;

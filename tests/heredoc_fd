@@ -1,0 +1,34 @@
+eval $'cat 3<<EOF </dev/null\nnot on stdin\nEOF'; echo end
+eval $'cat 3<<EOF <&3\nthree\nEOF'
+eval $'cat 0<<EOF\nzero\nEOF'
+eval $'cat 2<<EOF </dev/null\nnot on stdin\nEOF'; echo end
+eval $'while read -r l <&3; do echo "got $l"; done 3<<EOF\na\nb\nEOF'
+eval $'for i in 1 2; do read -r l <&3; echo "$i $l"; done 3<<EOF\na\nb\nEOF'
+eval $'{ cat <&4; } 4<<EOF\ngroup\nEOF'
+eval $'( cat <&4 ) 4<<EOF\nsubshell\nEOF'
+eval $'if true; then cat <&3; fi 3<<EOF\nif\nEOF'
+eval $'case x in x) cat <&3;; esac 3<<EOF\ncase\nEOF'
+n=0; eval $'until read -r l <&3 || [ $((n+=1)) -gt 3 ]; do :; done 3<<EOF\nuntil\nEOF'; echo "$l $n"
+eval $'f() { cat <&3; }; f 3<<EOF\nfunction\nEOF'
+eval $'f() { cat <&3; } 3<<EOF\ndefined on the body\nEOF\nf'
+eval $'cat 3<<EOF 4<<EOF2 <&4\nthree\nEOF\nfour\nEOF2'
+eval $'cat 3<<EOF <&3 | tr a-z A-Z\npiped\nEOF'
+eval $'x=$(cat 3<<EOF <&3\nsubst\nEOF\n); echo "[$x]"'
+eval $'exec 3<<EOF\nheld by exec\nEOF\ncat <&3'
+eval $'cat <&3 3<<EOF\ndup before the heredoc\nEOF'; echo "rc=$?"
+eval $'cat 3<<-EOF <&3\n\ttabbed\n\tEOF'; echo after
+eval $'cat 0<<-EOF\n\ttabbed\n\tEOF'; echo after
+eval $'cat 12<<-EOF <&12\n\ttwo digits\n\tEOF'; echo after
+eval $'for i in 1; do cat <&3; done 3<<-EOF\n\tloop\n\tEOF'; echo after
+eval $'while read -r l <&3; do echo "[$l]"; done 3<<-EOF\n\ta\n\t\tb\n\tEOF'
+eval $'cat 3<<-\'EOF\' <&3\n\t$HOME stays\n\tEOF'
+echo five > hfd5; cat 5<hfd5 <&5; rm -f hfd5
+echo nine > hfd9; cat 9<hfd9 <&9; rm -f hfd9
+echo two > hfd12; cat 12<hfd12 <&12; rm -f hfd12
+echo seven > hfd7; { cat <&7; } 7<hfd7; rm -f hfd7
+echo w > hfd6; cat 6<hfd6 7<&6 <&7; rm -f hfd6
+cat 5<&3; echo "rc=$?"
+cat <&8 8<hfd_missing; echo "rc=$?"
+echo c > hfd13; cat 5<hfd13 5<&- <&5; echo "rc=$?"; rm -f hfd13
+echo c > hfd14; cat 5<&- 5<hfd14 <&5; rm -f hfd14
+echo c > hfd15; cat 5<hfd15 6<&5 5<&- <&6; rm -f hfd15

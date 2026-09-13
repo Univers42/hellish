@@ -103,7 +103,8 @@ int	try_create_redir(t_shell *state, t_ast_node *curr,
 			state->ctx, fname);
 		return (xfree(fname), -1);
 	}
-	if (!create_redir_4(tt, fname, &new_redir, src_fd))
+	if (!create_redir_4(tt, fname, &new_redir, src_fd)
+		&& !dup_of_pending(state, tt, fname, &new_redir))
 	{
 		print_redir_err(state, full_token, fname);
 		return (xfree(fname), -1);

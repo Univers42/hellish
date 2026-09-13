@@ -70,5 +70,6 @@ bool	is_delim_line(const char *line, size_t len, t_hd *s);
 bool	split_heredocs(const char *str, char **stripped, char **bodies);
 int		specs_on_line(const char *ls, size_t len, size_t line, t_vec *v);
 bool	heredoc_incomplete(const char *str);
+bool	heredoc_op_strips(const char *op);
 
 #endif

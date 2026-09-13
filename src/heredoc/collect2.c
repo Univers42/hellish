@@ -52,9 +52,8 @@ static t_hdoc	build_hdoc_req(t_ast_node *node, bool is_pipe, t_string *sep)
 
 	req.sep = (char *)sep->ctx;
 	req.expand = !contains_quotes(((t_ast_node *)node->children.ctx)[1]);
-	req.remove_tabs = (ft_strncmp(
-				((t_ast_node *)node->children.ctx)[0].token.start,
-				STRIP_HEREDOC, 3) == 0);
+	req.remove_tabs = heredoc_op_strips(
+			((t_ast_node *)node->children.ctx)[0].token.start);
 	req.is_pipe_heredoc = is_pipe;
 	req.finished = false;
 	req.full_file = (t_string){0};
@@ -94,7 +93,9 @@ int	materialize_heredoc(t_shell *state, t_ast_node *node, int *redir_idx)
 /* Process one AST_REDIRECT node that carries a heredoc operator (<<
    or <<-).  If deferral is appropriate (inside a function body or when
    hd_src is available) we capture the raw body onto the node and skip
-   eager materialisation; otherwise we expand the body now via
+   eager materialisation -- from the unread input when nothing was
+   pre-extracted, as for `f() { cat; } <<EOF` on one line of a script, whose
+   body every call must re-read; otherwise we expand the body now via
    write_heredoc (which attaches the pipe / temp-file backing) so the fd
    is ready when the command forks. */
 void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
@@ -106,7 +107,8 @@ void	gather_heredoc(t_shell *state, t_ast_node *node, bool is_pipe)
 	ft_assert(node->children.len >= 1);
 	if (((t_ast_node *)node->children.ctx)[0].token.tt != TT_HEREDOC)
 		return ;
-	if (state->gather_in_func && capture_heredoc_to_node(state, node))
+	if (state->gather_in_func && (capture_heredoc_to_node(state, node)
+			|| capture_heredoc_from_buff(state, node)))
 		return ;
 	idx = ft_mktemp(state, node);
 	sep = word_to_hrdoc_string(((t_ast_node *)node->children.ctx)[1]);

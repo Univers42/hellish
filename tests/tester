@@ -48,6 +48,8 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue17_signal_report"
         "issue16_net_redir"
         "redir_multi_fd"
+        "heredoc_fd"
+        "func_def_redirect"
         "dquote_brace_nest"
         "glob_collate"
         "special_builtin_abort"
