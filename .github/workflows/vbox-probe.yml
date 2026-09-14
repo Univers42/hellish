@@ -1,0 +1,42 @@
+# Throwaway: can a GitHub runner run VirtualBox at all, and does unloading
+# KVM give it back AMD-V? Deleted once the answer is recorded.
+name: vbox probe
+on:
+  push:
+    branches: [ci/vbox-probe]
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: What holds the hardware
+        run: |
+          grep -m1 -o -E 'svm|vmx' /proc/cpuinfo || echo "no virt flag"
+          lsmod | grep -E '^kvm' || echo "no kvm modules loaded"
+          ls -l /dev/kvm || true
+          cat /sys/module/kvm_amd/parameters/nested 2>/dev/null || true
+      - name: Install VirtualBox
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y virtualbox
+          VBoxManage --version
+      - name: Unload KVM, then look again
+        run: |
+          sudo modprobe -r kvm_amd kvm_intel 2>&1 || echo "rm kvm_amd/intel failed"
+          sudo modprobe -r kvm 2>&1 || echo "rm kvm failed"
+          lsmod | grep -E '^kvm' || echo "kvm modules gone"
+          sudo modprobe vboxdrv || sudo /sbin/vboxconfig || true
+          lsmod | grep vbox || echo "no vbox modules"
+      - name: Can a VM actually power on?
+        run: |
+          set -x
+          VBoxManage createvm --name probe --ostype Debian_64 --register
+          VBoxManage modifyvm probe --memory 512 --nic1 nat
+          VBoxManage startvm probe --type headless; rc=$?
+          sleep 5
+          VBoxManage showvminfo probe --machinereadable | grep -E '^VMState=' || true
+          VBoxManage controlvm probe poweroff || true
+          echo "startvm rc=$rc"
+          exit $rc
