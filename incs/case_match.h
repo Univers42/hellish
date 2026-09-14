@@ -69,8 +69,8 @@ bool		cm_class_has_w(const char *name, int len, const char *c,
    xg_match matches the group PLUS the rest of the pattern. */
 bool		xg_start(const char *p, const char *pe);
 bool		xg_match(t_cmp m);
-const char	*xg_group_end(const char *p, const char *pe);
-const char	*xg_alt_end(const char *p, const char *pe);
+const char	*xg_group_end(const char *p, const char *pe, bool brk);
+const char	*xg_alt_end(const char *p, const char *pe, bool brk);
 bool		xg_any_alt(t_cmp m, size_t cut);
 
 /* Both spellings of a group -- bash's `@(a|b)` and zsh's bare `(a|b)` --
@@ -81,7 +81,7 @@ bool		xg_any_alt(t_cmp m, size_t cut);
    `(` at the start of a word is a subshell and only the lexer has to care. */
 const char	*xg_open(const char *p);
 bool		xg_meta(char c);
-int			xg_alt_group_n(const char *at, const char *pe);
+int			xg_alt_group_n(const char *at, const char *pe, bool brk);
 int			xg_alt_group(const char *at);
 int			zsh_alt_ahead(const char *start, const char *at);
 

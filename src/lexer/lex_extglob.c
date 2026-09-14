@@ -44,7 +44,7 @@ int	extglob_ahead(const char *at)
 	if (!glob_extglob() || !at[0] || !ft_strchr("?*+@!", at[0])
 		|| at[1] != '(')
 		return (0);
-	e = xg_group_end(at + 1, at + 1 + ft_strlen(at + 1));
+	e = xg_group_end(at + 1, at + 1 + ft_strlen(at + 1), false);
 	if (!e)
 		return (0);
 	return ((int)(e - at));

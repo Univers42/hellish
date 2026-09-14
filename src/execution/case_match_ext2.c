@@ -122,7 +122,7 @@ bool	xg_match(t_cmp m)
 	const char	*tail;
 
 	op = xg_open(m.p);
-	tail = xg_group_end(op, m.pe);
+	tail = xg_group_end(op, m.pe, true);
 	if (!tail)
 		return (false);
 	if (*m.p == '*')

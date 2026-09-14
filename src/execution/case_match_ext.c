@@ -39,8 +39,14 @@
      A backslash-escaped byte is stepped over whole. That is what a quoted
    `")"` inside a group is by the time it gets here (append_pat_tok escapes
    it), and counting it as the closing paren would end the group in the
-   middle of itself. */
-const char	*xg_group_end(const char *p, const char *pe)
+   middle of itself.
+     `brk` is the same rule for a bracket expression, and only the MATCHER
+   asks for it -- bash's lexer stops at the first `)` and its matcher skips
+   `[...]` whole, so `@([)]|x)` is a syntax error to both shells while
+   `${v//@([)]|x)/Z}` replaces a `)` in both. A bracket that never closes
+   swallows the rest, group included, which is why bash matches nothing at
+   all against `@(a[b|c)`. */
+const char	*xg_group_end(const char *p, const char *pe, bool brk)
 {
 	int	depth;
 
@@ -50,6 +56,12 @@ const char	*xg_group_end(const char *p, const char *pe)
 	{
 		if (*p == '\\' && p + 1 < pe)
 			p++;
+		else if (brk && *p == '[')
+		{
+			p = bracket_close(p, pe);
+			if (!p)
+				return (NULL);
+		}
 		else if (*p == '(')
 			depth++;
 		else if (*p == ')' && depth-- == 0)
@@ -70,7 +82,7 @@ bool	xg_start(const char *p, const char *pe)
 	if (p >= pe)
 		return (false);
 	if (*p == '(')
-		return (xg_alt_group_n(p, pe) != 0);
+		return (xg_alt_group_n(p, pe, true) != 0);
 	return (ft_strchr("?*+@!", *p) != NULL && p + 1 < pe && p[1] == '('
 		&& glob_extglob());
 }
@@ -78,8 +90,11 @@ bool	xg_start(const char *p, const char *pe)
 /* The end of the alternative starting at `p`: the next top-level `|`, the
    group's closing `)`, or the end of the slice. Nested groups are skipped
    whole, and so is a backslash-escaped byte -- a quoted `"a|b"` written
-   inside a group is ONE alternative, not two. */
-const char	*xg_alt_end(const char *p, const char *pe)
+   inside a group is ONE alternative, not two -- and, when `brk` is set, so
+   is a bracket expression: the `|` in `a@([|]|x)b` is a MEMBER of the
+   class, and splitting the group there made that pattern miss `a|b`
+   entirely, silently, which is how it survived. */
+const char	*xg_alt_end(const char *p, const char *pe, bool brk)
 {
 	int	depth;
 
@@ -88,6 +103,8 @@ const char	*xg_alt_end(const char *p, const char *pe)
 	{
 		if (*p == '\\' && p + 1 < pe)
 			p++;
+		else if (brk && *p == '[' && bracket_close(p, pe))
+			p = bracket_close(p, pe);
 		else if (*p == '(')
 			depth++;
 		else if (*p == ')' && depth-- == 0)
@@ -115,7 +132,7 @@ bool	xg_any_alt(t_cmp m, size_t cut)
 	while (1)
 	{
 		a.p = m.p;
-		a.pe = xg_alt_end(m.p, m.pe);
+		a.pe = xg_alt_end(m.p, m.pe, true);
 		if (cm_run(a))
 			return (true);
 		if (a.pe >= m.pe || *a.pe != '|')
