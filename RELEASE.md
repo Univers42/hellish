@@ -94,6 +94,43 @@ And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
   a newline, a tab, an escape or a byte that is not a character in this
   locale as `$'…'`, the way bash does, so its output reads back as the
   same variable.
+- **A bad substitution names the word, and the line does not run.**
+  `docker image ls --format ${{.ID}}` printed `hellish: ${{.ID}: bad
+  substitution` and then ran docker anyway, once per image, with a lone
+  `}` for its `--format`. Two bugs in three lines: the message named the
+  `${…}` span the scanner stopped at where bash names the whole word, and
+  the failed expansion came back as `""` so the command ran with a mangled
+  argument list. bash's expansion errors discard the rest of the line —
+  the command does not run, nothing after its `;` or `&&` runs, `$?` is 1
+  — and so do these now, in the word expander, the simple-command
+  executor, the list loops and the streamed input reader, which share one
+  answer about when a line is over.
+- **The pattern matcher matches slices, and a pattern that matches
+  nothing is refused in one pass.** A fresh install stalled for seconds at
+  every prompt: bash-preexec's `__bp_sanitize_string` runs one
+  `${v//pat/rep}` over `PROMPT_COMMAND` whose pattern normally matches
+  nothing, and that cost 7.7 seconds on a 122-character value where bash
+  spends none — three times per install, and enough for the pty gate
+  watching it to time out under load. Two compounding costs, both gone.
+  Every caller that asked about a *piece* of something — an extglob
+  alternative, the prefix a group is asked to consume, every prefix at
+  every position — copied the piece out first, three deep, so one
+  substitution copied cubically many bytes before it could answer; the
+  matcher takes slices now and copies nothing to ask a question. And the
+  substitution asks bash's question first: wrap the pattern in `*`s, and
+  if *that* does not match, no substring does. bash's two other guards
+  came with it — a position whose first byte the pattern's first element
+  cannot take is skipped, and the longest-match scan stops at the most the
+  pattern can consume. 7.67s → 0.09s on that value; `${v//[b]/X}` over
+  20k characters, 19.19s → 0.15s.
+- **Two answers the matcher was getting wrong, found by pinning the one
+  above.** An extglob group whose operator is not itself a wildcard —
+  `@(`, `+(`, `!(`, zsh's bare `(` — took the substitution's literal fast
+  path and was compared as text, so `${v//@(X|Y)/-}` and `${v//+(a)/Z}`
+  replaced nothing and said nothing about it. And a bracket expression
+  inside a group was read as syntax: the `|` in `a@([|]|x)b` is a member
+  of the class, not an alternative separator, so that pattern could not
+  match `a|b` at all. Both are bash's answers now.
 - **Carried from 2.10.2**, which was never published on its own: `N<<EOF`
   feeds descriptor N, `N<<-EOF` strips tabs and ends at `EOF`,
   `cmd 5<file <&5` works for any descriptor, and a function definition
@@ -112,8 +149,15 @@ And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
   `declare -p` quoting forms the same way, under both locales.
   `rc_hooks_test.py` types at an array `PROMPT_COMMAND` and at the z.sh
   shape; `regress_hellish` pins the `localvar_unset` answers
-  bash-completion asks a bash 5 for. The golden suite is 5036/5036 and the hard corpus 17/17 with
-  signals ignored on entry, where they were 4892 and 16/17.
+  bash-completion asks a bash 5 for, and thirteen malformed expansions
+  with their messages and statuses, while `bad_substitution_test.py` types
+  them at a real terminal, where the discard is the only visible part.
+  `pattern_slice` pins 84 substitution, `case` and `[[ ]]` patterns around
+  the slice boundaries, and `pattern_cost_test.py` shapes the complexity
+  fix as work that is instant with it and effectively unbounded without —
+  one of its five cases took over an hour before. The golden suite is
+  5133/5133 and the hard corpus 17/17 with signals ignored on entry, where
+  they were 4892 and 16/17.
 
 ---
 
