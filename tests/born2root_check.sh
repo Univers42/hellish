@@ -15,7 +15,8 @@
 #      qemu, work in mktemp directories and need no root) and the host-side
 #      helpers that are safe to run (the help renderer, the backend probe)
 #      print the same stdout and exit with the same status under both shells.
-#      mktemp names differ per run and are normalised before the diff.
+#      mktemp names and git autostash hashes differ per run and are normalised
+#      before the diff.
 #      hellish's stderr is scanned for sanitizer reports.
 #
 # hellish is put first on PATH for its side of the run, so born2root's
@@ -105,7 +106,7 @@ run_case() { # run_case <shell> <path-prefix> <script...>
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 		timeout 180 "$sh" "$@" </dev/null )
 }
-normalise() { sed -E 's#/tmp/tmp\.[A-Za-z0-9_]+#/tmp/tmp.X#g'; }
+normalise() { sed -E -e 's#/tmp/tmp\.[A-Za-z0-9_]+#/tmp/tmp.X#g' -e 's#(autostash:? )[0-9a-f]{7,}#\1X#g'; }
 
 ok=0; ko=0
 for c in "${cases[@]}"; do
@@ -135,6 +136,7 @@ for sh in "$BASH_BIN" "$H"; do
 		timeout 180 "$sh" -c 'make -n all' </dev/null ) 2>"$OUT/mk.err" \
 		| sed -E -e 's#(/[A-Za-z0-9_./-]+/)?(hellish|bash) (setup|utils|generate)/#$SH \3/#g' \
 			-e "s#(/[A-Za-z0-9_./-]+/)?(hellish|bash) -c#\$SH -c#g" \
+			-e 's#SCRIPT_SH="[^"]*"#SCRIPT_SH="$SH"#g' \
 			-e 's#/tmp/tmp\.[A-Za-z0-9_]+#/tmp/tmp.X#g' >"$OUT/mk.$(basename "$sh")"
 	echo "${PIPESTATUS[0]}" >"$OUT/mk.$(basename "$sh").rc"
 done
@@ -145,7 +147,7 @@ bn="$(basename "$BASH_BIN")"; hn="$(basename "$H")"
 picked="$(cd "$B2R" && env -i PATH="$(dirname "$H"):$PATH" HOME="$FAKE_HOME" TERM=dumb \
 	HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 	timeout 60 "$H" -c 'make -n all' 2>/dev/null </dev/null \
-	| grep -m1 -oE '[^ ]+ setup/host/select_backend.sh' | cut -d' ' -f1)"
+	| grep -m1 -oE 'SCRIPT_SH="[^"]+"' | sed -E 's/^SCRIPT_SH="(.*)"$/\1/')"
 if [ "$picked" != "$H" ]; then
 	ko=$((ko + 1)); fail=1
 	printf 'FAIL  %-44s probe picked %s\n' "make picks hellish as SCRIPT_SH" "${picked:-nothing}"

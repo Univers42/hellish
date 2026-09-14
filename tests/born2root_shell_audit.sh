@@ -89,7 +89,12 @@ diagnostic/b2b_learling_lab\.sh:.*useradd -- same
 fixes/fix_policy\.sh:.*grep "/bin/bash" -- reads /etc/passwd
 tests/test_vbox_driver\.sh:.*#!/bin/sh -- stub VirtualBoxVM files whose mode bits are the subject
 tests/test_check_deps_backend\.sh:.*#!/bin/sh -- stub tools on a fabricated PATH; whether `make deps` reaches sudo at all is the subject
-generate/create_custom_iso\.sh:.*(sed -i -e|-e "s\|echo) -- the rewrite rules themselves: what the ISO'"'"'s preseed says instead of /bin/bash and #!/bin/sh
+tests/test_(select_backend|guest_users|stop_kvm_guests)\.sh:.*#!/bin/sh -- same: stub tools and processes on a fabricated PATH, the script under test is what runs
+tests/test_nvim_bootstrap_env\.sh:.*:/bin/sh\\n -- a fabricated passwd line: the shell field is data
+tests/test_nvim_bootstrap_env\.sh:.*sh -c '"'"'sleep -- stand-ins for curl and a language server whose argv is the subject: bash and hellish would exec sleep in place and drop it
+tests/test_stop_kvm_guests\.sh:.*sh -c '"'"'sleep 300 -- a stray guest process for the script under test to stop
+preseeds/b2b-setup\.sh:.*LOGIN_SHELL=/bin/bash -- new accounts get it only when the lines above already failed the build
+generate/create_custom_iso\.sh:.*(sed -i|-e "s\|echo) -- the rewrite rules themselves: what the ISO'"'"'s preseed says instead of /bin/bash and #!/bin/sh
 '
 shebangs=$(find "$B2R" -name '*.sh' -type f -not -path '*/.git/*' -exec head -q -n1 {} + | grep -c -v '^#!/usr/bin/env hellish$')
 total=$(find "$B2R" -name '*.sh' -type f -not -path '*/.git/*' | wc -l)
