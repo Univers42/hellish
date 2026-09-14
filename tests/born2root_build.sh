@@ -262,18 +262,31 @@ guest() { # guest <cmd...>  -- over the ssh config born2root wrote
 # pty echoes the typed line back with its $(...) unexpanded, which is why the
 # caller's pattern always requires an EXPANDED field.
 #
-# It retries, because the guest is not finished with itself when it first
-# answers ssh: first boot keeps provisioning for minutes after sshd is up,
-# and one of its late steps replaces /usr/bin/hellish.real with the published
-# release -- a login that lands in that window gets no shell and no output.
-# On the CI runner both pty checks came back empty two seconds after sshd
-# answered, on a guest that passes them every time here. When the retries run
-# out the raw answer and ssh's own stderr are printed, so the next failure
-# says something instead of "''".
+# TERM is the load-bearing part. Both pty checks came back empty on the CI
+# runner, on a guest that answers them every time on a developer machine, and
+# the reason is one line at the end of the session:
+#
+#     open terminal failed: terminal does not support clear
+#
+# born2root's guest auto-attaches tmux for interactive logins, `docker run`
+# without -t leaves TERM unset in the container the harness runs in -- bash
+# then calls it `dumb`, which tmux refuses just as flatly -- and ssh passes
+# that straight through, so tmux quit before the login shell could run
+# anything. No human login looks like that, so the probe presents a real
+# terminal type: the caller's when it has one, xterm-256color otherwise.
+#
+# It also retries, because the guest is not finished with itself when it first
+# answers ssh: first boot keeps provisioning for minutes after sshd is up, and
+# one of its late steps replaces /usr/bin/hellish.real with the published
+# release -- a login landing in that window gets no shell either. When the
+# retries run out the raw answer and ssh's own stderr are printed, which is
+# how the tmux line above was found; before that this said "''".
 guest_pty() {
-	local line="$1" pat="$2" try=0 raw="" hit=""
+	local line="$1" pat="$2" try=0 raw="" hit="" term="${TERM:-}"
+	case "$term" in "" | dumb | unknown) term=xterm-256color ;; esac
 	while [ "$try" -lt 6 ]; do
-		raw="$(printf '%s\nexit\n' "$line" | "$WORK/bin/ssh" -tt \
+		raw="$(printf '%s\nexit\n' "$line" \
+			| TERM="$term" "$WORK/bin/ssh" -tt \
 			-o BatchMode=yes -o ConnectTimeout=15 b2b 2>"$WORK/pty.err" \
 			| tr -d '\r')"
 		# not `grep | head && return`: head succeeds on empty input, so that
