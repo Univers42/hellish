@@ -64,6 +64,17 @@ CASES = [
     'x=ab; echo "${x:1:5}|${x:2}|${#x}"',
     'x=ééé; printf \'%s\\n\' "${x:1:1}" "${#x}" "${x^}"',
     'printf \'%-8s|\\n\' "$(x=été; echo "${x^^}")"',
+    # The substitution now caps how far it looks for the longest match, and
+    # the cap is in BYTES while `?` and a bracket each match one CHARACTER.
+    # Counting them as one byte would cut the scan short and drop matches
+    # that exist -- silently, since "no match" is an ordinary answer.
+    'x=café; echo "${x//é/E}|${x//[é]/E}|${x//?/.}|${x//[a-z]/.}"',
+    'x=café; echo "${x//[à-ü]/.}|${x//?é/X}|${x//é?/X}"',
+    'x=àéîõü; echo "${x//?/.}|${x//[éõ]/_}"',
+    'x=café; echo "${x/#?/X}|${x/%?/X}|${x/#[c]/X}|${x/%[é]/X}"',
+    'shopt -s extglob; eval \'x=café; echo "${x//@(é|f)/_}"\'',
+    'shopt -s extglob; eval \'x=ééé; echo "${x//+(é)/_}"\'',
+    'shopt -s extglob; eval \'x=café; echo "${x##+([a-z])}|${x%%?(c)}"\'',
 ]
 
 

@@ -25,7 +25,17 @@
    took the literal path, so ${v//[X]/-} compared the three characters `[X]`
    against the value and replaced nothing -- silently, because "no match" is
    an ordinary answer here. A fast path has to know every character the
-   matcher treats as special, which is the standing cost of having one. */
+   matcher treats as special, which is the standing cost of having one.
+   `(` is the last of them, and it was missing the same way:
+
+     v=aXbYc; echo "${v//@(X|Y)/-}"     bash: a-b-c      here: aXbYc
+     v=aaa;   echo "${v//+(a)/Z}"       bash: Z          here: aaa
+
+   -- an extglob group whose operator is not itself a wildcard (`@(`, `+(`,
+   `!(`, and zsh's bare `(`) has no character in the old set, so the whole
+   group was compared as literal text and matched nothing.  Every group
+   spells its opening paren, so testing for that one byte covers all four
+   without the fast path having to learn what an operator is. */
 int	patsub_match_len(const char *pat, const char *s)
 {
 	size_t	plen;
@@ -33,8 +43,8 @@ int	patsub_match_len(const char *pat, const char *s)
 	int		cap;
 
 	plen = ft_strlen(pat);
-	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?')
-		&& !ft_strchr(pat, '[') && !ft_strchr(pat, '\\'))
+	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?') && !ft_strchr(pat, '[')
+		&& !ft_strchr(pat, '\\') && !ft_strchr(pat, '('))
 	{
 		if (!ft_strncmp(pat, s, plen))
 			return ((int)plen);
