@@ -451,7 +451,21 @@ run_backend() { # run_backend qemu|virtualbox
 		echo "   rc=$rc in $(( ( $(date +%s) - t0 ) / 60 )) min"
 	fi
 	grep -aE '▶|✓|✗|⚠' "$LOG" | sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/^/   | /' | tail -40
-	if [ "$rc" != 0 ]; then ko "[$be] make exited $rc"; tail -20 "$LOG"; return 1; fi
+	if [ "$rc" != 0 ]; then
+		ko "[$be] make exited $rc"; tail -20 "$LOG"
+		# The guest usually outlives the failure -- first boot provisions
+		# over ssh and `make all` gives up after it, with the reason written
+		# down inside the VM. Fetch it: "features.status records a failure
+		# -- see above" is not something a CI log can act on, and the guest
+		# is gone by the time anyone reads it.
+		if guest true 2>/dev/null; then
+			echo "   --- guest /etc/b2b/features.status"
+			guest 'cat /etc/b2b/features.status' 2>/dev/null | sed 's/^/   | /'
+			echo "   --- guest /var/log/b2b-provision.log (last 60)"
+			guest 'tail -60 /var/log/b2b-provision.log' 2>/dev/null | sed 's/^/   | /'
+		fi
+		return 1
+	fi
 	ok "[$be] the guest is up"
 	grep -qaE 'AddressSanitizer|LeakSanitizer' "$LOG" && ko "[$be] sanitizer report in the log"
 	tripwire_report "[$be] make all"
