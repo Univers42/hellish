@@ -12,6 +12,7 @@
 
 #include "builtins_private.h"
 #include "executor.h"
+#include "pal.h"
 #include <signal.h>
 
 /* g_trap_pending holds the signal number of the most recently received
@@ -100,6 +101,8 @@ int	set_one_trap(t_shell *state, const char *action, int num)
 {
 	if (num < 0 || num >= SH_NTRAP)
 		return (1);
+	if (num > 0 && num < SH_NSIG && pal_sig_ignored_on_entry(num))
+		return (0);
 	if (num >= TRAP_DEBUG)
 		state->traps_quiet &= ~(1 << (num - TRAP_DEBUG));
 	xfree(state->traps[num]);

@@ -24,6 +24,14 @@
 # include <signal.h>
 # include <stdint.h>
 
+/* src/platform/posix/sig_entry.c.  Declared here, not only in pal.h,
+   because the two inline helpers below run in a just-forked child and
+   must not hand back a signal the shell was told to ignore: SIG_IGN
+   survives execve, which is the whole point of a background job's
+   deafness to ^C, and resetting it here would have made every command a
+   background shell runs killable by a ^C aimed at someone else. */
+int		pal_sig_ignored_on_entry(int sig);
+
 /* Restore the job-control and interrupt signals to their default kernel
    action.  Called in the child just before execve so the new program starts
    with clean dispositions (its own handlers, not ours).
@@ -35,8 +43,10 @@
    them right after calling us -- see bg_child_body. */
 static inline void	default_signal_handlers(void)
 {
-	signal(SIGINT, SIG_DFL);
-	signal(SIGQUIT, SIG_DFL);
+	if (!pal_sig_ignored_on_entry(SIGINT))
+		signal(SIGINT, SIG_DFL);
+	if (!pal_sig_ignored_on_entry(SIGQUIT))
+		signal(SIGQUIT, SIG_DFL);
 	signal(SIGTSTP, SIG_DFL);
 	signal(SIGTTIN, SIG_DFL);
 	signal(SIGTTOU, SIG_DFL);

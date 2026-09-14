@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "rl_private.h"
+#include "pal.h"
 
 /* Re-sync the has_line flag from the raw buffer state. The buffer acts as a
    ring: data already consumed lives below cursor, unread data above it. We
@@ -82,7 +83,7 @@ int	get_more_input_notty(t_shell *state)
 	int		status;
 
 	status = 1;
-	set_unwind_sig_norestart();
+	pal_arm_unwind(1);
 	state->rl.buff.elem_size = 1;
 	while (1)
 	{
@@ -100,6 +101,6 @@ int	get_more_input_notty(t_shell *state)
 		if (ft_strnchr(buff, '\n', ret))
 			break ;
 	}
-	return (set_unwind_sig(),
+	return (pal_arm_unwind(0),
 		buff_readline_update(&state->rl), status);
 }

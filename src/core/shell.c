@@ -18,6 +18,7 @@
 #include "job_control.h"
 #include "update.h"
 #include "sys.h"
+#include "pal.h"
 #include <stdlib.h>
 #include <fcntl.h>
 #include <locale.h>
@@ -54,6 +55,7 @@ int	main(int argc, char **argv, char **envp)
 	(void)argc;
 	setlocale(LC_ALL, "");
 	on(&state, argv, envp);
+	seed_entry_traps(&state);
 	tty_snapshot_save();
 	if (is_login_shell)
 		state.option_flags |= OPT_FLAG_LOGIN;

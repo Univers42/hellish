@@ -14,6 +14,7 @@
 #include "update.h"
 #include "shell.h"
 #include "pal.h"
+#include <signal.h>
 #include "helpers.h"
 #include "env.h"
 #include <string.h>
@@ -130,7 +131,7 @@ void	on(t_shell *state, char **argv, char **envp)
 {
 	t_cli	cli;
 
-	set_unwind_sig();
+	pal_entry_signals();
 	*state = shell_init();
 	state->shopt = SHOPT_CHECKWINSIZE;
 	cli_parse(state, argv, &cli);
