@@ -111,7 +111,8 @@ And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
   `array_scalar_shape` pins the 88 scalar-over-array, `+=`, builtin and
   `declare -p` quoting forms the same way, under both locales.
   `rc_hooks_test.py` types at an array `PROMPT_COMMAND` and at the z.sh
-  shape. The golden suite is 5031/5031 and the hard corpus 17/17 with
+  shape; `regress_hellish` pins the `localvar_unset` answers
+  bash-completion asks a bash 5 for. The golden suite is 5036/5036 and the hard corpus 17/17 with
   signals ignored on entry, where they were 4892 and 16/17.
 
 ---
