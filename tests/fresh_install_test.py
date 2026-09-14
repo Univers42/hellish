@@ -102,6 +102,22 @@ def fetch(name, url):
         return None
 
 
+LAST_STATE = ""
+
+
+def proc_state(pid):
+    try:
+        with open("/proc/%d/stat" % pid) as f:
+            fields = f.read().rsplit(")", 1)[1].split()
+        with open("/proc/%d/wchan" % pid) as f:
+            wchan = f.read().strip()
+        # after the ")": state pgrp session tty tpgid ...
+        return "state=%s pgrp=%s tpgid=%s wchan=%s" % (
+            fields[0], fields[2], fields[5], wchan)
+    except OSError as e:
+        return "proc: %s" % e
+
+
 def session(home, cmds, settle=1.2):
     env = {"HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
            "TERM": "dumb", "LANG": "C.UTF-8", "HELLISH_NO_BANNER": "1",
@@ -135,6 +151,14 @@ def session(home, cmds, settle=1.2):
     for c in cmds:
         os.write(fd, c + b"\n")
         drain(settle)
+    # What the shell is doing right now, before we tell it to leave: its
+    # state letter, process group against the terminal's foreground group,
+    # and the kernel wait channel. A shell that never printed a prompt is
+    # either stopped (T: a SIGTTIN from a terminal it no longer owns) or
+    # asleep in a read it should not be in, and the two need different
+    # fixes. Linux-only, and only ever informative.
+    global LAST_STATE
+    LAST_STATE = proc_state(pid)
     os.write(fd, b"exit\n")
     drain(0.5)
     try:
@@ -196,7 +220,8 @@ def main():
     check("the shell still runs commands", "E2E-ALIVE" in out, out[-300:])
     check("bash-preexec really installed itself",
           "__bp_precmd_invoke_cmd" in out,
-          "PROMPT_COMMAND never got the hook:\n" + out[-400:])
+          "PROMPT_COMMAND never got the hook; shell was %s\n%s"
+          % (LAST_STATE, out[-1500:]))
     check("the hooks are separated, not concatenated",
           "_hx_precmd_run__bp" not in out, out[-400:])
     shutil.rmtree(home, ignore_errors=True)
