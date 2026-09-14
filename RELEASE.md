@@ -8,6 +8,35 @@ shows you how to drive the shell.
 
 ---
 
+## v2.10.2 — *heredocs on any descriptor*
+
+- **`N<<EOF` feeds fd N.** The body always went to stdin whatever N said,
+  so `while read -r l <&3; do ...; done 3<<EOF` failed "3: Bad file
+  descriptor" and `cat 3<<EOF </dev/null` printed the body. The redirect now
+  carries its source fd, on a simple command, a compound, a function call, a
+  pipeline member, a command substitution and `exec`.
+- **`N<<-EOF` strips tabs and ends at `EOF`.** The lexer read `3<<-` as
+  `3<<` followed by the word `-EOF`, and the pre-scan that gathers a
+  script's heredoc bodies agreed, so everything after the body vanished.
+  Both now take the dash from the operator, whatever digits precede it.
+- **`cmd 5<file <&5` works for any fd.** The `<&N` check probed the shell's
+  own fd table before the same command's earlier redirects were applied, so
+  it failed for any fd the shell did not already have open (5 and up).
+  It now asks the redirects already resolved for that command first; the
+  last one naming the fd decides, so `5<f 5<&- <&5` is still refused.
+- **Redirects on a function definition.** `f() { ...; } 2>/dev/null` was a
+  syntax error. POSIX's `function_body: compound_command [redirect_list]`
+  is parsed now: the redirects belong to the body and apply at every call,
+  heredocs included (re-expanded per call, even when the body and the
+  heredoc sit on the definition's own line), and `declare -f` prints them.
+- **Tests:** golden categories `heredoc_fd` (34 cases) and
+  `func_def_redirect` (26), scripts `50_heredoc_fd.sh` and
+  `51_func_def_redirect.sh`, all diffed against the pinned bash 5.3.9.
+  tests/prompt_width_test.c links on clang too (a weak `ft_eprintf` stub for
+  the inline error helpers clang emits at -O0).
+
+---
+
 ## v2.10.1 — *the whole VM under the logger*
 
 - **born2root is hellish throughout, and an exec log says so.** Launched
