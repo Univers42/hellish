@@ -15,7 +15,10 @@
 /* Real bash option names hellish implements no behaviour for -- but that
    scripts legitimately probe. bash_completion runs `shopt -q cdable_vars`
    and `shopt -u hostcomplete` bare, so answering "invalid shell option
-   name" made `. bash_completion` noisy at every login (#105). */
+   name" made `. bash_completion` noisy at every login (#105). Its
+   _comp_unlocal asks `shopt -q localvar_unset` on any bash 5 -- which
+   hellish became to it once $(( BASH_VERSINFO[0] >= 5 )) evaluated -- and
+   takes the plain `unset -v` path on the "off" bash defaults to. */
 static bool	shopt_is_known_unimpl(const char *name)
 {
 	static const char	*tab[] = {"cdable_vars", "checkhash", "checkjobs",
@@ -23,8 +26,9 @@ static bool	shopt_is_known_unimpl(const char *name)
 		"expand_aliases", "extdebug", "extquote", "failglob",
 		"force_fignore", "globasciiranges", "globskipdots", "gnu_errfmt",
 		"histreedit", "histverify", "hostcomplete", "huponexit",
-		"inherit_errexit", "interactive_comments", "login_shell",
-		"mailwarn", "no_empty_cmd_completion", "nocasematch",
+		"inherit_errexit", "interactive_comments", "localvar_inherit",
+		"localvar_unset", "login_shell", "mailwarn",
+		"no_empty_cmd_completion", "nocasematch",
 		"patsub_replacement", "progcomp_alias", "promptvars",
 		"restricted_shell", "shift_verbose", "sourcepath",
 		"varredir_close", "xpg_echo", NULL};

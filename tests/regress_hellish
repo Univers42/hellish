@@ -257,3 +257,8 @@ if [[ "$(echo hi)" =~ "declare -a" ]]; then echo A; else echo B; fi
 [[ abc =~ ^(a)(b)c$ ]]; echo $?
 [[ "x y" =~ "x"" ""y" ]]; echo $?
 v="p q"; [[ "p q" =~ "$v" ]]; echo $?
+shopt -q localvar_unset; echo $?
+shopt -u localvar_unset; echo $?
+shopt -p localvar_unset
+shopt -q localvar_inherit; echo $?
+x=g; f() { local x=1; g; echo "f:[$x]"; }; g() { unset x; echo "g:[$x]"; }; f; echo "top:[$x]"
