@@ -92,3 +92,40 @@ bool	lex_zsh_len(t_arith_lexer *lex)
 	lex->current.len = lex->pos - start;
 	return (true);
 }
+
+/* bash's `a[i]` inside $(( )): the subscript is part of the name.
+
+   Claimed here for the same reason lex_zsh_plus claims `+name[key]`: the
+   lexer has no shell to look anything up, so it hands get_var_value the
+   whole shape and lets the expander resolve it. Before this the name
+   stopped at `a` and `[` went to lex_operator, which had no reading of it
+   -- ATOK_ERROR on the plain path, and on the cached path a token that
+   never advanced, so lex_all pushed it until the allocator asked for
+   0xc00000000 bytes; `a[a[0]]` hung. Brackets are counted, so a subscript
+   inside a subscript ends at its own `]`; nothing else can nest by now,
+   every $-expansion inside $(( )) having already been replaced. False for
+   an unterminated `[`: the caller must make that an error token itself,
+   because handing `[` on to lex_operator is exactly the shape that never
+   advanced and hung. bash says "bad array subscript". */
+bool	lex_subscript(t_arith_lexer *lex)
+{
+	int	i;
+	int	depth;
+
+	if (lex->pos >= lex->len || lex->input[lex->pos] != '[')
+		return (true);
+	i = lex->pos;
+	depth = 0;
+	while (i < lex->len)
+	{
+		if (lex->input[i] == '[')
+			depth++;
+		else if (lex->input[i] == ']' && --depth == 0)
+		{
+			lex->pos = i + 1;
+			return (true);
+		}
+		i++;
+	}
+	return (false);
+}

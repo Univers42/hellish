@@ -108,6 +108,11 @@ char			*zsh_param(t_shell *state, const char *s, int slen);
 char			*expand_strlen(t_shell *state, const char *s, int slen);
 bool			lex_zsh_plus(t_arith_lexer *lex);
 bool			lex_zsh_len(t_arith_lexer *lex);
+bool			lex_subscript(t_arith_lexer *lex);
+char			*arith_elem_get(t_shell *state, const char *name, int len);
+void			arith_elem_set(t_shell *state, const char *name, int len,
+					const char *nv);
+char			*arith_var_special(t_shell *state, const char *name, int len);
 
 /* Main API */
 char			*arith_expand(t_shell *state, const char *expr, int len);

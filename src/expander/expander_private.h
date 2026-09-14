@@ -181,6 +181,11 @@ bool		zsh_aliases_assign(t_shell *state, t_env *ev, const char *sub,
 				t_vec *args);
 bool		zsh_aliases_scalar(t_shell *state, t_env *ret);
 char		*expand_param_word_dq(t_shell *state, const char *word, int wlen);
+
+/* src/expander/expand_subscript.c: the ']' that closes the '[' at `open`,
+   skipping the nested ${...}, $(...), $((...)), subscripts and quoted
+   text that carry a ']' of their own. -1 when unterminated. */
+int			subscript_close(const char *s, int len, int open);
 char		*pf_word_pipeline(t_shell *state, const char *word, int wlen,
 				bool no_sq);
 t_string	word_to_pattern(t_ast_node node);

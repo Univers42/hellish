@@ -16,6 +16,7 @@ once per terminal you opened at the same moment, and — through born2root —
 it offered to install a hypervisor the build was never going to use. The
 major number is for the first one: a hellish started as a background job
 now behaves like bash there, which is a change in what your scripts see.
+And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
 
 - **A signal ignored on entry is not the shell's to take.** *(behaviour
   change)* POSIX, and bash: *signals that were ignored on entry to the
@@ -60,6 +61,19 @@ now behaves like bash there, which is a change in what your scripts see.
   terminal type now, retries while first boot is still provisioning, and
   prints the guest's raw answer when it gives up, which is how that line
   was found at all.
+- **A subscript ends at its own bracket.** `${a[$((i % ${#a[@]}))]}` was
+  answered with `$((i % ${#a[@: arithmetic error`: the scanner took the
+  first `]` it met as the end of the subscript, and that one belonged to
+  the `[@]` nested inside. Anything that brought a `]` of its own cut the
+  subscript off there — `${a[${#b[@]}]}`, `${m[${k[0]}]}`, a slice offset
+  of `${#a[@]}-1` — and what was left over came back as somebody else's
+  syntax error, a `bad substitution`, or the wrong element. Brackets nest
+  now, and `${…}`, `$(…)` and `$((…))` are skipped as one unit each, so a
+  `]` inside them is theirs. Slice offsets are expanded before they are
+  evaluated. And inside arithmetic itself `a[i]`, `a[i+1]`, `a[a[0]]`,
+  `m[key]` and `x[0]` read the element bash reads, `(( a[1] = 9 ))` and
+  `(( a[0]++ ))` write it, and an unterminated `$(( a[ ))` is an
+  arithmetic error where it used to be a hang that ate all the memory.
 - **Carried from 2.10.2**, which was never published on its own: `N<<EOF`
   feeds descriptor N, `N<<-EOF` strips tabs and ends at `EOF`,
   `cmd 5<file <&5` works for any descriptor, and a function definition
@@ -71,8 +85,11 @@ now behaves like bash there, which is a change in what your scripts see.
   simultaneous shells, plus the claim held by someone else and the claim
   nobody released; born2root's `tests/test_check_deps_backend.sh` pins
   the dependency rule against a fabricated PATH where `sudo` only records
-  that it was reached. The golden suite is 4894/4894 and the hard corpus
-  17/17 with signals ignored on entry, where they were 4892 and 16/1.
+  that it was reached. The golden category `array_subscript_nest` — 49
+  subscripts with something nested inside, diffed against bash 5.3.9 —
+  fails 43 of them on 2.10.2, several by hanging, and passes all 49 now.
+  The golden suite is 4943/4943 and the hard corpus 17/17 with signals
+  ignored on entry, where they were 4892 and 16/17.
 
 ---
 

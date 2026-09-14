@@ -24,6 +24,8 @@ void	lex_variable(t_arith_lexer *lex)
 	start = lex->pos;
 	while (lex->pos < lex->len && is_var_char(lex->input[lex->pos]))
 		lex->pos++;
+	if (!lex_subscript(lex))
+		return (set_lex_error(lex));
 	lex->current.type = ATOK_VAR;
 	lex->current.var_name = (char *)(lex->input + start);
 	lex->current.var_len = lex->pos - start;

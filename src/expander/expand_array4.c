@@ -29,19 +29,30 @@ char	*idx_str(long idx)
 	return (buf);
 }
 
-/* Evaluate a slice offset/length arithmetic sub-expression to an int. */
+/* Evaluate a slice offset/length sub-expression to an int.
+
+   The text is a WORD before it is arithmetic: ${a[@]:${#s}} and
+   ${a[@]:$((i+1))} carry expansions that the arithmetic evaluator does not
+   perform, so they went straight to it and came back as "arithmetic
+   error" -- while the scalar slice ${s:${#s}-2}, and the element path
+   ${a[${#s}]}, expanded the word first and worked. Same order here: the
+   parameter word first, then the number. A bare name (${a[@]:n}) survives
+   unchanged and the evaluator resolves it as it always did. */
 int	arith_num(t_shell *state, const char *s, int len)
 {
+	char	*word;
 	char	*res;
 	int		v;
 
 	if (len <= 0)
 		return (0);
-	res = arith_expand(state, s, len);
+	word = expand_param_word(state, s, len, false);
+	res = arith_expand(state, word, (int)ft_strlen(word));
 	v = 0;
 	if (res)
 		v = ft_atoi(res);
 	xfree(res);
+	xfree(word);
 	return (v);
 }
 

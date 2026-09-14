@@ -55,6 +55,8 @@ void	set_var_value(t_arith_parser *p, const char *name, int len,
 
 	if (p->no_side_effects)
 		return ;
+	if (ft_memchr(name, '[', len))
+		return (arith_elem_set(p->shell, name, len, ll_to_buf(buf, val)));
 	key = ft_strndup(name, len);
 	if (!key)
 		return ;
@@ -134,18 +136,17 @@ long long	get_var_value(t_arith_parser *p, const char *name, int len)
 	long long	n;
 	char		*val;
 
-	if (len > 1 && name[0] == '+')
+	val = arith_var_special(p->shell, name, len);
+	if (val)
 	{
-		val = zsh_param(p->shell, name, len);
-		if (val)
-			return (n = ft_atol(val), xfree(val), n);
+		if (is_simple_decimal(val))
+			n = ft_atol(val);
+		else
+			n = resolve_recursive(p, val);
+		return (xfree(val), n);
 	}
-	if (len > 1 && name[0] == '#')
-	{
-		val = expand_strlen(p->shell, name + 1, len - 1);
-		if (val)
-			return (n = ft_atol(val), xfree(val), n);
-	}
+	if (ft_memchr(name, '[', len))
+		return (0);
 	val = env_expand_n(p->shell, (char *)name, len);
 	if (!val || !*val)
 		return (0);

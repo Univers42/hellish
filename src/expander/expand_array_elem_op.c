@@ -100,10 +100,8 @@ static bool	elem_op_split(const char *s, int len, int *nl, int sublen[2])
 	if ((s[i + 1] == '@' || s[i + 1] == '*') && s[i + 2] == ']'
 		&& !at_op_ok(s + i + 3, len - i - 3))
 		return (false);
-	close = i + 1;
-	while (close < len && s[close] != ']')
-		close++;
-	if (close >= len - 1 || s[close] != ']')
+	close = subscript_close(s, len, i);
+	if (close < 0 || close >= len - 1)
 		return (false);
 	*nl = i;
 	sublen[0] = close - i - 1;
