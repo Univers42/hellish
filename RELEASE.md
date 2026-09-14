@@ -8,6 +8,74 @@ shows you how to drive the shell.
 
 ---
 
+## v3.0.0 — *nothing you did not ask for*
+
+Three things this shell did without being asked, and does not any more: it
+took signals its parent had told it to ignore, it asked the release server
+once per terminal you opened at the same moment, and — through born2root —
+it offered to install a hypervisor the build was never going to use. The
+major number is for the first one: a hellish started as a background job
+now behaves like bash there, which is a change in what your scripts see.
+
+- **A signal ignored on entry is not the shell's to take.** *(behaviour
+  change)* POSIX, and bash: *signals that were ignored on entry to the
+  shell cannot be trapped or reset*. Whoever starts a shell decides which
+  signals it may act on, and `cmd &` decides for `SIGINT` and `SIGQUIT` —
+  it ignores them in the child so a `^C` meant for the foreground job
+  cannot kill the background one, and `SIG_IGN` survives `execve`. cron,
+  a systemd unit and any harness that backgrounds a run hand a shell the
+  same thing. hellish took the signal anyway, in three places: it
+  installed its own `SIGINT` handler at startup, `trap` armed a handler
+  for it, and a forked child reset it to the default before `exec` — so a
+  command a background hellish ran was killable by a `^C` aimed at
+  someone else, which under bash it is not. All three honour the entry
+  dispositions now, and the ignored signals are listed by `trap` as `''`,
+  which is what they are.
+- **One update request per burst of terminals.** Recording the attempt
+  before forking was meant to settle who checks, and it could not: the
+  freshness test *reads* the record and the claim *writes* it, so every
+  shell starting inside that window read the same stale record and forked
+  its own request. Six terminals opened together made six requests. The
+  claim is a directory now — `mkdir(2)` creates it or fails with
+  `EEXIST`, in one step, for every caller at once, on a local filesystem
+  and on the NFS home a 42 machine hands out. One shell fetches; the rest
+  drop the check. A claim nobody came back for is reclaimed after a
+  minute.
+- **The weekly VM job builds a guest again, on both hypervisors.** It had
+  been red every week since it was written, each leg for its own reason
+  and each of them forty minutes in. On QEMU, born2root's `make deps`
+  asked for *both* hypervisors and treated either one missing as missing,
+  so a container given `/dev/kvm` and nothing else walked into an
+  interactive `sudo apt install virtualbox-7.1` with no terminal to
+  answer it; the corpus installs only what the chosen backend needs now.
+  On VirtualBox, the runner image arrives with `kvm_amd` loaded, so KVM
+  owned AMD-V before the job began and every `VBoxManage startvm` died
+  with `VERR_SVM_IN_USE`; the CPU module is unloaded first, and a
+  preflight VM powers on in the same step, so a machine that cannot run
+  one says so in a minute rather than at minute forty. Then both legs
+  failed two checks that type a line into an interactive login and read
+  the answer — because the container has no `TERM`, the guest's tmux
+  auto-attach refused to open a terminal it could not clear, and the
+  session ended before the shell ran anything. The probe presents a
+  terminal type now, retries while first boot is still provisioning, and
+  prints the guest's raw answer when it gives up, which is how that line
+  was found at all.
+- **Carried from 2.10.2**, which was never published on its own: `N<<EOF`
+  feeds descriptor N, `N<<-EOF` strips tabs and ends at `EOF`,
+  `cmd 5<file <&5` works for any descriptor, and a function definition
+  takes redirects that apply at every call.
+- **Tests:** `tests/signal_entry_test.py` runs every trap case twice —
+  once from a parent that sets `SIG_IGN` before `exec` the way `&` does,
+  once as the control — and diffs each against `bash --posix`;
+  `update_freshness_test.py` asks for exactly one request from six
+  simultaneous shells, plus the claim held by someone else and the claim
+  nobody released; born2root's `tests/test_check_deps_backend.sh` pins
+  the dependency rule against a fabricated PATH where `sudo` only records
+  that it was reached. The golden suite is 4894/4894 and the hard corpus
+  17/17 with signals ignored on entry, where they were 4892 and 16/1.
+
+---
+
 ## v2.10.2 — *heredocs on any descriptor*
 
 - **`N<<EOF` feeds fd N.** The body always went to stdin whatever N said,
