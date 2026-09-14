@@ -1,0 +1,88 @@
+x=abc; x+=(d); declare -p x
+x=abc; x+=(d e); echo "${#x[@]} ${x[0]} ${x[2]}"
+x=; x+=(d); declare -p x
+unset x; x+=(d); declare -p x
+x=(a); x+=(b c); declare -p x
+x=abc; x[1]=d; declare -p x
+x=abc; x+=(d); x+=(e); echo "${x[*]}"
+declare -A m=([k]=v); m+=([j]=w); echo "${#m[@]} ${m[j]}"
+export x=abc; x+=(d); echo "${x[*]}"
+f() { local x=abc; x+=(d); echo "${x[*]}"; }; f
+x=abc; x+=("$x" "${#x}"); echo "${x[*]}"
+PROMPT_COMMAND='_hx_precmd_run'; PROMPT_COMMAND+=('__bp_install "$_"'); echo "${#PROMPT_COMMAND[@]}"; declare -p PROMPT_COMMAND
+x=; x[1]=d; declare -p x
+declare -a x; x[1]=d; declare -p x
+declare -a x; x+=(d); declare -p x
+x=; x+=(d e); echo "${#x[@]}"
+declare -a x=(); x+=(d); declare -p x
+unset x; x[2]=d; declare -p x
+x=(a b); x[5]=f; x+=(g); echo "${!x[@]}"
+x=(a b); x=c; declare -p x
+x=(a b); x="$x-"; declare -p x
+x=(a b); x+=c; declare -p x
+f() { local x=(a b); x=c; declare -p x; }; f
+declare -A m=([k]=v); m=x; echo "${m[0]} ${m[k]} ${#m[@]}"
+declare -A m=([k]=v); m+=x; echo "${m[0]} ${m[k]}"
+x=(a b); x=; declare -p x
+x=(a b); unset x; x=c; declare -p x
+PROMPT_COMMAND=(a b); PROMPT_COMMAND="$PROMPT_COMMAND"$'\n'z; echo "${#PROMPT_COMMAND[@]}"
+x=(a b); x=c; echo "${x[@]}" "${#x[@]}"
+x=(a b); x=c; x=(z); declare -p x
+x=(a b); x+=c; x+=d; echo "${x[0]} ${x[1]}"
+x=(); x=c; declare -p x
+x=([3]=a); x=c; declare -p x
+x=(a b); x=c; unset 'x[0]'; declare -p x
+x=(a b); export x=c; echo "${x[*]}"
+x=(a b); declare x=c; declare -p x
+x=(a b); readonly x=c; echo "${x[*]}"
+f() { local x=(a b); local x=c; declare -p x; }; f
+x=(a b); f() { local x=c; declare -p x; }; f; declare -p x
+x=(a b); export x+=c; echo "${x[*]}"
+x=a; export x+=c; echo "$x"
+x=a; declare x+=c; echo "$x"
+x=(a b); declare x+=c; echo "${x[*]}"
+x=(a b); typeset x=c; echo "${x[*]}"
+declare -A m=([k]=v); export m=x; echo "${m[0]} ${m[k]}"
+f() { local x=a; local x+=c; echo "$x"; }; f
+x=a; f() { local x+=c; echo "$x"; }; f; echo "$x"
+f() { local x=(a b); local x+=c; echo "${x[*]}"; }; f
+x=(a b); readonly x=c; declare -p x
+x=(a b); export x; declare -p x
+x=1; readonly x; declare -p x
+x=1; readonly x; export x; declare -p x
+declare -a a=(1); readonly a; export a; declare -p a
+f() { local a=(1 2); a[0]=9; local a; echo "${a[*]}"; }; f
+x=(a b); readonly x=c; declare -p x
+x=(a b); export x; declare -p x
+x=1; readonly x; declare -p x
+x=1; readonly x; export x; declare -p x
+declare -a a=(1); readonly a; export a; declare -p a
+declare -A m=([k]=v); export m; declare -p m
+x=$'a\nb'; declare -p x
+x=$'a\tb'; declare -p x
+x=$'\e[0m'; declare -p x
+x=$'\x01x'; declare -p x
+x='a\b'; declare -p x
+x=$'\x7f'; declare -p x
+x=$'caf\xc3\xa9'; declare -p x
+x=$'a"b\n'; declare -p x
+x=$'$x\n'; declare -p x
+x=$'x\ry'; declare -p x
+x=$'\a\b\f\v'; declare -p x
+x=$'it\'s\n'; declare -p x
+a=($'a\nb' 'c"d' 'e$f'); declare -p a
+declare -A m=([k]=$'v\n' [j]='w`x'); declare -p m
+x=$'\\\n'; declare -p x
+PROMPT_COMMAND=$'__bp_precmd_invoke_cmd "$_"\n_hx_precmd_run'; PROMPT_COMMAND+=('__bp_interactive_mode'); declare -p PROMPT_COMMAND
+x=; declare -p x
+x=(a b); readonly x; declare -p x
+x=$'\xff'; declare -p x
+x=$'\xc3'; declare -p x
+x=$'caf\xc3\xa9\n'; declare -p x
+a=($'\xe2\x82\xac' $'\xff\n'); declare -p a
+f() { local -a e; e+=( "A=${1}" ); e+=( B=$2 ); echo "${e[@]}"; }; f x y
+f() { local -a e; local -A m; e+=(x); m[k]=v; echo "${e[*]} ${m[k]} ${#e[@]} ${#m[@]}"; }; f
+f() { local -a e; echo "${#e[@]}<${e[*]}>"; }; f
+f() { local -A m; m[k]=v; m+=([j]=w); echo "${#m[@]}"; }; f
+f() { local -a e=(1 2); e+=(3); echo "${e[*]}"; }; f
+f() { local x; echo "[$x]"; }; f

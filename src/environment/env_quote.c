@@ -94,3 +94,18 @@ bool	assoc_key_quoted(const char *k, int len)
 	}
 	return (false);
 }
+
+/* Heap copy of the quoted word. */
+char	*quote_value(const char *s)
+{
+	t_string	out;
+
+	vec_init(&out);
+	out.elem_size = 1;
+	if (s)
+		vec_push_value(&out, s, (int)ft_strlen(s));
+	else
+		vec_push_str(&out, "\"\"");
+	vec_push_char(&out, '\0');
+	return ((char *)out.ctx);
+}

@@ -85,7 +85,7 @@ void	subscript_assign(t_shell *state, t_env *ret)
 
 	br = ft_strchr(ret->key, '[');
 	if (!br || !ret->value)
-		return ;
+		return (keep_array_shape(state, ret));
 	subscript_prepend_current(state, ret, br);
 	*br = '\0';
 	old = env_expand(state, ret->key);

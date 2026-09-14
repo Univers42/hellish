@@ -72,7 +72,9 @@ int	process_arg(t_shell *st, t_vec av, int i)
 /* `export NAME+=value` (bash append): the parser handed us id="NAME+" and
    val="value".  Strip the trailing '+' and splice the current value of NAME
    in front of val, so `export a=1; export a+=2` leaves a="12".  A no-op when
-   id does not end in '+'. */
+   id does not end in '+'. When NAME is an array the current value is its
+   element 0, and keep_array_shape below writes the result back there, so
+   `export x+=c` on (a b) is ([0]="ac" [1]="b") as it is in bash. */
 static char	*export_apply_append(t_shell *st, char *id, char *val)
 {
 	size_t	n;
@@ -85,10 +87,12 @@ static char	*export_apply_append(t_shell *st, char *id, char *val)
 		return (val);
 	id[n - 1] = '\0';
 	e = env_get(&st->env, id);
-	old = "";
-	if (e && e->value)
+	old = NULL;
+	if (e)
 		old = e->value;
+	old = append_base(old);
 	joined = ft_strjoin(old, val);
+	xfree(old);
 	xfree(val);
 	return (joined);
 }
@@ -108,7 +112,7 @@ int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
 			xfree(id);
 		}
 		else
-			env_set(&st->env, (t_env){true, id, val});
+			env_set_shaped(st, (t_env){true, id, val});
 		return (0);
 	}
 	else

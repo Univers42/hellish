@@ -25,10 +25,8 @@ static void	fmt_rec(t_string *out, long idx, const char *v, int vl)
 	if (n)
 		vec_push_str(out, n);
 	xfree(n);
-	vec_push_str(out, "]=\"");
-	if (v && vl > 0)
-		vec_push_dquoted(out, v, vl);
-	vec_push_char(out, '"');
+	vec_push_str(out, "]=");
+	vec_push_value(out, v, vl);
 }
 
 /* Human form for `set`/export listings: ([0]="a" [3]="b") — the bash

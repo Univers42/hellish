@@ -74,6 +74,26 @@ And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
   `m[key]` and `x[0]` read the element bash reads, `(( a[1] = 9 ))` and
   `(( a[0]++ ))` write it, and an unterminated `$(( a[ ))` is an
   arithmetic error where it used to be a hang that ate all the memory.
+- **A scalar written over an array keeps the array.** bash: `x=(a b);
+  x=c` is `([0]="c" [1]="b")`, `x+=c` is `([0]="ac" [1]="b")`, and
+  `x=abc; x+=(d)` is `([0]="abc" [1]="d")` — element 0 either way, and the
+  same through `export`, `readonly`, `declare` and a `local` rebind; a
+  bare `local -a e` is an empty array, not an empty string. hellish
+  replaced the whole array with the string, or dropped the string when an
+  array was appended to it, and that is how bash-preexec never installed:
+  it appends `__bp_install "$_"` to `PROMPT_COMMAND` as element 1 and
+  waits for the first prompt; z.sh, sourced next, does
+  `PROMPT_COMMAND="$PROMPT_COMMAND"$'\n'"(_z --add …)"`, which under bash
+  reads and writes element 0 — and under hellish took element 1 with it.
+  Found by the fresh-install pty test the moment the subscript fix above
+  let bash-preexec see a bash 5 and take its array code path. Two more
+  things surfaced behind it: an array `PROMPT_COMMAND` now runs each
+  element as its own command before the prompt, where the encoded record
+  list used to be handed to the parser as one string (`0_hx_precmd_run:
+  command not found`, every prompt); and `declare -p` spells a value with
+  a newline, a tab, an escape or a byte that is not a character in this
+  locale as `$'…'`, the way bash does, so its output reads back as the
+  same variable.
 - **Carried from 2.10.2**, which was never published on its own: `N<<EOF`
   feeds descriptor N, `N<<-EOF` strips tabs and ends at `EOF`,
   `cmd 5<file <&5` works for any descriptor, and a function definition
@@ -87,9 +107,12 @@ And one thing it could not do that bash can: read `${a[$((i % ${#a[@]}))]}`.
   the dependency rule against a fabricated PATH where `sudo` only records
   that it was reached. The golden category `array_subscript_nest` — 49
   subscripts with something nested inside, diffed against bash 5.3.9 —
-  fails 43 of them on 2.10.2, several by hanging, and passes all 49 now.
-  The golden suite is 4943/4943 and the hard corpus 17/17 with signals
-  ignored on entry, where they were 4892 and 16/17.
+  fails 43 of them on 2.10.2, several by hanging, and passes all 49 now;
+  `array_scalar_shape` pins the 88 scalar-over-array, `+=`, builtin and
+  `declare -p` quoting forms the same way, under both locales.
+  `rc_hooks_test.py` types at an array `PROMPT_COMMAND` and at the z.sh
+  shape. The golden suite is 5031/5031 and the hard corpus 17/17 with
+  signals ignored on entry, where they were 4892 and 16/17.
 
 ---
 

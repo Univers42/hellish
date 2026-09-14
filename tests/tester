@@ -61,6 +61,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "printf_escapes"
         "negate_inline"
         "array_subscript_nest"
+        "array_scalar_shape"
         "command_v"
         "array_subscript" "declare_quoting" "procsub_assign"
         "longtail"

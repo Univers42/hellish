@@ -18,7 +18,7 @@
    caps a file at five functions; scope_save/scope_leave in func_scope.c are
    still what makes any of this actually local. */
 
-void	local_set_var(t_shell *state, char *key, char *eq);
+void	local_set_var(t_shell *state, char *key, char *eq, int flags);
 
 /* Consume leading option words and report the first operand.
 **
@@ -30,9 +30,12 @@ void	local_set_var(t_shell *state, char *key, char *eq);
 ** of the value corrupts data rather than failing.
 **
 ** `n` is reported through *term because it changes what the operands MEAN
-** (a target name, not a value). The rest of declare's letters are consumed
-** and ignored exactly as declare consumes them, so `local -r x=1` is a
-** normal local rather than a variable named "-r". */
+** (a target name, not a value); `a` and `A` because a bare `local -a e`
+** declares an EMPTY ARRAY, not an empty string -- `e+=(x)` after it is
+** one element under bash, and was two here, the "" first. The rest of
+** declare's letters are consumed and ignored exactly as declare consumes
+** them, so `local -r x=1` is a normal local rather than a variable named
+** "-r". */
 static size_t	local_opts(t_vec argv, char *term)
 {
 	size_t	i;
@@ -47,6 +50,10 @@ static size_t	local_opts(t_vec argv, char *term)
 			break ;
 		if (ft_strchr(w, 'n'))
 			*term = 'n';
+		else if (*term != 'n' && ft_strchr(w, 'A'))
+			*term = 'A';
+		else if (*term != 'n' && ft_strchr(w, 'a'))
+			*term = 'a';
 		i++;
 	}
 	return (i);
@@ -104,29 +111,32 @@ static bool	local_already(t_shell *state, const char *name, char *eq)
 	return (false);
 }
 
-/* The ordinary operand loop: name, or name=value. */
-static int	local_plain(t_shell *state, t_vec argv, size_t i)
+/* The ordinary operand loop: name, or name=value. A name=value for a
+   name ALREADY local at this depth is a rebind, and a rebind of an array
+   keeps the array -- bash writes element 0 -- where a first `local x=c`
+   over a global array makes a fresh scalar, as bash does. */
+static int	local_plain(t_shell *state, t_vec argv, size_t i, char term)
 {
 	char	**av;
 	char	*eq;
 	char	*key;
+	int		flags;
 
 	av = (char **)argv.ctx;
 	while (i < argv.len)
 	{
-		eq = ft_strchr(av[i], '=');
-		if (eq)
-			key = ft_strndup(av[i], eq - av[i]);
-		else
-			key = ft_strdup(av[i]);
+		key = local_split(av[i], &eq, &flags);
+		if (!eq && term)
+			flags |= 4 << (term == 'A');
 		if (local_already(state, key, eq))
 		{
 			xfree(key);
 			i++;
 			continue ;
 		}
+		flags |= local_already(state, key, NULL);
 		scope_save(state, key);
-		local_set_var(state, key, eq);
+		local_set_var(state, key, eq, flags);
 		i++;
 	}
 	return (0);
@@ -151,5 +161,5 @@ int	builtin_local(t_shell *state, t_vec argv)
 	i = local_opts(argv, &term);
 	if (term == 'n')
 		return (local_nameref(state, argv, i));
-	return (local_plain(state, argv, i));
+	return (local_plain(state, argv, i, term));
 }

@@ -135,6 +135,8 @@ char		*assoc_format(const char *val);
 void		vec_push_dquoted(t_string *out, const char *s, int len);
 bool		assoc_key_quoted(const char *k, int len);
 char		*dquote_str(const char *s);
+void		vec_push_value(t_string *out, const char *s, int len);
+char		*quote_value(const char *s);
 void		env_extend(t_vec_env *dest, t_vec_env *src, bool export);
 int			env_set(t_vec_env *v, t_env el);
 int			env_unexport(t_vec_env *v, char *key);

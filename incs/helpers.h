@@ -70,6 +70,7 @@ void	rc_load_after(t_shell *state, const char *home);
 
 /* Composable rc hooks (src/core/hooks*.c). */
 void	run_hook_funcs(t_shell *state, char *var, const char *arg);
+void	run_prompt_command(t_shell *state);
 void	hook_run_one(t_shell *state, const char *fn, const char *arg);
 void	run_zsh_prompt_hooks(t_shell *state, const char *which,
 			const char *arg);

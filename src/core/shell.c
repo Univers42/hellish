@@ -70,10 +70,9 @@ int	main(int argc, char **argv, char **envp)
 
 /* Open one REPL turn: hand out a fresh input buffer and clear the "Ctrl-C
    just unwound us" flag, then run $PROMPT_COMMAND in the current shell
-   right before each interactive primary prompt (bash behaviour).
-   Non-interactive shells never touch it. The last command's status is
-   preserved so the prompt's $? badge reflects the user's command, not
-   PROMPT_COMMAND's.
+   right before each interactive primary prompt (bash behaviour; see
+   prompt_command.c for the array form). Non-interactive shells never
+   touch it.
 
    The two exit flags are also aged here, and that is what makes "ask me
    twice" mean twice IN A ROW. exit_warned used to be cleared only when a
@@ -85,9 +84,6 @@ int	main(int argc, char **argv, char **envp)
    else you do re-arms it. */
 static void	open_cycle(t_shell *state)
 {
-	t_execution_state	saved;
-	char				*pc;
-
 	vec_init(&state->input);
 	state->input.elem_size = 1;
 	state->rl.eof_refused = false;
@@ -99,13 +95,7 @@ static void	open_cycle(t_shell *state)
 	if (state->metinp != INP_RL)
 		return ;
 	tty_snapshot_refresh();
-	pc = env_expand(state, "PROMPT_COMMAND");
-	if (pc && *pc)
-	{
-		saved = state->last_cmd_st_exe;
-		exec_string(state, pc);
-		set_cmd_status(state, saved);
-	}
+	run_prompt_command(state);
 	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
 	run_zsh_prompt_hooks(state, "precmd", NULL);
 }

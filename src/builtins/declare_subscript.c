@@ -72,6 +72,7 @@ void	declare_assign(t_shell *state, const char *word, int exprt)
 	}
 	ev = env_create(ft_strndup(word, eq - word), ft_strdup(eq + 1),
 			exprt != 0);
+	scalar_append(state, &ev);
 	subscript_assign(state, &ev);
 	env_set(&state->env, ev);
 }

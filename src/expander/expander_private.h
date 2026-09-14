@@ -186,6 +186,9 @@ char		*expand_param_word_dq(t_shell *state, const char *word, int wlen);
    skipping the nested ${...}, $(...), $((...)), subscripts and quoted
    text that carry a ']' of their own. -1 when unterminated. */
 int			subscript_close(const char *s, int len, int open);
+char		*append_base(const char *old);
+void		keep_array_shape(t_shell *state, t_env *ret);
+void		env_set_shaped(t_shell *state, t_env ev);
 char		*pf_word_pipeline(t_shell *state, const char *word, int wlen,
 				bool no_sq);
 t_string	word_to_pattern(t_ast_node node);

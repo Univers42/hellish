@@ -77,7 +77,8 @@ char	*assoc_without(const char *old, const char *key, int klen)
 }
 
 /* One [key]="value" record.  The key is quoted only when it needs it and
-   the value always is, which is what bash prints -- see env_quote.c. */
+   the value always is, which is what bash prints -- see env_quote.c, and
+   env_quote2.c for the $'...' form a value with a newline in it takes. */
 static void	assoc_rec(t_string *out, t_assoc_it *it)
 {
 	bool	q;
@@ -89,9 +90,8 @@ static void	assoc_rec(t_string *out, t_assoc_it *it)
 	vec_push_dquoted(out, it->k, it->kl);
 	if (q)
 		vec_push_char(out, '"');
-	vec_push_str(out, "]=\"");
-	vec_push_dquoted(out, it->v, it->vl);
-	vec_push_char(out, '"');
+	vec_push_str(out, "]=");
+	vec_push_value(out, it->v, it->vl);
 }
 
 /* declare -p / set display form: ([key]="val" ...) with keys quoted.

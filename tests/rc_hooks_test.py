@@ -156,6 +156,36 @@ def main():
           b"LEAKED" not in p.stdout and b"done" in p.stdout,
           "stdout=%r" % p.stdout[:200])
 
+    # 8: PROMPT_COMMAND as an array (bash 5.1): every element is a command
+    # of its own, run in order, before each prompt. hellish handed the
+    # stored value to exec_string as one string, and the stored value of an
+    # array is its encoded record list, so what ran was `0pa` and `1pb`,
+    # each "command not found" at every prompt -- which is what bash-preexec
+    # got once hellish stopped losing its install hook (case 9).
+    rc = ("pa() { echo PC_A; }\npb() { echo PC_B; }\n"
+          "PROMPT_COMMAND=(pa pb)\nPS1='[st=$?] '\n")
+    out = session(rc, ["sh -c 'exit 7'", "true"])
+    check("an array PROMPT_COMMAND runs every element, in order",
+          out.count("PC_A") >= 2 and out.count("PC_B") >= 2
+          and out.find("PC_A") < out.find("PC_B")
+          and "not found" not in out, "%r" % out[-300:])
+    check("...and $? is still the user's afterwards", "[st=7]" in out,
+          "%r" % out[-300:])
+
+    # 9: the z.sh shape. bash-preexec appends its install string as element
+    # 1; z.sh then does PROMPT_COMMAND="$PROMPT_COMMAND"$'\n'"(_z ...)",
+    # which under bash reads and writes element 0 and leaves element 1
+    # alone. hellish replaced the whole array with the string, and the
+    # element 1 that was to install bash-preexec at the first prompt was
+    # gone before any prompt ran.
+    rc = ("pa() { echo PC_A; }\npb() { echo PC_B; }\npc() { echo PC_C; }\n"
+          "PROMPT_COMMAND=(pa pb)\n"
+          "PROMPT_COMMAND=\"$PROMPT_COMMAND\"$'\\n'pc\n")
+    out = session(rc, ["true"])
+    check("a scalar write over an array PROMPT_COMMAND keeps element 1",
+          "PC_A" in out and "PC_B" in out and "PC_C" in out
+          and "not found" not in out, "%r" % out[-300:])
+
     print("\n%d checks failed" % len(FAILS))
     return 1 if FAILS else 0
 

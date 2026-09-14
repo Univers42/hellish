@@ -26,33 +26,46 @@ void	declare_assign(t_shell *state, const char *word, int exprt);
    the point is that scripts using declare -a / declare -p run instead of
    dying on "command not found". */
 
+/* The letters after `declare -`: the type first, then r and x as bash
+   orders them -- `declare -arx a=(...)`, `declare -rx v="..."` -- and a
+   lone `-` when a scalar has none, so the name can start with anything. */
+static void	attr_letters(t_shell *state, t_env *e, char *buf)
+{
+	int	n;
+
+	n = 0;
+	if (assoc_is(e->value))
+		buf[n++] = 'A';
+	else if (arr_is(e->value))
+		buf[n++] = 'a';
+	if (is_readonly_var(state, e->key))
+		buf[n++] = 'r';
+	if (e->exported)
+		buf[n++] = 'x';
+	if (n == 0)
+		buf[n++] = '-';
+	buf[n] = '\0';
+}
+
 /* Print one variable's declaration, bash-format. */
 static int	declare_print_one(t_shell *state, const char *name)
 {
 	t_env	*e;
 	char	*fmt;
+	char	attrs[8];
 
 	e = env_get(&state->env, (char *)name);
 	if (!e)
 		return (ft_eprintf("%s: declare: %s: not found\n",
 				state->ctx, name), 1);
+	attr_letters(state, e, attrs);
 	if (assoc_is(e->value))
-	{
 		fmt = assoc_format(e->value);
-		ft_printf("declare -A %s=%s\n", e->key, fmt);
-		return (xfree(fmt), 0);
-	}
-	if (arr_is(e->value))
-	{
+	else if (arr_is(e->value))
 		fmt = arr_format(e->value);
-		ft_printf("declare -a %s=%s\n", e->key, fmt);
-		return (xfree(fmt), 0);
-	}
-	fmt = dquote_str(e->value);
-	if (e->exported)
-		ft_printf("declare -x %s=\"%s\"\n", e->key, fmt);
 	else
-		ft_printf("declare -- %s=\"%s\"\n", e->key, fmt);
+		fmt = quote_value(e->value);
+	ft_printf("declare -%s %s=%s\n", attrs, e->key, fmt);
 	return (xfree(fmt), 0);
 }
 

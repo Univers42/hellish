@@ -85,6 +85,8 @@ static int	list_readonly(t_shell *state)
    remaining operands after either -- `readonly A=1 1BAD B=2` still sets A
    and B and returns 1 -- so this reports rather than bailing out.
    A rejected operand is NOT marked read-only. */
+/* NAME=value keeps the shape of an array NAME -- bash writes element 0 --
+   so `readonly x=c` on (a b) freezes ([0]="c" [1]="b"). */
 static int	readonly_one(t_shell *state, char *arg)
 {
 	char	*eq;
@@ -104,7 +106,7 @@ static int	readonly_one(t_shell *state, char *arg)
 		rc = (ft_eprintf("%s: readonly: %s: readonly variable\n",
 					state->ctx, name), 1);
 	else if (eq)
-		env_set(&state->env, env_create(ft_strdup(name),
+		env_set_shaped(state, env_create(ft_strdup(name),
 				ft_strdup(eq + 1), false));
 	if (rc == 0)
 		mark_readonly(state, name);

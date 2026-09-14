@@ -22,8 +22,10 @@
 
 /* NAME+=value: the key still carries its trailing '+'. Prepend the
    variable's current value (string concatenation, bash scalar +=) and
-   drop the '+'. A subscript key (a[i]+=) belongs to subscript_assign, so
-   it is left completely alone here -- INCLUDING the '+'.
+   drop the '+'. When NAME is an array the current value is element 0,
+   as it is for bash: `x=(a b); x+=c` is ([0]="ac" [1]="b"). A subscript
+   key (a[i]+=) belongs to subscript_assign, so it is left completely
+   alone here -- INCLUDING the '+'.
      Stripping it here and then returning is what made `a[1]+=Z` overwrite
    instead of appending: by the time the element path ran, the only mark
    that an append had been asked for was gone. */
@@ -39,10 +41,9 @@ void	scalar_append(t_shell *state, t_env *ret)
 	if (ft_strchr(ret->key, '['))
 		return ;
 	ret->key[klen - 1] = '\0';
-	old = env_expand(state, ret->key);
-	if (!old)
-		old = "";
+	old = append_base(env_expand(state, ret->key));
 	joined = ft_strjoin(old, ret->value);
+	xfree(old);
 	xfree(ret->value);
 	ret->value = joined;
 }

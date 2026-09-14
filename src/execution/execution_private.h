@@ -294,4 +294,9 @@ bool				sel_number(const char *s, long *n);
 void				sel_write(int fd, const char *s, size_t n);
 void				sel_geometry(t_selmenu *m, int width);
 
+void				keep_array_shape(t_shell *state, t_env *ret);
+void				env_set_shaped(t_shell *state, t_env ev);
+char				*append_base(const char *old);
+char				*local_split(const char *word, char **eq, int *append);
+
 #endif

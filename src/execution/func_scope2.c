@@ -68,13 +68,54 @@ void	restore_temp_assigns(t_shell *state, t_vec *saves)
    our "" placeholder would put NAME= in the environment where bash shows
    nothing.  The key string is owned by the env entry after env_create;
    do not xfree it here. */
-void	local_set_var(t_shell *state, char *key, char *eq)
+/* NAME, NAME=value or NAME+=value: the name on the heap, *eq at the '='
+   or NULL, *append 2 for the += form -- the bit local_set_var reads. */
+char	*local_split(const char *word, char **eq, int *append)
 {
-	if (eq)
-		env_set(&state->env,
-			env_create(key, ft_strdup(eq + 1), state->opt_allexport));
-	else
-		env_set(&state->env, env_create(key, ft_strdup(""), false));
+	size_t	n;
+
+	*eq = ft_strchr(word, '=');
+	*append = 0;
+	if (!*eq)
+		return (ft_strdup(word));
+	n = (size_t)(*eq - word);
+	if (n > 0 && word[n - 1] == '+')
+	{
+		*append = 2;
+		n--;
+	}
+	return (ft_strndup(word, n));
+}
+
+/* flags: 1 = NAME is already local at this depth (a rebind), 2 = the +=
+   form, 4 = `local -a NAME`, 8 = `local -A NAME`. A rebind of an array
+   keeps the array, bash writing element 0; a += on a rebind appends to
+   what is there, and on a fresh local to "", which is what bash's
+   `local x+=c` yields with a global x=a: c. Without a value the local
+   is "", or the empty array or map its letter asked for. */
+void	local_set_var(t_shell *state, char *key, char *eq, int flags)
+{
+	t_env	ev;
+	char	*base;
+
+	if (!eq)
+	{
+		base = ft_strdup("");
+		if (flags & 4)
+			base = (xfree(base), arr_from_elems(NULL, 0, NULL));
+		else if (flags & 8)
+			base = (xfree(base), ft_strdup("\x1c"));
+		env_set(&state->env, env_create(key, base, false));
+		return ;
+	}
+	base = ft_strdup("");
+	if ((flags & 3) == 3)
+		base = (xfree(base), append_base(env_expand(state, key)));
+	ev = env_create(key, ft_strjoin(base, eq + 1), state->opt_allexport);
+	xfree(base);
+	if (flags & 1)
+		keep_array_shape(state, &ev);
+	env_set(&state->env, ev);
 }
 
 /* The saves vec itself, at shutdown.

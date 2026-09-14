@@ -74,7 +74,7 @@ char	*arr_with_set(const char *old, long idx, const char *nv)
 	vec_init(&out);
 	out.elem_size = 1;
 	vec_push_char(&out, ARR_MAGIC);
-	if (old && !arr_is(old) && *old && idx != 0)
+	if (old && !arr_is(old) && idx != 0)
 		rec_append(&out, 0, old, (int)ft_strlen(old));
 	set_records(&out, old, idx, nv);
 	vec_push_char(&out, '\0');
@@ -105,7 +105,8 @@ long	arr_max_idx(const char *val)
 /* Build an encoded value from `n` element strings. With `base` NULL this
    is arr=(...): indices 0..n-1. With `base` an existing array this is
    arr+=(...): base's records are kept and the new elements continue
-   after its highest index. */
+   after its highest index. With `base` a scalar -- `x=abc; x+=(d)` --
+   it becomes element 0 and the new elements follow, as in bash. */
 char	*arr_from_elems(char **elems, int n, const char *base)
 {
 	t_string	out;
@@ -116,11 +117,10 @@ char	*arr_from_elems(char **elems, int n, const char *base)
 	out.elem_size = 1;
 	vec_push_char(&out, ARR_MAGIC);
 	next = 0;
-	if (base && arr_is(base))
-	{
-		vec_push_str(&out, (char *)base + 1);
-		next = arr_max_idx(base) + 1;
-	}
+	if (base && !arr_is(base))
+		rec_append(&out, next++, base, (int)ft_strlen(base));
+	else if (base)
+		next = (vec_push_str(&out, (char *)base + 1), arr_max_idx(base) + 1);
 	i = 0;
 	while (i < n)
 	{
