@@ -367,7 +367,18 @@ for m in re.finditer(rb"070701[0-9A-Fa-f]{104}", d):
     out[h + 6:h + 14] = b"0" * 8        # c_ino
     out[h + 46:h + 54] = b"0" * 8       # c_mtime
     out[h + 62:h + 78] = b"0" * 16      # c_devmajor, c_devminor
+# The injected preseed rides in here too, and it carries the password
+# hashes -- salted afresh on every build, so these bytes can never match.
+# Same length in, same length out, so every later offset is untouched.
+for m in re.finditer(rb"\$6\$[./A-Za-z0-9]{1,}\$[./A-Za-z0-9]{1,}", d):
+    out[m.start():m.end()] = b"$" * (m.end() - m.start())
 sys.stdout.buffer.write(bytes(out))'
+	}
+	norm_crypt() {
+		sed 's/\$6\$[./A-Za-z0-9]\{1,\}\$[./A-Za-z0-9]\{1,\}/$6$<salted-hash>/g' "$1"
+	}
+	norm_md5() {
+		grep -v -E 'initrd\.gz|preseed\.cfg' "$1"
 	}
 	nd=0
 	while IFS= read -r f; do
@@ -375,9 +386,23 @@ sys.stdout.buffer.write(bytes(out))'
 		*initrd.gz)
 			norm_initrd "$WORK/tree.bash/$f" | cmp -s - <(norm_initrd "$WORK/tree.hellish/$f") \
 				|| { nd=$((nd + 1)); echo "   differs: $f (decompressed, cpio header fields masked)"; } ;;
+		*preseed.cfg)
+			# Both builds hash the same passwords, and each gets a fresh
+			# random salt: utils/b2b_config.py runs `openssl passwd -6`
+			# without -salt, which is the correct way to hash a password and
+			# the reason two builds of one configuration can never be
+			# byte-identical here. So the salt and digest are masked and the
+			# rest of the line is compared -- the key must still be there,
+			# and it must still carry a $6$ (SHA-512 crypt) value.
+			norm_crypt "$WORK/tree.bash/$f" | cmp -s - <(norm_crypt "$WORK/tree.hellish/$f") \
+				|| { nd=$((nd + 1)); echo "   differs: $f (crypt hashes masked)"; } ;;
 		*md5sum.txt)
-			grep -v 'initrd.gz' "$WORK/tree.bash/$f" | cmp -s - <(grep -v 'initrd.gz' "$WORK/tree.hellish/$f") \
-				|| { nd=$((nd + 1)); echo "   differs: $f (beyond the initrd lines)"; } ;;
+			# The two files whose bytes cannot match -- the initrds, and the
+			# preseed that carries the freshly salted hashes -- take their
+			# md5 lines with them. Everything else on the disc still has to
+			# agree, line for line.
+			norm_md5 "$WORK/tree.bash/$f" | cmp -s - <(norm_md5 "$WORK/tree.hellish/$f") \
+				|| { nd=$((nd + 1)); echo "   differs: $f (beyond the initrd and preseed lines)"; } ;;
 		*) cmp -s "$WORK/tree.bash/$f" "$WORK/tree.hellish/$f" || { nd=$((nd + 1)); echo "   differs: $f"; } ;;
 		esac
 	done <"$WORK/list.bash"
