@@ -1,0 +1,58 @@
+shopt -s extglob; eval 'v="a b"; echo "[${v//?(+([[:blank:]]))b/X}]"'
+shopt -s extglob; eval 'v="  a  "; echo "[${v//+([[:blank:]])/_}]"'
+shopt -s extglob; eval 'v="abc"; echo "[${v//@(X|Y)/-}]"'
+shopt -s extglob; eval 'v="abcabc"; echo "[${v//a?(b)c/.}]"'
+shopt -s extglob; eval 'v="foo.c foo.h"; echo "[${v//!(*.h)/K}]"'
+shopt -s extglob; eval 'v="a|b"; echo "[${v//@(a\|b)/P}]"'
+shopt -s extglob; eval 'v="a)b"; echo "[${v//@(a\)b)/Q}]"'
+shopt -s extglob; eval 'v="a-b"; echo "[${v//@([a-c]|-)/R}]"'
+shopt -s extglob; eval 'v="a]b"; echo "[${v//@([]]|a)/S}]"'
+shopt -s extglob; eval 'v="a[b"; echo "[${v//@([[]|a)/T}]"'
+shopt -s extglob; eval 'v="x1y"; echo "[${v//@([[:digit:]]|x)/D}]"'
+shopt -s extglob; eval 'v="  lead"; echo "[${v##+([[:blank:]])}]"'
+shopt -s extglob; eval 'v="trail  "; echo "[${v%%+([[:blank:]])}]"'
+shopt -s extglob; eval 'v="xxay"; echo "[${v#*(x)}]" "[${v##*(x)}]"'
+shopt -s extglob; eval 'v="abc"; echo "[${v#?(a)}]" "[${v##?(a|ab)}]"'
+v='a\b'; echo "[${v//\\/S}]"
+v='a\b'; echo "[${v//a\\b/Z}]"
+v='ab'; echo "[${v//b\\/N}]"
+v='a*b'; echo "[${v//\*/S}]"
+v='aXb'; echo "[${v//X/}]"
+v='aaa'; echo "[${v//a/}]" "[${v//a}]"
+v=''; echo "[${v//x/y}]"
+v='abc'; echo "[${v///-}]" "[${v/#/P}]" "[${v/%/S}]"
+v='abc'; echo "[${v//[bc]/.}]" "[${v//[!b]/.}]"
+v='a.b.c'; echo "[${v//./-}]" "[${v/./-}]"
+v='hello'; echo "[${v//l*o/X}]" "[${v//l*/X}]"
+v='aaa'; echo "[${v//?/-}]"
+v='abcabc'; echo "[${v//abc/x}]" "[${v/abc/x}]"
+shopt -s extglob; eval 'case "a|b" in @(a\|b)) echo M;; *) echo n;; esac'
+shopt -s extglob; eval 'case "ab" in @(a|b)b) echo M;; *) echo n;; esac'
+shopt -s extglob; eval 'case "a]b" in @([]]|a)]b) echo M;; *) echo n;; esac'
+shopt -s extglob; eval 'case "ab" in @(a[b|c)) echo M;; *) echo n;; esac'
+shopt -s extglob; eval '[[ "  x" == ?(+([[:blank:]]))x ]] && echo M || echo n'
+shopt -s extglob; eval '[[ "x" == ?(+([[:blank:]]))x ]] && echo M || echo n'
+shopt -s extglob; eval 'nl=$(printf "\nx"); v="a;b"; echo "[${v//?(+([[:blank:]]))[";"]*([[:blank:]])/N}]"'
+shopt -s extglob; eval 'v="_run
+__bp \$_"; printf "[%s]\n" "${v//?(+([[:blank:]]))[";"]*([[:blank:]]):*([[:blank:]])[";"]*([[:blank:]])/,}"'
+shopt -s extglob; mkdir -p ps_d; cd ps_d; touch xa xb yc; eval 'echo @(xa|xb)'; eval 'echo @(x|y)?'; eval 'echo !(x*)'; cd ..; rm -rf ps_d
+v='aXa'; echo "[${v//X/-}]" "[${v//a/-}]" "[${v//[aX]/-}]"
+v='abcdef'; echo "[${v//[bd]/-}]" "[${v//?c/-}]" "[${v//c?/-}]"
+v='aaab'; echo "[${v//[ab]/-}]" "[${v/[ab]/-}]"
+v='xaby'; echo "[${v//a[b]/-}]" "[${v//[a]b/-}]"
+v='a1b2'; echo "[${v//[[:digit:]]/#}]" "[${v//[![:digit:]]/#}]"
+v='a-b'; echo "[${v//[a-c]/.}]" "[${v//[!a-c]/.}]"
+v='ab'; echo "[${v//[]a]/.}]" "[${v//[]]/.}]"
+v='a\b'; echo "[${v//[\\]/.}]"
+v='aaa'; echo "[${v//a[a]/-}]"
+v='abab'; echo "[${v//ab/X}]" "[${v//?b/X}]" "[${v//a?/X}]"
+v=café; echo "[${v//é/E}]"
+v='a.b'; echo "[${v//./-}]" "[${v//\./-}]"
+v='a*b'; echo "[${v//\*/-}]" "[${v//[*]/-}]"
+v='a?b'; echo "[${v//\?/-}]" "[${v//[?]/-}]"
+v='abc'; echo "[${v/#a/X}]" "[${v/%c/X}]" "[${v/#[a]/X}]" "[${v/%[c]/X}]"
+v='abc'; echo "[${v/#b/X}]" "[${v/%b/X}]"
+v='aaa'; echo "[${v/#[a]/X}]" "[${v/%[a]/X}]"
+v='abc'; echo "[${v#[a]}]" "[${v##[a]}]" "[${v%[c]}]" "[${v%%[c]}]"
+v='abc'; echo "[${v#?}]" "[${v##?}]" "[${v%?}]" "[${v%%?}]"
+v='aXbXc'; echo "[${v#*X}]" "[${v##*X}]" "[${v%X*}]" "[${v%%X*}]"

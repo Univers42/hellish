@@ -79,15 +79,16 @@ static bool	cm_class_has(const char *name, int len, char c)
 /* *q points at the '[' of a candidate "[:name:]". Advance past the whole
    class and return true; an unterminated one is bash's ordinary '[' --
    advance one character and return false so the caller treats it as a
-   literal member. */
-bool	cm_class_skip(const char **q)
+   literal member. `qe` ends the pattern slice: a class that closes after
+   it belongs to whatever comes next, not to this bracket. */
+bool	cm_class_skip(const char **q, const char *qe)
 {
 	const char	*p;
 
 	p = *q + 2;
-	while (*p && !(p[0] == ':' && p[1] == ']'))
+	while (p < qe && !(p[0] == ':' && p + 1 < qe && p[1] == ']'))
 		p++;
-	if (!*p)
+	if (p >= qe)
 		return ((*q)++, false);
 	*q = p + 2;
 	return (true);
@@ -97,16 +98,17 @@ bool	cm_class_skip(const char **q)
    advance past it. A multibyte character is classified by the wide tables
    (cm_class_has_w). The unterminated case mirrors cm_class_skip: the '['
    is an ordinary member, so it matches a literal '[' and only that. */
-bool	cm_class_match(const char *c, size_t n, const char **pp)
+bool	cm_class_match(const char *c, size_t n, const char **pp,
+		const char *pe)
 {
 	const char	*name;
 	const char	*p;
 
 	name = *pp + 2;
 	p = name;
-	while (*p && !(p[0] == ':' && p[1] == ']'))
+	while (p < pe && !(p[0] == ':' && p + 1 < pe && p[1] == ']'))
 		p++;
-	if (!*p)
+	if (p >= pe)
 		return ((*pp)++, n == 1 && *c == '[');
 	*pp = p + 2;
 	if (n > 1)

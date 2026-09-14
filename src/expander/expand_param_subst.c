@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "case_match.h"
 
 /* Find how many characters of s[0..] are consumed by a match of pat.
    Returns the match length (may be 0 for a pattern that matches empty), or
@@ -27,53 +28,66 @@
    matcher treats as special, which is the standing cost of having one. */
 int	patsub_match_len(const char *pat, const char *s)
 {
+	size_t	plen;
 	int		k;
-	char	*sub;
+	int		cap;
 
+	plen = ft_strlen(pat);
 	if (!ft_strchr(pat, '*') && !ft_strchr(pat, '?')
 		&& !ft_strchr(pat, '[') && !ft_strchr(pat, '\\'))
 	{
-		k = (int)ft_strlen(pat);
-		if (!ft_strncmp(pat, s, (size_t)k))
-			return (k);
+		if (!ft_strncmp(pat, s, plen))
+			return ((int)plen);
 		return (-1);
 	}
-	k = (int)ft_strlen(s);
+	if (!patsub_head_ok(pat, plen, s))
+		return (-1);
+	cap = patsub_maxlen(pat, plen);
+	k = 0;
+	while (s[k] && (cap < 0 || k < cap))
+		k++;
 	while (k >= 0)
 	{
-		sub = ft_strndup(s, (size_t)k);
-		if (sub && pat_match_pub(pat, sub))
-			return (xfree(sub), k);
-		xfree(sub);
+		if (case_match_n(s, (size_t)k, pat, plen))
+			return (k);
 		k--;
 	}
 	return (-1);
 }
 
 /* Build the substituted string by walking `val` one character at a time.
-   When global=0 only the first match is replaced (`done` gate); when
-   global=1 every non-overlapping match is replaced.  Unmatched characters
-   and zero-length match results are copied literally to avoid infinite loops.
-   The output is grown on demand in `out` via vec_push. */
+   When global=0 only the first match is replaced; when global=1 every
+   non-overlapping match is replaced.  Unmatched characters and zero-length
+   match results are copied literally to avoid infinite loops.  The output
+   is grown on demand in `out` via vec_push.
+
+   `live` is patsub_anywhere's answer about the rest of the value: -1 not
+   asked yet, 0 nothing left to find, 1 something is.  Asking it turns the
+   common "this pattern matches nothing" case from a match at every position
+   into a single one, and it doubles as the old `done` gate: a replacement
+   sets it back to -1 when every match is wanted and to 0 when only the
+   first was, which is what `-global` spells. */
 static char	*patsub_build(const char *val, const char *pat,
 				const char *rep, int global)
 {
 	t_string	out;
 	int			i;
 	int			k;
-	int			done;
+	int			live;
 
 	vec_init(&out);
 	out.elem_size = 1;
 	i = 0;
-	done = 0;
+	live = -1;
 	while (val[i])
 	{
 		k = -1;
-		if (pat[0] && (global || !done))
+		if (pat[0] && live < 0)
+			live = patsub_anywhere(pat, val + i);
+		if (pat[0] && live > 0)
 			k = patsub_match_len(pat, val + i);
 		if (k > 0)
-			(vec_push_str(&out, (char *)rep), i += k, done = 1);
+			(vec_push_str(&out, (char *)rep), i += k, live = -global);
 		else
 			(vec_push_char(&out, val[i]), i++);
 	}

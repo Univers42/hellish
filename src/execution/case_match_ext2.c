@@ -20,44 +20,60 @@
 **
 ** The subject is split at every position rather than parsed greedily: an
 ** alternative is a full pattern and may itself contain `*`, so there is no
-** single "longest match" to commit to.  That is the same reason case_match
+** single "longest match" to commit to.  That is the same reason cm_run
 ** backtracks over `*`.
+**
+** `op` points at the group's '(' and `tail` just past its ')', so the
+** alternatives are the slice [op + 1, tail - 1) and the rest of the pattern
+** is [tail, m.pe) -- three cursors into one string, no copies.
 */
 
 /* Zero or more repeats, then the tail. Trying the tail FIRST is what makes
    zero repeats legal, and the cut > 0 floor is what stops an alternative
    that matches the empty string from recursing forever. */
-static bool	xg_rep(const char *s, const char *p, const char *tail)
+static bool	xg_rep(t_cmp m, const char *op, const char *tail)
 {
+	t_cmp	t;
 	size_t	cut;
-	size_t	n;
 
-	if (case_match(s, tail))
+	t = m;
+	t.p = tail;
+	if (cm_run(t))
 		return (true);
-	n = ft_strlen(s);
-	cut = 1;
-	while (cut <= n)
+	cut = 0;
+	while (++cut <= (size_t)(m.se - m.s))
 	{
-		if (xg_any_alt(s, cut, xg_open(p) + 1) && xg_rep(s + cut, p, tail))
+		t = m;
+		t.p = op + 1;
+		t.pe = tail - 1;
+		if (!xg_any_alt(t, cut))
+			continue ;
+		t = m;
+		t.s = m.s + cut;
+		if (xg_rep(t, op, tail))
 			return (true);
-		cut++;
 	}
 	return (false);
 }
 
 /* `+(p)`: one repeat, then as many more as `*` would take. */
-static bool	xg_plus(const char *s, const char *p, const char *tail)
+static bool	xg_plus(t_cmp m, const char *op, const char *tail)
 {
+	t_cmp	t;
 	size_t	cut;
-	size_t	n;
 
-	n = ft_strlen(s);
-	cut = 1;
-	while (cut <= n)
+	cut = 0;
+	while (++cut <= (size_t)(m.se - m.s))
 	{
-		if (xg_any_alt(s, cut, xg_open(p) + 1) && xg_rep(s + cut, p, tail))
+		t = m;
+		t.p = op + 1;
+		t.pe = tail - 1;
+		if (!xg_any_alt(t, cut))
+			continue ;
+		t = m;
+		t.s = m.s + cut;
+		if (xg_rep(t, op, tail))
 			return (true);
-		cut++;
 	}
 	return (false);
 }
@@ -67,44 +83,51 @@ static bool	xg_plus(const char *s, const char *p, const char *tail)
    it still has to leave a remainder the tail accepts, which is why it runs
    the same loop with the alternative test inverted rather than negating the
    whole answer. */
-static bool	xg_once(const char *s, const char *p, const char *tail)
+static bool	xg_once(t_cmp m, const char *op, const char *tail)
 {
+	t_cmp	t;
 	size_t	cut;
-	size_t	n;
 	bool	hit;
 
-	if (*p == '?' && case_match(s, tail))
+	t = m;
+	t.p = tail;
+	if (*m.p == '?' && cm_run(t))
 		return (true);
-	n = ft_strlen(s);
 	cut = -1;
-	while (++cut <= n)
+	while (++cut <= (size_t)(m.se - m.s))
 	{
-		hit = xg_any_alt(s, cut, xg_open(p) + 1);
-		if (*p == '!' && !hit && case_match(s + cut, tail))
-			return (true);
-		if (*p != '!' && hit && case_match(s + cut, tail))
+		t = m;
+		t.p = op + 1;
+		t.pe = tail - 1;
+		hit = xg_any_alt(t, cut);
+		t = m;
+		t.s = m.s + cut;
+		t.p = tail;
+		if (hit == (*m.p != '!') && cm_run(t))
 			return (true);
 	}
 	return (false);
 }
 
-/* Match `s` against a pattern that BEGINS with a group at `p`.
+/* Match the subject against a pattern that BEGINS with a group at m.p.
    The whole remaining pattern is handled here -- the group and everything
-   after it -- so case_match can hand off and return the answer directly.
+   after it -- so cm_run can hand off and return the answer directly.
      zsh's bare `(a|b)` carries no operator, so it falls through to xg_once
    and is read as `@` -- exactly one alternative, which is what zsh means by
    it. Nothing else in this file had to learn the second spelling: xg_open
    is the only place that knows where the paren is. */
-bool	xg_match(const char *s, const char *p)
+bool	xg_match(t_cmp m)
 {
+	const char	*op;
 	const char	*tail;
 
-	tail = xg_group_end(xg_open(p));
+	op = xg_open(m.p);
+	tail = xg_group_end(op, m.pe);
 	if (!tail)
 		return (false);
-	if (*p == '*')
-		return (xg_rep(s, p, tail));
-	if (*p == '+')
-		return (xg_plus(s, p, tail));
-	return (xg_once(s, p, tail));
+	if (*m.p == '*')
+		return (xg_rep(m, op, tail));
+	if (*m.p == '+')
+		return (xg_plus(m, op, tail));
+	return (xg_once(m, op, tail));
 }

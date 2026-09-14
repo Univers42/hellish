@@ -62,6 +62,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "negate_inline"
         "array_subscript_nest"
         "array_scalar_shape"
+        "pattern_slice"
         "command_v"
         "array_subscript" "declare_quoting" "procsub_assign"
         "longtail"

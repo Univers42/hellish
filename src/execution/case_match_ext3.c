@@ -65,16 +65,25 @@ bool	xg_meta(char c)
    cannot drift from the code that later splits the group up -- a group the
    lexer claims and the matcher then reads as literal text is a pattern that
    silently never fires. */
-int	xg_alt_group(const char *at)
+int	xg_alt_group_n(const char *at, const char *pe)
 {
 	const char	*end;
+	const char	*bar;
 
-	if (*at != '(' || !glob_zsh())
+	if (at >= pe || *at != '(' || !glob_zsh())
 		return (0);
-	end = xg_group_end(at);
-	if (!end || *xg_alt_end(at + 1) != '|')
+	end = xg_group_end(at, pe);
+	bar = xg_alt_end(at + 1, pe);
+	if (!end || bar >= pe || *bar != '|')
 		return (0);
 	return ((int)(end - at));
+}
+
+/* The same question about a whole NUL-terminated word, which is what the
+   lexer, the word reparser and the filename globber all hold. */
+int	xg_alt_group(const char *at)
+{
+	return (xg_alt_group_n(at, at + ft_strlen(at)));
 }
 
 /* The lexer's two extra conditions, both about parens already spoken for.

@@ -87,19 +87,15 @@ bool	handle_extglob_token(t_tokenizer_ctx ctx)
 	return (true);
 }
 
-/* Does the group at token `g` match the prefix name[0..cut)? */
+/* Does the group at token `g` match the prefix name[0..cut)?
+     Both sides are slices of something longer -- the entry name and the
+   pattern the tokenizer cut this segment out of -- and case_match_n takes
+   them as slices, so asking the question costs two pointers rather than
+   two copies of it. */
 static bool	xg_pfx(char *name, size_t cut, t_glob *g)
 {
-	char	*head;
-	char	*pat;
-	bool	ok;
-
-	head = ft_strndup(name, cut);
-	pat = ft_strndup((char *)g->start, (size_t)g->len);
-	ok = case_match(head, pat);
-	xfree(head);
-	xfree(pat);
-	return (ok);
+	return (case_match_n(name, cut, (const char *)g->start,
+			(size_t)g->len));
 }
 
 /* Match one directory entry against a segment beginning with an extglob

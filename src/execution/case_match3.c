@@ -105,23 +105,23 @@ bool	cm_class_has_w(const char *name, int len, const char *c, size_t n)
 **
 ** A ']' as the FIRST member is a literal member and not the close, so
 ** `[]abc]` is a four-character class. */
-const char	*bracket_close(const char *p)
+const char	*bracket_close(const char *p, const char *pe)
 {
 	const char	*q;
 
 	q = p + 1;
-	if (*q == '!' || *q == '^')
+	if (q < pe && (*q == '!' || *q == '^'))
 		q++;
-	if (*q == ']')
+	if (q < pe && *q == ']')
 		q++;
-	while (*q && *q != ']')
+	while (q < pe && *q != ']')
 	{
-		if (q[0] == '[' && q[1] == ':')
-			cm_class_skip(&q);
+		if (q[0] == '[' && q + 1 < pe && q[1] == ':')
+			cm_class_skip(&q, pe);
 		else
 			q++;
 	}
-	if (*q == ']')
+	if (q < pe && *q == ']')
 		return (q);
 	return (NULL);
 }

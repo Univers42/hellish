@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "mbchar.h"
+#include "case_match.h"
 
 /* ${val%pattern} — remove the SHORTEST suffix of `val` that matches
    `pattern`.  We scan from the end of val backwards until we find the
@@ -62,20 +63,16 @@ char	*trim_suffix_longest(const char *val, const char *pattern)
 char	*trim_prefix_shortest(const char *val, const char *pattern)
 {
 	int		vlen;
+	int		plen;
 	int		i;
-	char	*sub;
 
 	vlen = ft_strlen(val);
+	plen = ft_strlen(pattern);
 	i = 0;
 	while (i <= vlen)
 	{
-		sub = ft_strndup(val, i);
-		if (pat_match_pub(pattern, sub))
-		{
-			xfree(sub);
+		if (case_match_n(val, (size_t)i, pattern, (size_t)plen))
 			return (ft_strdup(val + i));
-		}
-		xfree(sub);
 		if (i == vlen)
 			break ;
 		i += (int)mb_len(val + i, (size_t)(vlen - i));
@@ -89,20 +86,16 @@ char	*trim_prefix_shortest(const char *val, const char *pattern)
 char	*trim_prefix_longest(const char *val, const char *pattern)
 {
 	int		vlen;
+	int		plen;
 	int		i;
-	char	*sub;
 
 	vlen = ft_strlen(val);
+	plen = ft_strlen(pattern);
 	i = vlen;
 	while (i >= 0)
 	{
-		sub = ft_strndup(val, i);
-		if (pat_match_pub(pattern, sub))
-		{
-			xfree(sub);
+		if (case_match_n(val, (size_t)i, pattern, (size_t)plen))
 			return (ft_strdup(val + i));
-		}
-		xfree(sub);
 		if (i == 0)
 			break ;
 		i = (int)mb_back(val, (size_t)i);

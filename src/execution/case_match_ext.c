@@ -26,8 +26,8 @@
 ** option was pure fiction.  The lexer half is in helper2.c; this is the
 ** matching half.
 **
-** It hangs off case_match rather than beside it because an alternative is
-** an ordinary pattern -- `@(a*|b?)` and nested `@(a|@(b|c))` both have to
+** It hangs off cm_run rather than beside it because an alternative is an
+** ordinary pattern -- `@(a*|b?)` and nested `@(a|@(b|c))` both have to
 ** work -- so the two are mutually recursive by nature.  One matcher, both
 ** spellings: `case`, `[[ == ]]` and filename globbing cannot end up
 ** disagreeing about what a pattern means.
@@ -40,15 +40,15 @@
    `")"` inside a group is by the time it gets here (append_pat_tok escapes
    it), and counting it as the closing paren would end the group in the
    middle of itself. */
-const char	*xg_group_end(const char *p)
+const char	*xg_group_end(const char *p, const char *pe)
 {
 	int	depth;
 
 	depth = 0;
 	p++;
-	while (*p)
+	while (p < pe)
 	{
-		if (*p == '\\' && p[1])
+		if (*p == '\\' && p + 1 < pe)
 			p++;
 		else if (*p == '(')
 			depth++;
@@ -63,28 +63,30 @@ const char	*xg_group_end(const char *p)
      bash's spelling needs the operator AND the option, so with extglob off
    `@(` is a literal at-sign followed by whatever the shell made of the paren
    -- exactly the reading every existing pattern has today. zsh's spelling is
-   the bare paren and needs neither; xg_alt_group carries that rule, and the
-   `|` it insists on is what keeps `f()` a function definition. */
-bool	xg_start(const char *p)
+   the bare paren and needs neither; xg_alt_group_n carries that rule, and
+   the `|` it insists on is what keeps `f()` a function definition. */
+bool	xg_start(const char *p, const char *pe)
 {
+	if (p >= pe)
+		return (false);
 	if (*p == '(')
-		return (xg_alt_group(p) != 0);
-	return (*p && ft_strchr("?*+@!", *p) != NULL && p[1] == '('
+		return (xg_alt_group_n(p, pe) != 0);
+	return (ft_strchr("?*+@!", *p) != NULL && p + 1 < pe && p[1] == '('
 		&& glob_extglob());
 }
 
-/* The end of the alternative starting at `p`: the next top-level `|`, or
-   the group's closing `)`. Nested groups are skipped whole, and so is a
-   backslash-escaped byte -- a quoted `"a|b"` written inside a group is ONE
-   alternative, not two. */
-const char	*xg_alt_end(const char *p)
+/* The end of the alternative starting at `p`: the next top-level `|`, the
+   group's closing `)`, or the end of the slice. Nested groups are skipped
+   whole, and so is a backslash-escaped byte -- a quoted `"a|b"` written
+   inside a group is ONE alternative, not two. */
+const char	*xg_alt_end(const char *p, const char *pe)
 {
 	int	depth;
 
 	depth = 0;
-	while (*p)
+	while (p < pe)
 	{
-		if (*p == '\\' && p[1])
+		if (*p == '\\' && p + 1 < pe)
 			p++;
 		else if (*p == '(')
 			depth++;
@@ -97,37 +99,27 @@ const char	*xg_alt_end(const char *p)
 	return (p);
 }
 
-/* Does the alternative slice [alt, alt+alen) match the prefix s[0..cut)?
-   Both are copied out because case_match is whole-string by contract --
-   and that contract is exactly what lets an alternative be any pattern at
-   all, nested groups included. */
-static bool	xg_try_alt(const char *s, size_t cut, const char *alt, int alen)
+/* Does ANY alternative match the first `cut` bytes of the subject?
+     m carries the subject in m.s and the alternatives as the pattern slice
+   [m.p, m.pe) -- m.pe is the group's ')' -- so each alternative is taken by
+   moving two pointers rather than by copying it out, and so is the prefix
+   it is asked about. That is the whole reason this matcher stopped being
+   quadratic in memory: an alternative is any pattern, and cm_run is
+   whole-slice by contract, which is exactly what makes nesting work. */
+bool	xg_any_alt(t_cmp m, size_t cut)
 {
-	char	*head;
-	char	*pat;
-	bool	ok;
+	t_cmp	a;
 
-	head = ft_strndup((char *)s, cut);
-	pat = ft_strndup((char *)alt, (size_t)alen);
-	ok = case_match(head, pat);
-	xfree(head);
-	xfree(pat);
-	return (ok);
-}
-
-/* Does ANY alternative in the `|`-separated list match the prefix
-   s[0..cut)? The list runs to the group's ')'. */
-bool	xg_any_alt(const char *s, size_t cut, const char *alts)
-{
-	const char	*e;
-
+	a.s = m.s;
+	a.se = m.s + cut;
 	while (1)
 	{
-		e = xg_alt_end(alts);
-		if (xg_try_alt(s, cut, alts, (int)(e - alts)))
+		a.p = m.p;
+		a.pe = xg_alt_end(m.p, m.pe);
+		if (cm_run(a))
 			return (true);
-		if (*e != '|')
+		if (a.pe >= m.pe || *a.pe != '|')
 			return (false);
-		alts = e + 1;
+		m.p = a.pe + 1;
 	}
 }
