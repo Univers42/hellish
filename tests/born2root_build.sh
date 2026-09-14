@@ -533,9 +533,15 @@ run_backend() { # run_backend qemu|virtualbox
 	# whatever is released, and a bug fixed on the branch (e.g. the escaped
 	# backtick in a heredoc that broke Inception's mariadb bootstrap under
 	# 2.9.1) would still fail here. sudo wants a tty and a password (requiretty);
-	# the password is the dlesieur account password the preseed set.
+	# the password is the login account's, as born2root configured it.
 	if [ -f "$GUEST" ]; then
-		gpass="$(awk '$1=="d-i" && $2=="passwd/user-password" {print $4; exit}' "$B2R/preseeds/preseed.cfg" 2>/dev/null)"
+		# born2root.toml holds it since the corpus pin moved past 1.0.0: the
+		# preseed is a template there and carries only a crypted hash, so the
+		# old awk found nothing and every refresh failed. Its own reader is
+		# asked, under the shell under test; a corpus without it still has
+		# the plain preseed line.
+		gpass="$("$H" "$B2R/utils/b2b_config.sh" get B2B_USER_PASSWORD 2>/dev/null)"
+		[ -n "$gpass" ] || gpass="$(awk '$1=="d-i" && $2=="passwd/user-password" {print $4; exit}' "$B2R/preseeds/preseed.cfg" 2>/dev/null)"
 		want=$(wc -c <"$GUEST")
 		# Replace EVERY hellish.real on the guest, on EVERY mount. The upstream
 		# installer (install_hellish_upstream.sh, run with HOME=/home/<user>)
