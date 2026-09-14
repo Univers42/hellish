@@ -131,7 +131,9 @@ for f in tests/*.py; do
 			"$b" "$(( $(date +%s) - start ))" "$rc"
 		[ "$rc" = 124 ] && printf '    TIMED OUT after %ss -- a wedged shell counts as a failure\n' "$t"
 		sed -n '/FAIL/p' "/tmp/pty_$$_$b.log" | head -12 | sed 's/^/    /'
-		tail -4 "/tmp/pty_$$_$b.log" | sed 's/^/    | /'
+		# The transcript a test prints under its FAIL line is the only
+		# evidence CI keeps; four lines of it was never enough to read.
+		tail -40 "/tmp/pty_$$_$b.log" | sed 's/^/    | /'
 		fail=$((fail + 1)); failed_files="$failed_files $b"
 	fi
 	rm -f "/tmp/pty_$$_$b.log"
