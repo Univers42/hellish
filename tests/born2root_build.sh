@@ -254,6 +254,61 @@ guest() { # guest <cmd...>  -- over the ssh config born2root wrote
 	"$WORK/bin/ssh" -o BatchMode=yes -o ConnectTimeout=15 b2b "$@"
 }
 
+# guest_pty <line> <pattern>  -- type one line into an INTERACTIVE login over
+# a pty and print what the pattern matches in the answer.
+#
+# Every question this asks is about the login path, so it cannot use guest():
+# sshd runs the login shell for real here, banner, rc files and all, and the
+# pty echoes the typed line back with its $(...) unexpanded, which is why the
+# caller's pattern always requires an EXPANDED field.
+#
+# It retries, because the guest is not finished with itself when it first
+# answers ssh: first boot keeps provisioning for minutes after sshd is up,
+# and one of its late steps replaces /usr/bin/hellish.real with the published
+# release -- a login that lands in that window gets no shell and no output.
+# On the CI runner both pty checks came back empty two seconds after sshd
+# answered, on a guest that passes them every time here. When the retries run
+# out the raw answer and ssh's own stderr are printed, so the next failure
+# says something instead of "''".
+guest_pty() {
+	local line="$1" pat="$2" try=0 raw="" hit=""
+	while [ "$try" -lt 6 ]; do
+		raw="$(printf '%s\nexit\n' "$line" | "$WORK/bin/ssh" -tt \
+			-o BatchMode=yes -o ConnectTimeout=15 b2b 2>"$WORK/pty.err" \
+			| tr -d '\r')"
+		# not `grep | head && return`: head succeeds on empty input, so that
+		# reports a hit for an answer that never came.
+		hit="$(printf '%s' "$raw" | grep -o "$pat" | head -1)"
+		if [ -n "$hit" ]; then printf '%s' "$hit"; return 0; fi
+		try=$((try + 1))
+		sleep 5
+	done
+	printf '      pty probe found no %s after %d tries; last answer:\n' \
+		"$pat" "$try" >&2
+	printf '%s' "$raw" | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g; s/^/        | /' \
+		| tail -12 >&2
+	sed 's/^/        ssh: /' "$WORK/pty.err" 2>/dev/null | tail -4 >&2
+	return 1
+}
+
+# wait_first_boot <backend> -- first boot keeps provisioning long after sshd
+# answers (ufw, the hellishrc plugins, the upstream hellish install), and both
+# the contract questions and the refresh below must land after it. The loop
+# leaves the moment it is quiet, so a fast guest pays nothing; a RAM-capped
+# VirtualBox guest ran past 15 min here, so the ceiling is backend-aware. The
+# bracket keeps pgrep from matching the ssh command that carries the name.
+wait_first_boot() {
+	local be="$1" fbmax quiet=0
+	case "$be" in virtualbox) fbmax=210 ;; *) fbmax=90 ;; esac
+	for _ in $(seq 1 "$fbmax"); do
+		if guest 'pgrep -f "first[-]boot-setup" >/dev/null' 2>/dev/null; then quiet=0; else quiet=$((quiet + 1)); fi
+		[ "$quiet" -ge 2 ] && break
+		sleep 10
+	done
+	[ "$quiet" -ge 2 ] && ok "first boot finished" \
+		|| ko "[$be] first-boot-setup.sh still running after $((fbmax / 6)) min"
+}
+
 # ---- 0. the probe must hand the scripts to hellish ------------------------
 say "0. which shell does born2root's Makefile pick when hellish launches make?"
 picked="$(run_from "$H" 'make -n backend' 2>/dev/null \
@@ -372,6 +427,16 @@ run_backend() { # run_backend qemu|virtualbox
 		for _ in $(seq 1 60); do sleep 10; guest true 2>/dev/null && break; done
 	fi
 	guest true 2>/dev/null && ok "ssh b2b answers" || { ko "[$be] ssh b2b never answered"; return 1; }
+	# ...and then let it finish with itself. sshd answers minutes before first
+	# boot is done -- it installs Docker, WordPress, the plugin framework and
+	# the published hellish release over the baked binary, and a login that
+	# lands mid-replacement gets no shell at all. The questions below are
+	# about a machine that has finished booting, so wait for that here rather
+	# than racing it; the refresh in step 4 still lands after this, which is
+	# what it needs. The loop leaves the moment first boot is quiet, so a fast
+	# guest pays nothing, and a RAM-capped VirtualBox guest gets the longer
+	# ceiling it has always needed.
+	wait_first_boot "$be"
 	gsh="$(guest 'getent passwd $(id -un) | cut -d: -f7' 2>/dev/null)"
 	case "$gsh" in */hellish) ok "login shell in the guest: $gsh" ;; *) ko "[$be] login shell in the guest: '$gsh'" ;; esac
 	# born2root's guest installs /usr/bin/hellish as a link to hellish.real,
@@ -388,7 +453,8 @@ run_backend() { # run_backend qemu|virtualbox
 	# sshd starts the login shell as `-hellish`; $0 is then `hellish` (the
 	# wrapper of old exec'd the binary by path, which is why this once
 	# expected a slash). The exe is asked for as well, through the pty.
-	ilog="$(printf 'echo INTERACTIVE-$0-$((6*7))-$(readlink /proc/$$/exe)\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes -o ConnectTimeout=15 b2b 2>/dev/null | tr -d '\r' | grep -o 'INTERACTIVE-[^$[:space:]]*-42-[^[:space:]]*' | head -1)"
+	ilog="$(guest_pty 'echo INTERACTIVE-$0-$((6*7))-$(readlink /proc/$$/exe)' \
+		'INTERACTIVE-[^$[:space:]]*-42-[^[:space:]]*')"
 	# (the pty echoes the typed line too, with its $0 and $(...) unexpanded;
 	# the pattern wants the expanded -42-, so only the answer matches)
 	case "$ilog" in INTERACTIVE-*hellish*-42-/usr/bin/hellish.real) ok "interactive login runs hellish: $ilog" ;; *) ko "[$be] interactive login: '$ilog'" ;; esac
@@ -400,29 +466,13 @@ run_backend() { # run_backend qemu|virtualbox
 
 	# -- 4. the parity table, then the status page, both from hellish --------
 	say "[$be] 4. verify_guest and the status page, launched from hellish"
-	# First boot keeps provisioning after sshd is up (ufw rules, the hellishrc
-	# plugins, the upstream hellish install); the parity table checks those
-	# AND the refresh below must land after it, so wait for it to finish. A
-	# RAM-capped VirtualBox guest is much slower here than QEMU -- 2 GB of
-	# `curl | sh` plus the plugin framework ran past 15 min -- so the ceiling
-	# is backend-aware. The loop breaks the moment first boot is quiet, so a
-	# fast guest pays nothing for the larger cap. The bracket keeps pgrep from
-	# matching the ssh command that carries the name.
-	case "$be" in virtualbox) fbmax=210 ;; *) fbmax=90 ;; esac
-	quiet=0
-	for _ in $(seq 1 "$fbmax"); do
-		if guest 'pgrep -f "first[-]boot-setup" >/dev/null' 2>/dev/null; then quiet=0; else quiet=$((quiet + 1)); fi
-		[ "$quiet" -ge 2 ] && break
-		sleep 10
-	done
-	[ "$quiet" -ge 2 ] && ok "first boot finished" || ko "[$be] first-boot-setup.sh still running after $((fbmax / 6)) min"
-	# ORDER MATTERS: this runs only once first boot has FINISHED (the wait
-	# just above). First boot keeps provisioning after sshd answers, and its
-	# upstream hellish installer is one of the LATE steps -- refreshing right
-	# after `ssh b2b answers` (as this once did, in step 3) won the race for a
-	# moment, passed its own size check, and was then clobbered back to the
-	# release by first boot before `make inception` baked the shell into the
-	# containers. So it sits here: the last hand on hellish.real before 4b.
+	# ORDER MATTERS: this runs only once first boot has FINISHED -- step 3
+	# waits for that now, before it asks the guest anything at all. The
+	# upstream hellish installer is one of first boot's LATE steps, so
+	# refreshing right after `ssh b2b answers` (as this once did) won the race
+	# for a moment, passed its own size check, and was then clobbered back to
+	# the release before `make inception` baked the shell into the containers.
+	# So it sits here: the last hand on hellish.real before 4b.
 	# born2root's first boot installs the PUBLISHED hellish release over the
 	# ISO-baked binary (setup/install/hellish/install_hellish_upstream.sh runs
 	# `curl .../install.sh | sh`). The corpus exists to test THIS tree, so put
@@ -459,7 +509,8 @@ run_backend() { # run_backend qemu|virtualbox
 			# marker and grep it, exactly as the ilog check below does; require a
 			# digit after `=` so the pty's echo of our own input line (which
 			# reads LGOTMARK=$(...)) cannot match.
-			lgot=$(printf 'echo "LGOTMARK=$(wc -c < "$(command -v hellish.real)")."\nexit\n' | "$WORK/bin/ssh" -tt -o BatchMode=yes b2b 2>/dev/null | tr -d '\r' | grep -o 'LGOTMARK=[0-9][0-9]*' | head -1 | tr -dc '0-9')
+			lgot=$(guest_pty 'echo "LGOTMARK=$(wc -c < "$(command -v hellish.real)")."' \
+				'LGOTMARK=[0-9][0-9]*' | tr -dc '0-9')
 			# and assert EVERY hellish.real is now this tree -- not just the one
 			# command -v happens to resolve. The old check trusted a single
 			# `command -v` whose non-tty PATH found the refreshed /usr/bin copy
