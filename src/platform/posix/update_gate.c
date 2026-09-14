@@ -15,7 +15,8 @@
 #include <time.h>
 
 /* Split from update_cache.c only because the norm caps a file at 5
-   functions. This is the whole of "should we look again, and may we". */
+   functions. This is "should we look again"; who gets to, when several
+   shells ask at once, is update_claim.c. */
 
 /* How long to wait before asking again, and the two answers are not the
    same question.
@@ -70,19 +71,4 @@ int	cache_is_fresh(void)
 	if (last <= 0)
 		return (0);
 	return ((long)time(NULL) - last <= check_interval(&s));
-}
-
-/* Claim the check before forking, in the PARENT.
-   Twenty terminals opened at once would otherwise all read the same stale
-   record and all fork their own request. Recording the attempt here makes
-   the first one win and the other nineteen see a fresh cache. It is one
-   small temp-file-and-rename, at most once per interval, and it happens
-   off the prompt's path entirely. */
-void	claim_attempt(void)
-{
-	t_upd_state	s;
-
-	update_state_load(&s);
-	s.attempted = (long)time(NULL);
-	update_state_save(&s);
 }

@@ -245,24 +245,30 @@ def main():
     # ── 5. the check must never cost the user startup time ────────────────
     # Cold cache + a black-holed endpoint: the check MUST be spawned and MUST
     # be detached, so the first prompt arrives immediately regardless.
+    #
+    # The measurement is a DIFFERENCE, not a stopwatch. Both halves used to
+    # be "under one second", which is a statement about the machine: an ASan
+    # debug build on a loaded laptop reaches its first prompt in 1.1s with
+    # the update check compiled out of the run entirely, so the control --
+    # the line whose whole job is to say "this is what startup costs anyway"
+    # -- was the one that failed, while CI passed. What the check may not do
+    # is cost more than not doing it; the cap catches an outright hang.
     c = tmp()
+    ctl = tmp()
     try:
+        _, base = session(ctl, {"HELLISH_NO_UPDATE_CHECK": "1"}, settle=2.0)
         out, first = session(c, settle=2.0)
-        check("startup is not blocked by the update check", first < 1.0,
-              "first output took %.2fs with a dead update endpoint" % first)
+        check("startup is not blocked by the update check",
+              first < base + 0.5 and first < 5.0,
+              "first output took %.2fs with a dead update endpoint, "
+              "%.2fs with no check at all" % (first, base))
         check("a check was actually attempted (cache is cold)",
               os.path.exists(os.path.join(c, "hellish")) or True)
+        check("the shell reaches its prompt promptly at all", base < 5.0,
+              "%.2fs with the check disabled" % base)
     finally:
         shutil.rmtree(c, ignore_errors=True)
-
-    # Same, with the check switched off, as the control.
-    c = tmp()
-    try:
-        _, first = session(c, {"HELLISH_NO_UPDATE_CHECK": "1"}, settle=2.0)
-        check("startup is fast with the check disabled too", first < 1.0,
-              "%.2fs" % first)
-    finally:
-        shutil.rmtree(c, ignore_errors=True)
+        shutil.rmtree(ctl, ignore_errors=True)
 
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)

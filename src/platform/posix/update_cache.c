@@ -53,7 +53,8 @@ void	maybe_spawn_update_check(t_shell *state)
 		return ;
 	if (getenv("HELLISH_NO_UPDATE_CHECK") || cache_is_fresh())
 		return ;
-	claim_attempt();
+	if (!claim_attempt())
+		return ;
 	pid = fork();
 	if (pid != 0)
 	{
@@ -64,5 +65,6 @@ void	maybe_spawn_update_check(t_shell *state)
 	if (fork() != 0)
 		_exit(0);
 	run_bg_update_check();
+	release_attempt();
 	_exit(0);
 }

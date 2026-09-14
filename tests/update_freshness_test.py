@@ -138,11 +138,13 @@ def read_state(cache):
     return out
 
 
-def session(cache, api, settle=3.0, cmds=(b"echo MARK\n",)):
-    env = {"HOME": os.environ.get("HOME", "/tmp"), "PATH": os.environ["PATH"],
-           "TERM": "xterm-256color", "LANG": "C.UTF-8",
-           "XDG_CACHE_HOME": cache, "ASAN_OPTIONS": "detect_leaks=0",
-           "HELLISH_UPDATE_API": api}
+def session(cache, api, settle=3.0, cmds=(b"echo MARK\n",), env=None):
+    base = {"HOME": os.environ.get("HOME", "/tmp"), "PATH": os.environ["PATH"],
+            "TERM": "xterm-256color", "LANG": "C.UTF-8",
+            "XDG_CACHE_HOME": cache, "ASAN_OPTIONS": "detect_leaks=0",
+            "HELLISH_UPDATE_API": api}
+    base.update(env or {})
+    env = base
     t0 = time.time()
     pid, fd = pty.fork()
     if pid == 0:
@@ -252,6 +254,13 @@ def main():
         shutil.rmtree(cache, ignore_errors=True)
 
     # ── 4. Single flight. Terminals opened together must not each fire.
+    #      Recording the attempt before the fork does not settle this on its
+    #      own: cache_is_fresh() READS the record and the claim WRITES it,
+    #      and in between every other shell has read the same stale one.
+    #      Six shells, six requests, in CI. The claim is a mkdir now -- one
+    #      winner, decided in one step -- so this expects ONE request, not
+    #      "not too many": at most two would have passed with the race still
+    #      in, on any machine that staggered the starts by a millisecond.
     srv = Server(NEWER)
     cache = tempfile.mkdtemp()
     try:
@@ -264,8 +273,45 @@ def main():
             t.start()
         for t in ts:
             t.join()
-        check("six shells at once make at most two requests", srv.hits <= 2,
+        check("six shells at once make exactly one request", srv.hits == 1,
               "%d requests -- one release per terminal" % srv.hits)
+        check("the winner releases the claim when the fetch is over",
+              not os.path.isdir(os.path.join(cache, "hellish", "check.lock")),
+              "check.lock is still held; no later check could run")
+    finally:
+        srv.stop()
+        shutil.rmtree(cache, ignore_errors=True)
+
+    # ── 4b. The claim is a claim: a shell that does not get it does not
+    #       check. Held by someone else (a fresh directory), nothing fires.
+    srv = Server(NEWER)
+    cache = tempfile.mkdtemp()
+    try:
+        seed(cache, latest=RUNNING, checked=now - 3000, attempted=now - 3000,
+             header_shown=now, header_rev=3, header_ver=RUNNING,
+             announced=RUNNING)
+        os.makedirs(os.path.join(cache, "hellish", "check.lock"))
+        session(cache, srv.url, settle=2.0)
+        check("a claim held by another shell stops this one", srv.hits == 0,
+              "asked %d times while another shell owned the check" % srv.hits)
+    finally:
+        srv.stop()
+        shutil.rmtree(cache, ignore_errors=True)
+
+    # ── 4c. ...and a claim whose owner was killed must not wedge the check
+    #       forever. One older than a minute is reclaimed.
+    srv = Server(NEWER)
+    cache = tempfile.mkdtemp()
+    try:
+        seed(cache, latest=RUNNING, checked=now - 3000, attempted=now - 3000,
+             header_shown=now, header_rev=3, header_ver=RUNNING,
+             announced=RUNNING)
+        lock = os.path.join(cache, "hellish", "check.lock")
+        os.makedirs(lock)
+        os.utime(lock, (now - 3600, now - 3600))
+        session(cache, srv.url, settle=2.5)
+        check("an abandoned claim is reclaimed, not obeyed forever",
+              srv.hits == 1, "%d requests behind a dead claim" % srv.hits)
     finally:
         srv.stop()
         shutil.rmtree(cache, ignore_errors=True)
@@ -286,8 +332,24 @@ def main():
         check("a failed check does not claim a successful one",
               int(st.get("checked", 0)) <= now - 2000,
               "checked=%s was advanced by a failure" % st.get("checked"))
-        check("a dead endpoint never delays startup", first < 1.0,
-              "first output took %.2fs" % first)
+        # What must be zero is the update check's SHARE of startup, not the
+        # wall clock: a fixed 1.0s budget measures the machine. An ASan
+        # debug build on a loaded laptop takes 1.1s to its first prompt
+        # with the check switched off entirely, so the absolute form failed
+        # there while passing in CI -- it was reporting the binary, not the
+        # bug. The control is the same shell with HELLISH_NO_UPDATE_CHECK,
+        # and a black-holed endpoint may not cost meaningfully more than
+        # that. The 5s cap still catches an outright hang on the socket.
+        ctl = tempfile.mkdtemp()
+        try:
+            _, base = session(ctl, "http://127.0.0.1:9/dead", settle=2.0,
+                              env={"HELLISH_NO_UPDATE_CHECK": "1"})
+        finally:
+            shutil.rmtree(ctl, ignore_errors=True)
+        check("a dead endpoint never delays startup",
+              first < base + 0.5 and first < 5.0,
+              "first prompt took %.2fs, %.2fs without the check at all"
+              % (first, base))
     finally:
         shutil.rmtree(cache, ignore_errors=True)
 

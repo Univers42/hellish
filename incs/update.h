@@ -133,7 +133,8 @@ void		maybe_spawn_update_check(t_shell *state);
    many shells starting at once make one request. */
 long		check_interval(const t_upd_state *s);
 int			cache_is_fresh(void);
-void		claim_attempt(void);
+int			claim_attempt(void);
+void		release_attempt(void);
 
 /* The background worker: fetch the latest tag and write it to the cache. */
 void		run_bg_update_check(void);
