@@ -36,6 +36,18 @@
 
 int	visible_width_cstr(const char *s);
 
+/* The debug objects keep the static inline helpers of incs/public/error.h,
+   which call ft_eprintf; nothing under test reaches them. clang emits them
+   at -O0 and gcc does not, so this unit linked in CI and failed on a clang
+   machine with "undefined reference to ft_eprintf". A weak stub lets it link
+   without libft on both, and the real symbol still wins wherever present. */
+__attribute__((weak))
+int	ft_eprintf(const char *str, ...)
+{
+	(void)str;
+	return (0);
+}
+
 /* The object under test is compiled against libft; ft_memset is the only
    symbol it needs and memset is the same function. */
 void	*ft_memset(void *b, int c, unsigned long n)
