@@ -77,7 +77,8 @@ static inline void	interactive_job_signals(int interactive)
    but SIGQUIT is ignored so Ctrl-\ doesn't dump core from the shell. */
 static inline void	readline_bg_signals(void)
 {
-	signal(SIGINT, SIG_DFL);
+	if (!pal_sig_ignored_on_entry(SIGINT))
+		signal(SIGINT, SIG_DFL);
 	signal(SIGQUIT, SIG_IGN);
 }
 
