@@ -88,6 +88,7 @@ setup/b2br_internal/b2b_setup\.sh:.*useradd -- a new account'"'"'s shell is poli
 diagnostic/b2b_learling_lab\.sh:.*useradd -- same
 fixes/fix_policy\.sh:.*grep "/bin/bash" -- reads /etc/passwd
 tests/test_vbox_driver\.sh:.*#!/bin/sh -- stub VirtualBoxVM files whose mode bits are the subject
+tests/test_check_deps_backend\.sh:.*#!/bin/sh -- stub tools on a fabricated PATH; whether `make deps` reaches sudo at all is the subject
 generate/create_custom_iso\.sh:.*(sed -i -e|-e "s\|echo) -- the rewrite rules themselves: what the ISO'"'"'s preseed says instead of /bin/bash and #!/bin/sh
 '
 shebangs=$(find "$B2R" -name '*.sh' -type f -not -path '*/.git/*' -exec head -q -n1 {} + | grep -c -v '^#!/usr/bin/env hellish$')

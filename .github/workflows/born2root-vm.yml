@@ -52,9 +52,36 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y virtualbox
+          # AMD-V belongs to one hypervisor at a time, and the runner image
+          # arrives with kvm_amd already loaded and nested=1 -- it owns the
+          # extension before anything of ours runs, so every VBoxManage
+          # startvm here died with
+          #   VirtualBox can't enable the AMD-V extension. Please disable
+          #   the KVM kernel extension (VERR_SVM_IN_USE)
+          # forty minutes into the job, at the guest's OS install. Unloading
+          # the CPU module hands it back; `kvm` itself stays, because
+          # Ubuntu's vboxdrv links against it.
+          sudo modprobe -r kvm_amd kvm_intel || true
           sudo modprobe vboxdrv || sudo /sbin/vboxconfig
+          if lsmod | grep -qE '^(kvm_amd|kvm_intel) '; then
+            echo "KVM still holds the CPU extension; VirtualBox cannot run here" >&2
+            exit 1
+          fi
           ls -l /dev/vboxdrv /dev/vboxdrvu
           VBoxManage --version
+      # Forty minutes of ISO and installer before the first VM is started is
+      # the worst possible place to find out that this runner cannot start
+      # one. Ask now, with a machine that boots nothing: it either powers on
+      # or it says why in under a minute.
+      - name: A VM can actually be powered on here
+        if: matrix.backend == 'virtualbox'
+        run: |
+          VBoxManage createvm --name preflight --ostype Debian_64 --register
+          VBoxManage modifyvm preflight --memory 512 --nic1 nat
+          VBoxManage startvm preflight --type headless
+          VBoxManage showvminfo preflight --machinereadable | grep -E '^VMState="running"'
+          VBoxManage controlvm preflight poweroff
+          VBoxManage unregistervm preflight --delete
       - name: Cache the Debian netinst ISO
         uses: actions/cache@v4
         with:

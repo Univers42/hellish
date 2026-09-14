@@ -33,7 +33,11 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 H="${HELLISH_BIN:-$ROOT/build/bin/hellish}"
-B2R="$ROOT/tests/born2root"
+# The corpus, which is normally the submodule. BORN2ROOT_DIR points it
+# at another checkout -- the same knob born2root_shell_audit.sh takes,
+# so a candidate version of the corpus can be run through both gates
+# before the submodule is moved to it.
+B2R="${BORN2ROOT_DIR:-$ROOT/tests/born2root}"
 
 if [ ! -f "$B2R/Makefile" ]; then
 	echo "born2root: submodule not checked out (git submodule update --init tests/born2root) -- skipping"
@@ -84,6 +88,7 @@ cases=(
 	"tests/test_host_ports.sh"
 	"tests/test_inception_vm_path.sh"
 	"tests/test_make_pull.sh"
+	"tests/test_check_deps_backend.sh"
 	"tests/test_qemu_ports.sh"
 	"tests/test_qemu_stop.sh"
 	"tests/test_vbox_driver.sh"
