@@ -75,13 +75,37 @@ jobs:
       # or it says why in under a minute.
       - name: A VM can actually be powered on here
         if: matrix.backend == 'virtualbox'
+        timeout-minutes: 8
         run: |
-          VBoxManage createvm --name preflight --ostype Debian_64 --register
-          VBoxManage modifyvm preflight --memory 512 --nic1 nat
-          VBoxManage startvm preflight --type headless
-          VBoxManage showvminfo preflight --machinereadable | grep -E '^VMState="running"'
-          VBoxManage controlvm preflight poweroff
-          VBoxManage unregistervm preflight --delete
+          # Every call is bounded. This check takes one second when
+          # VirtualBox is healthy, and on one runner VBoxManage simply never
+          # came back -- the step sat there for 42 minutes and would have
+          # eaten the job's whole two-hour budget, which is the opposite of
+          # what a preflight is for. A wedged VBoxSVC is also the one thing
+          # worth retrying: it is restarted, the driver reloaded, and the
+          # question asked once more before the leg gives up.
+          probe() {
+            timeout 60 VBoxManage createvm --name preflight --ostype Debian_64 --register || return 1
+            timeout 60 VBoxManage modifyvm preflight --memory 512 --nic1 nat || return 1
+            timeout 120 VBoxManage startvm preflight --type headless || return 1
+            timeout 60 VBoxManage showvminfo preflight --machinereadable \
+              | grep -E '^VMState="running"' || return 1
+          }
+          clean() {
+            timeout 60 VBoxManage controlvm preflight poweroff > /dev/null 2>&1 || true
+            timeout 60 VBoxManage unregistervm preflight --delete > /dev/null 2>&1 || true
+          }
+          if probe; then clean; exit 0; fi
+          echo "preflight failed; restarting VBoxSVC and the driver, then one retry" >&2
+          clean
+          pkill -f VBoxSVC || true
+          sudo modprobe -r vboxdrv || true
+          sudo modprobe vboxdrv || sudo /sbin/vboxconfig || true
+          sleep 5
+          if probe; then clean; exit 0; fi
+          clean
+          echo "VirtualBox cannot power on a VM on this runner" >&2
+          exit 1
       - name: Cache the Debian netinst ISO
         uses: actions/cache@v4
         with:
