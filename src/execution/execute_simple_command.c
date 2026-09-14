@@ -123,7 +123,8 @@ static t_execution_state	dispatch_cmd(t_shell *state,
    NULL pointers that can appear after glob/IFS expansion, optionally
    print the trace (set -x), then dispatch (aliases were already spliced
    by the input scanner before the lexer ran).  An expansion error
-   (ambiguous redirect, signal unwind) short-circuits before dispatch.
+   (ambiguous redirect, bad substitution, signal unwind) short-circuits
+   before dispatch; res_expand_failed says which status that is.
    The cmd struct is always freed on all paths to stay leak-flat. */
 t_execution_state	execute_simple_command(t_shell *state,
 									t_executable_node *exe)
@@ -141,11 +142,7 @@ t_execution_state	execute_simple_command(t_shell *state,
 		procsub_close_fds_parent(state);
 		free_executable_cmd(state, cmd);
 		free_executable_node(state, exe);
-		if (get_g_sig()->should_unwind)
-			return (res_status(CANCELED));
-		if (fatal)
-			exit_clean(state, 1);
-		return (res_status(AMBIGUOUS_REDIRECT));
+		return (res_expand_failed(state, fatal));
 	}
 	if (!cmd.argv.ctx)
 		cmd.argv.len = 0;

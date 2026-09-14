@@ -135,7 +135,7 @@ t_execution_state	execute_simple_list(t_shell *state, t_executable_node *exe)
 		status = run_list_range(state, exe, &i, defer);
 		run_pending_traps(state);
 		if (state->should_exit || state->loop_break || state->loop_continue
-			|| state->func_return || get_g_sig()->should_unwind)
+			|| state->func_return || exec_aborting(state))
 			break ;
 	}
 	reap_background_children(state);

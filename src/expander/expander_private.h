@@ -243,6 +243,8 @@ int			csf_skip_quoted(const char *s, int i);
 int			csf_skip_csub(const char *s, int i);
 int			csf_skip_param(const char *s, int i);
 char		*pf_bad_subst(t_shell *state, const char *s, int slen);
+void		note_assign_value(t_shell *state, t_ast_node *src);
+void		note_word(t_shell *state, t_ast_node *node);
 bool		pf_find_substr(const char *s, int slen, int *name_len);
 char		*expand_substr(t_shell *state, const char *s, int slen,
 				int name_len);

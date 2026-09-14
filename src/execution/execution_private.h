@@ -147,6 +147,7 @@ int					find_cmd_path(t_shell *state, char *cmd_name,
 void				prehash_external(t_shell *state, char *argv0);
 void				path_cache_sync(t_shell *state);
 t_execution_state	res_status(int status);
+t_execution_state	res_expand_failed(t_shell *state, bool fatal);
 t_execution_state	res_pid(int pid);
 void				exe_res_set_status(t_shell *st, t_execution_state *res);
 t_execution_state	pipeline_status(t_shell *state, t_vec_exe_res *results);

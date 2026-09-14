@@ -75,17 +75,6 @@ char	*expand_indirect(t_shell *state, const char *s, int n)
 	return (ft_strdup(val));
 }
 
-/* bash parity for a malformed ${...}: report "bad substitution", set $? to
-   127, and abort a non-interactive shell (bash --posix -c exits 127). */
-char	*pf_bad_subst(t_shell *state, const char *s, int slen)
-{
-	ft_eprintf("%s: ${%.*s}: bad substitution\n", state->ctx, slen, s);
-	set_cmd_status(state, create_exec_state(127, false));
-	if (state->metinp != INP_RL)
-		exit_clean(state, 127);
-	return (ft_strdup(""));
-}
-
 /* Detect the substring form NAME:... — a valid plain parameter followed by
    a ':' that find_param_op did not already claim as :-/:=/:?/:+ — and hand
    back the name length. */

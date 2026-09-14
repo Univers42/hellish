@@ -332,6 +332,17 @@ typedef struct s_shell
 								   NOT \! -- history dedupes and survives
 								   the session; this counter does neither */
 	bool				should_exit; /* set by `exit` builtin */
+	/* An expansion error in an interactive shell -- a bad substitution, a
+	   ${u:?} that fired -- discards the rest of the line, as bash's
+	   jump_to_top_level(DISCARD) does: the command is not run and nothing
+	   after its `;` is either. Set by the reporter, read by the executor
+	   and the list loops, cleared by open_cycle before each typed line. */
+	bool				discard_line;
+	/* The word being expanded, so a bad substitution can be reported the
+	   way bash reports it -- the whole word, `${{.ID}}x: bad substitution`,
+	   not the ${...} span the scanner stopped at. */
+	const char			*exp_word;
+	int					exp_wlen;
 	bool				builtin_fatal; /* special builtin got a MALFORMED
 										  request, not merely a failing one:
 										  read and cleared by

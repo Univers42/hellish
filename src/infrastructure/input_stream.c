@@ -78,7 +78,7 @@ bool	stream_try(t_shell *state, t_parser *parser, t_deque_tok *tt)
 		return (false);
 	state->cycle_streamed = true;
 	more = true;
-	while (more && !state->should_exit && !get_g_sig()->should_unwind)
+	while (more && !state->should_exit && !exec_aborting(state))
 	{
 		parser->parse_stack.len = 0;
 		parser->stream = 1;

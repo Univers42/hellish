@@ -33,7 +33,9 @@ static int	pf_fatal_status(t_shell *state)
 
 /* ${p?w} / ${p:?w}: if p is unset (or null with the colon), print the word
    to stderr and abort a non-interactive shell with the bash-parity status;
-   interactively just set $? and return empty so the user keeps typing.
+   interactively set $?, and discard the rest of the line -- the command
+   this word belongs to does not run, and neither does what follows its
+   `;`, which is bash's DISCARD.
    Callers pass val=NULL to force the error branch (the @ and * path
    decides set-ness itself).
 
@@ -64,6 +66,7 @@ char	*pf_err_word(t_shell *state, char *val, t_pe_op o)
 	set_cmd_status(state, state->last_cmd_st_exe);
 	if (state->metinp != INP_RL)
 		exit_clean(state, st);
+	state->discard_line = true;
 	return (ft_strdup(""));
 }
 
@@ -77,6 +80,7 @@ char	*pf_assign_err(t_shell *state, t_pe_op o)
 	set_cmd_status(state, state->last_cmd_st_exe);
 	if (state->metinp != INP_RL)
 		exit_clean(state, 1);
+	state->discard_line = true;
 	return (ft_strdup(""));
 }
 

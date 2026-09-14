@@ -49,7 +49,7 @@ void	errexit_check(t_shell *state, t_execution_state st,
 	if (last && last->node_type == AST_COMMAND_PIPELINE && last->negate)
 		return ;
 	if (state->should_exit || state->func_return || state->loop_break
-		|| state->loop_continue || get_g_sig()->should_unwind)
+		|| state->loop_continue || exec_aborting(state))
 		return ;
 	fire_err_trap(state, st.status);
 	if (state->opt_errexit)

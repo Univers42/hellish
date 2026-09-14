@@ -98,6 +98,7 @@ static void	open_cycle(t_shell *state)
 	run_prompt_command(state);
 	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
 	run_zsh_prompt_hooks(state, "precmd", NULL);
+	state->discard_line = false;
 }
 
 /* The read-eval-print loop -- the beating heart of the shell. Each turn hands

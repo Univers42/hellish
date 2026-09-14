@@ -67,6 +67,8 @@ void	expand_word_ro(t_shell *state, t_ast_node *src,
 {
 	t_ast_node	scratch;
 
+	state->exp_word = src->token.start;
+	state->exp_wlen = src->token.len;
 	if (fast_path_expand(state, src, args, keep_as_one))
 		return ;
 	scratch = clone_as_word(src);
@@ -85,6 +87,7 @@ void	expand_word_assign_ro(t_shell *state, t_ast_node *src, t_vec *args)
 	int			o;
 
 	o = word_slab_push(0);
+	note_assign_value(state, src);
 	if (fast_path_expand(state, src, args, true))
 	{
 		word_slab_push(o);

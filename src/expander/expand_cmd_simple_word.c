@@ -28,7 +28,7 @@ int	expand_simple_cmd_word(t_shell *state,
 	o = word_slab_push(1);
 	expand_word_ro(state, exp->curr, &ret->argv, false);
 	word_slab_push(o);
-	if (get_g_sig()->should_unwind)
+	if (exec_aborting(state))
 		return (1);
 	exp->found_first = true;
 	return (0);

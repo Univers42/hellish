@@ -33,13 +33,15 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 	t_ast_node	scratch;
 	int			flags;
 
+	if (exp->curr->children.len == 2)
+		note_word(state, &((t_ast_node *)exp->curr->children.ctx)[1]);
 	scratch = clone_ast(exp->curr);
 	assignment_word_to_word(&scratch);
 	flags = EW_NO_GLOB;
 	if (exp->export)
 		flags |= EW_KEEP_AS_ONE;
 	expand_word_glob_ctl(state, &scratch, &ret->argv, flags);
-	if (get_g_sig()->should_unwind)
+	if (exec_aborting(state))
 		return (1);
 	return (0);
 }

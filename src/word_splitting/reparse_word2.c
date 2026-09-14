@@ -18,13 +18,20 @@
    and decompose it into a tree of typed subtokens (TT_SQWORD, TT_DQWORD,
    TT_ENVVAR, TT_WORD ...). The returned node owns its children vec; the
    caller must free_ast() it when done. This is the "second parse pass" that
-   turns the flat lexer output into something the expander can act on. */
+   turns the flat lexer output into something the expander can act on.
+     The node's own token keeps the whole word as a slice -- not owned, so
+   nothing frees it, exactly like the subtokens that point into it -- so an
+   error inside one piece can be reported the way bash reports it, naming
+   the word: `${{.ID}}x: bad substitution`, not the `${{.ID}` the scanner
+   stopped at. */
 t_ast_node	reparse_word(t_token t, bool no_squote)
 {
 	t_ast_node	ret;
 	t_reparser	rp;
 
 	ret = create_node_type(AST_WORD);
+	ret.token.start = t.start;
+	ret.token.len = t.len;
 	vec_init(&ret.children);
 	ret.children.elem_size = sizeof(t_ast_node);
 	create_reparser(&rp, ret, t, &(int){0});

@@ -262,3 +262,16 @@ shopt -u localvar_unset; echo $?
 shopt -p localvar_unset
 shopt -q localvar_inherit; echo $?
 x=g; f() { local x=1; g; echo "f:[$x]"; }; g() { unset x; echo "g:[$x]"; }; f; echo "top:[$x]"
+echo ${{.ID}}; echo after
+echo ${{.ID}}x; echo after
+echo a${{.ID}}b; echo after
+x=${{a}}; echo after
+x=${{a}} true; echo after
+echo "${{.ID}}"; echo after
+echo ${x{a}}; echo after
+echo ${x:-a{b}
+echo ${x:-{a}}
+x=1; echo ${x}}
+export x=${{a}}; echo after
+unset u; echo ${u:?msg}; echo after
+echo pre ${{.ID}} post; echo after
