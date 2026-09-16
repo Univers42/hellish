@@ -52,4 +52,12 @@ char	*cmd_gen_dirs(t_cmd_gen *g, size_t tlen, const char *text);
 char	*rl_dup(const char *s);
 char	*rl_dup_dollar(const char *name, size_t len);
 
+/* complete_quote.c -- the four readline hooks that make a completed
+   filename survive being read back as shell input (spaces escaped, an
+   open quote respected). Without them `cat my<TAB>` produced two words. */
+void	setup_quoting(void);
+int		comp_char_is_quoted(char *line, int idx);
+char	*comp_quote_filename(char *text, int mtype, char *qp);
+char	*comp_dequote_filename(char *text, int qc);
+
 #endif

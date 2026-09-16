@@ -49,10 +49,25 @@ static void	pc_func_tail(t_string *out, t_compspec *c, const char *text,
 ** afterwards is cosmetic -- this runs in the readline child, whose option
 ** state dies with the line -- but a bracket that only opens invites the
 ** next reader to wonder.
+**
+** `set -f` covered the globbing half and nothing covered the splitting
+** half, so compgen got the multi-word candidate right and the array
+** literal immediately took it apart again:
+**
+**     complete -W 'a "b c" d' foo ; foo <TAB>
+**       bash: a, "b c", d        here: a, b, c, d
+**
+** compgen prints one candidate per LINE, so newline is the only separator
+** that means anything here -- with the default IFS every embedded space
+** was a split point, and with `IFS=:` set anywhere in the session the
+** candidates stopped splitting at all. Pinning IFS to a newline for the
+** assignment says what the data actually is.
 */
 static void	pc_gen_tail(t_string *out, t_compspec *c, const char *text)
 {
-	vec_push_str(out, "set -f; COMPREPLY=($(compgen");
+	vec_push_str(out, "set -f; IFS='");
+	vec_push_char(out, '\n');
+	vec_push_str(out, "'; COMPREPLY=($(compgen");
 	if (c->words)
 	{
 		vec_push_str(out, " -W ");

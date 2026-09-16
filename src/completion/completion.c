@@ -126,12 +126,21 @@ static char	**cmd_completion(const char *text, int start, int end)
    also why bash keeps '$' out of its own. With the stock set readline
    split "$HOM" into a word starting at the 'H', so the dispatcher's
    text[0] == '$' test below could never be true and complete_variables
-   was unreachable: $VAR completion had simply never worked. */
+   was unreachable: $VAR completion had simply never worked.
+
+   Backslash is out of it too, and bash's set has never had it. A
+   backslash in a word is an ESCAPE, not a boundary: with it in the set
+   readline cut `cat my\ fi<TAB>` at the backslash and tried to complete
+   ` fi`, so continuing a name whose space had already been escaped could
+   only ring the bell. The escape is now understood by the quoting hooks
+   in complete_quote.c instead -- which is where it belongs, since they
+   are what puts the backslash there in the first place. */
 void	setup_completion(void)
 {
-	static char	brk[] = " \t\n\"\\'`@><=;|&{(";
+	static char	brk[] = " \t\n\"'`@><=;|&{(";
 
 	rl_attempted_completion_function = cmd_completion;
 	rl_completion_append_character = ' ';
 	rl_completer_word_break_characters = brk;
+	setup_quoting();
 }
