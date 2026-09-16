@@ -93,6 +93,7 @@ t_execution_state	execute_cmd_bg(t_shell *state,
 			env_set(&state->env,
 				env_create(ft_strdup(ULTIMATE_ARG), ft_strdup(last), true));
 	}
+	git_tree_touched();
 	if (state->cmdsub_in_place)
 		run_cmd_in_place(state, exe, cmd, false);
 	if (state->bg_exec_node && state->bg_exec_node == exe->node)

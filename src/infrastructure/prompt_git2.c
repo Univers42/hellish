@@ -96,3 +96,24 @@ int	*git_scan_gen(void)
 
 	return (&gen);
 }
+
+/* Something that can modify the working tree just happened.
+**
+** This used to be an unconditional bump after every executed tree, which
+** reads as "a command ran, so assume the tree moved" -- except a bare
+** Enter parses and executes too, and so does `echo hi`. The comparison in
+** git_dirty_cached was therefore false on every interactive prompt, the
+** 3-second TTL never once applied, and the shell forked `git status`
+** between every prompt and the next. strace over twenty bare Enters in a
+** repo counted twenty-one execve and 220 file opens.
+**
+** The tree can only change under this shell when an external program runs
+** in it or a redirection opens a file for writing, so those are the two
+** callers. Anything else -- an empty line, a builtin, a function of
+** builtins -- leaves the answer as good as it was, which is what the TTL
+** was written to exploit. A late background writer is still caught by the
+** TTL expiring, and a `cd` to another repo by the root comparison. */
+void	git_tree_touched(void)
+{
+	(*git_scan_gen())++;
+}

@@ -53,7 +53,6 @@ static void	execute_settled_tree(t_shell *state)
 		update_winsize_vars(state);
 	run_preexec(state);
 	execute_top_level(state);
-	(*git_scan_gen())++;
 	if (parena()->attached)
 		free_ast(&state->tree);
 	else

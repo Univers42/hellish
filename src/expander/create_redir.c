@@ -52,11 +52,14 @@ static bool	open_file_redir(t_tt tt, t_redir *ret)
 		ret->fd = open(ret->fname, O_RDONLY);
 	else if (tt == TT_REDIRECT_RIGHT || tt == TT_CLOBBER
 		|| tt == TT_AMP_REDIR)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+		ret->fd = (git_tree_touched(),
+				open(ret->fname, O_WRONLY | O_CREAT | O_TRUNC, 0666));
 	else if (tt == TT_APPEND || tt == TT_AMP_APPEND)
-		ret->fd = open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0666);
+		ret->fd = (git_tree_touched(),
+				open(ret->fname, O_WRONLY | O_CREAT | O_APPEND, 0666));
 	else if (tt == TT_READWRITE)
-		ret->fd = open(ret->fname, O_RDWR | O_CREAT, 0666);
+		ret->fd = (git_tree_touched(),
+				open(ret->fname, O_RDWR | O_CREAT, 0666));
 	else
 		ret->fd = -1;
 	if (!redir_park_fd(ret))
