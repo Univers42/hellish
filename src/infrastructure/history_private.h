@@ -92,4 +92,15 @@ int			in_sq(const char *s, size_t pos);
 char		*replace_first(const char *s, const char *old, const char *nw);
 char		*quick_sub(t_shell *state, const char *input);
 
+/* The HIST* variables (history_vars.c). Read per use: they are ordinary
+   shell variables and a cached copy could only go stale. */
+bool		hist_control_has(t_shell *state, const char *word);
+bool		hist_ignore_match(t_shell *state, const char *line);
+long		hist_limit(t_shell *state, const char *var, long dflt);
+char		*hist_candidate(t_shell *state);
+void		hist_erase_dups(t_shell *state, const char *line);
+void		hist_trim_to_limit(t_shell *state);
+void		append_hist_entry(t_shell *state, char *hist_entry);
+void		history_record(t_shell *state, bool early);
+
 #endif

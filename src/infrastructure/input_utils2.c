@@ -52,6 +52,7 @@ static void	execute_settled_tree(t_shell *state)
 	if (state->shopt & SHOPT_CHECKWINSIZE)
 		update_winsize_vars(state);
 	run_preexec(state);
+	history_record(state, true);
 	execute_top_level(state);
 	if (parena()->attached)
 		free_ast(&state->tree);

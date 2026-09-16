@@ -146,7 +146,10 @@ def more_shapes():
     for _, cmd, _ in SHAPES:
         for line in cmd.split("\n"):
             s.send(line + "\n", 0.4)
-    out = plain(s.send("history %d\n" % len(SHAPES), 0.9))
+    # +1 because `history N` counts ITSELF: bash records a command as it
+    # reads it, so the listing's own entry is the newest one. Asking for
+    # exactly len(SHAPES) slides the oldest shape out of the window.
+    out = plain(s.send("history %d\n" % (len(SHAPES) + 1), 0.9))
     for name, _, want in SHAPES:
         check("%s joins as bash does" % name, want in out,
               "want %r in %r" % (want, out[-400:]))
@@ -205,7 +208,9 @@ def main():
     for cmd in cmds:
         for line in cmd.split("\n"):
             s.send(line + "\n", 0.4)
-    hist_out = plain(s.send("history 5\n", 0.9))
+    # 6, not 5: the `history` command is itself the newest entry, because
+    # bash records a line when it reads it rather than after it runs.
+    hist_out = plain(s.send("history 6\n", 0.9))
     check("history joins the loop the way bash does",
           "for i in 1 2 3; do echo LOOP$i; done" in hist_out,
           repr(hist_out[-500:]))

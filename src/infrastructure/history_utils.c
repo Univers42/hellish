@@ -37,74 +37,66 @@
    across sessions with no format change. add_history is called directly
    rather than add_history_line because the entry is already in its final
    shape by this point. */
-static void	append_hist_entry(t_shell *state, char *hist_entry)
-{
-	char	*enc;
-	char	*joined;
+/* End of cycle: record the command if history_record did not already (the
+   EOF and `exit` paths reach here without having run it), then clear the
+   expansion flag and compact the ring buffer.
 
-	joined = hist_join_line(hist_entry,
-			(state->shopt & SHOPT_LITHIST) != 0);
-	if (joined)
-	{
-		xfree(hist_entry);
-		hist_entry = joined;
-	}
-	add_history(hist_entry);
-	vec_push(&state->hist.hist_cmds, &hist_entry);
-	if (state->hist.append_fd < 0)
-		return ;
-	enc = (char *)encode_cmd_hist(hist_entry).ctx;
-	if (write_to_file(enc, state->hist.append_fd))
-	{
-		warning_error("Failed to write to the history file");
-		close(state->hist.append_fd);
-		state->hist.append_fd = -1;
-	}
-	xfree(enc);
-}
-
-/* Called after each command: if the command is worth saving, extract the raw
-   text from the ring buffer (or from the history-expanded form if expansion
-   ran), and append it. The expanded form is saved so "!! ; echo done" records
-   the real command, not "!!" — less confusing to navigate later.
-   Clears input_expanded and compacts the ring buffer unconditionally. */
+   The expanded form is what gets saved, so "!! ; echo done" records the
+   real command rather than "!!" -- less confusing to navigate later. */
 void	manage_history(t_shell *state)
 {
-	char	*hist_entry;
-
-	if (worthy_of_being_remembered(state))
+	if (!state->hist.recorded)
 	{
 		if (state->rl.cursor > 0 && state->rl.buff.ctx)
 			((char *)state->rl.buff.ctx)[state->rl.cursor - 1] = '\0';
-		if (state->input_expanded && state->input.ctx)
-			hist_entry = ft_strndup((char *)state->input.ctx,
-					state->input.len);
-		else
-			hist_entry = ft_strndup((char *)state->rl.buff.ctx,
-					state->rl.cursor - 1);
-		append_hist_entry(state, hist_entry);
+		history_record(state, false);
 	}
+	state->hist.recorded = false;
 	state->input_expanded = false;
 	buff_readline_reset(&state->rl);
 }
 
-/* True when the command should be saved: at least one byte was typed, history
-   is active, and the new entry differs from the most recent one (dedup, like
-   HISTCONTROL=ignoredups). A cursor of <= 1 means nothing was typed (the ring
-   buffer only ever has the trailing '\n' that readline appends). */
+/* True when the command should be saved.
+**
+** This used to be "something was typed, and it differs from the previous
+** entry" -- HISTCONTROL=ignoredups, hard-wired, whatever HISTCONTROL
+** actually said. Two things were wrong with that. It ignored the user's
+** configuration, so ignorespace, erasedups and HISTIGNORE did nothing at
+** all. And it was not bash's default either: bash with HISTCONTROL unset
+** keeps consecutive duplicates, so hellish silently dropped entries bash
+** would have kept.
+**
+** It also compared the RAW typed text against the STORED entry, and the
+** stored entry is the joined form (append_hist_entry joins before
+** pushing). For a multi-line command those two are never equal -- `for i
+** in 1 2` + `do echo $i` + `done` is stored as one `; `-joined line -- so
+** the dedup could not fire for any multi-line command however many times
+** it was repeated. The comparison is now against the joined candidate,
+** which is what will actually be stored.
+**
+** A cursor of <= 1 means nothing was typed: the ring buffer only ever
+** holds the trailing '\n' readline appends. */
 bool	worthy_of_being_remembered(t_shell *state)
 {
-	if (state->rl.cursor > 1 && state->hist.hist_active
-		&& (!state->hist.hist_cmds.len
-			|| !str_slice_eq_str((char *)state->rl.buff.ctx,
-				state->rl.cursor - 1,
-				((char **)state->hist.hist_cmds.ctx)
-				[state->hist.hist_cmds.len - 1]
-			)
-		)
-	)
-		return (true);
-	return (false);
+	char	*line;
+	char	*prev;
+	bool	keep;
+
+	if (state->rl.cursor <= 1 || !state->hist.hist_active)
+		return (false);
+	line = hist_candidate(state);
+	if (!line)
+		return (false);
+	keep = true;
+	prev = hist_last(state);
+	if (*line == ' ' && hist_control_has(state, "ignorespace"))
+		keep = false;
+	else if (prev && !ft_strcmp(prev, line)
+		&& hist_control_has(state, "ignoredups"))
+		keep = false;
+	else if (hist_ignore_match(state, line))
+		keep = false;
+	return (xfree(line), keep);
 }
 
 /* First-time history setup: zero the struct, open the file, load and cap the

@@ -27,13 +27,18 @@ typedef struct s_history
 {
 	bool		hist_active;
 	bool		quiet_expand;
+	bool		recorded; /* this cycle's line is already in the list */
 	int			append_fd;
 	size_t		appended;
 	size_t		readmark;
 	t_vec		hist_cmds;
+	char		*file; /* the file this session streams into */
 }	t_history;
 
 void		manage_history(t_shell *state);
+/* Record this cycle's line BEFORE it runs, as bash does -- which is what
+   makes `history` list itself. manage_history then only cleans up. */
+void		history_record(t_shell *state, bool early);
 void		init_history(t_shell *state);
 void		free_hist(t_shell *state);
 void		parse_history_file(t_shell *state);

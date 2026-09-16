@@ -192,7 +192,9 @@ def test_live_session_options():
 
     out = s.send("history -s marker_entry\n")
     check("history -s prints nothing", not numbered(out))
-    out = s.send("history 1\n")
+    # 2, not 1: `history` lists itself as the newest entry (bash records a
+    # line as it reads it), so the last 1 is the `history` call itself.
+    out = s.send("history 2\n")
     check("history -s stored the entry", "marker_entry" in out,
           "tail=%r" % out[-160:])
 
