@@ -63,6 +63,11 @@ typedef struct s_rl
 	const char	*ln_tok; /* first token of the executing command */
 	const char	*ln_ptr; /* memoised lineno lookup key (token ptr) */
 	int			ln_val; /* memoised line number for ln_ptr */
+	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
+	t_string	rp_txt; /* rendered right prompt, width markers stripped */
+	int			rp_w; /* its terminal width; 0 = nothing to paint */
+	int			rp_prompt_w; /* width of the row readline was handed */
+	bool		rp_painted; /* the clock is on screen right now */
 }	t_rl;
 
 // Forward declaration to avoid circular dependency

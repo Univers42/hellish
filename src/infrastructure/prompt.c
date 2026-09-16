@@ -52,6 +52,7 @@ t_string	prompt_more_input(t_shell *state, t_parser *parser)
 	size_t		i;
 	const char	*label;
 
+	rprompt_clear(state);
 	label = env_expand(state, "PS2");
 	if (label && *label)
 		return (ps1_render(state, label));
@@ -171,13 +172,12 @@ t_string	prompt_normal(t_shell *state)
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
+	rprompt_render(state);
 	ps1 = env_expand(state, "PROMPT");
 	if (ps1 && *ps1)
-		return (rprompt_wrap(state, zsh_prompt(state, ps1, true)));
+		return (zsh_prompt(state, ps1, true));
 	ps1 = env_expand(state, "PS1");
 	if (ps1 && *ps1)
-		return (rprompt_wrap(state,
-				zsh_prompt(state, ps1, zsh_mode(state))));
-	return (rprompt_wrap(state,
-			zsh_prompt(state, HELLISH_PS1_DEFAULT, false)));
+		return (zsh_prompt(state, ps1, zsh_mode(state)));
+	return (zsh_prompt(state, HELLISH_PS1_DEFAULT, false));
 }

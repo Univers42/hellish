@@ -111,6 +111,7 @@ static void	free_session_strings(t_shell *state)
 	state->ctx = 0;
 	state->dft_ctx = 0;
 	xfree(state->rl.buff.ctx);
+	xfree(state->rl.rp_txt.ctx);
 	if (state->path_dirs)
 		free_tab(state->path_dirs);
 	state->path_dirs = NULL;

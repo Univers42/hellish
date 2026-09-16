@@ -166,9 +166,15 @@ def main():
     check("colors defined $fg[green] as an SGR sequence",
           re.search(r"033\s+\[\s+3\s+2\s+m", clean) is not None,
           clean[-400:])
+    # DECSC / jump / DECRC, painted from the redisplay hook -- not CSI s/u
+    # inside the prompt string, which readline then miscounted.
     check("RPROMPT is drawn via cursor save/jump/restore",
-          "\x1b[s" in out and "\x1b[u" in out and
+          "\x1b7" in out and "\x1b8" in out and
           re.search(r"\d\d:\d\d:\d\d", clean) is not None, out[-300:])
+    # The width markers are readline's private vocabulary. A coloured
+    # RPROMPT used to leak its inner pair to the terminal (nested guards).
+    check("no raw \\x01/\\x02 width marker reaches the terminal",
+          "\x01" not in out and "\x02" not in out, repr(out[-300:]))
     check("the shell still runs commands", "E2E-OK" in clean, clean[-200:])
 
     # bash-preexec owns the hook convention when loaded: hooks must not

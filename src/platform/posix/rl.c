@@ -84,6 +84,7 @@ static void	debug_dump_prompt(char *prompt)
 void	bg_readline(int outfd, char *prompt, int edit_mode, t_shell *state)
 {
 	char	*ret;
+	char	*row;
 
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
@@ -96,7 +97,10 @@ void	bg_readline(int outfd, char *prompt, int edit_mode, t_shell *state)
 	zle_install(state);
 	debug_dump_prompt(prompt);
 	mascot_install();
-	ret = readline(split_prompt(prompt));
+	row = split_prompt(prompt);
+	state->rl.rp_prompt_w = visible_width_cstr(row);
+	rl_rprompt_install(state);
+	ret = readline(row);
 	zle_cwd_send();
 	if (!ret)
 		(close(outfd), exit (1));

@@ -6,7 +6,7 @@
 /*   By: dlesieur <dlesieur@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/09/01 02:30:00 by dlesieur          #+#    #+#             */
-/*   Updated: 2026/09/01 02:30:00 by dlesieur         ###   ########.fr       */
+/*   Updated: 2026/09/16 15:30:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,18 +16,30 @@
 
 /* RPROMPT -- zsh's right-side prompt, issue #91.
 **
-** Emulated the way bash themes have always faked it: a zero-width guarded
-** block appended AFTER the prompt that saves the cursor, jumps to the
-** right margin, prints, and jumps back. readline counts none of it (the
-** \001/\002 guards make it invisible to the width model), and the cursor
-** lands back at the input point as if nothing happened. Typing far enough
-** simply overwrites it -- zsh auto-hides at that moment; overwriting is
-** the readline-world equivalent, and both leave the input intact.
+** The first version appended the rendered right prompt to readline's own
+** prompt string, inside one \001...\002 guard: save cursor, jump to the
+** right margin, print, restore. It assumed readline would count none of
+** it. readline does not nest guards. A coloured RPROMPT already carries
+** its own \001/\002 pairs from %F{..}%f, so readline stopped ignoring at
+** the FIRST \002, counted the rest as visible columns, and copied the
+** inner markers to the terminal. Every history recall then redrew from a
+** prompt readline believed nine columns wider than it was -- the cursor
+** drift of the field reports, reproduced cell by cell in
+** tests/prompt_drift_matrix_test.py. The plain, uncoloured case had a
+** smaller defect of its own: readline's clear-to-end-of-line on a redraw
+** erased the clock and nothing ever repainted it.
+**
+** So the right prompt is no longer part of readline's prompt at all. This
+** file only RENDERS it -- once per primary prompt, into t_rl -- with the
+** width markers stripped, since the text will be written straight to the
+** tty. The painting happens inside the editor, from the redisplay hook
+** (src/platform/posix/rl_rprompt.c), after every redraw readline makes:
+** it survives ↑/↓ and never enters readline's width model.
 **
 ** The format string gets EXACT zsh semantics (strict reader): RPROMPT is
 ** a zsh variable with no bash ancestry, so there is no legacy spelling to
-** protect. Skipped when it does not fit, and on a dumb terminal, where
-** cursor movement is not a vocabulary. */
+** protect. Skipped on a dumb terminal, where cursor movement is not a
+** vocabulary, and outside an interactive read. */
 
 /* Cursor games need a terminal that plays them. */
 static bool	term_is_dumb(t_shell *state)
@@ -51,28 +63,60 @@ static t_string	rp_render(t_shell *state, char *rp)
 	return (txt);
 }
 
-t_string	rprompt_wrap(t_shell *state, t_string base)
+/* Drop the \001/\002 width markers in place. They exist to guide readline,
+   and this text never reaches readline -- on a terminal they print as
+   noise (and used to, see the file comment). */
+static void	rp_strip(t_string *txt)
 {
-	char		seq[24];
+	char	*s;
+	size_t	r;
+	size_t	w;
+
+	s = (char *)txt->ctx;
+	r = 0;
+	w = 0;
+	while (r < txt->len)
+	{
+		if (s[r] != '\001' && s[r] != '\002')
+			s[w++] = s[r];
+		r++;
+	}
+	s[w] = '\0';
+	txt->len = w;
+}
+
+/* Forget the rendered right prompt: nothing gets painted until the next
+   primary prompt renders one. prompt_more_input calls this too -- zsh
+   shows no right prompt on a continuation row, and neither do we. */
+void	rprompt_clear(t_shell *state)
+{
+	if (state->rl.rp_txt.ctx)
+		xfree(state->rl.rp_txt.ctx);
+	state->rl.rp_txt = (t_string){0};
+	state->rl.rp_w = 0;
+	state->rl.rp_painted = false;
+}
+
+/* Render RPROMPT (RPS1 is zsh's other spelling) for this prompt and park it
+   in t_rl for the editor to paint. Re-read every prompt, so `unset RPROMPT`
+   or a theme switch takes effect on the very next one. */
+void	rprompt_render(t_shell *state)
+{
 	char		*rp;
 	t_string	txt;
-	int			w;
-	int			cols;
 
+	rprompt_clear(state);
 	rp = env_expand(state, "RPROMPT");
+	if (!rp || !*rp)
+		rp = env_expand(state, "RPS1");
 	if (!rp || !*rp || term_is_dumb(state) || state->metinp != INP_RL)
-		return (base);
+		return ;
 	txt = rp_render(state, rp);
-	w = visible_width_cstr((char *)txt.ctx);
-	cols = get_cols();
-	if (txt.ctx && w > 0 && cols > w + 1)
-	{
-		snprintf(seq, sizeof(seq), "\001\033[s\033[%dG", cols - w + 1);
-		vec_push_str(&base, seq);
-		vec_push_str(&base, (char *)txt.ctx);
-		vec_push_str(&base, "\033[u\002");
-		vec_push_char(&base, '\0');
-		base.len--;
-	}
-	return (xfree(txt.ctx), base);
+	if (!txt.ctx)
+		return ;
+	rp_strip(&txt);
+	state->rl.rp_w = visible_width_cstr((char *)txt.ctx);
+	state->rl.rp_txt = txt;
+	if (state->rl.rp_w <= 0)
+		rprompt_clear(state);
 }
