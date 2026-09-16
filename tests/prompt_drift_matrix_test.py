@@ -253,6 +253,53 @@ def interrupt_case(cwd, home):
     os.unlink(os.path.join(home, ".hellishrc"))
 
 
+def paste_wrap_case(cwd, home):
+    """Paste a long line, then walk it with the arrows, at the widths where
+    it WRAPS.
+
+    Reported as "when I copy paste an element and I use the arrow on the
+    right or left it duplicates weirdly", with the evidence
+
+        git clone git@githugit@github.com:Univers42/turings.git
+
+    -- nine characters of the pasted text, then the whole of it again. It
+    is the nested-RPROMPT-marker width error wearing a different hat: the
+    editor believed the prompt was ~9 columns wider than it was, so once
+    the line crossed a wrap boundary the redraw put a fragment at the
+    wrong column. That it depended on the terminal width is exactly why it
+    looked random.
+
+    The widths matter. Against the release before this was fixed, 40, 72
+    and 80 columns were clean and 50 and 60 duplicated, so a single width
+    would have been a coin toss; the whole band is swept. Bracketed paste
+    is the form a terminal actually sends on Ctrl-Shift-V, and it is the
+    one that failed -- a raw byte-for-byte paste never did."""
+    if not HAVE_PYTE:
+        print("skip paste/wrap: needs pyte")
+        return
+    text = b"git clone git@github.com:Univers42/turings.git"
+    for cols in (40, 50, 60, 72, 80):
+        env = dict(base_env(home), PS1=COLOURED, RPROMPT=COLOUR_RP)
+        s = Session([SHELL, "--norc"], env, cwd)
+        fcntl.ioctl(s.fd, termios.TIOCSWINSZ,
+                    struct.pack("HHHH", ROWS, cols, 0, 0))
+        s.screen = Screen(cols, ROWS)
+        s.stream = pyte.ByteStream(s.screen)
+        s.drain(6.0)
+        s.send(b"\x1b[200~" + text + b"\x1b[201~")
+        for _ in range(10):
+            s.send(b"\x1b[D", 2.0)
+        for _ in range(5):
+            s.send(b"\x1b[C", 2.0)
+        screen = "\n".join(l.rstrip() for l in s.screen.display)
+        check("paste then arrows at %d columns keeps one copy" % cols,
+              screen.count("github.com") == 1,
+              "%d copies: %r" % (screen.count("github.com"),
+                                 [l for l in screen.splitlines() if "git" in l]))
+        s.send(b"\x15", 1.0)
+        s.close()
+
+
 def main():
     base = tempfile.mkdtemp(prefix="hellish_drift_")
     home = os.path.join(base, "home")
@@ -274,6 +321,7 @@ def main():
     hellish_cell("fixture rc (frontend.hellishrc)", cwd, home, None, None, True, rc=FIXTURE)
     theme_switch(cwd, home)
     interrupt_case(cwd, home)
+    paste_wrap_case(cwd, home)
 
     shutil.rmtree(base, ignore_errors=True)
     print("\n%d checks failed" % len(FAILS))
