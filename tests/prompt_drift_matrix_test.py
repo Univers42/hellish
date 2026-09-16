@@ -300,6 +300,56 @@ def paste_wrap_case(cwd, home):
         s.close()
 
 
+def completion_listing_case(cwd, home):
+    """Type after a completion LISTING has been printed.
+
+    Reported from a live session: two TABs on `cat ~/.config/` print the
+    multi-column listing, and the characters typed afterwards land in the
+    wrong place -- "drift cursor on first i".
+
+    What the terminal model shows, against the release before the RPROMPT
+    fix, is worse than a cursor being off: the prompt is GONE from the line
+    being edited. The text starts in column 0, so the editor is redrawing
+    from an origin that is wrong by the prompt's width -- the same phantom
+    columns, reached this time by readline reprinting the prompt after its
+    listing rather than by a wrap. Deterministic, 3 rounds out of 3.
+
+    The assertion is therefore on all three things at once: the prompt is
+    on the line, the typed text follows it, and the cursor sits at the end
+    of that text. Checking the cursor alone passes even when the prompt has
+    vanished, because the cursor is then consistently wrong."""
+    if not HAVE_PYTE:
+        print("skip completion listing: needs pyte")
+        return
+    cols = 120
+    env = dict(base_env(home), PS1=COLOURED, RPROMPT=COLOUR_RP)
+    s = Session([SHELL, "--norc"], env, cwd)
+    fcntl.ioctl(s.fd, termios.TIOCSWINSZ,
+                struct.pack("HHHH", 30, cols, 0, 0))
+    s.screen = Screen(cols, 30)
+    s.stream = pyte.ByteStream(s.screen)
+    s.drain(6.0)
+    s.send(b"cat " + home.encode() + b"/\t", 4.0)
+    s.send(b"\t", 4.0)
+    s.send(b"\x15", 2.0)
+    typed = "cat " + home + "/x"
+    s.send(typed.encode(), 3.0)
+    s.send(b"i" * 20, 3.0)
+    row = s.screen.display[s.screen.cursor.y].rstrip()
+    want = typed + "i" * 20
+    idx = row.find(want)
+    check("after a completion listing the prompt is still on the line",
+          "❯" in row, repr(row[:90]))
+    check("after a completion listing typed text follows the prompt",
+          idx > 0, repr(row[:90]))
+    check("after a completion listing the cursor is at the end of the text",
+          idx > 0 and s.screen.cursor.x == idx + len(want),
+          "cursor=%d text ends at %s" % (s.screen.cursor.x,
+                                         idx + len(want) if idx > 0 else "?"))
+    s.send(b"\x15", 1.0)
+    s.close()
+
+
 def main():
     base = tempfile.mkdtemp(prefix="hellish_drift_")
     home = os.path.join(base, "home")
@@ -322,6 +372,7 @@ def main():
     theme_switch(cwd, home)
     interrupt_case(cwd, home)
     paste_wrap_case(cwd, home)
+    completion_listing_case(cwd, home)
 
     shutil.rmtree(base, ignore_errors=True)
     print("\n%d checks failed" % len(FAILS))

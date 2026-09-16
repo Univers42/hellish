@@ -192,11 +192,15 @@ pass counts in `bench/baseline/`). Performance claims come from
       shell -- that hard test is cwd-sensitive by construction and will
       keep failing from the repo root until this is fixed.
 
-- [ ] `history` does not list itself. bash records an entry BEFORE running
+- [x] `history` does not list itself. bash records an entry BEFORE running
       it, so `history` shows the `history` command as its own last line;
       hellish records in manage_history AFTER execution, so the listing
       always stops one short. Found measuring issue #6 against bash 5.3.9
       in a pty; separate contract from the multi-line joining fixed there.
+      FIXED: history_record(state, early) runs before execute_top_level,
+      with here-doc cycles declining the early call (their body is read
+      while the command runs, so the entry is not whole yet). Three pty
+      tests were pinning the off-by-one and now ask for N+1.
 - [ ] Prompt render window: the fix for #5/#10/#19 makes the prefix write
       atomic, so an echoed keystroke can no longer split an escape or a
       multibyte glyph -- but it is still ECHOED at whatever point of the
@@ -207,6 +211,19 @@ pass counts in `bench/baseline/`). Performance claims come from
       delicate: readline saves the termios it finds and restores it on
       return, so modifying it before readline preps would leave the
       terminal without echo after the line is read.
+      STILL OPEN, and NOT the cause of the paste-duplication report: that
+      one ("copy paste an element, use the arrows, it duplicates") was the
+      nested-RPROMPT-marker width error, reproducible at 50 and 60 columns
+      with a bracketed paste and clean at 40/72/80. Pinned by
+      tests/prompt_drift_matrix_test.py's paste_wrap_case.
+
+- [ ] Interactive latency: the per-prompt fork is the last structural cost.
+      strace says a bare Enter now costs 0 execve, 1 clone (the readline
+      child) and 1 openat, against bash's 0/0/0. Release build, real user
+      config, median of a held-Enter burst: 1.71 ms/prompt before this
+      work, 1.25 ms after, bash 0.16 ms. Removing the fork (readline
+      in-process, behind HELLISH_RL_INPROC first) is what closes the rest.
+      Measure with tests/prompt_latency_test.py and tighten its ratchet.
 
 - [ ] Conformance gate for `2a7c5c1`+prompt running (expect possible
       Oils `background` cluster gains). Norminette NOT INSTALLED on
