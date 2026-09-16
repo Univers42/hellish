@@ -82,6 +82,11 @@ skip_reason() {
 			echo "needs a SAFE=0 (ft_malloc) build to mean anything; a"\
 			     "cross-heap free cannot exist on SAFE=1. Runs as"\
 			     "\`make completion-test\`, which builds one." ;;
+		prompt_latency_test.py)
+			echo "measures TIME against bash, and this job builds with"\
+			     "ASan -- which slows hellish ~4x and bash not at all,"\
+			     "so the ratio would grade the sanitizer. Runs as"\
+			     "\`make prompt-latency-test\`, which builds OPT=1." ;;
 		update_test.py|update_ui_test.py|net_redir_test.py)
 			echo "brings up its own local peer; runs in the \`update\` job"\
 			     "as \`make update-test\` / \`make net-redir-test\`." ;;

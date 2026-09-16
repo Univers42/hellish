@@ -1057,6 +1057,32 @@ anim-test: all  ## pty: the prompt animation never clobbers pasted input
 git-prompt-test: all  ## pty: the prompt's git check never blocks a render
 	@python3 $(TEST_DIR)/git_prompt_stall_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The interactive frontend gates. All of these are discovered by `make
+# pty-test` as well -- the named targets exist because two of them need
+# something the plain debug build does not give them, and because a gate
+# nobody can run on its own is a gate nobody debugs.
+prompt-drift-test: all  ## pty: the prompt never drifts the cursor (wants pyte)
+	@python3 $(TEST_DIR)/prompt_drift_matrix_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# RELEASE build, deliberately: this one measures TIME against the bash in
+# PATH, and ASan roughly quadruples hellish's side while doing nothing to
+# bash's -- which turns a fair ratio into a fixed 4x penalty. It therefore
+# leaves an OPT=1 binary behind, like test-release does.
+prompt-latency-test: ## pty: time-to-prompt stays within a bound of bash's (builds OPT=1)
+	@$(MAKE) --no-print-directory OPT=1 all
+	@python3 $(TEST_DIR)/prompt_latency_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+# Counts, not times, so this one is build-independent and says the same
+# thing on any machine: what a bare Enter is allowed to cost.
+prompt-syscall-test: all  ## What one bare Enter may cost in syscalls (wants strace)
+	@python3 $(TEST_DIR)/prompt_syscall_budget_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+history-vars-test: all  ## HISTCONTROL/HISTIGNORE/HISTSIZE diffed against the oracle
+	@python3 $(TEST_DIR)/history_vars_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
+completion-opts-test: all  ## complete -o, and what counts as a command word
+	@python3 $(TEST_DIR)/completion_opts_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Background jobs and the controlling terminal. POSIX only redirects an
 # async list's stdin to /dev/null when job control is DISABLED; doing it
 # unconditionally broke `top &` interactively ("top: failed tty get")

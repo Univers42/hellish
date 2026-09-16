@@ -317,7 +317,15 @@ jobs:
         with:
           submodules: recursive
       - name: Install deps
-        run: sudo apt-get update && sudo apt-get install -y build-essential libreadline-dev python3
+        run: |
+          sudo apt-get update
+          # strace: the syscall budget gate counts what one bare Enter costs.
+          # pyte: a terminal model, so the drift gate can assert what is ON
+          # SCREEN rather than what the shell believes. Without it that gate
+          # still runs its two model-free oracles, but the strongest one --
+          # "Up then Down restores the screen exactly" -- is skipped.
+          sudo apt-get install -y build-essential libreadline-dev python3 python3-pip strace
+          python3 -m pip install --quiet pyte
       - uses: ./.github/actions/oracle
       - name: Build
         run: make re > build.log 2>&1 || { sed 's/\x1b\[[0-9;]*[A-Za-z]//g' build.log | tail -80; exit 1; }
@@ -345,6 +353,13 @@ jobs:
             'HISTTIMEFORMAT="%F %T "' > "$HOME/.hellishrc"
           make pty-test
           rm -f "$HOME/.hellishrc"
+      # The one gate `make pty-test` cannot run for us. It measures TIME
+      # against the bash in PATH, and this job builds with ASan -- which
+      # slows hellish ~4x and bash not at all, so the ratio would be
+      # grading the sanitizer. The target builds OPT=1 for itself, and
+      # leaves that binary behind, so it goes LAST.
+      - name: Time-to-prompt stays within a bound of bash's
+        run: make prompt-latency-test
       - name: Multi-line history, both modes, vs the pinned bash
         run: make history-matrix-test
 
