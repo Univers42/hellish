@@ -80,6 +80,24 @@ per-prompt work that should never have been per-prompt, and the `HIST*` and
   `else`, `sudo` or `exec` is a command name, which the completer did not
   know, so the body of every loop completed filenames.
 
+- **⚠ Upgrading with `HISTFILE` set: your history has moved, and you have
+  to move it.** This is the one change that can look like data loss. Before
+  3.1.0 the session ignored `$HISTFILE` and streamed every command into
+  `~/.minishell_history`, while `history -a`/`-r`/`-w` used the file you
+  had named. Now the whole shell honours it — which is correct, and which
+  means the first 3.1.0 session reads the file you set, finds whatever the
+  builtin happened to leave there, and your accumulated history appears to
+  be gone. It is not gone; it is in the other file. Merge it, oldest
+  first, before the size cap trims anything:
+
+      cp ~/.hellish_history ~/.hellish_history.bak
+      cat ~/.minishell_history ~/.hellish_history > /tmp/h && mv /tmp/h ~/.hellish_history
+
+  (Substitute your own `$HISTFILE` for `~/.hellish_history`.) Both files
+  use the same on-disk encoding, so a plain concatenation is a valid
+  history file. If you never set `HISTFILE`, nothing moves and there is
+  nothing to do.
+
 - **Five new gates, because none of the above could have been caught.** No
   test in this project had ever started an interactive shell with a user
   configuration, and no benchmark had ever measured a prompt. There is now
