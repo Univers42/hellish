@@ -39,5 +39,6 @@ void	buff_readline_init(t_rl *ret);
 void	update_ctx(t_shell *state);
 int		get_more_input_notty(t_shell *state);
 int		visible_width_cstr(const char *s);
+void	rl_preinit(t_rl *l);
 
 #endif

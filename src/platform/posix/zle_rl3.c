@@ -35,35 +35,22 @@ int	zle_run_widget(t_shell *state, const char *name)
 	return (exec_string(state, w->fn));
 }
 
-/* Install every recorded binding into readline's current keymap, and mark
-** this process as the one inside the editor.
+/* Mark this process as the one inside the editor.
 **
-** Called from the readline child after the editing mode is set up, because
-** setup_emacs_mode/setup_vi_mode replace the keymap: a binding installed
-** before them would be discarded, silently, and the key would simply do
-** nothing.
+** Only the child may do this: zle_active() is "is there a line being
+** edited right now", and the `zle` builtin refuses outside that. The
+** parent pre-initialises readline (rl_preinit.c) but is emphatically not
+** in the editor, so it must not set the cell.
 **
-** rl_initialize() first, for the same class of reason: readline builds its
-** keymaps there, and rl_bind_keyseq before it binds into a map that is
-** about to be replaced. The failure is identical -- the key does nothing,
-** with no error anywhere -- which is why both orderings are spelled out
-** rather than left to be rediscovered.
+** The binding install that used to live here moved to the parent with the
+** rest of readline's setup. Its orderings did not change and are restated
+** there: rl_initialize() builds the keymaps, and the editing mode replaces
+** the keymap, so bindings come last -- installed earlier they are silently
+** discarded and the key simply does nothing.
 */
-void	zle_install(t_shell *state)
+void	zle_enter(t_shell *state)
 {
-	t_zle_bind	*a;
-	size_t		i;
-
 	*zle_state_cell() = state;
-	rl_initialize();
-	a = (t_zle_bind *)zle_binds()->ctx;
-	i = 0;
-	while (i < zle_binds()->len)
-	{
-		zle_bind_raw(&a[i]);
-		rl_bind_keyseq(a[i].seq, zle_dispatch);
-		i++;
-	}
 }
 
 /* Record what readline will REPORT for this binding, which is not what the

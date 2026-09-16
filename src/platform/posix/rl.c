@@ -78,23 +78,20 @@ static void	debug_dump_prompt(char *prompt)
    so readline's display uses the right fd. Exit 0 = line, 1 = EOF (^D). One
    trap: readline's buffer is libc-malloc'd, so free(ret) uses libc free, not
    xfree -- at SAFE=0 that would hit the ft_malloc heap and corrupt it.
-     zle_install goes AFTER the editing mode is chosen: setup_emacs_mode and
-   setup_vi_mode replace the keymap, so a binding installed before them
-   would be discarded and the key would silently do nothing. */
+     Everything that does NOT depend on the line being read -- rl_initialize,
+   the completion hooks, the editing mode, the zle bindings -- was hoisted
+   into the parent (rl_preinit.c), because doing it here meant rebuilding
+   readline from the terminfo database and both inputrc files on every
+   single prompt. The child inherits all of it and only enters the editor.
+   edit_mode is now the parent's business too; the parameter stays so the
+   signature the pipe protocol is written against does not move. */
 void	bg_readline(int outfd, char *prompt, int edit_mode, t_shell *state)
 {
 	char	*ret;
 	char	*row;
 
-	setlocale(LC_ALL, "");
-	rl_instream = stdin;
-	rl_outstream = stderr;
-	setup_completion();
-	if (edit_mode == 0)
-		setup_vi_mode();
-	else
-		setup_emacs_mode();
-	zle_install(state);
+	(void)edit_mode;
+	zle_enter(state);
 	debug_dump_prompt(prompt);
 	mascot_install();
 	row = split_prompt(prompt);
@@ -147,6 +144,7 @@ int	get_more_input_readline(t_rl *l, char *prompt)
 	int	pp[2];
 	int	pid;
 
+	rl_preinit(l);
 	if (pipe(pp))
 		critical_error_errno_ctx("pipe");
 	zle_cwd_open();

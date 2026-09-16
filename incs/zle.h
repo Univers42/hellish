@@ -76,7 +76,7 @@ t_shell			**zle_state_cell(void);
 t_shell			**zle_caller_cell(void);
 t_shell			*zle_caller(void);
 bool			zle_active(void);
-void			zle_install(t_shell *state);
+void			zle_enter(t_shell *state);
 int				zle_dispatch(int count, int key);
 void			zle_do_redisplay(void);
 void			zle_do_message(const char *msg);

@@ -42,6 +42,10 @@ typedef struct s_shell	t_shell;
 
 void		get_git_info(char **branch, int *dirty);
 const char	*git_repo_root(void);
+/* Invalidate the prompt's cached git-dirty answer: called where the working
+   tree can actually change (an external command, a write redirection), not
+   once per executed tree -- see the comment on the definition. */
+void		git_tree_touched(void);
 
 // buff_readline.c
 typedef struct s_rl
@@ -63,6 +67,10 @@ typedef struct s_rl
 	const char	*ln_tok; /* first token of the executing command */
 	const char	*ln_ptr; /* memoised lineno lookup key (token ptr) */
 	int			ln_val; /* memoised line number for ln_ptr */
+	/* --- readline, initialised once in the parent (rl_preinit.c) --- */
+	bool		rl_ready; /* rl_initialize() has run in this process */
+	int			mode_applied; /* edit_mode readline's keymap is set to */
+	size_t		binds_done; /* zle bindings already installed */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
 	t_string	rp_txt; /* rendered right prompt, width markers stripped */
 	int			rp_w; /* its terminal width; 0 = nothing to paint */
