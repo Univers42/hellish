@@ -90,6 +90,17 @@ def prompt_of(home):
     return out.decode("utf-8", "replace")
 
 
+def file_state(path):
+    """(mtime, size, bytes) of a file, or None when it does not exist --
+    enough to tell "the seeder rewrote this" from "this already existed"."""
+    try:
+        st = os.stat(path)
+        with open(path, "rb") as f:
+            return (st.st_mtime_ns, st.st_size, f.read())
+    except OSError:
+        return None
+
+
 def main():
     if not os.path.isfile(SHELL):
         print("error: no shell at %s -- run make" % SHELL)
@@ -97,18 +108,23 @@ def main():
 
     home = tempfile.mkdtemp()
     pfile = os.path.join(home, ".config", "hellish", "rc.d", "30-prompt.hsh")
+    # It must land in the home we asked for, even though the ambient
+    # XDG_CONFIG_HOME points somewhere else entirely. The question is
+    # whether the seeder WROTE there, which is not the same as whether the
+    # file exists: anyone who has run `make user-install` already has one,
+    # and asserting its absence failed on every machine that actually uses
+    # hellish while passing on CI's empty $HOME -- a test that only ever
+    # ran where it could not fail. Snapshot it and compare instead.
+    real = os.path.expanduser("~/.config/hellish/rc.d/30-prompt.hsh")
+    before = file_state(real)
     try:
         seed(home)
         check("the seeder writes a prompt file", os.path.isfile(pfile),
               "expected %s" % pfile)
 
-        # It must land in the home we asked for, even though the ambient
-        # XDG_CONFIG_HOME points somewhere else entirely.
-        real = os.path.expanduser("~/.config/hellish/rc.d/30-prompt.hsh")
         check("seeding a temp home does not touch the real ~/.config",
-              not os.path.exists(real)
-              or os.path.realpath(real).startswith(os.path.realpath(home)),
-              "the seeder wrote to the developer's own config")
+              file_state(real) == before,
+              "the seeder wrote to the developer's own config: %s" % real)
 
         text = prompt_of(home)
         check("the prompt comes from that file, not the built-in theme",
