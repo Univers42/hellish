@@ -12,6 +12,7 @@
 
 #include "update.h"
 #include "version.h"
+#include "prompt_private.h"
 #include <unistd.h>
 #include <time.h>
 
@@ -31,25 +32,39 @@
 
    The cost is that a check finishing mid-line is announced one prompt
    later. That is the right trade: a late notice is a cosmetic delay, a
-   corrupted command line is a wrong command executed. */
+   corrupted command line is a wrong command executed.
+
+   It is also throttled, for the same reason the \U badge next to it is
+   (prompt_update.c): this runs once per REPL cycle, and an unconditional
+   open+read+parse of the state file there is a syscall on the path between
+   every command and the next prompt -- to re-read a file that a daily
+   background check writes. Once the notice has been spent it stops looking
+   entirely; before that it looks at most every UPD_TAG_TTL seconds, which
+   is far below human notice and far above the cost. */
 void	update_notify_prompt(t_shell *state)
 {
 	t_upd_state	s;
+	long		now;
 
-	if (state->metinp != INP_RL || !isatty(STDERR_FILENO))
+	if (state->metinp != INP_RL || state->upd_notified)
 		return ;
-	if (getenv("HELLISH_NO_UPDATE_CHECK"))
+	if (getenv("HELLISH_NO_UPDATE_CHECK") || !isatty(STDERR_FILENO))
 		return ;
+	now = (long)time(NULL);
+	if (state->upd_notify_seen && now - state->upd_notify_seen < UPD_TAG_TTL)
+		return ;
+	state->upd_notify_seen = now;
 	if (!update_state_load(&s) || !update_available(&s))
 		return ;
 	if (s.notified > 0)
-		return ;
+		return ((void)(state->upd_notified = true));
 	ft_eprintf("\n\033[33m\xe2\xac\x86\033[0m  update available: "
 		"\033[2m%s\033[0m \xe2\x86\x92 \033[1m%s\033[0m\n",
 		HELLISH_VERSION, s.latest);
 	ft_eprintf("   \033[1;38;5;203m[Update]\033[0m run \033[1mupdate\033[0m"
 		"    \033[2m[Later]\033[0m ignore this, nothing breaks\n\n");
 	update_mark_notified();
+	state->upd_notified = true;
 }
 
 /* Stop announcing the version we already know about. Called both after the
