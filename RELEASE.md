@@ -8,6 +8,90 @@ shows you how to drive the shell.
 
 ---
 
+## v3.1.0 — *the prompt stops lying about how wide it is*
+
+Everything here was found by using the shell rather than by reading it, and
+almost all of it comes back to one mistake. The right prompt was drawn
+inside the line editor's own prompt string, which made the editor believe
+the prompt was about nine columns wider than it was — and an editor that is
+wrong about where the prompt ends is wrong about where *everything* is. It
+showed up as three unrelated-looking bugs. The rest of the release is the
+per-prompt work that should never have been per-prompt, and the `HIST*` and
+`complete` variables that were being read by nobody.
+
+- **The cursor no longer drifts, and the paste no longer duplicates.**
+  *(the headline)* `RPROMPT` was appended to the editor's prompt inside one
+  `\[ \]` guard, on the assumption that the guard made it weightless. A
+  coloured right prompt already carries its own guards, and readline does
+  not nest them: it stopped ignoring at the first closing marker, counted
+  the clock and an escape as visible columns, and printed the marker bytes
+  to your terminal. Three reports, one cause:
+
+      ↑ then ↓ over a recalled command     the cursor lands 9 columns right
+      paste a URL, then use the arrows     git clone git@githugit@github.com:…
+      TAB a directory, then keep typing    the prompt vanishes from the line
+
+  The right prompt is no longer part of what the editor measures. It is
+  rendered once per prompt and painted from the redisplay hook, after every
+  redraw — so it survives recall (it used to be *erased* by a redraw, even
+  uncoloured), it hides itself when your typing reaches it, and the editor
+  never learns it is there. The duplication only ever appeared at widths
+  where the line wrapped, which is why it felt random: 50 and 60 columns
+  duplicated, 40, 72 and 80 did not.
+
+- **The prompt stopped doing a day's work between every two commands.**
+  Per bare Enter, before and after, counted with `strace`:
+
+      execve   1.05 → 0      a `git status`, forked for every prompt
+      openat  11.05 → 1.00   terminfo + ~/.inputrc + /etc/inputrc, re-read
+      clone    1.30 → 1.00
+
+  readline was fully re-initialised inside the fork that reads each line —
+  the terminfo database opened and parsed, both inputrc files re-read, the
+  keymaps rebuilt — none of which depends on the line about to be typed,
+  and all of which a child inherits. It happens once now, in the parent.
+  The `git status` was the cache being retired after *every* executed tree,
+  including an empty line, so its three-second TTL never once applied; it
+  is retired now only when something ran that could touch the tree. Held
+  Enter on a real configuration: **1.71 → 1.25 ms per prompt.**
+
+- **`HISTCONTROL`, `HISTIGNORE`, `HISTSIZE`, `HISTFILESIZE` and
+  `HISTTIMEFORMAT` do something.** They appeared in the tree only inside a
+  comment. Nothing read them, and the dedup rule was wired to bash's
+  `ignoredups` whatever you had asked for — which is a divergence in both
+  directions, since bash's own default keeps consecutive duplicates.
+  `$HISTFILE` was honoured by the `history` builtin and ignored by the
+  session, so setting it gave you two histories, neither complete, with
+  `history -r` re-importing entries the session had never written. The
+  file is created `0600` now, not `0666`; a repeated multi-line command
+  finally counts as a duplicate (the check compared the raw text against
+  the joined entry, which for anything over one line could never match);
+  and `history` lists itself, as bash's does.
+
+- **A completed word survives being read back.** `touch 'my file.txt'` then
+  `cat my<TAB>` gave you `cat my file.txt` — two words, and `cat` runs
+  against neither. Four readline hooks bash has always installed were not
+  installed here. `complete -o` was recorded and never acted on, so
+  git-completion's `-o default` — "fall back to filenames when I find
+  nothing" — did nothing, and only the last `-o` of three survived the
+  parse anyway. `complete -W 'a "b c" d'` offered four candidates instead
+  of three, because the list was split on `$IFS` rather than on the
+  newlines `compgen` actually prints. And the word after `then`, `do`,
+  `else`, `sudo` or `exec` is a command name, which the completer did not
+  know, so the body of every loop completed filenames.
+
+- **Five new gates, because none of the above could have been caught.** No
+  test in this project had ever started an interactive shell with a user
+  configuration, and no benchmark had ever measured a prompt. There is now
+  a drift matrix judged by a terminal emulator and by readline's own
+  belief (36 cells, plus paste-across-widths and the completion listing), a
+  syscall budget that says what one bare Enter may cost and is the same
+  number on every machine, a time-to-prompt ratchet against the pinned
+  bash, and oracle-diffed gates for the history variables and for
+  completion quoting.
+
+---
+
 ## v3.0.0 — *nothing you did not ask for*
 
 Three things this shell did without being asked, and does not any more: it
