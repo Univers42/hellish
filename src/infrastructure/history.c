@@ -97,7 +97,10 @@ t_vec	parse_hist_file(t_string hist)
 	while (cur < hist.len)
 	{
 		cmd = (char *)parse_single_cmd(hist, &cur).ctx;
-		vec_push(&ret, &cmd);
+		if (cmd && *cmd)
+			vec_push(&ret, &cmd);
+		else
+			xfree(cmd);
 	}
 	return (ret);
 }

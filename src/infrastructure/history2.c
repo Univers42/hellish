@@ -13,16 +13,19 @@
 #include "history_private.h"
 #include "libft.h"
 
-/* Keep only the newest HIST_MAX entries (free + drop the oldest), so a
-   runaway history file doesn't slow every startup. Returns true if cut. */
-static bool	cap_history(t_vec *h)
+/* Keep only the newest HISTFILESIZE entries (free + drop the oldest), so a
+   runaway history file doesn't slow every startup. Returns true if cut.
+   HIST_MAX is now only the fallback for an unset variable, not the law. */
+static bool	cap_history(t_shell *state, t_vec *h)
 {
 	size_t	drop;
 	size_t	i;
+	long	lim;
 
-	if (h->len <= HIST_MAX)
+	lim = hist_limit(state, "HISTFILESIZE", HIST_MAX);
+	if (lim < 0 || h->len <= (size_t)lim)
 		return (false);
-	drop = h->len - HIST_MAX;
+	drop = h->len - (size_t)lim;
 	i = 0;
 	while (i < drop)
 		xfree(((char **)h->ctx)[i++]);
@@ -74,7 +77,7 @@ void	parse_history_file(t_shell *state)
 	path = get_hist_file_path(state);
 	if (!path)
 		return ;
-	fd = open(path, O_RDONLY | O_CREAT, 0666);
+	fd = open(path, O_RDONLY | O_CREAT, 0600);
 	if (fd < 0)
 		return (warning_error("Can't open the history file for reading"),
 			xfree(path));
@@ -84,12 +87,13 @@ void	parse_history_file(t_shell *state)
 	close(fd);
 	state->hist.hist_cmds = parse_hist_file(hist);
 	xfree(hist.ctx);
-	trimmed = cap_history(&state->hist.hist_cmds);
+	trimmed = cap_history(state, &state->hist.hist_cmds);
 	load_and_persist(state, path, trimmed);
-	state->hist.append_fd = open(path, O_CREAT | O_WRONLY | O_APPEND, 0666);
+	state->hist.append_fd = open(path, O_CREAT | O_WRONLY | O_APPEND, 0600);
 	if (state->hist.append_fd < 0)
 		warning_error("Can't open the history file for writing");
-	xfree(path);
+	xfree(state->hist.file);
+	state->hist.file = path;
 }
 
 /* Encode a command for the history file: prefix every backslash with an extra
@@ -117,16 +121,28 @@ t_string	encode_cmd_hist(char *cmd)
 	return (ret);
 }
 
-/* Build the full path to the history file by joining $HOME and HIST_FILE.
-   Returns a heap-allocated string the caller must xfree, or NULL if HOME is
-   unset. A '/' is appended only when HOME does not already end with one, so
-   both "/home/user" and "/home/user/" work correctly. */
+/* Where this session's history lives: $HISTFILE when set, otherwise $HOME
+   joined with HIST_FILE.
+
+   $HISTFILE was honoured by the `history` builtin and ignored by the
+   session, so a rc setting HISTFILE=~/.hellish_history got a shell that
+   streamed every command into ~/.minishell_history while `history -a`,
+   `-r` and `-w` operated on the other file -- two divergent histories,
+   neither of them complete, and `history -r` re-importing a set the
+   session had never written.
+
+   Returns a heap-allocated string the caller must xfree, or NULL if there
+   is nothing to build one from. A '/' is appended only when HOME does not
+   already end with one, so both "/home/user" and "/home/user/" work. */
 char	*get_hist_file_path(t_shell *state)
 {
 	t_env		*env;
 	t_string	full_path;
 	char		tmp;
 
+	env = env_get(&state->env, "HISTFILE");
+	if (env && env->value && *env->value)
+		return (ft_strdup(env->value));
 	env = env_get(&state->env, "HOME");
 	if (!env || !env->value)
 		return (warning_error("HOME is not set, can't get the history"), NULL);

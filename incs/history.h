@@ -39,6 +39,11 @@ void		manage_history(t_shell *state);
 /* Record this cycle's line BEFORE it runs, as bash does -- which is what
    makes `history` list itself. manage_history then only cleans up. */
 void		history_record(t_shell *state, bool early);
+/* Re-open the history on $HISTFILE once the rc has had its say: history is
+   loaded during on(), before ~/.hellishrc runs, so an rc that ASSIGNS
+   HISTFILE would otherwise be ignored by the session while the `history`
+   builtin honoured it -- two files, neither complete. */
+void		hist_rehome(t_shell *state);
 void		init_history(t_shell *state);
 void		free_hist(t_shell *state);
 void		parse_history_file(t_shell *state);
