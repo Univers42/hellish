@@ -16,6 +16,26 @@
    comp_store copies them per name, so nothing here owns memory. */
 
 /* The value-taking options, and where each value lands. */
+/* Collect one -o value. bash allows the flag repeatedly and means all of
+   them: git-completion registers `-o bashdefault -o default -o nospace`.
+   Keeping only the last (`o->opts = v`) silently dropped `default`, which
+   is the one that says "fall back to filenames when I find nothing" -- so
+   `git add <TAB>` on a path offered nothing at all. */
+static void	comp_opt_add(t_cmpopt *o, char *v)
+{
+	if (!o->optbuf.ctx)
+	{
+		vec_init(&o->optbuf);
+		o->optbuf.elem_size = 1;
+	}
+	if (o->optbuf.len)
+		vec_push_char(&o->optbuf, ' ');
+	vec_push_str(&o->optbuf, v);
+	vec_push_char(&o->optbuf, '\0');
+	o->optbuf.len--;
+	o->opts = (char *)o->optbuf.ctx;
+}
+
 static int	comp_val_opt(t_vec argv, size_t i, t_cmpopt *o)
 {
 	char	*w;
@@ -30,7 +50,7 @@ static int	comp_val_opt(t_vec argv, size_t i, t_cmpopt *o)
 	if (ft_strcmp(w, "-F") == 0)
 		return (o->func = v, 1);
 	if (ft_strcmp(w, "-o") == 0)
-		return (o->opts = v, 1);
+		return (comp_opt_add(o, v), 1);
 	if (ft_strcmp(w, "-A") == 0)
 	{
 		o->act = cg_action_of(v);

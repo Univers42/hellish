@@ -131,13 +131,14 @@ typedef struct s_cgopt
    copies per NAME, since one command can register several names. */
 typedef struct s_cmpopt
 {
-	char	*words;
-	char	*func;
-	char	*opts;
-	char	act;
-	bool	print;
-	bool	remove;
-	bool	defsel;
+	char		*words;
+	char		*func;
+	char		*opts;
+	t_string	optbuf; /* every -o value, space-joined; opts points here */
+	char		act;
+	bool		print;
+	bool		remove;
+	bool		defsel;
 }	t_cmpopt;
 
 typedef struct s_getopts

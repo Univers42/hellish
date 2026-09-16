@@ -97,6 +97,11 @@ static char	*pc_generator(const char *text, int state)
 ** produced nothing, and a shell that did would answer `git ch<TAB>` with the
 ** files in the current directory the moment a completion function declined.
 ** An empty answer from a spec is an answer.
+**
+** UNLESS the spec asked otherwise. `-o default` / `-o bashdefault` mean
+** exactly "when I find nothing, let the ordinary completion have it", and
+** git-completion registers both -- so for those the flag is handed back
+** and readline does the filename completion it would have done anyway.
 */
 char	**progcomp_try(const char *text, int start, int end)
 {
@@ -117,7 +122,10 @@ char	**progcomp_try(const char *text, int start, int end)
 	if (!c)
 		return (NULL);
 	rl_attempted_completion_over = 1;
+	pc_opt_apply(c->opts);
 	pc_build(st, c, text, start);
+	if (!pc_cell()->len && pc_opt_fallback(c->opts))
+		return (pc_reset(), rl_attempted_completion_over = 0, NULL);
 	res = rl_completion_matches(text, pc_generator);
 	return (pc_reset(), res);
 }

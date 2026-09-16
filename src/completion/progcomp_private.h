@@ -44,6 +44,13 @@ void		pc_qpush(t_string *out, const char *s, int n);
 void		pc_head(t_string *out, int start);
 char		*pc_call_str(t_compspec *c, const char *text, int start);
 bool		pc_build(t_shell *st, t_compspec *c, const char *text, int start);
+
+/* `complete -o ...` (progcomp_opts.c). pc_opt_apply sets the display
+   options before matches are generated; pc_opt_fallback asks whether an
+   empty answer should be handed back to the ordinary completion. */
+bool		pc_opt_has(const char *opts, const char *name);
+void		pc_opt_apply(const char *opts);
+bool		pc_opt_fallback(const char *opts);
 t_compspec	*comp_find(t_shell *st, const char *name);
 char		**progcomp_try(const char *text, int start, int end);
 

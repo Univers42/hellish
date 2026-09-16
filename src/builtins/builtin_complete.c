@@ -106,24 +106,32 @@ static int	comp_print(t_shell *st, t_vec argv, size_t i)
    how bash-completion installs its lazy loader, names none, and bash sets
    the default spec silently. Falling into list mode there dumped every
    registration to stdout at the end of `. bash_completion` (#105). */
-int	builtin_complete(t_shell *state, t_vec argv)
+static int	complete_run(t_shell *state, t_vec argv, t_cmpopt *o)
 {
-	t_cmpopt	o;
-	size_t		i;
+	size_t	i;
 
-	o = (t_cmpopt){0};
-	i = comp_parse_opts(state, argv, &o);
+	i = comp_parse_opts(state, argv, o);
 	if (i == CG_OPT_ERR)
 		return (2);
-	if (o.print)
+	if (o->print)
 		return (comp_print(state, argv, i));
-	if (o.remove)
+	if (o->remove)
 		return (comp_remove(state, argv, i));
-	if (i >= argv.len && o.defsel)
+	if (i >= argv.len && o->defsel)
 		return (0);
 	if (i >= argv.len)
 		return (comp_print_all(state), 0);
 	while (i < argv.len)
-		comp_store(state, ((char **)argv.ctx)[i++], &o);
+		comp_store(state, ((char **)argv.ctx)[i++], o);
 	return (0);
+}
+
+int	builtin_complete(t_shell *state, t_vec argv)
+{
+	t_cmpopt	o;
+	int			st;
+
+	o = (t_cmpopt){0};
+	st = complete_run(state, argv, &o);
+	return (xfree(o.optbuf.ctx), st);
 }

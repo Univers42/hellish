@@ -30,6 +30,9 @@ char	**complete_commands(const char *text, int start, int end);
 char	**complete_variables(const char *text, int start, int end);
 char	**complete_files(const char *text, int start, int end);
 char	**complete_exec_files(const char *text, int start, int end);
+/* complete_cmdpos.c -- "is this word a command name?", which is not the
+   same question as "is it at column 0". */
+int		is_cmd_word(int start);
 
 /* readline OWNS every string a generator hands back, and releases it with
    libc free(). Our xmalloc family compiles to ft_malloc on a SAFE=0 build,
@@ -70,34 +73,6 @@ char	*rl_dup_dollar(const char *name, size_t len)
 	return (out);
 }
 
-/* Is the word beginning at `start` a COMMAND word?
-
-   It is when nothing but blanks precede it, and it is when the last
-   non-blank before it is an operator that ends a command: POSIX XCU 2.9
-   makes the word after ; | & ( { ` and a newline the start of a new
-   command, which is why `ls | <TAB>` and `true && <TAB>` complete a
-   command in bash.  This used to be `start == 0`, so all of those --
-   and a line that merely began with a space -- silently fell through to
-   filename completion instead.
-
-   The redirection operators are deliberately NOT in the set even though
-   readline breaks words on them: the word after > or < is a filename,
-   and so is the word after the = of an assignment. */
-static int	is_cmd_word(int start)
-{
-	int	i;
-
-	if (!rl_line_buffer)
-		return (start == 0);
-	i = start;
-	while (i > 0 && (rl_line_buffer[i - 1] == ' '
-			|| rl_line_buffer[i - 1] == '\t'))
-		i--;
-	if (i == 0)
-		return (1);
-	return (ft_strchr(";|&(){\n`", rl_line_buffer[i - 1]) != NULL);
-}
-
 /* Completion dispatcher registered with readline.  A '$' word is a
    variable wherever it appears -- this test comes FIRST because the old
    start==0 branch shadowed it, so `$HOM<TAB>` at the start of a line was
@@ -125,7 +100,9 @@ static char	**cmd_completion(const char *text, int start, int end)
 {
 	char	**spec;
 
-	if (text[0] == '$')
+	rl_completion_append_character = ' ';
+	rl_completion_suppress_append = 0;
+	if (text[0] == '$' && !ft_strchr(text, '/'))
 		return (rl_attempted_completion_over = 1,
 			complete_variables(text, start, end));
 	if (!is_cmd_word(start))
