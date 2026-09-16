@@ -318,7 +318,7 @@ typedef struct s_shell
 	int					metinp; /* input method: INP_RL / FILE / ARG */
 	char				upd_tag[32]; /* pending update version, "" if none */
 	long				upd_seen; /* when upd_tag was last refreshed */
-	long				upd_notify_seen; /* when the notice last read state */
+	long				upd_state_stamp; /* mtime of the state file last read */
 	bool				upd_notified; /* the notice is spent for this run */
 	char				*dft_ctx; /* default shell name for error msgs */
 	char				*ctx; /* active error context (argv[0]) */

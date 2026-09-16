@@ -12,9 +12,9 @@
 
 #include "update.h"
 #include "version.h"
-#include "prompt_private.h"
 #include <unistd.h>
 #include <time.h>
+#include <sys/stat.h>
 
 /* Tell the user an update is waiting -- at most once per discovered
    version.
@@ -34,26 +34,47 @@
    later. That is the right trade: a late notice is a cosmetic delay, a
    corrupted command line is a wrong command executed.
 
-   It is also throttled, for the same reason the \U badge next to it is
-   (prompt_update.c): this runs once per REPL cycle, and an unconditional
-   open+read+parse of the state file there is a syscall on the path between
-   every command and the next prompt -- to re-read a file that a daily
-   background check writes. Once the notice has been spent it stops looking
-   entirely; before that it looks at most every UPD_TAG_TTL seconds, which
-   is far below human notice and far above the cost. */
+   It is also cheap, which it had to be made rather than declared: this
+   runs once per REPL cycle, and an unconditional open+read+parse of the
+   state file there is work on the path between every command and the next
+   prompt, to re-read a file a daily background check writes.
+
+   The throttle is the state file's own mtime, NOT a clock. A time-based
+   one was tried first and was wrong in the one case that matters: the
+   session that DISCOVERS a release reads the file before its background
+   check has written it, so a 5-second hold meant the discovering session
+   announced nothing at all -- update_freshness_test.py's "the discovering
+   session says so, unprompted", which fails under the suite and passes
+   standalone, because whether the check lands inside the hold is pure
+   timing. Keyed on mtime, a write is seen on the very next prompt and an
+   unchanged file costs one stat instead of an open, a read and a parse.
+   No state file at all means nothing has ever been checked, so there is
+   nothing to announce and the stat is the whole cost. */
+static long	upd_state_stamp(void)
+{
+	char		path[512];
+	struct stat	st;
+
+	if (!update_cache_file("state", path, sizeof(path)))
+		return (0);
+	if (stat(path, &st) != 0)
+		return (0);
+	return ((long)st.st_mtim.tv_sec * 1000000000L + st.st_mtim.tv_nsec);
+}
+
 void	update_notify_prompt(t_shell *state)
 {
 	t_upd_state	s;
-	long		now;
+	long		stamp;
 
 	if (state->metinp != INP_RL || state->upd_notified)
 		return ;
 	if (getenv("HELLISH_NO_UPDATE_CHECK") || !isatty(STDERR_FILENO))
 		return ;
-	now = (long)time(NULL);
-	if (state->upd_notify_seen && now - state->upd_notify_seen < UPD_TAG_TTL)
+	stamp = upd_state_stamp();
+	if (stamp == 0 || stamp == state->upd_state_stamp)
 		return ;
-	state->upd_notify_seen = now;
+	state->upd_state_stamp = stamp;
 	if (!update_state_load(&s) || !update_available(&s))
 		return ;
 	if (s.notified > 0)
