@@ -14,7 +14,6 @@
 #include "version.h"
 #include <unistd.h>
 #include <time.h>
-#include <sys/stat.h>
 
 /* Tell the user an update is waiting -- at most once per discovered
    version.
@@ -34,47 +33,35 @@
    later. That is the right trade: a late notice is a cosmetic delay, a
    corrupted command line is a wrong command executed.
 
-   It is also cheap, which it had to be made rather than declared: this
-   runs once per REPL cycle, and an unconditional open+read+parse of the
-   state file there is work on the path between every command and the next
-   prompt, to re-read a file a daily background check writes.
+   The state file IS re-read every cycle, and two attempts to avoid it are
+   the reason that is now written down rather than assumed.
 
-   The throttle is the state file's own mtime, NOT a clock. A time-based
-   one was tried first and was wrong in the one case that matters: the
-   session that DISCOVERS a release reads the file before its background
-   check has written it, so a 5-second hold meant the discovering session
-   announced nothing at all -- update_freshness_test.py's "the discovering
-   session says so, unprompted", which fails under the suite and passes
-   standalone, because whether the check lands inside the hold is pure
-   timing. Keyed on mtime, a write is seen on the very next prompt and an
-   unchanged file costs one stat instead of an open, a read and a parse.
-   No state file at all means nothing has ever been checked, so there is
-   nothing to announce and the stat is the whole cost. */
-static long	upd_state_stamp(void)
-{
-	char		path[512];
-	struct stat	st;
+   A 5-second hold came first. It broke the one case the feature exists
+   for: the session that DISCOVERS a release reads the file before its own
+   background check has written it, so the discovering session announced
+   nothing at all. Keying on the file's mtime instead looked right and was
+   not either -- st_mtim is POSIX.1-2008 and macOS spells it st_mtimespec,
+   so it cost the Darwin build a compile error, and the portable st_mtime
+   has one-second resolution, which is exactly the window the check lands
+   in. Folding in st_size did not save it: the rewrite is the same length.
 
-	if (!update_cache_file("state", path, sizeof(path)))
-		return (0);
-	if (stat(path, &st) != 0)
-		return (0);
-	return ((long)st.st_mtim.tv_sec * 1000000000L + st.st_mtim.tv_nsec);
-}
+   Both attempts were optimising something that was never the cost. The
+   read is one open+read+close of a ~100-byte file, comfortably under 1%
+   of a prompt -- measured, after the second failure, which is the order
+   those two things should have happened in.
 
+   What IS kept is the part with no timing in it: once the notice has been
+   spent for this run, stop looking altogether. That is a pure saving for
+   every session after the first that sees a pending update, and it cannot
+   be wrong, because there is nothing left to announce. */
 void	update_notify_prompt(t_shell *state)
 {
 	t_upd_state	s;
-	long		stamp;
 
 	if (state->metinp != INP_RL || state->upd_notified)
 		return ;
 	if (getenv("HELLISH_NO_UPDATE_CHECK") || !isatty(STDERR_FILENO))
 		return ;
-	stamp = upd_state_stamp();
-	if (stamp == 0 || stamp == state->upd_state_stamp)
-		return ;
-	state->upd_state_stamp = stamp;
 	if (!update_state_load(&s) || !update_available(&s))
 		return ;
 	if (s.notified > 0)
