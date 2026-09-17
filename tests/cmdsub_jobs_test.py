@@ -27,7 +27,15 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
                         else os.path.join(ROOT, "build", "bin", "hellish"))
-BASH = shutil.which("bash")
+# The pinned oracle when it is built, as tests/tester prefers it. The
+# `jobs` format is one of the things bash changed between releases: 5.1
+# pads the status column to 24, 5.3 to 27, and 5.3 announces a finished
+# job that 5.1 swallows -- so against the system bash (5.1 on Ubuntu 22.04)
+# a correct hellish reads as three failures. CI puts the oracle first on
+# PATH; a developer's machine does not.
+ORACLE = os.environ.get("HELLISH_ORACLE",
+                        os.path.expanduser("~/bash-5.3.9/bin/bash"))
+BASH = ORACLE if os.path.exists(ORACLE) else shutil.which("bash")
 FAILS = []
 
 # job 1 finishes at once, job 2 outlives the whole case
