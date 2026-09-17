@@ -56,6 +56,10 @@ char	*rl_dup_dollar(const char *name, size_t len);
    filename survive being read back as shell input (spaces escaped, an
    open quote respected). Without them `cat my<TAB>` produced two words. */
 void	setup_quoting(void);
+/* A path through a variable -- `ls $HOME/.con<TAB>` (complete_dollar.c). */
+void	setup_dollar_hooks(void);
+int		comp_dollar_rewrite(char **name);
+size_t	comp_dollar_len(const char *s);
 int		comp_char_is_quoted(char *line, int idx);
 char	*comp_quote_filename(char *text, int mtype, char *qp);
 char	*comp_dequote_filename(char *text, int qc);

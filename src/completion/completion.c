@@ -143,4 +143,5 @@ void	setup_completion(void)
 	rl_completion_append_character = ' ';
 	rl_completer_word_break_characters = brk;
 	setup_quoting();
+	setup_dollar_hooks();
 }

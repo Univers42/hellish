@@ -93,21 +93,49 @@ char	*comp_dequote_filename(char *text, int qc)
 	return (out[j] = '\0', out);
 }
 
+/* The head of the word that the user wrote in order to have it EXPANDED:
+   a leading `~` or `$NAME`/`${NAME}`. Quoting it is what two field reports
+   were: `ls ~/.con<TAB>` inserted `ls \~/.config/`, and once paths through
+   a variable completed, `ls $HOME/.con<TAB>` inserted `ls \$HOME/.config/`.
+   Both name something that does not exist -- a backslashed `~` is a
+   directory called "~", a backslashed `$` is a literal dollar. These
+   characters are in the quote set because in the MIDDLE of a filename they
+   are ordinary and need escaping; at the head they are the whole point,
+   and bash leaves them alone there too. */
+static size_t	comp_literal_prefix(const char *s)
+{
+	size_t	brace;
+	size_t	n;
+
+	if (s[0] == '~')
+		return (1);
+	if (s[0] != '$')
+		return (0);
+	brace = 0;
+	if (s[1] == '{')
+		brace = 1;
+	n = comp_dollar_len(s + 1 + brace);
+	if (n == 0 || (brace && s[1 + brace + n] != '}'))
+		return (0);
+	return (1 + brace + n + brace);
+}
+
 /* Put the quoting back on the match being inserted. Inside an open quote
    readline supplies the closing one and the shell reads the span
    literally, so only the bare case needs backslashes. */
 char	*comp_quote_filename(char *text, int mtype, char *qp)
 {
 	char	*out;
-	int		i;
-	int		j;
+	size_t	i;
+	size_t	j;
 
 	(void)mtype;
 	out = malloc(ft_strlen(text) * 2 + 1);
 	if (!out)
 		return (NULL);
-	i = 0;
-	j = 0;
+	i = comp_literal_prefix(text);
+	ft_memcpy(out, text, i);
+	j = i;
 	while (text[i])
 	{
 		if ((!qp || !*qp) && rl_filename_quote_characters

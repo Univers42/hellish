@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <readline/readline.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 extern char	**environ;
 
@@ -54,10 +55,29 @@ static char	*var_generator(const char *text, int state_gen)
 	return (NULL);
 }
 
+/* A variable whose value is a directory gets '/' rather than a space, so
+   `echo $HOM<TAB>` carries straight on into the path instead of making the
+   user delete a space first. bash does the same; readline hands us the
+   single match as matches[0] with matches[1] NULL. */
+static void	var_append_for(const char *match)
+{
+	struct stat	st;
+	char		*val;
+
+	val = getenv(match + (match[0] == '$'));
+	if (val && stat(val, &st) == 0 && S_ISDIR(st.st_mode))
+		rl_completion_append_character = '/';
+}
+
 char	**complete_variables(const char *text, int start, int end)
 {
+	char	**matches;
+
 	(void)start;
 	(void)end;
 	rl_completion_append_character = ' ';
-	return (rl_completion_matches(text, var_generator));
+	matches = rl_completion_matches(text, var_generator);
+	if (matches && matches[0] && !matches[1])
+		var_append_for(matches[0]);
+	return (matches);
 }
