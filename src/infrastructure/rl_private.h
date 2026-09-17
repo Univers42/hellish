@@ -24,6 +24,7 @@
 # include <readline/readline.h>
 # include <stdbool.h>
 # include <signal.h>
+# include <termios.h>
 # include "pal_wait.h"
 # include <unistd.h>
 # include "sh_input.h"
@@ -57,6 +58,16 @@ void	rl_preinit(t_rl *l);
 #  define RL_INPROC_OK 0
 # endif
 
+/* The bracket rl_shell_exec puts around shell code run from the editor. */
+typedef struct s_rl_bracket
+{
+	t_execution_state	status;
+	struct termios		tty;
+	int					have_tty;
+}	t_rl_bracket;
+
+void	rl_shell_enter(t_shell *state, t_rl_bracket *b);
+int		rl_shell_leave(t_shell *state, t_rl_bracket *b);
 int		rl_getc_hook(FILE *stream);
 int		rl_idle_timeout(void);
 int		rl_idle_fd(void);

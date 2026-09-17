@@ -96,6 +96,7 @@ void			zle_params_restore(t_shell *state, t_zle_saved *s);
 /* Shell code run from inside the editor (rl_editor.c): signals, terminal
    settings and $? are handled around it. */
 int				rl_shell_exec(t_shell *state, char *code);
+void			rl_prompt_repaint(t_shell *state, bool force);
 
 /* Refresh BUFFER/LBUFFER/RBUFFER/CURSOR from readline's current line. A
    built-in widget that edits the line directly must call this, or the

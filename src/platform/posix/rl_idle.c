@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "rl_private.h"
+#include "zle.h"
 #include <signal.h>
 
 /* The line reader's surroundings: what it waits on besides the terminal,
@@ -26,18 +27,28 @@ int	rl_idle_timeout(void)
 	return (-1);
 }
 
-/* A descriptor to wake up for besides the terminal, or -1. */
+/* A descriptor to wake up for besides the terminal, or -1: the background
+   git scan's pipe, while its answer could still be shown by a repaint
+   (rl_repaint.c) -- a PS1 read in this process. */
 int	rl_idle_fd(void)
 {
-	return (-1);
+	t_shell	*st;
+
+	st = *zle_state_cell();
+	if (!st || st->rl.use_fork || !st->rl.ps1_read)
+		return (-1);
+	return (git_scan_fd());
 }
 
 /* The wait ended without a key: r == 0 is the idle timeout, r > 0 the idle
-   descriptor, r < 0 an interrupted wait (the caller looks at signals). */
+   descriptor, r < 0 an interrupted wait (the caller looks at signals). A
+   scan that finished with a new answer gets the prompt repainted. */
 void	rl_idle_event(int r)
 {
 	if (r == 0)
 		anim_tick();
+	else if (r > 0 && git_scan_poll())
+		rl_prompt_repaint(*zle_state_cell(), false);
 }
 
 /* Block the signals readline catches, keeping the previous mask in *old

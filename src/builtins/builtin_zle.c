@@ -35,21 +35,19 @@
 ** widget that appears to run and does nothing is indistinguishable from a
 ** working one until the user presses the key.
 **
-** `reset-prompt` is NOT `redisplay` and is answered with it anyway -- the
-** remaining half of #77 item 5, written down here because it is the one
-** inexactness in this file that cannot announce itself. zsh re-expands PS1
-** and redraws; this only redraws, so a plugin that changes the prompt and
-** calls reset-prompt sees the old one. Doing it properly means running
-** prompt_normal inside the readline CHILD, which can fork for a `$(...)` in
-** PS1 and writes to the terminal mid-edit: worth prototyping rather than
-** bolting on. Reporting it instead is not available either -- plugins call
-** it from widgets, once per keystroke, and the child is a fresh fork every
-** prompt, so "once per session" cannot be said there.
+** `reset-prompt` re-expands the prompt and redraws it, as zsh does -- the
+** half of #77 item 5 that had to wait until the line was read in the shell
+** process: a widget that moved the shell (dirhistory) now shows the new
+** directory without an Enter. rl_prompt_repaint runs
+** HELLISH_PROMPT_REFRESH_FUNCS first, for prompts built by hook functions,
+** and declines when the prompt cannot be redrawn in place safely, which
+** leaves a plain redisplay.
 */
 static int	zle_builtin(t_shell *state, const char *name)
 {
-	if (!ft_strcmp(name, "redisplay") || !ft_strcmp(name, "reset-prompt")
-		|| !ft_strcmp(name, ".redisplay"))
+	if (!ft_strcmp(name, "reset-prompt") || !ft_strcmp(name, ".reset-prompt"))
+		return (rl_prompt_repaint(state, true), zle_do_redisplay(), 0);
+	if (!ft_strcmp(name, "redisplay") || !ft_strcmp(name, ".redisplay"))
 		return (zle_do_redisplay(), 0);
 	if (!ft_strcmp(name, "kill-buffer") || !ft_strcmp(name, ".kill-buffer"))
 		return (zle_do_kill_buffer(), zle_publish(state), 0);

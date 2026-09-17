@@ -31,26 +31,37 @@ int	exec_string(t_shell *state, char *content);
 ** cooked mode. TCSANOW, never a deprep/prep pair, which would echo
 ** typeahead. $? is the user's again afterwards, and a widget that ran
 ** `exit` ends the read (rl_should_abort). */
-int	rl_shell_exec(t_shell *state, char *code)
+void	rl_shell_enter(t_shell *state, t_rl_bracket *b)
 {
-	t_execution_state	saved;
-	struct termios		tty;
-	int					have_tty;
-	int					rc;
-
-	saved = state->last_cmd_st_exe;
-	have_tty = (tcgetattr(STDIN_FILENO, &tty) == 0);
+	b->status = state->last_cmd_st_exe;
+	b->have_tty = (tcgetattr(STDIN_FILENO, &b->tty) == 0);
 	rl_clear_signals();
-	rc = exec_string(state, code);
+}
+
+/* 0 when the shell code left the editor for good (`exit` from a widget
+   that did not exit, an exec that failed after leaving). */
+int	rl_shell_leave(t_shell *state, t_rl_bracket *b)
+{
 	if (!zle_active())
-		return (rc);
+		return (0);
 	rl_set_signals();
-	if (have_tty)
-		tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+	if (b->have_tty)
+		tcsetattr(STDIN_FILENO, TCSANOW, &b->tty);
 	rl_reset_screen_size();
-	set_cmd_status(state, saved);
+	set_cmd_status(state, b->status);
 	if (state->should_exit)
 		*rl_editor_abort_cell() = 1;
+	return (1);
+}
+
+int	rl_shell_exec(t_shell *state, char *code)
+{
+	t_rl_bracket	b;
+	int				rc;
+
+	rl_shell_enter(state, &b);
+	rc = exec_string(state, code);
+	rl_shell_leave(state, &b);
 	return (rc);
 }
 

@@ -136,38 +136,21 @@ static int	poll_done(t_dcache *c, int wait_ms)
 	return (0);
 }
 
-/* How long the render about to start a scan may wait for it, and the
-** bookkeeping that goes with starting one.
-**
-** A freshly entered root gets up to GIT_WAIT_NEW_MS: fast repositories
-** keep an exact first answer, and the last one is forgotten, since it
-** described a repository the shell has left. After a command that may
-** have touched the tree -- or a change of untracked mode -- the rescan is
-** waited for up to GIT_WAIT_TOUCHED_MS, but only when the last timed scan
-** of this repository fit in that budget: `git commit` in a normal repo is
-** followed by an exact prompt, and a slow repo never makes the prompt
-** wait, its answer arriving a render late instead. A TTL refresh -- the
-** answer merely aged while nothing ran -- does not wait at all. */
-static int	scan_wait(t_dcache *c, const char *root)
+/* The line reader's hook (rl_idle.c): harvest an in-flight scan without
+   waiting. 1 when it was published just now and says something the
+   previous answer did not -- the prompt on screen is stale. */
+int	git_scan_poll(void)
 {
-	int	wait_ms;
+	t_dcache	*c;
+	t_gitstat	was;
 
-	wait_ms = 0;
-	if (!c->init || ft_strcmp(c->root, root) != 0)
-	{
-		wait_ms = GIT_WAIT_NEW_MS;
-		ft_bzero(&c->cur, sizeof(c->cur));
-		c->last_ms = -1;
-	}
-	else if ((c->gen != *git_scan_gen()
-			|| c->untracked != *git_untracked_cell())
-		&& c->last_ms >= 0 && c->last_ms <= GIT_WAIT_TOUCHED_MS)
-		wait_ms = GIT_WAIT_TOUCHED_MS;
-	c->init = 1;
-	c->gen = *git_scan_gen();
-	c->untracked = *git_untracked_cell();
-	ft_strlcpy(c->root, root, sizeof(c->root));
-	return (wait_ms);
+	c = git_dcache();
+	if (!c->busy)
+		return (0);
+	was = c->cur;
+	if (!poll_done(c, 0))
+		return (0);
+	return (ft_memcmp(&was, &c->cur, sizeof(was)) != 0);
 }
 
 /* The GIT_* bits for the repository rooted at `root`, never waiting longer
@@ -191,7 +174,7 @@ int	git_dirty_cached(const char *root)
 		&& c->untracked == *git_untracked_cell()
 		&& time(NULL) - c->at < c->ttl)
 		return (c->cur.bits);
-	wait_ms = scan_wait(c, root);
+	wait_ms = git_scan_wait(c, root);
 	spawn_check(c);
 	if (c->busy)
 		poll_done(c, wait_ms);

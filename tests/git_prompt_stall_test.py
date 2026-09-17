@@ -14,7 +14,9 @@ Checks, in a real pty, default two-row prompt (PS1 unset):
   1. With a `git` shim sleeping 2s, cd into a repo prompts fast
      (well under the shim delay) instead of after the scan.
   2. A later prompt in that repo is also fast, and the star the
-     background scan found has arrived by then (async harvest).
+     background scan found has arrived by then (async harvest) -- in fact
+     before it: the line reader waits on the scan too and repaints the
+     prompt the moment it lands, with nothing typed yet.
   3. With real git, cd into a repo with tracked modifications still
      shows the amber star (bounded wait keeps normal repos exact).
   4. After the TTL expires there, the refresh keeps the prompt fast
@@ -170,10 +172,15 @@ def main():
     s = Session(base, work, shim + ":" + os.environ["PATH"])
     s.prompt_latency(b"")
     s.drain(0.4)
+    n_cd = len(s.raw)
     lat = s.prompt_latency(("cd %s\n" % slow).encode())
     check("cd into slow-git repo prompts fast",
           lat is not None and lat < 1.0, "latency=%s" % lat)
+    n_shown = len(s.raw)
     s.drain(2.6)  # background scan finishes during this idle
+    check("slow repo star is repainted without a key press",
+          b"*" not in s.raw[n_cd:n_shown] and b"*" in s.raw[n_shown:],
+          repr(s.raw[n_shown:][-160:]))
     n0 = len(s.raw)
     lat = s.prompt_latency(b"\n")
     check("later prompt in slow repo stays fast",

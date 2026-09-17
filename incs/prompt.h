@@ -88,6 +88,8 @@ typedef struct s_rl
 	/* --- readline, initialised once in the parent (rl_preinit.c) --- */
 	bool		rl_ready; /* rl_initialize() has run in this process */
 	bool		use_fork; /* read in a forked child (HELLISH_RL_FORK=1) */
+	bool		ps1_read; /* the prompt being read is PS1's, not PS2's */
+	char		*shown_prompt; /* the prompt on screen, while reading */
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
@@ -114,7 +116,7 @@ int			get_more_input_notty(t_shell *state);
 int			rl_read_fork(t_shell *state, char *prompt);
 int			rl_read_inproc(t_shell *state, char *prompt);
 char		*rl_editor_enter(t_shell *state, char *prompt);
-void		rl_editor_exit(void);
+void		rl_editor_exit(t_shell *state);
 t_string	prompt_normal(t_shell *state);
 t_string	prompt_more_input(t_shell *state, struct s_parser *parser);
 void		buff_readline_init(t_rl *ret);

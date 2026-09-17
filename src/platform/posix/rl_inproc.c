@@ -60,7 +60,7 @@ int	rl_read_inproc(t_shell *state, char *prompt)
 
 	row = rl_editor_enter(state, prompt);
 	line = readline(row);
-	rl_editor_exit();
+	rl_editor_exit(state);
 	anim_cells()->count = 0;
 	if (*rl_intr_cell() || get_g_sig()->should_unwind)
 	{

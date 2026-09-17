@@ -30,6 +30,8 @@ restores the child for one release, so it cannot rot unnoticed.
   14. TAB completion leaves IFS, `set -f` and COMP_* as they were
   15. a recalled line edited and abandoned is unchanged in history
   16. the kill ring carries across lines
+  17. `zle reset-prompt` from a widget that cds shows the new directory
+      without an Enter
 
 Usage: python3 rl_inproc_test.py [/path/to/hellish]
 """
@@ -410,6 +412,21 @@ def case_kill_ring():
     s.close()
 
 
+def case_reset_prompt():
+    dest = tempfile.mkdtemp(prefix="rp_dest_")
+    s = Session()
+    s.send(b"PS1='P$ \\w> '\r")
+    s.send(("go() { cd %s; zle reset-prompt; }; zle -N go; "
+            "bindkey '\\eg' go\r" % dest).encode())
+    n0 = len(s.raw)
+    os.write(s.fd, b"\x1bg")
+    s.drain(0.8)
+    shown = s.raw[n0:]
+    check("zle reset-prompt shows the new directory at once",
+          os.path.basename(dest).encode() in shown, repr(shown[-200:]))
+    s.close()
+
+
 def main():
     if not os.access(SHELL, os.X_OK):
         print("error: no shell at %s" % SHELL)
@@ -430,6 +447,7 @@ def main():
     case_completion_sandbox()
     case_history_revert()
     case_kill_ring()
+    case_reset_prompt()
     print("\n%d checks failed" % len(FAILS))
     return 1 if FAILS else 0
 

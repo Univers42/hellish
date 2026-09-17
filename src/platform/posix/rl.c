@@ -76,6 +76,8 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 
 	zle_enter(state);
 	debug_dump_prompt(prompt);
+	xfree(state->rl.shown_prompt);
+	state->rl.shown_prompt = ft_strdup(prompt);
 	row = split_prompt(prompt);
 	state->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_rprompt_install(state);
@@ -84,10 +86,12 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 
 /* Leave it: the `zle` builtin refuses from here on, and nothing the
    editor installed for this read outlives it. */
-void	rl_editor_exit(void)
+void	rl_editor_exit(t_shell *state)
 {
 	zle_enter(NULL);
 	rl_redisplay_function = rl_redisplay;
+	xfree(state->rl.shown_prompt);
+	state->rl.shown_prompt = NULL;
 }
 
 /* Read one line of interactive input into state->rl.buff. 0 = a line,

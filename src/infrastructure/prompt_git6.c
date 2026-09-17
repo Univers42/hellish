@@ -58,3 +58,48 @@ void	git_scan_publish(t_dcache *c, int timed)
 	if (timed)
 		c->last_ms = (int)ms;
 }
+
+/* How long the render about to start a scan may wait for it, and the
+** bookkeeping that goes with starting one.
+**
+** A freshly entered root gets up to GIT_WAIT_NEW_MS: fast repositories
+** keep an exact first answer, and the last one is forgotten, since it
+** described a repository the shell has left. After a command that may
+** have touched the tree -- or a change of untracked mode -- the rescan is
+** waited for up to GIT_WAIT_TOUCHED_MS, but only when the last timed scan
+** of this repository fit in that budget: `git commit` in a normal repo is
+** followed by an exact prompt, and a slow repo never makes the prompt
+** wait, its answer arriving a render late instead. A TTL refresh -- the
+** answer merely aged while nothing ran -- does not wait at all. */
+int	git_scan_wait(t_dcache *c, const char *root)
+{
+	int	wait_ms;
+
+	wait_ms = 0;
+	if (!c->init || ft_strcmp(c->root, root) != 0)
+	{
+		wait_ms = GIT_WAIT_NEW_MS;
+		ft_bzero(&c->cur, sizeof(c->cur));
+		c->last_ms = -1;
+	}
+	else if ((c->gen != *git_scan_gen()
+			|| c->untracked != *git_untracked_cell())
+		&& c->last_ms >= 0 && c->last_ms <= GIT_WAIT_TOUCHED_MS)
+		wait_ms = GIT_WAIT_TOUCHED_MS;
+	c->init = 1;
+	c->gen = *git_scan_gen();
+	c->untracked = *git_untracked_cell();
+	ft_strlcpy(c->root, root, sizeof(c->root));
+	return (wait_ms);
+}
+
+/* The in-flight scan's pipe, for the line reader to wait on, or -1. */
+int	git_scan_fd(void)
+{
+	t_dcache	*c;
+
+	c = git_dcache();
+	if (!c->busy)
+		return (-1);
+	return (c->fd);
+}

@@ -53,6 +53,7 @@ t_string	prompt_more_input(t_shell *state, t_parser *parser)
 	const char	*label;
 
 	rprompt_clear(state);
+	state->rl.ps1_read = false;
 	label = env_expand(state, "PS2");
 	if (label && *label)
 		return (ps1_render(state, label));
@@ -172,6 +173,7 @@ t_string	prompt_normal(t_shell *state)
 	*anim_status() = status;
 	*anim_dur_ms() = state->last_cmd_ms;
 	*anim_jobs() = state->job_table.count;
+	state->rl.ps1_read = true;
 	rprompt_render(state);
 	ps1 = env_expand(state, "PROMPT");
 	if (ps1 && *ps1)
