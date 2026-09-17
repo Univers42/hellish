@@ -147,6 +147,7 @@ t_env		*env_nget(t_vec_env *env, char *key, int len);
 void		set_shlvl(t_shell *state);
 void		set_shell_var(t_shell *state);
 void		update_winsize_vars(t_shell *state);
+void		winsize_follow_resize(t_shell *state);
 
 /* O(1) env name index (env_index.c) -- lazy hash table over the vector.
    Pass len<0 to use strlen(key).  Returns vector position, -1 if absent. */

@@ -58,6 +58,23 @@ void	rl_preinit(t_rl *l);
 #  define RL_INPROC_OK 0
 # endif
 
+/* SIGWINCH during a read (rl_winch.c, rl_winch2.c). readline's own resize
+   path calls rl_forced_update_display() as soon as a redisplay function is
+   installed -- and the RPROMPT painter installs one -- which appended a
+   copy of the prompt per resize. Taken over here instead. */
+typedef struct s_winch
+{
+	volatile sig_atomic_t	winch; /* a resize was signalled */
+	int						cols; /* width the line was laid out at */
+	struct sigaction		old; /* disposition to restore, and to chain */
+}	t_winch;
+
+t_winch	*rl_winch_cell(void);
+int		rl_winch_cols(void);
+void	rl_winch_arm(void);
+void	rl_winch_disarm(void);
+int		rl_winch_poll(void);
+
 /* The bracket rl_shell_exec puts around shell code run from the editor. */
 typedef struct s_rl_bracket
 {

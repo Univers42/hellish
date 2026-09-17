@@ -42,9 +42,13 @@ int	rl_idle_fd(void)
 
 /* The wait ended without a key: r == 0 is the idle timeout, r > 0 the idle
    descriptor, r < 0 an interrupted wait (the caller looks at signals). A
-   scan that finished with a new answer gets the prompt repainted. */
+   scan that finished with a new answer gets the prompt repainted.
+     A resize is acted on from here too, and not only from
+   rl_signal_event_hook: this is readline's OTHER wait, and while the
+   animation is ticking it is the one the process sits in (rl_winch.c). */
 void	rl_idle_event(int r)
 {
+	rl_winch_poll();
 	if (r == 0)
 		anim_tick();
 	else if (r > 0 && git_scan_poll())

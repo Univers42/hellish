@@ -81,6 +81,7 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 	row = split_prompt(prompt);
 	state->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_rprompt_install(state);
+	rl_winch_arm();
 	return (row);
 }
 
@@ -89,6 +90,7 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 void	rl_editor_exit(t_shell *state)
 {
 	zle_enter(NULL);
+	rl_winch_disarm();
 	rl_redisplay_function = rl_redisplay;
 	xfree(state->rl.shown_prompt);
 	state->rl.shown_prompt = NULL;

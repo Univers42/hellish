@@ -393,6 +393,8 @@ typedef struct s_shell
 										there must leave shell state as a
 										forked one would -- `jobs` reads
 										the job table and changes nothing */
+	int					ws_cols; /* terminal size COLUMNS was last set from */
+	int					ws_rows; /* ... and LINES (winsize.c) */
 	/* Same trick for a background child (`cmd &`): the ONE simple command
 	   this process was forked to run may execve in place, so $! names the
 	   command and not a wrapper (issue #13).  Stored as the AST node's

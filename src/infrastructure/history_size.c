@@ -32,17 +32,14 @@
 /* Drop entry i from both lists and fix the marks that sat above it. */
 static void	hist_drop_at(t_shell *state, size_t i)
 {
-	char		**a;
-	HIST_ENTRY	*e;
+	char	**a;
 
 	a = (char **)state->hist.hist_cmds.ctx;
 	xfree(a[i]);
 	ft_memmove(a + i, a + i + 1,
 		(state->hist.hist_cmds.len - i - 1) * sizeof(char *));
 	state->hist.hist_cmds.len--;
-	e = remove_history((int)i);
-	if (e)
-		free_history_entry(e);
+	hist_rl_drop((int)i);
 	if (state->hist.appended > i)
 		state->hist.appended--;
 	if (state->hist.readmark > i)

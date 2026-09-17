@@ -49,7 +49,7 @@ void	hist_rehome(t_shell *state)
 		close(state->hist.append_fd);
 	state->hist.append_fd = -1;
 	free_hist(state);
-	clear_history();
+	hist_rl_clear();
 	parse_history_file(state);
 	state->hist.readmark = state->hist.hist_cmds.len;
 	state->hist.appended = state->hist.hist_cmds.len;

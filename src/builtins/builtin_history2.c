@@ -48,13 +48,9 @@ void	hist_push(t_shell *state, char *owned)
 /* Drop readline's copy of entry idx so recall agrees with `history`. */
 void	hist_rl_remove(t_shell *state, int idx)
 {
-	HIST_ENTRY	*e;
-
 	if (!state->hist.hist_active)
 		return ;
-	e = remove_history(idx);
-	if (e)
-		free_history_entry(e);
+	hist_rl_drop(idx);
 }
 
 /* history -c : wipe the list. The backing allocation stays so the vector is
@@ -70,7 +66,7 @@ int	hist_clear(t_shell *state)
 	state->hist.hist_cmds.len = 0;
 	state->hist.appended = 0;
 	if (state->hist.hist_active)
-		clear_history();
+		hist_rl_clear();
 	return (0);
 }
 

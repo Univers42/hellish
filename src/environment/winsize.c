@@ -37,7 +37,8 @@ static void	set_winsize_var(t_shell *state, const char *key, int val)
    a resize — the kernel updates the pty size whether or not anyone
    catches SIGWINCH — is visible to the very next command, which is the
    strongest observable guarantee bash offers. Non-interactive shells set
-   neither, exactly like bash. */
+   neither, exactly like bash. The size published is remembered, for
+   winsize_follow_resize. */
 void	update_winsize_vars(t_shell *state)
 {
 	struct winsize	ws;
@@ -49,4 +50,28 @@ void	update_winsize_vars(t_shell *state)
 		return ;
 	set_winsize_var(state, "COLUMNS", ws.ws_col);
 	set_winsize_var(state, "LINES", ws.ws_row);
+	state->ws_cols = ws.ws_col;
+	state->ws_rows = ws.ws_row;
+}
+
+/* The prompt-time half: republish COLUMNS/LINES only when the terminal is
+   no longer the size they were last set from. bash does this from
+   readline's SIGWINCH handler, so a resize at the prompt followed by a
+   bare Enter redraws PS1 at the new width. Before this, hellish refreshed
+   only ahead of an execution, and a bare Enter has none: every theme that
+   measures $COLUMNS drew its rule at the old width and wrapped.
+     Comparing against the last published size rather than the variable is
+   what keeps a hand-set `COLUMNS=50` in place until the terminal really
+   changes, which is bash's answer too. */
+void	winsize_follow_resize(t_shell *state)
+{
+	struct winsize	ws;
+
+	if (state->metinp != INP_RL)
+		return ;
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) != 0
+		|| ws.ws_col <= 0 || ws.ws_row <= 0)
+		return ;
+	if (ws.ws_col != state->ws_cols || ws.ws_row != state->ws_rows)
+		update_winsize_vars(state);
 }

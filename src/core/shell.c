@@ -73,7 +73,8 @@ int	main(int argc, char **argv, char **envp)
    just unwound us" flag, then run $PROMPT_COMMAND in the current shell
    right before each interactive primary prompt (bash behaviour; see
    prompt_command.c for the array form). Non-interactive shells never
-   touch it.
+   touch it. COLUMNS/LINES follow a resize first, because the hooks are
+   where themes measure $COLUMNS (winsize.c).
 
    The two exit flags are also aged here, and that is what makes "ask me
    twice" mean twice IN A ROW. exit_warned used to be cleared only when a
@@ -96,6 +97,7 @@ static void	open_cycle(t_shell *state)
 	if (state->metinp != INP_RL)
 		return ;
 	tty_snapshot_refresh();
+	winsize_follow_resize(state);
 	run_prompt_command(state);
 	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
 	run_zsh_prompt_hooks(state, "precmd", NULL);

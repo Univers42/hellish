@@ -44,6 +44,10 @@ void		history_record(t_shell *state, bool early);
    HISTFILE would otherwise be ignored by the session while the `history`
    builtin honoured it -- two files, neither complete. */
 void		hist_rehome(t_shell *state);
+/* readline's mirror: remove / clear that also free the undo list readline
+   keeps on an edited entry (history_rl.c). Never call the raw ones. */
+void		hist_rl_drop(int idx);
+void		hist_rl_clear(void);
 void		init_history(t_shell *state);
 void		free_hist(t_shell *state);
 void		parse_history_file(t_shell *state);
