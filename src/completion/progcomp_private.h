@@ -44,6 +44,14 @@ void		pc_qpush(t_string *out, const char *s, int n);
 void		pc_head(t_string *out, int start);
 char		*pc_call_str(t_compspec *c, const char *text, int start);
 bool		pc_build(t_shell *st, t_compspec *c, const char *text, int start);
+bool		pc_collect(t_shell *st);
+
+/* What pc_build puts back after the call (progcomp5.c). */
+typedef struct s_pc_sandbox
+{
+	char	*ifs;
+	bool	noglob;
+}	t_pc_sandbox;
 
 /* `complete -o ...` (progcomp_opts.c). pc_opt_apply sets the display
    options before matches are generated; pc_opt_fallback asks whether an

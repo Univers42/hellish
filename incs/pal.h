@@ -15,6 +15,10 @@
 
 # include "pal_wait.h"
 
+/* Leaving the process from inside the line editor (`exit`, `exec` in a
+   widget): hand the terminal back as readline found it. */
+void	pal_editor_leave(void);
+
 /* Process shims for shared code; included after shell.h like every other
    header here.  POSIX implementations are thin passthroughs
    (src/platform/posix/pal_proc*.c).  The win32 siblings resolve pids

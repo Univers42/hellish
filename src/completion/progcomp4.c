@@ -13,8 +13,6 @@
 #include "progcomp_private.h"
 #include "env.h"
 
-int	exec_string(t_shell *state, char *content);
-
 /* Running the spec and reading the answer back out of COMPREPLY. */
 
 /* -F: the function is called with three arguments -- the command, the word
@@ -107,7 +105,7 @@ char	*pc_call_str(t_compspec *c, const char *text, int start)
 
 /* Read COMPREPLY into the match list. A scalar assignment (COMPREPLY=foo,
    which scripts do write) is one match, not a parse error. */
-static bool	pc_collect(t_shell *st)
+bool	pc_collect(t_shell *st)
 {
 	const char	*cur;
 	const char	*v;
@@ -125,17 +123,4 @@ static bool	pc_collect(t_shell *st)
 	while (arr_next(&cur, &idx, &v, &vl))
 		pc_push(v, vl);
 	return (pc_cell()->len > 0);
-}
-
-bool	pc_build(t_shell *st, t_compspec *c, const char *text, int start)
-{
-	char	*cmd;
-
-	pc_reset();
-	cmd = pc_call_str(c, text, start);
-	if (!cmd)
-		return (false);
-	exec_string(st, cmd);
-	xfree(cmd);
-	return (pc_collect(st));
 }

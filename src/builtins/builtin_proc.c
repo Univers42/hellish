@@ -61,6 +61,7 @@ int	builtin_exec(t_shell *state, t_vec argv)
 	}
 	xargv = dup_exec_argv(argv);
 	envp = get_envp(state, path);
+	pal_editor_leave();
 	execve(path, xargv, envp);
 	ft_eprintf("%s: exec: %s: %s\n", state->ctx, path, strerror(errno));
 	exit(126);

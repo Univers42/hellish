@@ -16,8 +16,6 @@
 #include "env.h"
 #include <readline/readline.h>
 
-int	exec_string(t_shell *state, char *content);
-
 /* The bridge: a shell function invoked as a readline keybinding.
 **
 ** readline binds a C FUNCTION POINTER. zle_dispatch is that pointer -- one
@@ -103,13 +101,31 @@ static void	zle_collect(t_shell *state, const char *was)
 	xfree(joined);
 }
 
+/* One widget run: the line goes in through BUFFER and friends, comes
+   back out of them, and those names are then what they were before. */
+static void	zle_run(t_shell *state, t_zle_widget *w)
+{
+	t_zle_saved	saved;
+	char		*was;
+
+	was = ft_strdup("");
+	if (rl_line_buffer)
+		was = (xfree(was), ft_strdup(rl_line_buffer));
+	zle_params_save(state, &saved);
+	zle_publish(state);
+	rl_shell_exec(state, w->fn);
+	if (was)
+		zle_collect(state, was);
+	zle_params_restore(state, &saved);
+	xfree(was);
+}
+
 /* Run the widget bound to the key sequence that just fired. */
 int	zle_dispatch(int count, int key)
 {
 	const char		*name;
 	t_zle_widget	*w;
 	t_shell			*state;
-	char			*was;
 
 	(void)count;
 	(void)key;
@@ -120,14 +136,8 @@ int	zle_dispatch(int count, int key)
 	w = zle_widget_get(name);
 	if (!w)
 		return (0);
-	was = ft_strdup("");
-	if (rl_line_buffer)
-		was = (xfree(was), ft_strdup(rl_line_buffer));
-	zle_publish(state);
-	exec_string(state, w->fn);
-	if (was)
-		zle_collect(state, was);
-	xfree(was);
-	rl_redisplay();
+	zle_run(state, w);
+	if (zle_active())
+		rl_redisplay();
 	return (0);
 }

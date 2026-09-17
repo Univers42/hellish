@@ -56,6 +56,7 @@ int	exit_parse_ll(const char *s, long long *out)
    print it or every test harness would need to strip the word from output. */
 void	print_exit_if_readline(t_shell *state)
 {
+	pal_editor_leave();
 	if (state->metinp == INP_RL)
 		ft_eprintf("exit\n");
 }

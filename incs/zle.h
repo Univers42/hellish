@@ -80,6 +80,23 @@ void			zle_do_redisplay(void);
 void			zle_do_message(const char *msg);
 void			zle_do_kill_buffer(void);
 
+/* A widget's BUFFER/LBUFFER/RBUFFER/CURSOR are scoped to it: the values
+   from before are saved and put back (or the names unset) afterwards --
+   see zle_params.c. */
+# define ZLE_NPARAMS 4
+
+typedef struct s_zle_saved
+{
+	char	*val[ZLE_NPARAMS];
+}	t_zle_saved;
+
+void			zle_params_save(t_shell *state, t_zle_saved *s);
+void			zle_params_restore(t_shell *state, t_zle_saved *s);
+
+/* Shell code run from inside the editor (rl_editor.c): signals, terminal
+   settings and $? are handled around it. */
+int				rl_shell_exec(t_shell *state, char *code);
+
 /* Refresh BUFFER/LBUFFER/RBUFFER/CURSOR from readline's current line. A
    built-in widget that edits the line directly must call this, or the
    dispatcher's write-back restores the text it just removed. */

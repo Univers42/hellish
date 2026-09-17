@@ -30,6 +30,7 @@ void	exit_clean(t_shell *state, int code)
 {
 	char	*pid_s;
 
+	pal_editor_leave();
 	run_exit_trap(state);
 	pid_s = ft_itoa((int)getpid());
 	if (pid_s && state->pid && ft_strcmp(state->pid, pid_s) == 0)
