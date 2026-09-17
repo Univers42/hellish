@@ -8,6 +8,38 @@ shows you how to drive the shell.
 
 ---
 
+## v3.1.2 — *`$(jobs)` counts what bash counts*
+
+A point release for one bug, found by CI going red on a commit that had
+gone green an hour earlier on the same code. It is a real bug, not a
+flaky test: it needs a machine slow enough for a background job to finish
+before the shell reaches its `wait` -- a loaded CI runner, never a
+developer's desk.
+
+- **`$(jobs)` lists what bash's does.** bash reclaims a dead job at its
+  next fork and spares exactly one, the job `$!` names. hellish had that
+  rule half-right in each of its two `$( )` paths: the forkless one hid
+  every finished job, so `a & wait; echo "$(jobs)"` lost a's Done line;
+  the forked one hid none, so `a & wait; b & echo "$(jobs | wc -l)"`
+  printed 2 where bash prints 1 -- once a was already dead when `wait`
+  ran. Both paths now apply bash's rule, the forked one on a table the
+  parent has just brought up to date, and neither retires anything on the
+  shell's behalf: `$(jobs)$(jobs)` prints the Done line twice, and the
+  shell's own `jobs` still prints it after.
+- **`-` never marks a dead job.** `a & sleep 0.3; b & jobs` printed
+  `[1]-  Done` where bash prints `[1]   Done`; with a live `[1]` and a
+  dead `[2]`, the marker sat on the corpse. Creating a job now elects `-`
+  the way bash's `set_current_job` does -- the newest stopped job, else
+  the newest running one -- from a table polled first.
+- A new golden category, `tests/cmdsub_jobs`, pins 21 of these shapes
+  against bash 5.3.9 with margins the runner's load cannot flip.
+
+Known and unchanged: `( jobs )` in a plain subshell and `<(jobs)` still
+list the parent's table, where bash lists nothing and the reclaimed table
+respectively. Tracked in `backlog.md`.
+
+---
+
 ## v3.1.1 — *a prompt that costs nothing, and a `${…}` that cannot crash*
 
 3.1.0 fixed where the prompt was drawn; this release fixes what it cost.
