@@ -8,9 +8,11 @@ shows you how to drive the shell.
 
 ---
 
-## Unreleased — *a prompt that costs nothing, and a `${…}` that cannot crash*
+## v3.1.1 — *a prompt that costs nothing, and a `${…}` that cannot crash*
 
-Two reports. Holding Enter left prompts printing for seconds after the key
+3.1.0 fixed where the prompt was drawn; this release fixes what it cost.
+If 3.1.0 felt slower than 3.0 -- it was, and this is the version to update
+to. Two reports. Holding Enter left prompts printing for seconds after the key
 was released, and `cd` into a large repository was visibly slow. Both came
 from the same place: a prompt that ran git seven times before every line,
 and a shell that made that easy to do and expensive to fix. Measured with
@@ -54,6 +56,22 @@ that prompt, in a repository with ten submodules, release build:
   does); a quoted `${s%"…"}` is one comparison instead of a match at every
   position -- peeling a 1000-character string went from 2.9 s to 18 ms;
   `command -v` answers from the command cache.
+- **Completion keeps `~` and `$VAR` expandable.** `ls ~/.con<TAB>` inserted
+  `ls \~/.config/` -- a backslash that stops the tilde expanding, so the
+  completed path did not exist; `$HOME/su<TAB>` never completed at all, and
+  `${HOME}/…` was cut at the brace. All three complete as bash does, and the
+  line keeps `~` or `$HOME` as you typed it.
+- **The right prompt leaves nothing behind.** Recalling a shorter history
+  entry under a right prompt left fragments of the clock on the line, and a
+  long entry could disappear under it while still being the command that
+  ran. A terminal resize -- or a tab switch, which signals one too -- printed
+  another copy of the prompt each time. Only a change of width redraws now,
+  and the clock is cleared from where the text ends.
+- **No leak per prompt under `HISTCONTROL=erasedups`.** An edited history
+  entry that was later dropped kept its undo list (a LeakSanitizer report
+  per prompt in debug builds; wasted memory in release ones).
+- Cloning on Windows failed with `error: invalid path ' '`: a stray file
+  whose name was a single space had reached the tree. Removed.
 
 The standalone prompt in `hellishrc_plugins/examples/hellishrc` (the `hx`
 themes) starts no process per prompt under this hellish, and one `git
