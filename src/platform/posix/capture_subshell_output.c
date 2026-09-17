@@ -12,6 +12,7 @@
 
 #include "expander_private.h"
 #include "executor.h"
+#include "job_control.h"
 #include "sys.h"
 
 /* Fork a child for $(...) command substitution.  The child inherits the full
@@ -19,7 +20,12 @@
    its stdout to pipefd[1], then runs the command string via exec_string.
    "In-process" means: no execve of a fresh shell binary — the clone of the
    shell state IS the subshell.  The EXIT trap is cleared so it cannot fire
-   inside the substitution. */
+   inside the substitution.
+   csf_depth is raised here for the same reason the forkless path raises
+   it: this child IS a $( ) body, and `jobs` inside one lists what bash's
+   does (builtin_jobs.c, hidden_in_cmdsub).  Without it the two halves of
+   the same construct disagreed -- $(jobs) hid every finished job and
+   $(jobs | wc -l) hid none. */
 static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 					const char *cmd)
 {
@@ -36,6 +42,7 @@ static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 		xfree(state->traps[0]);
 		state->traps[0] = NULL;
 		pseudo_traps_quiet(state);
+		state->csf_depth++;
 		state->cmdsub_in_place = cs_single_cmd(state, cmd);
 		exit(exec_string(state, (char *)cmd) & 0xFF);
 	}
@@ -85,6 +92,11 @@ static char	*read_pipe_and_wait(t_shell *state, pid_t pid, int readfd)
    state->last_cmdsub_status so callers like $? pick it up correctly.
    Side-effect-free single-builtin bodies skip the fork entirely via
    cmdsub_fast (NULL means "not eligible, fork as usual").
+   The status poll before the fork is what bash gets for free from its
+   SIGCHLD handler: the child cannot reap its parent's children, so a job
+   that died since the last prompt reads as Running in there unless the
+   parent files it first -- `a & sleep 0.3; echo "$(jobs | cat)"` printed
+   a as Running where bash prints Done.
    If the pipe() or fork() fails we return an empty string rather than
    crashing — worst case the command appears to produce no output. */
 char	*capture_subshell_output(t_shell *state, const char *cmd)
@@ -98,6 +110,7 @@ char	*capture_subshell_output(t_shell *state, const char *cmd)
 	fast = cmdsub_fast(state, cmd);
 	if (fast)
 		return (fast);
+	job_update_status(state);
 	if (pipe(pipefd) == -1)
 		return (ft_strdup(""));
 	pid = fork_and_run_inproc(state, pipefd, cmd);

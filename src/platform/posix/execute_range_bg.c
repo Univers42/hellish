@@ -197,7 +197,12 @@ static void	bg_job_label(t_shell *state, t_ast_node *node, char *buf,
    bookkeeping silently -- must not announce a job number. It did, and a
    fresh install printed "[1] <pid>" above every prompt (issue #88).  The
    parent always returns status 0 immediately (background jobs never block
-   the parent).  bg_job_count still gates reap_background_children. */
+   the parent).  bg_job_count still gates reap_background_children.
+   The status poll before job_add is bash's SIGCHLD handler done late, and
+   it is what job_add's '-' election reads: a job that died since the last
+   poll still reads Running in the table, and would be elected '-' where
+   bash never marks a dead job.  The count guard keeps it off the path of
+   a shell with no jobs, as execute_pipeline_children does. */
 t_execution_state	execute_range_background(t_shell *state,
 										t_executable_node *exe,
 										size_t start, size_t end)
@@ -218,6 +223,8 @@ t_execution_state	execute_range_background(t_shell *state,
 	state->last_bg_pid = ft_itoa(pid);
 	bg_job_label(state, (t_ast_node *)exe->node->children.ctx + start,
 		label, sizeof(label));
+	if (state->job_table.count > 0)
+		job_update_status(state);
 	job = job_add(&state->job_table, pid, label, true);
 	if (state->metinp == INP_RL && getpid() == state->shell_pid && job)
 		ft_printf("[%d] %d\n", job->id, pid);

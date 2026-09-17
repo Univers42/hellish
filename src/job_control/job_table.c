@@ -35,7 +35,13 @@ void	job_table_init(t_job_table *jt)
 
 /* Find a free slot (pgid==0), fill it, update current/previous, and
    increment the running count.  Returns NULL if the table is full
-   (JOB_MAX reached -- effectively impossible in practice). */
+   (JOB_MAX reached -- effectively impossible in practice).
+   The new job takes '+'; '-' is elected the way bash's set_current_job
+   does it (job_live_id: the newest stopped job, else the newest running
+   one, never a dead one).  Handing '-' to the old current blindly gave
+   it to a job that had already died -- `a & sleep 0.3; b & jobs` printed
+   "[1]-  Done" where bash prints "[1]   Done", and with a live [1] and a
+   dead [2] the marker sat on the corpse instead of on [1]. */
 t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg)
 {
 	int	i;
@@ -53,8 +59,8 @@ t_job	*job_add(t_job_table *jt, pid_t pgid, const char *cmd, bool bg)
 			jt->jobs[i].bg = bg;
 			jt->jobs[i].exit_code = 0;
 			jt->count++;
-			jt->previous = jt->current;
 			jt->current = jt->jobs[i].id;
+			jt->previous = job_live_id(jt, jt->current);
 			return (&jt->jobs[i]);
 		}
 		i++;

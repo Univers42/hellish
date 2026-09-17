@@ -1,0 +1,21 @@
+sleep 0.05 & sleep 0.3; wait; sleep 0.3 & echo "$(jobs | wc -l)"; wait
+sleep 0.05 & sleep 0.3; wait; sleep 0.3 & echo "$(jobs)" | wc -l; wait
+sleep 0.05 & sleep 0.3; wait; echo "[$(jobs)]"
+sleep 0.05 & sleep 0.3; wait; echo "[$(jobs | cat)]"
+sleep 0.05 & sleep 0.3; echo "[$(jobs)]"
+sleep 0.05 & sleep 0.3; echo "[$(jobs | cat)]"
+sleep 0.05 & sleep 0.3; wait; sleep 0.3 & echo "[$(jobs)]"; wait
+sleep 0.05 & sleep 0.3; wait; sleep 0.3 & echo "[$(jobs | cat)]"; wait
+sleep 0.05 & sleep 0.3; sleep 0.3 & echo "[$(jobs)]"; wait
+sleep 0.05 & sleep 0.3; sleep 0.3 & echo "[$(jobs | cat)]"; wait
+sleep 1 & sleep 0.05 & sleep 0.3; echo "[$(jobs)]"; wait
+sleep 1 & sleep 0.05 & sleep 0.3; echo "[$(jobs | cat)]"; wait
+sleep 0.05 & sleep 0.3; echo "[$(jobs)][$(jobs)]"
+sleep 0.05 & sleep 0.3; echo "[$(jobs | cat)][$(jobs | cat)]"
+sleep 0.05 & sleep 0.3; x=$(jobs); jobs; jobs; echo end
+sleep 0.05 & sleep 0.3; wait; x=$(jobs); jobs; jobs; echo end
+sleep 1 & sleep 0.05 & sleep 0.3; x=$(jobs | cat); jobs; wait
+sleep 0.05 & sleep 0.3; wait; sleep 0.3 & x=$(jobs | cat); jobs; wait
+sleep 0.05 & sleep 0.3; sleep 1 & jobs; wait
+sleep 1 & sleep 0.05 & sleep 0.3; sleep 1 & jobs; wait
+sleep 1 & sleep 1 & sleep 0.05 & sleep 0.3; sleep 1 & jobs; wait

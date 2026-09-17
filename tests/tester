@@ -79,6 +79,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "assign_shaped_words"
         "funcbody"
         "patsub_quoting"
+        "cmdsub_jobs"
     )
 fi
 

@@ -47,7 +47,9 @@ static void	retire_reported(t_shell *state, t_job *job)
 
 /* One line of the listing: the pgid alone under -p, else the full row;
    a finished job is marked reported on the way out (retired after the
-   whole listing, see retire_reported). */
+   whole listing, see retire_reported) -- except inside a $( ) body, which
+   reports nothing on the shell's behalf: `$(jobs)$(jobs)` prints a's Done
+   line twice in bash, and the shell's own `jobs` still prints it after. */
 static void	list_one(t_shell *state, t_job *job, bool show_pid, bool long_fmt)
 {
 	t_job_table	*jt;
@@ -57,8 +59,30 @@ static void	list_one(t_shell *state, t_job *job, bool show_pid, bool long_fmt)
 		ft_printf("%d\n", job->pgid);
 	else
 		job_print(job, jt->current, jt->previous, long_fmt);
-	if (job_finished(job) && !show_pid)
+	if (job_finished(job) && !show_pid && !state->csf_depth)
 		retire_reported(state, job);
+}
+
+/* Is this finished job one that a $( ) body must not list?
+**
+** bash reclaims a dead job at the next fork (cleanup_dead_jobs), and
+** spares exactly one: the job $! names (last_asynchronous_pid). A $( )
+** body therefore sees the parent's table minus the dead jobs that are no
+** longer $!. Both halves matter, and hellish had neither right:
+** `a & wait; $(jobs)` must still print a's Done line -- a is still $!,
+** and hiding every finished job lost it -- while `a & wait; b & $(jobs)`
+** must not, because b took $! over. The forked half hid nothing, so
+** `a & $(jobs | wc -l); wait; b & $(jobs | wc -l)` counted 2 where bash
+** counts 1 -- but only on a machine slow enough for a to die before the
+** `wait` reached it, which is why it read as a CI flake and passed on
+** every developer box. */
+static bool	hidden_in_cmdsub(t_shell *state, t_job *job)
+{
+	if (!state->csf_depth)
+		return (false);
+	if (!state->last_bg_pid)
+		return (true);
+	return (job->pgid != (pid_t)ft_atoi(state->last_bg_pid));
 }
 
 /* jobs [-l] [-p]: list background (and stopped) jobs. We update statuses
@@ -78,9 +102,10 @@ static void	list_one(t_shell *state, t_job *job, bool show_pid, bool long_fmt)
    -p is the exception: it prints pgids, never a status, so bash does not
    count it as having reported anything and the job stays.
 
-   Inside a $( ) body run in-process (csf_depth), `jobs` is what bash's
-   forked one is: a listing of the jobs still alive, with finished ones
-   left for the shell itself to report -- nothing is retired or purged.
+   Inside a $( ) body -- run in-process or in the fork, both raise
+   csf_depth -- `jobs` lists what bash's does there: the jobs still alive
+   plus the one dead job $! still names (hidden_in_cmdsub), with the rest
+   left for the shell itself to report. Nothing is retired or purged.
 
    We walk job NUMBERS (job_next_after) rather than table slots: a reaped
    job frees its slot, a later job reuses that slot, and slot order then
@@ -101,7 +126,8 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	{
 		job = job_find_id(jt, i);
 		i = job_next_after(jt, i);
-		if (!(job_finished(job) && (job->notified || state->csf_depth)))
+		if (!(job_finished(job)
+				&& (job->notified || hidden_in_cmdsub(state, job))))
 			list_one(state, job, show_pid, long_fmt);
 	}
 	if (!show_pid && !state->csf_depth)

@@ -8,10 +8,16 @@ child cannot reap its parent's children. It now runs in-process (the
 cmdsub fast path) in a read-only mode, which is also what bash's forked
 `jobs` amounts to:
 
-  * jobs still alive are listed, finished ones are not;
+  * jobs still alive are listed; a finished one only while it is still
+    `$!` (bash reclaims the other dead jobs at its next fork and spares
+    exactly that one);
   * nothing is retired -- the shell's own `jobs` afterwards still reports
     the finished job as Done, exactly once;
-  * `jobs -p` and `jobs -l` follow the same rule.
+  * `jobs -p` and `jobs -l` follow the same rule;
+  * a body the fast path declines (`jobs | wc -l`) forks, and the fork
+    lists the same thing -- the parent files its dead children first, so
+    the copy is current. tests/cmdsub_jobs pins those shapes against the
+    oracle without a race.
 
 Each case runs under hellish and bash with the same generous sleeps (a
 loaded machine must not flip a verdict), PIDs masked.

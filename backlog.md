@@ -149,6 +149,17 @@ pass counts in `bench/baseline/`). Performance claims come from
       are pinned in tests/job_label; the others are close but not equal,
       which is why they are not in that file.
 
+- [ ] `jobs` in a plain subshell and in a process substitution still list
+      the parent's table where bash does not: `( jobs )` prints nothing in
+      bash (the subshell starts with no jobs), and `cat <(jobs)` prints the
+      reclaimed table -- dead jobs dropped unless `$!` -- exactly as `$( )`
+      now does (3.1.2, hidden_in_cmdsub). The `$( )` half was the one CI
+      caught; these two have no golden case yet because fixing `( )` means
+      clearing the table on subshell entry, which touches every `( cmd & )`
+      path (issue #88 lives there). Measured against 5.3.9:
+      `sleep 0.05 & sleep 0.3; wait; sleep 0.3 & ( jobs ); wait` -> bash
+      empty, hellish two lines.
+
 - [ ] The special-builtin abort rule is implemented for the two error
       classes that could be pinned down against bash 5.3.9: a redirection
       error on a special builtin, and a non-zero return from export /
