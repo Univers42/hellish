@@ -6,7 +6,7 @@
 > (tools/gen_builtins_md.py), never edit it by hand. The help
 > table itself is test-enforced against the dispatch table, so
 > neither this page nor `help` can drift from what actually
-> runs. 69 builtins; anything else on `$PATH` works as usual —
+> runs. 72 builtins; anything else on `$PATH` works as usual —
 > `type NAME` says which is which.
 
 ## navigation
@@ -31,16 +31,16 @@
 **`echo`** — `echo [-neE] [arg ...]`
 <br>write arguments (-n no newline, -e escapes)
 
-**`mapfile`** — `mapfile [-t] [-n n] [-O i] [-s n] [-u fd] [array]`
+**`mapfile`** — `mapfile [-d delim] [-n n] [-O idx] [-s n] [-t] [-u fd] [array]`
 <br>read lines of input into an array
 
 **`printf`** — `printf [-v var] format [arg ...]`
 <br>format and print, like printf(3)
 
-**`read`** — `read [-r] [-p prompt] [-n n] [-t sec] [name ...]`
+**`read`** — `read [-r] [-a arr] [-d delim] [-n n] [-N n] [-p str] [-t s] [name ...]`
 <br>read one line into variables
 
-**`readarray`** — `readarray [-t] [-n n] [-O i] [-s n] [array]`
+**`readarray`** — `readarray [-d delim] [-n n] [-O idx] [-s n] [-t] [-u fd] [array]`
 <br>same as mapfile
 
 **`umask`** — `umask [-S] [-p] [mode]`
@@ -108,6 +108,9 @@
 **`alias`** — `alias [-p] [name[=value] ...]`
 <br>define or list command aliases
 
+**`builtin`** — `builtin [name [args ...]]`
+<br>run a shell builtin, bypassing function lookup
+
 **`command`** — `command [-pVv] name [arg ...]`
 <br>run a command, ignoring functions and aliases
 
@@ -159,6 +162,9 @@
 **`complete`** — `complete [-abcdfkv] [-A action] [-W list] [-F fn] [-pr] name ...`
 <br>register what to offer when completing an argument of name
 
+**`compopt`** — `compopt [-o|+o option] [-DEI] [name ...]`
+<br>change a completion spec's options, or the running one's
+
 **`eval`** — `eval [arg ...]`
 <br>join the arguments and run them as a command
 
@@ -201,6 +207,9 @@ Not builtins — the grammar `help` also explains, kept here for the same one-st
 
 **`for`** — `for NAME [in WORD ...]; do LIST; done`
 <br>loop over words
+
+**`select`** — `select NAME [in WORD ...]; do LIST; done`
+<br>menu loop: number the words on stderr, read a choice into NAME
 
 **`for((`** — `for ((exp1; exp2; exp3)); do LIST; done`
 <br>C-style counting loop
@@ -256,6 +265,9 @@ Only reachable when the dialect is armed (`set -o zsh`, `emulate zsh`, or sourci
 
 **`emulate`** — `emulate [-L] {zsh|sh|ksh|bash}`
 <br>switch dialect; in a function it reverts on return
+
+**`is-at-least`** — `is-at-least need [have]`
+<br>0 when version have (default $ZSH_VERSION) is need or newer
 
 **`print`** — `print [-nrlP] [--] [arg ...]`
 <br>zsh's echo: escapes on by default, -r turns them off
