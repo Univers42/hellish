@@ -25,7 +25,9 @@ void	update_pwd_vars(t_shell *state);
 
 /* Carrying a widget's `cd` back across the readline fork -- #80 item 2.
 **
-** readline runs in a forked child (bg_readline), so a widget's edits to
+** Only for HELLISH_RL_FORK=1 (rl_fork.c): a line read in the shell process
+** needs none of this, since a widget's `cd` happens in the shell itself.
+** In the forked reader, a widget's edits to
 ** BUFFER survive -- the line is what the child sends back -- while anything
 ** else it changes does not. A widget that runs `cd` moved the CHILD and the
 ** parent never learned. That is why oh-my-zsh's `sudo`, which only rewrites

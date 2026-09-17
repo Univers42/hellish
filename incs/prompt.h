@@ -87,6 +87,7 @@ typedef struct s_rl
 	int			ln_val; /* memoised line number for ln_ptr */
 	/* --- readline, initialised once in the parent (rl_preinit.c) --- */
 	bool		rl_ready; /* rl_initialize() has run in this process */
+	bool		use_fork; /* read in a forked child (HELLISH_RL_FORK=1) */
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
@@ -111,6 +112,7 @@ void		update_ctx(t_shell *state);
 int			get_more_input_notty(t_shell *state);
 
 int			rl_read_fork(t_shell *state, char *prompt);
+int			rl_read_inproc(t_shell *state, char *prompt);
 char		*rl_editor_enter(t_shell *state, char *prompt);
 void		rl_editor_exit(void);
 t_string	prompt_normal(t_shell *state);

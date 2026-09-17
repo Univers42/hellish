@@ -44,7 +44,7 @@ static void	handle_eof_or_error(t_shell *state, t_deque_tok *tt)
 	if (!state->input.len && state->metinp == INP_RL)
 	{
 		ft_eprintf("exit\n");
-		if (!rl_eof_exit_ok(state))
+		if (!state->should_exit && !rl_eof_exit_ok(state))
 			return ;
 		state->should_exit = true;
 		return ;

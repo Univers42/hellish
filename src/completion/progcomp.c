@@ -30,17 +30,15 @@
 **
 ** THE STATE HANDLE. #72 records "the callback has no t_shell*" as a hard
 ** constraint, and it was true when it was written -- the completer read
-** getenv() and environ directly. The ZLE work removed it: readline runs in a
-** forked child and zle_install parks that child's t_shell where a callback
-** can reach it. Same cell, same fork, same lifetime. A spec is therefore
-** looked up in the real shell's table, and a -F function runs with the real
-** shell's variables.
+** getenv() and environ directly. The ZLE work removed it: the shell being
+** edited for is parked where a callback can reach it (zle_state_cell), for
+** exactly the length of a read. A spec is therefore looked up in the real
+** shell's table, and a -F function runs with the real shell's variables.
 **
-** THAT FORK IS ALSO THE BOUNDARY. A completion function that assigns a
-** variable, or cds, changes the readline child and the parent never learns.
-** For completion that is exactly right -- bash's own manual calls a
-** completion function's side effects undefined -- and it is the same
-** boundary a widget lives behind (src/platform/posix/zle_rl.c).
+** It runs IN the shell, too, now that the line is read there. bash's manual
+** calls a completion function's side effects undefined; what the call
+** itself changes -- `set -f`, IFS, the COMP_* variables -- is put back
+** (pc_build, progcomp5.c).
 */
 
 t_vec	*pc_cell(void)

@@ -14,8 +14,9 @@ Budget, per bare Enter, inside a git repo, with the fixture rc loaded
 RPROMPT, three hooks):
 
   execve            0   nothing external runs when the user runs nothing
-  clone/fork        <= MAX_CLONES   the readline child (0 once readline runs
-                                    in-process); never a git status
+  clone/fork        0   the line is read in the shell process; never a git
+                        status (a HELLISH_RL_FORK=1 run allows the one
+                        readline child that setting brings back)
   openat            <= MAX_OPENS    .git/HEAD for the branch name, and the
                                     update state at most once per TTL
 
@@ -61,7 +62,7 @@ FIXTURE = os.path.join(HERE, "fixtures", "frontend.hellishrc")
 STRACE = shutil.which("strace")
 GIT = shutil.which("git")
 ENTERS = 20
-MAX_CLONES = 1
+MAX_CLONES = 0
 MAX_OPENS = 2
 MARK = "❯".encode()
 FAILS = []
@@ -93,7 +94,7 @@ def make_repo(base):
 
 
 class Traced:
-    def __init__(self, home, cwd, trace):
+    def __init__(self, home, cwd, trace, fork=False):
         env = {
             "HOME": home, "XDG_CONFIG_HOME": os.path.join(home, ".config"),
             "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -101,6 +102,8 @@ class Traced:
             "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
             "HELLISH_NO_ANIM": "1", "ASAN_OPTIONS": "detect_leaks=0",
         }
+        if fork:
+            env["HELLISH_RL_FORK"] = "1"
         self.buf = bytearray()
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
@@ -186,7 +189,8 @@ PROMPT_COMMAND=sb_prompt
 """
 
 
-def run_case(label, rc_text, max_opens, max_execs=0, max_clones=MAX_CLONES):
+def run_case(label, rc_text, max_opens, max_execs=0, max_clones=MAX_CLONES,
+             fork=False):
     base = tempfile.mkdtemp(prefix="hellish_syscalls_")
     home = os.path.join(base, "home")
     os.makedirs(home)
@@ -195,7 +199,7 @@ def run_case(label, rc_text, max_opens, max_execs=0, max_clones=MAX_CLONES):
     cwd = make_repo(base)
     trace = os.path.join(base, "trace")
 
-    s = Traced(home, cwd, trace)
+    s = Traced(home, cwd, trace, fork)
     s.drain(10.0)
     check("%s: prompt appeared under strace" % label, s.buf.count(MARK) >= 1,
           repr(bytes(s.buf[-300:])))
@@ -249,6 +253,10 @@ def main():
     # in-process $(jobs) captures into (cmdsub_fast.c).
     run_case("substitutions + alias", SUBST_RC, MAX_OPENS + 3, 1,
              MAX_CLONES + 1)
+    # The escape hatch keeps working, at its old price: one readline child.
+    with open(FIXTURE) as f:
+        run_case("fixture rc, HELLISH_RL_FORK=1", f.read(), MAX_OPENS,
+                 max_clones=1, fork=True)
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 

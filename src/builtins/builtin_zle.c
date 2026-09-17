@@ -26,8 +26,8 @@
 **
 ** so it must answer FALSE outside the editor and TRUE inside a widget --
 ** otherwise every plugin that guards this way would try to redraw a line
-** that is not being edited. zle_state_cell() is non-NULL only inside the
-** readline child, which is exactly that distinction.
+** that is not being edited. zle_state_cell() is non-NULL only while a line
+** is being read, which is exactly that distinction.
 */
 
 /* The built-in widgets a plugin invokes by name. Only the ones the corpus

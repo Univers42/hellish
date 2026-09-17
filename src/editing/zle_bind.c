@@ -17,16 +17,16 @@
 /* The key bindings a plugin asked for, kept until readline exists to
 ** receive them.
 **
-** `bindkey` runs when the plugin is SOURCED -- at startup, in the parent
-** shell. readline runs later, in a forked child, and its keymaps are set up
-** fresh there (setup_emacs_mode / setup_vi_mode). So a binding installed at
-** source time would be installed into a keymap that is about to be replaced,
-** in a process that will never read a key.
+** `bindkey` runs when the plugin is SOURCED -- at startup, before readline
+** is initialised, and before the editing mode sets up the keymaps that
+** would receive the binding (setup_emacs_mode / setup_vi_mode), which
+** replace whatever was there. A binding installed at source time would be
+** lost.
 **
-** Recording them and replaying into each child is the only ordering that
-** works, and it also gets the semantics right for free: a `bindkey` issued
-** later (from a function, from another plugin) is picked up by the next
-** prompt without any re-registration.
+** Recording them and replaying them before each read (rl_preinit) is the
+** ordering that works, and it also gets the semantics right for free: a
+** `bindkey` issued later (from a function, from another plugin) is picked
+** up by the next prompt without any re-registration.
 */
 
 t_vec	*zle_binds(void)

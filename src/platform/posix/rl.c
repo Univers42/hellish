@@ -92,9 +92,12 @@ void	rl_editor_exit(void)
 
 /* Read one line of interactive input into state->rl.buff. 0 = a line,
    1 = EOF, 2 = interrupted. readline is brought up to date first (its
-   one-time setup, new bindings, the editing mode). */
+   one-time setup, new bindings, the editing mode). In the shell process,
+   unless HELLISH_RL_FORK=1 asked for the old child (rl_preinit). */
 int	get_more_input_readline(t_shell *state, char *prompt)
 {
 	rl_preinit(&state->rl);
-	return (rl_read_fork(state, prompt));
+	if (state->rl.use_fork)
+		return (rl_read_fork(state, prompt));
+	return (rl_read_inproc(state, prompt));
 }

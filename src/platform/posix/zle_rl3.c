@@ -37,10 +37,10 @@ int	zle_run_widget(t_shell *state, const char *name)
 
 /* Mark this process as the one inside the editor.
 **
-** Only the child may do this: zle_active() is "is there a line being
-** edited right now", and the `zle` builtin refuses outside that. The
-** parent pre-initialises readline (rl_preinit.c) but is emphatically not
-** in the editor, so it must not set the cell.
+** Only for the length of a read (rl_editor_enter / rl_editor_exit):
+** zle_active() is "is there a line being edited right now", and the `zle`
+** builtin refuses outside that. Initialising readline (rl_preinit.c) is
+** not being in the editor, so it does not set the cell.
 **
 ** The binding install that used to live here moved to the parent with the
 ** rest of readline's setup. Its orderings did not change and are restated

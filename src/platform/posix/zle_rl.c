@@ -30,16 +30,18 @@
 ** the registry -- a strdup here would leak one name per keypress, on a path
 ** no `-c` test can reach because it needs a live readline.
 **
-** THE SHELL STATE IS THE FORKED CHILD'S. readline runs in a child of the
-** shell (see bg_readline), so the widget's edits to BUFFER survive -- the
-** line is what the child sends back -- while anything else it changes does
-** NOT. A widget that runs `cd` changes the child's directory and the parent
-** never learns. That is a real boundary, not an oversight: it is why
-** oh-my-zsh's sudo works here and dirhistory, whose widgets cd, does not.
+** THE SHELL STATE IS THE SHELL'S. The line is read in the shell process,
+** so what a widget does stays done -- a `cd`, a variable, a function --
+** as with zsh widgets and bash's `bind -x`. rl_shell_exec runs it with
+** readline's signals and terminal settings handled around the call, and
+** its BUFFER/LBUFFER/RBUFFER/CURSOR are scoped to it (zle_params.c).
+** Under HELLISH_RL_FORK=1 it runs in the reader's child as it used to, and
+** only BUFFER edits and a `cd` (zle_cwd.c) come back.
 */
 
-/* The state the child's widgets run against, parked where a readline
-   callback -- which takes no context -- can reach it. */
+/* The state widgets run against, parked where a readline callback --
+   which takes no context -- can reach it. Non-NULL exactly while a line
+   is being edited. */
 t_shell	**zle_state_cell(void)
 {
 	static t_shell	*st;

@@ -19,10 +19,10 @@
    version.
 
    WHERE this runs is the whole design. Issue #20 is emphatic that the
-   notice must never damage what the user has typed, and in this shell
-   readline runs in a forked child that owns the terminal for the duration
-   of a line: anything written from the parent while that child is live
-   lands in the middle of the user's input. There is no safe way to
+   notice must never damage what the user has typed, and readline owns the
+   terminal for the duration of a line: anything written behind its back
+   while a line is being edited lands in the middle of the user's input.
+   There is no safe way to
    interrupt an in-progress line, so we do not try. The notice is emitted
    from the REPL between commands, before the prompt for the NEXT line is
    built -- the "show it when the prompt is redrawn" option the issue

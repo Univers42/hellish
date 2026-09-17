@@ -72,6 +72,17 @@ static void	rl_bind_pending(t_rl *l)
 	}
 }
 
+/* HELLISH_RL_FORK=1: read in a forked child, as every release before this
+   one did. Read from the process environment, once, so it works even when
+   the rc file is what is broken. */
+static bool	rl_fork_wanted(void)
+{
+	const char	*v;
+
+	v = getenv("HELLISH_RL_FORK");
+	return (v && v[0] == '1' && v[1] == '\0');
+}
+
 /* The one-time build.
 **
 ** rl_getc_function is ours (rl_getc.c): it is how a read ends on ^C
@@ -100,6 +111,7 @@ static void	rl_first_init(t_rl *l)
 	rl_initialize();
 	l->rl_ready = true;
 	l->mode_applied = -1;
+	l->use_fork = !RL_INPROC_OK || rl_fork_wanted();
 }
 
 /* Bring readline up to date before a read. First call does the heavy

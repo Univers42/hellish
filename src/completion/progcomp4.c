@@ -43,10 +43,9 @@ static void	pc_func_tail(t_string *out, t_compspec *c, const char *text,
 **
 ** `set -f` brackets the assignment because $(...) inside an array literal
 ** is word-split AND globbed: a candidate containing a `*` would otherwise
-** be replaced by whatever files it happened to match. Turning it back off
-** afterwards is cosmetic -- this runs in the readline child, whose option
-** state dies with the line -- but a bracket that only opens invites the
-** next reader to wonder.
+** be replaced by whatever files it happened to match. The option is put
+** back to what it was around the whole call (pc_build), which is what
+** makes the closing `set +f` here harmless even to a user's own `set -f`.
 **
 ** `set -f` covered the globbing half and nothing covered the splitting
 ** half, so compgen got the multi-word candidate right and the array

@@ -112,34 +112,37 @@ This model decouples **line boundaries** from how data is actually read
 
 ## 3. Readline Strategy, Multibyte Characters, and ANSI Handling
 
-### 3.1 Why we fork for `readline`
+### 3.1 Reading a line with `readline`, in the shell process
 
-Interactive input is handled via GNU Readline, but we want the parent shell
-process to remain in control of signals and buffering. The strategy is:
+Interactive input is read with GNU Readline, in the shell itself. Until
+3.2 every line was read in a forked child (pipe, `fork`, `readline()` in the
+child, the line sent back), because readline installs signal handlers and
+puts the terminal in raw mode. That cost a process per prompt. What the fork
+used to contain is now handled in place:
 
-- `get_more_input_readline`:
-  - creates a pipe (`pp[2]`),
-  - forks a child,
-  - child calls `bg_readline(pp[1], prompt)` and exits.
+- `get_more_input_readline` (`src/platform/posix/rl.c`) brings readline up
+  to date (`rl_preinit`: one-time setup, editing mode, new `bindkey`
+  bindings, screen size) and calls `rl_read_inproc`.
+- `rl_editor_enter` publishes the shell to widgets, writes the prompt's upper
+  rows itself and arms the right-prompt painter; readline only ever sees the
+  last row.
+- readline reads through `rl_getc_hook` (`rl_getc.c`): one byte per
+  `read(2)` so queued Enters stay in the terminal, a `pselect` wait with the
+  readline-caught signals blocked outside it, and the prompt animation's idle
+  tick on its timeout. A `SIGINT` readline handled during the read makes it
+  return `READERR`, readline's way to end its main loop, so `readline()`
+  returns `NULL` and the read reports "interrupted" (`status == 2`).
+- Shell code run from the editor -- widgets, completion functions -- goes
+  through `rl_shell_exec` (`rl_editor.c`): readline's signal handlers come
+  down for the call, the terminal settings and `$?` are put back, and
+  `exit`/`exec` hand the terminal back first (`pal_editor_leave`). Widget
+  variables and completion side effects are scoped (`zle_params.c`,
+  `progcomp5.c`).
+- readline's buffer is libc-malloc'd: the line is freed with `free()`, never
+  `xfree`.
 
-- In `bg_readline`:
-  - set `rl_instream` and `rl_outstream` appropriately,
-  - optionally dump debug info (byte values and visible width) if
-    `MINISHELL_DEBUG_PROMPT` is set,
-  - call `readline(prompt)`,
-  - write the result into the pipe and exit.
-
-- The parent (`attach_input_readline`):
-  - reads the child’s data into `t_rl.buff` via `vec_append_fd`,
-  - updates `has_line`/`cursor`,
-  - waits for the child and inspects exit status or signals.
-
-This split gives us:
-
-- Clean separation of Readline’s internal state from the main process.
-- Proper Ctrl‑C handling: if Readline is interrupted, the child dies by signal
-  and the parent sees that, converting it into `status == 2` and setting
-  `should_unwind`.
+`HELLISH_RL_FORK=1` in the environment restores the forked reader
+(`rl_fork.c`) for one release, as does a readline older than 8.0.
 
 ### 3.2 ANSI and multibyte width tracking for prompts
 

@@ -12,9 +12,8 @@
 
 #include "prompt_private.h"
 
-/* The animation frame, shared parent -> readline-child by fork inheritance:
-   the parent stamps it in prompt_normal, the child advances its own copy each
-   idle tick so the mascot keeps blinking from where the prompt started. */
+/* The animation frame: stamped in prompt_normal, advanced on each idle tick
+   of the line reader, so the mascot keeps blinking from where it was. */
 size_t	*anim_frame(void)
 {
 	static size_t	frame;

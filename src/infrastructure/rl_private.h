@@ -10,12 +10,13 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-/* Internal header for the buffered readline layer. readline is always called
-   in a forked child (see rl.c: get_more_input_readline + bg_readline) because
-   it installs global signal handlers and terminal state that would corrupt the
-   parent shell's state if called directly. The child writes the line over a
-   pipe and exits; the parent reads into a ring buffer (t_rl) and parcels it
-   out one logical line at a time via buff_readline/return_new_line. */
+/* Internal header for the buffered readline layer. A line is read in the
+   shell process (rl_inproc.c) -- or, with HELLISH_RL_FORK=1, in a forked
+   child that sends it over a pipe (rl_fork.c) -- into a ring buffer (t_rl)
+   that buff_readline/return_new_line parcel out one logical line at a
+   time. What reading in-process takes to be safe is in rl_getc.c (ending a
+   read on ^C), rl_editor.c (shell code run from the editor) and
+   rl_preinit.c (readline's one-time setup). */
 #ifndef RL_PRIVATE_H
 # define RL_PRIVATE_H
 
@@ -47,6 +48,14 @@ void	rl_preinit(t_rl *l);
 #  define READERR -2
 # endif
 # define RL_AGAIN -3
+
+/* rl_check_signals arrived in readline 8.0; an older library keeps the
+   forked reader. */
+# if RL_READLINE_VERSION >= 0x0800
+#  define RL_INPROC_OK 1
+# else
+#  define RL_INPROC_OK 0
+# endif
 
 int		rl_getc_hook(FILE *stream);
 int		rl_idle_timeout(void);
