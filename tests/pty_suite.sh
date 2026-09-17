@@ -107,12 +107,79 @@ timeout_for() {
 	esac
 }
 
+# ---- what must NOT share the machine ---------------------------------------
+# Most of these files only need a terminal, and a terminal is per-process --
+# so they run in parallel and the suite finishes in the time of its longest
+# file instead of the sum of all of them (2100s -> ~400s here).
+#
+# These do not. Each one grades a NUMBER that other load moves: a syscall
+# count per keystroke, a time ratio against bash, a repaint that must arrive
+# within a deadline, or -- prompt_atomic's second phase -- a reader starved on
+# purpose, which every other test on the box starves further. Running them
+# alongside 15 siblings does not find bugs, it invents them, which is the
+# failure mode this suite has been paying for all week. They go last, alone.
+is_serial() {
+	case "$1" in
+		frontend_budget_test.py|prompt_syscall_budget_test.py) return 0 ;;
+		prompt_atomic_test.py|prompt_latency_test.py) return 0 ;;
+		git_prompt_stall_test.py|prompt_shortwrite_test.py) return 0 ;;
+		parse_scaling_test.py|pattern_cost_test.py) return 0 ;;
+		trim_literal_perf_test.py|func_registry_perf_test.py) return 0 ;;
+		nonblock_tty_test.py|prompt_resize_test.py) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+# One file: run it, park the verdict. Printing happens in the parent so two
+# workers cannot interleave half a line each.
+run_one() {
+	_b="$1"
+	_t=$(timeout_for "$_b")
+	_s=$(date +%s)
+	if timeout "$_t" python3 "tests/$_b" "$SHELL_BIN" \
+			> "$RUNDIR/$_b.log" 2>&1; then
+		printf 'ok %s\n' "$(( $(date +%s) - _s ))" > "$RUNDIR/$_b.res"
+	else
+		printf '%s %s\n' "$?" "$(( $(date +%s) - _s ))" > "$RUNDIR/$_b.res"
+	fi
+}
+export -f run_one timeout_for
+export SHELL_BIN RUNDIR
+
+report_one() {
+	_b="$1"
+	read -r _rc _secs < "$RUNDIR/$_b.res"
+	if [ "$_rc" = ok ]; then
+		printf '\033[32m  ✓ %s\033[0m (%ss)\n' "$_b" "$_secs"
+		pass=$((pass + 1))
+		rm -f "$RUNDIR/$_b.log" "$RUNDIR/$_b.res"
+		return 0
+	fi
+	printf '\033[31m  ✗ %s\033[0m (%ss, exit %s)\n' "$_b" "$_secs" "$_rc"
+	[ "$_rc" = 124 ] && printf '    TIMED OUT after %ss -- a wedged shell counts as a failure\n' "$(timeout_for "$_b")"
+	sed -n '/FAIL/p' "$RUNDIR/$_b.log" | head -12 | sed 's/^/    /'
+	tail -40 "$RUNDIR/$_b.log" | sed 's/^/    | /'
+	fail=$((fail + 1)); failed_files="$failed_files $_b"
+	rm -f "$RUNDIR/$_b.log" "$RUNDIR/$_b.res"
+}
+
 pass=0; fail=0; skip=0; failed_files=""
 start_all=$(date +%s)
+RUNDIR="$(mktemp -d)"
+export RUNDIR
+trap 'rm -rf "$RUNDIR"' EXIT
+
+# One worker per core by default. PTY_JOBS=1 restores the old serial run,
+# which is what to reach for when a result looks like contention.
+jobs_n="${PTY_JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
+[ "$jobs_n" -lt 1 ] 2>/dev/null && jobs_n=1
+[ "$jobs_n" -gt 16 ] 2>/dev/null && jobs_n=16
 
 printf '\n\033[1m═══ pty / regression suite ═══\033[0m\n'
-printf '  shell: %s\n\n' "$SHELL_BIN"
+printf '  shell: %s\n' "$SHELL_BIN"
+printf '  jobs:  %s parallel, timing-sensitive files serial\n\n' "$jobs_n"
 
+par=""; ser=""
 for f in tests/*.py; do
 	b=$(basename "$f")
 	if [ -n "$pattern" ] && ! printf '%s' "$b" | grep -q "$pattern"; then
@@ -122,27 +189,18 @@ for f in tests/*.py; do
 		printf '\033[33m  ~ %s\033[0m skipped: %s\n' "$b" "$reason"
 		skip=$((skip + 1)); continue
 	fi
-	t=$(timeout_for "$b")
-	printf '\033[1;36m▸ %s\033[0m\n' "$b"
-	start=$(date +%s)
-	# Every one of these takes the shell path as argv[1] and nothing else;
-	# that uniformity is what makes discovery possible, so keep it.
-	if timeout "$t" python3 "$f" "$SHELL_BIN" > "/tmp/pty_$$_$b.log" 2>&1; then
-		printf '\033[32m  ✓ %s\033[0m (%ss)\n' "$b" "$(( $(date +%s) - start ))"
-		pass=$((pass + 1))
-	else
-		rc=$?
-		printf '\033[31m  ✗ %s\033[0m (%ss, exit %s)\n' \
-			"$b" "$(( $(date +%s) - start ))" "$rc"
-		[ "$rc" = 124 ] && printf '    TIMED OUT after %ss -- a wedged shell counts as a failure\n' "$t"
-		sed -n '/FAIL/p' "/tmp/pty_$$_$b.log" | head -12 | sed 's/^/    /'
-		# The transcript a test prints under its FAIL line is the only
-		# evidence CI keeps; four lines of it was never enough to read.
-		tail -40 "/tmp/pty_$$_$b.log" | sed 's/^/    | /'
-		fail=$((fail + 1)); failed_files="$failed_files $b"
-	fi
-	rm -f "/tmp/pty_$$_$b.log"
+	if is_serial "$b"; then ser="$ser $b"; else par="$par $b"; fi
 done
+
+if [ -n "$par" ]; then
+	printf '\033[1;36m▸ %s files in parallel\033[0m\n' "$(printf '%s\n' $par | wc -l)"
+	printf '%s\n' $par | xargs -P "$jobs_n" -I{} bash -c 'run_one "$@"' _ {}
+	for b in $par; do report_one "$b"; done
+fi
+if [ -n "$ser" ]; then
+	printf '\033[1;36m▸ %s files serially (timing-sensitive)\033[0m\n' "$(printf '%s\n' $ser | wc -l)"
+	for b in $ser; do run_one "$b"; report_one "$b"; done
+fi
 
 printf '\n\033[1m═══ %d ok / %d failed' "$pass" "$fail"
 [ "$skip" -gt 0 ] && printf ' / %d skipped' "$skip"
