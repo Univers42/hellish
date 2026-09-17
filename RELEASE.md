@@ -8,6 +8,74 @@ shows you how to drive the shell.
 
 ---
 
+## v3.1.3 — *`compopt`, and a subshell that inherits no jobs*
+
+Reported from a born2root VM: completion "does not work in the first shell,
+but works in a nested one". It was not the terminal, readline, or `SHLVL`
+— the login shell sources `/etc/profile`, picks up bash-completion's specs,
+and every path completion driven by one lost its trailing `/`; a nested
+shell loads no specs and falls back to readline's own filename completion,
+which was always right.
+
+- **`compopt` exists.** bash-completion puts no `-o filenames` on its
+  registrations — it calls `compopt -o filenames` from inside the
+  completion function, at twenty-odd sites including `_filedir`. Every one
+  of those was a command-not-found here, so `ls /us<TAB>` gave `ls /usr`
+  where bash gives `ls /usr/`. `compopt` now edits the running spec for
+  that TAB only (and `complete -p` still prints the spec as registered, as
+  in bash), or a named spec for good; its messages and exit statuses match
+  bash 5.3.9 across 19 pinned cases, including `compopt --` and a missing
+  `-o` argument.
+- **A `( )` subshell inherits no jobs.** `sleep 1 & ( jobs )` printed the
+  parent's table and `( kill %1 )` addressed a process the subshell did not
+  own; bash prints nothing and says "no such job", because those jobs are
+  not the subshell's children and it could never wait for them. Its own
+  jobs number from `[1]`, which falls out of starting empty.
+- **`<(jobs)` sees what `$(jobs)` sees** — the live jobs, minus the dead
+  ones bash has already reclaimed (the 3.1.2 rule, now applied to process
+  substitution too).
+- **`complete -p` round-trips.** It printed the whole option list after a
+  single `-o` (`-o filenames dirnames`), which re-read as `-o filenames`
+  plus a command named `dirnames` — so a completion script that saved and
+  restored specs registered one for the wrong name and dropped an option.
+  Each option now gets its own `-o`, in bash's order.
+
+- **A prompt escape can no longer be split by echoed type-ahead.**
+  `split_prompt` composes the prompt's upper rows in memory so they reach
+  the tty in one `write()` — that closed the per-byte window issues #10,
+  #19 and #5 were filed about, but not the last one, because the remaining
+  split is the kernel's: a pty accepts only what fits in its buffer and
+  reports a short count (11776 bytes, measured), so the write resumes and
+  the line discipline echoes a keystroke between the two chunks. It lands
+  inside a colour escape, every letter is a valid CSI final byte, and the
+  tail prints as text — `22;162;247m` on a line of its own.
+  The fix is ordering, not locking: those rows are now written from
+  readline's `rl_startup_hook`, which readline calls *after*
+  `rl_prep_terminal` has put the terminal in raw mode, so echo is already
+  off and there is no window to lose a keystroke into. It costs nothing.
+  Hushing echo around our own write fixed it too and cost three ioctls and
+  two sigactions per prompt — `frontend_budget_test.py` priced a bare Enter
+  at 21 ioctls against a budget of 16 and refused it, which is the gate
+  doing its job.
+  `prompt_atomic_test.py` grew a second phase that starves its reader,
+  which is what makes the split reproducible at all — the first phase
+  never caught it in eight local runs, four of them pinned to two cores.
+  It also stopped counting a capture that ends mid-escape as a fragment;
+  that was a false positive of its own making.
+- **The pty suite runs in 383s instead of 2107s.** `tests/pty_suite.sh`
+  runs its files in parallel — they each drive their own terminal, so most
+  of them never needed to queue. The eleven that grade a *number* another
+  process moves (syscall counts per keystroke, time ratios against bash,
+  repaint deadlines, and the starved reader above) still run alone, at the
+  end: parallelising those does not find bugs, it invents them. `PTY_JOBS=1`
+  restores the serial run when a result looks like contention.
+
+`shopt -s progcomp` is still off by default and still required for any of
+this. See `wiki/interactive.md` for why, and for what has changed about
+that reasoning.
+
+---
+
 ## v3.1.2 — *`$(jobs)` counts what bash counts*
 
 A point release for one bug, found by CI going red on a commit that had
