@@ -104,36 +104,31 @@ static char	*patsub_build(const char *val, const char *pat,
 	return (vec_push_char(&out, '\0'), (char *)out.ctx);
 }
 
-/* Extract and expand the pattern portion of a ${v/pat/rep} spec.  The
-   pattern starts after the first '/' plus `g` extra prefix characters (a
-   second '/' for global mode and/or a '#'/'%' anchor) and extends to the
-   next '/' or end of spec.  We call expand_param_word so nested ${} and
-   `...` inside the pattern are processed. */
-static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g)
+/* Extract and expand the pattern portion of a ${v/pat/rep} spec: the span
+   subst_span finds, after the operator slash(es) and any '#'/'%' anchor,
+   up to the first '/' that is not quoted, escaped or nested.  We call
+   expand_param_pattern so nested ${} and `...` inside it are processed. */
+static char	*subst_get_pat(t_shell *state, t_trim_ctx ctx, int g, int a)
 {
 	int	start;
-	int	i;
+	int	end;
 
-	start = ctx.name_len + 1 + g;
-	i = start;
-	while (i < ctx.slen && ctx.name[i] != '/')
-		i++;
-	return (expand_param_pattern(state, ctx.name + start, i - start));
+	end = subst_span(ctx, g, a, &start);
+	return (expand_param_pattern(state, ctx.name + start, end - start));
 }
 
 /* Extract and expand the replacement part of ${v/pat/rep}.  If there is no
-   second '/' the form is ${v/pat} which is a pure deletion (empty rep).
+   separating '/' the form is ${v/pat} which is a pure deletion (empty rep).
    expand_param_word handles nested expansions in the replacement too. */
-static char	*subst_get_rep(t_shell *state, t_trim_ctx ctx, int g)
+static char	*subst_get_rep(t_shell *state, t_trim_ctx ctx, int g, int a)
 {
-	int	i;
+	int	start;
+	int	end;
 
-	i = ctx.name_len + 1 + g;
-	while (i < ctx.slen && ctx.name[i] != '/')
-		i++;
-	if (i < ctx.slen)
-		return (expand_param_word(state, ctx.name + i + 1,
-				ctx.slen - i - 1, false));
+	end = subst_span(ctx, g, a, &start);
+	if (end < ctx.slen)
+		return (expand_param_word(state, ctx.name + end + 1,
+				ctx.slen - end - 1, false));
 	return (ft_strdup(""));
 }
 
@@ -154,8 +149,8 @@ char	*expand_subst(t_shell *state, t_trim_ctx ctx)
 		return (ft_strdup(""));
 	g = (ctx.name_len + 1 < ctx.slen && ctx.name[ctx.name_len + 1] == '/');
 	a = subst_anchor(ctx, g);
-	pat = subst_get_pat(state, ctx, g + (a != 0));
-	rep = subst_get_rep(state, ctx, g + (a != 0));
+	pat = subst_get_pat(state, ctx, g, a);
+	rep = subst_get_rep(state, ctx, g, a);
 	if (a == 2)
 		val = patsub_prefix(val, pat, rep);
 	else if (a == 3)

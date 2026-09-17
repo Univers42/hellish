@@ -23,8 +23,11 @@
 /* Consume a single-quoted region and emit a TT_SQWORD subtoken covering
    the content (not the surrounding quotes). Single-quoting in POSIX is
    "preserve everything literally" -- no expansions, no escapes, not even
-   a backslash. The ft_assert guards verify the caller placed *i on a quote
-   and that the region ended properly (no runaway string). */
+   a backslash. The ft_assert guards the caller's promise that *i sits on
+   the opening quote. The CLOSING one is not asserted: the text here is a
+   slice (a ${v/pat/rep} pattern, a trim word), and a slice can end inside
+   a quote the whole word balances -- an unterminated region simply runs to
+   the end of the slice. Asserting it turned user input into a segfault. */
 void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 {
 	int	start;
@@ -34,7 +37,8 @@ void	reparse_squote(t_ast_node *ret, int *i, t_token t)
 	while (*i < t.len && t.start[*i] != '\'')
 		(*i)++;
 	push_subtoken_node(ret, t, create_interval(start, *i), TT_SQWORD);
-	ft_assert(t.start[(*i)++] == '\'');
+	if (*i < t.len)
+		(*i)++;
 }
 
 /* Consume one backslash escape outside quotes and emit a TT_SQWORD subtoken

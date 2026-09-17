@@ -78,6 +78,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "issue120_bytes_c"
         "assign_shaped_words"
         "funcbody"
+        "patsub_quoting"
     )
 fi
 

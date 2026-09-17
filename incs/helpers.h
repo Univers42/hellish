@@ -36,6 +36,7 @@ void	forward_exit_status(t_execution_state res);
 void	set_cmd_status(t_shell *state, t_execution_state res);
 int		ft_checked_atoi(const char *str, int *ret, int flags);
 bool	is_var_name_p1(char c);
+int		span_skip(const char *s, int i, int len);
 int		sh_skip_quoted(const char *s, int len, int i);
 bool	is_var_name_p2(char c);
 char	*sq_quote(const char *val);

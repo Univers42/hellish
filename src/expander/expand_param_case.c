@@ -17,9 +17,11 @@
 
 /* ${v^} ${v^^} ${v,} ${v,,} ${v~} ${v~~}: bash case conversion.
    ^ upper, , lower, ~ toggle. Doubled operator converts the whole
-   string; single converts only the first character. (The optional
-   char-class pattern form ${v^^[abc]} is a documented v1 scope-out —
-   bare-op case conversion is the near-universal usage.) */
+   string; single converts only the first character. A pattern after the
+   operator narrows it to the characters that match: ${v^^[ab]} upcases
+   only a and b, and ${v^b} upcases the first character only if it is b.
+   The pattern used to be ignored, so ${v^b} upcased whatever came first.
+   (The array and "$@" forms are still a scope-out.) */
 
 /* Convert one char under op ('^' upper, ',' lower, '~' toggle). */
 static char	case_conv(char c, char op)
@@ -51,10 +53,9 @@ static void	case_push(t_string *out, const char *s, size_t n, char op)
 }
 
 /* Apply the operator to a fresh copy of the value: `all` converts every
-   character, else just the first; the rest is copied as is.  Shared with
-   ${v@U} / ${v@L} / ${v@u} (expand_param_xform.c), the same three shapes
-   under other spellings. */
-char	*case_body(const char *val, char op, bool all)
+   character, else just the first, and only a character `pat` matches
+   (NULL: every one); the rest is copied as is. */
+char	*case_body_pat(const char *val, char op, bool all, const char *pat)
 {
 	t_string	out;
 	size_t		i;
@@ -66,7 +67,7 @@ char	*case_body(const char *val, char op, bool all)
 	while (val[i])
 	{
 		n = mb_len0(val + i);
-		if (i == 0 || all)
+		if ((i == 0 || all) && case_hit(val + i, n, pat))
 			case_push(&out, val + i, n, op);
 		else
 			vec_push_nstr(&out, (char *)val + i, n);
@@ -76,41 +77,31 @@ char	*case_body(const char *val, char op, bool all)
 	return ((char *)out.ctx);
 }
 
+/* The unpatterned shape, shared with ${v@U} / ${v@L} / ${v@u}
+   (expand_param_xform.c), the same three conversions under other
+   spellings. */
+char	*case_body(const char *val, char op, bool all)
+{
+	return (case_body_pat(val, op, all, NULL));
+}
+
 char	*expand_case(t_shell *state, const char *s, int slen, int name_len)
 {
 	char	op;
-	bool	all;
+	int		at;
 	char	*val;
+	char	*pat;
 
 	op = s[name_len];
-	all = (name_len + 1 < slen && s[name_len + 1] == op);
+	at = name_len + 1 + (name_len + 1 < slen && s[name_len + 1] == op);
 	val = pf_get_var_value(state, s, name_len);
 	if (!val)
 		return (ft_strdup(""));
 	if (arr_is(val))
 		return (ft_strdup(val));
-	return (case_body(val, op, all));
-}
-
-/* Is s a ${name^...} / ${name,...} / ${name~...} form? Sets *nl to the
-   name length and returns true. Rejects the substring ':' cases and the
-   trim/subst ops (those are matched earlier by their own finders). */
-bool	find_case_op(const char *s, int slen, int *nl)
-{
-	int	i;
-
-	i = 0;
-	if (i < slen && ft_isdigit((unsigned char)s[i]))
-		while (i < slen && ft_isdigit((unsigned char)s[i]))
-			i++;
-	else if (i < slen && (s[i] == '_' || ft_isalpha((unsigned char)s[i])))
-	{
-		i++;
-		while (i < slen && (s[i] == '_' || ft_isalnum((unsigned char)s[i])))
-			i++;
-	}
-	else
-		return (false);
-	*nl = i;
-	return (i < slen && (s[i] == '^' || s[i] == ',' || s[i] == '~'));
+	pat = NULL;
+	if (at < slen)
+		pat = expand_param_pattern(state, s + at, slen - at);
+	val = case_body_pat(val, op, at > name_len + 1, pat);
+	return (xfree(pat), val);
 }

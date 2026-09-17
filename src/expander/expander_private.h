@@ -199,6 +199,9 @@ char		*default_or_alt(t_shell *state, char *val, t_pe_op o);
 bool		pf_op_word_used(char *val, t_pe_op o);
 char		*expand_case(t_shell *state, const char *s, int slen, int name_len);
 char		*case_body(const char *val, char op, bool all);
+char		*case_body_pat(const char *val, char op, bool all,
+				const char *pat);
+bool		case_hit(const char *c, size_t n, const char *pat);
 bool		find_case_op(const char *s, int slen, int *nl);
 char		*expand_xform(t_shell *state, const char *s, int name_len, char op);
 bool		find_xform_op(const char *s, int slen, int *nl, char *op);
@@ -228,6 +231,7 @@ char		*trim_prefix_shortest(const char *val, const char *pattern);
 char		*trim_prefix_longest(const char *val, const char *pattern);
 char		*expand_trim(t_shell *state, t_trim_ctx ctx);
 char		*expand_subst(t_shell *state, t_trim_ctx ctx);
+int			subst_span(t_trim_ctx ctx, int g, int a, int *start);
 int			patsub_match_len(const char *pat, const char *s);
 int			patsub_anywhere(const char *pat, const char *s);
 int			patsub_head_ok(const char *pat, size_t plen, const char *s);

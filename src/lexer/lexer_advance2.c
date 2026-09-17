@@ -42,3 +42,39 @@ void	advance_bs(char **str)
 		*str += 1;
 	*str += 1;
 }
+
+/* Scan a `...` backtick command substitution as one span so spaces inside do
+   not break the surrounding word. Honours \` escapes. */
+int	advance_backtick(char **str)
+{
+	ft_assert(**str == '`');
+	(*str)++;
+	while (**str && **str != '`')
+	{
+		if (**str == '\\' && (*str)[1])
+			(*str)++;
+		(*str)++;
+	}
+	if (**str != '`')
+		return (1);
+	(*str)++;
+	return (0);
+}
+
+/* Advance past a single-quoted span. Single quotes are the simplest case:
+   nothing is special inside them -- not even backslash -- so we just scan
+   forward to the matching `'`. Returns 1 if the quote was never closed
+   (caller will prompt for more input). */
+int	advance_squoted(char **str)
+{
+	ft_assert(**str == '\'');
+	(*str)++;
+	while (**str && **str != '\'')
+	{
+		(*str)++;
+	}
+	if (**str != '\'')
+		return (1);
+	(*str)++;
+	return (0);
+}

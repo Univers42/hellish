@@ -12,30 +12,46 @@
 
 #include "reparser_private.h"
 
+/* Past the $( ) or `...` span at rp->i, or the end of the token when it
+   never closes there (the lexer has already rejected that input). */
+static int	span_end(t_reparser *rp)
+{
+	int	j;
+
+	j = span_skip(rp->current_token.start, rp->i, rp->current_token.len);
+	if (j < 0)
+		return (rp->current_token.len);
+	return (j);
+}
+
 /* Advance rp->i by one "logical unit" inside a ${...} while tracking the
    nesting depth. Quotes swallow their content so inner braces don't count
    (e.g. ${"}" is the variable named "}"). A backslash escapes the next
    character, so ${u-\"} does not open a quoted section and ${u-\}} does
    not close the brace early — bash treats both as escaped literals. A
    nested `${` bumps depth; a closing brace that hits depth==0 stops the
-   scan (caller's loop exits on the next iteration). Everything else is
-   consumed one character at a time.
+   scan (caller's loop exits on the next iteration). A nested $( ) or
+   `...` is skipped whole, as the lexer's brace_step does, so the } in
+   ${x:-$(echo })} is the command's. Everything else is consumed one
+   character at a time.
    `${` and not a bare `{`, matching advance_brace_param -- see the note
    there for the bash-completion parse failure a bare one caused. The two
    scanners run over the same bytes at different stages, so they cannot
    hold different opinions about where the expansion ends.
-   in_dq says the expansion sits inside a double-quoted word, where a '
-   is an ORDINARY character: bash prints a'b for "${u:-a'b}" but calls
-   ${u:-a'b} an unterminated quote. Treating it as a quote opener here
-   made the scan run off the end of the word. */
-static void	scan_brace_depth(t_reparser *rp, int *depth, bool in_dq)
+   sq_dead says a ' is an ORDINARY character here: inside a double-quoted
+   word, for the word operators -- bash prints a'b for "${u:-a'b}" but
+   calls ${u:-a'b} an unterminated quote. Treating it as a quote opener
+   there made the scan run off the end of the word. The pattern operators
+   keep it a quote even inside "..."; brace_sq_live decides, for this
+   scan and for the lexer's alike. */
+static void	scan_brace_depth(t_reparser *rp, int *depth, bool sq_dead)
 {
 	char	c;
 
 	c = rp->current_token.start[rp->i];
 	if (c == '\\' && rp->i + 1 < rp->current_token.len)
 		rp->i += 2;
-	else if (c == '"' || (c == '\'' && !in_dq))
+	else if (c == '"' || (c == '\'' && !sq_dead))
 	{
 		skip_quoted_in_brace(rp, c);
 		rp->i++;
@@ -46,6 +62,9 @@ static void	scan_brace_depth(t_reparser *rp, int *depth, bool in_dq)
 		(*depth)++;
 		rp->i += 2;
 	}
+	else if (c == '`' || (c == '$' && rp->i + 1 < rp->current_token.len
+			&& rp->current_token.start[rp->i + 1] == '('))
+		rp->i = span_end(rp);
 	else if (c == '}' && --(*depth) == 0)
 		return ;
 	else
@@ -63,8 +82,9 @@ static void	scan_brace_depth(t_reparser *rp, int *depth, bool in_dq)
    payload fails pf_valid_plain and routes there. */
 static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 {
-	int	start;
-	int	depth;
+	int		start;
+	int		depth;
+	bool	sq_dead;
 
 	if (rp->i >= rp->current_token.len
 		|| rp->current_token.start[rp->i] != '{')
@@ -72,8 +92,10 @@ static bool	handle_envvar_brace(t_reparser *rp, t_tt tt)
 	rp->i++;
 	start = rp->i;
 	depth = 1;
+	sq_dead = !brace_sq_live(rp->current_token.start + start,
+			rp->current_token.len - start, tt == TT_DQENVVAR);
 	while (rp->i < rp->current_token.len && depth > 0)
-		scan_brace_depth(rp, &depth, tt == TT_DQENVVAR);
+		scan_brace_depth(rp, &depth, sq_dead);
 	if (rp->i == start && rp->i < rp->current_token.len)
 		push_subtoken_node(&rp->current_node, rp->current_token,
 			create_interval(start - 1, rp->i + 1), tt);

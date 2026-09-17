@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "lexer.h"
+#include <limits.h>
 
 static void	advance_cmdsub(char **str);
 
@@ -77,11 +78,41 @@ int	advance_dquoted(char **str)
 	return (0);
 }
 
+/* One unit of a ${...} body: an escaped byte, a quoted span, a nested
+   $( ) or `...`, a nested ${ (depth + 1), or one plain byte (a `}` is
+   depth - 1). The nested command substitutions are spans of their own:
+   bash prints } for ${x:-$(echo })}, and an unterminated one is an
+   unterminated ${...} -- ${x%$(} used to be accepted as literal text. */
+static void	brace_step(char **str, int sq, int *depth)
+{
+	if (**str == '\\' && (*str)[1])
+		(*str) += 2;
+	else if (**str == '\'' && sq)
+		advance_squoted(str);
+	else if (**str == '"')
+		advance_dquoted(str);
+	else if (**str == '`')
+		advance_backtick(str);
+	else if (**str == '$' && (*str)[1] == '(')
+		advance_cmdsub(str);
+	else if (**str == '$' && (*str)[1] == '{')
+	{
+		(*depth)++;
+		(*str) += 2;
+	}
+	else
+	{
+		*depth -= (**str == '}');
+		(*str)++;
+	}
+}
+
 /* Scan a ${...} parameter expansion as one span so spaces inside (e.g.
    ${x:-a b c}) do not break the surrounding word. Honours nested braces and
    quoted segments. in_dq says the expansion sits inside a double-quoted
-   word, where a ' is an ordinary character: bash prints a'b for
-   "${u:-a'b}" but reports an unterminated quote for ${u:-a'b}.
+   word, where a ' is an ordinary character for the word operators -- bash
+   prints a'b for "${u:-a'b}" but reports an unterminated quote for
+   ${u:-a'b} -- and still a quote for the pattern ones: brace_sq_live.
    A backslash escapes the next byte, so ${u-\"} does
    not open a quoted section and ${u-\}} does not close the brace
    early — the same rule the reparser's scan_brace_depth applies. It
@@ -104,63 +135,12 @@ int	advance_dquoted(char **str)
 int	advance_brace_param(char **str, int in_dq)
 {
 	int	depth;
+	int	sq;
 
 	*str += 2;
+	sq = brace_sq_live(*str, INT_MAX, in_dq);
 	depth = 1;
 	while (**str && depth > 0)
-	{
-		if (**str == '\\' && (*str)[1])
-			(*str) += 2;
-		else if (**str == '\'' && !in_dq)
-			advance_squoted(str);
-		else if (**str == '"')
-			advance_dquoted(str);
-		else if (**str == '$' && (*str)[1] == '{')
-		{
-			depth++;
-			(*str) += 2;
-		}
-		else
-		{
-			depth -= (**str == '}');
-			(*str)++;
-		}
-	}
+		brace_step(str, sq, &depth);
 	return (depth != 0);
-}
-
-/* Scan a `...` backtick command substitution as one span so spaces inside do
-   not break the surrounding word. Honours \` escapes. */
-int	advance_backtick(char **str)
-{
-	ft_assert(**str == '`');
-	(*str)++;
-	while (**str && **str != '`')
-	{
-		if (**str == '\\' && (*str)[1])
-			(*str)++;
-		(*str)++;
-	}
-	if (**str != '`')
-		return (1);
-	(*str)++;
-	return (0);
-}
-
-/* Advance past a single-quoted span. Single quotes are the simplest case:
-   nothing is special inside them -- not even backslash -- so we just scan
-   forward to the matching `'`. Returns 1 if the quote was never closed
-   (caller will prompt for more input). */
-int	advance_squoted(char **str)
-{
-	ft_assert(**str == '\'');
-	(*str)++;
-	while (**str && **str != '\'')
-	{
-		(*str)++;
-	}
-	if (**str != '\'')
-		return (1);
-	(*str)++;
-	return (0);
 }

@@ -1072,6 +1072,16 @@ prompt-latency-test: ## pty: time-to-prompt stays within a bound of bash's (buil
 	@$(MAKE) --no-print-directory OPT=1 all
 	@python3 $(TEST_DIR)/prompt_latency_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
+# The ${...} quoting sweep, on the build `make my_shell` installs: release
+# with libc malloc. That is where `x=a/b; echo ${x//"/"/_}` segfaulted, while
+# the ft_malloc release build survived the same bytes and printed a wrong
+# answer -- so the configuration is the point. `make pty-test` runs the same
+# file against the debug/ASan build.
+expansion-sweep-test:  ## ${...} quoting sweep vs bash, on the release libc build (builds OPT=1 SAFE=1)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@$(MAKE) --no-print-directory all OPT=1 SAFE=1
+	@python3 $(TEST_DIR)/expansion_quote_sweep_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+
 # Counts, not times, so this one is build-independent and says the same
 # thing on any machine: what a bare Enter is allowed to cost.
 prompt-syscall-test: all  ## What one bare Enter may cost in syscalls (wants strace)
@@ -1360,7 +1370,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
-	prompt-atomic-test \
+	prompt-atomic-test expansion-sweep-test \
 	bg-tty-test prompt-integrity-test update-badge-test nonblock-tty-test \
 	update-config-test update-test help-test test-release arena-stress \
 	conformance perf rss \

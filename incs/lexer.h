@@ -87,6 +87,7 @@ int			advance_squoted(char **str);
 int			advance_ansic(char **str);
 int			advance_backtick(char **str);
 int			advance_brace_param(char **str, int in_dq);
+bool		brace_sq_live(const char *s, int len, int in_dq);
 void		free_all_state(struct s_shell *state);
 void		print_tokens(t_deque_tok *tokens);
 char		*tt_to_str(t_tt tt);
