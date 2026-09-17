@@ -192,7 +192,17 @@ jobs:
         run: |
           cd tests
           ./tester 2>&1 | sed 's/\x1b\[[0-9;]*[A-Za-z]//g' | tee ../suite.log | grep -E 'PASSED|FAIL' | tail -3
-          grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log || { echo "::error::Unit suite has failures"; exit 1; }
+          grep -q 'ALL [0-9]* TESTS PASSED' ../suite.log && exit 0
+          # The failing cases go in the job log AND in an annotation. The
+          # artifact below needs a token to download, and so does the log;
+          # the annotation is on the run page and in the unauthenticated
+          # API, so a red run can be diagnosed without one. (The 3.1.2
+          # `$(jobs)` bug cost hours of reproduction for want of this.)
+          awk '/^❌ TEST/{p=1} /FAILED OUT OF/{p=0} p' ../suite.log | head -120
+          msg=$(awk '/^❌ TEST/{p=1} /FAILED OUT OF/{p=0} p' ../suite.log \
+                | head -40 | tr -d '\r' | sed 's/%/%25/g' | awk '{printf "%s%%0A", $0}')
+          echo "::error title=Unit suite has failures::${msg}"
+          exit 1
       - name: Upload suite log on failure
         if: failure()
         uses: actions/upload-artifact@v4
