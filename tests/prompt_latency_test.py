@@ -37,7 +37,14 @@ pty 24x100, cwd = dirty git repo):
     bash --rcfile <twin of the fixture>    0.16 ms per prompt
     hellish + fixtures/frontend.hellishrc  1.21 ms per prompt    7.4x
 
-Per bare Enter that cost was: one fork for readline plus a full
+After the line was read in the shell process (3.2), same machine:
+
+    bash --norc                            0.06 ms per prompt
+    hellish --norc                         0.07 ms per prompt    1.3x
+    bash --rcfile <twin of the fixture>    0.11 ms per prompt
+    hellish + fixtures/frontend.hellishrc  0.14 ms per prompt    1.3x
+
+Per bare Enter the original cost was: one fork for readline plus a full
 rl_initialize() in the child (terminfo database, ~/.inputrc and /etc/inputrc
 re-parsed EVERY prompt -- see prompt_syscall_budget_test.py), a `git status`
 subprocess, five hook dispatches through the whole lexer and parser, and an
@@ -79,10 +86,14 @@ BURST = 20
 #   measured, release build, this machine     bare        configured
 #   before any of this work                  13.60x        7.40x
 #   readline pre-initialised in the parent
-#     + git rescan gated on a real change     8.50x        5.14x   <- bounds
-#   with the per-prompt fork removed          expected to reach DELTA_MS
-BARE_BOUND = 10.0
-RC_BOUND = 6.5
+#     + git rescan gated on a real change     8.50x        5.14x
+#   the line read in the shell process        1.30x        1.29x
+#     (0.07 ms against bash's 0.06 per prompt, 0.14 against 0.11)
+#
+# At that size a ratio is mostly harness noise, so the bounds sit at 2x
+# rather than at the measured figure; DELTA_MS catches the rest.
+BARE_BOUND = 2.0
+RC_BOUND = 2.0
 # Per-prompt milliseconds hellish may exceed bash by regardless of the ratio.
 # Sized so that a shell which no longer forks per prompt passes on this rule
 # alone even when bash's own median is too small for a ratio to mean anything.
