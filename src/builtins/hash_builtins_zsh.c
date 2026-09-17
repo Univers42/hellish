@@ -45,4 +45,5 @@ void	fill_builtin_hash5(t_hash *h)
 {
 	hash_set(h, "compgen", (void *)builtin_compgen);
 	hash_set(h, "complete", (void *)builtin_complete);
+	hash_set(h, "compopt", (void *)builtin_compopt);
 }

@@ -11,7 +11,7 @@ manual, see the [docs site](https://univers42.github.io/hellish/).
 | the shell | an almost-POSIX shell that runs your bash scripts and muscle memory — `hellish`, `hellish script.sh`, `hellish -c 'cmd'` |
 | prompt themes | 29 named themes; `prompt` lists them, `prompt <name>` switches, `prompt save <name>` persists |
 | plugin framework | `~/.hellish/` with a `conf` manager — `conf list`, `conf on\|off <name>`, `hxp list`; plus oh-my-zsh plugin support through the zsh dialect |
-| completion | tab completion for commands/files/variables; `complete`/`compgen` specs behind `shopt -s progcomp` |
+| completion | tab completion for commands/files/variables; `complete`/`compgen`/`compopt` specs behind `shopt -s progcomp` |
 | update channel | a daily background check; `update` on demand, `update --now` to self-update |
 
 ## Install

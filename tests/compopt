@@ -1,0 +1,27 @@
+compopt -o filenames; echo "st=$?"
+compopt; echo "st=$?"
+compopt -o filenames ls; echo "st=$?"
+complete -F _f ls; compopt -o filenames ls; echo "st=$?"; complete -p ls
+complete -o nospace -F _f ls; compopt +o nospace -o filenames ls; echo "st=$?"; complete -p ls
+compopt -o bogus; echo "st=$?"
+compopt -x; echo "st=$?"
+complete -F _f ls; compopt ls; echo "st=$?"
+compopt -D; echo "st=$?"
+complete -o filenames -o dirnames -F _f x; complete -p x
+complete -F _f good; compopt -o filenames good nospec; echo "st=$?"; complete -p good
+complete -o nospace -o plusdirs -o bashdefault -F _f x; complete -p x
+complete -F _f y; compopt -o filenames -o nospace y; complete -p y; compopt +o filenames y; complete -p y
+compopt -o filenames -o nospace nospec2; echo "st=$?"
+complete -W 'a b' z; complete -p z; compopt -o nosort z; complete -p z
+compopt -o; echo "st=$?"
+complete -F _f q; compopt -o fullquote -o noquote q; complete -p q
+type compopt; command -v compopt
+compopt --; echo "st=$?"
+sleep 1 & ( jobs ); kill %1; wait 2>/dev/null
+sleep 1 & ( jobs -p ); kill %1; wait 2>/dev/null
+sleep 1 & (jobs; echo done); kill %1; wait 2>/dev/null
+( sleep 0.2 & wait; echo waited )
+sleep 1 & ( jobs -r; jobs -s; echo end ); kill %1; wait 2>/dev/null
+sleep 1 & cat <(jobs); kill %1; wait 2>/dev/null
+sleep 0.05 & sleep 0.3; wait; sleep 1 & cat <(jobs); kill %2; wait 2>/dev/null
+sleep 1 & ( ( jobs ) ); kill %1; wait 2>/dev/null

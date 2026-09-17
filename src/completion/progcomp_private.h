@@ -59,6 +59,8 @@ typedef struct s_pc_sandbox
 bool		pc_opt_has(const char *opts, const char *name);
 void		pc_opt_apply(const char *opts);
 bool		pc_opt_fallback(const char *opts);
+char		**pc_live(void);
+void		pc_live_set(const char *opts);
 t_compspec	*comp_find(t_shell *st, const char *name);
 char		**progcomp_try(const char *text, int start, int end);
 

@@ -87,6 +87,31 @@ static char	*pc_generator(const char *text, int state)
 	return (rl_dup(((char **)v->ctx)[i++]));
 }
 
+/* Run the spec and hand readline what it produced, or NULL when the spec
+   asked for the ordinary completion and produced nothing.
+   The options are applied twice around the call: once as registered, and
+   once more afterwards because a `compopt` inside the function may have
+   changed them for this TAB (pc_live, progcomp_opts.c). Registering
+   `-o filenames` and calling `compopt -o filenames` are the same thing to
+   readline, and bash-completion does the latter. */
+static char	**pc_answer(t_shell *st, t_compspec *c, const char *text,
+		int start)
+{
+	char	**res;
+
+	pc_live_set("");
+	if (c->opts)
+		pc_live_set(c->opts);
+	pc_opt_apply(*pc_live());
+	pc_build(st, c, text, start);
+	pc_opt_apply(*pc_live());
+	if (!pc_cell()->len && pc_opt_fallback(*pc_live()))
+		return (pc_live_set(NULL), pc_reset(),
+			rl_attempted_completion_over = 0, NULL);
+	res = rl_completion_matches(text, pc_generator);
+	return (pc_live_set(NULL), pc_reset(), res);
+}
+
 /* Answer a TAB on an ARGUMENT word from the command's registered spec, or
 ** NULL to leave the existing dispatch alone.
 **
@@ -106,7 +131,6 @@ char	**progcomp_try(const char *text, int start, int end)
 	t_shell		*st;
 	t_compspec	*c;
 	char		*cmd;
-	char		**res;
 
 	(void)end;
 	st = *zle_state_cell();
@@ -120,10 +144,5 @@ char	**progcomp_try(const char *text, int start, int end)
 	if (!c)
 		return (NULL);
 	rl_attempted_completion_over = 1;
-	pc_opt_apply(c->opts);
-	pc_build(st, c, text, start);
-	if (!pc_cell()->len && pc_opt_fallback(c->opts))
-		return (pc_reset(), rl_attempted_completion_over = 0, NULL);
-	res = rl_completion_matches(text, pc_generator);
-	return (pc_reset(), res);
+	return (pc_answer(st, c, text, start));
 }

@@ -46,7 +46,7 @@ char	*g_builtins[] = {
 	"dirs", "setopt", "unsetopt", "emulate", "print", "autoload",
 	"is-at-least",
 	"zmodload", "zstyle", "compdef", "zle", "bindkey", "add-zsh-hook",
-	"compgen", "complete", "colors", "vcs_info",
+	"compgen", "complete", "compopt", "colors", "vcs_info",
 	NULL
 };
 

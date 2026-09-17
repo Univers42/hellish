@@ -258,6 +258,7 @@ bool	test_var_isset(t_shell *st, char *name);
 
 int		builtin_compgen(t_shell *state, t_vec argv);
 int		builtin_complete(t_shell *state, t_vec argv);
+int		builtin_compopt(t_shell *state, t_vec argv);
 int		cg_emit(t_cgopt *o, const char *s, const char *pfx);
 void	cg_add(t_vec *out, const char *s, const char *pfx);
 int		cg_flush(t_cgopt *o, t_vec *out);
@@ -276,6 +277,25 @@ void	comp_print_one(t_compspec *c);
 void	comp_print_all(t_shell *st);
 int		comp_remove(t_shell *st, t_vec argv, size_t i);
 size_t	comp_parse_opts(t_shell *st, t_vec argv, t_cmpopt *o);
+
+/* `compopt` (builtin_compopt*.c) and the two things it reaches into: the
+   spec registry above, and the option list of the completion running right
+   now, which lives with the completer (src/completion/progcomp_opts.c). */
+char	*co_name_at(int i);
+bool	co_valid(const char *name);
+void	co_set(char **opts, const char *name, bool on);
+void	co_edit(t_vec argv, char **opts);
+bool	co_has_edit(t_vec argv);
+bool	co_defsel(t_vec argv);
+int		co_scan(t_shell *st, t_vec argv, size_t *first);
+void	co_print(t_compspec *c);
+int		co_current(t_shell *st, t_vec argv);
+int		co_named(t_shell *st, t_vec argv, size_t i);
+int		co_usage(t_shell *st, const char *w, const char *why);
+bool	pc_opt_has(const char *opts, const char *name);
+void	pc_opt_apply(const char *opts);
+char	**pc_live(void);
+void	pc_live_set(const char *opts);
 
 int		tx_test_binary(char **a);
 int		db_eval_flat(char **av, int n);

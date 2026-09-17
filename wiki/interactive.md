@@ -67,15 +67,24 @@ Readline-driven completion with context-aware generators:
 **Programmable completion** works, behind `shopt -s progcomp`: `complete -W 'add commit push' git`
 and `complete -F _fn cmd` are both consulted at TAB, with `COMP_WORDS`, `COMP_CWORD`, `COMP_LINE`,
 `COMP_POINT` and `COMPREPLY` behaving as bash defines them. `compgen` generates the same lists on
-demand. Sourcing git's own `git-completion.bash` and pressing TAB after `git che` offers
+demand, and `compopt` changes a spec's `-o` options — from inside a running completion function
+(for that TAB only, as bash does) or by name (for good). That last one matters more than it
+sounds: bash-completion puts no `-o filenames` on its registrations and calls
+`compopt -o filenames` from inside `_filedir` instead, so without `compopt` every path completion
+it drove silently lost its trailing `/`. Sourcing git's own `git-completion.bash` and pressing TAB after `git che` offers
 `checkout cherry-pick cherry`, byte-identical to bash 5.3.9.
 
 **Why it is not on by default, when bash has it on.** `shopt -q progcomp` is the exact gate
 `/etc/profile.d/bash_completion.sh` checks. Answering yes makes a Debian or Ubuntu login source
-bash-completion's 3800-line framework, which hellish cannot yet parse — so the session opens with
 a syntax error, which is the thing issue #51 was filed about. Put `shopt -s progcomp` in your
 rc and every `complete` spec works; the default flips the day that framework loads clean, and
 `tests/plugin_corpus_test.py` carries the row that will say so.
+
+That day may have arrived: as of 3.1.3 both bash-completion 2.11 and 2.16 source cleanly here
+(191 and 179 specs registered, exit 0) against bash's 192 and 180 — one spec short each, not a
+syntax error. The default has **not** been flipped on that evidence alone, because "sources
+without erroring" is a weaker claim than "behaves like bash", and the one-spec gap is unexplained.
+Flipping it needs the corpus row, not a spot check.
 
 One documented gap: bash re-expands a `-W` list at every TAB, so the deferred form
 `complete -W '$(cmd)' x` (single-quoted) stays literal here. `complete -W "$(cmd)" x` is expanded

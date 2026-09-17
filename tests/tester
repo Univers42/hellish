@@ -80,6 +80,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "funcbody"
         "patsub_quoting"
         "cmdsub_jobs"
+        "compopt"
     )
 fi
 

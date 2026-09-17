@@ -60,8 +60,39 @@ void	pc_opt_apply(const char *opts)
 	rl_completion_suppress_append = 0;
 	if (pc_opt_has(opts, "nospace"))
 		rl_completion_suppress_append = 1;
-	if (pc_opt_has(opts, "filenames"))
-		rl_filename_completion_desired = 1;
+	rl_filename_completion_desired = pc_opt_has(opts, "filenames");
+}
+
+/* The option list in force for the TAB being answered right now.
+**
+** `compopt -o filenames` inside a completion function changes what THIS
+** completion does and nothing after it: bash edits the running compspec
+** and throws the edit away when the function returns, so `complete -p`
+** still prints the spec as it was registered. The options are therefore
+** copied here for the length of one call, compopt edits the copy
+** (co_current, builtin_compopt2.c), and pc_answer applies it again on the
+** way out.
+** NULL means "no completion is running", which is what compopt reports
+** from an ordinary command line -- so a spec with no options at all still
+** enters with "" rather than NULL. Most specs have none (bash-completion
+** puts no -o on its registrations and calls compopt instead), and storing
+** NULL for those told every one of those calls that nothing was running. */
+char	**pc_live(void)
+{
+	static char	*opts;
+
+	return (&opts);
+}
+
+void	pc_live_set(const char *opts)
+{
+	char	**cell;
+
+	cell = pc_live();
+	xfree(*cell);
+	*cell = NULL;
+	if (opts)
+		*cell = ft_strdup(opts);
 }
 
 /* Does this spec want the ordinary completion when it finds nothing? */
