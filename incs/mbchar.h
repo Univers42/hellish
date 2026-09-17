@@ -14,6 +14,7 @@
 # define MBCHAR_H
 
 # include <stddef.h>
+# include <stdbool.h>
 
 /* Multibyte-aware string arithmetic (src/helpers/mbchar.c): characters
    in a multibyte locale, bytes in the C locale, an undecodable byte
@@ -25,5 +26,6 @@ size_t	mb_count(const char *s, size_t n);
 size_t	mb_skip(const char *s, size_t n, size_t nth);
 size_t	mb_conv(const char *s, size_t n, char op, char *out);
 size_t	mb_back(const char *s, size_t i);
+bool	mb_is_utf8(void);
 
 #endif

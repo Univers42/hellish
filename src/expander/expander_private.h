@@ -230,6 +230,8 @@ char		*trim_suffix_longest(const char *val, const char *pattern);
 char		*trim_prefix_shortest(const char *val, const char *pattern);
 char		*trim_prefix_longest(const char *val, const char *pattern);
 char		*expand_trim(t_shell *state, t_trim_ctx ctx);
+char		*trim_literal(const char *val, const char *pat, bool suffix);
+char		*trim_by_matcher(const char *val, const char *pat, const char *op);
 char		*expand_subst(t_shell *state, t_trim_ctx ctx);
 int			subst_span(t_trim_ctx ctx, int g, int a, int *start);
 int			patsub_match_len(const char *pat, const char *s);

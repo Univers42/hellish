@@ -24,10 +24,14 @@
    control/redirect operator forks. */
 
 /* The command word must be one of the builtins that cannot touch shell
-   state and cannot legitimately fail the whole shell. */
+   state and cannot legitimately fail the whole shell. `jobs` qualifies
+   because it knows it is in here (csf_depth) and then only reads the job
+   table -- which is also what makes `$(jobs)` right: a forked copy listed
+   jobs as Running after they had finished (builtin_jobs.c). */
 static bool	csf_word(const char *s, int len)
 {
-	static const char	*ok[] = {"echo", "pwd", "true", ":", "printf", NULL};
+	static const char	*ok[] = {"echo", "pwd", "true", ":", "printf",
+		"jobs", NULL};
 	int					i;
 
 	i = 0;

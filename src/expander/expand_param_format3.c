@@ -120,15 +120,10 @@ char	*expand_trim(t_shell *state, t_trim_ctx ctx)
 	op_off = 1 + (ctx.op[1] == '%' || ctx.op[1] == '#');
 	pat = expand_param_pattern(state, ctx.op + op_off,
 			ctx.slen - ctx.name_len - op_off);
-	if (ctx.op[0] == '%' && ctx.op[1] == '%')
-		result = trim_suffix_longest(val, pat);
-	else if (ctx.op[0] == '%')
-		result = trim_suffix_shortest(val, pat);
-	else if (ctx.op[0] == '#' && ctx.op[1] == '#')
-		result = trim_prefix_longest(val, pat);
-	else if (ctx.op[0] == '#')
-		result = trim_prefix_shortest(val, pat);
-	else
-		result = ft_strdup(val);
+	result = NULL;
+	if (ctx.op[0] == '%' || ctx.op[0] == '#')
+		result = trim_literal(val, pat, ctx.op[0] == '%');
+	if (!result)
+		result = trim_by_matcher(val, pat, ctx.op);
 	return (xfree(pat), result);
 }

@@ -55,7 +55,6 @@ int	builtin_return(t_shell *state, t_vec argv)
 static int	command_v(t_shell *state, char *name)
 {
 	char	*path;
-	char	**dirs;
 
 	if (alias_get(&state->aliases, name))
 		return (ft_printf("alias "), alias_print_one(&state->aliases, name));
@@ -67,14 +66,7 @@ static int	command_v(t_shell *state, char *name)
 			return (ft_printf("%s\n", name), 0);
 		return (1);
 	}
-	path = env_expand(state, "PATH");
-	if (!path)
-		return (1);
-	dirs = ft_split(path, ':');
-	if (!dirs)
-		return (1);
-	path = exe_path_preferred(dirs, name, state->opt_posix);
-	free_tab(dirs);
+	path = command_v_lookup(state, name);
 	if (path)
 		return (ft_printf("%s\n", path), xfree(path), 0);
 	return (1);

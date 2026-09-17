@@ -388,6 +388,11 @@ typedef struct s_shell
 	bool				cmdsub_in_place; /* this process IS a disposable $( )
 										body whose single external command
 										may execve without forking again */
+	int					csf_depth; /* > 0 while a $( ) body runs in this
+										process (cmdsub_fast): a builtin
+										there must leave shell state as a
+										forked one would -- `jobs` reads
+										the job table and changes nothing */
 	/* Same trick for a background child (`cmd &`): the ONE simple command
 	   this process was forked to run may execve in place, so $! names the
 	   command and not a wrapper (issue #13).  Stored as the AST node's

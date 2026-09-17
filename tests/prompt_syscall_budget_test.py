@@ -32,6 +32,11 @@ Its open budget is three higher: the hook's own three /dev/null opens.
 Its PS1 has \\u, which read /etc/passwd on every prompt when $USER was
 unset (as it is here); the name is looked up once now.
 
+A third run gives the hook the two command substitutions rc files use
+most, with an alias defined (every real rc has some): `$(/bin/true)` must
+cost one process and one exec, not the two processes it cost as soon as
+ANY alias existed, and `$(jobs)` must cost nothing -- it runs in-process.
+
 Skips (exit 0, says so) when strace is not installed; CI installs it.
 
 Usage: python3 prompt_syscall_budget_test.py /path/to/hellish
@@ -170,6 +175,17 @@ PROMPT_COMMAND=hk_prompt
 """
 
 
+SUBST_RC = r"""
+PS1='\w ❯ '
+alias ll='ls -l'
+sb_prompt() {
+    SB_T=$(/bin/true)
+    SB_J=$(jobs)
+}
+PROMPT_COMMAND=sb_prompt
+"""
+
+
 def run_case(label, rc_text, max_opens, max_execs=0, max_clones=MAX_CLONES):
     base = tempfile.mkdtemp(prefix="hellish_syscalls_")
     home = os.path.join(base, "home")
@@ -229,6 +245,10 @@ def main():
     with open(FIXTURE) as f:
         run_case("fixture rc", f.read(), MAX_OPENS)
     run_case("framework hook", HOOK_RC, MAX_OPENS + 3)
+    # Opens: /bin/true's own loader (ld.so.cache, libc) and the file the
+    # in-process $(jobs) captures into (cmdsub_fast.c).
+    run_case("substitutions + alias", SUBST_RC, MAX_OPENS + 3, 1,
+             MAX_CLONES + 1)
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 

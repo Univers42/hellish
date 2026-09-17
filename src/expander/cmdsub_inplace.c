@@ -51,8 +51,13 @@ static bool	cs_word_opaque(t_shell *state, const char *s, int len)
    dangerous redirect spellings still reject on their other byte: `>&` and
    `>|` on the & / |, `<(` on the paren, a heredoc on its newline.  Quoted
    spans and nested $( ) / ${ } are skipped wholesale, and $(( )) rejects.
-   Aliases reject outright: exec_string splices them AFTER this scan, so
-   `alias f='a; b'` could otherwise smuggle a second command past us. */
+   An alias on the command word rejects: exec_string splices aliases AFTER
+   this scan, so `alias f='a; b'` could otherwise smuggle a second command
+   past us. Only that word can expand -- a later word expands only after
+   an alias ending in a blank, and that alias would be this one. The gate
+   used to reject whenever ANY alias existed, so every `$(git ...)` in a
+   prompt hook forked twice for a user who had defined one alias (66 in
+   the report): 0.79 ms per `$(/bin/true)` became 1.21 ms. */
 
 /* The byte walk itself, from position i: false the moment any byte could
    start a second command; quoted spans and nested $( ) / ${ } are skipped
@@ -83,15 +88,14 @@ bool	cs_single_cmd(t_shell *state, const char *s)
 	int	i;
 	int	w;
 
-	if (!alias_table_empty(&state->aliases))
-		return (false);
 	i = 0;
 	while (s[i] == ' ' || s[i] == '\t')
 		i++;
 	w = i;
 	while (s[w] && !ft_strchr(" \t", s[w]))
 		w++;
-	if (cs_word_opaque(state, s + i, w - i))
+	if (cs_word_opaque(state, s + i, w - i)
+		|| csf_word_aliased(state, s + i, w - i))
 		return (false);
 	return (cs_scan_rest(s, i));
 }

@@ -78,6 +78,10 @@ static void	list_one(t_shell *state, t_job *job, bool show_pid, bool long_fmt)
    -p is the exception: it prints pgids, never a status, so bash does not
    count it as having reported anything and the job stays.
 
+   Inside a $( ) body run in-process (csf_depth), `jobs` is what bash's
+   forked one is: a listing of the jobs still alive, with finished ones
+   left for the shell itself to report -- nothing is retired or purged.
+
    We walk job NUMBERS (job_next_after) rather than table slots: a reaped
    job frees its slot, a later job reuses that slot, and slot order then
    prints [1] [4] [3] where bash prints [1] [3] [4]. */
@@ -97,10 +101,10 @@ int	builtin_jobs(t_shell *state, t_vec argv)
 	{
 		job = job_find_id(jt, i);
 		i = job_next_after(jt, i);
-		if (!(job_finished(job) && job->notified))
+		if (!(job_finished(job) && (job->notified || state->csf_depth)))
 			list_one(state, job, show_pid, long_fmt);
 	}
-	if (!show_pid)
+	if (!show_pid && !state->csf_depth)
 		job_purge_reported(jt);
 	return (0);
 }

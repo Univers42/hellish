@@ -120,7 +120,9 @@ char	*cmdsub_fast(t_shell *state, const char *cmd)
 		return (NULL);
 	save_exe = state->last_cmd_st_exe;
 	save_st = state->last_cmd_st;
+	state->csf_depth++;
 	rc = exec_string(state, (char *)cmd);
+	state->csf_depth--;
 	state->last_cmd_st_exe = save_exe;
 	state->last_cmd_st = save_st;
 	state->last_cmdsub_status = rc & 0xFF;
@@ -136,14 +138,20 @@ char	*cmdsub_fast(t_shell *state, const char *cmd)
    the "source got slow again" of issue #108. Only an alias on THIS word
    can change this body's meaning: eligibility already guarantees a
    single simple command, so no other name in the body sits in command
-   position. */
+   position. Any length: the in-place path (cmdsub_inplace.c) asks the
+   same question about external command words, and those can be long
+   paths -- a fixed buffer would have answered "aliased" for all of them. */
 bool	csf_word_aliased(t_shell *state, const char *s, int len)
 {
-	char	buf[16];
+	char	*word;
+	bool	hit;
 
-	if (len <= 0 || len >= (int) sizeof(buf))
+	if (len <= 0)
 		return (true);
-	ft_memcpy(buf, s, len);
-	buf[len] = '\0';
-	return (alias_get(&state->aliases, buf) != NULL);
+	word = ft_strndup(s, (size_t)len);
+	if (!word)
+		return (true);
+	hit = (alias_get(&state->aliases, word) != NULL);
+	xfree(word);
+	return (hit);
 }

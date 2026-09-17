@@ -24,7 +24,9 @@
 
 /* Print one job in `jobs` format.  current/prev are the job IDs (not
    slot indices) that get '+'/'-' markers.  show_pid adds the pgid column,
-   which `jobs -l` requests but the async notification doesn't need.
+   which `jobs -l` requests but the async notification doesn't need; bash
+   prints it right-aligned in five columns after ONE space ("[1]- 4711 "),
+   where this printed two and no width.
    Field width and the trailing " &" on running background jobs match
    bash byte-for-byte (measured, not guessed): status is padded to 27
    and only Running lines carry the ampersand.  A signalled job puts the
@@ -40,7 +42,7 @@ void	job_print(t_job *job, int current, int prev, bool show_pid)
 	else if (job->id == prev)
 		mark = '-';
 	if (show_pid)
-		ft_printf("[%d]%c  %d %-27s%s%s", job->id, mark, job->pgid,
+		ft_printf("[%d]%c %5d %-27s%s%s", job->id, mark, job->pgid,
 			job_status_desc(job), job_core_suffix(job), job->cmd);
 	else
 		ft_printf("[%d]%c  %-27s%s%s", job->id, mark,

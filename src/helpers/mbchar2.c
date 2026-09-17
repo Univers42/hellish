@@ -14,6 +14,8 @@
 #include "libft.h"
 #include <stdlib.h>
 #include <langinfo.h>
+#include <locale.h>
+#include <stdbool.h>
 
 /* Stepping BACKWARDS through characters, for the suffix-trim scans
    (${v%pat}, ${v%%pat}): every candidate suffix has to start on a
@@ -22,6 +24,27 @@
    byte that is not a continuation byte, which is a constant-time step;
    any other multibyte encoding walks forward from the start, which is what
    bash's own conversion to wide characters costs too. */
+
+/* Is the character encoding UTF-8? Asked once per step of every suffix
+   trim, so the answer is cached, keyed on the LC_CTYPE locale name: a
+   locale change is noticed, and otherwise the question costs a short
+   string compare instead of nl_langinfo plus one. */
+bool	mb_is_utf8(void)
+{
+	static char	name[128];
+	static bool	utf8;
+	const char	*cur;
+
+	cur = setlocale(LC_CTYPE, NULL);
+	if (!cur)
+		cur = "C";
+	if (!name[0] || ft_strncmp(cur, name, sizeof(name)) != 0)
+	{
+		ft_strlcpy(name, cur, sizeof(name));
+		utf8 = (ft_strcmp(nl_langinfo(CODESET), "UTF-8") == 0);
+	}
+	return (utf8);
+}
 
 /* Byte offset of the character that ends just before offset i in s
    (i > 0), i.e. the previous character's start. */
@@ -34,7 +57,7 @@ size_t	mb_back(const char *s, size_t i)
 		return (0);
 	if (MB_CUR_MAX == 1)
 		return (i - 1);
-	if (ft_strcmp(nl_langinfo(CODESET), "UTF-8") == 0)
+	if (mb_is_utf8())
 	{
 		i--;
 		while (i > 0 && ((unsigned char)s[i] & 0xC0) == 0x80)
