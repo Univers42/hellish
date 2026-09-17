@@ -85,6 +85,7 @@ typedef struct s_rl_bracket
 
 void	rl_shell_enter(t_shell *state, t_rl_bracket *b);
 int		rl_shell_leave(t_shell *state, t_rl_bracket *b);
+void	rl_prerow_arm(t_string *rows);
 int		rl_getc_hook(FILE *stream);
 int		rl_idle_timeout(void);
 int		rl_idle_fd(void);

@@ -30,6 +30,16 @@ prompts, with a PS1 whose first row is a few hundred bytes of truecolor
 escapes (the shipped default prompt is that shape).  Before the fix this
 scores hundreds of fragments in a few seconds; after it, zero.
 
+Composing in memory is not the whole fix, and phase 2 is why.  A pty
+accepts only what fits in its buffer and reports a short count, so one
+write() of a full prompt becomes two whenever the reader is behind -- and
+the line discipline echoes between them.  Reading promptly, as phase 1
+does, almost never provokes it: it took a loaded CI runner to score a
+single fragment, and eight local runs (four of them pinned to two cores)
+scored none.  Phase 2 starves the reader on purpose, which turns that into
+3 fragments in 6 seconds without the echo guard and 0 with it.  Keep it:
+the bug it pins is invisible to phase 1 on any idle machine.
+
 Usage: python3 prompt_atomic_test.py /path/to/hellish [seconds]
 """
 import fcntl
@@ -61,6 +71,26 @@ TAIL = re.compile(rb"[0-9;]{2,}m|38;2;[0-9;]*")
 FAILS = []
 
 
+def drop_partial_tail(buf):
+    """Cut a capture that ends in the middle of an escape sequence.
+
+    The reader stops when the session does, which can be mid-write: the
+    stream then ends with a bare `\x1b[38;2;` that CSI cannot match, and
+    the leftover reads exactly like a sequence something split. It is not
+    one -- there are no bytes after it at all. broken_utf8 already declines
+    to judge a truncated tail for the same reason; this is that rule for
+    escapes. Cutting at the last unterminated ESC costs at most one real
+    fragment at the very end and removes a false one on every run whose
+    reader was behind.
+    """
+    i = buf.rfind(b"\x1b")
+    if i < 0:
+        return buf
+    if CSI.match(buf, i):
+        return buf
+    return buf[:i]
+
+
 def broken_utf8(buf):
     """Count U+2500 box-drawing characters that no longer decode.
 
@@ -85,7 +115,7 @@ def check(name, ok, detail=""):
 
 
 class Session:
-    def __init__(self, home):
+    def __init__(self, home, slow=0.0):
         env = {
             "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "TERM": "xterm-256color", "LANG": "C.UTF-8", "PS1": PS1,
@@ -95,6 +125,7 @@ class Session:
         os.makedirs(os.path.join(home, ".cache", "hellish"), exist_ok=True)
         open(os.path.join(home, ".cache", "hellish", "seen"), "w").close()
         self.raw = bytearray()
+        self.slow = slow
         self.stop = False
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
@@ -112,6 +143,10 @@ class Session:
 
     def reader(self):
         while not self.stop:
+            # Phase 2 falls behind on purpose: a full pty buffer is what
+            # makes the kernel split the prompt write in the first place.
+            if self.slow:
+                time.sleep(self.slow)
             r, _, _ = select.select([self.fd], [], [], 0.05)
             if r:
                 try:
@@ -154,27 +189,34 @@ class Session:
             pass
 
 
-def main():
+def phase(label, slow, secs, want_alive):
     home = tempfile.mkdtemp(prefix="hellish_prompt_")
-    s = Session(home)
-    writes = s.hammer(SECS)
+    s = Session(home, slow)
+    writes = s.hammer(secs)
     s.close()
     shutil.rmtree(home, ignore_errors=True)
     data = bytes(s.raw)
-    frags = TAIL.findall(CSI.sub(b"", data))
-    check("shell stayed alive under the type-ahead storm",
-          len(data) > 10000 and writes > 500,
-          "bytes=%d writes=%d" % (len(data), writes))
-    check("the typed commands actually ran",
-          data.count(b"MARK") > 20, "MARK seen %d times" % data.count(b"MARK"))
-    check("no colour escape was split by echoed type-ahead",
-          not frags,
-          "%d fragments, first: %r" % (len(frags), frags[:5]))
-    bad = broken_utf8(CSI.sub(b"", data))
-    check("no box-drawing glyph was split by echoed type-ahead",
+    if want_alive:
+        check("shell stayed alive under the type-ahead storm",
+              len(data) > 10000 and writes > 500,
+              "bytes=%d writes=%d" % (len(data), writes))
+        check("the typed commands actually ran", data.count(b"MARK") > 20,
+              "MARK seen %d times" % data.count(b"MARK"))
+    stripped = CSI.sub(b"", drop_partial_tail(data))
+    frags = TAIL.findall(stripped)
+    check("no colour escape was split by echoed type-ahead (%s)" % label,
+          not frags, "%d fragments, first: %r" % (len(frags), frags[:5]))
+    bad = broken_utf8(stripped)
+    check("no box-drawing glyph was split by echoed type-ahead (%s)" % label,
           not bad, "%d mangled multibyte sequences" % bad)
-    print("\n%d/%d checks passed (%d bytes, %d writes)"
-          % (4 - len(FAILS), 4, len(data), writes))
+    return len(data), writes
+
+
+def main():
+    n1, w1 = phase("reader keeps up", 0.0, SECS, True)
+    n2, w2 = phase("reader starved", 0.06, max(6.0, SECS * 0.75), False)
+    print("\n%d/%d checks passed (%d+%d bytes, %d+%d writes)"
+          % (6 - len(FAILS), 6, n1, n2, w1, w2))
     sys.exit(1 if FAILS else 0)
 
 

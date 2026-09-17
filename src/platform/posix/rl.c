@@ -19,9 +19,11 @@
    line. readline only ever sees a single-line prompt, which avoids the cursor
    drift and heavy full-line redraws that a multi-line prompt (embedded \n)
    causes during ↑/↓ history navigation.
-   The whole prefix goes out in ONE write(). It used to stream through
-   unbuffered fputc on stderr -- a write() syscall PER BYTE -- and the tty
-   line discipline echoes type-ahead between two user-space writes. A key
+   The whole prefix goes out in ONE write(), and not until readline has put
+   the terminal in raw mode -- rl_prerow_arm hands it to readline's startup
+   hook, which is what keeps echo out of it (rl_prerow.c). It used to stream
+   through unbuffered fputc on stderr -- a write() syscall PER BYTE -- and
+   the tty line discipline echoes type-ahead between two user-space writes. A key
    pressed here therefore landed inside a colour escape, and since every
    letter is a valid CSI final byte the sequence ended early and its tail
    printed as literal text (`38;2;112`, `;79;87m`). Same reason
@@ -44,8 +46,7 @@ static char	*split_prompt(char *prompt)
 			vec_push_char(&f, prompt[i]);
 		i++;
 	}
-	tty_write_all(fileno(rl_outstream), f.ctx, f.len);
-	xfree(f.ctx);
+	rl_prerow_arm(&f);
 	return (nl + 1);
 }
 
