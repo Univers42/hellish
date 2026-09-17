@@ -22,6 +22,16 @@ RPROMPT, three hooks):
 When this file first landed a bare Enter cost 2 clones + 1 execve (the git
 check) + a handful of opens (terminfo, inputrc, update state), every prompt.
 
+A second run swaps in the shape of a prompt FRAMEWORK: PS1 built by a
+PROMPT_COMMAND function that reads the repository through vcs_info's
+HELLISH_GIT_* variables and, like every real rc, is full of `>/dev/null`.
+Each of those redirections used to count as "the working tree may have
+changed", so the git answer was thrown away and a `git status` spawned on
+every bare Enter -- 20 execve for 20 Enters, from a hook that ran nothing.
+Its open budget is three higher: the hook's own three /dev/null opens.
+Its PS1 has \\u, which read /etc/passwd on every prompt when $USER was
+unset (as it is here); the name is looked up once now.
+
 Skips (exit 0, says so) when strace is not installed; CI installs it.
 
 Usage: python3 prompt_syscall_budget_test.py /path/to/hellish
@@ -149,26 +159,35 @@ def count(lines, pattern):
     return sum(1 for l in lines if rx.search(l))
 
 
-def main():
-    if not STRACE:
-        print("skip: strace not installed (apt-get install strace)")
-        sys.exit(0)
+HOOK_RC = r"""
+PS1='\u \w ❯ '
+hk_prompt() {
+    vcs_info >/dev/null 2>&1
+    : >/dev/null 2>/dev/null
+    HK_LABEL="${HELLISH_GIT_BRANCH}${HELLISH_GIT_AHEAD}${HELLISH_GIT_STASH}"
+}
+PROMPT_COMMAND=hk_prompt
+"""
+
+
+def run_case(label, rc_text, max_opens, max_execs=0, max_clones=MAX_CLONES):
     base = tempfile.mkdtemp(prefix="hellish_syscalls_")
     home = os.path.join(base, "home")
     os.makedirs(home)
-    shutil.copy(FIXTURE, os.path.join(home, ".hellishrc"))
+    with open(os.path.join(home, ".hellishrc"), "w") as f:
+        f.write(rc_text)
     cwd = make_repo(base)
     trace = os.path.join(base, "trace")
 
     s = Traced(home, cwd, trace)
     s.drain(10.0)
-    check("prompt appeared under strace", s.buf.count(MARK) >= 1,
+    check("%s: prompt appeared under strace" % label, s.buf.count(MARK) >= 1,
           repr(bytes(s.buf[-300:])))
     s.drain(3.0)  # let startup-time background work (git scan) finish
     with open(trace, errors="replace") as f:
         mark = len(f.readlines())
     drawn = s.hold_enter(ENTERS)
-    check("all %d prompts were drawn" % ENTERS, drawn >= ENTERS,
+    check("%s: all %d prompts were drawn" % (label, ENTERS), drawn >= ENTERS,
           "only %d" % drawn)
     s.drain(3.0)
     with open(trace, errors="replace") as f:
@@ -179,9 +198,10 @@ def main():
     clones = count(lines, r"\b(clone3?|fork|vfork)\(")
     opens = count(lines, r"\bopenat\(")
     per = lambda n: n / float(ENTERS)
-    print("     %d bare Enters: execve=%d clone=%d openat=%d  "
+    print("     %s, %d bare Enters: execve=%d clone=%d openat=%d  "
           "-> per Enter: %.2f / %.2f / %.2f"
-          % (ENTERS, execs, clones, opens, per(execs), per(clones), per(opens)))
+          % (label, ENTERS, execs, clones, opens,
+             per(execs), per(clones), per(opens)))
     if execs:
         seen = [l.strip() for l in lines if "execve(" in l][:3]
         print("     first execve lines:\n       " + "\n       ".join(seen))
@@ -193,14 +213,22 @@ def main():
         print("     opens: " + ", ".join("%s x%d" % kv for kv in
                                           sorted(top.items(), key=lambda kv: -kv[1])[:6]))
 
-    check("a bare Enter executes no external program", execs == 0,
-          "%d execve for %d Enters" % (execs, ENTERS))
-    check("a bare Enter creates at most %d process" % MAX_CLONES,
-          per(clones) <= MAX_CLONES, "%.2f clones per Enter" % per(clones))
-    check("a bare Enter opens at most %d files" % MAX_OPENS,
-          per(opens) <= MAX_OPENS, "%.2f opens per Enter" % per(opens))
-
+    check("%s: a bare Enter executes at most %d program" % (label, max_execs),
+          per(execs) <= max_execs, "%d execve for %d Enters" % (execs, ENTERS))
+    check("%s: a bare Enter creates at most %d process" % (label, max_clones),
+          per(clones) <= max_clones, "%.2f clones per Enter" % per(clones))
+    check("%s: a bare Enter opens at most %d files" % (label, max_opens),
+          per(opens) <= max_opens, "%.2f opens per Enter" % per(opens))
     shutil.rmtree(base, ignore_errors=True)
+
+
+def main():
+    if not STRACE:
+        print("skip: strace not installed (apt-get install strace)")
+        sys.exit(0)
+    with open(FIXTURE) as f:
+        run_case("fixture rc", f.read(), MAX_OPENS)
+    run_case("framework hook", HOOK_RC, MAX_OPENS + 3)
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 

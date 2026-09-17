@@ -26,6 +26,15 @@ cleanly with none), state by state in a scratch repository:
 Both markers exist only under `check-for-changes true`, exactly like zsh,
 and untracked files never count (zsh's default, and our -uno scan).
 
+The HELLISH_GIT_* variables vcs_info also sets -- the fork-free source a
+prompt framework reads instead of running git seven times per prompt --
+have no zsh counterpart, so they are checked against git's own answers,
+with or without zsh on the machine: ahead/behind, stash, each kind of
+change, a conflicted merge, a detached HEAD, a submodule with local edits
+(ignored, as zsh's vcs_info does), a subdirectory of a submodule (whose
+relative gitdir used to be resolved against the cwd) and a linked
+worktree.
+
 Usage: python3 vcs_info_zstyle_test.py [/path/to/hellish]
 """
 import os
@@ -94,14 +103,126 @@ def both(zsh, repo, script):
     return zout, hout, herr
 
 
+GITVARS = ("BRANCH", "DETACHED", "ROOT", "DIR", "STAGED", "UNSTAGED",
+           "UNTRACKED", "UNMERGED", "AHEAD", "BEHIND", "STASH")
+
+
+def git_vars(cwd, untracked=False):
+    """HELLISH_GIT_* as vcs_info leaves them in `cwd`. The scan is
+    asynchronous: the second call harvests whatever the first one started,
+    once the sleep has given it time to finish."""
+    pre = "HELLISH_VCS_UNTRACKED=1; " if untracked else ""
+    probe = "; ".join('printf "%s=%%s\\n" "$HELLISH_GIT_%s"' % (v, v)
+                      for v in GITVARS)
+    rc, out, err = run([SHELL, "--norc", "-c", pre + "vcs_info; sleep 1; "
+                        "vcs_info; " + probe], cwd)
+    got = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+    return got, err
+
+
+def expect(name, cwd, want, untracked=False):
+    got, err = git_vars(cwd, untracked)
+    bad = {k: (got.get(k), v) for k, v in want.items() if got.get(k) != v}
+    check("HELLISH_GIT/%s" % name, not bad and not err,
+          "got/want %r %r" % (bad, err[:120]))
+    return got
+
+
+def commit(repo, name, text):
+    with open(os.path.join(repo, name), "w") as f:
+        f.write(text)
+    git(repo, "add", name)
+    git(repo, "commit", "-q", "-m", name)
+
+
+def git_vars_cases(top):
+    up = os.path.join(top, "up.git")
+    a = os.path.join(top, "a")
+    b = os.path.join(top, "b")
+    git(top, "init", "-q", "--bare", "-b", "main", up)
+    git(top, "clone", "-q", up, a)
+    commit(a, "f", "1\n")
+    git(a, "push", "-q", "origin", "main")
+    git(top, "clone", "-q", up, b)
+    commit(b, "g", "1\n")
+    git(b, "push", "-q", "origin", "main")
+    expect("clean, no upstream change seen yet", a, {
+        "BRANCH": "main", "DETACHED": "0", "ROOT": a,
+        "DIR": os.path.join(a, ".git"), "STAGED": "0", "UNSTAGED": "0",
+        "UNTRACKED": "0", "UNMERGED": "0", "AHEAD": "0", "BEHIND": "0",
+        "STASH": "0"})
+    git(a, "fetch", "-q")
+    commit(a, "h", "1\n")
+    expect("ahead 1, behind 1", a, {"AHEAD": "1", "BEHIND": "1"})
+    for i in range(2):
+        with open(os.path.join(a, "f"), "a") as f:
+            f.write("s%d\n" % i)
+        git(a, "stash", "-q")
+    expect("two stashes", a, {"STASH": "2", "UNSTAGED": "0"})
+    with open(os.path.join(a, "f"), "a") as f:
+        f.write("u\n")
+    expect("unstaged", a, {"UNSTAGED": "1", "STAGED": "0"})
+    with open(os.path.join(a, "h"), "a") as f:
+        f.write("s\n")
+    git(a, "add", "h")
+    open(os.path.join(a, "new"), "w").close()
+    expect("staged too, untracked not asked for", a, {
+        "STAGED": "1", "UNSTAGED": "1", "UNTRACKED": "0"})
+    expect("untracked when asked for", a, {"UNTRACKED": "1"}, True)
+    c = os.path.join(top, "c")
+    git(top, "init", "-q", "-b", "main", c)
+    commit(c, "x", "base\n")
+    git(c, "checkout", "-q", "-b", "side")
+    commit(c, "x", "side\n")
+    git(c, "checkout", "-q", "main")
+    commit(c, "x", "main\n")
+    subprocess.run(["git", "merge", "-q", "side"], cwd=c,
+                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    expect("conflicted merge", c, {"UNMERGED": "1", "BRANCH": "main"})
+    git(c, "merge", "--abort")
+    got = expect("detached HEAD", c, {"DETACHED": "0"})
+    git(c, "checkout", "-q", "--detach", "HEAD")
+    got = expect("detached HEAD", c, {"DETACHED": "1"})
+    check("HELLISH_GIT/detached branch is the short commit",
+          len(got.get("BRANCH", "")) == 7, repr(got.get("BRANCH")))
+    git(c, "checkout", "-q", "main")
+    git(c, "-c", "protocol.file.allow=always", "submodule", "add", "-q",
+        c, "mod")
+    git(c, "commit", "-q", "-m", "sub")
+    with open(os.path.join(c, "mod", "x"), "a") as f:
+        f.write("dirty inside the submodule\n")
+    expect("edits inside a submodule do not dirty the parent", c, {
+        "UNSTAGED": "0", "STAGED": "0"})
+    deep = os.path.join(c, "mod", "d1", "d2")
+    os.makedirs(deep)
+    got = expect("a submodule subdirectory still has its branch", deep, {
+        "BRANCH": "main", "ROOT": os.path.join(c, "mod"), "UNSTAGED": "1"})
+    check("HELLISH_GIT/submodule dir is the one under .git/modules",
+          os.path.realpath(got.get("DIR", "")) ==
+          os.path.join(c, ".git", "modules", "mod"), repr(got.get("DIR")))
+    wt = os.path.join(top, "wt")
+    git(c, "worktree", "add", "-q", "-b", "wtb", wt)
+    got = expect("linked worktree", wt, {"BRANCH": "wtb", "ROOT": wt})
+    check("HELLISH_GIT/worktree dir sits under worktrees/",
+          "/worktrees/" in got.get("DIR", ""), repr(got.get("DIR")))
+    expect("outside a repository", top, {
+        "BRANCH": "", "ROOT": "", "DIR": "", "DETACHED": "0",
+        "STAGED": "0", "UNSTAGED": "0", "UNTRACKED": "0", "UNMERGED": "0",
+        "AHEAD": "0", "BEHIND": "0", "STASH": "0"})
+
+
 def main():
     if not os.path.isfile(SHELL):
         print("error: no shell at %s -- run make" % SHELL)
         return 2
+    if shutil.which("git"):
+        vtop = tempfile.mkdtemp()
+        git_vars_cases(os.path.realpath(vtop))
+        shutil.rmtree(vtop, ignore_errors=True)
     zsh = find_zsh()
     if not zsh or not shutil.which("git"):
-        print("skip: no zsh or no git on this machine")
-        return 0
+        print("skip: the zsh comparison needs zsh and git")
+        return 1 if FAILS else 0
     top = tempfile.mkdtemp()
     repo = os.path.join(top, "vrepo")
     os.makedirs(repo)

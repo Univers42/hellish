@@ -20,6 +20,8 @@ Checks, in a real pty, default two-row prompt (PS1 unset):
   4. After the TTL expires there, the refresh keeps the prompt fast
      and keeps showing the last known star while it re-checks.
   5. A clean repo shows its branch and no star.
+  5b. A command that dirties a fast repo stars the very next prompt: the
+     rescan it triggers is waited for when the repo's scans are fast.
   6. The scan leaves no zombie behind while a foreground command runs
      (issue #24): the checker is double-forked onto init, so a `git
      <defunct>` can never sit in ps for the lifetime of whatever the
@@ -208,6 +210,16 @@ def main():
     win = s.raw[n0:]
     check("clean repo shows branch", b"on\x1b[0m" in win and b"main" in win)
     check("clean repo shows no star", b"*" not in win)
+
+    # 5b: a command that dirties a FAST repo is followed by an exact
+    # prompt. The rescan it causes is waited for (briefly, and only
+    # because this repo's last scan fit in that budget) instead of
+    # leaving the old answer up for one more render.
+    n0 = len(s.raw)
+    s.prompt_latency(b"echo z >> f.txt\n")
+    win = s.raw[n0:]
+    check("a command dirtying a fast repo stars the very next prompt",
+          b"*" in win, repr(win[-160:]))
     s.close()
 
     # 6: no zombie while a foreground command runs. The slow shim keeps the

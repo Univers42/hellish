@@ -101,25 +101,26 @@ static void	vcs_expand(t_string *out, const char *f, t_vcs *v)
 /* `vcs_info`: fill vcs_info_msg_0_ from the prompt's own fork-free cached
    git reader -- the same source \g uses, so the two can never disagree
    about the branch. Outside a repository the message is empty, exactly
-   what a `${vcs_info_msg_0_}` prompt wants to interpolate. */
+   what a `${vcs_info_msg_0_}` prompt wants to interpolate. The same read
+   also publishes the HELLISH_GIT_* variables (builtin_zsh_vcs2.c). */
 int	builtin_vcs_info(t_shell *state, t_vec argv)
 {
 	t_string	out;
 	t_vcs		v;
 	char		*branch;
-	const char	*check;
 
 	(void)argv;
 	vec_init(&out);
 	out.elem_size = 1;
+	*git_untracked_cell() = vcs_truthy(style(state, "HELLISH_VCS_UNTRACKED",
+			NULL));
 	get_git_info(&branch, &v.bits);
 	v.branch = branch;
 	v.root = git_repo_root();
+	vcs_publish(state, branch, v.root, v.bits);
 	v.staged = style(state, "HELLISH_VCS_STAGED", "S");
 	v.unstaged = style(state, "HELLISH_VCS_UNSTAGED", "U");
-	check = style(state, "HELLISH_VCS_CHECK", "false");
-	if (ft_strcmp(check, "true") && ft_strcmp(check, "yes")
-		&& ft_strcmp(check, "1") && ft_strcmp(check, "on"))
+	if (!vcs_truthy(style(state, "HELLISH_VCS_CHECK", "false")))
 		v.bits &= ~(GIT_STAGED | GIT_UNSTAGED);
 	if (branch && v.root)
 		vcs_expand(&out, style(state, "HELLISH_VCS_FORMAT", " (%b)"), &v);
@@ -127,8 +128,7 @@ int	builtin_vcs_info(t_shell *state, t_vec argv)
 	env_set(&state->env, env_create(ft_strdup("vcs_info_msg_0_"),
 			ft_strdup((char *)out.ctx), false));
 	xfree(out.ctx);
-	xfree(branch);
-	return (0);
+	return (xfree(branch), 0);
 }
 
 /* `zstyle`: the vcs_info keys are captured and honoured; the rest of a

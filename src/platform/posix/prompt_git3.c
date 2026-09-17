@@ -47,12 +47,19 @@
 
    Then: stdout into the pipe, stderr silenced, exec git status.
    --no-optional-locks keeps git from touching .git/index behind the
-   user's back; -uno skips the (possibly huge) untracked scan, so the
-   star means "tracked changes exist". _exit, not exit: neither process
-   here may run the shell's atexit/cleanup paths. */
-static void	dirty_child(int *fd, const char *root)
+   user's back. Porcelain v2 with --branch and --show-stash says in ONE run
+   everything a prompt shows: the tracked bits, untracked and unmerged
+   paths, ahead/behind and the stash count. --ignore-submodules=dirty is
+   what zsh's vcs_info passes: without it git walks into every submodule
+   to see whether its checkout is dirty, which cost 49 ms per scan in a
+   ten-submodule repository against 6 ms with it -- a submodule whose
+   recorded commit moved still shows. -uno skips the (possibly huge)
+   untracked scan unless the prompt asked for it (git_untracked_cell).
+   _exit, not exit: neither process may run the shell's cleanup paths. */
+static void	dirty_child(int *fd, const char *root, int untracked)
 {
-	int	nul;
+	int			nul;
+	const char	*u;
 
 	if (fork() != 0)
 		_exit(0);
@@ -62,12 +69,13 @@ static void	dirty_child(int *fd, const char *root)
 	close(fd[1]);
 	nul = open("/dev/null", O_WRONLY);
 	if (nul >= 0)
-	{
-		dup2(nul, STDERR_FILENO);
-		close(nul);
-	}
+		(dup2(nul, STDERR_FILENO), close(nul));
+	u = "-uno";
+	if (untracked)
+		u = "-unormal";
 	execlp("git", "git", "-C", root, "--no-optional-locks", "status",
-		"--porcelain", "-uno", NULL);
+		"--porcelain=v2", "--branch", "--show-stash",
+		"--ignore-submodules=dirty", u, NULL);
 	_exit(127);
 }
 
@@ -87,100 +95,105 @@ static void	spawn_check(t_dcache *c)
 		return ;
 	mid = fork();
 	if (mid == 0)
-		dirty_child(fd, c->root);
+		dirty_child(fd, c->root, c->untracked);
 	close(fd[1]);
 	if (mid < 0)
-	{
-		close(fd[0]);
-		return ;
-	}
+		return ((void)close(fd[0]));
 	while (waitpid(mid, NULL, 0) < 0 && errno == EINTR)
 		;
 	c->busy = 1;
 	c->fd = fd[0];
+	ft_bzero(&c->acc, sizeof(c->acc));
+	c->llen = 0;
 	fcntl(c->fd, F_SETFL, O_NONBLOCK);
 	fcntl(c->fd, F_SETFD, FD_CLOEXEC);
-	c->spawned = time(NULL);
+	c->spawned_ms = git_now_ms();
 }
 
-/* Let go of the in-flight scan. Closing the read end is the whole of it:
-   the scanner is init's child, not ours, so there is nothing to wait for.
-   Abandoning one (a cd to another repo) no longer needs a SIGKILL either —
-   that kill only existed so the reap could not block on a live scan. The
-   orphan finishes on its own, and dies on SIGPIPE the moment it writes to
-   the pipe we just closed. */
-static void	drop_check(t_dcache *c)
-{
-	close(c->fd);
-	c->busy = 0;
-}
-
-/* Harvest attempt with a wait budget. Any output byte means dirty; EOF
-   with none means clean — and now that the scanner sits in its own process
-   group, EOF really does mean the scan ran to completion rather than "the
-   prompt's Ctrl-C killed it and this sample proves nothing".
-   The porcelain lines are read (up to one buffer, git_drain) rather than
-   sampled by one byte, because their first two columns say whether the
-   change sits in the index or the work tree -- vcs_info's %c and %u
-   (issue #112). A first read that says EAGAIN means the scan is still
-   running: not done, try at the next render.
-   Slow repos (scan >= 1s) stretch the TTL so git is not re-run near
-   continuously; the checks are async either way. */
+/* Harvest the scan, waiting up to wait_ms for it. The output is parsed as
+   it arrives (gs_drain) and published once it ends, so a partial listing
+   never reaches a render; EOF means exactly what it says, since the
+   scanner sits in its own process group where the prompt's Ctrl-C cannot
+   reach it. 1 when the scan was published. */
 static int	poll_done(t_dcache *c, int wait_ms)
 {
 	struct pollfd	p;
-	ssize_t			got;
-	char			buf[4096];
+	long long		end;
+	int				left;
 
-	p.fd = c->fd;
-	p.events = POLLIN;
-	if (poll(&p, 1, wait_ms) <= 0)
-		return (0);
-	got = git_drain(c->fd, buf, sizeof(buf));
-	if (got < 0)
-		return (0);
-	drop_check(c);
-	c->dirty = git_status_bits(buf, got);
-	c->at = time(NULL);
-	c->ttl = 3;
-	if (c->at - c->spawned >= 1)
-		c->ttl = 30;
-	return (1);
+	end = git_now_ms() + wait_ms;
+	left = wait_ms;
+	while (c->busy)
+	{
+		p.fd = c->fd;
+		p.events = POLLIN;
+		if (poll(&p, 1, left) > 0 && gs_drain(c))
+			return (git_scan_publish(c, wait_ms > 0), 1);
+		left = (int)(end - git_now_ms());
+		if (left <= 0)
+			return (0);
+	}
+	return (0);
 }
 
-/* Non-blocking dirty flag for the repo rooted at `root`. A change of root
-   abandons any in-flight check (its answer is for a repo we left). Only a
-   freshly entered root gets a bounded wait — TTL refreshes poll with a
-   zero budget, so a render never stalls once the shell is inside a repo.
+/* How long the render about to start a scan may wait for it, and the
+** bookkeeping that goes with starting one.
+**
+** A freshly entered root gets up to GIT_WAIT_NEW_MS: fast repositories
+** keep an exact first answer, and the last one is forgotten, since it
+** described a repository the shell has left. After a command that may
+** have touched the tree -- or a change of untracked mode -- the rescan is
+** waited for up to GIT_WAIT_TOUCHED_MS, but only when the last timed scan
+** of this repository fit in that budget: `git commit` in a normal repo is
+** followed by an exact prompt, and a slow repo never makes the prompt
+** wait, its answer arriving a render late instead. A TTL refresh -- the
+** answer merely aged while nothing ran -- does not wait at all. */
+static int	scan_wait(t_dcache *c, const char *root)
+{
+	int	wait_ms;
 
-   A generation change (a command ran, so the tree may differ) retires the
-   cached answer whatever the TTL says. Without that, the 30-second arm
-   taken by a slow scan kept asserting "dirty" long after a `git checkout`
-   in the same shell had made the tree clean. */
+	wait_ms = 0;
+	if (!c->init || ft_strcmp(c->root, root) != 0)
+	{
+		wait_ms = GIT_WAIT_NEW_MS;
+		ft_bzero(&c->cur, sizeof(c->cur));
+		c->last_ms = -1;
+	}
+	else if ((c->gen != *git_scan_gen()
+			|| c->untracked != *git_untracked_cell())
+		&& c->last_ms >= 0 && c->last_ms <= GIT_WAIT_TOUCHED_MS)
+		wait_ms = GIT_WAIT_TOUCHED_MS;
+	c->init = 1;
+	c->gen = *git_scan_gen();
+	c->untracked = *git_untracked_cell();
+	ft_strlcpy(c->root, root, sizeof(c->root));
+	return (wait_ms);
+}
+
+/* The GIT_* bits for the repository rooted at `root`, never waiting longer
+   than scan_wait allows. A change of root abandons any in-flight scan (its
+   answer is for a repository we left). A generation change -- a command
+   ran, so the tree may differ -- retires the cached answer whatever the
+   TTL says; without that, the 30-second arm taken by a slow scan kept
+   asserting "dirty" long after `git checkout` had made the tree clean. */
 int	git_dirty_cached(const char *root)
 {
-	static t_dcache	c;
-	int				wait_ms;
+	t_dcache	*c;
+	int			wait_ms;
 
-	if (c.busy && ft_strcmp(c.root, root) != 0)
-		drop_check(&c);
-	if (c.busy)
-		return (poll_done(&c, 0), c.dirty);
-	if (c.init && ft_strcmp(c.root, root) == 0
-		&& c.gen == *git_scan_gen()
-		&& time(NULL) - c.at < c.ttl)
-		return (c.dirty);
-	wait_ms = 0;
-	if (ft_strcmp(c.root, root) != 0)
-	{
-		wait_ms = 60;
-		c.dirty = 0;
-	}
-	c.init = 1;
-	c.gen = *git_scan_gen();
-	ft_strlcpy(c.root, root, sizeof(c.root));
-	spawn_check(&c);
-	if (c.busy)
-		poll_done(&c, wait_ms);
-	return (c.dirty);
+	c = git_dcache();
+	if (c->busy && ft_strcmp(c->root, root) != 0)
+		git_scan_drop(c);
+	if (c->busy)
+		return (poll_done(c, 0), c->cur.bits);
+	if (c->init && ft_strcmp(c->root, root) == 0
+		&& c->gen == *git_scan_gen()
+		&& c->untracked == *git_untracked_cell()
+		&& time(NULL) - c->at < c->ttl)
+		return (c->cur.bits);
+	wait_ms = scan_wait(c, root);
+	spawn_check(c);
+	if (c->busy)
+		poll_done(c, wait_ms);
+	return (c->cur.bits);
 }

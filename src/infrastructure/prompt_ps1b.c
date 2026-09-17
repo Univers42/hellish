@@ -37,22 +37,26 @@ void	ps1_host(t_string *out, char kind)
 	vec_push_str(out, shortname);
 }
 
-/* \u: the username, from the live environment. */
+/* \u: the username, from the live environment; without $USER, the
+   account name, looked up once. getpwuid reads /etc/passwd (or asks NSS)
+   on every call, and this renders on every prompt. */
 void	ps1_user(t_shell *state, t_string *out)
 {
+	static char		name[256];
 	struct passwd	*pw;
 	char			*user;
 
 	user = env_expand(state, "USER");
-	if (!user || !*user)
+	if (user && *user)
+		return ((void)vec_push_str(out, user));
+	if (!name[0])
 	{
+		ft_strlcpy(name, "user", sizeof(name));
 		pw = getpwuid(getuid());
 		if (pw && pw->pw_name)
-			user = pw->pw_name;
-		else
-			user = "user";
+			ft_strlcpy(name, pw->pw_name, sizeof(name));
 	}
-	vec_push_str(out, user);
+	vec_push_str(out, name);
 }
 
 /* \g (hellish extension): the git branch of the cwd's repo with a dirty

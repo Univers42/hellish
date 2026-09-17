@@ -45,6 +45,11 @@ typedef struct s_vcs
 	int			bits;
 }	t_vcs;
 
+/* vcs_info's HELLISH_GIT_* variables (builtin_zsh_vcs2.c) */
+void	vcs_publish(t_shell *state, const char *branch, const char *root,
+			int bits);
+bool	vcs_truthy(const char *v);
+
 /* un-export (export_helpers3.c, builtin_declare5.c) */
 bool	export_wants_unexport(t_vec av, size_t first_operand);
 int		export_unexport_arg(t_shell *st, const char *word);

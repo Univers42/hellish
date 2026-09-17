@@ -105,26 +105,50 @@ typedef struct s_gitloc
 	int		init;
 }	t_gitloc;
 
-/* State of the async dirty check: the cached answer for `root` (valid for
-   `ttl` seconds past `at`) plus the in-flight `git status` scan, if any
-   (`busy`, `fd` its non-blocking read end, started at `spawned`).  The
-   scanner is deliberately NOT our child -- see prompt_git3.c -- so there
-   is no pid here to wait for; `fd` closing is the only completion signal.
+/* What one `git status --porcelain=v2 --branch --show-stash` says: the
+   GIT_* bits (incs/prompt.h) plus the branch.ab and stash headers. */
+typedef struct s_gitstat
+{
+	int	bits;
+	int	ahead;
+	int	behind;
+	int	stash;
+}	t_gitstat;
+
+# define GS_LINE 128
+# define GIT_WAIT_NEW_MS 60
+# define GIT_WAIT_TOUCHED_MS 25
+
+/* State of the async git scan: the published answer `cur` for `root`
+   (valid for `ttl` seconds past `at`) plus the in-flight scan, if any
+   (`busy`, `fd` its non-blocking read end, started at `spawned_ms`).
+   The scanner is deliberately NOT our child -- see prompt_git3.c -- so
+   there is no pid here to wait for; EOF on `fd` is the only completion
+   signal. A scan's output is parsed as it arrives into `acc`, a line at a
+   time through `line` (a read can end mid-line), and published into
+   `cur` only once it is over, so a render never shows half an answer.
    `gen` is the value of *git_scan_gen() when this answer was computed: the
    TTL only throttles rescanning while NOTHING has happened, so a command
    running in the tree retires the cached answer regardless of how much of
-   the TTL is left. */
+   the TTL is left. `untracked` is the -u mode the answer was taken with,
+   and `last_ms` how long the last scan took when it was timed at all (-1:
+   unknown or too slow to wait for). */
 typedef struct s_dcache
 {
 	char			root[PATH_MAX];
 	int				gen;
 	time_t			at;
 	time_t			ttl;
-	time_t			spawned;
+	long long		spawned_ms;
 	int				busy;
 	int				fd;
-	int				dirty;
 	int				init;
+	int				untracked;
+	int				last_ms;
+	t_gitstat		cur;
+	t_gitstat		acc;
+	char			line[GS_LINE];
+	int				llen;
 }	t_dcache;
 
 void		vec_push_ansi(t_string *v, const char *seq);
@@ -151,8 +175,12 @@ const char	*pal(int id);
 int			pal_truecolor(void);
 t_gitloc	*repo_locate(void);
 int			git_dirty_cached(const char *root);
-int			git_status_bits(const char *buf, ssize_t n);
-ssize_t		git_drain(int fd, char *buf, ssize_t cap);
+t_dcache	*git_dcache(void);
+void		gs_feed(t_dcache *c, const char *buf, ssize_t n);
+int			gs_drain(t_dcache *c);
+long long	git_now_ms(void);
+void		git_scan_drop(t_dcache *c);
+void		git_scan_publish(t_dcache *c, int timed);
 char		*branch_for_dir(const char *dir);
 void		push_user_seg(t_string *ret, t_prompt *p);
 void		push_cwd_seg(t_string *ret, t_prompt *p);

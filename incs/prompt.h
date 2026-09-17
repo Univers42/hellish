@@ -39,6 +39,24 @@ typedef struct s_shell	t_shell;
 # define GIT_DIRTY 1
 # define GIT_STAGED 2
 # define GIT_UNSTAGED 4
+# define GIT_UNTRACKED 8
+# define GIT_UNMERGED 16
+
+/* The prompt's git scan beyond the dirty bits, for vcs_info's HELLISH_GIT_*
+   variables (builtin_zsh_vcs2.c): ahead/behind/stash of the repository
+   rooted at `root`, 0 when the cached answer is for another one. */
+typedef struct s_gitcounts
+{
+	int	ahead;
+	int	behind;
+	int	stash;
+}	t_gitcounts;
+
+t_gitcounts	git_counts(const char *root);
+int			*git_untracked_cell(void);
+int			*git_detached_cell(void);
+void		git_redir_touch(const char *path);
+bool		git_dir_for(const char *root, char *out, size_t cap);
 
 void		get_git_info(char **branch, int *dirty);
 const char	*git_repo_root(void);
