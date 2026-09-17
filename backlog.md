@@ -217,6 +217,28 @@ pass counts in `bench/baseline/`). Performance claims come from
       with a bracketed paste and clean at 40/72/80. Pinned by
       tests/prompt_drift_matrix_test.py's paste_wrap_case.
 
+- [ ] The `Tests · suite + scripts + leaks` job flakes on the golden suite,
+      and the evidence is clean: 172935a0 and 5bc59791 differ ONLY in
+      .github/workflows/ci.yml and RELEASE.md -- zero files under src/,
+      incs/, tests/ or Makefile -- so that job ran byte-identical code and
+      binaries, passed on the first and failed the golden-suite step on the
+      second. It reproduces nowhere locally: 5133/5133 repeatedly, and
+      5133/5133 again under `env -i` with an empty $HOME, which is the
+      shape of CI's environment.
+      The suspicion is the background-job categories (wait_reports,
+      issue18_job_numbers, issue27_job_pgrp, issue13_bg_pid,
+      issue17_signal_report) on a 2-core runner under ASan -- the harness
+      prints "diffs may be background-job timing flakes; re-run to
+      confirm" for exactly this. UNCONFIRMED, because the suite-log
+      artifact and the job log both need repository admin rights to
+      download (403/401 unauthenticated), so the failing case was never
+      identified.
+      Worth one of: a token in the session that investigates it, or
+      uploading the failing case NAMES into the job summary (which is
+      readable without auth) rather than only into an artifact that is
+      not. A gate whose failure cannot be read is a gate that gets
+      re-run rather than fixed.
+
 - [ ] Interactive latency: the per-prompt fork is the last structural cost.
       strace says a bare Enter now costs 0 execve, 1 clone (the readline
       child) and 1 openat, against bash's 0/0/0. Release build, real user
