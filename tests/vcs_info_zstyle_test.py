@@ -200,7 +200,13 @@ def git_vars_cases(top):
     commit(c, "x", "side\n")
     git(c, "checkout", "-q", "main")
     commit(c, "x", "main\n")
-    subprocess.run(["git", "merge", "-q", "side"], cwd=c,
+    # Exits 1 on the conflict we want, so not through git() -- but WITH its
+    # identity: git >= 2.43 checks the committer before it starts the merge,
+    # and on a CI runner nobody is configured. Bare, it refused with
+    # "Committer identity unknown", no MERGE_HEAD, UNMERGED=0, and then the
+    # --abort below had nothing to abort. git 2.34 only asked at commit time.
+    subprocess.run(["git", "-c", "user.email=t@t", "-c", "user.name=t",
+                    "merge", "-q", "side"], cwd=c,
                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     expect("conflicted merge", c, {"UNMERGED": "1", "BRANCH": "main"})
     git(c, "merge", "--abort")
