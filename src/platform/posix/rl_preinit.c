@@ -72,20 +72,46 @@ static void	rl_bind_pending(t_rl *l)
 	}
 }
 
-/* Bring readline up to date before forking. First call does the heavy
-   build; later ones only notice a changed editing mode or new bindings. */
+/* The one-time build.
+**
+** rl_getc_function is ours (rl_getc.c): it is how a read ends on ^C
+** without a longjmp, and where the idle tick runs.
+**
+** rl_change_environment = 0: readline otherwise setenv()s LINES and
+** COLUMNS whenever it measures the screen, and it now does that in the
+** shell itself, where get_cols() reads COLUMNS first -- the width would
+** stay whatever it was at the first prompt.
+**
+** revert-all-at-newline: history lines edited but not run are put back
+** when a line is accepted. The line used to be read in a child, so such
+** edits died with it; reading in-process keeps readline's history list
+** across lines, and without this a recalled line changed and abandoned
+** stayed changed. Bound before rl_initialize so ~/.inputrc can still
+** turn it off. */
+static void	rl_first_init(t_rl *l)
+{
+	setlocale(LC_ALL, "");
+	rl_instream = stdin;
+	rl_outstream = stderr;
+	rl_getc_function = rl_getc_hook;
+	rl_change_environment = 0;
+	rl_variable_bind("revert-all-at-newline", "on");
+	setup_completion();
+	rl_initialize();
+	l->rl_ready = true;
+	l->mode_applied = -1;
+}
+
+/* Bring readline up to date before a read. First call does the heavy
+   build; later ones only notice a changed editing mode or new bindings,
+   and re-measure the terminal, which may have been resized while a
+   command ran and no readline was there to see it. */
 void	rl_preinit(t_rl *l)
 {
 	if (!l->rl_ready)
-	{
-		setlocale(LC_ALL, "");
-		rl_instream = stdin;
-		rl_outstream = stderr;
-		setup_completion();
-		rl_initialize();
-		l->rl_ready = true;
-		l->mode_applied = -1;
-	}
+		rl_first_init(l);
+	rl_reset_screen_size();
+	rl_abort_reset();
 	if (l->mode_applied != l->edit_mode)
 	{
 		rl_mode_apply(l->edit_mode);

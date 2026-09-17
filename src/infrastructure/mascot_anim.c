@@ -71,38 +71,33 @@ static int	anim_line_fits(void)
 	return (w < get_cols());
 }
 
-/* readline idle tick (~100ms, while the shell waits at the prompt):
-   advance the frame counter and repaint the rows above the input with
-   the next pre-rendered variant. No allocation, no t_shell access —
-   the variants were fully rendered by the parent before the fork.
-   Skipped whenever the cursor may have left the input's first row
-   (wrapped/multiline/pasted input, isearch, completion): a frozen
-   glyph is invisible, a repaint one row off destroys the line. */
-int	mascot_hook(void)
+/* Idle tick (~100ms, while the shell waits at the prompt; the line
+   reader's timeout, rl_idle.c): advance the frame counter and repaint the
+   rows above the input with the next pre-rendered variant. No allocation,
+   no t_shell access -- the variants were fully rendered when the prompt
+   was. Skipped whenever the cursor may have left the input's first row
+   (wrapped/multiline/pasted input, isearch, completion): a frozen glyph is
+   invisible, a repaint one row off destroys the line. */
+void	anim_tick(void)
 {
 	t_panim		*a;
 	t_string	view;
 
 	a = anim_cells();
 	if (a->count <= 0)
-		return (0);
+		return ;
 	if ((rl_readline_state & (RL_STATE_ISEARCH | RL_STATE_NSEARCH
 				| RL_STATE_COMPLETING)) || !anim_line_fits())
-		return (0);
+		return ;
 	(*anim_frame())++;
 	view = (t_string){0};
 	view.ctx = a->buf[*anim_frame() % a->count];
 	redraw_mascot(&view);
-	return (0);
 }
 
-/* Install the idle hook only when frame variants exist (PS1 contains \A
-   and HELLISH_ANIM selects a live style); a static prompt keeps the
-   hook NULL and pays nothing. */
-void	mascot_install(void)
+/* Frame variants exist only when PS1 contains \A and HELLISH_ANIM selects a
+   live style; a static prompt never ticks and pays nothing. */
+bool	anim_armed(void)
 {
-	if (anim_cells()->count > 0)
-		rl_event_hook = mascot_hook;
-	else
-		rl_event_hook = NULL;
+	return (anim_cells()->count > 0);
 }

@@ -22,6 +22,7 @@
 # include "shell.h"
 # include <readline/readline.h>
 # include <stdbool.h>
+# include <signal.h>
 # include "pal_wait.h"
 # include <unistd.h>
 # include "sh_input.h"
@@ -40,5 +41,22 @@ void	update_ctx(t_shell *state);
 int		get_more_input_notty(t_shell *state);
 int		visible_width_cstr(const char *s);
 void	rl_preinit(t_rl *l);
+
+/* The line reader (src/platform/posix/rl_getc.c, rl_idle.c, rl_sig.c). */
+# ifndef READERR
+#  define READERR -2
+# endif
+# define RL_AGAIN -3
+
+int		rl_getc_hook(FILE *stream);
+int		rl_idle_timeout(void);
+int		rl_idle_fd(void);
+void	rl_idle_event(int r);
+void	rl_block(sigset_t *old);
+int		*rl_intr_cell(void);
+int		*rl_editor_abort_cell(void);
+bool	rl_should_abort(void);
+int		rl_abort_value(void);
+void	rl_abort_reset(void);
 
 #endif

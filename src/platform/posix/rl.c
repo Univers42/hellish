@@ -76,7 +76,6 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 
 	zle_enter(state);
 	debug_dump_prompt(prompt);
-	mascot_install();
 	row = split_prompt(prompt);
 	state->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_rprompt_install(state);

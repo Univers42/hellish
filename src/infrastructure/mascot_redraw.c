@@ -68,7 +68,7 @@ static void	rd_char(t_string *f, char c)
 /* Compose and emit one repaint frame: sync+hide, save cursor, jump up,
    clear+rewrite every row above the input, restore, show, unsync — all
    in a single write so the terminal treats it as one update. The climb
-   is exactly count_nl rows: mascot_hook's anim_line_fits guard already
+   is exactly count_nl rows: anim_tick's anim_line_fits guard already
    proved the cursor sits on the input's first screen row, so no wrap
    term is needed. (The old (lastw + rl_point) / cols estimate counted
    BYTES as columns and a pasted newline as ordinary width — off-by-a-

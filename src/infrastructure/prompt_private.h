@@ -74,16 +74,15 @@ enum e_pal
 	PAL_N
 };
 
-/* Prompt animation cells, filled by the parent in ps1_animated and read
-   by the forked readline child's idle hook (plain fork inheritance, the
-   same trick the old mascot used): one fully-rendered prompt string per
+/* Prompt animation cells, filled in ps1_animated and read by the line
+   reader's idle tick (anim_tick): one fully-rendered prompt string per
    frame, differing only in the \A glyph, plus the visible width of the
-   last prompt row for the repaint math. count == 0 disables the idle
-   hook entirely. The cells are SINGLE-SHOT: each ps1_animated render
-   arms exactly one readline fork, and attach_input_readline disarms the
-   parent right after forking -- a continuation read (dquote>, heredoc>)
-   must never inherit frames describing a prompt block that is no longer
-   the rows above its cursor. */
+   last prompt row for the repaint math. count == 0 disables the tick
+   entirely. The cells are SINGLE-SHOT: each ps1_animated render arms
+   exactly one primary read, and are disarmed as soon as that read is
+   over -- a continuation read (dquote>, heredoc>) must never tick with
+   frames describing a prompt block that is no longer the rows above its
+   cursor. */
 # define PANIM_FRAMES 8
 # define PANIM_MAX 2048
 
@@ -224,8 +223,8 @@ const char	*user_color(void);
 void		render_extras(t_string *ret, t_prompt *p);
 void		prompt_arrow_row(t_string *ret, t_prompt *p);
 int			*anim_status(void);
-int			mascot_hook(void);
-void		mascot_install(void);
+void		anim_tick(void);
+bool		anim_armed(void);
 void		redraw_mascot(t_string *r);
 
 bool		ps1_is_special(char c);
