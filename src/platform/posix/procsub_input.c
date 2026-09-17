@@ -28,10 +28,16 @@
    so the parent's EXIT trap cannot fire from here.  cmdsub_in_place lets a
    body that is one external command execve without a second fork, so
    `cat <(seq 3)` costs one clone plus one exec, where the re-exec cost a
-   whole shell start-up on top. */
+   whole shell start-up on top.
+   csf_depth is raised for the same reason the $( ) child raises it: bash
+   shows a procsub the same job table a command substitution sees -- the
+   live jobs, minus the dead ones it has already reclaimed (builtin_jobs.c,
+   hidden_in_cmdsub). Unlike a ( ) subshell, the table is NOT cleared;
+   `sleep 1 & cat <(jobs)` lists that job in bash. */
 void	procsub_run_child(t_shell *state, const char *cmd)
 {
 	reset_traps_child(state);
+	state->csf_depth++;
 	state->cmdsub_in_place = cs_single_cmd(state, cmd);
 	exit(exec_string(state, (char *)cmd) & 0xFF);
 }

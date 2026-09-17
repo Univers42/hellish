@@ -18,6 +18,13 @@
    - The EXIT trap (traps[0]) is cleared: it belongs to the parent shell,
      not the subshell; the child runs run_exit_trap at the end from its own
      (now-empty) table.
+   - The JOB table goes with it. A subshell inherits no jobs in bash --
+     `sleep 1 & ( jobs )` prints nothing and `( kill %1 )` says "no such
+     job" -- because the jobs are not the subshell's children and it could
+     not wait for them if it tried. hellish listed the parent's table, so
+     `( jobs )` reported jobs the subshell had no way to touch, and any
+     `%N` in there addressed a process it did not own. Its OWN jobs number
+     from [1], which falls out of clearing rather than needing a rule.
    - We call free_executable_node before execute_tree_node so the pipe fds
      (next_infd etc.) have already been closed; then we reset infd/outfd so
      set_up_redirection does not try to dup2 the now-closed values.
@@ -30,6 +37,8 @@ static void	subshell_body(t_shell *state, t_executable_node *exe)
 	xfree(state->traps[0]);
 	state->traps[0] = NULL;
 	pseudo_traps_quiet(state);
+	job_table_free(&state->job_table);
+	job_table_init(&state->job_table);
 	set_up_redirection(state, exe);
 	exe->node = &((t_ast_node *)exe->node->children.ctx)[0];
 	free_executable_node(state, exe);
