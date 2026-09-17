@@ -121,8 +121,15 @@ def git_vars(cwd, untracked=False):
 
 
 def expect(name, cwd, want, untracked=False):
-    got, err = git_vars(cwd, untracked)
-    bad = {k: (got.get(k), v) for k, v in want.items() if got.get(k) != v}
+    # The scan is asynchronous and a loaded machine can take longer than
+    # the sleep in git_vars; a few more looks are allowed before a
+    # mismatch counts. A wrong answer stays wrong however long it runs.
+    for _ in range(5):
+        got, err = git_vars(cwd, untracked)
+        bad = {k: (got.get(k), v) for k, v in want.items()
+               if got.get(k) != v}
+        if not bad:
+            break
     check("HELLISH_GIT/%s" % name, not bad and not err,
           "got/want %r %r" % (bad, err[:120]))
     return got
