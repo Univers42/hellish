@@ -134,10 +134,17 @@ static char	**cmd_completion(const char *text, int start, int end)
    ` fi`, so continuing a name whose space had already been escaped could
    only ring the bell. The escape is now understood by the quoting hooks
    in complete_quote.c instead -- which is where it belongs, since they
-   are what puts the backslash there in the first place. */
+   are what puts the backslash there in the first place.
+
+   `{` left with them, and bash's set has never had it either. It cut
+   `ls ${HOME}/su<TAB>` into a word starting at `HOME}`, which begins with
+   no `$` -- so the variable-path hook (complete_dollar.c) never saw one,
+   and the braced form of a variable was the one spelling that would not
+   complete. Brace EXPANSION is the expander's business, not a word
+   boundary in the editor. */
 void	setup_completion(void)
 {
-	static char	brk[] = " \t\n\"'`@><=;|&{(";
+	static char	brk[] = " \t\n\"'`@><=;|&(";
 
 	rl_attempted_completion_function = cmd_completion;
 	rl_completion_append_character = ' ';
