@@ -73,8 +73,6 @@ void			zle_binds_free(void);
 /* The readline side. zle_active() is false outside the editor, which is
    what the bare `zle` guard in every plugin tests. */
 t_shell			**zle_state_cell(void);
-t_shell			**zle_caller_cell(void);
-t_shell			*zle_caller(void);
 bool			zle_active(void);
 void			zle_enter(t_shell *state);
 int				zle_dispatch(int count, int key);

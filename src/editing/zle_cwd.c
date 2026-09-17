@@ -51,8 +51,7 @@ void	update_pwd_vars(t_shell *state);
 */
 
 /* The pipe, parked where both halves of the fork can reach it without
-   changing bg_readline's or attach_input_readline's signatures. Same
-   function-local-static arrangement as zle_caller_cell. */
+   changing bg_readline's or attach_input_readline's signatures. */
 int	*zle_cwd_pipe(void)
 {
 	static int	fds[2] = {-1, -1};

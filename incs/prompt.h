@@ -106,13 +106,13 @@ void		begin_cycle(t_shell *state, t_string *ret);
 int			nl_count(const char *s, size_t n);
 void		buff_readline_update(t_rl *l);
 void		buff_readline_reset(t_rl *l);
-int			get_more_input_readline(t_rl *l, char *prompt);
+int			get_more_input_readline(t_shell *state, char *prompt);
 void		update_ctx(t_shell *state);
 int			get_more_input_notty(t_shell *state);
 
-void		bg_readline(int outfd, char *prompt, int edit_mode,
-				struct s_shell *state);
-int			attach_input_readline(t_rl *l, int pp[2], int pid);
+int			rl_read_fork(t_shell *state, char *prompt);
+char		*rl_editor_enter(t_shell *state, char *prompt);
+void		rl_editor_exit(void);
 t_string	prompt_normal(t_shell *state);
 t_string	prompt_more_input(t_shell *state, struct s_parser *parser);
 void		buff_readline_init(t_rl *ret);

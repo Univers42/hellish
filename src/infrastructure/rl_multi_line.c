@@ -73,8 +73,7 @@ static int	fetch_more(t_shell *state, char *prompt)
 		code = get_more_input_notty(state);
 	else
 	{
-		*zle_caller_cell() = state;
-		code = get_more_input_readline(&state->rl, prompt);
+		code = get_more_input_readline(state, prompt);
 	}
 	if (code == 1 || code == 2)
 		return (code);
