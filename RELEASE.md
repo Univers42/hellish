@@ -8,6 +8,61 @@ shows you how to drive the shell.
 
 ---
 
+## Unreleased — *a prompt that costs nothing, and a `${…}` that cannot crash*
+
+Two reports. Holding Enter left prompts printing for seconds after the key
+was released, and `cd` into a large repository was visibly slow. Both came
+from the same place: a prompt that ran git seven times before every line,
+and a shell that made that easy to do and expensive to fix. Measured with
+that prompt, in a repository with ten submodules, release build:
+
+    per prompt       before 74 ms     now 1.1 ms     (bash with the same rc: 90 → 8 ms)
+    30 fast Enters   drain in 2.2 s   now 32 ms
+    cd into a repo   56–121 ms        now 3–19 ms
+
+- **The line is read in the shell process.** *(the headline)* Every line
+  used to be read in a forked child, a process per prompt. A bare Enter
+  now creates none (strace: 0 execve, 0 clone), and costs 0.07 ms against
+  bash's 0.06. `HELLISH_RL_FORK=1` brings the child back for this release.
+  What changes for you: a widget's `cd`, variables and functions persist,
+  as in zsh and with bash's `bind -x`; the kill ring carries across lines;
+  `zle reset-prompt` really re-renders the prompt; and after `trap '' INT`
+  a ^C at the prompt does nothing, as in bash.
+- **The prompt repaints itself** when the background git scan finishes
+  after the prompt was drawn: a slow repository's dirty star appears
+  without pressing a key, instead of one Enter late. Prompts built by
+  hook functions can follow through `HELLISH_PROMPT_REFRESH_FUNCS`.
+- **One git process tells the prompt everything, and scripts can read
+  it.** The background scan is `git status --porcelain=v2 --branch
+  --show-stash --ignore-submodules=dirty` -- 6 ms where the old one walked
+  into every submodule for 49 -- and `vcs_info` publishes it as
+  `HELLISH_GIT_BRANCH`, `_STAGED`, `_UNSTAGED`, `_UNTRACKED`, `_UNMERGED`,
+  `_AHEAD`, `_BEHIND`, `_STASH`, `_DETACHED`, `_ROOT`, `_DIR`, so a prompt
+  framework needs no git process at all (`HELLISH_VCS_UNTRACKED=1` asks
+  for the untracked walk). A write to `/dev/null` no longer counts as a
+  change to the working tree, which used to restart the scan on every
+  bare Enter under a hook full of `2>/dev/null`.
+- **`${x//"/"/_}` no longer segfaults.** A `/` inside quotes, `\/`, `$(…)`
+  or backticks in a `${v/pat/rep}` pattern split it in the wrong place, and
+  the release build died on the leftover quote. Patterns and replacements
+  now split where bash splits them, the reparser never asserts on user
+  input, `"${x%'b}"` is the syntax error bash reports, and `${x^pat}`
+  honours its pattern. A 3780-case sweep against bash runs in CI on the
+  release build.
+- **Cheaper `$(…)` and trims.** Defining any alias no longer makes every
+  `$(cmd)` fork twice; `$(jobs)` runs in-process (and lists what bash's
+  does); a quoted `${s%"…"}` is one comparison instead of a match at every
+  position -- peeling a 1000-character string went from 2.9 s to 18 ms;
+  `command -v` answers from the command cache.
+
+The standalone prompt in `hellishrc_plugins/examples/hellishrc` (the `hx`
+themes) starts no process per prompt under this hellish, and one `git
+status` inside a repository under bash, zsh or an older hellish. Copy it
+over `~/.hellishrc` to get the numbers above; the old one still runs git
+seven times per prompt whatever the shell.
+
+---
+
 ## v3.1.0 — *the prompt stops lying about how wide it is*
 
 Everything here was found by using the shell rather than by reading it, and

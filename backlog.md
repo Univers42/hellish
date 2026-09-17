@@ -239,13 +239,19 @@ pass counts in `bench/baseline/`). Performance claims come from
       not. A gate whose failure cannot be read is a gate that gets
       re-run rather than fixed.
 
-- [ ] Interactive latency: the per-prompt fork is the last structural cost.
-      strace says a bare Enter now costs 0 execve, 1 clone (the readline
-      child) and 1 openat, against bash's 0/0/0. Release build, real user
-      config, median of a held-Enter burst: 1.71 ms/prompt before this
-      work, 1.25 ms after, bash 0.16 ms. Removing the fork (readline
-      in-process, behind HELLISH_RL_INPROC first) is what closes the rest.
-      Measure with tests/prompt_latency_test.py and tighten its ratchet.
+- [x] Interactive latency: the per-prompt fork is gone -- the line is
+      read in the shell process (rl_inproc.c), with HELLISH_RL_FORK=1 as
+      the escape hatch for one release. A bare Enter costs 0 execve, 0
+      clone, 1 openat; 0.07 ms/prompt against bash's 0.06 (release build,
+      tests/prompt_latency_test.py, ratchet now 2x).
+- [ ] Remove the forked reader (rl_fork.c, zle_cwd.c, readline_bg_signals,
+      HELLISH_RL_FORK) in 3.3.0.
+- [ ] `trap 'cmd' INT` at the prompt: bash runs the trap on ^C; hellish
+      discards the line and never runs it (run_pending_traps is skipped
+      while should_unwind is set). Found while moving readline in-process;
+      not changed by it.
+- [ ] `hash -p` is not supported, and `hash` prints nothing for an empty
+      table where bash prints "hash table empty".
 
 - [ ] Conformance gate for `2a7c5c1`+prompt running (expect possible
       Oils `background` cluster gains). Norminette NOT INSTALLED on
