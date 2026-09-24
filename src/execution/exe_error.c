@@ -57,20 +57,27 @@ int	no_such_file_or_dir(t_shell *state,
 	return (COMMAND_NOT_FOUND);
 }
 
-static int	errex_code(t_shell *state,
-					char *cmd_name,
-					char **path_of_exe,
-					int ex)
+/* Report a direct path's failure with the errno the caller left -- the one
+   that says WHY -- and let it decide the status as bash does: 127 when the
+   file is not there, 126 for everything else. It used to force ENOENT, so
+   a file that exists but is not executable, a directory, `./file/x` and a
+   symlink loop all read "No such file or directory" (#133: `./life` was
+   there), and the last two also came back 127 instead of 126. */
+static int	errex_code(t_shell *state, char *cmd_name, char **path_of_exe)
 {
-	errno = ENOENT;
+	int	ex;
+
+	ex = EXE_PERM_DENIED;
+	if (errno == ENOENT)
+		ex = COMMAND_NOT_FOUND;
 	err_1_errno(state, cmd_name);
 	xfree(*path_of_exe);
 	*path_of_exe = NULL;
 	return (ex);
 }
 
-/* Validate a command given as a direct path (contains '/').  A missing
-   file -> COMMAND_NOT_FOUND; a directory -> EXE_PERM_DENIED.  Shell
+/* Validate a command given as a direct path (contains '/'): stat's own
+   errno, EISDIR, or access's EACCES, each reported for what it is.  Shell
    script extensions (.sh/.hell/.hellish) only need to be readable, not
    executable (the shell will interpret them directly), so we skip the
    X_OK check for those.  Everything else requires X_OK (POSIX). */
@@ -81,18 +88,15 @@ int	handle_direct_path_error(t_shell *state, char *cmd_name,
 	size_t		len;
 
 	if (stat(*path_of_exe, &st) == -1)
-		return (errex_code(state, cmd_name, path_of_exe, COMMAND_NOT_FOUND));
+		return (errex_code(state, cmd_name, path_of_exe));
 	if (S_ISDIR(st.st_mode))
-		return (errex_code(state, cmd_name, path_of_exe, EXE_PERM_DENIED));
+		return (errno = EISDIR, errex_code(state, cmd_name, path_of_exe));
 	len = ft_strlen(*path_of_exe);
 	if ((len >= 3 && ft_strcmp(*path_of_exe + len - 3, ".sh") == 0)
 		|| (len >= 5 && ft_strcmp(*path_of_exe + len - 5, ".hell") == 0)
 		|| (len >= 8 && ft_strcmp(*path_of_exe + len - 8, ".hellish") == 0))
 		return (0);
 	if (access(*path_of_exe, X_OK) != 0)
-	{
-		return (errex_code(state, cmd_name, path_of_exe,
-				EXE_PERM_DENIED));
-	}
+		return (errex_code(state, cmd_name, path_of_exe));
 	return (0);
 }
