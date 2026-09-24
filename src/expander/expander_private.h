@@ -266,7 +266,7 @@ void		print_redir_err(t_shell *state,
 int			redirect_from_ast_redir(t_shell *state,
 				t_ast_node *curr,
 				int *redir_idx);
-bool		is_export(t_ast_node word);
+int			decl_word_kind(t_ast_node word);
 int			expand_simple_cmd_assignment(t_shell *state,
 				t_expander_simple_cmd *exp, t_executable_cmd *ret);
 int			expand_simple_cmd_redir(t_shell *state,
@@ -305,7 +305,6 @@ bool		token_starts_with(t_token t, char *str);
 t_token_old	get_old_token(t_ast_node word);
 int			expand_simple_cmd_redir(t_shell *state,
 				t_expander_simple_cmd *exp, t_vec_int *redirects);
-bool		is_export(t_ast_node word);
 bool		is_empty_command(const char *cmd);
 void		expand_cmd_substitutions(t_shell *state, t_ast_node *node);
 void		expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
@@ -449,6 +448,12 @@ char		*zsh_param(t_shell *state, const char *s, int slen);
 char		*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr);
 char		*zf_inner_text(t_shell *state, const char *s, int n);
 char		*zsh_token_text(t_shell *state, const char *s, int slen);
+char		*zsh_body_eval(t_shell *state, const char *s, int slen);
+bool		zsh_subscripted(const char *s, int slen);
+int			zsh_nested_len(const char *s, int slen);
+char		*zsh_nested_apply(t_shell *state, char *inner, const char *rest,
+				int rlen);
+bool		zsh_nested_op(t_shell *state, t_token *tt);
 char		*zd_plain(t_shell *state, const char *name, int len);
 char		*zd_splice(const char *val, const char *rest, int rlen);
 char		*zd_bind_name(int depth);
