@@ -34,13 +34,15 @@ void	chunk_close(t_chunkctx *c)
 
 /* Execute the fully parsed statements of a chunk, in order, stopping on
    exit/return/errexit/unwind. Freeing is chunk_close's job so even the
-   never-reached tail is reclaimed. */
+   never-reached tail is reclaimed. -1 when the chunk held no statement at
+   all -- blank lines, comments -- which must not stand in for the status
+   of the last command that did run. */
 static int	run_stmt_list(t_shell *state, t_chunkctx *c, bool *stop)
 {
 	size_t	i;
 	int		status;
 
-	status = 0;
+	status = -1;
 	i = 0;
 	while (i < c->asts.len && !*stop)
 	{
@@ -79,7 +81,8 @@ static int	replay_chunk(t_shell *state, t_chunkctx *c, bool *stop)
 /* One chunk, start to finish: open at the next hazard boundary, grow
    while the construct is incomplete and text remains (nothing executes
    during growth), then run it -- whole-chunk on success, replay on
-   failure. Advances *off past the chunk either way. */
+   failure. Advances *off past the chunk either way. Returns the status
+   of its last statement, -1 when it had none. */
 static int	run_chunk(t_shell *state, const char *s, size_t *off,
 				bool *stop)
 {
@@ -109,12 +112,16 @@ static int	run_chunk(t_shell *state, const char *s, size_t *off,
 
 /* Drive the whole string chunk by chunk. Clearing func_return at the end
    keeps a `return` inside eval from leaking into the caller's frame,
-   same contract as the old single-pass loop. */
+   same contract as the old single-pass loop. The string's status is the
+   last command's: a trailing chunk of blank lines or comments -- what a
+   hazard line such as `. file` leaves behind it -- ran nothing, and used
+   to make `eval $'. f; false\n# note'` succeed. */
 int	exec_chunks(t_shell *state, const char *str)
 {
 	size_t	off;
 	size_t	n;
 	int		status;
+	int		ran;
 	bool	stop;
 
 	off = 0;
@@ -122,7 +129,11 @@ int	exec_chunks(t_shell *state, const char *str)
 	status = 0;
 	stop = false;
 	while (off < n && !stop)
-		status = run_chunk(state, str, &off, &stop);
+	{
+		ran = run_chunk(state, str, &off, &stop);
+		if (ran >= 0)
+			status = ran;
+	}
 	state->func_return = 0;
 	return (status);
 }
