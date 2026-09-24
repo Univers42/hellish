@@ -153,6 +153,8 @@ static void	free_session_data(t_shell *state)
 
 	free_hist(state);
 	alias_table_free(&state->aliases);
+	xfree(state->aliases_view[0]);
+	xfree(state->aliases_view[1]);
 	cmd_hash_free(&state->cmd_cache);
 	zle_widgets_free();
 	zle_binds_free();
