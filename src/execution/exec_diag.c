@@ -105,7 +105,10 @@ static bool	bad_interpreter(t_shell *state, char *path, int err)
 	return (true);
 }
 
-/* bash's order, and its statuses: 127 only when execve said ENOENT.
+/* bash 5.3's order, and its statuses -- the pinned oracle's, which moved
+   the `#!` check ahead of ENOENT: a script whose interpreter is missing
+   is a "bad interpreter" (126), and only a file with no `#!` whose loader
+   is missing is "required file not found" (127, the one ENOENT status).
      err == EXEC_ERR_BINARY is our own: ENOEXEC on a file the sample says
    is binary, which must never reach the /bin/sh fallback. */
 int	exec_failure_report(t_shell *state, char *path, int err)
@@ -119,9 +122,11 @@ int	exec_failure_report(t_shell *state, char *path, int err)
 		err_2(state, path, strerror(EISDIR));
 	else if (access(path, X_OK) != 0 || err == E2BIG || err == ENOMEM)
 		err_2(state, path, strerror(err));
+	else if (bad_interpreter(state, path, err))
+		return (EXIT_CMD_NOT_EXEC);
 	else if (err == ENOENT)
 		err_2(state, path, "cannot execute: required file not found");
-	else if (!bad_interpreter(state, path, err))
+	else
 		err_2(state, path, strerror(err));
 	if (err == ENOENT)
 		return (EXIT_CMD_NOT_FOUND);
