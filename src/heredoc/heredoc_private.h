@@ -74,5 +74,6 @@ char	*hd_lex_line(const char *ls, const char **end, size_t *line,
 			t_deque_tok *tt);
 bool	heredoc_incomplete(const char *str);
 bool	heredoc_op_strips(const char *op);
+bool	capture_heredoc_live(t_shell *state, t_ast_node *node);
 
 #endif
