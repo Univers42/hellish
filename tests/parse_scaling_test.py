@@ -69,6 +69,17 @@ def themes_like(n):
     return "".join(out)
 
 
+def word_heavy(n):
+    """Many short functions, dense with words: every position of every word
+    asked whether a zsh alternation group starts there, and the question
+    first measured the rest of the input with strlen -- quadratic in the
+    size of the file, however it arrived (#135). 6000 such lines took
+    630ms to parse where bash takes 32ms, and 16000 took seconds."""
+    return "".join('f%d() { local a=$1 b="$2"; echo "$a" x y z '
+                   '| grep -q q && printf "%%s\\n" "$b"; }\n' % i
+                   for i in range(n))
+
+
 def timed(args, stdin_path=None, timeout=300):
     best = None
     for _ in range(2):
@@ -117,6 +128,33 @@ def scaling_check(name, gen, via_stdin=False, via_source=False):
     check(name, t1 <= ABS_CAP and t4 / max(t1, 0.02) < RATIO_MAX, detail)
 
 
+WORD_N = 2000
+WORD_RATIO_MAX = 20.0   # an 8x size step: linear ~8, quadratic ~64
+
+
+def word_scaling_check(name, argv):
+    """t(8N) against t(N), no fast pass. The step is 8x, not 4x: under
+    ASan the linear part is heavy enough that a 4x step put the quadratic
+    at a ratio of ~10 -- too close to linear to call on a busy runner."""
+    small = write_tmp(word_heavy(WORD_N))
+    big = write_tmp(word_heavy(WORD_N * 8))
+    try:
+        run = (lambda p: argv[:-1] + [argv[-1] + p]) if argv[-1] == ". " \
+            else (lambda p: argv + [p])
+        t1 = timed(run(small))
+        t4 = timed(run(big))
+    except subprocess.TimeoutExpired:
+        check(name, False, "timed out -- parse is grossly superlinear")
+        return
+    finally:
+        os.unlink(small)
+        os.unlink(big)
+    detail = "t(%d)=%.3fs t(%d)=%.3fs ratio=%.1f" % (
+        WORD_N, t1, WORD_N * 8, t4, t4 / max(t1, 0.005))
+    print("     " + name + ": " + detail)
+    check(name, t4 / max(t1, 0.01) < WORD_RATIO_MAX, detail)
+
+
 def main():
     scaling_check("hazard compound via -n FILE", hazard_compound)
     scaling_check("hazard compound via piped stdin", hazard_compound,
@@ -125,6 +163,12 @@ def main():
     scaling_check("themes-like monolith via source (v2.8.6: interior "
                   "hazards must not re-parse the open construct)",
                   themes_like, via_source=True)
+
+    # Word-heavy text is cheap per line, so the quadratic stayed under the
+    # fast pass at the sizes above: this one compares 2000 and 16000 lines
+    # outright, both ways the text can arrive.
+    word_scaling_check("word-heavy file via -n FILE", [SHELL, "-n"])
+    word_scaling_check("word-heavy file via source", [SHELL, "-c", ". "])
 
     # Re-sourcing an rc that installed aliases, functions and a DEBUG
     # trap must stay as cheap as the first load: hellish once disabled
