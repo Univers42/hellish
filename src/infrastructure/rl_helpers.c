@@ -62,7 +62,10 @@ void	buff_readline_init(t_rl *ret)
 
 /* Update the error-message context string to reflect the current line number.
    Bash writes "script: line N:" in error output — we mirror that here.
-   Only runs when should_update_ctx is set (non-interactive script mode). */
+   Only runs when should_update_ctx is set (non-interactive script mode).
+   This is the READER's line, right for an error found while reading; a
+   command that runs later moves ctx to its own line (exec_where.c), and
+   ctx_src/ctx_line are kept in step so that knows what ctx says. */
 void	update_ctx(t_shell *state)
 {
 	if (!state->rl.should_update_ctx)
@@ -70,6 +73,9 @@ void	update_ctx(t_shell *state)
 	xfree(state->ctx);
 	state->ctx = (char *)ft_asprintf("%s: line %i",
 			state->dft_ctx, state->rl.line);
+	state->ctx_src = NULL;
+	state->ctx_line = state->rl.line;
+	state->ctx_num = 0;
 }
 
 /* Non-TTY path: read raw bytes straight from fd 0 (piped script). We stop on

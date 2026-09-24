@@ -97,14 +97,12 @@ static int	run_chunk(t_shell *state, const char *s, size_t *off,
 	chunk_grow(state, s, n, &c);
 	while (c.parser.res == RES_GETMOREINPUT && c.end < n)
 		chunk_grow(state, s, n, &c);
+	where_chunk(state, c.spliced);
 	if (c.parser.res == RES_OK)
 		status = run_stmt_list(state, &c, stop);
 	else
-	{
-		if (state->err_src)
-			state->err_line = 1 + nl_count(s, c.start);
 		status = replay_chunk(state, &c, stop);
-	}
+	where_chunk(state, NULL);
 	chunk_close(&c);
 	*off = c.end;
 	return (status);
@@ -114,25 +112,28 @@ static int	run_chunk(t_shell *state, const char *s, size_t *off,
    keeps a `return` inside eval from leaking into the caller's frame,
    same contract as the old single-pass loop. The string's status is the
    last command's: a trailing chunk of blank lines or comments -- what a
-   hazard line such as `. file` leaves behind it -- ran nothing, and used
-   to make `eval $'. f; false\n# note'` succeed. */
+   hazard line such as `. file` or a heredoc leaves behind it -- ran
+   nothing, and used to make `eval $'. f; false\n# note'` succeed. A
+   sourced file's running line (err_line) advances chunk by chunk. */
 int	exec_chunks(t_shell *state, const char *str)
 {
+	size_t	at;
 	size_t	off;
-	size_t	n;
 	int		status;
 	int		ran;
 	bool	stop;
 
 	off = 0;
-	n = ft_strlen(str);
 	status = 0;
 	stop = false;
-	while (off < n && !stop)
+	while (str[off] && !stop)
 	{
+		at = off;
 		ran = run_chunk(state, str, &off, &stop);
 		if (ran >= 0)
 			status = ran;
+		if (state->err_src)
+			state->err_line += nl_count(str + at, off - at);
 	}
 	state->func_return = 0;
 	return (status);

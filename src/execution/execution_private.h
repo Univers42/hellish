@@ -257,6 +257,36 @@ int					run_one_stmt(t_shell *state, t_deque_tok *tt,
 int					run_parsed(t_shell *state, t_ast_node *ast);
 bool				must_stop(t_shell *state);
 
+/* exec_where.c: where the executing command is. `source` saves the whole
+   frame -- the file, its chunk, and the ctx string naming the caller's
+   place -- and puts it back exactly, so the next error after the source
+   names the caller again. */
+typedef struct s_where
+{
+	const char			*src;
+	int					line;
+	t_srcpos			pos;
+	char				*ctx;
+	const char			*ctx_src;
+	int					ctx_line;
+}	t_where;
+
+int					nl_between(const char *from, const char *to);
+int					srcpos_line(t_srcpos *p, int line0, const char *tok);
+int					cycle_lineno(t_shell *state, const char *tok);
+int					tok_lineno(t_shell *state);
+void				ctx_follow(t_shell *state, const char *src, int line);
+void				where_follow(t_shell *state, const char *tok);
+void				where_chunk(t_shell *state, const char *text);
+void				where_push(t_shell *state, t_where *saved,
+						const char *src);
+void				where_pop(t_shell *state, t_where *saved);
+
+static inline bool	srcpos_has(t_srcpos *p, const char *tok)
+{
+	return (p->base && tok >= p->base && tok < p->base + p->len);
+}
+
 /* select's loop state (execute_select.c): the expanded words, the body
    wrapped once, the loop variable, whether the next round reprints the
    menu, and the status the loop ends with. */

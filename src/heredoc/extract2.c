@@ -50,11 +50,17 @@ static bool	delim_present(const char *p, t_hd *s)
 /* Collect every heredoc body whose operator sits on the current line. ln pins
    the operator line so multiple specs sharing it (`cat <<A <<B`) all match even
    as collect_body bumps *cur past consumed body lines, keeping the line counter
-   in sync so the next command's heredocs still resolve. */
+   in sync so the next command's heredocs still resolve.
+     Each body line leaves an empty line behind in the stripped text, so a
+   token's line there is its line in the source: $LINENO and a runtime
+   error's "line N" after a heredoc are counted, not estimated. An empty
+   line is a separator wherever the operator line's own newline already is,
+   so the parse does not change. */
 static void	advance_hd(const char **p, size_t *cur,
 				t_string *out, t_walk_ctx *c)
 {
-	size_t	ln;
+	size_t		ln;
+	const char	*from;
 
 	ln = *cur;
 	while (c->si < c->n && c->sp[c->si].line < ln)
@@ -62,7 +68,13 @@ static void	advance_hd(const char **p, size_t *cur,
 	while (c->si < c->n && c->sp[c->si].line == ln)
 	{
 		if (delim_present(*p, &c->sp[c->si]))
+		{
+			from = *p;
 			c->got += (collect_body(p, cur, &out[1], &c->sp[c->si]), 1);
+			while (from < *p)
+				if (*from++ == '\n')
+					vec_push_char(&out[0], '\n');
+		}
 		c->si++;
 	}
 }
@@ -70,9 +82,10 @@ static void	advance_hd(const char **p, size_t *cur,
 /* Walk the source line by line: emit each line into out[0] (the stripped
    source for the parser), and after each line call advance_hd to pull any
    heredoc bodies that start on that line into out[1].  The result is a
-   parser-safe source string (no heredoc bodies) plus a packed body stream
-   in source order.  Returns the count of heredoc bodies actually extracted
-   (some operators may not have their delimiter present in the string). */
+   parser-safe source string (no heredoc bodies, an empty line for each of
+   their lines) plus a packed body stream in source order.  Returns the
+   count of heredoc bodies actually extracted (some operators may not have
+   their delimiter present in the string). */
 static int	walk_and_strip(const char *str, t_hd *sp, int n, t_string *out)
 {
 	const char	*p;
