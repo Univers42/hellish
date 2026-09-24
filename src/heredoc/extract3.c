@@ -52,39 +52,51 @@ static void	push_spec(t_vec *v, t_deque_tok *tt, size_t i, size_t line)
 	vec_push(v, &sp);
 }
 
-/* Tokenise a single command line (copied so its NUL terminates the lexer) and
-   append a spec for every `<<word` on it; return the operator count. */
-int	specs_on_line(const char *ls, size_t len, size_t line, t_vec *v)
+/* Append a spec for every `<<word` among tt's tokens, all tagged `line`. */
+static int	push_specs(t_deque_tok *tt, size_t line, t_vec *v)
 {
-	t_deque_tok	tt;
-	char		*copy;
-	size_t		i;
-	int			found;
+	size_t	i;
+	int		found;
 
-	copy = ft_strndup(ls, len);
-	if (!copy)
-		return (0);
-	tt = (t_deque_tok){0};
-	deque_init(&tt.deqtok, 16, sizeof(t_ltoken));
-	tokenizer(copy, &tt);
 	i = 0;
 	found = 0;
-	while (i + 1 < tt.deqtok.len)
+	while (i + 1 < tt->deqtok.len)
 	{
-		if (((t_ltoken *)deque_idx(&tt.deqtok, i))->tt == TT_HEREDOC)
-			(push_spec(v, &tt, i, line), found++);
+		if (((t_ltoken *)deque_idx(&tt->deqtok, i))->tt == TT_HEREDOC)
+			(push_spec(v, tt, i, line), found++);
 		i++;
 	}
+	return (found);
+}
+
+/* Tokenise the command line at *p -- grown across physical lines while a
+   quote or substitution is open (extract5.c) -- append a spec for every
+   `<<word` on it, and move *p past it. *line ends on the index of its last
+   physical line, the one its bodies follow. Returns the operator count. */
+int	specs_on_line(const char **p, size_t *line, t_vec *v)
+{
+	t_deque_tok	tt;
+	const char	*end;
+	char		*copy;
+	int			found;
+
+	tt = (t_deque_tok){0};
+	deque_init(&tt.deqtok, 16, sizeof(t_ltoken));
+	copy = hd_lex_line(*p, &end, line, &tt);
+	found = 0;
+	if (copy)
+		found = push_specs(&tt, *line, v);
+	*p = end;
 	return (xfree(tt.deqtok.buff), xfree(copy), found);
 }
 
-/* Walk the source line by line, collecting heredoc specs and skipping each
-   heredoc's body so its bytes are never lexed. *out receives the spec array. */
+/* Walk the source command line by command line, collecting heredoc specs and
+   skipping each heredoc's body so its bytes are never lexed. *out receives
+   the spec array. */
 int	collect_specs(const char *str, t_hd **out)
 {
 	t_vec		v;
 	const char	*p;
-	const char	*ls;
 	size_t		line;
 	int			k;
 
@@ -94,11 +106,8 @@ int	collect_specs(const char *str, t_hd **out)
 	line = 0;
 	while (*p)
 	{
-		ls = p;
-		while (*p && *p != '\n')
-			p++;
-		k = specs_on_line(ls, p - ls + (*p == '\n'), line++, &v);
-		p += (*p == '\n');
+		k = specs_on_line(&p, &line, &v);
+		line++;
 		while (k-- > 0 && *p)
 			skip_one_body(&p, &line, &((t_hd *)v.ctx)[v.len - 1 - k]);
 	}

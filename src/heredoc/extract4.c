@@ -74,7 +74,7 @@ bool	heredoc_incomplete(const char *str)
 {
 	t_vec		v;
 	const char	*p;
-	const char	*ls;
+	size_t		line;
 	int			k;
 
 	if (!str || !ft_strnstr(str, "<<", ft_strlen(str)))
@@ -82,13 +82,10 @@ bool	heredoc_incomplete(const char *str)
 	vec_init(&v);
 	v.elem_size = sizeof(t_hd);
 	p = str;
+	line = 0;
 	while (*p)
 	{
-		ls = p;
-		while (*p && *p != '\n')
-			p++;
-		k = specs_on_line(ls, p - ls + (*p == '\n'), v.len, &v);
-		p += (*p == '\n');
+		k = specs_on_line(&p, &line, &v);
 		if (k > 0 && !line_bodies_ok(&p, &v, k))
 			return (free_hd_vec(&v), true);
 	}

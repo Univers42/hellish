@@ -19,6 +19,7 @@
 # include "redir.h"
 # include "env.h"
 # include "expander.h"
+# include "lexer.h"
 # include <unistd.h>
 # include "helpers.h"
 # include "pal_wait.h"
@@ -68,7 +69,9 @@ void	hdoc_attach_backing(t_shell *state, int idx, t_string *body);
 bool	contains_quotes(t_ast_node node);
 bool	is_delim_line(const char *line, size_t len, t_hd *s);
 bool	split_heredocs(const char *str, char **stripped, char **bodies);
-int		specs_on_line(const char *ls, size_t len, size_t line, t_vec *v);
+int		specs_on_line(const char **p, size_t *line, t_vec *v);
+char	*hd_lex_line(const char *ls, const char **end, size_t *line,
+			t_deque_tok *tt);
 bool	heredoc_incomplete(const char *str);
 bool	heredoc_op_strips(const char *op);
 
