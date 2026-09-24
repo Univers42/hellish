@@ -11,6 +11,7 @@
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include "parena.h"
 
 /* `${${(s: :)$(git version)}[3]}` -- a nested flagged expansion with NO
 ** flags of its own on the outside.
@@ -44,5 +45,41 @@ bool	zsh_bare_nested(t_shell *state, t_token *tt, bool split_ctx)
 	l = zl_from(state, &f, v);
 	xfree(v);
 	zf_emit(state, &f, tt, &l);
+	return (true);
+}
+
+/* The same nested flagged expansion with an OPERATOR after it, the
+** subscript optional: `${${(Az)aliases[$cmd]}[1]:-$cmd}` -- the omz sudo
+** widget's "what command does this alias run", evaluated on ESC ESC.
+**
+** zsh_bare_nested stops at a bare subscript, so this shape fell one layer
+** down to the scalar engine, which has neither the token nor a subscript:
+** a bad substitution on every ESC ESC (#137). Here the inner value comes
+** from zf_nested WITH the token, so the quoting decides, as it does for
+** the bare shape, whether a flagged inner value is still an array -- the
+** `[1]` then picks a word (`ls`) and not a character (`l`) -- and the
+** outer subscript and operator are applied by zsh_nested_apply, which
+** binds the value and hands `scratch[1]:-$cmd` to the ordinary expander.
+** An unflagged inner (`${${x}:-d}`) has no array-ness to lose, and keeps
+** going the scalar way. */
+bool	zsh_nested_op(t_shell *state, t_token *tt)
+{
+	char	*v;
+	int		n;
+
+	n = zsh_nested_len(tt->start, tt->len);
+	if (n < 5 || n >= tt->len || tt->start[2] != '('
+		|| !zf_is_nested(tt->start, n))
+		return (false);
+	v = zf_nested(state, tt, tt->start, n);
+	if (!v)
+		return (false);
+	v = zsh_nested_apply(state, v, tt->start + n, tt->len - n);
+	if (!v)
+		return (false);
+	tt->start = v;
+	tt->len = (int)ft_strlen(v);
+	tt->allocated = true;
+	parena_note_attach();
 	return (true);
 }

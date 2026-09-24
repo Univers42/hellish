@@ -48,7 +48,9 @@ void	zf_free(t_zflags *f)
    which is what makes ${(f)$(cmd)} the idiom it is.  The second case runs
    the ordinary word pipeline (tilde, command substitution, parameters; no
    split, no glob); the first re-enters expand_param_format so ${(U)x:-y}
-   keeps working, and falls back to a plain lookup.
+   keeps working, and falls back to a plain lookup. A SUBSCRIPTED name --
+   ${(U)e[2]}, ${(z)aliases[ll]} -- goes through the token-level expander
+   instead, which is where subscripts live (zsh_body_eval, #137).
      env_expand_n's result is BORROWED from the environment, so it is copied:
    everything downstream of here owns what it holds. */
 char	*zf_inner(t_shell *state, t_token *tt, const char *s, int slen)
@@ -67,6 +69,8 @@ char	*zf_inner(t_shell *state, t_token *tt, const char *s, int slen)
 	}
 	if (s[0] == '$' || s[0] == '"' || s[0] == '\'' || s[0] == '`')
 		return (pf_word_pipeline(state, s, slen, false));
+	if (zsh_subscripted(s, slen))
+		return (zsh_body_eval(state, s, slen));
 	v = expand_param_format(state, s, slen, false);
 	if (v)
 		return (v);

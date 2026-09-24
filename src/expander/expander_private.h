@@ -448,6 +448,12 @@ char		*zsh_param(t_shell *state, const char *s, int slen);
 char		*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr);
 char		*zf_inner_text(t_shell *state, const char *s, int n);
 char		*zsh_token_text(t_shell *state, const char *s, int slen);
+char		*zsh_body_eval(t_shell *state, const char *s, int slen);
+bool		zsh_subscripted(const char *s, int slen);
+int			zsh_nested_len(const char *s, int slen);
+char		*zsh_nested_apply(t_shell *state, char *inner, const char *rest,
+				int rlen);
+bool		zsh_nested_op(t_shell *state, t_token *tt);
 char		*zd_plain(t_shell *state, const char *name, int len);
 char		*zd_splice(const char *val, const char *rest, int rlen);
 char		*zd_bind_name(int depth);
