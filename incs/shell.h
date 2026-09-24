@@ -452,6 +452,11 @@ typedef struct s_shell
 	bool				cycle_streamed; /* ranges parse+exec'd in-stream */
 	char				*hd_src; /* raw heredoc body string (pre-expand) */
 	size_t				hd_pos; /* read position within hd_src */
+	bool				hd_from_caller; /* one-shot: the next exec_string
+										is a $( ) body, whose unterminated
+										heredoc reads on in the caller's
+										input as bash's does; eval and
+										source never do (#139) */
 	char				*hd_stripped; /* tab-stripped heredoc body */
 	bool				gather_in_func; /* true while gathering heredocs */
 	bool				gathering_compound; /* mid incomplete compound cmd */
