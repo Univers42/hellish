@@ -365,8 +365,23 @@ void	rd_assign_array(t_shell *state, char *line, t_rdopt *o);
 void	rd_set_var(t_shell *state, char *name, char *value_owned);
 void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
 long	rd_secs_ms(const char *s);
-int		fc_resolve_idx(t_shell *state, const char *s);
-int		fc_list(t_shell *state, char **av, int ac, bool reverse);
+/* fc's parsed command line (builtin_fc3.c): -e NAME, the -l -n -r -s
+   switches, and the first [last] operands that follow them. */
+typedef struct s_fcopt
+{
+	const char	*editor;
+	char		**ops;
+	int			nops;
+	bool		list;
+	bool		nonum;
+	bool		rev;
+	bool		subst;
+}	t_fcopt;
+
+int		fc_parse(t_shell *state, char **av, int ac, t_fcopt *o);
+int		fc_total(t_shell *state);
+int		fc_resolve_idx(t_shell *state, const char *s, int total, int *idx);
+int		fc_list(t_shell *state, t_fcopt *o);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);
 int		fc_run_editor(t_shell *state, const char *editor, char *tmpf);
 int		fc_edit_run(t_shell *state, const char *editor, int first, int last);
