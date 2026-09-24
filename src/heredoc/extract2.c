@@ -55,7 +55,10 @@ static bool	delim_present(const char *p, t_hd *s)
    token's line there is its line in the source: $LINENO and a runtime
    error's "line N" after a heredoc are counted, not estimated. An empty
    line is a separator wherever the operator line's own newline already is,
-   so the parse does not change. */
+   so the parse does not change. vec_push_nstr, not vec_push_char: the
+   stripped text is used as a C string, and vec_push_char leaves no NUL
+   when its byte fills the buffer exactly (the tokenizer then read past a
+   file ending in a heredoc -- arena-stress caught it). */
 static void	advance_hd(const char **p, size_t *cur,
 				t_string *out, t_walk_ctx *c)
 {
@@ -73,7 +76,7 @@ static void	advance_hd(const char **p, size_t *cur,
 			c->got += (collect_body(p, cur, &out[1], &c->sp[c->si]), 1);
 			while (from < *p)
 				if (*from++ == '\n')
-					vec_push_char(&out[0], '\n');
+					vec_push_nstr(&out[0], "\n", 1);
 		}
 		c->si++;
 	}
