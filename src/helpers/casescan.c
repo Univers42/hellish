@@ -26,6 +26,8 @@ void	casescan_init(t_casescan *cs, int len)
 	cs->len = len;
 	cs->ncase = 0;
 	cs->cmdpos = true;
+	cs->nhd = 0;
+	cs->arith = -1;
 }
 
 /* End of the alnum/underscore run starting at i — the word the keyword
@@ -80,16 +82,14 @@ int	casescan_step(t_casescan *cs, const char *s, int *i, int depth)
 {
 	char	c;
 
+	if (cs->arith >= 0 && depth <= cs->arith)
+		cs->arith = -1;
+	if (casescan_comment(cs, s, i) || casescan_bodies(cs, s, i)
+		|| (cs->arith < 0 && casescan_heredoc_op(cs, s, i)))
+		return (0);
 	c = s[*i];
-	if (c == '(')
-		return (cs->cmdpos = true, (*i)++, 1);
-	if (c == ')')
-	{
-		(*i)++;
-		if (cs->ncase > 0 && cs->at[cs->ncase - 1] == depth)
-			return (cs->cmdpos = true, 0);
-		return (cs->cmdpos = false, -1);
-	}
+	if (c == '(' || c == ')')
+		return (casescan_paren(cs, s, i, depth));
 	if (c == ';' || c == '|' || c == '&' || c == '\n')
 		return (cs->cmdpos = true, (*i)++, 0);
 	if (c == ' ' || c == '\t')

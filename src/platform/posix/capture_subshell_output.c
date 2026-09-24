@@ -44,6 +44,7 @@ static pid_t	fork_and_run_inproc(t_shell *state, int pipefd[2],
 		pseudo_traps_quiet(state);
 		state->csf_depth++;
 		state->cmdsub_in_place = cs_single_cmd(state, cmd);
+		state->hd_from_caller = true;
 		exit(exec_string(state, (char *)cmd) & 0xFF);
 	}
 	return (pid);

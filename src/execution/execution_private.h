@@ -246,6 +246,8 @@ typedef struct s_chunkctx
 }	t_chunkctx;
 
 void				chunk_close(t_chunkctx *c);
+size_t				chunk_span(const char *s, size_t off, size_t n,
+						bool open);
 void				chunk_grow(t_shell *state, const char *s, size_t n,
 						t_chunkctx *c);
 int					exec_chunks(t_shell *state, const char *str);
