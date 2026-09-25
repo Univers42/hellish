@@ -35,13 +35,15 @@ void	emit_array_at(t_shell *state, const char *name, t_ast_node *curr_node,
 	emit_val_at(val, curr_node, ret);
 }
 
-/* One field per associative element: values (want_keys 0) or keys
-   (want_keys 1). Shared by "${h[@]}" and "${!h[@]}" emission. */
+/* One field per associative element: the values, or the keys with
+   EMIT_KEYS. Shared by "${h[@]}", ${h[@]} and both keys forms; EMIT_QUOTED
+   is the quoted ones, whose fields are never pathname-expanded. */
 void	emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
-			int want_keys)
+			int mode)
 {
 	t_assoc_it	it;
 	int			nth;
+	char		*s;
 
 	assoc_it_init(&it, val);
 	nth = 0;
@@ -49,10 +51,14 @@ void	emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
 	{
 		if (nth++ > 0)
 			push_and_reinit_curr_node(ret, curr_node);
-		if (want_keys)
-			push_new_env_child(curr_node, ft_strndup(it.k, it.kl));
+		if (mode & EMIT_KEYS)
+			s = ft_strndup(it.k, it.kl);
 		else
-			push_new_env_child(curr_node, ft_strndup(it.v, it.vl));
+			s = ft_strndup(it.v, it.vl);
+		if (mode & EMIT_QUOTED)
+			push_new_dq_child(curr_node, s);
+		else
+			push_new_env_child(curr_node, s);
 	}
 }
 
@@ -112,7 +118,7 @@ void	emit_keys_fields(t_shell *state, const char *name,
 	if (!val)
 		return ;
 	if (assoc_is(val))
-		return (emit_assoc_fields(val, curr_node, ret, 1));
+		return (emit_assoc_fields(val, curr_node, ret, EMIT_KEYS));
 	cur = "";
 	if (arr_is(val))
 		cur = val + 1;

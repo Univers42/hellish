@@ -74,8 +74,9 @@ void	emit_positional_split(t_shell *state, t_ast_node *curr_node,
 }
 
 /* Expand a quoted "$@": one field per positional parameter (NOT IFS-split, so
-   params containing spaces stay intact). First/last fields join adjacent
-   literal text, mirroring POSIX behaviour for pre"$@"post. */
+   params containing spaces stay intact, and not pathname-expanded, so a `*`
+   stays a `*`). First/last fields join adjacent literal text, mirroring
+   POSIX behaviour for pre"$@"post. */
 void	emit_positional_at(t_shell *state, t_ast_node *curr_node, t_vec_nd *ret)
 {
 	char	*cnt;
@@ -98,8 +99,8 @@ void	emit_positional_at(t_shell *state, t_ast_node *curr_node, t_vec_nd *ret)
 		if (i > 1)
 			push_and_reinit_curr_node(ret, curr_node);
 		if (v)
-			push_new_env_child(curr_node, ft_strdup(v));
+			push_new_dq_child(curr_node, ft_strdup(v));
 		else
-			push_new_env_child(curr_node, ft_strdup(""));
+			push_new_dq_child(curr_node, ft_strdup(""));
 	}
 }

@@ -333,6 +333,7 @@ void		ft_reset(void *ptr, size_t size,
 void		free_children(void *p);
 void		push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node);
 void		push_new_env_child(t_ast_node *curr_node, char *new_start);
+void		push_new_dq_child(t_ast_node *curr_node, char *new_start);
 
 /* indexed arrays (expand_array*.c, split_array.c) */
 bool		expand_array_token(t_shell *state, t_token *tt, bool split_ctx);
@@ -342,12 +343,19 @@ void		arr_marks_clear(t_shell *state);
 bool		arr_keys_defer(t_shell *state, t_token *tt);
 void		emit_keys_fields(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
+void		emit_keys_at(t_shell *state, const char *name,
+				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_at(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
+/* emit_assoc_fields mode bits: the keys rather than the values, and
+   verbatim (quoted) fields rather than glob-eligible ones. */
+# define EMIT_KEYS 1
+# define EMIT_QUOTED 2
+
 void		emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
-				int want_keys);
+				int mode);
 typedef struct s_slice_ctx
 {
 	char	*val;
