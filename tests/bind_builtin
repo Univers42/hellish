@@ -25,3 +25,13 @@ bind -s; echo rc=$?
 bind '"\C-x\C-m": "echo macro"'; bind -s | grep -F 'C-x\C-m'
 f=$(mktemp); printf '"\\C-x\\C-e": end-of-line\n' > "$f"; bind -f "$f"; bind -p | grep -F '"\C-x\C-e"'; rm -f "$f"
 bind -qforward-word | grep -c 'forward-word can be invoked'
+bind -x '"\C-x\C-z": echo hi'; bind -X; echo rc=$?
+bind -x 'C-x: echo'; echo rc=$?
+bind -x '"\C-x: echo'; echo rc=$?
+bind -x '"\C-x"echo'; echo rc=$?
+bind -x '"\C-x" "echo two words"'; bind -X
+bind -x '"\C-x":"echo q"'; bind -X
+bind -x '"\C-x": printf "%s\n" $READLINE_LINE'; bind -X
+bind -x '"\C-x": a'; bind -x '"\C-x": b'; bind -X
+bind -x '"\C-x\C-z": echo hi'; bind -p | grep -c C-z
+bind -x; echo rc=$?
