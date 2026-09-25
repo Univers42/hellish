@@ -67,6 +67,7 @@ typedef struct s_zle_bind
 t_vec			*zle_binds(void);
 void			zle_bind_raw(t_zle_bind *b);
 void			zle_bind_add(const char *seq, const char *widget);
+char			*zle_keyseq(const char *s);
 const char		*zle_bind_widget(const char *seq);
 void			zle_binds_free(void);
 
@@ -76,6 +77,14 @@ t_shell			**zle_state_cell(void);
 bool			zle_active(void);
 void			zle_enter(t_shell *state);
 int				zle_dispatch(int count, int key);
+
+/* A built-in widget is readline's own command (zle_rl4.c): the key is
+   bound to the function itself, never through zle_dispatch. t_zle_fn is
+   readline's rl_command_func_t, spelled without its header. */
+typedef int				(*t_zle_fn)(int count, int key);
+
+t_zle_fn		zle_builtin_func(const char *w);
+void			zle_bind_install(t_zle_bind *b);
 void			zle_do_redisplay(void);
 void			zle_do_message(const char *msg);
 void			zle_do_kill_buffer(void);

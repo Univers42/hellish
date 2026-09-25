@@ -65,11 +65,7 @@ static void	rl_bind_pending(t_rl *l)
 
 	a = (t_zle_bind *)zle_binds()->ctx;
 	while (l->binds_done < zle_binds()->len)
-	{
-		zle_bind_raw(&a[l->binds_done]);
-		rl_bind_keyseq(a[l->binds_done].seq, zle_dispatch);
-		l->binds_done++;
-	}
+		zle_bind_install(&a[l->binds_done++]);
 }
 
 /* HELLISH_RL_FORK=1: read in a forked child, as every release before this
