@@ -61,21 +61,26 @@ int	rd_wait_input(t_rdopt *o)
 /* Route the completed line to its destination: -a fills the named array,
    no variable names sends the whole line to $REPLY, otherwise the line is
    IFS-split across the named variables. rd_set_var takes ownership of the
-   line; the array/word paths copy fields out of it, so it is freed here. */
-static void	rd_dispatch(t_shell *state, t_vec argv, char *line, t_rdopt *o)
+   line; the array/word paths copy fields out of it, so it is freed here.
+   Returns the status a readonly variable forces, 0 when every assignment
+   was made: bash's 2 for REPLY, 1 for an -a array (assign_words has the
+   named-variable rules). */
+static int	rd_dispatch(t_shell *state, t_vec argv, char *line, t_rdopt *o)
 {
-	if (o->aname)
-	{
+	int	st;
+
+	if (o->first >= argv.len && !o->aname)
+		return (2 * !rd_set_var(state, "REPLY", line));
+	st = 0;
+	if (o->aname && is_readonly_var(state, o->aname))
+		st = (ft_eprintf("%s: %s: readonly variable\n", state->ctx,
+					o->aname), 1);
+	else if (o->aname)
 		rd_assign_array(state, line, o);
-		xfree(line);
-	}
-	else if (o->first >= argv.len)
-		rd_set_var(state, "REPLY", line);
 	else
-	{
-		assign_words(state, line, argv, o);
-		xfree(line);
-	}
+		st = assign_words(state, line, argv, o);
+	xfree(line);
+	return (st);
 }
 
 /* read [-r] [-n N] [-N N] [-d C] [-t S] [-p PROMPT] [-a NAME] [var ...]:
@@ -84,6 +89,10 @@ static void	rd_dispatch(t_shell *state, t_vec argv, char *line, t_rdopt *o)
    Returns 1 on EOF even if some data was read (mimics bash), so `while read
    line; do …; done` processes the last line before stopping even when the
    file lacks a trailing newline.
+     At EOF with nothing read the variables are still assigned, empty (an
+   -a array emptied), as bash does. They used to keep their old values, so
+   `while read -r l || [ -n "$l" ]` -- the loop that also handles a last
+   line with no newline -- never ended: $l still held that last line.
      -N reads a fixed byte count and must NOT field-split: an empty IFS is
    exactly that, so the ordinary assign_words path handles it with no second
    code path to keep in step. */
@@ -92,6 +101,7 @@ int	builtin_read(t_shell *state, t_vec argv)
 	char	*line;
 	t_rdopt	o;
 	int		eof;
+	int		st;
 
 	o = (t_rdopt){.nchars = -1, .delim = '\n', .tmo_ms = -1};
 	o.first = parse_read_opts2(argv, &o);
@@ -105,7 +115,9 @@ int	builtin_read(t_shell *state, t_vec argv)
 		return (xfree(o.ifs), 142);
 	line = read_one_line(&o, &eof);
 	if (!line)
-		return (xfree(o.ifs), 1);
-	rd_dispatch(state, argv, line, &o);
+		line = ft_strdup("");
+	st = rd_dispatch(state, argv, line, &o);
+	if (st)
+		return (xfree(o.ifs), st);
 	return (xfree(o.ifs), eof != 0);
 }
