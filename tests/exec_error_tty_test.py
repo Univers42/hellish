@@ -13,6 +13,13 @@ terminal, fails, and the shell must take it back and prompt at once. Each
 case must print bash's diagnostic, then a prompt, then answer `echo $?`
 with bash's status. Waits on output: a hang is a timeout, a named failure.
 
+The same failures through `exec` come after them. At a prompt a failed
+exec must leave the shell up, as bash's does -- a script or subshell
+exits instead (tests/scripts/55_exec_builtin.sh). `exec nosuch` used to
+print "command not found", then read the shell it had just freed: under
+ASan the shell died on the spot. exec names the file by its full path, as
+bash's does (@D@ is the directory the cases run in).
+
 Usage: python3 exec_error_tty_test.py [/path/to/hellish]
 """
 import os
@@ -40,6 +47,11 @@ CASES = [
     ("./elfjunk", b"./elfjunk: cannot execute binary file: Exec format error",
      126),
     ("./notexec/x", b"./notexec/x: Not a directory", 126),
+    ("exec nosuch_cmd_q", b"exec: nosuch_cmd_q: not found", 127),
+    ("exec -- nosuch_cmd_q", b"exec: nosuch_cmd_q: not found", 127),
+    ("exec ./notexec", b"@D@/notexec: Permission denied", 126),
+    ("exec ./dir", b"@D@/dir: Is a directory", 126),
+    ("exec ./nope", b"@D@/nope: No such file or directory", 127),
 ]
 
 
@@ -70,6 +82,7 @@ def main():
     t.send("cd %s\r" % d)
     t.expect(b"P$ ")
     for cmd, said, status in CASES:
+        said = said.replace(b"@D@", d.encode())
         mark = len(t.out)
         t.send(cmd + "\r")
         ok = t.expect(said, timeout=5) and t.expect(b"P$ ", timeout=5)
