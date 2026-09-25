@@ -108,7 +108,8 @@ static int	heredoc_redir(t_shell *state, t_ast_node *curr, t_token op_tok,
    handled specially: if the heredoc body is already materialised (has_redirect)
    we just return its cached index; if not yet materialised, materialize_heredoc
    is called.  All other redirect types go through try_create_redir which opens
-   the file and registers the fd in state->redirects. */
+   the file and registers the fd in state->redirects.  Either way the fd it
+   acts on must be one a redirection can reach (redir_src_fd_ok). */
 int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 {
 	t_token	op_tok;
@@ -119,10 +120,16 @@ int	redirect_from_ast_redir(t_shell *state, t_ast_node *curr, int *redir_idx)
 	op_tok = ((t_ast_node *)curr->children.ctx)[0].token;
 	tt = op_tok.tt;
 	if (tt == TT_HEREDOC)
-		return (heredoc_redir(state, curr, op_tok, redir_idx));
-	src_fd = parse_src_fd(tt, op_tok);
-	if (try_create_redir(state, curr, tt, src_fd) < 0)
+		heredoc_redir(state, curr, op_tok, redir_idx);
+	else
+	{
+		src_fd = parse_src_fd(tt, op_tok);
+		if (try_create_redir(state, curr, tt, src_fd) < 0)
+			return (-1);
+		*redir_idx = curr->redir_idx;
+	}
+	if (!redir_src_fd_ok(state,
+			vec_idx(&state->redirects, (size_t)(*redir_idx))))
 		return (-1);
-	*redir_idx = curr->redir_idx;
 	return (0);
 }

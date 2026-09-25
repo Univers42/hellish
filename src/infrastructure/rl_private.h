@@ -86,6 +86,7 @@ typedef struct s_rl_bracket
 void	rl_shell_enter(t_shell *state, t_rl_bracket *b);
 int		rl_shell_leave(t_shell *state, t_rl_bracket *b);
 void	rl_prerow_arm(t_string *rows);
+FILE	*rl_out_open(void);
 int		rl_getc_hook(FILE *stream);
 int		rl_idle_timeout(void);
 int		rl_idle_fd(void);
@@ -96,5 +97,17 @@ int		*rl_editor_abort_cell(void);
 bool	rl_should_abort(void);
 int		rl_abort_value(void);
 void	rl_abort_reset(void);
+
+/* The terminal opened a second time, non-blocking, to read keys from
+   (rl_keyfd.c): `twin` reads the keys of `src`, the device `rdev`. */
+typedef struct s_rl_keyfd
+{
+	int		twin;
+	int		src;
+	dev_t	rdev;
+}	t_rl_keyfd;
+
+int		rl_keyfd(int fd);
+void	rl_keyfd_refresh(int fd);
 
 #endif

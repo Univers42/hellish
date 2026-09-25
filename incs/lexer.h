@@ -124,5 +124,6 @@ void		advance_bs(char **str);
 int			create_token_consume(char *start, int fd_len,
 						t_tt tt, t_token *out);
 int			check_fd_redirect(char *str, t_token *out);
+int			io_number_at(t_deque_tok *toks, const char *s);
 
 #endif

@@ -35,13 +35,16 @@ int		extglob_ahead(const char *at);
    is db_pattern_match).
      The same span arms db_front_cell, so zsh's bare group may OPEN the
    operand: `[[ $TERM == (xterm*|screen*) ]]` is one word there and a
-   subshell anywhere else (dbracket_lex2.c, db_front_group). */
+   subshell anywhere else (dbracket_lex2.c, db_front_group).
+     An IO_NUMBER goes to parse_op: digits are word characters, and the
+   catch-all would take the `2` of `2>f` for a word (io_number_at). */
 static char	*try_parse_lexeme(char **str, t_deque_tok *ret, int in_db)
 {
 	char	*prompt;
 	int		saved;
 
-	if (glob_zsh() && (*str)[0] == '=' && (*str)[1] == '(')
+	if ((glob_zsh() && (*str)[0] == '=' && (*str)[1] == '(')
+		|| io_number_at(ret, *str))
 		return (0);
 	saved = *glob_extglob_cell();
 	if (in_db)

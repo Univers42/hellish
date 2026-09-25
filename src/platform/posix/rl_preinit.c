@@ -103,7 +103,7 @@ static void	rl_first_init(t_rl *l)
 {
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
-	rl_outstream = stderr;
+	rl_outstream = rl_out_open();
 	rl_getc_function = rl_getc_hook;
 	rl_change_environment = 0;
 	rl_variable_bind("revert-all-at-newline", "on");
@@ -124,6 +124,7 @@ void	rl_preinit(t_rl *l)
 		rl_first_init(l);
 	rl_reset_screen_size();
 	rl_abort_reset();
+	rl_keyfd_refresh(fileno(rl_instream));
 	if (l->mode_applied != l->edit_mode)
 	{
 		rl_mode_apply(l->edit_mode);

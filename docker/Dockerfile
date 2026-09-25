@@ -44,6 +44,11 @@ FROM ${BASE}
 # in was a red rung on a commit the rung had built fine an hour earlier.
 # A mirror that keeps failing four times still fails the build -- it is
 # the transient, not the broken, that is retried.
+# apt gets the same loop, update included: an Ubuntu mirror mid-sync serves
+# an index that disagrees with its files ("File has unexpected size ...
+# Mirror sync in progress?", or a 404 on a .deb the index already moved
+# past), and only a fresh update a little later cures it. It turned the
+# ubuntu 22.04 rung red on PR #141 before a line was compiled.
 ARG CC=cc
 
 RUN set -eux; \
@@ -51,10 +56,13 @@ RUN set -eux; \
 		apk add --no-cache build-base readline-dev ncurses-dev git bash \
 			coreutils python3 clang; \
 	elif command -v apt-get >/dev/null 2>&1; then \
-		apt-get update; \
-		DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-			build-essential libreadline-dev git ca-certificates bash \
-			python3 clang; \
+		n=0; until apt-get update -o Acquire::Retries=3 \
+			&& DEBIAN_FRONTEND=noninteractive apt-get install -y \
+				-o Acquire::Retries=3 --no-install-recommends \
+				build-essential libreadline-dev git ca-certificates bash \
+				python3 clang; do \
+			n=$((n + 1)); [ "$n" -ge 4 ] && exit 1; sleep $((n * 15)); \
+		done; \
 		rm -rf /var/lib/apt/lists/*; \
 	elif command -v pacman >/dev/null 2>&1; then \
 		pacman -Sy --noconfirm --needed base-devel readline git bash \
