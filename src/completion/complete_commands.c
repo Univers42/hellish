@@ -45,7 +45,7 @@ char	*g_builtins[] = {
 	"mapfile", "readarray", "declare", "typeset", "shopt", "pretty",
 	"dirs", "setopt", "unsetopt", "emulate", "print", "autoload",
 	"is-at-least",
-	"zmodload", "zstyle", "compdef", "zle", "bindkey", "add-zsh-hook",
+	"zmodload", "zstyle", "compdef", "zle", "bindkey", "bind", "add-zsh-hook",
 	"compgen", "complete", "compopt", "colors", "vcs_info",
 	NULL
 };
