@@ -103,7 +103,7 @@ static void	rl_first_init(t_rl *l)
 {
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
-	rl_outstream = stderr;
+	rl_outstream = rl_out_open();
 	rl_getc_function = rl_getc_hook;
 	rl_change_environment = 0;
 	rl_variable_bind("revert-all-at-newline", "on");

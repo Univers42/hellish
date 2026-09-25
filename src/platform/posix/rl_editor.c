@@ -30,9 +30,14 @@ int	exec_string(t_shell *state, char *content);
 ** `stty`, or a command whose job control hands the terminal back in
 ** cooked mode. TCSANOW, never a deprep/prep pair, which would echo
 ** typeahead. $? is the user's again afterwards, and a widget that ran
-** `exit` ends the read (rl_should_abort). */
+** `exit` ends the read (rl_should_abort).
+**
+** readline's stream is buffered (rl_outstream.c): what it drew goes out
+** first, so the widget's own output lands after it and a child the widget
+** forks never inherits bytes still in that buffer. */
 void	rl_shell_enter(t_shell *state, t_rl_bracket *b)
 {
+	fflush(rl_outstream);
 	b->status = state->last_cmd_st_exe;
 	b->have_tty = (tcgetattr(STDIN_FILENO, &b->tty) == 0);
 	rl_clear_signals();

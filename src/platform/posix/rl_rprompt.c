@@ -120,7 +120,7 @@ static void	rp_frame(t_rl *l, int cols, int end, bool show)
 	if (show)
 		vec_push_str(&f, (char *)l->rp_txt.ctx);
 	vec_push_str(&f, "\0338");
-	tty_write_all(fileno(rl_outstream), f.ctx, f.len);
+	rl_out_write(f.ctx, f.len);
 	xfree(f.ctx);
 	l->rp_painted = show;
 }
