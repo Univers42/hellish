@@ -1,0 +1,27 @@
+type bind
+bind; echo rc=$?
+bind --; echo rc=$?
+bind -q nosuchfn; echo rc=$?
+bind -Z; echo rc=$?
+bind -q; echo rc=$?
+bind -m; echo rc=$?
+bind -f /nonexistent/x; echo rc=$?
+bind -m nosuchmap -p >/dev/null; echo rc=$?
+bind -u nosuchfn; echo rc=$?
+bind '"\C-x\C-y": history-substring-search-backward'; bind -q history-substring-search-backward; echo rc=$?
+bind -q history-substring-search-forward; echo rc=$?
+bind '"\C-x\C-y": history-search-backward'; bind -p | grep -F '"\C-x\C-y"'
+bind '"\C-x\C-y": history-search-backward' '"\C-x\C-t": history-search-forward'; bind -q history-search-forward | grep -c 'C-x.C-t'
+bind -u forward-char; bind -q forward-char; echo rc=$?
+bind '"\C-x\C-y": kill-whole-line'; bind -r '\C-x\C-y'; bind -q kill-whole-line; echo rc=$?
+bind -m vi-insert '"\C-x\C-w": kill-whole-line'; bind -m vi-insert -q kill-whole-line; bind -q kill-whole-line; echo rc=$?
+bind -m emacs -p | grep -c '^"\\C-a": beginning-of-line$'
+bind 'set completion-ignore-case on'; bind -v | grep completion-ignore-case
+bind 'set completion-ignore-case off'; bind -V | grep -c completion-ignore-case
+bind -l | grep -c '^history-search-'
+bind -lp | grep -c '^beginning-of-line$'
+bind -X; echo rc=$?
+bind -s; echo rc=$?
+bind '"\C-x\C-m": "echo macro"'; bind -s | grep -F 'C-x\C-m'
+f=$(mktemp); printf '"\\C-x\\C-e": end-of-line\n' > "$f"; bind -f "$f"; bind -p | grep -F '"\C-x\C-e"'; rm -f "$f"
+bind -qforward-word | grep -c 'forward-word can be invoked'
