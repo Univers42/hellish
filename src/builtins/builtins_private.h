@@ -466,4 +466,8 @@ int		declare_names(t_shell *state, t_vec argv, size_t i);
 int		list_all(t_shell *state);
 int		list_named(t_shell *state, t_vec argv, size_t i);
 
+/* The file `exec NAME` runs, by bash's full name, or NULL when PATH has
+   none (builtin_exec_path.c). Looks only: never prints, never exits. */
+char	*exec_lookup(t_shell *state, char *name);
+
 #endif

@@ -20,53 +20,6 @@
 #include <sys/times.h>
 #include <unistd.h>
 
-void	procsub_detach_all(t_shell *state);
-
-/* Build a NULL-terminated argv array for execve from argv[1..] (skipping
-   argv[0] which is the "exec" word itself). We calloc so the sentinel NULL
-   is already in place without an explicit assignment. The strings are NOT
-   duplicated — execve does not need them to outlive the process image. */
-static char	**dup_exec_argv(t_vec argv)
-{
-	char	**out;
-	size_t	i;
-
-	out = ft_calloc(argv.len, sizeof(char *));
-	if (!out)
-		return (NULL);
-	i = 1;
-	while (i < argv.len)
-	{
-		out[i - 1] = ((char **)argv.ctx)[i];
-		i++;
-	}
-	return (out);
-}
-
-/* exec [command [args]]: replace the shell with command (or, with no command,
-   leave the already-applied redirections in place). */
-int	builtin_exec(t_shell *state, t_vec argv)
-{
-	char	*path;
-	char	**xargv;
-	char	**envp;
-
-	if (argv.len < 2)
-		return (procsub_detach_all(state), 0);
-	if (find_cmd_path(state, ((char **)argv.ctx)[1], &path) != 0)
-	{
-		ft_eprintf("%s: exec: %s: not found\n", state->ctx,
-			((char **)argv.ctx)[1]);
-		exit(127);
-	}
-	xargv = dup_exec_argv(argv);
-	envp = get_envp(state, path);
-	pal_editor_leave();
-	execve(path, xargv, envp);
-	ft_eprintf("%s: exec: %s: %s\n", state->ctx, path, strerror(errno));
-	exit(126);
-}
-
 /* waitpid() failed (ECHILD): the child was already reaped by
    reap_background_children's WNOHANG poll between list items, or by
    job_update_status's poll when `jobs` listed it. bash remembers a
