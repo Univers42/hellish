@@ -488,5 +488,7 @@ int		bind_rl_list(t_shell *state, const char *map, char opt);
 int		bind_rl_query(t_shell *state, const char *map, const char *name);
 bool	bind_rl_keymap_ok(const char *name);
 bool	bind_rl_fn_ok(const char *name);
+int		bind_unix(t_shell *state, const char *line);
+int		bind_x_list(void);
 
 #endif

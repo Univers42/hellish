@@ -27,8 +27,8 @@ int	bind_usage(t_shell *state, char bad, char missing)
 	return (2);
 }
 
-/* Every listing asked for, in bash's order whatever the order given.
-   -X lists `bind -x` bindings, of which there are none. */
+/* Every readline listing asked for, in bash's order whatever the order
+   given. -X, the `bind -x` bindings, comes later (builtin_bind3.c). */
 int	bind_list_all(t_shell *state, const char *map, const char *list)
 {
 	const char	*order;

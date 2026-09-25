@@ -46,6 +46,7 @@ typedef struct s_zle_widget
 {
 	char	*name;
 	char	*fn;
+	bool	bashx;
 }	t_zle_widget;
 
 t_vec			*zle_widgets(void);
@@ -98,6 +99,7 @@ int				zle_dispatch(int count, int key);
 typedef int				(*t_zle_fn)(int count, int key);
 
 t_zle_fn		zle_builtin_func(const char *w);
+void			zle_run_x(t_shell *state, t_zle_widget *w);
 void			zle_bind_install(t_zle_bind *b);
 void			zle_do_redisplay(void);
 void			zle_do_message(const char *msg);

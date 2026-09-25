@@ -26,9 +26,8 @@
 ** mode's keymap replaces whatever was bound before it (bind_lines.c).
 ** The listings bring readline up first, so they show what a prompt would.
 **
-** -x (a key that runs a shell command) is a bash extension on top of
-** readline, and is not here yet: it says so and fails rather than bind a
-** key that would do nothing. */
+** -x (a key that runs a shell command, READLINE_LINE and all) is bash's
+** own layer on top of readline; it is a widget here (builtin_bind3.c). */
 
 /* The option letter at av[*i][*j]; one that takes an argument takes the
    rest of the word or the next one, like getopt. NULL when there is none.
@@ -118,7 +117,7 @@ static size_t	bind_parse(t_bindopt *o, t_vec argv)
 	return (i);
 }
 
-/* bash's order: listings, -f, -q, -u, -r, then the bindings. A request
+/* bash's order: listings, -f, -q, -u, -r, -x, -X, then the bindings. A request
    that readline would carry out later is checked now, as bash checks it:
    the keymap, -u's function, -f's file. */
 int	builtin_bind(t_shell *state, t_vec argv)
@@ -131,9 +130,6 @@ int	builtin_bind(t_shell *state, t_vec argv)
 	i = bind_parse(&o, argv);
 	if (o.bad || o.missing)
 		return (bind_usage(state, o.bad, o.missing));
-	if (o.unix_cmd)
-		return (ft_eprintf("%s: bind: -x: not supported yet\n",
-				state->ctx), 1);
 	if (o.map && !bind_rl_keymap_ok(o.map))
 		return (ft_eprintf("%s: bind: `%s': invalid keymap name\n",
 				state->ctx, o.map), 1);
@@ -144,6 +140,10 @@ int	builtin_bind(t_shell *state, t_vec argv)
 	st |= bind_unbind(state, o.map, o.unbind);
 	if (o.remove)
 		bind_line_add('r', o.map, o.remove);
+	if (o.unix_cmd)
+		st |= bind_unix(state, o.unix_cmd);
+	if (ft_strchr(o.list, 'X'))
+		bind_x_list();
 	while (i < argv.len)
 		bind_line_add(0, o.map, ((char **)argv.ctx)[i++]);
 	return (st);

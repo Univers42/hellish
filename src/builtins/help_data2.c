@@ -30,7 +30,7 @@ static const t_help	g_help_2[] = {
 	"register what to offer when completing an argument of name"},
 {"bind", "shell",
 	"bind [-lpsvPSVX] [-m keymap] [-f file] [-q name] [-u name] [-r keyseq]"
-	" [keyseq:function | readline-line]",
+	" [-x keyseq:command] [keyseq:function | readline-line]",
 	"set key bindings and readline variables, or list them"},
 {"compopt", "shell",
 	"compopt [-o|+o option] [-DEI] [name ...]",
