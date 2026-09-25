@@ -21,7 +21,8 @@
 
    A value that is not an array is one field, and an unset one is none --
    the same two edge cases "${x[@]}" has always had, now shared rather than
-   restated. */
+   restated. Every field is a quoted one (push_new_dq_child): nothing in it
+   is a glob. */
 void	emit_val_at(const char *val, t_ast_node *curr_node, t_vec_nd *ret)
 {
 	const char	*cur;
@@ -32,15 +33,15 @@ void	emit_val_at(const char *val, t_ast_node *curr_node, t_vec_nd *ret)
 	if (!val)
 		return ;
 	if (assoc_is(val))
-		return (emit_assoc_fields((char *)val, curr_node, ret, 0));
+		return (emit_assoc_fields((char *)val, curr_node, ret, EMIT_QUOTED));
 	if (!arr_is(val))
-		return (push_new_env_child(curr_node, ft_strdup(val)));
+		return (push_new_dq_child(curr_node, ft_strdup(val)));
 	cur = val + 1;
 	nth[0] = 0;
 	while (arr_next(&cur, &idx, &v, &nth[1]))
 	{
 		if (nth[0]++ > 0)
 			push_and_reinit_curr_node(ret, curr_node);
-		push_new_env_child(curr_node, ft_strndup(v, nth[1]));
+		push_new_dq_child(curr_node, ft_strndup(v, nth[1]));
 	}
 }
