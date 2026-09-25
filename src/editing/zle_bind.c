@@ -41,29 +41,32 @@ t_vec	*zle_binds(void)
 	return (&v);
 }
 
-/* Record one binding. A repeat of the same sequence REPLACES: a plugin that
-   binds the same key in three keymaps (emacs, vicmd, viins -- which is what
-   oh-my-zsh's sudo does) must not leave three entries fighting over it, and
-   readline's keymaps are not per-editing-mode here. */
+/* Record one binding, the sequence in readline's spelling (zle_keyseq).
+   A repeat of the same sequence REPLACES: a plugin that binds the same key
+   in three keymaps (emacs, vicmd, viins -- which is what oh-my-zsh's sudo
+   does) must not leave three entries fighting over it, and readline's
+   keymaps are not per-editing-mode here. */
 void	zle_bind_add(const char *seq, const char *widget)
 {
 	t_zle_bind	b;
 	t_zle_bind	*a;
 	size_t		i;
 
+	b.seq = zle_keyseq(seq);
+	if (!b.seq)
+		return ;
 	a = (t_zle_bind *)zle_binds()->ctx;
-	i = 0;
-	while (i < zle_binds()->len)
+	i = -1;
+	while (++i < zle_binds()->len)
 	{
-		if (!ft_strcmp(a[i].seq, seq))
+		if (!ft_strcmp(a[i].seq, b.seq))
 		{
+			xfree(b.seq);
 			xfree(a[i].widget);
 			a[i].widget = ft_strdup(widget);
 			return ;
 		}
-		i++;
 	}
-	b.seq = ft_strdup(seq);
 	b.raw = NULL;
 	b.widget = ft_strdup(widget);
 	vec_push(zle_binds(), &b);

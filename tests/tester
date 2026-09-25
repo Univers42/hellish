@@ -83,6 +83,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "cmdsub_jobs"
         "compopt"
         "chunk_status"
+        "bind_builtin"
     )
 fi
 

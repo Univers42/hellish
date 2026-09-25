@@ -138,7 +138,10 @@ int	zle_dispatch(int count, int key)
 	w = zle_widget_get(name);
 	if (!w)
 		return (0);
-	zle_run(state, w);
+	if (w->bashx)
+		zle_run_x(state, w);
+	else
+		zle_run(state, w);
 	if (zle_active())
 		rl_redisplay();
 	return (0);

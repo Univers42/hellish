@@ -466,4 +466,29 @@ int		declare_names(t_shell *state, t_vec argv, size_t i);
 int		list_all(t_shell *state);
 int		list_named(t_shell *state, t_vec argv, size_t i);
 
+/* `bind` (builtin_bind*.c, platform/posix/bind_rl*.c). */
+typedef struct s_bindopt
+{
+	const char	*map;
+	const char	*query;
+	const char	*unbind;
+	const char	*remove;
+	const char	*file;
+	const char	*unix_cmd;
+	char		list[9];
+	char		bad;
+	char		missing;
+}	t_bindopt;
+
+int		bind_usage(t_shell *state, char bad, char missing);
+int		bind_list_all(t_shell *state, const char *map, const char *list);
+int		bind_file(t_shell *state, const char *map, const char *file);
+int		bind_unbind(t_shell *state, const char *map, const char *name);
+int		bind_rl_list(t_shell *state, const char *map, char opt);
+int		bind_rl_query(t_shell *state, const char *map, const char *name);
+bool	bind_rl_keymap_ok(const char *name);
+bool	bind_rl_fn_ok(const char *name);
+int		bind_unix(t_shell *state, const char *line);
+int		bind_x_list(void);
+
 #endif
