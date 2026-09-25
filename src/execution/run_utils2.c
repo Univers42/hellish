@@ -76,21 +76,3 @@ void	cleanup_after_exec_failure(t_vec *args,
 	xfree(path_of_exe);
 	free_tab(envp);
 }
-
-/* Map errno to POSIX shell exit codes after execve failure. */
-int	map_errno_to_exit(void)
-{
-	if (errno == EACCES)
-		return (PERMISSION_DENIED);
-	if (errno == ENOENT)
-		return (NO_SUCH_FILE_OR_DIR);
-	if (errno == ENOEXEC)
-		return (EXIT_CMD_NOT_EXEC);
-	if (errno == ENOTDIR)
-		return (NO_SUCH_DIR);
-	if (errno == ENOMEM)
-		return (OUT_OF_MEM);
-	if (errno == EISDIR)
-		return (IS_A_DIR);
-	return (EXIT_GENERAL_ERR);
-}

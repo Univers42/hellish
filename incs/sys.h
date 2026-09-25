@@ -43,11 +43,6 @@ getcwd() failed: No such file or directory\n"
 # define BLACK_HOLE "/dev/null"
 # define CMD_OPT "-c"
 # define EXIT_CMD_NOT_EXEC 126
-# define PERMISSION_DENIED 126
-# define NO_SUCH_FILE_OR_DIR 127
-# define NO_SUCH_DIR 127
-# define OUT_OF_MEM 127
-# define IS_A_DIR 126
 # define EXIT_CMD_NOT_FOUND 127
 # define EXIT_GENERAL_ERR 1
 # define IS_DOLLAR '$'
