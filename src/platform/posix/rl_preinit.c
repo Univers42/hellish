@@ -124,6 +124,7 @@ void	rl_preinit(t_rl *l)
 		rl_first_init(l);
 	rl_reset_screen_size();
 	rl_abort_reset();
+	rl_keyfd_refresh(fileno(rl_instream));
 	if (l->mode_applied != l->edit_mode)
 	{
 		rl_mode_apply(l->edit_mode);
