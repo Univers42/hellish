@@ -45,9 +45,7 @@ void	hist_rehome(t_shell *state)
 	if (!ft_strcmp(want, state->hist.file))
 		return (xfree(want));
 	xfree(want);
-	if (state->hist.append_fd >= 0)
-		close(state->hist.append_fd);
-	state->hist.append_fd = -1;
+	hist_close_append(state);
 	free_hist(state);
 	hist_rl_clear();
 	parse_history_file(state);
