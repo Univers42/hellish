@@ -20,7 +20,9 @@
    un-read remainder of rl.buff, capture the RAW body onto the node (so
    materialize_heredoc expands it at execution time, after any preceding
    same-line assignment), then advance rl.cursor past what we consumed so the
-   REPL does not re-read the body lines as commands.
+   REPL does not re-read the body lines as commands -- counting them, as
+   reading them would have: the next cycle starts on the line after the
+   delimiter, and $LINENO and every error after it said a line from before.
      rl.buff is a length-counted vector, not a C string, and the body scan
    stops at a NUL: without the terminator written past len here, a body
    whose delimiter never came ran off the end of the buffer (#139). */
@@ -41,6 +43,7 @@ bool	capture_heredoc_from_buff(t_shell *state, t_ast_node *node)
 	state->hd_src = (char *)state->rl.buff.ctx + state->rl.cursor;
 	state->hd_pos = 0;
 	ok = capture_heredoc_to_node(state, node);
+	state->rl.line += nl_count(state->hd_src, state->hd_pos);
 	state->rl.cursor += state->hd_pos;
 	state->hd_src = saved_src;
 	state->hd_pos = saved_pos;

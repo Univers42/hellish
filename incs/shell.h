@@ -240,6 +240,17 @@ typedef struct s_call_frame
 	unsigned int		shopt;
 }	t_call_frame;
 
+/* A sourced chunk's text as its statements run, and the last token whose
+   line was resolved in it -- the next resolves from there, forward or back
+   (exec_where.c). base is NULL outside a sourced file's chunk. */
+typedef struct s_srcpos
+{
+	const char			*base;
+	size_t				len;
+	const char			*memo;
+	int					memo_line;
+}	t_srcpos;
+
 /* One saved variable for function scope: its value at the moment it was made
    local / before positional params were replaced, restored on return. */
 typedef struct s_scope_save
@@ -359,9 +370,17 @@ typedef struct s_shell
 	/* The file whose text exec_string is running, so a parse error can say
 	   "FILE: line N" the way bash does (error_where.c); NULL for eval,
 	   traps, -c and the REPL, whose ctx already says where.  err_line is
-	   the file line the chunk under replay starts on. */
+	   the file line the running chunk starts on, err_pos that chunk, so a
+	   runtime error and $LINENO name the file line too.  ctx_src and
+	   ctx_line are what ctx names now, and ctx_num where its line number
+	   starts when ctx has room to rewrite it in place (0 when not): a new
+	   line costs a few digits, a new file a rebuild (exec_where.c). */
 	const char			*err_src;
 	int					err_line;
+	t_srcpos			err_pos;
+	const char			*ctx_src;
+	int					ctx_line;
+	size_t				ctx_num;
 	/* Silence the "not supported" notes while oh-my-zsh's plugins load
 	   through the shim (omz_shim.c): the user did not write those lines. */
 	bool				zunsup_quiet;
@@ -458,6 +477,7 @@ typedef struct s_shell
 										input as bash's does; eval and
 										source never do (#139) */
 	char				*hd_stripped; /* tab-stripped heredoc body */
+	size_t				hd_stripped_len; /* its length while it is set */
 	bool				gather_in_func; /* true while gathering heredocs */
 	bool				gathering_compound; /* mid incomplete compound cmd */
 	/* --- readline and PRNG --- */

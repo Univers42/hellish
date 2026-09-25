@@ -46,8 +46,10 @@
 ** as FUNCNAME plus a "main" entry. Here there is exactly one entry per live
 ** frame, innermost first. The element that matters -- [0] -- agrees with
 ** bash in every case the idiom above cares about. BASH_LINENO is not
-** provided: tok_lineno() cannot resolve lines inside sourced text today
-** (see src/execution/exec_lineno.c:97), so it would be a confident lie. */
+** provided: tok_lineno() resolves lines in the script and in sourced files
+** (exec_where.c) but not inside a function body, whose tokens are copies
+** with no position -- the one place BASH_LINENO is read -- so it would be
+** a confident lie. */
 
 /* Collect one field of the stack, innermost first, into a fresh array value.
    An empty stack yields an EMPTY array rather than nothing: bash leaves

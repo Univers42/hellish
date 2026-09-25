@@ -98,9 +98,9 @@ static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
    fresh-install pty test catches under ASan. The old single-pass code
    was immune only by accident: its up-front alias splice WAS the copy.
 
-   The two entry points below differ only in state->err_src, the file a
-   parse error is reported against (error_where.c). It is saved and
-   restored around every run so an eval inside a sourced file reports
+   The two entry points below differ only in state->err_src, the file an
+   error is reported against (error_where.c, exec_where.c). It is saved
+   and restored around every run so an eval inside a sourced file reports
    against ITS text rather than the file's line count. */
 static int	exec_string_own(t_shell *state, char *str)
 {
@@ -138,19 +138,14 @@ int	exec_string(t_shell *state, char *str)
 	return (status);
 }
 
-/* `source FILE` and the rc loader: parse errors name FILE and the line. */
+/* `source FILE` and the rc loader: errors name FILE and the line. */
 int	exec_file_string(t_shell *state, char *str, const char *src)
 {
-	const char	*saved_src;
-	int			saved_line;
-	int			status;
+	t_where	saved;
+	int		status;
 
-	saved_src = state->err_src;
-	saved_line = state->err_line;
-	state->err_src = src;
-	state->err_line = 1;
+	where_push(state, &saved, src);
 	status = exec_string_own(state, str);
-	state->err_src = saved_src;
-	state->err_line = saved_line;
+	where_pop(state, &saved);
 	return (status);
 }
