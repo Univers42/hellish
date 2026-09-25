@@ -308,6 +308,18 @@ commands from the newline that terminates a command record.
 The history subsystem therefore maintains a **vector of strings in memory** and
 an **append‑only file** on disk.
 
+The append descriptor (`history_fd.c`) is the shell's own, not the user's:
+
+- `hist_open_append` opens it `O_CLOEXEC` and moves it to fd ≥ 10 (as
+  `save_fd` does), so no program the shell runs inherits the history file
+  and it stays out of the 3..9 range scripts use;
+- it also records the file's device and inode. `hist_append_fd` checks them
+  before each write. If the user has since redirected that number
+  (`exec 10>f`) or closed it, the number is theirs: it is not written to or
+  closed, and the history file is opened again;
+- `hist_close_append` closes the descriptor only while it is still the
+  history file (`hist_rehome` uses it).
+
 ### 5.4 Initialization and teardown
 
 - `init_history` sets default flags and reads existing history from disk.
