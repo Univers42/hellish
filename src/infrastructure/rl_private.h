@@ -97,4 +97,16 @@ bool	rl_should_abort(void);
 int		rl_abort_value(void);
 void	rl_abort_reset(void);
 
+/* The terminal opened a second time, non-blocking, to read keys from
+   (rl_keyfd.c): `twin` reads the keys of `src`, the device `rdev`. */
+typedef struct s_rl_keyfd
+{
+	int		twin;
+	int		src;
+	dev_t	rdev;
+}	t_rl_keyfd;
+
+int		rl_keyfd(int fd);
+void	rl_keyfd_refresh(int fd);
+
 #endif
