@@ -67,8 +67,11 @@ Operator recognition used to walk a table on every call, with dozens of
 `parse_op()`:
 
 1. tries `check_fd_redirect()` (`helper4.c`) for the fd-prefixed forms
-   (`2>`, `10<`, `3>&`, `2>>`), with `fd_redir_type` picking the longest
-   form first;
+   (`2>`, `10<`, `255>&`, `2>>`), with `fd_redir_type` picking the longest
+   form first. `tokenize_step` routes digits here only when they are an
+   IO_NUMBER (`io_number_at`): a whole token of digits, at most `INT_MAX`,
+   delimited by `<` or `>`, and not the operand of a `>&`/`<&` just before
+   it (`>&2>f` is `>&2` then `>f`, as in bash);
 2. otherwise routes on the leading byte to `op_left` (`<` family: `<<<`,
    `<<-`, `<<`, `<(`, `<&`, `<>`, `<`), `op_right` (`>>`, `>(`, `>&`, `>|`,
    `>`), or `op_other` (`||`, `|`, the `&` family via `op_amp` -- `&&`,
@@ -88,12 +91,13 @@ exists.
 ### 4.1 Boundaries (`helper2.c`)
 
 `is_word_boundary(s)` consults a 256-entry character-class table (`g_cl`:
-metacharacter / blank / digit bits) instead of an `ft_strchr` walk -- these
+metacharacter / blank bits) instead of an `ft_strchr` walk -- these
 predicates run over a million times on a large parse. A word ends on a
-metacharacter, a blank (space or tab only; newline is a token), or a
-fd-redirect start (`is_fd_redirect_start`: one or two digits then `<`/`>`),
-so `echo2>file` is `echo` + `2>` + `file`. `is_space` and
-`is_special_char` read the same table.
+metacharacter or a blank (space or tab only; newline is a token), and on
+nothing else: digits before a `<`/`>` do not end one, since an fd number is
+a whole token or nothing (POSIX 2.10.1). So `echo2>file` is the word
+`echo2` redirected to `file`, and `x=2>f` assigns `2`, as in bash.
+`is_space` and `is_special_char` read the same table.
 
 ### 4.2 The word machine (`parse_lexeme.c`)
 

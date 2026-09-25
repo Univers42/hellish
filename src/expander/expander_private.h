@@ -170,6 +170,7 @@ int			net_redir_open(char *fname, t_redir *ret);
 bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 bool		redir_park_fd(t_redir *ret);
 bool		dup_target_is_fd(const char *fname);
+bool		redir_src_fd_ok(t_shell *state, t_redir *r);
 bool		dup_of_pending(t_shell *state, t_tt tt, char *fname,
 				t_redir *ret);
 int			parse_src_fd(t_tt tt, t_token op_tok);
