@@ -506,6 +506,9 @@ typedef struct s_shell
 	t_vec				compspecs; /* t_compspec: `complete` registrations */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */
+	char				*aliases_view[2]; /* zsh `aliases` as read: the
+										table as an assoc (alias_view.c) */
+	int					aliases_view_at; /* slot the last read returned */
 	t_hash				cmd_cache; /* command name -> resolved path cache */
 	int					edit_mode; /* 0=vi, 1=emacs (rl_editing_mode) */
 	/* --- argv slab pool (zero-malloc fast path for simple commands) --- */

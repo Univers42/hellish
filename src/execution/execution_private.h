@@ -45,6 +45,12 @@ invalid redirect index %d\n"
 
 # define NAME "shell"
 
+/* exec_diag.c: bash reads this much of a file that execve refused to
+   decide whether it is binary, and try_exec_with_fallback returns
+   EXEC_ERR_BINARY -- no errno is negative -- when it was. */
+# define EXEC_SAMPLE_LEN 80
+# define EXEC_ERR_BINARY -1
+
 /* Iteration context for execute_pipeline_children.  Bundles everything
    the loop body needs across prepare_child_exec and finalize_child_parent
    so we do not have to pass eight separate arguments to each helper.
@@ -182,11 +188,12 @@ int					handle_direct_path_error(t_shell *state, char *cmd_name,
 int					run_builtin_or_continue(t_shell *state, t_vec *args);
 int					find_exe_path_wrapper(t_shell *state,
 						char *cmd0, char **out_path);
-void				try_exec_with_fallback(char *path_of_exe,
+int					try_exec_with_fallback(char *path_of_exe,
 						t_vec *args, char **envp);
 void				cleanup_after_exec_failure(t_vec *args,
 						char *path_of_exe, char **envp);
-int					map_errno_to_exit(void);
+bool				exec_file_is_binary(const char *path);
+int					exec_failure_report(t_shell *state, char *path, int err);
 void				set_for_var(t_shell *state, char *name, char *val);
 void				restore_one(t_shell *state, t_scope_save *s);
 void				restore_temp_assigns(t_shell *state, t_vec *saves);

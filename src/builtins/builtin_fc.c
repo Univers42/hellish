@@ -17,87 +17,89 @@
 #include <fcntl.h>
 #include "pal_wait.h"
 
-/* Translate a history specifier to a 0-based array index. NULL means "most
-   recent". Positive numbers are 1-based history positions; negative numbers
-   are relative offsets from the end (e.g. -1 = last entry). Both are clamped
-   to the valid range rather than returning an error so fc is tolerant of
-   out-of-range values from scripts. */
-int	fc_resolve_idx(t_shell *state, const char *s)
+/* Resolve one history specifier against the `total` entries fc sees (a
+   0-based index into *idx). A number: positive is an absolute history
+   number, negative counts back from the most recent (-1), 0 is the most
+   recent; out-of-range numbers are clamped, as POSIX lets fc do. Anything
+   else names the most recent command STARTING with it (`fc -l ech`), and
+   one that no command starts with is an error. NULL is the most recent.
+   Returns 0, or 1 after reporting. */
+int	fc_resolve_idx(t_shell *state, const char *s, int total, int *idx)
 {
-	int	n;
-	int	total;
+	int		n;
+	char	**ents;
 
-	total = (int)state->hist.hist_cmds.len;
+	ents = (char **)state->hist.hist_cmds.ctx;
+	*idx = total - 1;
 	if (!s)
-		return (total - 1);
-	n = ft_atoi(s);
-	if (n < 0)
-		n = total + n;
-	else
-		n = n - 1;
-	if (n < 0)
-		n = 0;
-	if (n >= total)
-		n = total - 1;
-	return (n);
-}
-
-/* Print history entries first..last (inclusive, 0-based). Line numbers are
-   shown 1-based (matching `history` output) unless -n was passed. */
-static void	fc_print_entries(t_shell *state, int first, int last, bool nonums)
-{
-	int	i;
-
-	i = first - 1;
-	while (++i <= last)
+		return (0);
+	if (*s == '-' || *s == '+' || ft_isdigit((unsigned char)*s))
 	{
-		if (!nonums)
-			ft_printf("%d\t", i + 1);
-		ft_printf("%s\n", ((char **)state->hist.hist_cmds.ctx)[i]);
+		n = ft_atoi(s) - 1;
+		if (n < 0)
+			n += total + 1;
+		*idx = n;
+		if (n < 0)
+			*idx = 0;
+		if (n >= total)
+			*idx = total - 1;
+		return (0);
 	}
+	while (*idx >= 0 && ft_strncmp(ents[*idx], s, ft_strlen(s)))
+		(*idx)--;
+	if (*idx >= 0)
+		return (0);
+	return (ft_eprintf("%s: fc: no command found\n", state->ctx), 1);
 }
 
-static bool	fc_check_nonums(char **av, int ac)
+/* One entry, bash's layout: `N<TAB> cmd`, or `<TAB> cmd` with -n. */
+static void	fc_print_entry(t_shell *state, int i, bool nonum)
 {
-	int	i;
-
-	i = -1;
-	while (++i < ac)
-		if (av[i] && ft_strcmp(av[i], "-n") == 0)
-			return (true);
-	return (false);
+	if (!nonum)
+		ft_printf("%d", i + 1);
+	ft_printf("\t %s\n", ((char **)state->hist.hist_cmds.ctx)[i]);
 }
 
-/* fc -l [first [last]]: list history entries. With no range, default to the
-   last 16 entries. Reversed (-r) swaps first and last. -n suppresses line
-   numbers. The range arguments may be omitted individually — ac tracks which
-   were given. */
-int	fc_list(t_shell *state, char **av, int ac, bool reverse)
+/* Print first..last, whichever way round they are: first after last
+   lists backwards, and -r flips whichever direction that gave. */
+static void	fc_print_range(t_shell *state, int first, int last, t_fcopt *o)
 {
-	int		first;
-	int		last;
-	int		tmp;
+	int	step;
+	int	swap;
 
-	first = fc_resolve_idx(state, NULL);
-	if (ac > 0)
-		first = fc_resolve_idx(state, av[0]);
-	last = fc_resolve_idx(state, NULL);
-	if (ac > 1)
-		last = fc_resolve_idx(state, av[1]);
-	if (first == last && ac < 2)
+	if (o->rev)
 	{
-		first = (int)state->hist.hist_cmds.len - 16;
-		if (first < 0)
-			first = 0;
-		last = (int)state->hist.hist_cmds.len - 1;
-	}
-	if (reverse && first < last)
-	{
-		tmp = first;
+		swap = first;
 		first = last;
-		last = tmp;
+		last = swap;
 	}
-	fc_print_entries(state, first, last, fc_check_nonums(av, ac));
+	step = 1 - 2 * (first > last);
+	while (first != last + step)
+	{
+		fc_print_entry(state, first, o->nonum);
+		first += step;
+	}
+}
+
+/* fc -l [-nr] [first [last]]. No operand: the last 16. One: from it to
+   the most recent. */
+int	fc_list(t_shell *state, t_fcopt *o)
+{
+	int	total;
+	int	first;
+	int	last;
+
+	total = fc_total(state);
+	if (total <= 0)
+		return (0);
+	first = total - 16;
+	if (first < 0)
+		first = 0;
+	if (fc_resolve_idx(state, NULL, total, &last)
+		|| (o->nops > 0 && fc_resolve_idx(state, o->ops[0], total, &first))
+		|| (o->nops > 1 && fc_resolve_idx(state, o->ops[1], total, &last)))
+		return (1);
+	fc_print_range(state, first, last, o);
 	return (0);
 }
 

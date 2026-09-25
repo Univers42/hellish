@@ -70,49 +70,50 @@ static const char	*get_fc_editor(t_shell *state)
 }
 
 /* fc [-e editor] [first [last]]: write entries to a temp file, open the
-   editor, then queue the result for re-execution. `-e -` (a dash) would
-   suppress the editor in bash; we do not implement that form yet. */
-static int	fc_run(t_shell *state, char **av, int ac)
+   editor, then queue the result for re-execution. No operand edits the
+   previous command -- the fc line itself is out of fc's view (fc_total). */
+static int	fc_run(t_shell *state, t_fcopt *o)
 {
+	int			total;
 	int			first;
 	int			last;
 	const char	*editor;
 
-	if (ac >= 3 && ft_strcmp(av[1], "-e") == 0)
-		editor = av[2];
-	else
+	editor = o->editor;
+	if (!editor)
 		editor = get_fc_editor(state);
-	if (ac > 1 && av[1][0] != '-')
-		first = fc_resolve_idx(state, av[1]);
-	else
-		first = fc_resolve_idx(state, NULL);
-	if (ac > 2 && av[2][0] != '-')
-		last = fc_resolve_idx(state, av[2]);
-	else
-		last = fc_resolve_idx(state, NULL);
+	total = fc_total(state);
+	if (fc_resolve_idx(state, NULL, total, &first)
+		|| (o->nops > 0 && fc_resolve_idx(state, o->ops[0], total, &first)))
+		return (1);
+	last = first;
+	if (o->nops > 1 && fc_resolve_idx(state, o->ops[1], total, &last))
+		return (1);
+	if (first > last)
+		return (fc_edit_run(state, editor, last, first));
 	return (fc_edit_run(state, editor, first, last));
 }
 
-/* fc [-l [-r] [-n] [first [last]] | [-e editor] [first [last]]]: fix
-   command. `-l` lists history without editing. Without `-l`, writes the
-   selected commands to a temp file, opens an editor, and re-executes the
-   result. Bails out early (status 1) when history is empty or inactive. */
+/* fc [-e editor] [-lnr] [first [last]]: list the history (-l) or edit and
+   re-run part of it. Options cluster (fc_parse). `-s` and `-e -` -- re-run
+   without an editor -- are refused OUT LOUD rather than falling into edit
+   mode, which is what every unrecognised spelling used to do: an editor
+   started where the caller expected output, as in `$(fc -ln -1)`. */
 int	builtin_fc(t_shell *state, t_vec argv)
 {
-	char	**av;
-	int		ac;
-	bool	empty;
+	t_fcopt	o;
+	int		st;
 
-	av = (char **)argv.ctx;
-	ac = (int)argv.len;
-	empty = (!state->hist.hist_active || !state->hist.hist_cmds.len);
-	if (ac >= 2 && (!ft_strcmp(av[1], "-l") || !ft_strcmp(av[1], "-lr")))
-	{
-		if (empty)
-			return (0);
-		return (fc_list(state, av + 2, ac - 2, av[1][2] == 'r'));
-	}
-	if (empty)
+	st = fc_parse(state, (char **)argv.ctx, (int)argv.len, &o);
+	if (st)
+		return (st);
+	if (o.list && !state->hist.hist_active)
+		return (0);
+	if (o.list)
+		return (fc_list(state, &o));
+	if (o.subst)
+		return (ft_eprintf("%s: fc: -s: not supported\n", state->ctx), 2);
+	if (!state->hist.hist_active || fc_total(state) <= 0)
 		return (ft_eprintf("%s: fc: no command history\n", state->ctx), 1);
-	return (fc_run(state, av, ac));
+	return (fc_run(state, &o));
 }

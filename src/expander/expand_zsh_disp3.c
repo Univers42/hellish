@@ -40,3 +40,37 @@ char	*zsh_token_text(t_shell *state, const char *s, int slen)
 		return ((char *)tok.start);
 	return (ft_strndup(tok.start, (size_t)tok.len));
 }
+
+/* A ${...} body, given WITHOUT its braces, through the token-level
+** expander -- the entry an ordinary ${...} word takes. The two zsh
+** operands that are only a slice of an outer body -- what a nested
+** expansion's outer operator reads (`${${x}[1]:-d}`), and what a flag
+** list applies to (`${(U)e[2]}`) -- went to expand_param_format, the
+** scalar engine, which has no subscript: `name[sub]` there, alone or
+** before an operator, is expand_array_elem_op's form, one layer up. Both
+** came back as bad substitutions (issue #137: the omz sudo widget's
+** `${${(Az)aliases[$cmd]}[1]:-$cmd}`, on ESC ESC). Owned result, "" for
+** an unset parameter. */
+char	*zsh_body_eval(t_shell *state, const char *s, int slen)
+{
+	t_token	tok;
+
+	tok = (t_token){.tt = TT_ENVVAR, .start = (char *)s, .len = slen};
+	expand_token(state, &tok, false);
+	if (tok.allocated)
+		return ((char *)tok.start);
+	if (!tok.start)
+		return (ft_strdup(""));
+	return (ft_strndup(tok.start, (size_t)tok.len));
+}
+
+/* Does the operand start with `name[` -- a subscripted parameter? */
+bool	zsh_subscripted(const char *s, int slen)
+{
+	int	i;
+
+	i = 0;
+	while (i < slen && (ft_isalnum(s[i]) || s[i] == '_'))
+		i++;
+	return (i > 0 && i < slen && s[i] == '[' && !ft_isdigit(s[0]));
+}

@@ -125,7 +125,8 @@ bool	expand_zsh_flags(t_shell *state, t_token *tt, bool split_ctx)
 	if (!zsh_mode(state) || tt->len < 2)
 		return (false);
 	if (tt->start[0] != '(')
-		return (zsh_bare_nested(state, tt, split_ctx));
+		return (zsh_bare_nested(state, tt, split_ctx)
+			|| zsh_nested_op(state, tt));
 	f = (t_zflags){0};
 	f.split = split_ctx;
 	end = zf_parse(tt->start, tt->len, &f);

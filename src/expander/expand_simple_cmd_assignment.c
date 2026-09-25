@@ -19,14 +19,16 @@
    a private clone so the caller's node stays intact (loops reuse it).
    Returns 1 on unwind request, 0 otherwise.
 
-   `export` gets EW_KEEP_AS_ONE because an assignment word does not field
-   split -- `export PATH=$PATH` is one operand however many spaces $PATH
-   holds.  It used to also get the RAW SOURCE TEXT restored over any argv
-   entry ending in `=`, which paired with a second quote-strip-and-expand
-   inside the export builtin: two wrongs that cancelled on `export s=$UNSET`
-   and destroyed everything else (`export s=''` stored two literal quotes,
+   A declaration utility (export, readonly, declare, typeset, local) gets
+   EW_KEEP_AS_ONE because an assignment word does not field split --
+   `export PATH=$PATH` is one operand however many spaces $PATH holds, and
+   so is `local new=$2` (#137).  `export` used to also get the RAW SOURCE
+   TEXT restored over any argv entry ending in `=`, which paired with a
+   second quote-strip-and-expand inside the export builtin: two wrongs
+   that cancelled on `export s=$UNSET` and destroyed everything else
+   (`export s=''` stored two literal quotes,
    `export s='x$y'` stored `x`).  Both halves are gone; the ordinary
-   expansion is the answer, as it already was for declare/readonly/local. */
+   expansion is the answer. */
 static int	expand_assignment_word_and_fixup(t_shell *state,
 					t_expander_simple_cmd *exp, t_executable_cmd *ret)
 {
@@ -38,7 +40,7 @@ static int	expand_assignment_word_and_fixup(t_shell *state,
 	scratch = clone_ast(exp->curr);
 	assignment_word_to_word(&scratch);
 	flags = EW_NO_GLOB;
-	if (exp->export)
+	if (exp->decl)
 		flags |= EW_KEEP_AS_ONE;
 	expand_word_glob_ctl(state, &scratch, &ret->argv, flags);
 	if (exec_aborting(state))
