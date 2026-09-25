@@ -81,6 +81,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "patsub_quoting"
         "cmdsub_jobs"
         "compopt"
+        "chunk_status"
     )
 fi
 

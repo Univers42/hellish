@@ -39,76 +39,84 @@ static const char	*first_tok_start(t_ast_node *node)
 /* With batched input delivery, rl.line points at the END of the batch, so
    $LINENO can no longer be read off the line counter. Instead we remember
    the executing command's first source token here (a borrowed pointer into
-   alias_exp); lineno_str() lazily turns that into a line number by counting
-   newlines up to its offset — only when a $LINENO expansion actually asks.
-   Tokens that don't point into the cycle buffer (heap-copied function
-   bodies, eval/cmdsub re-lexes) are skipped, so those keep the previous
-   command's line — the call site — which is what bash reports for eval. */
+   the text it was lexed from), and where_follow moves the error context
+   there: a batch's line from the cycle buffer, a sourced file's from its
+   chunk. Tokens that point into neither (heap-copied function bodies,
+   eval/cmdsub re-lexes) are skipped, so those keep the previous command's
+   line -- the call site -- which is what bash reports for eval. */
 void	note_cmd_lineno(t_shell *state, t_ast_node *node)
 {
 	const char	*start;
 
 	start = first_tok_start(node);
-	if (start)
-		state->rl.ln_tok = start;
+	if (!start)
+		return ;
+	state->rl.ln_tok = start;
+	where_follow(state, start);
 }
 
-/* Line number of a token inside hd_stripped (the cycle buffer with heredoc
-   body lines removed). Before the first heredoc, stripped text matches the
-   source byte-for-byte, so the newline count is exact. Past the end of the
-   first heredoc's operator line, add back every removed body line (packed
-   in hd_src) — exact for the common one-heredoc cycle, an approximation
-   when several heredocs interleave with commands. */
-static int	hd_stripped_line(t_shell *state, const char *tok)
-{
-	const char	*s;
-	size_t		off;
-	size_t		cut;
-	int			line;
-
-	s = state->hd_stripped;
-	off = tok - s;
-	line = state->rl.cycle_line0 + nl_count(s, off);
-	cut = 0;
-	while (s[cut] && !(s[cut] == '<' && s[cut + 1] == '<'))
-		cut++;
-	while (s[cut] && s[cut] != '\n')
-		cut++;
-	if (off > cut && state->hd_src)
-		line += nl_count(state->hd_src, ft_strlen(state->hd_src));
-	return (line);
-}
-
-/* Resolve the executing command's line number under batched input
-   delivery: rl.line points at the END of the delivered batch, so the real
-   line is recovered from the command's first token offset into the cycle
-   buffer (cycle start line + newlines before the token). The (ln_ptr,
-   ln_val) pair memoises the scan so a loop body re-reading $LINENO costs a
-   pointer compare, not a rescan. Tokens live in alias_exp normally, or in
-   hd_stripped when the cycle contained heredocs; anything else (function
-   bodies, eval re-lexes) keeps the last resolved line — the call site. */
-int	tok_lineno(t_shell *state)
+/* The text this cycle's tokens slice, when it holds `tok`: alias_exp
+   normally, hd_stripped when the cycle held heredocs -- whose bodies left
+   an empty line apiece behind, so both count lines as the source does. */
+static const char	*cycle_text(t_shell *state, const char *tok)
 {
 	const char	*base;
+
+	base = (const char *)state->alias_exp.ctx;
+	if (base && tok >= base && tok < base + state->alias_exp.len)
+		return (base);
+	base = state->hd_stripped;
+	if (base && tok >= base && tok < base + state->hd_stripped_len)
+		return (base);
+	return (NULL);
+}
+
+/* The line of `tok` in this cycle's text, or -1 when it is not there.
+   The (ln_ptr, ln_val) pair memoises the last answer, and a token further
+   on (or back) in the same text resolves from it, so a batch run top to
+   bottom is scanned once and a loop body re-reading $LINENO costs a scan
+   of that body, not of everything before it. */
+int	cycle_lineno(t_shell *state, const char *tok)
+{
+	const char	*base;
+	const char	*m;
+
+	m = state->rl.ln_ptr;
+	if (m && tok == m)
+		return (state->rl.ln_val);
+	base = cycle_text(state, tok);
+	if (!base)
+		return (-1);
+	if (m && cycle_text(state, m) == base)
+		state->rl.ln_val += nl_between(m, tok);
+	else
+		state->rl.ln_val = state->rl.cycle_line0 + nl_count(base,
+				(size_t)(tok - base));
+	state->rl.ln_ptr = tok;
+	return (state->rl.ln_val);
+}
+
+/* $LINENO: the executing command's line -- in the sourced file when it
+   comes from one, else in the batch (the reader's counter at a prompt,
+   whose line counter keeps its per-entry semantics). Anything else --
+   function bodies, eval re-lexes -- keeps the last resolved line: the
+   call site. */
+int	tok_lineno(t_shell *state)
+{
 	const char	*tok;
 	int			line;
 
+	tok = state->rl.ln_tok;
+	if (tok && srcpos_has(&state->err_pos, tok))
+		return (srcpos_line(&state->err_pos, state->err_line, tok));
 	if (!state->rl.tok_line)
 		return (state->rl.line);
-	tok = state->rl.ln_tok;
-	if (tok && tok == state->rl.ln_ptr)
+	line = -1;
+	if (tok)
+		line = cycle_lineno(state, tok);
+	if (line >= 0)
+		return (line);
+	if (state->rl.ln_ptr)
 		return (state->rl.ln_val);
-	base = (const char *)state->alias_exp.ctx;
-	if (tok && base && tok >= base && tok < base + state->alias_exp.len)
-		line = state->rl.cycle_line0 + nl_count(base, tok - base);
-	else if (tok && state->hd_stripped && tok >= state->hd_stripped
-		&& tok < state->hd_stripped + ft_strlen(state->hd_stripped))
-		line = hd_stripped_line(state, tok);
-	else if (state->rl.ln_ptr)
-		return (state->rl.ln_val);
-	else
-		return (state->rl.line);
-	state->rl.ln_ptr = tok;
-	state->rl.ln_val = line;
-	return (line);
+	return (state->rl.line);
 }
