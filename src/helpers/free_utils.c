@@ -158,6 +158,7 @@ static void	free_session_data(t_shell *state)
 	cmd_hash_free(&state->cmd_cache);
 	zle_widgets_free();
 	zle_binds_free();
+	bind_lines_free();
 	xfree(state->cwd.ctx);
 	pos_free(&state->pos);
 	free_argv_pool(state);

@@ -71,6 +71,20 @@ char			*zle_keyseq(const char *s);
 const char		*zle_bind_widget(const char *seq);
 void			zle_binds_free(void);
 
+/* `bind` (bind_lines.c): readline requests recorded until readline can
+   take them, replayed by bind_line_apply before each read. */
+typedef struct s_bind_line
+{
+	char	op;
+	char	*map;
+	char	*line;
+}	t_bind_line;
+
+t_vec			*bind_lines(void);
+void			bind_line_add(char op, const char *map, const char *line);
+void			bind_lines_free(void);
+void			bind_line_apply(t_bind_line *b);
+
 /* The readline side. zle_active() is false outside the editor, which is
    what the bare `zle` guard in every plugin tests. */
 t_shell			**zle_state_cell(void);

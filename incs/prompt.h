@@ -92,6 +92,7 @@ typedef struct s_rl
 	char		*shown_prompt; /* the prompt on screen, while reading */
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
+	size_t		bind_lines_done; /* `bind` requests already applied */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
 	t_string	rp_txt; /* rendered right prompt, width markers stripped */
 	int			rp_w; /* its terminal width; 0 = nothing to paint */
