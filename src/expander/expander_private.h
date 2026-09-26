@@ -198,6 +198,7 @@ char		*pf_get_var_value(t_shell *state, const char *name, int len);
 char		*expand_strlen(t_shell *state, const char *s, int slen);
 char		*default_or_alt(t_shell *state, char *val, t_pe_op o);
 bool		pf_op_word_used(char *val, t_pe_op o);
+bool		pf_op_word_segments(t_shell *state, t_token *tt, t_pe_op o);
 char		*expand_case(t_shell *state, const char *s, int slen, int name_len);
 char		*case_body(const char *val, char op, bool all);
 char		*case_body_pat(const char *val, char op, bool all,
@@ -334,6 +335,8 @@ void		free_children(void *p);
 void		push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node);
 void		push_new_env_child(t_ast_node *curr_node, char *new_start);
 void		push_new_dq_child(t_ast_node *curr_node, char *new_start);
+void		emit_op_segments(t_shell *state, const char *enc,
+				t_ast_node *curr_node, t_vec_nd *ret);
 
 /* indexed arrays (expand_array*.c, split_array.c) */
 bool		expand_array_token(t_shell *state, t_token *tt, bool split_ctx);
@@ -353,6 +356,9 @@ void		emit_array_split(t_shell *state, const char *name,
    verbatim (quoted) fields rather than glob-eligible ones. */
 # define EMIT_KEYS 1
 # define EMIT_QUOTED 2
+/* First byte of a marker holding an operator word's segments
+   (pf_op_word_segments -> emit_op_segments). */
+# define SEG_MAGIC '\x02'
 
 void		emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
 				int mode);
