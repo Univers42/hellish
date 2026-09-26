@@ -82,9 +82,16 @@ int	xg_alt_group_n(const char *at, const char *pe, bool brk)
 /* The same question about a whole NUL-terminated word, which is what the
    lexer, the word reparser and the filename globber all hold -- and which
    scans parens the way a lexer does, without the matcher's bracket rule,
-   so where a group ENDS for the grammar stays exactly where it was. */
+   so where a group ENDS for the grammar stays exactly where it was.
+     The lexer asks this at every byte of every word, with `at` pointing
+   into the whole input: measuring the rest of it first made each question
+   cost the length of the file, and sourcing 3.5k lines spent half its time
+   in strlen (#135). Only a `(` in the zsh dialect can start a group, so the
+   end is found only then. */
 int	xg_alt_group(const char *at)
 {
+	if (*at != '(' || !glob_zsh())
+		return (0);
 	return (xg_alt_group_n(at, at + ft_strlen(at), false));
 }
 
