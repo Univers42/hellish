@@ -97,20 +97,32 @@ static char	*export_apply_append(t_shell *st, char *id, char *val)
 	return (joined);
 }
 
-int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
+/* `export NAME` with no value. An existing variable is marked; a name
+   that is not set yet gets a record with no value, so the attribute
+   waits for it: `export X; X=1` exports X (POSIX), and until then X is
+   still unset -- ${X+set} is empty, no child sees it, and `export -p`
+   lists it bare, as bash does. */
+static void	export_name_only(t_shell *st, char *id)
 {
 	t_env	*e;
 
+	e = env_get(&st->env, id);
+	if (e)
+	{
+		e->exported = true;
+		xfree(id);
+		return ;
+	}
+	env_set(&st->env, env_create(id, NULL, true));
+}
+
+int	handle_identifier(t_shell *st, char *id, char *val, const char *argv0)
+{
 	val = export_apply_append(st, id, val);
 	if (ft_is_valid_ident(id))
 	{
 		if (!val)
-		{
-			e = env_get(&st->env, id);
-			if (e)
-				e->exported = true;
-			xfree(id);
-		}
+			export_name_only(st, id);
 		else
 			env_set_shaped(st, (t_env){true, id, val});
 		return (0);
