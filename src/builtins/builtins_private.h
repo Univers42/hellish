@@ -362,8 +362,8 @@ void	skip_delim(char **pp, const char *ifs);
 char	*last_field(char *p, const char *ifs, bool raw);
 size_t	parse_read_opts2(t_vec argv, t_rdopt *o);
 void	rd_assign_array(t_shell *state, char *line, t_rdopt *o);
-void	rd_set_var(t_shell *state, char *name, char *value_owned);
-void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
+bool	rd_set_var(t_shell *state, char *name, char *value_owned);
+int		assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
 long	rd_secs_ms(const char *s);
 /* fc's parsed command line (builtin_fc3.c): -e NAME, the -l -n -r -s
    switches, and the first [last] operands that follow them. */
