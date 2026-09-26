@@ -119,6 +119,7 @@ int			rl_read_inproc(t_shell *state, char *prompt);
 char		*rl_editor_enter(t_shell *state, char *prompt);
 void		rl_editor_exit(t_shell *state);
 t_string	prompt_normal(t_shell *state);
+char		*prompt_expand_p(t_shell *state, const char *fmt);
 char		*prompt_more_input(t_shell *state, struct s_parser *parser);
 char		*prompt_ps2(t_shell *state, const char *fallback);
 void		buff_readline_init(t_rl *ret);

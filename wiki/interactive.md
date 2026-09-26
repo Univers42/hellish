@@ -118,6 +118,11 @@ Bash's escape set is implemented — `\u \h \H \w \W \t \d \D{fmt} \T \@ \! \# \
 \n \e \a \$ \\ \[ \] \nnn` — plus hellish's own: `\g` git branch, `\S` failure badge, `\p`
 duration, `\J` jobs, `\U` pending update, `\B` the built-in prompt, `\I` the file being sourced.
 
+`${PS1@P}` prints what PS1 renders to. It is bash's prompt-expansion operator, and here it runs
+the PS1 renderer itself, both escape languages included, so it cannot disagree with the prompt:
+`prompt preview` draws PS1 themes with it. (`print -P` is zsh's, and like zsh's it reads a
+variable's value for `%` escapes again; a PS1 does not.)
+
 **`\A` is the one deliberate divergence.** In bash it is the 24-hour clock; in hellish it is the
 animation frame, and it shipped first. `\D{%H:%M}` gives you bash's meaning. A bash PS1 pasted in
 with `\A` shows the glyph, or nothing while the animation is off, which is the default: the idle
