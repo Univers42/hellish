@@ -13,12 +13,15 @@
 #include "expander_private.h"
 #include "env.h"
 #include "helpers.h"
+#include "prompt.h"
 
 /* ${var@OP} parameter transformations (bash 5):
      @Q  single-quote the value so it can be re-read by the shell
      @U  uppercase   @L lowercase   @u uppercase-first
      @A  an assignment statement that would recreate the variable
-   The rarer @E/@P/@a/@K are documented v1 scope-outs.
+     @P  the value rendered as a prompt string, by the PS1 renderer
+         (prompt_expand_p) -- so ${PS1@P} is the prompt itself
+   The rarer @E/@a/@K are documented v1 scope-outs.
 
    @Q is sq_quote (src/helpers/sq_quote.c), shared with the completion
    dispatcher, which quotes the word under the cursor for the same reason:
@@ -68,6 +71,8 @@ char	*expand_xform(t_shell *state, const char *s, int name_len, char op)
 		return (xform_case(val, op));
 	if (op == 'A')
 		return (xform_assign(s, name_len, val));
+	if (op == 'P')
+		return (prompt_expand_p(state, val));
 	return (ft_strdup(val));
 }
 
