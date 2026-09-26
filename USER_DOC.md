@@ -97,6 +97,52 @@ A syntax error in any file hellish loads is reported once, with the file
 and line, and the line itself — the same two lines bash prints — and the
 lines before it still run.
 
+## The prompt
+
+`PS1` is the prompt, and it is bilingual: bash's backslash escapes (`\u`,
+`\w`, `\$`, `\[ \]`…) and zsh's percent escapes (`%~`, `%F{cyan}`,
+`%(?.a.b)`…) work in the same string. `PROMPT` is the zsh spelling with
+zsh's exact rules, and wins when both are set; `RPROMPT` is the right
+prompt. The full escape list is section 1 of `hellishrc.example`, and
+[wiki/interactive.md](wiki/interactive.md#prompt-) has the rest.
+
+What is live at every render, and what is not:
+
+| in the prompt | rendered? |
+|---|---|
+| `$VAR`, `${VAR}`, `${VAR:-x}`, `$?` and the other specials | yes, every time the prompt is drawn |
+| `$((…))` | yes |
+| `$(…)` and backquotes | **no** — the text stays on screen as written; it would fork on every redraw |
+
+For a computed segment, set a variable from a hook and put the variable in
+the prompt. `HELLISH_PRECMD_FUNCS` runs once before each prompt
+(`hellishrc.example`, section 5b):
+
+```sh
+_branch() { BR=$(git branch --show-current 2>/dev/null); }
+HELLISH_PRECMD_FUNCS=(_branch)
+PS1='${BR:+($BR) }\w \$ '
+```
+
+**`prompt` is a shell function, not a builtin.** The installer seeds it
+into `~/.config/hellish/rc.d/40-prompt-switch.hsh`, next to the 29 themes
+in `~/.config/hellish/themes/`. `type prompt` says whether it is loaded;
+from a checkout, `HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`
+loads it by hand.
+
+**`\A` is not bash's 24-hour clock here.** It is the animated glyph, and it
+was there first. A bash `PS1` pasted in with `\A` shows the glyph — or
+nothing, since the animation is off by default — where bash shows `14:30`.
+Write `\D{%H:%M}` or `%T` for the clock.
+
+**The animation is off by default, on purpose.** `HELLISH_ANIM=spinner`
+(or `pulse`, `ember`) makes `\A` repaint the prompt row about ten times a
+second while the shell is idle. That repaint has been reported to corrupt
+the prompt on some terminals: an escape sequence printed as text
+(`8;2;90;96;106m`), or a cut glyph shown as `�`. It could not be
+reproduced on demand, so it ships off. If you turn it on and see that,
+`HELLISH_ANIM=off` is the fix.
+
 ## Check that it works
 
 ```sh
