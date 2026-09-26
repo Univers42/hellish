@@ -108,7 +108,7 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	if (parser->res == RES_OK)
 		return (true);
 	else if (parser->res == RES_GETMOREINPUT)
-		*prompt = (char *)prompt_more_input(state, parser).ctx;
+		*prompt = prompt_more_input(state, parser);
 	else if (parser->res == RES_ERR)
 		abort_on_syntax_error(state);
 	return (free_ast(&state->tree), true);

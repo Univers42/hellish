@@ -189,7 +189,7 @@ void		push_user_seg(t_string *ret, t_prompt *p);
 void		push_cwd_seg(t_string *ret, t_prompt *p);
 char		*get_venv_name(void);
 void		get_timebuf(char *buf, size_t buflen);
-t_string	prompt_more_input(t_shell *state, t_parser *parser);
+char		*prompt_more_input(t_shell *state, t_parser *parser);
 t_string	prompt_normal(t_shell *state);
 t_string	ps1_render(t_shell *state, const char *fmt);
 void		ps1_host(t_string *out, char kind);

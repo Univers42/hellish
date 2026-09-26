@@ -40,23 +40,20 @@ static const char	*prompt_label(t_tt curr)
 	return (NULL);
 }
 
-/* Build the continuation prompt. A user-set PS2 (rc file or export) wins
-   and renders with the full bash escape set; otherwise the built-in
-   open-construct stack view: "if > ", "if while > ", etc. — the last
-   space is replaced by '>' to give it the feel of a depth indicator. An
-   empty stack (shouldn't happen here, but guarded) just produces "> ". */
-t_string	prompt_more_input(t_shell *state, t_parser *parser)
+/* Build the continuation prompt for an unfinished compound command. The
+   built-in label is the open-construct stack view: "if> ", "if while> ",
+   etc. -- the last space is replaced by '>' to give it the feel of a
+   depth indicator; an empty stack (shouldn't happen here, but guarded)
+   just produces "> ". prompt_ps2 decides whether a user-set PS2 replaces
+   it, the same way for every continuation line. */
+char	*prompt_more_input(t_shell *state, t_parser *parser)
 {
 	t_string	ret;
 	t_tt		curr;
 	size_t		i;
 	const char	*label;
+	char		*prompt;
 
-	rprompt_clear(state);
-	state->rl.ps1_read = false;
-	label = env_expand(state, "PS2");
-	if (label && *label)
-		return (ps1_render(state, label));
 	i = -1;
 	vec_init(&ret);
 	ret.elem_size = 1;
@@ -71,7 +68,10 @@ t_string	prompt_more_input(t_shell *state, t_parser *parser)
 	}
 	if (ret.len > 0)
 		((char *)ret.ctx)[ret.len - 1] = '>';
-	return (vec_push_str(&ret, " "), ret);
+	vec_push_str(&ret, " ");
+	prompt = prompt_ps2(state, (char *)ret.ctx);
+	xfree(ret.ctx);
+	return (prompt);
 }
 
 /* Build the whole prompt for a given animation frame and last exit status: the

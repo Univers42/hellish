@@ -32,7 +32,9 @@ static int	read_hd_src_line(t_shell *state, t_string *out)
 
 /* Read one line of heredoc body.  Source priority: if hd_src is set (we
    are executing a string -- eval/source/cmdsub) we serve from the
-   pre-extracted body stream; otherwise we call the readline layer.  EOF
+   pre-extracted body stream; otherwise we call the readline layer, with
+   PS2 as the prompt when one is set (bash's here-document prompt) and
+   "heredoc> " when not.  EOF
    (stat==0) or Ctrl-D (stat==2) trigger the POSIX "delimited by EOF"
    warning and mark req->finished so the caller loop terminates.  A stat
    of 4 from read_hd_src_line means "got a line". */
@@ -42,25 +44,25 @@ bool	get_line_heredoc(t_shell *state,
 	int		stat;
 	char	*prompt;
 
-	if (req->is_pipe_heredoc)
-		prompt = "pipe heredoc> ";
-	else
-		prompt = "heredoc> ";
 	vec_init(alloc_line);
 	if (state->hd_src)
 		stat = read_hd_src_line(state, alloc_line);
 	else
+	{
+		prompt = "heredoc> ";
+		if (req->is_pipe_heredoc)
+			prompt = "pipe heredoc> ";
+		prompt = prompt_ps2(state, prompt);
 		stat = buff_readline(state, alloc_line, prompt);
+		xfree(prompt);
+	}
 	state->rl.has_finished = false;
 	if (stat == 0)
 		ft_eprintf("%s: warning: here-document at"
 			" line %i delimited by end-of-file (wanted `%s')\n",
 			state->ctx, state->rl.line, req->sep);
 	if (stat == 0 || stat == 2)
-	{
-		req->finished = true;
-		return (true);
-	}
+		return (req->finished = true, true);
 	return (false);
 }
 

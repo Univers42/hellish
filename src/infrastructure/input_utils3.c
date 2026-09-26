@@ -42,8 +42,9 @@ bool	ends_with_bs_nl(t_string s)
 }
 
 /* Strip trailing \<newline> continuations by popping the last two bytes (the
-   backslash and the newline) and reading another line with a ">" prompt. This
-   repeats until no continuation remains, so "echo hello \<CR>\<CR>" works. */
+   backslash and the newline) and reading another line with PS2 (">" when it
+   is unset). This repeats until no continuation remains, so
+   "echo hello \<CR>\<CR>" works. */
 void	extend_bs(t_shell *state)
 {
 	char	*prompt;
@@ -52,7 +53,7 @@ void	extend_bs(t_shell *state)
 	{
 		vec_pop(&state->input);
 		vec_pop(&state->input);
-		prompt = ft_strdup("> ");
+		prompt = prompt_ps2(state, "> ");
 		if (readline_cmd(state, &prompt))
 			return ;
 	}
