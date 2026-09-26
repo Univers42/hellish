@@ -17,6 +17,8 @@ Full GNU-readline-backed editing, so every muscle-memory binding you already hav
 - **Emacs and vi modes** — toggle the editing mode; standard keymaps (`set -o vi` / `-o emacs`).
 - **Multi-line input** — unfinished constructs (open quote, pipe, `if`/`for`/heredoc) re-prompt
   with a continuation prompt instead of erroring; the buffer is reassembled transparently.
+  The continuation prompt is `PS2` when it is set, for every kind of continuation line, as in
+  bash; unset, it is a label naming what is still open (`dquote> `, `heredoc> `, `if> `).
 - **ANSI- and multibyte-aware prompt** rendering, so colorful prompts and wide characters don't
   desync the cursor.
 - **Ctrl-C / Ctrl-D / signal handling** behaves like a real login shell, including inside heredocs.
