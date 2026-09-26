@@ -127,7 +127,10 @@ Resolution order:
    `expand_special_1` (`$-` from `build_flagstr`, `$0` inside a zsh
    function via `zsh_arg_zero`, `$#` from `pos.cnt_str`); then
    `expand_special_dyn` (`expand2.c`): `$LINENO`, `$RANDOM` (session PRNG
-   masked to 15 bits), `$SECONDS`, `$EPOCHSECONDS`, all formatted into
+   masked to 15 bits), `$SECONDS`, `$EPOCHSECONDS`, and after them
+   `expand_special_dyn_time` (`expand_dyn_time.c`): `$EPOCHREALTIME`
+   (seconds.microseconds) and `$SRANDOM` (32 bits from `getentropy`, never
+   from the seedable `$RANDOM` generator), all formatted into
    `state->linebuf`. A user assignment to these names does not shadow them
    (accepted divergence).
 2. a nameref (`attr_target`) -> recurse on the target;
