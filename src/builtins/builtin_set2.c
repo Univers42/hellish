@@ -13,8 +13,9 @@
 #include "builtins_private.h"
 #include "sh_input.h"
 
-/* Print all environment entries in `name=value` form (or just `name` when a
-   variable has no value). This is the output of bare `set` — it differs from
+/* Print all set variables in `name=value` form; a name exported before it
+   has a value is not set, and bash's `set` leaves it out too. This is the
+   output of bare `set` — it differs from
    `env` in that it includes all variables, not just the exported ones, and
    it does not quote the values. */
 /* Arrays list in bash's display form, name=([0]="a" ...), so the
@@ -38,17 +39,12 @@ void	set_print_env(t_shell *state)
 	while (i < state->env.len)
 	{
 		e = &((t_env *)state->env.ctx)[i];
-		if (e->key)
+		if (e->key && e->value)
 		{
-			if (e->value)
-			{
-				if (arr_is(e->value))
-					print_env_array(e);
-				else
-					ft_printf("%s=%s\n", e->key, e->value);
-			}
+			if (arr_is(e->value))
+				print_env_array(e);
 			else
-				ft_printf("%s\n", e->key);
+				ft_printf("%s=%s\n", e->key, e->value);
 		}
 		i++;
 	}
