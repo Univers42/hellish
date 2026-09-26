@@ -118,6 +118,17 @@ def temp_file_cases():
     check("temp: path was printed", bool(re.match(r"^/.*", path)), True)
     if path:
         check("temp: cleaned up after exit", os.path.exists(path), False)
+    # A file left in /tmp by another process must never block a new one.
+    # The name used to be /tmp/hsh<pid>-<n>, opened O_EXCL: a leftover
+    # from an earlier process that had the same pid (a =(cmd) made inside
+    # $( ) outlives its subshell) failed the open, the word vanished, and
+    # `cat` read its stdin instead -- no error, status 0. It surfaced as
+    # zsh_glob_test's eqsub/reads-back failing about once in 150 runs.
+    out, _ = run_zsh(': > /tmp/hsh$$-0; : > /tmp/hsh$$-1\n'
+                     'cat =(echo hi) </dev/null\n'
+                     'rm -f /tmp/hsh$$-0 /tmp/hsh$$-1')
+    check("temp: a leftover file under the old name does not block it",
+          out, "hi")
 
 
 def churn_cases():
