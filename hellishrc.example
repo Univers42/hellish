@@ -70,6 +70,15 @@
 #
 # \S is usually the nicer answer than $? anyway: it shows " ✘N" only after a
 # failure and stays invisible when everything is fine.
+#
+# $((...)) is live too. $(...) is NOT: command substitution in a prompt is
+# never run -- it stays on screen as the text you wrote -- because it would
+# fork on every redraw. Compute the value in a hook (section 5b) and put the
+# variable in the prompt; the hook runs once per prompt, not per redraw:
+#
+#     _branch() { BR=$(git branch --show-current 2>/dev/null); }
+#     HELLISH_PRECMD_FUNCS=(_branch)
+#     PS1='${BR:+($BR) }\w \$ '
 
 # ── ANIMATION: OFF BY DEFAULT, AND THAT IS DELIBERATE ──────────────────
 # A live style makes \A repaint the prompt rows in place ~10x/second

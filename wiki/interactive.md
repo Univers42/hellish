@@ -99,19 +99,30 @@ The fish/zsh-grade layer (menus, descriptions, fuzzy matching) is on the roadmap
 **The default is zsh's own**: `hostname% `, plus the self-spacing `⬆` update badge — a first
 prompt that looks like the shell you already know. The rich two-row theme is one command away:
 `prompt` lists 29 themes, `prompt <name>` switches, `prompt save <name>` persists, and
-`PS1='\B'` is the old default by name.
+`PS1='\B'` is the old default by name. `prompt` is a shell function, not a builtin: the installer
+seeds it into `~/.config/hellish/rc.d/40-prompt-switch.hsh`, so `type prompt` says whether it is
+loaded, and a shell run from a checkout loads it with
+`HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`.
 
 **PS1 is bilingual.** Both escape languages render in a plain PS1 — paste `%n@%m %~ %#` or
 `\u@\h \w \$` and either works, while `100% `, csh-style `%> ` and the strftime percents inside
 `$(date +%H:%M)` or `\D{%M}` survive literally. `PROMPT` and `print -P` keep exact zsh semantics
 (measured against zsh 5.9), and under `set -o zsh`, PS1 *is* PROMPT, as in zsh.
 
+**What is live, and what is not.** `$VAR`, `${VAR…}`, `$?` and `$((…))` are expanded every time
+the prompt is drawn. Command substitution is not: `$(…)` and backquotes stay on screen as the
+text you wrote, because they would fork on every redraw. A computed segment is a variable set by
+a `HELLISH_PRECMD_FUNCS` hook (below), which runs once per prompt.
+
 Bash's escape set is implemented — `\u \h \H \w \W \t \d \D{fmt} \T \@ \! \# \j \l \r \s \v \V
 \n \e \a \$ \\ \[ \] \nnn` — plus hellish's own: `\g` git branch, `\S` failure badge, `\p`
 duration, `\J` jobs, `\U` pending update, `\B` the built-in prompt, `\I` the file being sourced.
 
 **`\A` is the one deliberate divergence.** In bash it is the 24-hour clock; in hellish it is the
-animation frame, and it shipped first. `\D{%H:%M}` gives you bash's meaning.
+animation frame, and it shipped first. `\D{%H:%M}` gives you bash's meaning. A bash PS1 pasted in
+with `\A` shows the glyph, or nothing while the animation is off, which is the default: the idle
+repaint that animates it has been reported to corrupt the prompt on some terminals and could not
+be reproduced on demand (`hellishrc.example`, "ANIMATION").
 
 Two hook arrays run around every command — `HELLISH_PRECMD_FUNCS` before each prompt,
 `HELLISH_PREEXEC_FUNCS` before the typed line, with the line as `$1`. They are arrays of function
