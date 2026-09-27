@@ -59,6 +59,8 @@ static int	declare_print_one(t_shell *state, const char *name)
 		return (ft_eprintf("%s: declare: %s: not found\n",
 				state->ctx, name), 1);
 	attr_letters(state, e, attrs);
+	if (!e->value)
+		return (ft_printf("declare -%s %s\n", attrs, e->key), 0);
 	if (assoc_is(e->value))
 		fmt = assoc_format(e->value);
 	else if (arr_is(e->value))
