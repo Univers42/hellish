@@ -57,3 +57,31 @@ void	emit_keys_at(t_shell *state, const char *name,
 		push_new_dq_child(curr_node, ft_itoa((int)idx));
 	}
 }
+
+/* A used operator word, as pf_op_word_segments parked it: a quoted segment
+   joins the field being built verbatim, an unquoted one is IFS-split into
+   it like any unquoted expansion, its fields glob-eligible. So
+   ${u:-$P"$P"} with P='a b c' is three fields, a / b / ca b c, as in
+   bash. */
+void	emit_op_segments(t_shell *state, const char *enc,
+			t_ast_node *curr_node, t_vec_nd *ret)
+{
+	const char	*cur;
+	const char	*v;
+	long		idx;
+	int			vl;
+	char		*s;
+
+	cur = enc + 1;
+	while (arr_next(&cur, &idx, &v, &vl))
+	{
+		s = ft_strndup(v + 1, (size_t)(vl - 1));
+		if (v[0] == 'q')
+			push_new_dq_child(curr_node, s);
+		else
+		{
+			split_value(state, s, curr_node, ret);
+			xfree(s);
+		}
+	}
+}

@@ -35,7 +35,9 @@ static bool	try_array_child(t_shell *state, t_token *curr_t,
 	name = arr_mark_name(state, curr_t->start);
 	if (!name)
 		return (false);
-	if (name[0] == ARR_MAGIC)
+	if (name[0] == SEG_MAGIC)
+		emit_op_segments(state, name, curr_node, ret);
+	else if (name[0] == ARR_MAGIC)
 		emit_val_at(name, curr_node, ret);
 	else if (name[0] == '!' && curr_t->tt == TT_DQENVVAR)
 		emit_keys_at(state, name, curr_node, ret);

@@ -16,7 +16,6 @@
 
 void	exit_clean(t_shell *state, int code);
 int		shell_fatal_status(t_shell *state);
-bool	opword_no_split(const char *w, int wlen);
 
 /* The fatal expansion-error status bash uses depends on how input arrived:
    a -c command string exits 127, a script or piped stdin exits 1 (verified
@@ -91,20 +90,20 @@ char	*pf_assign_err(t_shell *state, t_pe_op o)
 ** may need to re-emit one field per positional.  Returns false when the
 ** token is not an operator form so expand_token falls through.
 **
-** THE EMPTY-RESULT GUARD. Retyping the token to TT_DQWORD says "this is one
-** field, do not IFS-split it" -- right for `${x:-"c d"}`, and wrong when
-** there is nothing there at all, because an unquoted expansion that comes
-** out empty contributes NO field in POSIX. Without the guard:
-**
-**     a=(); d=; git ${a:+"${a[@]}"} ${d:+--git-dir="$d"} --version
-**
-** ran git with two extra empty arguments. git errors, prints nothing, and
-** the completion function that called it returned an empty COMPREPLY --
-** which reads as "no completions", not as "the shell built the wrong argv".
-** That is git-completion's __git wrapper, verbatim.
-**
-** `used && o.wlen > 0` is the exception bash keeps: `${x:-""}` DID use its
-** word, the word was a quoted empty string, and that is a real field.
+** FIELDS. What comes out unquoted is split and globbed, as bash does it:
+** the variable's own value (${p:-w} with p set, ${p:=w}, ${p:?w}) exactly
+** like $p, and a USED word of - or + part by part -- its unquoted text and
+** expansions split and globbed, its quoted parts kept whole -- through
+** pf_op_word_segments. `${u:-"c d"}` is one field, `${u:-$P}` and
+** `${u:-*.c}` are not.
+**   The whole token used to be retyped to TT_DQWORD (one field, no glob)
+** whenever the word's TEXT held no unquoted blank. That test looked at the
+** word even when the word was not used, so P='a b c'; ${P:-x} was one
+** field; and it could not see inside an expansion, so ${u:-$P} was never
+** split and ${u:-a*} never globbed.
+**   An unquoted result that comes out empty is no field at all, which
+** git-completion's `git ${a:+"${a[@]}"} ${d:+--git-dir="$d"}` relies on;
+** `${x:-""}` is still one empty field, because its word quoted it.
 */
 bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 {
@@ -121,42 +120,14 @@ bool	expand_op_token(t_shell *state, t_token *tt, bool split_ctx)
 		return (true);
 	}
 	used = pf_op_word_used(pf_get_var_value(state, o.name, o.name_len), o);
-	if (used && split_ctx
-		&& pf_op_word_at_fields(state, tt, o.word, o.wlen))
+	if (used && split_ctx && (pf_op_word_at_fields(state, tt, o.word, o.wlen)
+			|| (tt->tt == TT_ENVVAR && (o.opc == '-' || o.opc == '+')
+				&& pf_op_word_segments(state, tt, o))))
 		return (true);
 	fmt = expand_param_op(state, o);
 	tt->start = fmt;
 	tt->len = (int)ft_strlen(fmt);
 	tt->allocated = true;
-	if (split_ctx && tt->tt == TT_ENVVAR && (tt->len > 0
-			|| (used && o.wlen > 0)) && opword_no_split(o.word, o.wlen))
-		tt->tt = TT_DQWORD;
 	parena_note_attach();
-	return (true);
-}
-
-/* Does the operator word contain NO unquoted IFS whitespace? Then its
-   expansion is a single field even in a split context — `${x:-"c d"}`
-   keeps "c d" whole because the space is inside quotes. Words WITH
-   unquoted whitespace stay split-eligible (a mixed word like a "b c" d
-   is a documented v1 divergence — flat splitting mislabels its middle
-   field, but fully-quoted defaults, the common case, are now correct). */
-bool	opword_no_split(const char *w, int wlen)
-{
-	int		i;
-	char	q;
-
-	i = 0;
-	q = 0;
-	while (i < wlen)
-	{
-		if (q && w[i] == q)
-			q = 0;
-		else if (!q && (w[i] == '"' || w[i] == '\''))
-			q = w[i];
-		else if (!q && (w[i] == ' ' || w[i] == '\t' || w[i] == '\n'))
-			return (false);
-		i++;
-	}
 	return (true);
 }
