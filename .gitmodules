@@ -12,3 +12,6 @@
 	path = tests/inception
 	url = ../Inception.git
 	branch = feat/scripts-run-with-launching-shell
+[submodule ".claude"]
+	path = .claude
+	url = ../claude-deal-with-the-devil.git
