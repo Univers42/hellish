@@ -254,6 +254,8 @@ jobs:
       # debug build runs this sweep from the pty job; this is its release run.
       - name: ${...} quoting sweep against the RELEASE build
         run: python3 tests/expansion_quote_sweep_test.py build/bin/hellish
+      - name: curl installer output regression (#164)
+        run: python3 tests/curl_install_output_test.py build/bin/hellish
       # The suite diffs hellish against bash byte-for-byte, so anything that
       # steers bash steers the verdict -- and the people most likely to run it
       # are the people whose rc exports the most. A ~/.hellishrc framework
