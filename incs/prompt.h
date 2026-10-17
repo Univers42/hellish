@@ -93,12 +93,22 @@ typedef struct s_rl
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
 	size_t		bind_lines_done; /* `bind` requests already applied */
-	bool		hist_live; /* interactive read: Up/Down hooks are on */
-	int			hist_want; /* HELLISH_HISTORY_PREFIX wants search */
-	int			hist_on; /* what was applied; -1 = nothing yet */
-	bool		hist_open; /* this preinit parked the arrow slots */
-	unsigned	hist_bits; /* arrow slots we bound to history search */
-	unsigned	hist_user; /* arrow slots the user bound: hands off */
+	bool		slot_live; /* interactive read: the slot hooks are on */
+	int			feat_want[2]; /* per feature (rl_slot.c): wanted now */
+	int			feat_on[2]; /* what was applied; -1 = nothing yet */
+	unsigned	feat_open; /* features whose slots this preinit parked */
+	unsigned	slot_bits; /* slots we bound to a replacement */
+	unsigned	slot_user; /* slots the user bound: hands off */
+	int			sg_max; /* HELLISH_SUGGEST_MAX: entries scanned */
+	char		*sg_ent; /* history entry the suggestion comes from */
+	char		*sg_prev; /* the line sg_ent was searched for */
+	bool		sg_known; /* sg_prev / sg_ent describe a finished scan */
+	char		*sg_txt; /* ghost for the line on screen, or NULL */
+	char		*sg_post; /* POSTDISPLAY a widget set (zle_rl5.c) */
+	char		*sg_post_at; /* the line it was set for */
+	char		*sg_pub; /* what a widget was handed as POSTDISPLAY */
+	bool		sg_painted; /* a ghost is on screen right now */
+	int			sg_col; /* column it starts at */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
 	t_string	rp_txt; /* rendered right prompt, width markers stripped */
 	int			rp_w; /* its terminal width; 0 = nothing to paint */

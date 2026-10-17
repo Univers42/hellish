@@ -111,7 +111,8 @@ static void	rl_first_init(t_rl *l)
 	rl_initialize();
 	l->rl_ready = true;
 	l->mode_applied = -1;
-	l->hist_on = -1;
+	l->feat_on[0] = -1;
+	l->feat_on[1] = -1;
 	l->use_fork = !RL_INPROC_OK || rl_fork_wanted();
 }
 
@@ -133,7 +134,7 @@ void	rl_preinit(t_rl *l)
 		l->binds_done = 0;
 		l->bind_lines_done = 0;
 	}
-	rl_hist_prefix_pre(l);
+	rl_slot_pre(l);
 	rl_bind_pending(l);
-	rl_hist_prefix_post(l);
+	rl_slot_post(l);
 }

@@ -42,6 +42,7 @@ int	rl_winch_poll(void)
 	st->cols = cols;
 	rl_clear_visible_line();
 	rl_out_write("\033[J", 3);
+	rl_suggest_stale();
 	rl_reset_screen_size();
 	rl_forced_update_display();
 	return (0);

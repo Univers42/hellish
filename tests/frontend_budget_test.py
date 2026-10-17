@@ -55,6 +55,16 @@ BUDGET = {
     "forked": {"enter": 85, "enter_write": 13, "enter_ioctl": 16,
                "key": 9, "key_write": 3},
 }
+# The inline suggestion (#140): the same per-key budget with a ghost on
+# screen at every key, with and without a right prompt; and with nothing
+# to paint and no right prompt a key is readline's one write and no more
+# (the bound has room for the ^U that ends each typing phase).
+BUDGET["in-process/as+rp"] = dict(BUDGET["in-process"], nomatch_write=2.2)
+BUDGET["in-process/as"] = dict(BUDGET["in-process"], nomatch_write=1.2)
+BUDGET["forked/as+rp"] = dict(BUDGET["forked"], nomatch_write=2.2)
+BUDGET["forked/as"] = dict(BUDGET["forked"], nomatch_write=1.2)
+SEED = "x" * 60
+AS_ON = {"HELLISH_AUTOSUGGEST": "1"}
 FORKING = ("clone", "clone3", "fork", "vfork", "pipe2", "pipe", "wait4",
            "execve")
 
@@ -67,7 +77,7 @@ def check(name, ok, detail=""):
 
 
 class Traced:
-    def __init__(self, home, trace, extra):
+    def __init__(self, home, trace, extra, seed=()):
         env = {
             "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "TERM": "xterm-256color", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
@@ -89,6 +99,11 @@ class Traced:
             os._exit(127)
         self.until(lambda: MARK in self.buf, 20.0)
         self.settle()
+        for line in seed:
+            n = self.buf.count(MARK)
+            os.write(self.fd, line.encode() + b"\r")
+            self.until(lambda: self.buf.count(MARK) > n, 10.0)
+            self.settle()
 
     def pump(self, secs):
         r, _, _ = select.select([self.fd], [], [], secs)
@@ -125,9 +140,9 @@ class Traced:
         self.until(lambda: self.buf.count(MARK) >= n + ENTERS, 30.0)
         self.settle()
 
-    def typing(self):
+    def typing(self, ch=b"x"):
         for _ in range(KEYS):
-            os.write(self.fd, b"x")
+            os.write(self.fd, ch)
             self.pump(0.03)
         self.settle()
         os.write(self.fd, b"\x15")
@@ -169,13 +184,14 @@ def counts(lines, t0, t1):
     return c
 
 
-def cell(label, extra, base):
-    trace = os.path.join(base, "trace-" + label)
+def cell(label, extra, base, seed=()):
+    trace = os.path.join(base, "trace-" + label.replace("/", "_"))
     home = tempfile.mkdtemp(dir=base)
-    s = Traced(home, trace, extra)
+    s = Traced(home, trace, extra, seed)
     s.phase("enter", s.enters)
     s.phase("idle", s.idle)
     s.phase("key", s.typing)
+    s.phase("nomatch", lambda: s.typing(b"q"))
     s.phase("winch", s.winch_same)
     s.phase("rows", s.rows_only)
     s.close()
@@ -193,7 +209,7 @@ def cell(label, extra, base):
         check("%s: a bare Enter does at most %d %ss" % (label, b[key], name),
               n <= b[key], "%.1f per Enter" % n)
     forks = sum(by["enter"][k] for k in FORKING)
-    if label == "in-process":
+    if label.startswith("in-process"):
         check("%s: a bare Enter creates no process" % label, forks == 0,
               "%s" % {k: by["enter"][k] for k in FORKING if by["enter"][k]})
     else:
@@ -209,9 +225,15 @@ def cell(label, extra, base):
           per <= b["key"], "%.1f per key: %s" % (
               per, dict(by["key"].most_common(6))))
     n = by["key"]["write"] / float(KEYS)
+    print("#    %s: per key %.1f syscalls, %.1f writes" % (label, per, n))
     check("%s: a keystroke does at most %d writes" % (label, b["key_write"]),
           n <= b["key_write"], "%.1f per key" % n)
 
+    if "nomatch_write" in b:
+        n = by["nomatch"]["write"] / float(KEYS)
+        check("%s: a key with nothing to paint does at most %.1f writes"
+              % (label, b["nomatch_write"]), n <= b["nomatch_write"],
+              "%.1f per key" % n)
     check("%s: an idle prompt costs nothing" % label,
           sum(by["idle"].values()) == 0,
           "%d syscalls while idle: %s" % (sum(by["idle"].values()),
@@ -230,6 +252,12 @@ def main():
     try:
         cell("in-process", {}, base)
         cell("forked", {"HELLISH_RL_FORK": "1"}, base)
+        seed = (SEED,)
+        cell("in-process/as+rp", AS_ON, base, seed)
+        cell("in-process/as", dict(AS_ON, RPROMPT=""), base, seed)
+        cell("forked/as+rp", dict(AS_ON, HELLISH_RL_FORK="1"), base, seed)
+        cell("forked/as", dict(AS_ON, RPROMPT="", HELLISH_RL_FORK="1"),
+             base, seed)
     finally:
         shutil.rmtree(base, ignore_errors=True)
     if FAILS:

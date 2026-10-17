@@ -69,5 +69,6 @@ void	zle_do_kill_buffer(void)
    could disagree with it about trailing state. */
 void	zle_do_accept_line(void)
 {
+	rl_suggest_unpaint();
 	rl_done = 1;
 }

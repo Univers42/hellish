@@ -43,11 +43,69 @@ void	update_ctx(t_shell *state);
 int		get_more_input_notty(t_shell *state);
 int		visible_width_cstr(const char *s);
 void	rl_preinit(t_rl *l);
-void	rl_hist_prefix_sync(t_shell *state);
-void	rl_hist_prefix_pre(t_rl *l);
-void	rl_hist_prefix_post(t_rl *l);
-void	rl_hist_arm(t_rl *l, int bit);
-void	rl_hist_settle(t_rl *l, int bit);
+/* Keys readline binds to something of ours only while a feature is on
+   (rl_slot.c). A slot is one key sequence in one keymap; `fn` names the
+   stock function it holds and the one that replaces it. */
+# define RL_NFEAT 2
+# define RL_NSLOTS 17
+
+enum e_feat
+{
+	FEAT_HIST,
+	FEAT_ACCEPT
+};
+
+enum e_slot_fn
+{
+	SLOT_PREV,
+	SLOT_NEXT,
+	SLOT_FWD,
+	SLOT_END
+};
+
+typedef struct s_slot
+{
+	const char	*key;
+	int			feat;
+	int			vi;
+	int			fn;
+}	t_slot;
+
+t_slot	rl_slot_at(int i);
+void	rl_slot_sync(t_shell *state);
+void	rl_slot_pre(t_rl *l);
+void	rl_slot_post(t_rl *l);
+void	rl_slot_arm(t_rl *l, int i);
+void	rl_slot_settle(t_rl *l, int i);
+
+/* The inline suggestion (rl_suggest*.c): the ghost text after the cursor,
+   painted by the redisplay function of rl_rprompt.c. */
+typedef struct s_frame
+{
+	const char	*ghost;
+	size_t		gn;
+	int			end;
+	int			cols;
+	bool		show;
+}	t_frame;
+
+char	*rl_suggest_update(t_shell *state, int cols);
+char	*rl_suggest_live(t_rl *l);
+char	*rl_suggest_find(t_shell *state, t_rl *l);
+int		rl_suggest_accept(int count, int key);
+void	rl_suggest_end(t_shell *state);
+void	rl_suggest_stale(void);
+void	rl_suggest_unpaint(void);
+bool	rl_suggest_plain(const char *s);
+bool	rl_suggest_gate(t_rl *l, int cols);
+size_t	rl_ghost_fit(const char *s, int avail, int *used);
+int		rl_prompt_cols(t_rl *l);
+void	rl_rprompt_hook(void);
+int		rl_text_end(t_rl *l);
+int		rl_text_col(t_rl *l);
+bool	rl_rp_fits(t_rl *l, int cols, int end);
+void	rl_frame(t_rl *l, t_frame *f);
+bool	rl_push_col(t_string *f, int n);
 
 /* The line reader (src/platform/posix/rl_getc.c, rl_idle.c, rl_sig.c). */
 # ifndef READERR

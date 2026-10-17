@@ -48,7 +48,10 @@ static void	rl_take_signals(void)
 	if (!sig)
 		return ;
 	if (sig == SIGINT)
+	{
 		*rl_intr_cell() = 1;
+		rl_suggest_unpaint();
+	}
 	rl_check_signals();
 }
 
@@ -136,5 +139,7 @@ int	rl_getc_hook(FILE *stream)
 		else
 			r = (rl_idle_event(r), RL_AGAIN);
 	}
+	if (r == '\r' || r == '\n')
+		rl_suggest_unpaint();
 	return (r);
 }

@@ -163,6 +163,31 @@ escape hatches above get you back to your previous shell at any time.
 |---|---|
 | `HELLISH_BANNER=0\|1` | welcome panel off / on |
 | `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
+| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the newest history line that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
+| `HELLISH_SUGGEST_MAX=N` | how many of the newest history lines the suggestion looks at (default 1000; not a number, or below 1, is the default); read at every prompt |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
 | `HELLISH_NO_ANIM=1` | no startup animation |
 | `HELLISH_NO_EXEC=1` | user-install hook: skip for this one session |
+
+### Inline suggestion
+
+With `HELLISH_AUTOSUGGEST=1` (set it at the prompt or in the rc file) the
+newest history line that starts with what you have typed appears dim after
+the cursor. It is a hint, not part of the line: **Right**, **End** or
+**Ctrl-F** at the end of the line insert it; anywhere else, and when there
+is no hint, those keys do what they always did. Enter runs only what you
+typed, and the hint is wiped from the screen. `unset HELLISH_AUTOSUGGEST`
+(or `=0`) turns it off at the next prompt. A key you bound yourself
+(`bind` / `bindkey` / `.inputrc`) is never taken over.
+
+Never suggested: a line with a newline, a tab or any other control character
+(an old `printf '\e[31m'` cannot repaint your prompt), and nothing at all
+while you search (Ctrl-R), in vi command mode, on a continuation prompt, with
+the cursor inside the line, or on a line that would not fit the terminal's
+width (the hint is cut at the edge, never wrapped). A right prompt
+(`RPROMPT`) is hidden while the hint reaches it and comes back when it does
+not.
+
+For zsh widgets (`zle -N`), the variable `POSTDISPLAY` is the text shown
+after the cursor: read it in a widget to get the current hint, assign it
+(`POSTDISPLAY=' <hint>'`) to show your own until the line next changes.
