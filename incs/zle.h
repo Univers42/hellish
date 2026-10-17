@@ -105,10 +105,10 @@ void			zle_do_redisplay(void);
 void			zle_do_message(const char *msg);
 void			zle_do_kill_buffer(void);
 
-/* A widget's BUFFER/LBUFFER/RBUFFER/CURSOR are scoped to it: the values
-   from before are saved and put back (or the names unset) afterwards --
-   see zle_params.c. */
-# define ZLE_NPARAMS 4
+/* A widget's BUFFER, LBUFFER, RBUFFER, CURSOR and POSTDISPLAY are scoped to
+   it: the values from before are saved and put back (or the names unset)
+   afterwards -- see zle_params.c. */
+# define ZLE_NPARAMS 5
 
 typedef struct s_zle_saved
 {
@@ -127,6 +127,12 @@ void			rl_prompt_repaint(t_shell *state, bool force);
    built-in widget that edits the line directly must call this, or the
    dispatcher's write-back restores the text it just removed. */
 void			zle_publish(t_shell *state);
+
+/* POSTDISPLAY, the text painted after the cursor (rl_suggest3.c): handed
+   to a widget with the rest, and taken back from it afterwards. */
+void			rl_suggest_publish(t_shell *state);
+void			rl_suggest_collect(t_shell *state);
+void			rl_suggest_unpaint(void);
 void			zle_do_accept_line(void);
 
 int				zle_option(t_shell *state, t_vec argv, size_t i);

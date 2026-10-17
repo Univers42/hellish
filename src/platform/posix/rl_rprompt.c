@@ -50,109 +50,75 @@
 **             column lost its tail on screen -- the line you were about to
 **             run was not the line you could see.
 **
-** Where the text ends is an UPPER bound (rp_text_end): clearing a few
+** Where the text ends is an UPPER bound (rl_text_end): clearing a few
 ** blank cells too far right costs nothing, clearing one too far left
 ** erases what was typed. */
 
-/* The last column the line can occupy, or -1 when the cursor may not be
-   on the prompt's row (a search prompt owns it, the line has a newline).
-   Per byte: a tab takes at most 8 columns, a control character is drawn
-   as ^X (2), a byte a non-UTF-8 locale prints as \ooo takes 4, and every
-   other byte at most 1 -- a UTF-8 character never takes more columns than
-   it has bytes. */
-static int	rp_text_end(t_rl *l)
+/* The ghost (rl_suggest.c) goes where the cursor is, so the clock is
+   judged against the end of the ghost and left out while the ghost reaches
+   it; it comes back when the ghost is gone. Returns false when no ghost
+   fits in the room left (a wide character at the very edge). */
+static void	rp_ghost(t_rl *l, t_frame *f)
 {
-	unsigned char	c;
-	int				end;
-	int				i;
+	int	w;
 
-	if (RL_ISSTATE(RL_STATE_ISEARCH) || RL_ISSTATE(RL_STATE_NSEARCH))
-		return (-1);
-	end = l->rp_prompt_w;
-	i = 0;
-	while (rl_line_buffer && i < rl_end)
+	f->end = rl_prompt_cols(l) + visible_width_cstr(rl_line_buffer);
+	f->gn = rl_ghost_fit(f->ghost, f->cols - 1 - f->end, &w);
+	f->show = rl_rp_fits(l, f->cols, f->end + w);
+}
+
+/* Paint what this frame needs, if anything: the ghost; or, without one,
+   the clock shown or taken down, and a ghost that was up taken down. When
+   the cursor may be off the prompt's row nothing is touched. */
+static void	rp_paint(t_rl *l, t_frame *f)
+{
+	f->gn = 0;
+	if (f->ghost)
+		rp_ghost(l, f);
+	if (!f->gn)
 	{
-		c = (unsigned char)rl_line_buffer[i++];
-		if (c == '\n')
-			return (-1);
-		if (c == '\t')
-			end += 8;
-		else if (c < ' ' || c == 0x7f)
-			end += 2;
-		else if (c >= 0x80 && MB_CUR_MAX == 1)
-			end += 4;
-		else
-			end += 1;
+		f->end = rl_text_col(l);
+		if (f->end < 0 || f->end >= f->cols)
+			return ;
+		f->show = rl_rp_fits(l, f->cols, f->end);
+		if (!f->show && !l->rp_painted && !l->sg_painted)
+			return ;
 	}
-	return (end);
+	rl_frame(l, f);
 }
 
-/* Append CSI <n> G (cursor to column n). False if it could not be built,
-   and then nothing may be cleared: the clear would land at the cursor. */
-static bool	rp_push_col(t_string *f, int n)
-{
-	char	*s;
-
-	s = ft_itoa(n);
-	if (!s)
-		return (false);
-	vec_push_str(f, "\033[");
-	vec_push_str(f, s);
-	vec_push_str(f, "G");
-	xfree(s);
-	return (true);
-}
-
-/* One frame, one write: save, clear from just past the text to the end of
-   the row, the clock if it is shown, restore. */
-static void	rp_frame(t_rl *l, int cols, int end, bool show)
-{
-	t_string	f;
-
-	vec_init(&f);
-	f.elem_size = 1;
-	vec_push_str(&f, "\0337");
-	if (!rp_push_col(&f, end + 1))
-		return (xfree(f.ctx));
-	vec_push_str(&f, "\033[K");
-	if (show && !rp_push_col(&f, cols - l->rp_w + 1))
-		return (xfree(f.ctx));
-	if (show)
-		vec_push_str(&f, (char *)l->rp_txt.ctx);
-	vec_push_str(&f, "\0338");
-	rl_out_write(f.ctx, f.len);
-	xfree(f.ctx);
-	l->rp_painted = show;
-}
-
-/* readline's redisplay, then ours. The clock is shown with one blank
-   between it and the text; otherwise a painted one is taken down. */
+/* readline's redisplay, then ours. With no right prompt, no ghost and none
+   painted last frame this is readline's redisplay and nothing else. */
 static void	rp_redisplay(void)
 {
 	t_shell	*state;
+	t_frame	f;
 	int		rows;
-	int		cols;
-	int		end;
 
 	rl_redisplay();
 	state = *zle_state_cell();
-	if (!state || state->rl.rp_w <= 0)
+	if (!state)
 		return ;
-	rl_get_screen_size(&rows, &cols);
-	end = rp_text_end(&state->rl);
-	if (end < 0 || end >= cols)
+	rl_get_screen_size(&rows, &f.cols);
+	f.ghost = rl_suggest_update(state, f.cols);
+	if (!f.ghost && !state->rl.sg_painted && state->rl.rp_w <= 0)
 		return ;
-	if (cols > state->rl.rp_w + 1 && end + 1 < cols - state->rl.rp_w)
-		rp_frame(&state->rl, cols, end, true);
-	else if (state->rl.rp_painted)
-		rp_frame(&state->rl, cols, end, false);
+	rp_paint(&state->rl, &f);
 }
 
 /* Arm the painter for this readline() call. Nothing is painted until
    readline's first redisplay, which precedes the first keystroke, so the
-   clock appears together with the prompt. */
+   clock appears together with the prompt. It is needed with a right prompt
+   or with the suggestion on; a widget that sets POSTDISPLAY brings it in
+   by itself (rl_rprompt_hook). */
 void	rl_rprompt_install(t_shell *state)
 {
 	state->rl.rp_painted = false;
+	if (state->rl.rp_w > 0 || state->rl.feat_want[FEAT_ACCEPT])
+		rl_rprompt_hook();
+}
+
+void	rl_rprompt_hook(void)
+{
 	rl_redisplay_function = rp_redisplay;
 }
