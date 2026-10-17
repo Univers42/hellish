@@ -43,6 +43,11 @@ void	update_ctx(t_shell *state);
 int		get_more_input_notty(t_shell *state);
 int		visible_width_cstr(const char *s);
 void	rl_preinit(t_rl *l);
+void	rl_hist_prefix_sync(t_shell *state);
+void	rl_hist_prefix_pre(t_rl *l);
+void	rl_hist_prefix_post(t_rl *l);
+void	rl_hist_arm(t_rl *l, int bit);
+void	rl_hist_settle(t_rl *l, int bit);
 
 /* The line reader (src/platform/posix/rl_getc.c, rl_idle.c, rl_sig.c). */
 # ifndef READERR

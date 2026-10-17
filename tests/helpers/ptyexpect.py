@@ -28,7 +28,7 @@ class Tty:
     """One interactive shell on a pty, in a throwaway HOME."""
 
     def __init__(self, shell, rc="PS1='P$ '\n", env=None, path=None,
-                 cols=100, rows=30):
+                 cols=100, rows=30, args=("-i",)):
         self.home = tempfile.mkdtemp(prefix="ptyexpect-")
         with open(os.path.join(self.home, ".hellishrc"), "w") as f:
             f.write(rc)
@@ -44,7 +44,7 @@ class Tty:
             os.chdir(self.home)
             os.environ.clear()
             os.environ.update(base)
-            os.execv(shell, [shell, "-i"])
+            os.execv(shell, [shell] + list(args))
             os._exit(127)
         try:
             import fcntl
