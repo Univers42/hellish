@@ -114,6 +114,12 @@ What is live at every render, and what is not:
 | `$((…))` | yes |
 | `$(…)` and backquotes | **no** — the text stays on screen as written; it would fork on every redraw |
 
+**Preview caveat:** `print -P` formats its expanded input again using zsh's
+prompt escapes. If a variable contains `%` sequences, `print -rP "[${V}]"`
+can interpret them as prompt escapes even though the live prompt leaves the
+expanded value literal. Do not treat `print -P` output as an exact preview of
+variable-backed prompt segments; this mismatch is tracked in [issue #134](https://github.com/Univers42/hellish/issues/134).
+
 For a computed segment, set a variable from a hook and put the variable in
 the prompt. `HELLISH_PRECMD_FUNCS` runs once before each prompt
 (`hellishrc.example`, section 5b):
