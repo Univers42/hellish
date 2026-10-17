@@ -93,6 +93,12 @@ typedef struct s_rl
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
 	size_t		bind_lines_done; /* `bind` requests already applied */
+	bool		hist_live; /* interactive read: Up/Down hooks are on */
+	int			hist_want; /* HELLISH_HISTORY_PREFIX wants search */
+	int			hist_on; /* what was applied; -1 = nothing yet */
+	bool		hist_open; /* this preinit parked the arrow slots */
+	unsigned	hist_bits; /* arrow slots we bound to history search */
+	unsigned	hist_user; /* arrow slots the user bound: hands off */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
 	t_string	rp_txt; /* rendered right prompt, width markers stripped */
 	int			rp_w; /* its terminal width; 0 = nothing to paint */

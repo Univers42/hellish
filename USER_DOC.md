@@ -162,6 +162,7 @@ escape hatches above get you back to your previous shell at any time.
 | variable | effect |
 |---|---|
 | `HELLISH_BANNER=0\|1` | welcome panel off / on |
+| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
 | `HELLISH_NO_ANIM=1` | no startup animation |
 | `HELLISH_NO_EXEC=1` | user-install hook: skip for this one session |

@@ -103,6 +103,7 @@ void	rl_editor_exit(t_shell *state)
    unless HELLISH_RL_FORK=1 asked for the old child (rl_preinit). */
 int	get_more_input_readline(t_shell *state, char *prompt)
 {
+	rl_hist_prefix_sync(state);
 	rl_preinit(&state->rl);
 	if (state->rl.use_fork)
 		return (rl_read_fork(state, prompt));
