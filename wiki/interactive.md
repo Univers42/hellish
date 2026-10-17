@@ -106,8 +106,11 @@ loaded, and a shell run from a checkout loads it with
 
 **PS1 is bilingual.** Both escape languages render in a plain PS1 — paste `%n@%m %~ %#` or
 `\u@\h \w \$` and either works, while `100% `, csh-style `%> ` and the strftime percents inside
-`$(date +%H:%M)` or `\D{%M}` survive literally. `PROMPT` and `print -P` keep exact zsh semantics
-(measured against zsh 5.9), and under `set -o zsh`, PS1 *is* PROMPT, as in zsh.
+`$(date +%H:%M)` or `\D{%M}` survive literally. `PROMPT` keeps exact zsh semantics (measured against zsh 5.9), and under
+`set -o zsh`, PS1 *is* PROMPT, as in zsh. `print -P` uses zsh's prompt
+formatter too, but it can re-interpret percent escapes in expanded variable
+contents; its output is not always an exact preview of the live prompt (issue
+[#134](https://github.com/Univers42/hellish/issues/134)).
 
 **What is live, and what is not.** `$VAR`, `${VAR…}`, `$?` and `$((…))` are expanded every time
 the prompt is drawn. Command substitution is not: `$(…)` and backquotes stay on screen as the
