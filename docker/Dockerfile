@@ -50,7 +50,9 @@ FROM ${BASE}
 # to refresh, so one unreachable mirror for that repo (which only carries
 # rare urgent patches; Tumbleweed itself ships through Oss) turned the
 # fallback into a guaranteed red rung after #169 merged, 30 min of
-# "Curl error (28)" with the code never compiled.
+# "Curl error (28)" with the code never compiled. modifyrepo takes the
+# alias (repo-update), not the display name; no `|| true`, so an image that
+# renames the alias fails loudly instead of silently disabling nothing.
 # apt gets the same loop, update included: an Ubuntu mirror mid-sync serves
 # an index that disagrees with its files ("File has unexpected size ...
 # Mirror sync in progress?", or a 404 on a .deb the index already moved
@@ -82,8 +84,7 @@ RUN set -eux; \
 		zretry() { n=0; until "$@"; do n=$((n + 1)); \
 			[ "$n" -ge 4 ] && return 1; sleep 20; done; }; \
 		zretry zypper --non-interactive --gpg-auto-import-keys refresh \
-			|| zypper --non-interactive modifyrepo --disable \
-				openSUSE-Tumbleweed-Update || true; \
+			|| zypper --non-interactive modifyrepo --disable repo-update; \
 		pkgs="gcc clang make readline-devel ncurses-devel git-core bash \
 			python3 tar gzip which findutils diffutils"; \
 		if ! zretry zypper --non-interactive install $pkgs; then \
