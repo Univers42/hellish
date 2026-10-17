@@ -389,6 +389,8 @@ def case_completion_sandbox():
 
 def case_history_revert():
     s = Session()
+    # Pins plain Up/Down walking (edit, then Down): prefix search is off.
+    s.send(b"HELLISH_HISTORY_PREFIX=0\r")
     s.send(b"echo one\r")
     s.send(b"echo two\r")
     s.typed(b"\x1b[A\x1b[AXX")

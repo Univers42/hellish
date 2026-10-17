@@ -172,6 +172,7 @@ inside the shell: `help` for the grouped list, `help NAME` for one,
 | variable | effect |
 |---|---|
 | `HELLISH_BANNER=0\|1` | force the welcome panel off / on |
+| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down walk plain history; default on = search by the text before the cursor; read at every prompt |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for releases; no badge |
 | `HELLISH_NO_ANIM=1` | skip the startup animation |
 | `HELLISH_ANIM=spinner\|pulse\|ember` | opt into a prompt animation |
