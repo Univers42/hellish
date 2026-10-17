@@ -117,6 +117,31 @@ git's own `git-completion.bash` works. The default stays off where bash has
 it on, for a measured reason recorded in the
 [interactive page](interactive.md#completion-).
 
+### make targets
+
+`make <TAB>` / `make cl<TAB>` completes target names from the Makefile in the
+current directory (also `gmake`, `/usr/bin/make`, and behind `sudo`, `env X=1`,
+`&&`, `(`; a wrapper option that takes an argument, as in `sudo -u root make`,
+falls back to filenames). The file is parsed in the shell itself; make is never run.
+
+- Files read: the first regular file of `GNUmakefile`, `makefile`, `Makefile`
+  (GNU make's order, symlinks followed), at most 4 MiB. No such file, a
+  directory, or an unreadable file means plain filename completion.
+- Offered: the names on `target:` / `a b c:` / `a::` lines. Not offered:
+  variable assignments, directives, recipe lines, `define` blocks, names with
+  `%` or `$`, names starting with `.`; text after the colon is ignored.
+- `include` / `-include` / `sinclude` of literal file names are followed ONE
+  level deep (what an included file includes is ignored). Changing only an
+  included file does not refresh the cache; touch the Makefile.
+- Cache: the targets are reused while the Makefile's name, inode, mtime and
+  size are unchanged (one `stat` per TAB).
+- A word starting with `-` or containing `=` or `/` keeps filename completion,
+  and so does any `make` line with `-C`, `--directory`, `-f`, `--file` or
+  `--makefile` before the cursor, or a prefix that matches no target
+  (`make out.txt`).
+- A `complete` spec for `make` (under `shopt -s progcomp`) wins over all of
+  this; `complete -r make` brings the targets back.
+
 ## JOB CONTROL
 
 `&`, `jobs`, `fg`, `bg`, `wait`, `kill` with job specs, `$!`, Ctrl-Z, and
