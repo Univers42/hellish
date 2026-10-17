@@ -201,7 +201,24 @@ newest history line that starts with what you have typed appears dim after
 the cursor. It is a hint, not part of the line: **Right**, **End** or
 **Ctrl-F** at the end of the line insert it; anywhere else, and when there
 is no hint, those keys do what they always did. Enter runs only what you
-typed, and the hint is wiped from the screen. `unset HELLISH_AUTOSUGGEST`
+typed, and the hint is wiped from the screen.
+
+| key | with a hint | without one |
+|---|---|---|
+| Right, End, Ctrl-F | insert all of it | forward-char / end-of-line |
+| Alt-F, Ctrl-Right | insert its next word; the rest stays as the hint | forward-word |
+| Alt-N | show the next older, different matching line | non-incremental forward search |
+| Alt-P | go back to the newer one shown before | non-incremental reverse search |
+
+A word is the blanks at the front of the hint plus the run of characters up
+to the next space or tab (so `-m`, `a/b`, `x=1` are one word each). Alt-N
+and Alt-P step through distinct lines (same full text offered once), look
+at no more than `HELLISH_SUGGEST_MAX` entries, ring the bell at the oldest
+and the newest end instead of wrapping, and start over from the newest
+match as soon as the line is edited. Right after Alt-N inserts the line
+shown, not the newest. A hint a zle widget set as `POSTDISPLAY` is not
+cycled or taken by words. In vi insert mode Alt-F / Alt-N / Alt-P work the
+same (no Ctrl-Right). `unset HELLISH_AUTOSUGGEST`
 (or `=0`) turns it off at the next prompt. A key you bound yourself
 (`bind` / `bindkey` / `.inputrc`) is never taken over.
 
