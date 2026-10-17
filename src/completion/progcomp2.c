@@ -37,7 +37,7 @@ static bool	pc_blank(char c)
    separator set is the one is_cmd_word uses: POSIX XCU 2.9 makes the word
    after ; | & ( { ` or a newline a new command, so `ls | grep <TAB>` must
    look up grep and not ls. */
-static size_t	pc_cmd_off(int start)
+size_t	pc_cmd_off(int start)
 {
 	int	i;
 

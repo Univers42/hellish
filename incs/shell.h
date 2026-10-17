@@ -122,6 +122,8 @@ char	*x_getcwd(void);
 /* release the pushd/popd dir stack at exit; builtins/builtin_dirstack.c */
 void	free_dirstack(t_shell *state);
 void	free_compspecs(t_shell *state);
+/* release the `make <TAB>` target cache; completion/complete_make_cache.c */
+void	mk_cache_free(t_shell *state);
 /* remember / recover a finished bg child's status; src/execution/bg_done.c */
 void	bg_done_record(t_shell *state, pid_t pid, int status);
 int		bg_done_take(t_shell *state, pid_t pid, int *status);
@@ -318,6 +320,20 @@ typedef struct s_bg_done
 	int		status;
 }	t_bg_done;
 
+/* The parsed targets of the cwd's Makefile for `make <TAB>`, valid while
+   name, device, inode, mtime and size are unchanged
+   (src/completion/complete_make.c). */
+typedef struct s_make_cache
+{
+	char		*name;
+	long long	dev;
+	long long	ino;
+	long long	size;
+	long long	mtime_s;
+	long long	mtime_ns;
+	t_vec		targets; /* char *, xmalloc'd */
+}	t_make_cache;
+
 typedef struct s_shell
 {
 	/* --- I/O and readline state --- */
@@ -504,6 +520,7 @@ typedef struct s_shell
 	t_vec				var_attrs; /* declare -i/-n attribute table */
 	t_vec				dirstack; /* pushd/popd dir stack */
 	t_vec				compspecs; /* t_compspec: `complete` registrations */
+	t_make_cache		make_cache; /* `make <TAB>` targets (one entry) */
 	/* --- alias and command cache --- */
 	t_hash				aliases; /* alias name -> t_alias_entry */
 	char				*aliases_view[2]; /* zsh `aliases` as read: the
