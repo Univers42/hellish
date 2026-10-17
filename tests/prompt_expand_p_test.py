@@ -54,14 +54,18 @@ def check(name, ok, detail=""):
 
 
 def at_p(t, var):
-    """Print ${var@P} between markers; return it, or None on a timeout."""
-    t.send("printf '<%%s>\\n' \"${%s@P}\"\r" % var)
-    mark = len(t.out)
-    if not t.expect(b">\r\n", T):
+    """Print ${var@P} between markers; return it, or None on a timeout.
+    The markers are typed split (B''EG, E''ND) so their echo cannot be
+    mistaken for their output, and the slice ends where the END marker
+    was consumed (t.pos): the read that delivers it may also carry the
+    next prompt, which must not leak into the value."""
+    t.send("printf 'B''EG%%sE''ND\\n' \"${%s@P}\"\r" % var)
+    if not t.expect(b"\nBEG", T):
         return None
-    got = t.since(mark)
-    start = got.rfind(b"\n<")
-    return got[start + 2:-2] if start >= 0 else None
+    mark = t.pos
+    if not t.expect(b"END\r\n", T):
+        return None
+    return t.out[mark:t.pos - 5]
 
 
 def live_prompt(t, suffix):
