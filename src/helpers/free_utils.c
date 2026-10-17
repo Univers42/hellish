@@ -179,7 +179,9 @@ static void	free_session_data(t_shell *state)
 /* The single canonical shutdown path. Order is deliberate: functions first
    (they may reference variables), then the owned strings and caches, then
    per-command scratch (redirects, proc subs, AST), then session data
-   (history, cwd, positional args, the argv pool, traps). env_index_free()
+   (history, cwd, positional args, the argv pool, traps), then the `make
+   <TAB>` target cache (a t_make_cache, plain xmalloc'd strings that nothing
+   above refers to). env_index_free()
    must come after all env lookups; word_slab_teardown() is last so any
    stray word_free() calls during the earlier steps still work.
    alloc_live_report() is the ft_malloc leak oracle -- it's a no-op on libc
@@ -194,6 +196,7 @@ void	free_all_state(t_shell *state)
 	arr_marks_clear(state);
 	attr_clear(state);
 	free_session_data(state);
+	mk_cache_free(state);
 	env_index_free();
 	parena_destroy();
 	word_slab_teardown();

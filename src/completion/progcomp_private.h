@@ -31,6 +31,7 @@ void		pc_push(const char *s, int n);
 
 /* What the line under the cursor says. `start` is readline's offset of the
    word being completed. */
+size_t		pc_cmd_off(int start);
 char		*pc_cmd_word(int start);
 char		*pc_prev_word(int start);
 
