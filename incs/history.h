@@ -54,6 +54,7 @@ void		hist_rehome(t_shell *state);
    keeps on an edited entry (history_rl.c). Never call the raw ones. */
 void		hist_rl_drop(int idx);
 void		hist_rl_clear(void);
+void		hist_rl_reclaim_saved(void);
 void		init_history(t_shell *state);
 void		free_hist(t_shell *state);
 void		parse_history_file(t_shell *state);

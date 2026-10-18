@@ -169,16 +169,13 @@ $ git commit -m "fix: close [[ ]] on metachar-adjacent ]]"
 ```
 *(commands green, flags cyan, strings yellow — illustrative)*
 
-### Autosuggestions 🚧 *(Week 1)*
+### Autosuggestions ✅ *(3.2)*
 
-fish-style "ghost text": as you type, the longest matching command from history is shown dimmed
-after the cursor; **→ / End** accepts it. Reuses the loaded history and the same redisplay path
-as highlighting.
-
-```text
-$ make OPT=1 all          ← typed
-$ make OPT=1 all && ./build/bin/hellish   ← suggested (dim), press → to accept
-```
+Shipped in 3.2, opt-in with `export HELLISH_AUTOSUGGEST=1`. As you type, the newest history line
+that starts with the typed text is shown dimmed after the cursor. **→ / End / Ctrl-F** take it,
+**Alt-F** one word of it, and **Alt-N / Alt-P** show other matches. In the same release, Up and
+Down search the history by the text before the cursor. See
+[What's new in 3.2](whats-new.md#inline-hints).
 
 ### Completion polish 🚧 *(Week 1, time-boxed)*
 

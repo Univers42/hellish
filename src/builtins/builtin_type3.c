@@ -28,7 +28,7 @@ int	type_t_one(t_shell *state, const char *name)
 		return (ft_printf("keyword\n"), 0);
 	if (func_lookup(state, (char *)name))
 		return (ft_printf("function\n"), 0);
-	if (type_is_builtin(name))
+	if (type_is_builtin(state, name))
 		return (ft_printf("builtin\n"), 0);
 	if (cmd_hash_lookup(&state->cmd_cache, name))
 		return (ft_printf("file\n"), 0);
@@ -47,7 +47,7 @@ int	type_p_one(t_shell *state, const char *name, int force)
 	char	*path;
 
 	if (!force && (type_is_keyword(name) || func_lookup(state, (char *)name)
-			|| type_is_builtin(name)))
+			|| type_is_builtin(state, name)))
 		return (0);
 	if (ft_strchr(name, '/') && access(name, X_OK) == 0)
 		return (ft_printf("%s\n", name), 0);

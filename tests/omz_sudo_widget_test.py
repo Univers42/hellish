@@ -106,7 +106,9 @@ def main():
         print("SKIP omz sudo plugin: no cached copy and no network")
         return 0
     rc = "PS1='P$ '\nEDITOR=vim\nexport EDITOR\n. %s\n" % path
-    t = Tty(SHELL, rc=rc, path=fakes() + ":" + os.environ.get("PATH", ""))
+    first, second = fakes(), fakes()
+    t = Tty(SHELL, rc=rc,
+            path=first + ":" + second + ":" + os.environ.get("PATH", ""))
     check("start/prompt", t.expect(b"P$ "), repr(t.out[-300:]))
     esc = b"\x1b\x1b"
     line(t, ["echo a1", esc, "\r"], b"FAKESUDO[echo a1]",
@@ -125,7 +127,17 @@ def main():
     t.expect(b"a6\r\nP$ ")
     line(t, [esc, "\r"], b"FAKESUDO[echo a6]",
          "empty-line/recalls-the-previous-command")
+    # $EDITOR is the SECOND vim on $PATH: neither `vim` nor ${vim:c} (the
+    # first one) equals it, so only the widget's `builtin which -a vim |
+    # grep -Fx` can tell it is the editor. That builtin used to be missing,
+    # and every Esc Esc printed "builtin: which: not a shell builtin".
+    t.send("EDITOR=%s/vim\r" % second)
+    t.expect(b"P$ ")
+    line(t, ["vim /tmp/f7", esc, "\r"], b"FAKESUDO[-e /tmp/f7]",
+         "editor/second-on-PATH-found-by-builtin-which")
     check("no-bad-substitution", b"bad substitution" not in t.out,
+          repr(t.out[-400:]))
+    check("no-missing-builtin", b"not a shell builtin" not in t.out,
           repr(t.out[-400:]))
     st = t.close()
     check("exit/not-signalled", not os.WIFSIGNALED(st))

@@ -48,3 +48,22 @@ void	fill_builtin_hash5(t_hash *h)
 	hash_set(h, "compopt", (void *)builtin_compopt);
 	hash_set(h, "bind", (void *)builtin_bind);
 }
+
+/* The one exception to the rule above: names that are ALSO an external
+   command. `which` is /usr/bin/which to a bash script -- `type which`,
+   `command -v which` and its output format all depend on that -- and a
+   zsh builtin to a zsh plugin (oh-my-zsh's sudo widget runs
+   `builtin which -a`). An unconditional registration would change what
+   the bash script runs, so these resolve only in zsh mode, through
+   builtin_func(). */
+int	(*zsh_builtin_func(char *name))(t_shell *s, t_vec argv)
+{
+	static t_hash	h = {0};
+
+	if (!h.ctx)
+	{
+		hash_init(&h, 4);
+		hash_set(&h, "which", (void *)builtin_which);
+	}
+	return ((t_builtin_fn)hash_get(&h, name));
+}

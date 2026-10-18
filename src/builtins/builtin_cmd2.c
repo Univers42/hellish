@@ -58,7 +58,8 @@ static int	command_v(t_shell *state, char *name)
 
 	if (alias_get(&state->aliases, name))
 		return (ft_printf("alias "), alias_print_one(&state->aliases, name));
-	if (type_is_keyword(name) || builtin_func(name) || func_lookup(state, name))
+	if (type_is_keyword(name) || builtin_func(state, name)
+		|| func_lookup(state, name))
 		return (ft_printf("%s\n", name), 0);
 	if (ft_strchr(name, '/'))
 	{
@@ -120,8 +121,9 @@ static int	command_run(t_shell *state, t_vec argv, size_t start)
 	i = start;
 	while (i < argv.len)
 		vec_push(&sub, &av[i++]);
-	if (builtin_func(av[start]))
-		return (rc = builtin_func(av[start])(state, sub), xfree(sub.ctx), rc);
+	if (builtin_func(state, av[start]))
+		return (rc = builtin_func(state, av[start])(state, sub),
+			xfree(sub.ctx), rc);
 	rc = run_external_sync(state, &sub);
 	return (xfree(sub.ctx), rc);
 }

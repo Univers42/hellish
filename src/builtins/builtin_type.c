@@ -16,9 +16,9 @@
 
 /* Check via the dispatch hash table — no need to maintain a separate list.
    The dispatch table IS the authoritative set of builtins. */
-int	type_is_builtin(const char *name)
+int	type_is_builtin(t_shell *state, const char *name)
 {
-	return (builtin_func((char *)name) != NULL);
+	return (builtin_func(state, (char *)name) != NULL);
 }
 
 /* POSIX reserved words (plus the common function/{/}). */
@@ -100,7 +100,7 @@ int	type_one(t_shell *state, const char *name)
 		return (ft_printf("%s is a shell keyword\n", name), 0);
 	if (func_lookup(state, (char *)name))
 		return (ft_printf("%s is a function\n", name), 0);
-	if (type_is_builtin(name))
+	if (type_is_builtin(state, name))
 		return (ft_printf("%s is a shell builtin\n", name), 0);
 	return (type_one_path(state, name));
 }

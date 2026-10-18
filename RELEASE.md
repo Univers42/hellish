@@ -3,8 +3,65 @@
 > 🔥 **hellish** is a fast, almost‑POSIX shell written from scratch in C —
 > hackable, observable, and pleasant to live in.
 
-This file is what the welcome banner points you at. It tracks what's new and
-shows you how to drive the shell.
+This file tracks what's new in every release and shows you how to drive the
+shell. The welcome banner links to the guide for the latest one:
+[What's new](https://univers42.github.io/hellish/whats-new/).
+
+---
+
+## v3.2.0 — *Up finds what you typed, a hint is one key away, and `bind`*
+
+**The guide: [What's new in 3.2](https://univers42.github.io/hellish/whats-new/)**.
+It covers every feature: the keys that reach it, and an example run on
+3.2. The welcome banner shows the same list once after you update.
+
+- **Up and Down search by what you typed.** `git<Up>` steps through the
+  history lines that start with `git`; on an empty line Up walks the whole
+  history. On by default; `HELLISH_HISTORY_PREFIX=0` turns it off. The
+  configs that ask for it now work too: bash's
+  `bind '"\e[A": history-search-backward'` and zsh's
+  `bindkey '^[[A' history-beginning-search-backward` (#136).
+- **Inline hints**, opt-in with `export HELLISH_AUTOSUGGEST=1`. The newest
+  matching history line shows dim after the cursor. Right / End / Ctrl-F
+  take all of it, Alt-F / Ctrl-Right take one word, and Alt-N / Alt-P
+  show other matches (#140).
+- **`make <TAB>`** completes the targets of the Makefile in the current
+  directory. The shell reads the file itself; make never runs (#140).
+- **`bind`**, bash's builtin: key bindings and readline settings from
+  `~/.hellishrc`. `bind -x` runs a shell command on a key, and the command
+  can edit the line through `READLINE_LINE` / `READLINE_POINT`.
+- **`bindkey`** in zsh mode reads zsh's `^X` notation and reaches the line
+  editor's own widgets.
+- **`${var@P}`** renders a value through the PS1 renderer. **`$SRANDOM`**
+  and **`$EPOCHREALTIME`** are new variables.
+
+Fixed on the way to the release:
+
+- **The hint and prefix keys did nothing on some builds.** The shell found
+  readline's commands by comparing function addresses. On a non-PIE binary
+  linked against a readline built with `-Bsymbolic-functions` (Ubuntu's),
+  one function has two addresses, so nothing matched and every key kept
+  its stock meaning. The shell now asks readline for each command by name
+  (`rl_named_function`).
+- **Two leaks in readline 8.1's line editing**, one undo list per line:
+  - after walking the history with Up or Ctrl-P;
+  - after cancelling an Alt-P search.
+
+  LeakSanitizer reported both. `tests/rl_undo_leak_test.py` covers ten
+  ways to reach them.
+- **`which` in zsh mode.** Esc Esc (oh-my-zsh's `sudo` plugin) printed
+  `builtin: which: not a shell builtin`. zsh's `which [-ap]` now exists in
+  zsh mode.
+- **`make re` on NFS** no longer stops in `fclean` on the `.nfsXXXX` file
+  a running `build/bin/hellish` keeps open.
+- **The welcome banner** fits an 80-column terminal, and its frame stays
+  aligned under `LANG=C`.
+
+About two dozen smaller fixes landed as well, among them PS2 on every
+continuation line, `exec nosuch` no longer reading freed memory, `read`
+at end of input, and heredocs in functions, `eval` and `source`. The guide
+lists the ones you can see; the compare view has all of them:
+[v3.1.3...v3.2.0](https://github.com/Univers42/hellish/compare/v3.1.3...v3.2.0).
 
 ---
 
