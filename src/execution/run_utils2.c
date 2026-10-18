@@ -28,7 +28,7 @@ int	run_builtin_or_continue(t_shell *state, t_vec *args)
 	fn = func_lookup(state, ((char **)args->ctx)[0]);
 	if (fn)
 		exit(execute_func_call(state, fn, args).status);
-	bf = builtin_func(((char **)args->ctx)[0]);
+	bf = builtin_func(state, ((char **)args->ctx)[0]);
 	if (bf)
 		exit(bf(state, *args));
 	return (0);

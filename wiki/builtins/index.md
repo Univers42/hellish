@@ -6,7 +6,7 @@
 > (tools/gen_builtins_md.py), never edit it by hand. The help
 > table itself is test-enforced against the dispatch table, so
 > neither this page nor `help` can drift from what actually
-> runs. 72 builtins; anything else on `$PATH` works as usual —
+> runs. 73 builtins; anything else on `$PATH` works as usual —
 > `type NAME` says which is which.
 
 ## navigation
@@ -155,6 +155,9 @@
 
 **`.`** — `. filename [arguments]`
 <br>read and run a file in the current shell
+
+**`bind`** — `bind [-lpsvPSVX] [-m keymap] [-f file] [-q name] [-u name] [-r keyseq] [-x keyseq:command] [keyseq:function | readline-line]`
+<br>set key bindings and readline variables, or list them
 
 **`compgen`** — `compgen [-abcdfkv] [-A action] [-W wordlist] [word]`
 <br>print the completions the shell would offer for word

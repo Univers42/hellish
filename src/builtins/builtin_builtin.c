@@ -29,7 +29,7 @@ int	builtin_builtin(t_shell *state, t_vec argv)
 
 	if (argv.len < 2)
 		return (0);
-	f = builtin_func(((char **)argv.ctx)[1]);
+	f = builtin_func(state, ((char **)argv.ctx)[1]);
 	if (!f)
 	{
 		ft_eprintf("%s: builtin: %s: not a shell builtin\n",

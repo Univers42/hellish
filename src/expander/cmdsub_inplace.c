@@ -33,7 +33,7 @@ static bool	cs_word_opaque(t_shell *state, const char *s, int len)
 	if (!w)
 		return (true);
 	bad = (ft_strchr(w, '$') != NULL || ft_strchr(w, '=') != NULL
-			|| func_lookup(state, w) != NULL || builtin_func(w) != NULL);
+			|| func_lookup(state, w) != NULL || builtin_func(state, w) != NULL);
 	xfree(w);
 	return (bad);
 }

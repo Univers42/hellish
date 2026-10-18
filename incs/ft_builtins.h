@@ -148,7 +148,9 @@ bool			zopt_apply(t_shell *state, const char *n, bool on);
 int				builtin_let(t_shell *state, t_vec argv);
 int				builtin_kill(t_shell *state, t_vec argv);
 int				builtin_printf(t_shell *state, t_vec argv);
-int				(*builtin_func(char *name))(t_shell *state,
+int				(*builtin_func(t_shell *state, char *name))(t_shell *s,
 					t_vec argv);
+int				(*zsh_builtin_func(char *name))(t_shell *s, t_vec argv);
+int				builtin_which(t_shell *state, t_vec argv);
 
 #endif

@@ -31,7 +31,7 @@ char	*zp_which(t_shell *state, char *name)
 
 	if (!name || !*name)
 		return (NULL);
-	if (builtin_func(name) || func_lookup(state, name))
+	if (builtin_func(state, name) || func_lookup(state, name))
 		return (ft_strdup(name));
 	if (ft_strchr(name, '/'))
 	{

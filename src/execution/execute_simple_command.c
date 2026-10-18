@@ -112,7 +112,7 @@ static t_execution_state	dispatch_cmd(t_shell *state,
 	if (state->functions.len && func_lookup(state, argv0)
 		&& exe->modify_parent_ctx)
 		return (handle_func_call(state, cmd, exe, func_lookup(state, argv0)));
-	if (builtin_func(argv0) && exe->modify_parent_ctx)
+	if (builtin_func(state, argv0) && exe->modify_parent_ctx)
 		return (execute_builtin_cmd_fg(state, cmd, exe));
 	prehash_external(state, argv0);
 	return (execute_cmd_bg(state, exe, cmd));
