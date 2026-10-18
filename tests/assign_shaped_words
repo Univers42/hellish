@@ -44,3 +44,17 @@ x=5 e=( $x $((x+1)) ); echo "${e[@]}"
 A=old; A=new e=( B=$A ); echo "${e[@]}" "$A"
 A=1 e=( B=$A ) sh -c 'echo "$A" "$B"'
 A=1 e=( B=$A ) true; echo "[$A]" "[${e[*]}]"
+f(){ local v=$1 w=${1:+ }; printf '[%s][%s]\n' "$v" "$w"; }; f 'x y'
+f(){ declare v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ typeset v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ readonly v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ declare -x v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ local -r v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ local old=$1 new=$2 space=${2:+ }; printf '[%s][%s][%s]\n' "$old" "$new" "$space"; }; f vim 'sudo -e'
+x='a *'; f(){ local v=$x; printf '[%s]\n' "$v"; }; f
+f(){ command local v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ command declare v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ builtin local v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ command -p declare v=$1; printf '[%s]\n' "$v"; }; f 'x y'
+f(){ local $1; k1=a k2=b; printf '[%s][%s]\n' "$k1" "$k2"; }; f 'k1 k2'; printf '[%s]\n' "${k1-gone}"
+set -- 'p q'; declare g=$1; readonly r=$1; printf '[%s][%s]\n' "$g" "$r"

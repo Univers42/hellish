@@ -96,6 +96,7 @@ bool	alias_table_empty(t_hash *aliases);
 
 char	*alias_scan_line(t_hash *aliases, const char *input);
 void	alias_scan_update(struct s_shell *state);
+char	*zsh_aliases_view(struct s_shell *state);
 bool	asc_push(t_ascan *a, const char *name, size_t nlen, const char *val);
 void	asc_pop(t_ascan *a);
 bool	asc_active(t_ascan *a, const char *w, size_t len);

@@ -53,8 +53,10 @@ char	*declare_assign_eq(const char *word)
 	return (NULL);
 }
 
-/* One NAME or NAME=VALUE operand: NAME=VALUE assigns (export flag from -x),
-   a bare NAME with no '=' is a no-op that just accepts the name.
+/* One NAME or NAME=VALUE operand: NAME=VALUE assigns (export flag from -x).
+   A bare NAME with -x marks it exported, or, when it is not set, leaves a
+   record with no value that holds the attribute until it is, exactly as
+   `export NAME` does. Without -x a bare NAME just accepts the name.
      subscript_assign() rewrites key and value in place when the key carries
    a [subscript], so a plain name falls through it untouched and the two
    spellings cannot drift apart. */
@@ -68,6 +70,8 @@ void	declare_assign(t_shell *state, const char *word, int exprt)
 	{
 		if (exprt && env_get(&state->env, (char *)word))
 			env_get(&state->env, (char *)word)->exported = true;
+		else if (exprt && ft_is_valid_ident((char *)word))
+			env_set(&state->env, env_create(ft_strdup(word), NULL, true));
 		return ;
 	}
 	ev = env_create(ft_strndup(word, eq - word), ft_strdup(eq + 1),

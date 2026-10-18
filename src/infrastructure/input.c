@@ -126,10 +126,10 @@ static void	update_prompt(t_shell *state, char **prompt, t_deque_tok *tt)
 	else
 		*prompt = tokenizer((char *)state->alias_exp.ctx, tt);
 	if (*prompt)
-		*prompt = ft_strdup(*prompt);
+		*prompt = prompt_ps2(state, *prompt);
 	else if (state->gathering_compound && state->input.ctx
 		&& heredoc_incomplete((char *)state->input.ctx))
-		*prompt = ft_strdup("> ");
+		*prompt = prompt_ps2(state, "> ");
 }
 
 /* Keep reading lines until the tokenizer stops asking for more (prompt becomes

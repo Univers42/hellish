@@ -41,7 +41,8 @@ int	rl_winch_poll(void)
 		return (0);
 	st->cols = cols;
 	rl_clear_visible_line();
-	tty_write_all(fileno(rl_outstream), "\033[J", 3);
+	rl_out_write("\033[J", 3);
+	rl_suggest_stale();
 	rl_reset_screen_size();
 	rl_forced_update_display();
 	return (0);

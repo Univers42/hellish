@@ -14,9 +14,13 @@
 # define HISTORY_H
 
 # include "shell.h"
+# include <sys/types.h>
 
 /* hist_cmds is the truth; readline's own list is a mirror kept in step so
    the arrow keys agree with what `history` prints.
+
+   append_fd is known by identity too (append_dev / append_ino): the user
+   can redirect or close that number, and then it is theirs (history_fd.c).
 
    appended / readmark exist only for `history -a` and `history -n`, which
    are defined against "what this session has already written / already
@@ -29,6 +33,8 @@ typedef struct s_history
 	bool		quiet_expand;
 	bool		recorded; /* this cycle's line is already in the list */
 	int			append_fd;
+	dev_t		append_dev;
+	ino_t		append_ino;
 	size_t		appended;
 	size_t		readmark;
 	t_vec		hist_cmds;

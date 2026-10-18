@@ -137,6 +137,7 @@ int				builtin_vcs_info(t_shell *state, t_vec argv);
 int				builtin_zstyle(t_shell *state, t_vec argv);
 int				builtin_zle(t_shell *state, t_vec argv);
 int				builtin_bindkey(t_shell *state, t_vec argv);
+int				builtin_bind(t_shell *state, t_vec argv);
 int				builtin_add_zsh_hook(t_shell *state, t_vec argv);
 /* Fire chpwd_functions after a successful cd; see builtin_zsh_hook.c. */
 void			run_chpwd_hooks(t_shell *state);

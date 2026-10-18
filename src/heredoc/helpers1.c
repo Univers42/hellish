@@ -15,7 +15,10 @@
 /* Try to defer this heredoc's materialisation to execution time: from a stored
    body (functions / pre-extracted hd_src) or, for a same-line -c/script
    heredoc, straight from the unread remainder of rl.buff. Returns true if the
-   body was captured onto the node (caller skips eager temp-file writing). */
+   body was captured onto the node (caller skips eager temp-file writing).
+   Inside a function or loop body the capture MUST happen: an eager write
+   lands in this command's redirect slot, which is gone by the first call,
+   so with nothing pre-extracted the body is read from the live input. */
 static bool	try_defer_heredoc(t_shell *state, t_ast_node *curr,
 				bool is_pipeline)
 {
@@ -25,6 +28,8 @@ static bool	try_defer_heredoc(t_shell *state, t_ast_node *curr,
 	if (!is_pipeline && !state->gather_in_func && !state->hd_src
 		&& capture_heredoc_from_buff(state, curr))
 		return (true);
+	if (state->gather_in_func && !state->hd_src)
+		return (capture_heredoc_live(state, curr));
 	return (false);
 }
 

@@ -33,6 +33,8 @@ char	**complete_exec_files(const char *text, int start, int end);
 /* complete_cmdpos.c -- "is this word a command name?", which is not the
    same question as "is it at column 0". */
 int		is_cmd_word(int start);
+/* complete_provider.c -- per-command argument providers (make, ...). */
+char	**comp_provider_try(const char *text, int start, int end);
 
 /* readline OWNS every string a generator hands back, and releases it with
    libc free(). Our xmalloc family compiles to ft_malloc on a SAFE=0 build,
@@ -95,7 +97,11 @@ char	*rl_dup_dollar(const char *name, size_t len)
    alone when there is none, so every command without a registration keeps
    the filename completion it has always had -- which is the case that would
    have been broken silently, and everywhere, by a dispatcher that claimed
-   arguments unconditionally. */
+   arguments unconditionally.
+
+   Only when no spec exists does a built-in provider get a turn (make
+   targets, complete_make.c), so a user's `complete` always wins; a provider
+   that has nothing to offer answers NULL and the filenames come back. */
 static char	**cmd_completion(const char *text, int start, int end)
 {
 	char	**spec;
@@ -110,7 +116,10 @@ static char	**cmd_completion(const char *text, int start, int end)
 		spec = progcomp_try(text, start, end);
 		if (rl_attempted_completion_over)
 			return (spec);
-		return (NULL);
+		spec = comp_provider_try(text, start, end);
+		if (spec)
+			rl_attempted_completion_over = 1;
+		return (spec);
 	}
 	rl_attempted_completion_over = 1;
 	if (ft_strchr(text, '/'))

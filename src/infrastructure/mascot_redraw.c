@@ -94,6 +94,6 @@ void	redraw_mascot(t_string *r)
 	while (s + i < last)
 		rd_char(&f, s[i++]);
 	vec_push_str(&f, "\0338\033[?25h\033[?2026l");
-	tty_write_all(fileno(rl_outstream), f.ctx, f.len);
+	rl_out_write(f.ctx, f.len);
 	xfree(f.ctx);
 }

@@ -28,6 +28,10 @@ static const t_help	g_help_2[] = {
 {"complete", "shell",
 	"complete [-abcdfkv] [-A action] [-W list] [-F fn] [-pr] name ...",
 	"register what to offer when completing an argument of name"},
+{"bind", "shell",
+	"bind [-lpsvPSVX] [-m keymap] [-f file] [-q name] [-u name] [-r keyseq]"
+	" [-x keyseq:command] [keyseq:function | readline-line]",
+	"set key bindings and readline variables, or list them"},
 {"compopt", "shell",
 	"compopt [-o|+o option] [-DEI] [name ...]",
 	"change a completion spec's options, or the running one's"},

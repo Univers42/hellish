@@ -56,20 +56,20 @@ static void	rl_mode_apply(int edit_mode)
 		setup_emacs_mode();
 }
 
-/* Install the zle bindings this process has not installed yet. `bindkey`
-   can add one at any time, so this runs per prompt and is a no-op once
-   the registry has stopped growing. */
+/* Apply the `bind` requests and install the `bindkey` bindings this
+   process has not seen yet. Either can add one at any time, so this runs
+   per prompt and is a no-op once the registries have stopped growing. */
 static void	rl_bind_pending(t_rl *l)
 {
+	t_bind_line	*b;
 	t_zle_bind	*a;
 
+	b = (t_bind_line *)bind_lines()->ctx;
+	while (l->bind_lines_done < bind_lines()->len)
+		bind_line_apply(&b[l->bind_lines_done++]);
 	a = (t_zle_bind *)zle_binds()->ctx;
 	while (l->binds_done < zle_binds()->len)
-	{
-		zle_bind_raw(&a[l->binds_done]);
-		rl_bind_keyseq(a[l->binds_done].seq, zle_dispatch);
-		l->binds_done++;
-	}
+		zle_bind_install(&a[l->binds_done++]);
 }
 
 /* HELLISH_RL_FORK=1: read in a forked child, as every release before this
@@ -103,7 +103,7 @@ static void	rl_first_init(t_rl *l)
 {
 	setlocale(LC_ALL, "");
 	rl_instream = stdin;
-	rl_outstream = stderr;
+	rl_outstream = rl_out_open();
 	rl_getc_function = rl_getc_hook;
 	rl_change_environment = 0;
 	rl_variable_bind("revert-all-at-newline", "on");
@@ -111,6 +111,8 @@ static void	rl_first_init(t_rl *l)
 	rl_initialize();
 	l->rl_ready = true;
 	l->mode_applied = -1;
+	l->feat_on[0] = -1;
+	l->feat_on[1] = -1;
 	l->use_fork = !RL_INPROC_OK || rl_fork_wanted();
 }
 
@@ -124,11 +126,15 @@ void	rl_preinit(t_rl *l)
 		rl_first_init(l);
 	rl_reset_screen_size();
 	rl_abort_reset();
+	rl_keyfd_refresh(fileno(rl_instream));
 	if (l->mode_applied != l->edit_mode)
 	{
 		rl_mode_apply(l->edit_mode);
 		l->mode_applied = l->edit_mode;
 		l->binds_done = 0;
+		l->bind_lines_done = 0;
 	}
+	rl_slot_pre(l);
 	rl_bind_pending(l);
+	rl_slot_post(l);
 }

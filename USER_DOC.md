@@ -97,6 +97,52 @@ A syntax error in any file hellish loads is reported once, with the file
 and line, and the line itself — the same two lines bash prints — and the
 lines before it still run.
 
+## The prompt
+
+`PS1` is the prompt, and it is bilingual: bash's backslash escapes (`\u`,
+`\w`, `\$`, `\[ \]`…) and zsh's percent escapes (`%~`, `%F{cyan}`,
+`%(?.a.b)`…) work in the same string. `PROMPT` is the zsh spelling with
+zsh's exact rules, and wins when both are set; `RPROMPT` is the right
+prompt. The full escape list is section 1 of `hellishrc.example`, and
+[wiki/interactive.md](wiki/interactive.md#prompt-) has the rest.
+
+What is live at every render, and what is not:
+
+| in the prompt | rendered? |
+|---|---|
+| `$VAR`, `${VAR}`, `${VAR:-x}`, `$?` and the other specials | yes, every time the prompt is drawn |
+| `$((…))` | yes |
+| `$(…)` and backquotes | **no** — the text stays on screen as written; it would fork on every redraw |
+
+For a computed segment, set a variable from a hook and put the variable in
+the prompt. `HELLISH_PRECMD_FUNCS` runs once before each prompt
+(`hellishrc.example`, section 5b):
+
+```sh
+_branch() { BR=$(git branch --show-current 2>/dev/null); }
+HELLISH_PRECMD_FUNCS=(_branch)
+PS1='${BR:+($BR) }\w \$ '
+```
+
+**`prompt` is a shell function, not a builtin.** The installer seeds it
+into `~/.config/hellish/rc.d/40-prompt-switch.hsh`, next to the 29 themes
+in `~/.config/hellish/themes/`. `type prompt` says whether it is loaded;
+from a checkout, `HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`
+loads it by hand.
+
+**`\A` is not bash's 24-hour clock here.** It is the animated glyph, and it
+was there first. A bash `PS1` pasted in with `\A` shows the glyph — or
+nothing, since the animation is off by default — where bash shows `14:30`.
+Write `\D{%H:%M}` or `%T` for the clock.
+
+**The animation is off by default, on purpose.** `HELLISH_ANIM=spinner`
+(or `pulse`, `ember`) makes `\A` repaint the prompt row about ten times a
+second while the shell is idle. That repaint has been reported to corrupt
+the prompt on some terminals: an escape sequence printed as text
+(`8;2;90;96;106m`), or a cut glyph shown as `�`. It could not be
+reproduced on demand, so it ships off. If you turn it on and see that,
+`HELLISH_ANIM=off` is the fix.
+
 ## Check that it works
 
 ```sh
@@ -111,11 +157,62 @@ conf list                    # plugin framework: what is on and off
 If a terminal ever misbehaves after an experiment: `reset` — and the
 escape hatches above get you back to your previous shell at any time.
 
+## Completing `make` targets
+
+`make <TAB>` / `make cl<TAB>` completes target names from the Makefile in the
+current directory (also `gmake`, `/usr/bin/make`, and behind `sudo`, `env X=1`,
+`&&`, `(`; a wrapper option that takes an argument, as in `sudo -u root make`,
+falls back to filenames). The file is parsed in the shell itself; make is never run.
+
+- Files read: the first regular file of `GNUmakefile`, `makefile`, `Makefile`
+  (GNU make's order, symlinks followed), at most 4 MiB. No such file, a
+  directory, or an unreadable file means plain filename completion.
+- Offered: the names on `target:` / `a b c:` / `a::` lines. Not offered:
+  variable assignments, directives, recipe lines, `define` blocks, names with
+  `%` or `$`, names starting with `.`; text after the colon is ignored.
+- `include` / `-include` / `sinclude` of literal file names are followed ONE
+  level deep (what an included file includes is ignored). Changing only an
+  included file does not refresh the cache; touch the Makefile.
+- Cache: the targets are reused while the Makefile's name, inode, mtime and
+  size are unchanged (one `stat` per TAB).
+- A word starting with `-` or containing `=` or `/` keeps filename completion,
+  and so does any `make` line with `-C`, `--directory`, `-f`, `--file` or
+  `--makefile` before the cursor, or a prefix that matches no target
+  (`make out.txt`).
+- A `complete` spec for `make` (under `shopt -s progcomp`) wins over all of
+  this; `complete -r make` brings the targets back.
+
 ## Knobs
 
 | variable | effect |
 |---|---|
 | `HELLISH_BANNER=0\|1` | welcome panel off / on |
+| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
+| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the newest history line that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
+| `HELLISH_SUGGEST_MAX=N` | how many of the newest history lines the suggestion looks at (default 1000; not a number, or below 1, is the default); read at every prompt |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
 | `HELLISH_NO_ANIM=1` | no startup animation |
 | `HELLISH_NO_EXEC=1` | user-install hook: skip for this one session |
+
+### Inline suggestion
+
+With `HELLISH_AUTOSUGGEST=1` (set it at the prompt or in the rc file) the
+newest history line that starts with what you have typed appears dim after
+the cursor. It is a hint, not part of the line: **Right**, **End** or
+**Ctrl-F** at the end of the line insert it; anywhere else, and when there
+is no hint, those keys do what they always did. Enter runs only what you
+typed, and the hint is wiped from the screen. `unset HELLISH_AUTOSUGGEST`
+(or `=0`) turns it off at the next prompt. A key you bound yourself
+(`bind` / `bindkey` / `.inputrc`) is never taken over.
+
+Never suggested: a line with a newline, a tab or any other control character
+(an old `printf '\e[31m'` cannot repaint your prompt), and nothing at all
+while you search (Ctrl-R), in vi command mode, on a continuation prompt, with
+the cursor inside the line, or on a line that would not fit the terminal's
+width (the hint is cut at the edge, never wrapped). A right prompt
+(`RPROMPT`) is hidden while the hint reaches it and comes back when it does
+not.
+
+For zsh widgets (`zle -N`), the variable `POSTDISPLAY` is the text shown
+after the cursor: read it in a widget to get the current hint, assign it
+(`POSTDISPLAY=' <hint>'`) to show your own until the line next changes.

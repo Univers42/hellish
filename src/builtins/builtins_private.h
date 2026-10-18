@@ -362,11 +362,26 @@ void	skip_delim(char **pp, const char *ifs);
 char	*last_field(char *p, const char *ifs, bool raw);
 size_t	parse_read_opts2(t_vec argv, t_rdopt *o);
 void	rd_assign_array(t_shell *state, char *line, t_rdopt *o);
-void	rd_set_var(t_shell *state, char *name, char *value_owned);
-void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
+bool	rd_set_var(t_shell *state, char *name, char *value_owned);
+int		assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o);
 long	rd_secs_ms(const char *s);
-int		fc_resolve_idx(t_shell *state, const char *s);
-int		fc_list(t_shell *state, char **av, int ac, bool reverse);
+/* fc's parsed command line (builtin_fc3.c): -e NAME, the -l -n -r -s
+   switches, and the first [last] operands that follow them. */
+typedef struct s_fcopt
+{
+	const char	*editor;
+	char		**ops;
+	int			nops;
+	bool		list;
+	bool		nonum;
+	bool		rev;
+	bool		subst;
+}	t_fcopt;
+
+int		fc_parse(t_shell *state, char **av, int ac, t_fcopt *o);
+int		fc_total(t_shell *state);
+int		fc_resolve_idx(t_shell *state, const char *s, int total, int *idx);
+int		fc_list(t_shell *state, t_fcopt *o);
 int		fc_write_tmp(t_shell *state, char *tmpf, int first, int last);
 int		fc_run_editor(t_shell *state, const char *editor, char *tmpf);
 int		fc_edit_run(t_shell *state, const char *editor, int first, int last);
@@ -450,5 +465,34 @@ char	scan_term(const char *w);
 int		declare_names(t_shell *state, t_vec argv, size_t i);
 int		list_all(t_shell *state);
 int		list_named(t_shell *state, t_vec argv, size_t i);
+
+/* The file `exec NAME` runs, by bash's full name, or NULL when PATH has
+   none (builtin_exec_path.c). Looks only: never prints, never exits. */
+char	*exec_lookup(t_shell *state, char *name);
+
+/* `bind` (builtin_bind*.c, platform/posix/bind_rl*.c). */
+typedef struct s_bindopt
+{
+	const char	*map;
+	const char	*query;
+	const char	*unbind;
+	const char	*remove;
+	const char	*file;
+	const char	*unix_cmd;
+	char		list[9];
+	char		bad;
+	char		missing;
+}	t_bindopt;
+
+int		bind_usage(t_shell *state, char bad, char missing);
+int		bind_list_all(t_shell *state, const char *map, const char *list);
+int		bind_file(t_shell *state, const char *map, const char *file);
+int		bind_unbind(t_shell *state, const char *map, const char *name);
+int		bind_rl_list(t_shell *state, const char *map, char opt);
+int		bind_rl_query(t_shell *state, const char *map, const char *name);
+bool	bind_rl_keymap_ok(const char *name);
+bool	bind_rl_fn_ok(const char *name);
+int		bind_unix(t_shell *state, const char *line);
+int		bind_x_list(void);
 
 #endif

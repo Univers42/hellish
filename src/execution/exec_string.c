@@ -45,12 +45,25 @@ void	skip_delimiters(t_deque_tok *tt)
    as-is, under whatever hd_src the caller already installed. Stripping
    happens on the RAW text now that alias splicing is per-chunk (#105):
    bodies are removed before any splice, so alias words inside a heredoc
-   body are never expanded -- which is also what bash does. */
+   body are never expanded -- which is also what bash does.
+     A string whose heredoc found no body in its own text gets an EMPTY
+   stream, so the heredoc ends at once with the "delimited by end-of-file"
+   warning. The caller's stream was never this string's to read: `eval
+   'cat <<E'` or a sourced `cat <<E` swallowed the lines after the eval
+   or the `.` (bash runs those as commands), and a NULL stream sent the
+   heredoc to rl.buff -- the SCRIPT's buffer -- which is how nvm.sh's
+   misread heredoc became an out-of-bounds read (#139). A $( ) body is the
+   one exception, and it keeps the caller's stream (hd_from_caller): bash
+   reads `x=$(cat <<E)` on into the lines after it. */
 static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
 {
 	char	*stripped;
+	char	none[1];
+	bool	from_caller;
 	int		status;
 
+	from_caller = state->hd_from_caller;
+	state->hd_from_caller = false;
 	stripped = NULL;
 	if (ft_strnstr(str, "<<", ft_strlen(str))
 		&& split_heredocs(str, &stripped, bodies))
@@ -59,10 +72,15 @@ static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
 		state->hd_pos = 0;
 		status = exec_chunks(state, stripped);
 		xfree(stripped);
+		return (status);
 	}
-	else
-		status = exec_chunks(state, str);
-	return (status);
+	if (!from_caller)
+	{
+		none[0] = '\0';
+		state->hd_src = none;
+		state->hd_pos = 0;
+	}
+	return (exec_chunks(state, str));
 }
 
 /* Execute the string, routing any heredoc bodies aside first.  Alias
@@ -80,9 +98,9 @@ static int	exec_split_heredocs(t_shell *state, char *str, char **bodies)
    fresh-install pty test catches under ASan. The old single-pass code
    was immune only by accident: its up-front alias splice WAS the copy.
 
-   The two entry points below differ only in state->err_src, the file a
-   parse error is reported against (error_where.c). It is saved and
-   restored around every run so an eval inside a sourced file reports
+   The two entry points below differ only in state->err_src, the file an
+   error is reported against (error_where.c, exec_where.c). It is saved
+   and restored around every run so an eval inside a sourced file reports
    against ITS text rather than the file's line count. */
 static int	exec_string_own(t_shell *state, char *str)
 {
@@ -120,19 +138,14 @@ int	exec_string(t_shell *state, char *str)
 	return (status);
 }
 
-/* `source FILE` and the rc loader: parse errors name FILE and the line. */
+/* `source FILE` and the rc loader: errors name FILE and the line. */
 int	exec_file_string(t_shell *state, char *str, const char *src)
 {
-	const char	*saved_src;
-	int			saved_line;
-	int			status;
+	t_where	saved;
+	int		status;
 
-	saved_src = state->err_src;
-	saved_line = state->err_line;
-	state->err_src = src;
-	state->err_line = 1;
+	where_push(state, &saved, src);
 	status = exec_string_own(state, str);
-	state->err_src = saved_src;
-	state->err_line = saved_line;
+	where_pop(state, &saved);
 	return (status);
 }

@@ -107,8 +107,9 @@ char	*env_to_str(t_env *e)
 
 /* Build the NULL-terminated envp[] for execve, including only entries
    where exported==true.  Shell-local variables (exported=false) are
-   intentionally hidden from child processes. Caller owns the array and
-   each element. */
+   intentionally hidden from child processes, and so is a name exported
+   before it has a value (`export X` alone): bash passes nothing for it,
+   not "X=". Caller owns the array and each element. */
 char	**get_envp(t_shell *state, char *exe_path)
 {
 	char	**ret;
@@ -123,7 +124,7 @@ char	**get_envp(t_shell *state, char *exe_path)
 	while (++i < state->env.len)
 	{
 		e = &((t_env *)state->env.ctx)[i];
-		if (e->exported && !arr_is(e->value))
+		if (e->exported && e->value && !arr_is(e->value))
 			ret[j++] = env_to_str(e);
 	}
 	return (ret);

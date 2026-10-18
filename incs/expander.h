@@ -31,7 +31,11 @@ typedef struct s_expander_simple_cmd
 	t_ast_node	*node; /* the simple command, for looking at siblings */
 	t_ast_node	*curr; /* shorthand for children[i] */
 	bool		found_first; /* true once the command word is seen */
-	bool		export; /* true when expanding an `export` command */
+	bool		decl; /* a declaration utility: export, readonly,
+						declare, typeset, local -- its NAME=value
+						arguments are not field-split */
+	bool		decl_next; /* the command word was a bare `command`:
+							the next word decides `decl` */
 	bool		in_db; /* true inside [[ ]]: no split/glob, case rules */
 	bool		pat_next; /* [[ only: next word sits after ==/=/!= */
 	int			exit_stat; /* running exit status for the command */
@@ -41,6 +45,10 @@ typedef struct s_expander_simple_cmd
    splitting) and/or suppress pathname (glob) expansion. */
 # define EW_KEEP_AS_ONE 1
 # define EW_NO_GLOB 2
+
+/* decl_word_kind results (expander/utils.c). */
+# define DECL_UTILITY 1
+# define DECL_COMMAND 2
 
 /* Expander functions */
 void		expand_word(t_shell *state, t_ast_node *node,

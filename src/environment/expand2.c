@@ -19,25 +19,32 @@
 #include "helpers.h"
 #include "sh_input.h"
 #include "ft_stdlib.h"
+#include "sh_alias.h"
 #include <time.h>
 
 bool	is_readonly_var(t_shell *state, const char *key);
 void	exit_clean(t_shell *state, int code);
 int		shell_fatal_status(t_shell *state);
 char	*lineno_str(t_shell *state);
+char	*expand_special_dyn_time(t_shell *state, char *key, int len);
 
 int		tok_lineno(t_shell *state);
 
 /* Dynamic special variables computed at expansion time, second tier of
    expand_special: $LINENO, plus the bash-isms $RANDOM (0..32767 from the
    session PRNG), $SECONDS (whole seconds since shell start) and
-   $EPOCHSECONDS. All borrow state->linebuf like lineno_str. A user
+   $EPOCHSECONDS; $EPOCHREALTIME and $SRANDOM are the next tier
+   (expand_dyn_time.c). All borrow state->linebuf like lineno_str. A user
    assignment to these names does NOT shadow them (bash lets SECONDS=N
-   re-base the counter; accepted divergence). NULL = not one of ours. */
+   re-base the counter; accepted divergence). NULL = not one of ours.
+   In the zsh dialect `aliases` is the alias table (alias_view.c). */
 char	*expand_special_dyn(t_shell *state, char *key, int len)
 {
 	if (len == 6 && ft_strncmp(key, "LINENO", 6) == 0)
 		return (lineno_str(state));
+	if (len == 7 && key[0] == 'a' && zsh_mode(state)
+		&& ft_strncmp(key, "aliases", 7) == 0)
+		return (zsh_aliases_view(state));
 	if (len == 6 && ft_strncmp(key, "RANDOM", 6) == 0)
 	{
 		snprintf(state->linebuf, sizeof(state->linebuf), "%u",
@@ -56,7 +63,7 @@ char	*expand_special_dyn(t_shell *state, char *key, int len)
 			(long long)time(NULL));
 		return (state->linebuf);
 	}
-	return (NULL);
+	return (expand_special_dyn_time(state, key, len));
 }
 
 /* $LINENO: the line number currently being read/executed (input-line

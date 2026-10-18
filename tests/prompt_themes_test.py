@@ -123,16 +123,17 @@ def visible_width(s):
 
 
 def render(name, env=None):
-    """Render one theme the way the shell does. `print -rP` runs the real
-    engine, so this cannot drift from what a user sees; the percent-doubling
-    is the same one the switcher's preview does, and for the same reason --
-    print -P enters through the zsh frontend, where a bare % is an escape."""
+    """Render one theme the way the shell does, and the way the switcher's
+    preview does: a PROMPT theme through `print -rP`, a PS1 theme through
+    `${PS1@P}`, which is the PS1 rule itself (a variable's value is not
+    read again for escapes; print -P's zsh order would), so this cannot
+    drift from what a user sees."""
     script = (". %s\n" % SWITCH
               + "prompt %s >/dev/null 2>&1\n" % name
               + 'if [ -n "${PROMPT:-}" ]; then print -rP "$PROMPT"; '
-              + 'else print -rP "${PS1//%/%%}"; fi\n')
-    # print -P strips the \001/\002 width guards by default, because zsh's
-    # print -P emits none (measured; the parity suite pins it). This test
+              + "else printf '%s\\n' \"${PS1@P}\"; fi\n")
+    # print -P and, outside a line editor, @P strip the \001/\002 width
+    # guards, as zsh's print -P and bash's @P do (measured). This test
     # exists to SEE those bytes, so it asks for them by name.
     e = {"HELLISH_THEMES": THEMES, "HELLISH_DBG_PROMPT_MARKS": "1"}
     if env:

@@ -89,7 +89,7 @@ void	parse_history_file(t_shell *state)
 	xfree(hist.ctx);
 	trimmed = cap_history(state, &state->hist.hist_cmds);
 	load_and_persist(state, path, trimmed);
-	state->hist.append_fd = open(path, O_CREAT | O_WRONLY | O_APPEND, 0600);
+	hist_open_append(state, path);
 	if (state->hist.append_fd < 0)
 		warning_error("Can't open the history file for writing");
 	xfree(state->hist.file);

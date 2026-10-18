@@ -35,6 +35,11 @@
 ** widget that appears to run and does nothing is indistinguishable from a
 ** working one until the user presses the key.
 **
+** Any other name readline has a command for -- `history-beginning-search-
+** backward`, `beginning-of-line`, `kill-word` -- runs that command
+** (zle_builtin_func), and the widget's BUFFER family is refreshed after it,
+** or the dispatcher's write-back would restore the line it replaced.
+**
 ** `reset-prompt` re-expands the prompt and redraws it, as zsh does -- the
 ** half of #77 item 5 that had to wait until the line was read in the shell
 ** process: a widget that moved the shell (dirhistory) now shows the new
@@ -45,6 +50,8 @@
 */
 static int	zle_builtin(t_shell *state, const char *name)
 {
+	t_zle_fn	f;
+
 	if (!ft_strcmp(name, "reset-prompt") || !ft_strcmp(name, ".reset-prompt"))
 		return (rl_prompt_repaint(state, true), zle_do_redisplay(), 0);
 	if (!ft_strcmp(name, "redisplay") || !ft_strcmp(name, ".redisplay"))
@@ -55,6 +62,9 @@ static int	zle_builtin(t_shell *state, const char *name)
 		return (zle_do_accept_line(), 0);
 	if (zle_widget_get(name))
 		return (zle_run_widget(state, name));
+	f = zle_builtin_func(name);
+	if (f)
+		return (f(1, 0), zle_publish(state), 0);
 	return (ft_eprintf("%s: zle: %s: no such widget\n", state->ctx, name), 1);
 }
 

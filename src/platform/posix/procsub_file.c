@@ -13,7 +13,9 @@
 #include "shell.h"
 #include "libft.h"
 #include "sys.h"
-#include <fcntl.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <sys/wait.h>
 
@@ -68,18 +70,24 @@ static int	run_into_fd(t_shell *state, const char *cmd, int fd)
 }
 
 /* Create the temp file and record it so the session cleans it up. Returns
-   the path (owned by the caller), or NULL. */
+   the path (owned by the caller), or NULL.
+     The name comes from mkstemp, not from the pid: a =(cmd) made inside
+   $( ) outlives its subshell, so /tmp keeps files from processes long
+   gone, and a later shell given the same pid found its name taken. The
+   O_EXCL open failed, the word vanished without a word, and `cat =(...)`
+   read its stdin instead. mkstemp keeps O_EXCL's safety and retries a
+   taken name itself. */
 char	*create_procsub_file(t_shell *state, const char *cmd)
 {
 	t_procsub_entry	entry;
 	char			buf[64];
 	int				fd;
 
-	ft_snprintf(buf, sizeof(buf), "%s/hsh%d-%d", TMP_DIR,
-		(int)getpid(), (int)state->proc_subs.len);
-	fd = open(buf, O_RDWR | O_CREAT | O_EXCL, 0600);
+	ft_strlcpy(buf, TMP_DIR "/hsh.XXXXXX", sizeof(buf));
+	fd = mkstemp(buf);
 	if (fd < 0)
-		return (NULL);
+		return (ft_eprintf("%s: =(...): cannot create a temporary file: "
+				"%s\n", state->ctx, strerror(errno)), NULL);
 	if (cmd && *cmd && run_into_fd(state, cmd, fd) < 0)
 		return (close(fd), unlink(buf), NULL);
 	if (!cmd || !*cmd)

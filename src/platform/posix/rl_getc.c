@@ -33,7 +33,9 @@
 ** swallows typeahead into its own buffer).
 **
 ** One byte per read(2): queued Enters stay in the terminal, and each is
-** read by the prompt that comes up for it. */
+** read by the prompt that comes up for it. The read is of the terminal's
+** second, non-blocking descriptor where there is one (rl_keyfd.c), so the
+** only place this ever waits is pselect. */
 
 /* A signal readline caught since the last look: let readline handle it
    now -- cleanup, the application's handler, re-prep -- and remember an
@@ -46,7 +48,10 @@ static void	rl_take_signals(void)
 	if (!sig)
 		return ;
 	if (sig == SIGINT)
+	{
 		*rl_intr_cell() = 1;
+		rl_suggest_unpaint();
+	}
 	rl_check_signals();
 }
 
@@ -82,10 +87,12 @@ static int	rl_wait(int fd, sigset_t *old, fd_set *set)
 	return (pselect(nfds, set, NULL, NULL, rl_timeout(&ts), old));
 }
 
-/* One byte, or EOF, or RL_AGAIN when the read should simply be retried: a
-   descriptor left non-blocking by some program is put back, as readline's
+/* One byte, or EOF, or RL_AGAIN when the read should simply be retried.
+   From the second descriptor (rl_keyfd.c) EAGAIN means the key pselect saw
+   is gone -- a ^C flushed it -- and pselect is where to wait now. fd 0
+   itself, left non-blocking by some program, is put back, as readline's
    rl_getc does. Any other error ends the read the way readline's does. */
-static int	rl_read1(int fd)
+static int	rl_read1(int fd, bool twin)
 {
 	unsigned char	c;
 	ssize_t			n;
@@ -99,7 +106,7 @@ static int	rl_read1(int fd)
 		return (RL_AGAIN);
 	if (errno == EAGAIN || errno == EWOULDBLOCK)
 	{
-		if (fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK) < 0)
+		if (!twin && fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK) < 0)
 			return (EOF);
 		return (RL_AGAIN);
 	}
@@ -115,7 +122,7 @@ int	rl_getc_hook(FILE *stream)
 	int			fd;
 	int			r;
 
-	fd = fileno(stream);
+	fd = rl_keyfd(fileno(stream));
 	r = RL_AGAIN;
 	while (r == RL_AGAIN)
 	{
@@ -128,9 +135,11 @@ int	rl_getc_hook(FILE *stream)
 			r = rl_wait(fd, &old, &set);
 		sigprocmask(SIG_SETMASK, &old, NULL);
 		if (r > 0 && FD_ISSET(fd, &set))
-			r = rl_read1(fd);
+			r = rl_read1(fd, fd != fileno(stream));
 		else
 			r = (rl_idle_event(r), RL_AGAIN);
 	}
+	if (r == '\r' || r == '\n')
+		rl_suggest_unpaint();
 	return (r);
 }

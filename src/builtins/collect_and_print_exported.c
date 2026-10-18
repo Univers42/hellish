@@ -12,15 +12,29 @@
 
 #include "builtins_private.h"
 
-/* Walk the env table and format each exported entry as `export KEY="value"`.
-   Variables without a value (exported but never assigned) use an empty
-   string. All strings are heap-allocated — print_and_free_list owns them. */
+/* One exported entry as `export KEY="value"`. A variable exported but not
+   yet assigned is listed bare, `export KEY`, as bash lists it: printing
+   KEY="" would re-create it SET when the list is fed back to the shell. */
+static char	*export_line(t_env *e)
+{
+	char	*s;
+	char	*tmp;
+
+	if (!e->value)
+		return (ft_asprintf("export %s", e->key));
+	tmp = dquote_str(e->value);
+	s = ft_asprintf("export %s=\"%s\"", e->key, tmp);
+	xfree(tmp);
+	return (s);
+}
+
+/* Walk the env table and format each exported entry. All strings are
+   heap-allocated — print_and_free_list owns them. */
 static void	collect_exported_list(t_shell *st, t_vec *list)
 {
 	size_t	j;
 	t_env	*e;
 	char	*s;
-	char	*tmp;
 
 	vec_init(list);
 	list->elem_size = sizeof(char *);
@@ -30,9 +44,7 @@ static void	collect_exported_list(t_shell *st, t_vec *list)
 		e = &((t_env *)st->env.ctx)[j];
 		if (e->exported)
 		{
-			tmp = dquote_str(e->value);
-			s = ft_asprintf("export %s=\"%s\"", e->key, tmp);
-			xfree(tmp);
+			s = export_line(e);
 			vec_push(list, &s);
 		}
 		j++;

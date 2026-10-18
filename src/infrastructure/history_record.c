@@ -32,21 +32,24 @@
 /* Push one entry into readline's list, our vector and the file, then apply
    the HISTCONTROL and HISTSIZE rules that can retire older entries. The
    file write happens before those, because erasedups and the size cap may
-   free the very string being written. */
+   free the very string being written. The descriptor comes from
+   hist_append_fd, never straight from append_fd: that number may be the
+   user's by now. */
 void	append_hist_entry(t_shell *state, char *hist_entry)
 {
 	char	*enc;
+	int		fd;
 
 	add_history(hist_entry);
 	vec_push(&state->hist.hist_cmds, &hist_entry);
-	if (state->hist.append_fd >= 0)
+	fd = hist_append_fd(state);
+	if (fd >= 0)
 	{
 		enc = (char *)encode_cmd_hist(hist_entry).ctx;
-		if (write_to_file(enc, state->hist.append_fd))
+		if (write_to_file(enc, fd))
 		{
 			warning_error("Failed to write to the history file");
-			close(state->hist.append_fd);
-			state->hist.append_fd = -1;
+			hist_close_append(state);
 		}
 		xfree(enc);
 	}

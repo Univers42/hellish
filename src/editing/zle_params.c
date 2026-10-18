@@ -27,7 +27,7 @@
 static const char	*zle_param_name(int i)
 {
 	static const char	*names[] = {"BUFFER", "LBUFFER", "RBUFFER",
-		"CURSOR"};
+		"CURSOR", "POSTDISPLAY"};
 
 	return (names[i]);
 }

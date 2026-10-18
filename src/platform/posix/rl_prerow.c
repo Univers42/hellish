@@ -49,7 +49,7 @@ static int	rp_emit(void)
 
 	f = rp_cell();
 	if (f->len)
-		tty_write_all(fileno(rl_outstream), (char *)f->ctx, f->len);
+		rl_out_write((char *)f->ctx, f->len);
 	xfree(f->ctx);
 	f->ctx = NULL;
 	f->len = 0;
@@ -67,4 +67,14 @@ void	rl_prerow_arm(t_string *rows)
 	xfree(f->ctx);
 	*f = *rows;
 	rl_startup_hook = rp_emit;
+}
+
+/* What hellish composes itself for the terminal readline is drawing on --
+   these rows, the right prompt, a repaint, a mascot frame -- goes straight
+   to fd 2 in one write, after anything readline still holds in its buffered
+   stream (rl_outstream.c), so the two arrive in the order they were made. */
+void	rl_out_write(const char *buf, size_t len)
+{
+	fflush(rl_outstream);
+	tty_write_all(STDERR_FILENO, buf, len);
 }

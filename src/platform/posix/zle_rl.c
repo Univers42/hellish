@@ -70,6 +70,7 @@ void	zle_publish(t_shell *state)
 			ft_strdup(s + rl_point), false));
 	env_set(&state->env, env_create(ft_strdup("CURSOR"),
 			ft_itoa(rl_point), false));
+	rl_suggest_publish(state);
 }
 
 /* Read the variables back and install them in readline.
@@ -118,6 +119,7 @@ static void	zle_run(t_shell *state, t_zle_widget *w)
 	rl_shell_exec(state, w->fn);
 	if (was)
 		zle_collect(state, was);
+	rl_suggest_collect(state);
 	zle_params_restore(state, &saved);
 	xfree(was);
 }
@@ -138,7 +140,10 @@ int	zle_dispatch(int count, int key)
 	w = zle_widget_get(name);
 	if (!w)
 		return (0);
-	zle_run(state, w);
+	if (w->bashx)
+		zle_run_x(state, w);
+	else
+		zle_run(state, w);
 	if (zle_active())
 		rl_redisplay();
 	return (0);

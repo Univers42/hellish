@@ -10,7 +10,9 @@
 #
 # The shell's own stderr is captured to a file and replayed on stdout with the
 # volatile parts normalised away:
-#   - the pid, which changes every run;
+#   - the pid's value, which changes every run -- but not its width: bash
+#     right-aligns it in five columns (%5ld), so a pid under 10000 comes
+#     padded, and a narrower field shows up as NARROW-PID;
 #   - the "line N", because hellish's script line numbers are a KNOWN separate
 #     defect (update_ctx reports the end of the input batch rather than the
 #     running command) -- recorded in backlog.md. The message text, its stream,
@@ -27,7 +29,8 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
 norm() {
-	sed -e 's/^.*: line [0-9][0-9]*: [0-9][0-9]*  */PREFIX /' "$1"
+	sed -e 's/^.*: line [0-9][0-9]*: [ 0-9]\{5,\} /PREFIX /' \
+		-e 's/^.*: line [0-9][0-9]*: [ 0-9]* /NARROW-PID /' "$1"
 }
 
 echo "== SIGKILL: announced, then retired =="

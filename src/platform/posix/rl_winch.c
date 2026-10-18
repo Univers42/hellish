@@ -65,7 +65,7 @@ int	rl_winch_cols(void)
 {
 	struct winsize	ws;
 
-	if (ioctl(fileno(rl_outstream), TIOCGWINSZ, &ws) != 0 || ws.ws_col == 0)
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &ws) != 0 || ws.ws_col == 0)
 		return (-1);
 	return (ws.ws_col);
 }

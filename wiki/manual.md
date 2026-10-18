@@ -117,6 +117,31 @@ git's own `git-completion.bash` works. The default stays off where bash has
 it on, for a measured reason recorded in the
 [interactive page](interactive.md#completion-).
 
+### make targets
+
+`make <TAB>` / `make cl<TAB>` completes target names from the Makefile in the
+current directory (also `gmake`, `/usr/bin/make`, and behind `sudo`, `env X=1`,
+`&&`, `(`; a wrapper option that takes an argument, as in `sudo -u root make`,
+falls back to filenames). The file is parsed in the shell itself; make is never run.
+
+- Files read: the first regular file of `GNUmakefile`, `makefile`, `Makefile`
+  (GNU make's order, symlinks followed), at most 4 MiB. No such file, a
+  directory, or an unreadable file means plain filename completion.
+- Offered: the names on `target:` / `a b c:` / `a::` lines. Not offered:
+  variable assignments, directives, recipe lines, `define` blocks, names with
+  `%` or `$`, names starting with `.`; text after the colon is ignored.
+- `include` / `-include` / `sinclude` of literal file names are followed ONE
+  level deep (what an included file includes is ignored). Changing only an
+  included file does not refresh the cache; touch the Makefile.
+- Cache: the targets are reused while the Makefile's name, inode, mtime and
+  size are unchanged (one `stat` per TAB).
+- A word starting with `-` or containing `=` or `/` keeps filename completion,
+  and so does any `make` line with `-C`, `--directory`, `-f`, `--file` or
+  `--makefile` before the cursor, or a prefix that matches no target
+  (`make out.txt`).
+- A `complete` spec for `make` (under `shopt -s progcomp`) wins over all of
+  this; `complete -r make` brings the targets back.
+
 ## JOB CONTROL
 
 `&`, `jobs`, `fg`, `bg`, `wait`, `kill` with job specs, `$!`, Ctrl-Z, and
@@ -147,6 +172,10 @@ inside the shell: `help` for the grouped list, `help NAME` for one,
 | variable | effect |
 |---|---|
 | `HELLISH_BANNER=0\|1` | force the welcome panel off / on |
+| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down walk plain history; default on = search by the text before the cursor; read at every prompt |
+| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion (off by default): the newest history line starting with the typed text, dim after the cursor; Right / End / Ctrl-F insert it; never a line with control characters or a newline; read at every prompt |
+| `HELLISH_SUGGEST_MAX=N` | history lines the suggestion scans, newest first (default 1000; non-numeric or below 1 = default); read at every prompt |
+| `POSTDISPLAY` | zle widgets only: the text painted after the cursor, i.e. the suggestion; assign it to show your own until the buffer next changes |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for releases; no badge |
 | `HELLISH_NO_ANIM=1` | skip the startup animation |
 | `HELLISH_ANIM=spinner\|pulse\|ember` | opt into a prompt animation |

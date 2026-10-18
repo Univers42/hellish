@@ -28,23 +28,6 @@ bool	is_empty_command(const char *cmd)
 	return (true);
 }
 
-/* True when `word` is a single TT_WORD token whose text is exactly "export".
-   Used to detect the command name so assignment words that follow it are
-   expanded with EW_KEEP_AS_ONE rather than field-splitting. */
-bool	is_export(t_ast_node word)
-{
-	t_ast_node	c;
-
-	if (word.children.len != 1)
-		return (false);
-	c = ((t_ast_node *)word.children.ctx)[0];
-	if (c.token.tt != TT_WORD)
-		return (false);
-	if (ft_strncmp(c.token.start, "export", c.token.len))
-		return (false);
-	return (true);
-}
-
 /* Expand and register a redirect node from a simple command's child list.
    On error, clears should_unwind (the error is handled by returning the
    AMBIGUOUS_REDIRECT sentinel, not by propagating a signal-style unwind)

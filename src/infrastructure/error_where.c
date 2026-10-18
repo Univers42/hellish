@@ -14,6 +14,7 @@
 #include "lexer.h"
 #include "sh_error.h"
 #include "prompt.h"
+#include "sh_input.h"
 
 /* Where a parse error is, the way bash says it for a sourced file.
 **
@@ -38,6 +39,13 @@
 ** plus the newlines before the token inside the chunk.
 */
 
+/* At a prompt -- a terminal session, or -i -- bash leads a file's
+   "FILE: line N" with its own name; from a script or -c it does not. */
+bool	sh_interactive(t_shell *state)
+{
+	return (state->opt_interactive || state->metinp == INP_RL);
+}
+
 /* Owned: "ctx", or "hellish: FILE: line N" when a file is being sourced.
    `at` points into tt->base, the text the tokens index.  The shell's own
    name leads only when interactive -- bash prints "bash: FILE: line N" at
@@ -49,7 +57,7 @@ char	*parse_err_ctx(t_shell *state, t_deque_tok *tt, const char *at)
 	if (!state->err_src || !tt || !tt->base || !at || at < tt->base)
 		return (ft_strdup(state->ctx));
 	line = state->err_line + nl_count(tt->base, (size_t)(at - tt->base));
-	if (!state->opt_interactive)
+	if (!sh_interactive(state))
 		return (ft_asprintf("%s: line %d", state->err_src, line));
 	return (ft_asprintf("%s: %s: line %d", state->dft_ctx, state->err_src,
 			line));

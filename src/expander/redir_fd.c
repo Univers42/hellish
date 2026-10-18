@@ -6,12 +6,14 @@
 /*   By: marvin <marvin@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/08/19 20:40:00 by marvin            #+#    #+#             */
-/*   Updated: 2026/08/19 20:40:00 by marvin           ###   ########.fr       */
+/*   Updated: 2026/09/25 00:00:00 by dlesieur         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "expander_private.h"
+#include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 #include <unistd.h>
 
 /* Park a freshly acquired redirection fd out of the low, user-addressable
@@ -68,4 +70,33 @@ bool	dup_target_is_fd(const char *fname)
 		i++;
 	}
 	return (true);
+}
+
+/* A redirection onto a descriptor at or above the limit cannot be made:
+   dup2 fails with EBADF there, and nowhere else for a valid source. bash
+   finds out as it applies it -- after opening the file, which is created
+   all the same -- and says "N: Bad file descriptor"; the command does not
+   run and the status is 1. This shell applies a command's redirections
+   only once all are resolved, past any way back, so the same test is made
+   as each one is resolved (`1234567>f` reaches here now that the lexer
+   takes every IO_NUMBER whole). A dup is named by its target, as in bash;
+   closing a descriptor that cannot be open (`N>&-`) quietly does nothing
+   there too. What this resolution opened is closed again on failure, since
+   a redirection that failed is never handed to the command's teardown. */
+bool	redir_src_fd_ok(t_shell *state, t_redir *r)
+{
+	long	max;
+
+	max = sysconf(_SC_OPEN_MAX);
+	if (r->close_fd || max < 0 || r->src_fd < max)
+		return (true);
+	if (r->is_dup)
+		ft_eprintf("%s: %d: %s\n", state->ctx, r->fd, strerror(EBADF));
+	else
+		ft_eprintf("%s: %d: %s\n", state->ctx, r->src_fd, strerror(EBADF));
+	if (!r->is_dup && r->fd > STDERR_FILENO)
+		close(r->fd);
+	if (!r->is_dup)
+		r->fd = -1;
+	return (false);
 }

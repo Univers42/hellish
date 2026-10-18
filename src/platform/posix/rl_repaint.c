@@ -99,7 +99,7 @@ static void	rp_upper_rows(const char *s, int rows)
 		s += (*s == '\n');
 	}
 	vec_push_str(&f, "\033[K");
-	tty_write_all(fileno(rl_outstream), f.ctx, f.len);
+	rl_out_write(f.ctx, f.len);
 	xfree(f.ctx);
 }
 
@@ -122,7 +122,7 @@ static void	rp_swap(t_shell *st, t_string *p, int cols)
 	rl_set_prompt(row);
 	st->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_forced_update_display();
-	tty_write_all(fileno(rl_outstream), "\033[?2026l", 8);
+	rl_out_write("\033[?2026l", 8);
 	xfree(st->rl.shown_prompt);
 	st->rl.shown_prompt = (char *)p->ctx;
 }

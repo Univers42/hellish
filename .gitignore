@@ -9,7 +9,6 @@ out.dot
 tests/results.log
 tests/bench_results.txt
 tests/agnostic_results.tsv
-.claude/
 
 # secrets / credentials — never commit
 .env
@@ -44,8 +43,5 @@ tests/glob-zoo/tab	file
 
 # Host-runnable static binaries produced by `make static`.
 dist/
-.claude/*
-.claude
-.CLAUDE
-*CLAUDE*
 site/
+*.env

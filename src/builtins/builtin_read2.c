@@ -77,17 +77,29 @@ char	*last_field(char *p, const char *ifs, bool raw)
 }
 
 /* Write a variable into the environment. `value_owned` is transferred —
-   do not free it after calling this; env_create takes ownership. */
-void	rd_set_var(t_shell *state, char *name, char *value_owned)
+   do not free it after calling this; env_create takes ownership. A
+   readonly variable is refused with bash's message and left as it was
+   (false); read goes on running, as bash's does -- it is not a special
+   builtin, so the error is not fatal. */
+bool	rd_set_var(t_shell *state, char *name, char *value_owned)
 {
+	if (is_readonly_var(state, name))
+	{
+		ft_eprintf("%s: %s: readonly variable\n", state->ctx, name);
+		xfree(value_owned);
+		return (false);
+	}
 	env_set(&state->env, env_create(ft_strdup(name), value_owned, false));
+	return (true);
 }
 
 /* Split `line` across the variable names in argv[o->first..end-1]. All but
    the last variable get one next_field() result; the last one gets
    last_field() which includes the rest of the line minus trailing IFS
-   whitespace. This matches the POSIX `read` field-splitting algorithm. */
-void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o)
+   whitespace. This matches the POSIX `read` field-splitting algorithm.
+   A readonly name stops it the way it stops bash: before the last
+   variable, status 2 and nothing after it assigned; the last, status 1. */
+int	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o)
 {
 	size_t	i;
 	char	*p;
@@ -98,10 +110,12 @@ void	assign_words(t_shell *state, char *line, t_vec argv, t_rdopt *o)
 	i = o->first;
 	while (i + 1 < argv.len)
 	{
-		rd_set_var(state, ((char **)argv.ctx)[i],
-			next_field(&p, o->ifs, o->raw));
+		if (!rd_set_var(state, ((char **)argv.ctx)[i],
+			next_field(&p, o->ifs, o->raw)))
+			return (2);
 		skip_delim(&p, o->ifs);
 		i++;
 	}
-	rd_set_var(state, ((char **)argv.ctx)[i], last_field(p, o->ifs, o->raw));
+	return (!rd_set_var(state, ((char **)argv.ctx)[i],
+		last_field(p, o->ifs, o->raw)));
 }

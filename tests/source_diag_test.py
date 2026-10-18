@@ -156,14 +156,18 @@ def main():
               ("%s: line 4:" % late) in err, "err=%r" % err)
         check("chunks/still one report", n_errors(err) == 1, "err=%r" % err)
 
-        # ---- eval inside a sourced file reports against ITS text
+        # ---- eval inside a sourced file: the eval's line in the file.
+        # The eval's text is not the file's, so its own line count must
+        # not be added to the file's -- but bash still names the file and
+        # the line the eval is on ("F: eval: line 2: ..."). This used to
+        # say "hellish: line 1", the -c string's line, naming neither.
         ev = os.path.join(d, "evalin.sh")
         write(ev, "echo l1\neval 'echo (x)'\necho l3\n")
         rc, out, err = run([SHELL, "-c", "source " + ev], d)
         check("eval/the file goes on after a failed eval",
               out == "l1\nl3\n", "out=%r" % out)
-        check("eval/not blamed on the file's line",
-              ("evalin.sh: line" not in err) and n_errors(err) == 1,
+        check("eval/the file and the eval's own line, once",
+              ("%s: line 2:" % ev) in err and n_errors(err) == 1,
               "err=%r" % err)
 
         # ---- unterminated group: bash's line, once

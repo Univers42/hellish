@@ -92,6 +92,23 @@ typedef struct s_rl
 	char		*shown_prompt; /* the prompt on screen, while reading */
 	int			mode_applied; /* edit_mode readline's keymap is set to */
 	size_t		binds_done; /* zle bindings already installed */
+	size_t		bind_lines_done; /* `bind` requests already applied */
+	bool		slot_live; /* interactive read: the slot hooks are on */
+	int			feat_want[2]; /* per feature (rl_slot.c): wanted now */
+	int			feat_on[2]; /* what was applied; -1 = nothing yet */
+	unsigned	feat_open; /* features whose slots this preinit parked */
+	unsigned	slot_bits; /* slots we bound to a replacement */
+	unsigned	slot_user; /* slots the user bound: hands off */
+	int			sg_max; /* HELLISH_SUGGEST_MAX: entries scanned */
+	char		*sg_ent; /* history entry the suggestion comes from */
+	char		*sg_prev; /* the line sg_ent was searched for */
+	bool		sg_known; /* sg_prev / sg_ent describe a finished scan */
+	char		*sg_txt; /* ghost for the line on screen, or NULL */
+	char		*sg_post; /* POSTDISPLAY a widget set (zle_rl5.c) */
+	char		*sg_post_at; /* the line it was set for */
+	char		*sg_pub; /* what a widget was handed as POSTDISPLAY */
+	bool		sg_painted; /* a ghost is on screen right now */
+	int			sg_col; /* column it starts at */
 	/* --- RPROMPT: rendered here, painted by the editor (rl_rprompt.c) --- */
 	t_string	rp_txt; /* rendered right prompt, width markers stripped */
 	int			rp_w; /* its terminal width; 0 = nothing to paint */
@@ -118,7 +135,9 @@ int			rl_read_inproc(t_shell *state, char *prompt);
 char		*rl_editor_enter(t_shell *state, char *prompt);
 void		rl_editor_exit(t_shell *state);
 t_string	prompt_normal(t_shell *state);
-t_string	prompt_more_input(t_shell *state, struct s_parser *parser);
+char		*prompt_expand_p(t_shell *state, const char *fmt);
+char		*prompt_more_input(t_shell *state, struct s_parser *parser);
+char		*prompt_ps2(t_shell *state, const char *fallback);
 void		buff_readline_init(t_rl *ret);
 bool		rl_eof_exit_ok(t_shell *state);
 void		update_ctx(t_shell *state);

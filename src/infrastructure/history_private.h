@@ -103,4 +103,11 @@ void		hist_trim_to_limit(t_shell *state);
 void		append_hist_entry(t_shell *state, char *hist_entry);
 void		history_record(t_shell *state, bool early);
 
+/* The session's history descriptor (history_fd.c): close-on-exec, out of
+   the 3..9 range, and never written to once the user has taken its number
+   over -- hist_append_fd opens the file again instead. */
+void		hist_open_append(t_shell *state, const char *path);
+int			hist_append_fd(t_shell *state);
+void		hist_close_append(t_shell *state);
+
 #endif

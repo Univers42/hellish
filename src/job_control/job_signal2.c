@@ -61,7 +61,9 @@ static bool	sig_worth_announcing(int sig)
 }
 
 /* The unsolicited stderr line bash writes when it NOTICES a background job
-   died from a signal (issue #17) -- "script: line 5: 1234 Killed  sleep 9".
+   died from a signal (issue #17) -- "script: line 5:  1234 Killed  sleep 9".
+   The pid is right-aligned in five columns, as bash's print_pipeline has it
+   (%5ld), so a pid under 10000 gets padded like `jobs -l` pads it.
 
    Three conditions, all of them load-bearing:
 
@@ -96,7 +98,7 @@ void	job_notify_async(t_shell *state)
 		if (job->status == JOB_KILLED && !job->notified
 			&& sig_worth_announcing(job->term_sig))
 		{
-			ft_eprintf("%s: %d %-27s%s%s\n", state->ctx, job->pgid,
+			ft_eprintf("%s: %5d %-27s%s%s\n", state->ctx, job->pgid,
 				job_status_desc(job), job_core_suffix(job), job->cmd);
 			job->notified = true;
 			job_remove(jt, job->id);

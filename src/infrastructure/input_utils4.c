@@ -48,6 +48,7 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
 	state->hd_pos = 0;
 	xfree(state->hd_stripped);
 	state->hd_stripped = NULL;
+	state->hd_stripped_len = 0;
 	in = (char *)state->alias_exp.ctx;
 	state->cycle_has_hd = (in
 			&& ft_strnstr(in, "<<", state->alias_exp.len) != NULL);
@@ -57,6 +58,7 @@ static void	extract_input_heredocs(t_shell *state, t_deque_tok *tt)
 		return ;
 	state->hd_src = bodies;
 	state->hd_stripped = stripped;
+	state->hd_stripped_len = ft_strlen(stripped);
 	tokenizer(stripped, tt);
 }
 
@@ -106,7 +108,7 @@ bool	try_parse_tokens(t_shell *state, t_parser *parser,
 	if (parser->res == RES_OK)
 		return (true);
 	else if (parser->res == RES_GETMOREINPUT)
-		*prompt = (char *)prompt_more_input(state, parser).ctx;
+		*prompt = prompt_more_input(state, parser);
 	else if (parser->res == RES_ERR)
 		abort_on_syntax_error(state);
 	return (free_ast(&state->tree), true);

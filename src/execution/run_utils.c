@@ -71,11 +71,12 @@ static void	exec_fallback_shell(char *path, t_vec *args, char **envp)
 
 /* Attempt execve; on ENOEXEC (file is executable but not in a format the
    kernel can load -- e.g. a shell script without a shebang), retry with
-   a shell interpreter prepended.  The NULL sentinel is pushed onto args
-   so that the execve call receives a proper argv terminator.  On any
-   other execve failure this function returns and actually_run maps the
-   errno to an exit code. */
-void	try_exec_with_fallback(char *path_of_exe,
+   a shell interpreter prepended -- unless the file is binary, which bash
+   refuses rather than feed to a shell (#133). The NULL sentinel is pushed
+   onto args so that execve receives a proper argv terminator. Returns
+   only on failure, with the errno to report (EXEC_ERR_BINARY for the
+   refused binary), which exec_failure_report turns into bash's words. */
+int	try_exec_with_fallback(char *path_of_exe,
 							t_vec *args,
 							char **envp)
 {
@@ -84,6 +85,10 @@ void	try_exec_with_fallback(char *path_of_exe,
 	null_ptr = NULL;
 	vec_push(args, &null_ptr);
 	execve(path_of_exe, (char **)(args->ctx), envp);
-	if (errno == ENOEXEC)
-		exec_fallback_shell(path_of_exe, args, envp);
+	if (errno != ENOEXEC)
+		return (errno);
+	if (exec_file_is_binary(path_of_exe))
+		return (EXEC_ERR_BINARY);
+	exec_fallback_shell(path_of_exe, args, envp);
+	return (errno);
 }

@@ -170,6 +170,7 @@ int			net_redir_open(char *fname, t_redir *ret);
 bool		create_redir_4(t_tt tt, char *fname, t_redir *ret, int src_fd);
 bool		redir_park_fd(t_redir *ret);
 bool		dup_target_is_fd(const char *fname);
+bool		redir_src_fd_ok(t_shell *state, t_redir *r);
 bool		dup_of_pending(t_shell *state, t_tt tt, char *fname,
 				t_redir *ret);
 int			parse_src_fd(t_tt tt, t_token op_tok);
@@ -266,7 +267,7 @@ void		print_redir_err(t_shell *state,
 int			redirect_from_ast_redir(t_shell *state,
 				t_ast_node *curr,
 				int *redir_idx);
-bool		is_export(t_ast_node word);
+int			decl_word_kind(t_ast_node word);
 int			expand_simple_cmd_assignment(t_shell *state,
 				t_expander_simple_cmd *exp, t_executable_cmd *ret);
 int			expand_simple_cmd_redir(t_shell *state,
@@ -305,7 +306,6 @@ bool		token_starts_with(t_token t, char *str);
 t_token_old	get_old_token(t_ast_node word);
 int			expand_simple_cmd_redir(t_shell *state,
 				t_expander_simple_cmd *exp, t_vec_int *redirects);
-bool		is_export(t_ast_node word);
 bool		is_empty_command(const char *cmd);
 void		expand_cmd_substitutions(t_shell *state, t_ast_node *node);
 void		expand_node_glob(t_ast_node *node, t_vec *args, bool keep_as_one,
@@ -333,6 +333,7 @@ void		ft_reset(void *ptr, size_t size,
 void		free_children(void *p);
 void		push_and_reinit_curr_node(t_vec_nd *ret, t_ast_node *curr_node);
 void		push_new_env_child(t_ast_node *curr_node, char *new_start);
+void		push_new_dq_child(t_ast_node *curr_node, char *new_start);
 
 /* indexed arrays (expand_array*.c, split_array.c) */
 bool		expand_array_token(t_shell *state, t_token *tt, bool split_ctx);
@@ -342,12 +343,19 @@ void		arr_marks_clear(t_shell *state);
 bool		arr_keys_defer(t_shell *state, t_token *tt);
 void		emit_keys_fields(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
+void		emit_keys_at(t_shell *state, const char *name,
+				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_at(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
 void		emit_array_split(t_shell *state, const char *name,
 				t_ast_node *curr_node, t_vec_nd *ret);
+/* emit_assoc_fields mode bits: the keys rather than the values, and
+   verbatim (quoted) fields rather than glob-eligible ones. */
+# define EMIT_KEYS 1
+# define EMIT_QUOTED 2
+
 void		emit_assoc_fields(char *val, t_ast_node *curr_node, t_vec_nd *ret,
-				int want_keys);
+				int mode);
 typedef struct s_slice_ctx
 {
 	char	*val;
@@ -449,6 +457,12 @@ char		*zsh_param(t_shell *state, const char *s, int slen);
 char		*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr);
 char		*zf_inner_text(t_shell *state, const char *s, int n);
 char		*zsh_token_text(t_shell *state, const char *s, int slen);
+char		*zsh_body_eval(t_shell *state, const char *s, int slen);
+bool		zsh_subscripted(const char *s, int slen);
+int			zsh_nested_len(const char *s, int slen);
+char		*zsh_nested_apply(t_shell *state, char *inner, const char *rest,
+				int rlen);
+bool		zsh_nested_op(t_shell *state, t_token *tt);
 char		*zd_plain(t_shell *state, const char *name, int len);
 char		*zd_splice(const char *val, const char *rest, int rlen);
 char		*zd_bind_name(int depth);

@@ -86,8 +86,9 @@ static void	rp_strip(t_string *txt)
 }
 
 /* Forget the rendered right prompt: nothing gets painted until the next
-   primary prompt renders one. prompt_more_input calls this too -- zsh
-   shows no right prompt on a continuation row, and neither do we. */
+   primary prompt renders one. prompt_ps2 calls this too, for every kind
+   of continuation row -- zsh shows no right prompt there, and neither
+   do we. */
 void	rprompt_clear(t_shell *state)
 {
 	if (state->rl.rp_txt.ctx)

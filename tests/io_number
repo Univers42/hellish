@@ -1,0 +1,45 @@
+echo hi 255>/dev/null; echo rc=$?
+echo hi 10>outfiles/a; echo rc=$?; cat outfiles/a
+echo x 123>&1; echo rc=$?
+echo x 1024>/dev/null; echo rc=$?
+echo x 007>/dev/null; echo rc=$?
+echo x 0010>&1; echo rc=$?
+{ echo x 1234567>/dev/null; } 2>&1 | sed 's/^.*: //'
+{ echo x 2147483647>/dev/null; echo rc=$?; } 2>&1 | sed 's/^.*: //'
+echo x 2147483648>outfiles/a; echo rc=$?; cat outfiles/a
+echo x 99999999999>outfiles/a; echo rc=$?; cat outfiles/a
+echo x 99999999999999999999999>outfiles/a; cat outfiles/a
+echo a2>outfiles/a; echo rc=$?; cat outfiles/a
+echo a12>outfiles/a; echo rc=$?; cat outfiles/a
+echo2>/dev/null; echo rc=$?
+x=2>outfiles/a; echo "[$x]"; cat outfiles/a
+x=12>outfiles/a y=3; echo "[$x][$y]"
+echo "x"12>outfiles/a; echo rc=$?; cat outfiles/a
+echo 'x'2>outfiles/a; cat outfiles/a
+echo x\12>outfiles/a; cat outfiles/a
+f=a; echo $f2>outfiles/b; echo rc=$?; cat outfiles/b
+a=(1 2); echo ${a[1]}2>outfiles/a; cat outfiles/a
+echo $(echo a2>/dev/null)
+echo "$(echo b2>/dev/null)"
+echo hi >&2>/dev/null; echo rc=$?
+echo hi >& 2>/dev/null; echo rc=$?
+echo hi 1>&2 2>/dev/null; echo rc=$?
+{ echo in <&0>outfiles/a; }; cat outfiles/a
+exec 100>outfiles/a; echo y >&100; exec 100>&-; cat outfiles/a
+exec 255>outfiles/a; echo z >&255; exec 255>&-; cat outfiles/a
+exec 3>outfiles/a 42>&3; echo q >&42; exec 3>&- 42>&-; cat outfiles/a
+echo x 2<>/dev/null 3>>/dev/null 4>|/dev/null 12<>/dev/null; echo rc=$?
+eval $'cat 11<<EOF <&11\neleven\nEOF'
+eval $'cat 255<<EOF <&255\nhigh\nEOF'
+cat 12<<<twelve <&12
+(echo sub)12>outfiles/a; echo rc=$?; cat outfiles/a
+{ echo grp >&13; }13>outfiles/a; cat outfiles/a
+f() { echo fn >&14; }; f 14>outfiles/a; cat outfiles/a
+for i in 1 2; do echo $i >&15; done 15>outfiles/a; cat outfiles/a
+echo a;2>/dev/null echo b
+echo $((2>1)) $((12>3))
+((2>1)) && echo arith
+case 12 in 12) echo twelve;; esac
+echo 1 2>/dev/null 3 4
+echo 12 >outfiles/a; cat outfiles/a
+echo 3>&1 4

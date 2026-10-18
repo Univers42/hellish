@@ -87,6 +87,7 @@ void	zle_widget_add(const char *name, const char *fn)
 	}
 	w.name = ft_strdup(name);
 	w.fn = ft_strdup(fn);
+	w.bashx = false;
 	vec_push(zle_widgets(), &w);
 }
 

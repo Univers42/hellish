@@ -25,6 +25,9 @@ void	update_pwd_vars(t_shell *state)
 	pwd = env_get(&state->env, PWD_NAME);
 	if (pwd == NULL)
 		try_unset(state, OLDPWD_NAME);
+	else if (!pwd->value)
+		env_set(&state->env, env_create(ft_strdup(OLDPWD_NAME), NULL,
+				pwd->exported));
 	else
 		env_set(&state->env, env_create(ft_strdup(OLDPWD_NAME),
 				ft_strdup(pwd->value), pwd->exported));

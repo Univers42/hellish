@@ -152,6 +152,7 @@ typedef struct s_dcache
 
 void		vec_push_ansi(t_string *v, const char *seq);
 void		tty_write_all(int fd, const char *buf, size_t len);
+void		rl_out_write(const char *buf, size_t len);
 int			anim_style(t_shell *state);
 
 /* Seconds the pending-update badge trusts its cached read of the update
@@ -188,7 +189,7 @@ void		push_user_seg(t_string *ret, t_prompt *p);
 void		push_cwd_seg(t_string *ret, t_prompt *p);
 char		*get_venv_name(void);
 void		get_timebuf(char *buf, size_t buflen);
-t_string	prompt_more_input(t_shell *state, t_parser *parser);
+char		*prompt_more_input(t_shell *state, t_parser *parser);
 t_string	prompt_normal(t_shell *state);
 t_string	ps1_render(t_shell *state, const char *fmt);
 void		ps1_host(t_string *out, char kind);

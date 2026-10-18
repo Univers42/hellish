@@ -76,6 +76,7 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 	char	*row;
 
 	zle_enter(state);
+	rl_suggest_end(state);
 	debug_dump_prompt(prompt);
 	xfree(state->rl.shown_prompt);
 	state->rl.shown_prompt = ft_strdup(prompt);
@@ -93,6 +94,7 @@ void	rl_editor_exit(t_shell *state)
 	zle_enter(NULL);
 	rl_winch_disarm();
 	rl_redisplay_function = rl_redisplay;
+	rl_suggest_end(state);
 	xfree(state->rl.shown_prompt);
 	state->rl.shown_prompt = NULL;
 }
@@ -103,6 +105,7 @@ void	rl_editor_exit(t_shell *state)
    unless HELLISH_RL_FORK=1 asked for the old child (rl_preinit). */
 int	get_more_input_readline(t_shell *state, char *prompt)
 {
+	rl_slot_sync(state);
 	rl_preinit(&state->rl);
 	if (state->rl.use_fork)
 		return (rl_read_fork(state, prompt));

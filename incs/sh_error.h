@@ -24,6 +24,7 @@ void				err_2(t_shell *state, char *p1, char *p2);
 t_ast_node			unexpected(t_shell *state, t_parser *parser,
 						t_ast_node ret, t_deque_tok *tokens);
 void				zsh_brace_hint(t_shell *state, t_deque_tok *tt);
+bool				sh_interactive(t_shell *state);
 char				*parse_err_ctx(t_shell *state, t_deque_tok *tt,
 						const char *at);
 void				parse_err_echo(t_shell *state, t_deque_tok *tt,

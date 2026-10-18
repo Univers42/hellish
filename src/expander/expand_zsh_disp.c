@@ -41,7 +41,7 @@
    of the nested part including both braces, or 0.  Only a body that STARTS
    with `${` qualifies; a `${` later in the body belongs to an operator's
    word and is expanded by that operator, not here. */
-static int	zd_nested_len(const char *s, int slen)
+int	zsh_nested_len(const char *s, int slen)
 {
 	int	depth;
 	int	i;
@@ -61,8 +61,8 @@ static int	zd_nested_len(const char *s, int slen)
 	return (0);
 }
 
-/* Evaluate the nested part, BIND it to a scratch parameter, and read the
-** outer operator against that parameter.
+/* BIND an evaluated nested value to a scratch parameter, and read the
+** outer operator `rest` against that parameter. Owns `inner`.
 **
 ** THE VALUE, NOT ITS TEXT. Splicing the value in as text was the first
 ** attempt and it is wrong in a way that reads as working: with A=1,
@@ -76,32 +76,43 @@ static int	zd_nested_len(const char *s, int slen)
 ** substitution, the modifiers, :#, a subscript -- applies to the value
 ** through the code that already implements it. There is no second
 ** implementation of any of them, which is why this is a few lines rather
-** than a parallel expander.
+** than a parallel expander. The scratch body goes through the token-level
+** expander (zsh_body_eval): a subscript with an operator, `[1]:-d`, lives
+** there and not in the scalar engine (#137).
 **
 ** The scratch parameter is removed afterwards, and its name is depth-keyed
-** so a doubly-nested body cannot clobber the level still reading it. */
-static char	*zd_nested(t_shell *state, const char *s, int slen, int n)
+** so a doubly-nested body cannot clobber the level still reading it.
+** Two callers: zd_nested below, and zsh_nested_op one layer up, which
+** knows the quoting and so can evaluate the inner value as an array. */
+char	*zsh_nested_apply(t_shell *state, char *inner, const char *rest,
+			int rlen)
 {
 	static int	depth = 0;
-	char		*inner;
 	char		*body;
 	char		*name;
 	char		*out;
 
-	inner = zf_inner_text(state, s, n);
 	name = zd_bind_name(depth++);
 	if (!inner || !name)
 		return (depth--, xfree(inner), xfree(name), NULL);
 	env_set(&state->env, env_create(ft_strdup(name), inner, false));
-	body = zd_splice(name, s + n, slen - n);
+	body = zd_splice(name, rest, rlen);
 	out = NULL;
 	if (body)
-		out = expand_param_format(state, body, (int)ft_strlen(body), false);
-	if (body && !out)
-		out = zd_plain(state, name, (int)ft_strlen(name));
+		out = zsh_body_eval(state, body, (int)ft_strlen(body));
 	zd_unbind(state, name);
 	depth--;
 	return (xfree(body), xfree(name), out);
+}
+
+/* A nested operand reached WITHOUT its token -- inside another operator's
+   word, or a flag's operand -- so without the quoting that would decide
+   whether a flagged inner value stays an array; it is read as text. The
+   common shapes never get here: zsh_nested_op handles them with the token. */
+static char	*zd_nested(t_shell *state, const char *s, int slen, int n)
+{
+	return (zsh_nested_apply(state, zf_inner_text(state, s, n),
+			s + n, slen - n));
 }
 
 char	*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr)
@@ -111,7 +122,7 @@ char	*zsh_dispatch(t_shell *state, const char *s, int slen, bool arr)
 
 	if (!zsh_mode(state) || slen <= 0)
 		return (NULL);
-	n = zd_nested_len(s, slen);
+	n = zsh_nested_len(s, slen);
 	if (n > 0)
 		return (zd_nested(state, s, slen, n));
 	(void)arr;
