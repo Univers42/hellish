@@ -58,6 +58,7 @@ int	rl_read_inproc(t_shell *state, char *prompt)
 	char	*row;
 	char	*line;
 
+	hist_rl_reclaim_saved();
 	row = rl_editor_enter(state, prompt);
 	line = readline(row);
 	rl_editor_exit(state);

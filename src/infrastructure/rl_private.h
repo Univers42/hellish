@@ -165,6 +165,7 @@ int		rl_shell_leave(t_shell *state, t_rl_bracket *b);
 void	rl_prerow_arm(t_string *rows);
 FILE	*rl_out_open(void);
 int		rl_getc_hook(FILE *stream);
+int		rl_nsearch_reclaim(int c);
 int		rl_idle_timeout(void);
 int		rl_idle_fd(void);
 void	rl_idle_event(int r);
