@@ -68,22 +68,43 @@ t_slot	rl_slot_extra(int j)
 	return (s);
 }
 
+/* Readline's own functions, by the name readline knows them under:
+   0-6 the stock function of each SLOT_*, 7-8 the history-search pair
+   that replaces Up / Down.
+     Looked up by name, never by address. In a non-PIE executable (clang
+   before 15 builds those by default, 42's machines included)
+   `&rl_forward_char` is the executable's PLT stub, while a libreadline
+   linked -Bsymbolic-functions (Debian, Ubuntu) keeps its internal address
+   in the keymaps. The two never compare equal, so every slot read as the
+   user's own binding and no feature key was installed: Up stayed plain
+   history and Right / Alt-F / Alt-N never touched the ghost. A search
+   bound by stub address would also miss readline's rl_last_func check,
+   so a second Up would restart the search instead of walking back. */
+static rl_command_func_t	*rl_slot_readline(int i)
+{
+	static const char *const	names[] = {"previous-history",
+		"next-history", "forward-char", "end-of-line", "forward-word",
+		"non-incremental-forward-search-history",
+		"non-incremental-reverse-search-history",
+		"history-search-backward", "history-search-forward"};
+
+	return (rl_named_function(names[i]));
+}
+
 /* The stock function of a slot, and what replaces it while its feature
    is on. In vi insert mode the Alt keys have no stock function (ESC
    leaves insert mode), so there the slot is unbound while off. */
 void	rl_slot_funcs(const t_slot *s, rl_command_func_t **stock,
 	rl_command_func_t **repl)
 {
-	static rl_command_func_t *const	stk[] = {rl_get_previous_history,
-		rl_get_next_history, rl_forward_char, rl_end_of_line,
-		rl_forward_word, rl_noninc_forward_search,
-		rl_noninc_reverse_search};
-	static rl_command_func_t *const	rep[] = {rl_history_search_backward,
-		rl_history_search_forward, rl_suggest_accept, rl_suggest_accept,
-		rl_suggest_word, rl_suggest_older, rl_suggest_newer};
+	static rl_command_func_t *const	rep[] = {NULL, NULL, rl_suggest_accept,
+		rl_suggest_accept, rl_suggest_word, rl_suggest_older,
+		rl_suggest_newer};
 
-	*stock = stk[s->fn];
+	*stock = rl_slot_readline(s->fn);
 	*repl = rep[s->fn];
+	if (s->fn <= SLOT_NEXT)
+		*repl = rl_slot_readline(SLOT_NEWER + 1 + s->fn);
 	if (s->vi && s->fn >= SLOT_WORD)
 		*stock = NULL;
 }
