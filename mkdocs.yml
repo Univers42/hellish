@@ -55,6 +55,7 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - What's new in 3.2: whats-new.md
   - What it is + Install: product.md
   - The manual: manual.md
   - Builtins reference:

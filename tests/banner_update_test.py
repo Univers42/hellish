@@ -67,6 +67,18 @@ def version():
 RUNNING = version()
 
 
+def header_rev():
+    """HELLISH_HEADER_REV from incs/version.h: a seeded state must carry the
+    banner revision the binary was built with to count as already shown."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "incs", "version.h")) as f:
+        m = re.search(r"#\s*define\s+HELLISH_HEADER_REV\s+(\d+)", f.read())
+    return int(m.group(1))
+
+
+HEADER_REV = header_rev()
+
+
 def bump(v, part=1):
     """A version strictly newer than `v`, for seeding a pending update."""
     n = [int(x) for x in v.split(".")[:3]]
@@ -161,7 +173,7 @@ def main():
     c = tmp()
     try:
         # Fresh cache would show the banner anyway, so mark it shown first.
-        seed(c, header_shown=int(time.time()), header_rev=3,
+        seed(c, header_shown=int(time.time()), header_rev=HEADER_REV,
              header_ver=RUNNING)
         out, _ = session(c, {"HELLISH_BANNER": "1"})
         check("HELLISH_BANNER=1 forces the banner", "Welcome back" in out,
@@ -184,7 +196,7 @@ def main():
     try:
         seed(c, latest=newer, checked=int(time.time()),
              notified=int(time.time()), header_shown=int(time.time()),
-             header_rev=3, header_ver=RUNNING)
+             header_rev=HEADER_REV, header_ver=RUNNING)
         out, _ = session(c)
         check("a pending update re-shows the banner",
               "Welcome back" in out,
@@ -199,7 +211,8 @@ def main():
     c = tmp()
     try:
         seed(c, latest=newer, checked=int(time.time()),
-             header_shown=int(time.time()), header_rev=3, header_ver=RUNNING)
+             header_shown=int(time.time()), header_rev=HEADER_REV,
+             header_ver=RUNNING)
         out, _ = session(c)
         check("first session announces it", "Welcome back" in out)
         check("the announcement is recorded",
@@ -212,7 +225,7 @@ def main():
         # A newer release still gets announced.
         newest = bump(RUNNING, part=0)
         seed(c, latest=newest, checked=int(time.time()),
-             header_shown=int(time.time()), header_rev=3,
+             header_shown=int(time.time()), header_rev=HEADER_REV,
              header_ver=RUNNING, announced=newer)
         out, _ = session(c)
         check("a newer release is announced again",
@@ -226,7 +239,7 @@ def main():
     try:
         seed(c, latest=newer, checked=int(time.time()),
              notified=int(time.time()), header_shown=int(time.time()),
-             header_rev=3, header_ver=RUNNING, announced=newer)
+             header_rev=HEADER_REV, header_ver=RUNNING, announced=newer)
         for n in (1, 2):
             out, _ = session(c)
             check("session %d: the prompt carries the update badge" % n,
@@ -234,7 +247,7 @@ def main():
                   "no badge: %r" % out[-300:])
         # And it disappears once the running shell IS the latest.
         seed(c, latest=RUNNING, checked=int(time.time()),
-             header_shown=int(time.time()), header_rev=3,
+             header_shown=int(time.time()), header_rev=HEADER_REV,
              header_ver=RUNNING, announced=RUNNING)
         out, _ = session(c)
         check("no badge once the shell is up to date",
