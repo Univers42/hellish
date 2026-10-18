@@ -61,6 +61,31 @@ void	hist_rl_drop(int idx)
 		undo_list_free((UNDO_LIST *)free_history_entry(e));
 }
 
+/* Before each read: free the undo list readline parked with its saved
+** copy of the typed line.
+**
+** Walking the history from a typed line (previous-history: Ctrl-P, or Up
+** with prefix search off) makes readline save that line, with its undo
+** list as the entry's data, so Down can bring it back. When the line ends
+** elsewhere -- Enter or ^C on a recalled entry -- the saved copy outlives
+** the read, and the next readline() frees it without the undo list:
+** readline 8.1 (Ubuntu 22.04's) leaked the typed text's undo records once
+** per such line, which ASan reported at exit.
+**   rl_maybe_unsave_line() is the public way to take that list back into
+** rl_undo_list, and rl_free_undo_list() frees it as readline does, also
+** dropping any history entry still pointing at it. Unsave rings the bell
+** when nothing is saved, so the save before it makes sure something is.
+** Both rewrite rl_line_buffer, which is harmless here: the read that
+** follows starts from an empty line. */
+void	hist_rl_reclaim_saved(void)
+{
+	if (!rl_line_buffer)
+		return ;
+	rl_maybe_save_line();
+	rl_maybe_unsave_line();
+	rl_free_undo_list();
+}
+
 /* clear_history(), freeing the undo lists it cannot. */
 void	hist_rl_clear(void)
 {

@@ -128,7 +128,7 @@ int	rl_getc_hook(FILE *stream)
 	{
 		rl_take_signals();
 		if (rl_should_abort())
-			return (rl_abort_value());
+			return (rl_nsearch_reclaim(rl_abort_value()));
 		rl_block(&old);
 		r = -1;
 		if (!rl_pending_signal() && !rl_should_abort())
@@ -141,5 +141,5 @@ int	rl_getc_hook(FILE *stream)
 	}
 	if (r == '\r' || r == '\n')
 		rl_suggest_unpaint();
-	return (r);
+	return (rl_nsearch_reclaim(r));
 }
