@@ -64,6 +64,7 @@ void	rl_suggest_end(t_shell *state)
 	xfree(l->sg_post);
 	xfree(l->sg_post_at);
 	xfree(l->sg_pub);
+	rl_suggest_cyc_clear(l);
 	l->sg_ent = NULL;
 	l->sg_prev = NULL;
 	l->sg_post = NULL;
