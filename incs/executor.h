@@ -89,6 +89,7 @@ int					exec_external_argv(t_shell *state, t_vec *args);
 int					run_external_sync(t_shell *state, t_vec *args);
 int					expand_simple_command(t_shell *state, t_ast_node *node,
 						t_executable_cmd *ret, t_vec_int *redirects);
-int					(*builtin_func(char *name))(t_shell *state, t_vec argv);
+int					(*builtin_func(t_shell *state, char *name))(t_shell *s,
+						t_vec argv);
 
 #endif

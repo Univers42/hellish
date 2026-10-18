@@ -74,7 +74,7 @@ void	prehash_external(t_shell *state, char *argv0)
 	char	*path;
 	int		denied;
 
-	if (!argv0 || ft_strchr(argv0, '/') || builtin_func(argv0)
+	if (!argv0 || ft_strchr(argv0, '/') || builtin_func(state, argv0)
 		|| func_lookup(state, argv0))
 		return ;
 	path_cache_sync(state);

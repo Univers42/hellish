@@ -25,8 +25,6 @@
    `} 2>/dev/null`, so the closing brace is not added a second time. */
 static void	print_body(t_shell *state, t_shell_func *fn)
 {
-	const char	*t;
-	size_t		n;
 	char		*body;
 
 	if (!fn->text)
@@ -35,13 +33,7 @@ static void	print_body(t_shell *state, t_shell_func *fn)
 			"(defined by eval?)\n", state->ctx, fn->name);
 		return ;
 	}
-	t = fn->text;
-	while (*t == ' ' || *t == '\t' || *t == '\n')
-		t++;
-	n = ft_strlen(t);
-	while (n > 0 && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n'))
-		n--;
-	body = ft_strndup(t, n);
+	body = func_text_trimmed(fn->text);
 	if (fn->body.node_type == AST_COMMAND)
 		ft_printf("%s ()\n{\n%s\n", fn->name, body);
 	else
@@ -74,6 +66,21 @@ static int	bodies_of(t_shell *state, t_vec argv, size_t i)
 			missing = 1;
 	}
 	return (missing);
+}
+
+/* A function's source text without the blank space around it, as a new
+   string. Shared by `declare -f` and zsh's `which`, which print the same
+   body under different headers. */
+char	*func_text_trimmed(const char *t)
+{
+	size_t	n;
+
+	while (*t == ' ' || *t == '\t' || *t == '\n')
+		t++;
+	n = ft_strlen(t);
+	while (n > 0 && (t[n - 1] == ' ' || t[n - 1] == '\t' || t[n - 1] == '\n'))
+		n--;
+	return (ft_strndup(t, n));
 }
 
 int	declare_functions(t_shell *state, t_vec argv, size_t i, bool bodies)

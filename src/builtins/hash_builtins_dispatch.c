@@ -112,12 +112,20 @@ static void	init_builtin_hash(t_hash *h)
    (the `!h.ctx` guard) and then reused for every subsequent lookup — so the
    cost is one hash + one pointer dereference in the steady state. Returns
    NULL when `name` is not a builtin, so callers can branch on that to decide
-   whether to fork a child process. */
-int	(*builtin_func(char *name))(t_shell *state, t_vec argv)
+   whether to fork a child process.
+     `state` is what lets a name be a builtin in one dialect only: in zsh
+   mode the zsh-only table (hash_builtins_zsh.c) answers what this one does
+   not. Every caller goes through here, so `which`, `builtin which`,
+   `command which` and `type which` cannot disagree about it. */
+int	(*builtin_func(t_shell *state, char *name))(t_shell *s, t_vec argv)
 {
 	static t_hash	h = {0};
+	t_builtin_fn	f;
 
 	if (!h.ctx)
 		init_builtin_hash(&h);
-	return ((t_builtin_fn)hash_get(&h, name));
+	f = (t_builtin_fn)hash_get(&h, name);
+	if (!f && zsh_mode(state))
+		f = zsh_builtin_func(name);
+	return (f);
 }

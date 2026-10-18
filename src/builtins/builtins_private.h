@@ -337,6 +337,12 @@ int		parse_redir_len(const char *arg);
 bool	redir_needs_next(const char *arg);
 char	*exe_path(char **path_dirs, char *exe_name, int *perm_denied);
 char	*exe_path_preferred(char **path_dirs, char *exe_name, bool posix);
+void	path_cache_sync(t_shell *state);
+char	*func_text_trimmed(const char *t);
+# define WHICH_ALL 1
+# define WHICH_PATH 2
+
+int		which_one(t_shell *state, char *name, int flags);
 char	*command_v_lookup(t_shell *state, const char *name);
 
 int		list_traps(t_shell *state);
@@ -398,7 +404,7 @@ void	gopt_init(t_shell *state, t_vec argv, t_getopts *g);
 int		one_option(t_shell *state, t_vec argv, t_getopts *g, char *cur);
 int		type_one_path(t_shell *state, const char *name);
 int		type_one(t_shell *state, const char *name);
-int		type_is_builtin(const char *name);
+int		type_is_builtin(t_shell *state, const char *name);
 int		type_is_keyword(const char *name);
 int		type_find_in_path(t_shell *state, const char *name, char **out);
 int		type_dispatch(t_shell *state, const char *name, char mode);
