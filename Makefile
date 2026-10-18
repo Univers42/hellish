@@ -488,6 +488,14 @@ clean:  ## Remove object files, keep the binary
 # default set above does not, so a plain `make fclean` used to reach libft with
 # SAFE unset -- landing in its SAFE!=1 branch, running the LTO capability probe
 # and printing its warning just to delete files.
+#
+# The final `rm -rf build` cannot finish on NFS (the 42 machines' sgoinfre)
+# while a shell started from build/bin is still running: NFS keeps a deleted
+# file that is still open as build/bin/.nfsXXXX until its last user exits, and
+# refuses to remove it ("Device or resource busy"). That made `make re` stop
+# here with nothing rebuilt. Such a file is not ours to remove and does not
+# block the rebuild, so fclean succeeds when only those remain; anything else
+# left behind is retried and fails the target as before.
 fclean: clean  ## Remove objects, the binary and libft's build trees
 	@printf "  \033[1;33m⚠\033[0m \033[1;37mRemoving binary\033[0m" >&2
 	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
@@ -496,7 +504,14 @@ fclean: clean  ## Remove objects, the binary and libft's build trees
 	@$(MAKE) -C vendor/libft fclean SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
 	@rm -rf vendor/libft/build-ft vendor/libft/build-libc vendor/libft/build
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mlibft cleaned\033[0m\n" >&2
-	@rm -rf build
+	@if ! rm -rf build 2>/dev/null; then \
+		if find build ! -type d ! -name '.nfs*' | grep -q .; then \
+			rm -rf build; \
+		else \
+			printf "  \033[1;33m⚠\033[0m \033[37mkept %s: still open in a running process (NFS)\033[0m\n" \
+				"$$(find build -name '.nfs*' | xargs)" >&2; \
+		fi; \
+	fi
 	@printf "\n" >&2
 
 # Run fclean THEN all, strictly in order. As plain prerequisites
