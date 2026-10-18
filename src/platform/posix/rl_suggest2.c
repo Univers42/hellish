@@ -57,13 +57,17 @@ char	*rl_suggest_update(t_shell *state, int cols)
 
 /* What the accept keys may insert right now: the ghost of the last frame,
    if the line still is what it was drawn for. Keys can arrive faster than
-   frames (a paste), so the entry is matched against the line again. */
+   frames (a paste), so the entry is matched against the line again -- and
+   an alternative shown by a cycle belongs to the line it was cycled for,
+   not to a longer one typed since. */
 char	*rl_suggest_live(t_rl *l)
 {
 	size_t	n;
 
 	n = (size_t)rl_end;
 	if (!l->sg_txt || rl_point != rl_end)
+		return (NULL);
+	if (l->sg_cyc_line && ft_strcmp(l->sg_cyc_line, rl_line_buffer))
 		return (NULL);
 	if (l->sg_post && !ft_strcmp(l->sg_post_at, rl_line_buffer))
 		return (l->sg_post);

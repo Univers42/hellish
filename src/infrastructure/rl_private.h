@@ -47,7 +47,7 @@ void	rl_preinit(t_rl *l);
    (rl_slot.c). A slot is one key sequence in one keymap; `fn` names the
    stock function it holds and the one that replaces it. */
 # define RL_NFEAT 2
-# define RL_NSLOTS 17
+# define RL_NSLOTS 25
 
 enum e_feat
 {
@@ -60,7 +60,10 @@ enum e_slot_fn
 	SLOT_PREV,
 	SLOT_NEXT,
 	SLOT_FWD,
-	SLOT_END
+	SLOT_END,
+	SLOT_WORD,
+	SLOT_OLDER,
+	SLOT_NEWER
 };
 
 typedef struct s_slot
@@ -72,6 +75,9 @@ typedef struct s_slot
 }	t_slot;
 
 t_slot	rl_slot_at(int i);
+t_slot	rl_slot_extra(int j);
+void	rl_slot_funcs(const t_slot *s, rl_command_func_t **stock,
+			rl_command_func_t **repl);
 void	rl_slot_sync(t_shell *state);
 void	rl_slot_pre(t_rl *l);
 void	rl_slot_post(t_rl *l);
@@ -93,6 +99,14 @@ char	*rl_suggest_update(t_shell *state, int cols);
 char	*rl_suggest_live(t_rl *l);
 char	*rl_suggest_find(t_shell *state, t_rl *l);
 int		rl_suggest_accept(int count, int key);
+t_shell	*rl_suggest_ghost_state(void);
+int		rl_suggest_bell(void);
+int		rl_suggest_word(int count, int key);
+int		rl_suggest_older(int count, int key);
+int		rl_suggest_newer(int count, int key);
+ssize_t	rl_suggest_scan(t_shell *state, t_rl *l, size_t from);
+void	rl_suggest_cyc_clear(t_rl *l);
+bool	rl_suggest_cyc_sync(t_shell *state, t_rl *l);
 void	rl_suggest_end(t_shell *state);
 void	rl_suggest_stale(void);
 void	rl_suggest_unpaint(void);

@@ -11,6 +11,11 @@ attribute (pyte has no SGR 2), and the output of the lines that are run.
 Cells: both readers (in-process and HELLISH_RL_FORK=1). Each case gets a
 fresh shell and a history file of its own.
 
+Partial accept (Alt-F, Ctrl-Right): the ghost's leading blanks plus the
+next run of non-blank bytes. Cycling (Alt-N older, Alt-P newer): distinct
+matching entries, no wrap (bell at either end), reset by any edit. With no
+history ghost these keys are their stock readline functions.
+
 Usage: python3 autosuggest_test.py /path/to/hellish [case-name-part [inproc]]
 """
 import fcntl
@@ -35,6 +40,9 @@ ESC = "\x1b"
 RIGHT, RIGHT_O = "\x1b[C", "\x1bOC"
 END, END_O = "\x1b[F", "\x1bOF"
 LEFT = "\x1b[D"
+ALT_F, ALT_N, ALT_P = "\x1bf", "\x1bn", "\x1bp"
+CTRL_RIGHT = "\x1b[1;5C"
+CTRL_A, CTRL_E = "\x01", "\x05"
 CTRL_F, CTRL_U, CTRL_C, CTRL_D, CTRL_R, CTRL_G = (
     "\x06", "\x15", "\x03", "\x04", "\x12", "\x07")
 BKSP = "\x7f"
@@ -594,12 +602,360 @@ def case_dumb(fork, tag):
     s.close()
 
 
+
+def case_word(fork, tag):
+    s = shell(fork, ["git commit -m msg"])
+    s.keys("git")
+    check(tag + "24 W1 ghost before", s.ghost() == " commit -m msg",
+          repr(s.ghost()))
+    s.keys(ALT_F)
+    check(tag + "24 W1 Alt-F takes ' commit'",
+          s.row() == PROMPT + "git commit -m msg" and s.x() == PW + 10
+          and s.ghost() == " -m msg", "x=%d %r" % (s.x(), s.ghost()))
+    s.keys(ALT_F)
+    check(tag + "24 W1 Alt-F again takes ' -m'",
+          s.x() == PW + 13 and s.ghost() == " msg",
+          "x=%d %r" % (s.x(), s.ghost()))
+    s.keys(ALT_F)
+    check(tag + "24 W1 last word, no ghost left",
+          s.x() == PW + 17 and s.ghost() == ""
+          and s.row() == PROMPT + "git commit -m msg",
+          "x=%d %r" % (s.x(), s.ghost()))
+    start = len(s.buf)
+    s.run("")
+    out = bytes(s.buf[start:]).decode("utf-8", "replace")
+    check(tag + "24 W1 the line that runs is the accepted one",
+          "git commit -m msg" in out or "command not found" in out
+          or "not a git" in out or "git:" in out, repr(out))
+    s.close()
+
+
+def case_word_ctrl_right(fork, tag):
+    s = shell(fork, ["git commit -m msg"])
+    s.keys("git")
+    s.keys(CTRL_RIGHT)
+    s.keys(CTRL_RIGHT)
+    check(tag + "25 W2 Ctrl-Right = Alt-F",
+          s.x() == PW + 13 and s.ghost() == " msg",
+          "x=%d %r" % (s.x(), s.ghost()))
+    s.keys(CTRL_U + "git")
+    s.keys("\x1b[5C")
+    check(tag + "25 W2 CSI 5C form too", s.x() == PW + 10
+          and s.ghost() == " -m msg", "x=%d %r" % (s.x(), s.ghost()))
+    s.close()
+
+
+def case_word_blanks(fork, tag):
+    s = shell(fork, ["echo  two  spaces"])
+    s.keys("echo")
+    s.keys(ALT_F)
+    check(tag + "26 W3 leading blanks come with the word",
+          s.x() == PW + 9 and s.ghost() == "  spaces"
+          and s.row() == PROMPT + "echo  two  spaces",
+          "x=%d %r" % (s.x(), s.ghost()))
+    s.close()
+
+
+def case_word_stock(fork, tag):
+    s = shell(fork, ["echo history"])
+    s.keys("foo bar baz")
+    check(tag + "27 W4 no ghost to start with", s.ghost() == "")
+    s.keys(CTRL_A + ALT_F)
+    check(tag + "27 W4 Alt-F is forward-word, inserts nothing",
+          s.x() == PW + 3 and s.row() == PROMPT + "foo bar baz",
+          "x=%d %r" % (s.x(), s.row()))
+    s.keys(CTRL_E + CTRL_U + "echo")
+    s.keys(LEFT)
+    s.keys(ALT_F)
+    check(tag + "27 W5 cursor not at the end: stock forward-word (the "
+          "ghost, back at the end, is still only a ghost)",
+          s.x() == PW + 4 and s.ghost() == " history"
+          and s.row() == PROMPT + "echo history",
+          "x=%d %r" % (s.x(), s.row()))
+    s.keys(CTRL_A + RIGHT)
+    s.keys(ALT_F)
+    check(tag + "27 W5 mid-line: moves over the word, inserts nothing",
+          s.x() == PW + 4 and s.row() == PROMPT + "echo history",
+          "x=%d %r" % (s.x(), s.row()))
+    s.close()
+
+
+def case_word_utf8(fork, tag):
+    s = shell(fork, ["echo h\u00e9llo w\u00f6rld"])
+    s.keys("echo")
+    s.keys(ALT_F)
+    check(tag + "28 W6 UTF-8 word, cursor in columns",
+          s.row() == PROMPT + "echo h\u00e9llo w\u00f6rld"
+          and s.x() == PW + 10 and s.ghost() == " w\u00f6rld",
+          "x=%d %r %r" % (s.x(), s.ghost(), s.row()))
+    s.keys(ALT_F)
+    check(tag + "28 W6 second UTF-8 word", s.x() == PW + 16
+          and s.ghost() == "", "x=%d %r" % (s.x(), s.ghost()))
+    s.close()
+
+
+def three(fork, extra=(), **kw):
+    return shell(fork, ["echo a1", "echo a2", "echo a3"] + list(extra), **kw)
+
+
+def case_cycle(fork, tag):
+    s = three(fork)
+    s.keys("echo a")
+    check(tag + "29 C1 newest first", s.ghost() == "3", repr(s.ghost()))
+    for key, name, want in ((ALT_N, "Alt-N", "2"), (ALT_N, "Alt-N", "1"),
+                            (ALT_N, "Alt-N at the oldest: bell, no wrap", "1"),
+                            (ALT_P, "Alt-P", "2"), (ALT_P, "Alt-P", "3"),
+                            (ALT_P, "Alt-P at the newest: bell", "3")):
+        s.keys(key)
+        check(tag + "29 C1 " + name, s.ghost() == want
+              and s.row() == PROMPT + "echo a" + want
+              and s.x() == PW + 6, "%r %r" % (s.ghost(), s.row()))
+    s.keys(ALT_N + ALT_N + ALT_N)
+    check(tag + "29 C1 bell rung at the oldest end", b"\a" in s.since(),
+          repr(s.since()))
+    s.close()
+
+
+def case_cycle_dupes(fork, tag):
+    s = shell(fork, ["echo a1", "echo a2", "echo a1", "echo a3"])
+    s.keys("echo a")
+    seen = [s.ghost()]
+    for _ in range(4):
+        s.keys(ALT_N)
+        seen.append(s.ghost())
+    check(tag + "30 C2 distinct entries, once each, then the end",
+          seen == ["3", "1", "2", "2", "2"], repr(seen))
+    s.close()
+
+
+def case_cycle_reset(fork, tag):
+    s = three(fork, ["echo ab9"])
+    s.keys("echo a")
+    s.keys(ALT_N + ALT_N)
+    check(tag + "31 C3 two steps back", s.ghost() == "2", repr(s.ghost()))
+    s.keys("b")
+    check(tag + "31 C3 a typed character: newest match for the new line",
+          s.ghost() == "9", repr(s.ghost()))
+    s.keys(BKSP)
+    check(tag + "31 C3 Backspace: newest again", s.ghost() == "b9",
+          repr(s.ghost()))
+    s.keys(ALT_N)
+    check(tag + "31 C3 a new cycle starts from the newest",
+          s.ghost() == "3", repr(s.ghost()))
+    s.close()
+
+
+def case_cycle_accept(fork, tag):
+    s = three(fork)
+    s.keys("echo a")
+    s.keys(ALT_N)
+    s.keys(RIGHT)
+    check(tag + "32 C4 Right takes the alternative on show",
+          s.row() == PROMPT + "echo a2" and s.ghost() == "", s.row())
+    s.keys(CTRL_U + "echo a")
+    s.keys(ALT_N + ALT_N)
+    s.keys(ALT_F)
+    check(tag + "32 C4 so does Alt-F, and the rest follows that entry",
+          s.row() == PROMPT + "echo a1", s.row())
+    s.keys(CTRL_U + "echo a")
+    s.keys(ALT_N)
+    s.keys("\r")
+    s.settle()
+    rows = [s.row(y) for y in range(ROWS)]
+    check(tag + "32 C4 Enter runs only what was typed: the output is 'a'",
+          PROMPT + "echo a" in rows and "a" in rows
+          and "a2" not in rows and "a3" not in rows, repr(rows[:8]))
+    s.close()
+
+
+def case_cycle_max(fork, tag):
+    s = Session(tempfile.mkdtemp(prefix="autosuggest_"), fork=fork,
+                env={"HELLISH_AUTOSUGGEST": "1", "HELLISH_SUGGEST_MAX": "2"})
+    for n in (1, 2, 3):
+        s.run("echo a%d" % n)
+    s.keys("echo a")
+    seen = [s.ghost()]
+    s.keys(ALT_N)
+    seen.append(s.ghost())
+    s.keys(ALT_N)
+    seen.append(s.ghost())
+    check(tag + "33 C5 SUGGEST_MAX=2 bounds the cycle",
+          seen == ["3", "2", "2"], repr(seen))
+    s.close()
+
+
+def case_cycle_stock(fork, tag):
+    s = shell(fork, ["echo hello"])
+    s.keys("zzz")
+    s.keys(ALT_P)
+    check(tag + "34 C6 no ghost: Alt-P is the non-incremental search "
+          "(readline's ':' prompt)", s.row() == PROMPT + ":", repr(s.row()))
+    s.keys(CTRL_G)
+    s.keys(CTRL_U + "zzz")
+    s.keys(ALT_N)
+    check(tag + "34 C6 no ghost: Alt-N is the non-incremental search",
+          s.row() == PROMPT + ":", repr(s.row()))
+    s.keys(CTRL_G)
+    check(tag + "34 C6 still alive", s.alive())
+    s.close()
+
+
+def case_cycle_post(fork, tag):
+    home = tempfile.mkdtemp(prefix="autosuggest_")
+    s = Session(home, fork=fork, rc=POST_RC)
+    s.run("echo abc1")
+    s.run("echo abc2")
+    s.run("clear")
+    s.keys("abc")
+    s.keys(b"\x18\x08")
+    before = s.ghost()
+    s.keys(ALT_N)
+    check(tag + "35 C7 POSTDISPLAY is not cycled: Alt-N is the stock "
+          "non-incremental search (its own prompt, no history line shown)",
+          before.strip() == "<hint>" and "abc" not in s.row()
+          and s.row().startswith("IN#>"),
+          "%r %r" % (before, s.row()))
+    s.keys(CTRL_G)
+    check(tag + "35 C7 search aborted: the line is back",
+          s.row().startswith(PROMPT + "abc") and s.alive(), repr(s.row()))
+    s.keys(CTRL_U + "abc")
+    s.keys(b"\x18\x08")
+    s.keys(ALT_F)
+    check(tag + "35 C7 nor taken a word at a time: stock forward-word, "
+          "the hint is still the widget's", s.ghost() == before
+          and s.x() == PW + 3 and s.row() == PROMPT + "abc" + before,
+          "%r x=%d" % (s.ghost(), s.x()))
+    s.close()
+
+
+def case_cycle_user_bind(fork, tag):
+    home = tempfile.mkdtemp(prefix="autosuggest_")
+    s = Session(home, fork=fork, rc="HELLISH_AUTOSUGGEST=1\n"
+                "bind '\"\\en\": backward-char'\n"
+                "bind '\"\\ef\": backward-char'\n")
+    s.run("echo a1")
+    s.run("echo a2")
+    s.run("clear")
+    s.keys("echo a")
+    s.keys(ALT_N)
+    check(tag + "36 C8 the user's Alt-N wins (backward-char)",
+          s.x() == PW + 5 and s.row() == PROMPT + "echo a",
+          "x=%d %r" % (s.x(), s.row()))
+    s.keys(CTRL_E + ALT_F)
+    check(tag + "36 C8 the user's Alt-F wins",
+          s.x() == PW + 5 and s.row() == PROMPT + "echo a", str(s.x()))
+    s.keys(CTRL_E + ALT_P)
+    check(tag + "36 C8 Alt-P is still ours (a bell, not a search prompt)",
+          s.row() == PROMPT + "echo a2" and s.ghost() == "2", s.row())
+    s.close()
+
+
+def bound_keys(s, func):
+    """The `bind -q` answer for a readline function, as the shell prints it."""
+    s.run("clear")
+    s.run("bind -q " + func)
+    return s.screen_text()
+
+
+def case_cycle_off(fork, tag):
+    nis = "non-incremental-forward-search-history"
+    s = shell(fork, ["echo a1", "echo a2"], on=False)
+    check(tag + "37 C9 off: Alt-N, Alt-P, Alt-F, Ctrl-Right stay on their "
+          "stock functions (bind -q)",
+          '"\\en"' in bound_keys(s, nis)
+          and '"\\ep"' in bound_keys(
+              s, "non-incremental-reverse-search-history")
+          and '"\\ef"' in bound_keys(s, "forward-word")
+          and '"\\e[1;5C"' in bound_keys(s, "forward-word"),
+          repr(bound_keys(s, nis)))
+    s.keys("echo a")
+    s.keys(ALT_N)
+    check(tag + "37 C9 off: Alt-N is stock (search prompt)",
+          s.ghost() == "" and s.row() == PROMPT + ":", repr(s.row()))
+    s.keys(CTRL_G)
+    s.keys(CTRL_U + "echo a")
+    s.keys(ALT_P)
+    check(tag + "37 C9 off: Alt-P is stock", s.ghost() == ""
+          and s.row() == PROMPT + ":", repr(s.row()))
+    s.keys(CTRL_G)
+    s.keys(CTRL_U + "foo bar")
+    s.keys(CTRL_A + ALT_F)
+    check(tag + "37 C9 off: Alt-F is forward-word", s.x() == PW + 3
+          and s.row() == PROMPT + "foo bar", str(s.x()))
+    s.keys(CTRL_E + CTRL_U)
+    s.run("HELLISH_AUTOSUGGEST=1")
+    check(tag + "37 C9 switched on at the prompt: the keys are ours",
+          "not bound" in bound_keys(s, nis), repr(bound_keys(s, nis)))
+    s.keys("echo a")
+    s.keys(ALT_N)
+    check(tag + "37 C9 switched on at the prompt: Alt-N cycles",
+          s.ghost() == "1", repr(s.ghost()))
+    s.keys(CTRL_U)
+    s.run("unset HELLISH_AUTOSUGGEST")
+    check(tag + "37 C9 switched off again: stock keys are back",
+          '"\\en"' in bound_keys(s, nis), repr(bound_keys(s, nis)))
+    s.keys("echo a")
+    s.keys(ALT_N)
+    check(tag + "37 C9 switched off again: Alt-N is stock",
+          s.ghost() == "" and s.row() == PROMPT + ":", repr(s.row()))
+    s.keys(CTRL_G)
+    s.close()
+
+
+def case_cycle_vi(fork, tag):
+    s = three(fork)
+    s.run("set -o vi")
+    s.keys("echo a")
+    check(tag + "38 C10 vi insert: ghost", s.ghost() == "3", repr(s.ghost()))
+    s.keys(ALT_N)
+    check(tag + "38 C10 vi insert: Alt-N cycles", s.ghost() == "2",
+          repr(s.ghost()))
+    s.keys(ALT_P)
+    check(tag + "38 C10 vi insert: Alt-P cycles back", s.ghost() == "3",
+          repr(s.ghost()))
+    s.keys(CTRL_U + "echo")
+    s.keys(ALT_F)
+    check(tag + "38 C10 vi insert: Alt-F takes a word",
+          s.ghost() == "" and s.row().endswith("echo a3"), repr(s.row()))
+    s.keys(CTRL_U + "echo a")
+    s.keys(ESC)
+    time.sleep(0.8)
+    s.settle()
+    check(tag + "38 C10 vi command mode: no ghost",
+          s.row() == "(cmd)" + PROMPT + "echo a", repr(s.row()))
+    s.close()
+
+def case_cycle_history_shrinks(fork, tag):
+    """A bind -x widget that clears the history mid-cycle must not leave the
+    cycle pointing at entries that are gone (an out-of-bounds read)."""
+    s = three(fork, ["bind -x '\"\\C-t\": history -c'"])
+    s.keys("echo a")
+    s.keys(ALT_N + ALT_N)
+    check(tag + "29 C11 cycled before the clear", s.ghost() == "1",
+          repr(s.ghost()))
+    s.keys("\x14")
+    s.keys(ALT_P)
+    check(tag + "29 C11 no ghost survives a cleared history",
+          s.ghost() == "" and s.alive(), repr(s.ghost()))
+    s.keys("\x07\x15")
+    s.run("echo ok")
+    check(tag + "29 C11 the line still runs", "ok" in s.screen_text(),
+          repr(s.screen_text()[-300:]))
+    s.close()
+
+
+
 CASES = (case_off_by_default, case_on, case_accept, case_enter_plain,
          case_newest, case_edit, case_cursor, case_interrupt,
          case_history_keys, case_search, case_vi, case_escape,
          case_multiline, case_truncate, case_utf8, case_rprompt,
          case_paste, case_max, case_unset, case_user_bind,
-         case_postdisplay, case_resize, case_dumb)
+         case_postdisplay, case_resize, case_dumb, case_word,
+         case_word_ctrl_right, case_word_blanks, case_word_stock,
+         case_word_utf8, case_cycle, case_cycle_dupes, case_cycle_reset,
+         case_cycle_accept, case_cycle_max, case_cycle_stock,
+         case_cycle_post, case_cycle_user_bind, case_cycle_off,
+         case_cycle_vi, case_cycle_history_shrinks)
 
 
 def main():

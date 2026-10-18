@@ -23,45 +23,30 @@
 ** is a C1 control in its UTF-8 form: running `printf '\e[31m'` once must
 ** not repaint every later prompt. */
 
-/* True when `s` holds nothing a terminal would interpret. 0x7f is DEL; the
-   pair 0xC2 0x80..0x9F is U+0080..U+009F, which some terminals read as a
-   control sequence introducer. */
-static bool	sg_clean(const unsigned char *s)
+/* The newest of the last sg_max entries that starts with the first `n`
+   bytes of the line, is longer than it and is clean (rl_suggest_scan). */
+static char	*sg_scan(t_shell *state, t_rl *l)
 {
-	size_t	i;
+	ssize_t	i;
 
-	i = 0;
-	while (s[i])
-	{
-		if (s[i] < 0x20 || s[i] == 0x7f)
-			return (false);
-		if (s[i] == 0xc2 && s[i + 1] >= 0x80 && s[i + 1] < 0xa0)
-			return (false);
-		i++;
-	}
-	return (true);
+	i = rl_suggest_scan(state, l, state->hist.hist_cmds.len);
+	if (i < 0)
+		return (NULL);
+	return (((char **)state->hist.hist_cmds.ctx)[i]);
 }
 
-/* The newest of the last sg_max entries that starts with the first `n`
-   bytes of the line, is longer than it and is clean. A bounded look keeps
-   a huge history from slowing a keystroke down. */
-static char	*sg_scan(t_shell *state, t_rl *l, size_t n)
+/* True when the last scan still answers for the line: the line extends the
+   one it was for and the entry still matches (or there was none). */
+static bool	sg_cached(t_rl *l, size_t n)
 {
-	char	**a;
-	size_t	i;
-	size_t	seen;
+	size_t	p;
 
-	a = (char **)state->hist.hist_cmds.ctx;
-	i = state->hist.hist_cmds.len;
-	seen = 0;
-	while (i > 0 && seen++ < (size_t)l->sg_max)
-	{
-		i--;
-		if (a[i] && !ft_strncmp(a[i], rl_line_buffer, n)
-			&& ft_strlen(a[i]) > n && sg_clean((unsigned char *)a[i]))
-			return (a[i]);
-	}
-	return (NULL);
+	if (!l->sg_known)
+		return (false);
+	p = ft_strlen(l->sg_prev);
+	return (p <= n && !ft_strncmp(rl_line_buffer, l->sg_prev, p)
+		&& (!l->sg_ent || (ft_strlen(l->sg_ent) > n
+				&& !ft_strncmp(l->sg_ent, rl_line_buffer, n))));
 }
 
 /* The entry to suggest for the line, or NULL.
@@ -75,26 +60,20 @@ static char	*sg_scan(t_shell *state, t_rl *l, size_t n)
 ** it: it only grows between reads, and the cache is dropped per read. */
 char	*rl_suggest_find(t_shell *state, t_rl *l)
 {
-	size_t	n;
-	size_t	p;
 	char	*e;
 
-	n = (size_t)rl_end;
-	p = 0;
-	if (l->sg_known)
-		p = ft_strlen(l->sg_prev);
-	if (l->sg_known && p <= n && !ft_strncmp(rl_line_buffer, l->sg_prev, p)
-		&& (!l->sg_ent || (ft_strlen(l->sg_ent) > n
-				&& !ft_strncmp(l->sg_ent, rl_line_buffer, n))))
+	rl_suggest_cyc_sync(state, l);
+	if (sg_cached(l, (size_t)rl_end))
 		return (l->sg_ent);
 	xfree(l->sg_prev);
 	xfree(l->sg_ent);
-	e = sg_scan(state, l, n);
+	e = sg_scan(state, l);
 	l->sg_ent = NULL;
 	if (e)
 		l->sg_ent = ft_strdup(e);
 	l->sg_prev = ft_strdup(rl_line_buffer);
 	l->sg_known = true;
+	l->sg_hn = state->hist.hist_cmds.len;
 	return (l->sg_ent);
 }
 

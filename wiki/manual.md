@@ -173,7 +173,7 @@ inside the shell: `help` for the grouped list, `help NAME` for one,
 |---|---|
 | `HELLISH_BANNER=0\|1` | force the welcome panel off / on |
 | `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down walk plain history; default on = search by the text before the cursor; read at every prompt |
-| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion (off by default): the newest history line starting with the typed text, dim after the cursor; Right / End / Ctrl-F insert it; never a line with control characters or a newline; read at every prompt |
+| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion (off by default): the newest history line starting with the typed text, dim after the cursor; Right / End / Ctrl-F insert it, Alt-F / Ctrl-Right insert its next word (leading blanks + the run up to the next space or tab), Alt-N / Alt-P cycle through older / newer distinct matches (bell at either end, no wrap; any edit resets); never a line with control characters or a newline; read at every prompt |
 | `HELLISH_SUGGEST_MAX=N` | history lines the suggestion scans, newest first (default 1000; non-numeric or below 1 = default); read at every prompt |
 | `POSTDISPLAY` | zle widgets only: the text painted after the cursor, i.e. the suggestion; assign it to show your own until the buffer next changes |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for releases; no badge |
