@@ -30,6 +30,6 @@
 /* Bumped whenever the welcome header itself changes what it says. The
    header is shown once a day, but a new revision is new information, so
    it is shown again immediately rather than waiting for tomorrow. */
-# define HELLISH_HEADER_REV 3
+# define HELLISH_HEADER_REV 4
 
 #endif

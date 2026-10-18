@@ -55,8 +55,25 @@ static void	build_cwd(char *buf, size_t n)
 	ft_strlcpy(buf, cwd, n);
 }
 
-/* The left column: a greeting, the 42 logo mascot, the hellish identity and the
-   current directory. HP_LOGO lines are centred and tinted with logo_color. */
+/* Where the release's features are explained in full, under the logo. The
+   left column is a fixed 43 columns wide, so the link fits there at any
+   terminal width; the right column has 32 at 80. Plain text, not an OSC 8
+   hyperlink: header_width() skips CSI escapes only, and would count the
+   hidden target as visible columns. */
+static const char	*guide_link(void)
+{
+	if (header_use_unicode())
+		return ("\033[38;5;209m\xe2\x86\x92\033[0m "
+			"\033[4;38;5;81munivers42.github.io/hellish/whats-new\033[0m");
+	return ("\033[38;5;209m->\033[0m "
+		"\033[4;38;5;81munivers42.github.io/hellish/whats-new\033[0m");
+}
+
+/* The left column: a greeting, the 42 logo mascot, the hellish identity, the
+   current directory and the link to the release guide. HP_LOGO lines are
+   centred and tinted with logo_color. Under an ASCII terminal the identity's
+   middle dot is a dash: header_width() cannot decode it there and stops
+   counting, which pushed the frame out of line. */
 static void	build_left(const char **l)
 {
 	static char	welcome[128];
@@ -75,9 +92,15 @@ static void	build_left(const char **l)
 	while (g_logo[++i])
 		l[i + 2] = g_logo[i];
 	l[i + 2] = "";
-	l[i + 3] = "hellish " HELLISH_VERSION " \xc2\xb7 a POSIX shell with bite";
+	l[i + 3] = "hellish " HELLISH_VERSION " - a POSIX shell with bite";
+	if (header_use_unicode())
+		l[i + 3] = "hellish " HELLISH_VERSION
+			" \xc2\xb7 a POSIX shell with bite";
 	l[i + 4] = cwd;
-	l[i + 5] = NULL;
+	l[i + 5] = "";
+	l[i + 6] = "\033[38;5;245mthe 3.2 guide, with examples\033[0m";
+	l[i + 7] = guide_link();
+	l[i + 8] = NULL;
 }
 
 /* Print the welcome panel on interactive (tty) startup, when it has
@@ -92,7 +115,7 @@ static void	build_left(const char **l)
    HELLISH_BANNER. */
 void	show_welcome(t_shell *state)
 {
-	const char	*l[16];
+	const char	*l[20];
 	const char	*r[24];
 	t_panel		p;
 
