@@ -169,6 +169,10 @@ escape hatches above get you back to your previous shell at any time.
 current directory (also `gmake`, `/usr/bin/make`, and behind `sudo`, `env X=1`,
 `&&`, `(`; a wrapper option that takes an argument, as in `sudo -u root make`,
 falls back to filenames). The file is parsed in the shell itself; make is never run.
+Targets you have run (history lines starting with `make` or `gmake`) come first,
+most-run (weighted toward recent runs) first;
+the rest follow alphabetically. With `HELLISH_SUGGEST_STRATEGY=recent` the
+run ones are ordered by how recently they ran.
 
 - Files read: the first regular file of `GNUmakefile`, `makefile`, `Makefile`
   (GNU make's order, symlinks followed), at most 4 MiB. No such file, a
@@ -194,8 +198,9 @@ falls back to filenames). The file is parsed in the shell itself; make is never 
 |---|---|
 | `HELLISH_BANNER=0\|1` | welcome panel off / on |
 | `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
-| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the newest history line that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
+| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the best-ranked history line (see `HELLISH_SUGGEST_STRATEGY`) that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
 | `HELLISH_SUGGEST_MAX=N` | how many of the newest history lines the suggestion looks at (default 1000; not a number, or below 1, is the default); read at every prompt |
+| `HELLISH_SUGGEST_STRATEGY=recent` | rank suggestions newest first; by default (unset or any other value) they are ranked by frecency: how often a line was run, weighted toward recent runs. Also orders `make <TAB>`. Read at every prompt |
 | `HELLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
 | `HELLISH_NO_ANIM=1` | no startup animation |
 | `HELLISH_NO_EXEC=1` | user-install hook: skip for this one session |
@@ -219,10 +224,10 @@ typed, and the hint is wiped from the screen.
 A word is the blanks at the front of the hint plus the run of characters up
 to the next space or tab (so `-m`, `a/b`, `x=1` are one word each). Alt-N
 and Alt-P step through distinct lines (same full text offered once), look
-at no more than `HELLISH_SUGGEST_MAX` entries, ring the bell at the oldest
-and the newest end instead of wrapping, and start over from the newest
+at no more than `HELLISH_SUGGEST_MAX` entries, go in ranking order, ring the bell at the last and
+the first instead of wrapping, and start over from the best
 match as soon as the line is edited. Right after Alt-N inserts the line
-shown, not the newest. A hint a zle widget set as `POSTDISPLAY` is not
+shown, not the best-ranked one. A hint a zle widget set as `POSTDISPLAY` is not
 cycled or taken by words. In vi insert mode Alt-F / Alt-N / Alt-P work the
 same (no Ctrl-Right). `unset HELLISH_AUTOSUGGEST`
 (or `=0`) turns it off at the next prompt. A key you bound yourself

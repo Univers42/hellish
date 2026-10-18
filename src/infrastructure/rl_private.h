@@ -97,6 +97,15 @@ typedef struct s_frame
 
 char	*rl_suggest_update(t_shell *state, int cols);
 char	*rl_suggest_live(t_rl *l);
+/* One candidate while ranking: the text points into hist_cmds and is only
+   good for the call that filled it. */
+typedef struct s_sg_ent
+{
+	const char	*text;
+	size_t		idx;
+	uint64_t	score;
+}	t_sg_ent;
+
 char	*rl_suggest_find(t_shell *state, t_rl *l);
 int		rl_suggest_accept(int count, int key);
 t_shell	*rl_suggest_ghost_state(void);
@@ -104,7 +113,8 @@ int		rl_suggest_bell(void);
 int		rl_suggest_word(int count, int key);
 int		rl_suggest_older(int count, int key);
 int		rl_suggest_newer(int count, int key);
-ssize_t	rl_suggest_scan(t_shell *state, t_rl *l, size_t from);
+size_t	rl_suggest_cands(t_shell *state, t_rl *l);
+size_t	rl_suggest_rank(t_shell *state, t_rl *l);
 void	rl_suggest_cyc_clear(t_rl *l);
 bool	rl_suggest_cyc_sync(t_shell *state, t_rl *l);
 void	rl_suggest_end(t_shell *state);

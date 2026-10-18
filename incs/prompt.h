@@ -108,8 +108,10 @@ typedef struct s_rl
 	char		*sg_post; /* POSTDISPLAY a widget set (zle_rl5.c) */
 	char		*sg_post_at; /* the line it was set for */
 	char		*sg_pub; /* what a widget was handed as POSTDISPLAY */
-	t_vec		sg_cyc; /* history indices offered (size_t) */
-	size_t		sg_cyc_k; /* which of them is on screen */
+	bool		sg_recent; /* HELLISH_SUGGEST_STRATEGY=recent */
+	t_vec		sg_rank; /* ranked history indices (size_t) */
+	t_vec		sg_scr; /* ranking scratch (t_sg_ent), reused */
+	size_t		sg_cyc_k; /* which of sg_rank is on screen */
 	char		*sg_cyc_line; /* line the cycle is for; NULL: none */
 	bool		sg_painted; /* a ghost is on screen right now */
 	int			sg_col; /* column it starts at */
