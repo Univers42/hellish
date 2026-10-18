@@ -34,6 +34,9 @@
 ** TAB.  LIMITATION: a change to an INCLUDED file alone does not invalidate
 ** it -- touch the Makefile.
 **
+** ORDER.  Targets used in history come first (frecency, see
+** complete_make_rank.c), then the rest alphabetically.
+**
 ** WHEN IT STAYS OUT.  A word starting with '-' or holding '=' or '/' is not
 ** a target; and if an earlier argument is -C, --directory*, -f, --file* or
 ** --makefile*, the Makefile is not the one in the cwd, so filenames win.
@@ -54,12 +57,12 @@ static char	*mk_generator(const char *text, int state)
 	t_vec			*v;
 	char			*s;
 
-	v = &(*zle_state_cell())->make_cache.targets;
+	v = &(*zle_state_cell())->make_cache.order;
 	if (!state)
 		i = 0;
 	while (i < v->len)
 	{
-		s = ((char **)v->ctx)[i++];
+		s = (char *)((const char **)v->ctx)[i++];
 		if (!ft_strncmp(s, text, ft_strlen(text)))
 			return (rl_dup(s));
 	}
@@ -90,11 +93,21 @@ static int	mk_diverts(t_pv_line *a)
 	return (0);
 }
 
+/* The matches come out of mk_generator already in the order worth
+   showing (mk_order), so readline must not sort them again: it does that
+   AFTER this returns, so the flag is cleared here and cmd_completion sets
+   it back at the start of every attempt (completion.c). */
 char	**comp_make(t_shell *st, const char *text, t_pv_line *a)
 {
+	char	**m;
+
 	if (text[0] == '-' || ft_strchr(text, '=') || ft_strchr(text, '/'))
 		return (NULL);
 	if (mk_diverts(a) || !mk_load(st))
 		return (NULL);
-	return (rl_completion_matches(text, mk_generator));
+	mk_order(st);
+	m = rl_completion_matches(text, mk_generator);
+	if (m)
+		rl_sort_completion_matches = 0;
+	return (m);
 }

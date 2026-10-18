@@ -332,6 +332,7 @@ typedef struct s_make_cache
 	long long	mtime_s;
 	long long	mtime_ns;
 	t_vec		targets; /* char *, xmalloc'd */
+	t_vec		order; /* const char *, targets ranked for this TAB */
 }	t_make_cache;
 
 typedef struct s_shell
