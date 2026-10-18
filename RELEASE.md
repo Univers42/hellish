@@ -9,6 +9,20 @@ shell. The welcome banner links to the guide for the latest one:
 
 ---
 
+## v3.3.0 — *the hint knows what you run most* (unreleased)
+
+- **Hints are ranked by frecency.** With `HELLISH_AUTOSUGGEST=1`, the dim
+  hint is the matching history line you run most, weighted toward recent
+  runs, and no longer simply the newest one. Run `make re` three times and
+  `make clean` once more recently, and `make ` hints `re`. Alt-N / Alt-P
+  step through the matches in the same order (#140).
+- **`make <TAB>` lists the targets you run first**, most-run first, then
+  the rest alphabetically (#140).
+- `HELLISH_SUGGEST_STRATEGY=recent` brings back newest-first for both. It
+  is read at every prompt.
+
+---
+
 ## v3.2.0 — *Up finds what you typed, a hint is one key away, and `bind`*
 
 **The guide: [What's new in 3.2](https://univers42.github.io/hellish/whats-new/)**.
