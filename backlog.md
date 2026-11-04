@@ -9,6 +9,13 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## Done (this program)
 
+- [x] **`prompt_row_writes_test.py` counts rows, not write()s (#194).** Before
+      readline83-004 (Debian's 8.3-4 stops at 003) a multibyte prompt is
+      reprinted from column 0 at once, so on `ubuntu-26.04` one write() held
+      the row twice and the test reported 7 of 13 rows as split. None was: the
+      whole row was inside one write() every time, drawn twice. The redraw is
+      readline's and 004 ends it; the test now counts rows, so a row that is
+      really split still fails it.
 - [x] **^C inside ^R, Alt-P or M-x no longer kills the shell on readline 8.3
       (#194).** 8.3's `rl_free_line_state` frees those readers' contexts on
       SIGINT, on the bet that the application's handler longjmps. bash does,
