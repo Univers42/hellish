@@ -9,7 +9,9 @@ shell. The welcome banner links to the guide for the latest one:
 
 ---
 
-## v3.3.0 — *the hint knows what you run most* (unreleased)
+## v3.3.0 — *the hint knows what you run most*
+
+**The guide: [What's new in 3.3](https://univers42.github.io/hellish/whats-new/)**.
 
 - **Hints are ranked by frecency.** With `HELLISH_AUTOSUGGEST=1`, the dim
   hint is the matching history line you run most, weighted toward recent
@@ -20,6 +22,28 @@ shell. The welcome banner links to the guide for the latest one:
   the rest alphabetically (#140).
 - `HELLISH_SUGGEST_STRATEGY=recent` brings back newest-first for both. It
   is read at every prompt.
+- `HISTCONTROL=ignoredups` or `ignoreboth` stores a back-to-back repeat
+  once, so those repeats rank as one run.
+
+Fixed on the way to the release:
+
+- **A `$(...)` left as literal text.** A double-quoted word inside it that
+  held a nested substitution with an odd number of quote bytes stopped the
+  expansion: `x=$(echo "$(echo "a'b")")` assigned its own source text, with
+  status 0 and no error. All four reported forms now match bash 5.3.9
+  (#190).
+- **A `case` inside `"$(...)"`.** `x="$(case a in a) echo "q'r";; esac)"`
+  was a syntax error, because the pattern's `)` closed the substitution
+  (#191).
+- **`^C` inside `^R`, Alt-P or Alt-X on GNU readline 8.3.** Readline 8.3
+  frees a search's state on SIGINT and expects the application to longjmp
+  out. hellish's reader returns instead, so the search freed it a second
+  time: a double free in a sanitizer build, and a crash on `^R` in a
+  release build. A filter in front of readline's handler now holds the
+  signal while a search is up and delivers it at the main loop (#194).
+
+Every change:
+[v3.2.0...v3.3.0](https://github.com/Univers42/hellish/compare/v3.2.0...v3.3.0).
 
 ---
 
