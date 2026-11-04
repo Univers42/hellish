@@ -37,6 +37,12 @@ pass counts in `bench/baseline/`). Performance claims come from
       8.2.13 and 8.3 at patch levels 0, 3 and 6, and under a readline built
       with ASan, where the old code reported a heap-use-after-free WRITE in
       `_rl_search_getchar` for all three readers.
+- [x] **A case pattern's `)` inside a quoted substitution is no longer a syntax
+      error (#191).** `advance_cmdsub` counted parens, so in
+      `x="$(case a in a) echo "q'r";; esac)"` the pattern's `)` closed the
+      substitution and the rest of the word was read out of step. It delegates to
+      `span_skip`, which walks these through `casescan` (#95), so the lexer and the
+      expander no longer hold two walkers that can disagree.
 - [x] **A nested substitution with an odd count of quotes no longer leaves the
       outer `$(...)` as text (#190).** `sh_skip_quoted` read a double-quoted span
       flat, to the next `"`, so in `$(a "$(tr -d '"')" b)` it stopped on the inner
