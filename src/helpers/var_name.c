@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <ctype.h>
+#include "helpers.h"
 
 /* POSIX says a variable name starts with [a-zA-Z_]. The unsigned char cast
    is required by the C standard: isalpha on a plain char would be UB for
@@ -32,26 +33,25 @@ bool	is_var_name_p2(char c)
 
 /* Advance past a quoted region or a backslash escape starting at s[i],
    so paren-matching scans (the $(...) boundary hunt in both the reparser
-   and the expander) never count parens that live inside quotes — a sed
-   script like 's,[-(],,' must not derail the depth. Inside double quotes
-   a backslash still escapes the next character. Returns the index after
-   the skipped span, or i unchanged when s[i] starts no quoted span. */
+   and the expander) never count parens that live inside quotes -- a sed
+   script like 's,[-(],,' must not derail the depth. span_skip owns the
+   walk, because a double-quoted span is not flat: its $(...), ${...} and
+   `...` hold quotes of their own. Read flat, "$(tr -d '"')" ended at the
+   inner `"`, the `'` after it opened a span with no end, and the whole
+   outer substitution stayed in the word as literal text, with no error.
+   An even count of quote bytes inside balanced by accident and hid it.
+   Returns the index after the skipped span, or i unchanged when s[i]
+   starts no quoted span. An unterminated span ends the scan at len. */
 int	sh_skip_quoted(const char *s, int len, int i)
 {
-	char	q;
+	int	end;
 
 	if (s[i] == '\\' && i + 1 < len)
 		return (i + 2);
 	if (s[i] != '\'' && s[i] != '"')
 		return (i);
-	q = s[i++];
-	while (i < len && s[i] != q)
-	{
-		if (q == '"' && s[i] == '\\' && i + 1 < len)
-			i++;
-		i++;
-	}
-	if (i < len)
-		i++;
-	return (i);
+	end = span_skip(s, i, len);
+	if (end < 0)
+		return (len);
+	return (end);
 }

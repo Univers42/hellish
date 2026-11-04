@@ -37,6 +37,20 @@ pass counts in `bench/baseline/`). Performance claims come from
       8.2.13 and 8.3 at patch levels 0, 3 and 6, and under a readline built
       with ASan, where the old code reported a heap-use-after-free WRITE in
       `_rl_search_getchar` for all three readers.
+- [x] **A nested substitution with an odd count of quotes no longer leaves the
+      outer `$(...)` as text (#190).** `sh_skip_quoted` read a double-quoted span
+      flat, to the next `"`, so in `$(a "$(tr -d '"')" b)` it stopped on the inner
+      quote, the `'` after it opened a span with no end, and
+      `find_cmd_sub_end` reported the substitution as incomplete. The word kept
+      `$(a "..." b)` as literal text: no error, exit 0, the command never ran, and
+      `hellish -n` passed it. An even count balanced by accident, so
+      `$(a "$(b "$c")")` always worked and hid it. Found when a born2root
+      provisioner failed every first boot (hellish) and passed every retry (bash).
+      `sh_skip_quoted` now delegates to `span_skip`, which also fixes the `...` and
+      `${...}` neighbours, and `tests/cmdsub_nested_quote` compares 18 cases
+      against bash; 13 fail on 3.2.0.
+      A green `hellish -n` says nothing about this class: it is an expansion-time
+      scan, and it fails silently.
 - [x] **`"$VAR"` reaches the expander fast path: −19.5% loop instructions**
       (callgrind, loop_arith: 1,266.9M → 1,019.2M Ir). `try_simple_envvar`
       (`src/expander/expand_word2.c`) gated on `t->tt != TT_ENVVAR`, so the
