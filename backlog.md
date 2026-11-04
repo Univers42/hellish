@@ -9,6 +9,27 @@ pass counts in `bench/baseline/`). Performance claims come from
 
 ## Done (this program)
 
+- [x] **^C inside ^R, Alt-P or M-x no longer kills the shell on readline 8.3
+      (#194).** 8.3's `rl_free_line_state` frees those readers' contexts on
+      SIGINT, on the bet that the application's handler longjmps. bash does,
+      and readline83-003 taught readline's own `rl_getc` to abort to the top
+      level for handlers that return; `rl_getc_hook` replaces that `rl_getc`
+      and hands the reader EOF, so the reader unwound through a freed `cxt`:
+      a double free under ASan, a SIGSEGV on a release build (3 of 3 on ^R),
+      and every PR red when `ubuntu-latest` moved to 26.04 (readline 8.3-4)
+      on an unchanged tree. Guarding only `rl_getc_hook`'s own look was tried
+      first and is not enough: readline also looks at its deferred signal at
+      the end of every `rl_redisplay`, and a ^C sent with the keys of a ^R
+      came through there. `rl_intr.c` now puts a filter in front of
+      readline's SIGINT handler: while such a reader is up the signal is
+      parked, the reader unwinds on EOF with its context intact, and the ^C
+      is replayed in the main loop. Outside those readers the filter only
+      forwards, so ^C anywhere else, a slow completion included, is unchanged.
+      `prompt_interrupt_test.py` gains nsearch, mx and redraw,
+      `rl_read_race_test.py` gains nsearch and M-x. 48 and 34 ok on 8.1.2,
+      8.2.13 and 8.3 at patch levels 0, 3 and 6, and under a readline built
+      with ASan, where the old code reported a heap-use-after-free WRITE in
+      `_rl_search_getchar` for all three readers.
 - [x] **`"$VAR"` reaches the expander fast path: −19.5% loop instructions**
       (callgrind, loop_arith: 1,266.9M → 1,019.2M Ir). `try_simple_envvar`
       (`src/expander/expand_word2.c`) gated on `t->tt != TT_ENVVAR`, so the
