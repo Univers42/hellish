@@ -15,12 +15,12 @@
 
 /* Why a read ends early. */
 
-/* Set when readline handled a SIGINT during the current read. Written
-   from the reader, never from a signal handler: readline defers the
-   signal and our reader is where it is handled (rl_take_signals). */
-int	*rl_intr_cell(void)
+/* Set when a SIGINT reached this read. Written from the reader, which is
+   where readline's deferred signal is handled, and from the one handler
+   of ours in front of readline's (rl_intr.c). */
+t_intr	*rl_intr_cell(void)
 {
-	static int	intr;
+	static t_intr	intr;
 
 	return (&intr);
 }

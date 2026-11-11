@@ -28,6 +28,11 @@ matching its own echo.
   burst     three ^C in a row, then a command runs intact
   command   ^C interrupts a foreground `sleep`
   isearch   ^C inside ^R reverse search
+  nsearch   ^C inside Alt-P non-incremental search
+  mx        ^C inside M-x execute-named-command
+  redraw    ^C while ^R is still drawing the keys sent with it, and a key
+            and ^C in one write, several times over: readline looks at the
+            signal at the end of every redraw, not only in the read
   ps2       ^C at a continuation prompt returns to PS1 with $? = 130
   eof       ^D on an empty line still exits
 
@@ -180,6 +185,28 @@ def cell(label, home, extra):
     s.send(b"echo ISR_$((1+1))\r")
     check("%s: isearch: ^C inside ^R, then a command runs" % label,
           s.expect(b"ISR_2"), repr(s.tail()))
+
+    s.send(b"\x1bpech")
+    s.until(lambda: b"ech" in s.buf[s.at:], 3.0)
+    interrupt(s)
+    s.send(b"echo NSR_$((2+1))\r")
+    check("%s: nsearch: ^C inside Alt-P, then a command runs" % label,
+          s.expect(b"NSR_3"), repr(s.tail()))
+
+    s.send(b"\x1bxbeg")
+    s.until(lambda: b"beg" in s.buf[s.at:], 3.0)
+    interrupt(s)
+    s.send(b"echo MX_$((2+2))\r")
+    check("%s: mx: ^C inside M-x, then a command runs" % label,
+          s.expect(b"MX_4"), repr(s.tail()))
+
+    for keys in (b"\x12e\x03", b"\x12\x03", b"\x12ec\x03") * 3:
+        s.send(keys)
+        s.until(lambda: b"^C" in s.buf[s.at:], 3.0)
+        s.prompt(5.0)
+    s.send(b"echo RD_$((4+4))\r")
+    check("%s: redraw: ^C sent with the keys of a ^R, nine times" % label,
+          s.expect(b"RD_8"), repr(s.tail()))
 
     s.send(b"echo \"unterminated\r")
     s.until(lambda: b"> " in s.buf[s.at:], 3.0)

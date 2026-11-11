@@ -112,6 +112,10 @@ static void	free_session_strings(t_shell *state)
 	state->dft_ctx = 0;
 	xfree(state->rl.buff.ctx);
 	xfree(state->rl.rp_txt.ctx);
+	xfree(state->rl.sg_rank.ctx);
+	xfree(state->rl.sg_scr.ctx);
+	state->rl.sg_rank = (t_vec){};
+	state->rl.sg_scr = (t_vec){};
 	xfree(state->hist.file);
 	state->hist.file = NULL;
 	if (state->path_dirs)

@@ -10,35 +10,29 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "helpers.h"
 #include "lexer.h"
 #include <limits.h>
 
 static void	advance_cmdsub(char **str);
 
-/* Skip a $(...) command substitution, honouring nested parens and quoted
-   segments (whose quotes are independent of any enclosing quote). Used so a
-   '"' inside $(...) does not prematurely close an outer double quote. */
+/* Skip a $(...) command substitution, whose quotes are independent of any
+   enclosing quote, so a '"' inside does not close an outer double quote.
+   span_skip owns the walk: it knows a case pattern's unbalanced `)` does not
+   end the span, which a plain paren count here did not, and
+   x="$(case a in a) echo "q'r";; esac)" was refused as a syntax error while
+   the same text with no quotes around it worked. An unterminated span stops
+   at the end of the input, for the prompt to ask for more. */
 static void	advance_cmdsub(char **str)
 {
-	int	depth;
+	int	len;
+	int	end;
 
-	*str += 2;
-	depth = 1;
-	while (**str && depth > 0)
-	{
-		if (**str == '\\')
-			advance_bs(str);
-		else if (**str == '\'')
-			advance_squoted(str);
-		else if (**str == '\"')
-			advance_dquoted(str);
-		else
-		{
-			depth += (**str == '(');
-			depth -= (**str == ')');
-			(*str)++;
-		}
-	}
+	len = (int)ft_strlen(*str);
+	end = span_skip(*str, 0, len);
+	if (end < 0)
+		end = len;
+	*str += end;
 }
 
 /* Advance past a double-quoted span. Double quotes still expand $(...),

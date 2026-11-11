@@ -1,10 +1,9 @@
-# What's new in 3.2
+# What's new in 3.3
 
-hellish 3.2 is about the prompt. The up arrow finds what you started typing.
-A dim hint from your history can complete the line, and you take it with one
-key. `make <TAB>` knows your targets, and `bind` puts a shell command on a
-key. This page shows how to use each one. Every example on it was run on a
-3.2 build.
+hellish 3.3 ranks by what you run, not by what you ran last. The dim hint and
+`make <TAB>` put your most-run command first. This page shows how that works
+and which settings change it. Every example on it was run on a 3.3 build.
+[What came in 3.2](#what-came-in-32) follows further down.
 
 !!! tip "Get it"
     Already running hellish? Type `update --now`. Otherwise install it:
@@ -14,6 +13,83 @@ key. This page shows how to use each one. Every example on it was run on a
     ```
 
 ## At a glance
+
+This is the table from the welcome banner, explained.
+
+| Keys | What it does | Needs |
+|---|---|---|
+| `make <TAB>` | [most-run targets first](#make-targets-you-run-first) | |
+| `→ ^F End` | [take the hint, now your most-run match](#hints-rank-what-you-run-most) | `export HELLISH_AUTOSUGGEST=1` |
+| `Alt-N/P` | [step through the matches in the same order](#hints-rank-what-you-run-most) | `export HELLISH_AUTOSUGGEST=1` |
+
+## Hints rank what you run most
+
+With hints on, typing `make ` used to show the newest line that starts with
+it. It now shows the line you run most, weighted toward recent runs:
+
+```console
+$ export HELLISH_AUTOSUGGEST=1
+$ make re
+$ make re
+$ make re
+$ make clean
+$ make re
+```
+
+On the last line you typed `make `; `re` is the dim hint. <kbd>Alt-N</kbd>
+moves to the next match, `clean`. A run's weight halves for every 64 newer
+history lines, so a habit you dropped fades out.
+
+Two settings change the order:
+
+- `HELLISH_SUGGEST_STRATEGY=recent` brings back newest first: the history
+  above hints `clean`. It is read at every prompt.
+- `HISTCONTROL=ignoredups` or `ignoreboth` stores a back-to-back repeat once,
+  so the three `make re` above count as one run and the hint is `clean`.
+  Repeats with another command between them still count.
+
+## make targets you run first
+
+`make <TAB>` still reads the Makefile itself and never runs make. Targets you
+have run now come first, most-run first, and the rest follow alphabetically:
+
+```console
+$ make <TAB><TAB>
+re      clean   all     fclean  test
+```
+
+`HELLISH_SUGGEST_STRATEGY=recent` orders them newest first here too.
+
+## Fixed
+
+In scripts:
+
+- A `$(...)` no longer stays as literal text when a double-quoted word inside
+  it holds a nested substitution with an odd number of quote bytes.
+  `x=$(echo "$(echo "a'b")"); echo "[$x]"` prints `[a'b]`, as in bash
+  ([#190](https://github.com/Univers42/hellish/issues/190)).
+- A `case` inside a double-quoted `$(...)` parses.
+  `x="$(case a in a) echo "q'r";; esac)"; echo "[$x]"` prints `[q'r]`
+  ([#191](https://github.com/Univers42/hellish/issues/191)).
+
+At the prompt:
+
+- On a build linked against GNU readline 8.3, <kbd>Ctrl-C</kbd> inside
+  <kbd>Ctrl-R</kbd>, <kbd>Alt-P</kbd> or <kbd>Alt-X</kbd> freed the search
+  state twice. It now cancels the search and returns to a clean prompt
+  ([#194](https://github.com/Univers42/hellish/issues/194)).
+
+Every change since 3.2.0:
+[v3.2.0...v3.3.0](https://github.com/Univers42/hellish/compare/v3.2.0...v3.3.0).
+
+## What came in 3.2
+
+hellish 3.2 is about the prompt. The up arrow finds what you started typing.
+A dim hint from your history can complete the line, and you take it with one
+key. `make <TAB>` knows your targets, and `bind` puts a shell command on a
+key. Every example in this section was run on a 3.2 build.
+
+### At a glance
 
 This is the table from the welcome banner, explained.
 
@@ -29,7 +105,7 @@ This is the table from the welcome banner, explained.
 | `Alt-F` | [take one word](#inline-hints) | `HELLISH_AUTOSUGGEST=1` |
 | `Alt-N/P` | [older/newer hint](#inline-hints) | `HELLISH_AUTOSUGGEST=1` |
 
-## History that matches what you typed
+### History that matches what you typed
 
 Type the start of a command, then press <kbd>↑</kbd>. Up now steps only
 through history lines that begin with the text before the cursor, and
@@ -52,7 +128,7 @@ On an empty line, Up and Down walk the whole history as before.
   dead.
 - A key you bound yourself keeps your binding.
 
-## Inline hints
+### Inline hints
 
 Hints are off until you ask for them. Add this line to `~/.hellishrc`, or
 type it at the prompt to try it:
@@ -92,7 +168,7 @@ $ ech|o hello         you typed "ech", the cursor is at |, "o hello" is dim
   searched (default 1000).
 - In zsh mode, widgets see the hint as `POSTDISPLAY`, and can set their own.
 
-## Completing make targets
+### Completing make targets
 
 <kbd>Tab</kbd> after `make` offers the targets of the Makefile in the
 current directory. With this Makefile:
@@ -133,7 +209,7 @@ would type, so they are not offered.
 The full rules are in the manual's
 [make targets](manual.md#make-targets) section.
 
-## Key bindings with bind
+### Key bindings with bind
 
 hellish now has bash's `bind` builtin, so the lines you would put in
 `~/.inputrc` work in `~/.hellishrc`:
@@ -162,7 +238,7 @@ To see what is bound: `bind -p` lists key bindings, `bind -v` the settings,
 `bind -X` the `-x` commands and `bind -l` every command name. `help bind`
 shows every option.
 
-## bindkey in zsh configs
+### bindkey in zsh configs
 
 In zsh mode (`set -o zsh`, `emulate zsh`, or a sourced `.zsh` file),
 `bindkey` now understands zsh's key notation (`^[[A`, `^R`, `^[b`, `\E`)
@@ -174,7 +250,7 @@ bindkey '^[[A' history-beginning-search-backward
 bindkey '^[[B' history-beginning-search-forward
 ```
 
-## Rendering text like the prompt
+### Rendering text like the prompt
 
 `${var@P}` expands a value the way the prompt does. It uses the same
 renderer as `PS1`, so the result always matches your prompt:
@@ -188,7 +264,7 @@ ada in share $
 Both escape languages work, bash's `\u \w` and zsh's `%n %~`. `prompt
 preview` uses it to draw the themes.
 
-## Two new variables
+### Two new variables
 
 ```text
 $ echo $SRANDOM
@@ -201,7 +277,7 @@ $ echo $EPOCHREALTIME
 `$EPOCHREALTIME` is the time in seconds since the epoch, with microseconds.
 Both come from bash: `$EPOCHREALTIME` from 5.0, `$SRANDOM` from 5.1.
 
-## Fixed
+### Fixed
 
 At the prompt:
 

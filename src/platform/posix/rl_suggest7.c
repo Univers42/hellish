@@ -27,41 +27,19 @@ static void	sg_show(t_shell *state, size_t idx)
 	l->sg_txt = l->sg_ent + rl_end;
 }
 
-/* Start a cycle on the ghost on screen: its index is found again (it is
-   the newest match, see rl_suggest_find) so that only indices are kept. */
+/* Start a cycle on the ghost on screen: the ranking is made once, and
+   its first entry is that ghost (the history has not changed, see
+   rl_suggest_cyc_sync). */
 static bool	sg_cyc_begin(t_shell *state, t_rl *l)
 {
-	ssize_t	i;
-	size_t	idx;
-
-	i = rl_suggest_scan(state, l, state->hist.hist_cmds.len);
-	if (i < 0)
+	if (!rl_suggest_rank(state, l))
 		return (false);
-	idx = (size_t)i;
-	l->sg_cyc.elem_size = sizeof(size_t);
-	vec_push(&l->sg_cyc, &idx);
 	l->sg_cyc_k = 0;
 	l->sg_cyc_line = ft_strdup(rl_line_buffer);
 	return (true);
 }
 
-/* The next older distinct match, pushed on the cycle. False at the oldest
-   one: there is nothing more. */
-static bool	sg_push_older(t_shell *state, t_rl *l)
-{
-	ssize_t	i;
-	size_t	idx;
-
-	idx = ((size_t *)l->sg_cyc.ctx)[l->sg_cyc.len - 1];
-	i = rl_suggest_scan(state, l, idx);
-	if (i < 0)
-		return (false);
-	idx = (size_t)i;
-	vec_push(&l->sg_cyc, &idx);
-	return (true);
-}
-
-/* Alt-N: the next older distinct match. At the oldest one there is
+/* Alt-N: the next lower-ranked distinct match. At the last one there is
    nothing more: bell, and the ghost stays (no wrap). */
 int	rl_suggest_older(int count, int key)
 {
@@ -75,15 +53,15 @@ int	rl_suggest_older(int count, int key)
 	rl_suggest_cyc_sync(state, l);
 	if (!l->sg_cyc_line && !sg_cyc_begin(state, l))
 		return (rl_suggest_bell());
-	if (l->sg_cyc_k + 1 >= l->sg_cyc.len && !sg_push_older(state, l))
+	if (l->sg_cyc_k + 1 >= l->sg_rank.len)
 		return (rl_suggest_bell());
 	l->sg_cyc_k++;
-	sg_show(state, ((size_t *)l->sg_cyc.ctx)[l->sg_cyc_k]);
+	sg_show(state, ((size_t *)l->sg_rank.ctx)[l->sg_cyc_k]);
 	return (0);
 }
 
-/* Alt-P: back to the newer alternative shown before. At the newest match
-   there is nothing newer: bell. */
+/* Alt-P: back to the better-ranked alternative shown before. At the best
+   match there is nothing better: bell. */
 int	rl_suggest_newer(int count, int key)
 {
 	t_shell	*state;
@@ -97,6 +75,6 @@ int	rl_suggest_newer(int count, int key)
 	if (!l->sg_cyc_line || l->sg_cyc_k == 0)
 		return (rl_suggest_bell());
 	l->sg_cyc_k--;
-	sg_show(state, ((size_t *)l->sg_cyc.ctx)[l->sg_cyc_k]);
+	sg_show(state, ((size_t *)l->sg_rank.ctx)[l->sg_cyc_k]);
 	return (0);
 }

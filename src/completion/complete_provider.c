@@ -75,6 +75,14 @@ static t_prov_fn	prov_find(const char *w, size_t n)
 	return (NULL);
 }
 
+/* Does the command named by w[0..n) belong to the make provider (make,
+   gmake)? The table is the one place that says so; the history ranking in
+   complete_make_rank.c asks instead of keeping a list of its own. */
+bool	prov_is_make(const char *w, size_t n)
+{
+	return (prov_find(w, n) == comp_make);
+}
+
 /* Dispatch an argument word to the provider of its command, or NULL. */
 char	**comp_provider_try(const char *text, int start, int end)
 {

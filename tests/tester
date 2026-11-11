@@ -68,6 +68,7 @@ if [[ ${#test_lists[@]} -eq 0 ]]; then
         "array_subscript" "declare_quoting" "procsub_assign"
         "longtail"
         "issue95_case_cmdsub"
+        "cmdsub_nested_quote"
         "issue96_trap_func"
         "issue105_expansions"
         "issue121_errexit_andor"

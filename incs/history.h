@@ -15,6 +15,7 @@
 
 # include "shell.h"
 # include <sys/types.h>
+# include <stdint.h>
 
 /* hist_cmds is the truth; readline's own list is a mirror kept in step so
    the arrow keys agree with what `history` prints.
@@ -67,5 +68,10 @@ t_string	encode_cmd_hist(char *cmd);
 void		manage_history(t_shell *state);
 bool		worthy_of_being_remembered(t_shell *state);
 void		add_history_line(t_shell *state, const char *cmd);
+/* Frecency (history_frecency.c). */
+uint32_t	hist_weight(size_t age);
+uint64_t	hist_score_add(uint64_t score, size_t len, size_t idx,
+				bool recent);
+size_t		hist_window_floor(size_t len, int max);
 
 #endif

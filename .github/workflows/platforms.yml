@@ -198,7 +198,7 @@ jobs:
           # whole run, which is worse than not running it: a queued job
           # keeps its run open and holds concurrency. If Intel coverage is
           # wanted back it needs a runner that actually exists.
-          - { runner: macos-14, arch: "arm64" }
+          - { runner: macos-15, arch: "arm64" }
     steps:
       - uses: actions/checkout@v4
         with:
