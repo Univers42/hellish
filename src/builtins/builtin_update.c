@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "builtins_private.h"
 #include "update.h"
 #include "update_menu.h"
@@ -24,11 +25,11 @@ static int	print_status(const char *latest)
 {
 	if (hellish_version_cmp(latest, HELLISH_VERSION) <= 0)
 	{
-		ft_printf("\033[32m\xe2\x9c\x93\033[0m hellish %s", HELLISH_VERSION);
+		ft_printf("\033[32m\xe2\x9c\x93\033[0m polish %s", HELLISH_VERSION);
 		ft_printf(" is the latest release.\n");
 		return (0);
 	}
-	ft_printf("\033[33m\xe2\xac\x86\033[0m hellish %s is available ", latest);
+	ft_printf("\033[33m\xe2\xac\x86\033[0m polish %s is available ", latest);
 	ft_printf("(you have %s).\n", HELLISH_VERSION);
 	return (update_warn_stale_session(latest));
 }
@@ -73,13 +74,13 @@ static int	do_check(t_shell *state, t_origin origin, char *repo, int ask)
 	char	latest[64];
 	int		got;
 
-	ft_eprintf("hellish: checking for updates\xe2\x80\xa6\n");
+	ft_eprintf("polish: checking for updates\xe2\x80\xa6\n");
 	got = fetch_latest_tag(latest, sizeof(latest));
 	if (got == 0)
-		return (ft_eprintf("hellish: could not reach the release source "
+		return (ft_eprintf("polish: could not reach the release source "
 				"(offline?)\n"), 1);
 	if (got < 0)
-		return (ft_eprintf("hellish: the release source published no "
+		return (ft_eprintf("polish: the release source published no "
 				"usable release\n"), 1);
 	remember(latest);
 	if (print_status(latest))
@@ -92,7 +93,13 @@ static int	do_check(t_shell *state, t_origin origin, char *repo, int ask)
 }
 
 /* `update` checks and offers; `--now` goes straight to installing; `--check`
-   only reports (for scripts); `--version` prints the running version. */
+   only reports (for scripts); `--version` prints the running version.
+
+   `--version` is a frozen contract: every installed updater (back to 2.x)
+   validates a download by running `<bin> -c "update --version"` and
+   comparing everything after the FIRST space to the tag minus its `v`.
+   One word, one space, the bare version, nothing else -- "polish 3.4.0".
+   tests/brand_compat_test.sh replays that check. */
 int	builtin_update(t_shell *state, t_vec argv)
 {
 	char		repo[512];
@@ -101,7 +108,7 @@ int	builtin_update(t_shell *state, t_vec argv)
 
 	av = (char **)argv.ctx;
 	if (argv.len > 1 && !ft_strcmp(av[1], "--version"))
-		return (ft_printf("hellish %s\n", HELLISH_VERSION), 0);
+		return (ft_printf(BRAND_NAME " %s\n", HELLISH_VERSION), 0);
 	origin = detect_origin(repo, sizeof(repo));
 	if (argv.len > 1 && !ft_strcmp(av[1], "--now"))
 		return (update_now(state, origin, repo));

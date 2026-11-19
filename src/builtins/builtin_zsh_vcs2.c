@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "builtins_private.h"
 #include "prompt.h"
 
@@ -41,9 +42,13 @@
 ** scan is asynchronous: the flags describe the last completed scan, which
 ** is at most one prompt behind (prompt_git3.c). */
 
+/* Published under both prefixes: POLISH_GIT_* for the new name, and
+   HELLISH_GIT_* because PS1s written before the 3.4.0 rename read those. */
 static void	vcs_set(t_shell *state, const char *name, const char *val)
 {
-	env_set(&state->env, env_create(ft_strdup((char *)name),
+	env_set(&state->env, env_create(ft_strjoin(BRAND_PREFIX, name),
+			ft_strdup((char *)val), false));
+	env_set(&state->env, env_create(ft_strjoin(BRAND_LEGACY_PREFIX, name),
 			ft_strdup((char *)val), false));
 }
 
@@ -60,10 +65,10 @@ static void	vcs_setn(t_shell *state, const char *name, int n)
 
 static void	vcs_bits(t_shell *state, int bits)
 {
-	vcs_setn(state, "HELLISH_GIT_STAGED", (bits & GIT_STAGED) != 0);
-	vcs_setn(state, "HELLISH_GIT_UNSTAGED", (bits & GIT_UNSTAGED) != 0);
-	vcs_setn(state, "HELLISH_GIT_UNTRACKED", (bits & GIT_UNTRACKED) != 0);
-	vcs_setn(state, "HELLISH_GIT_UNMERGED", (bits & GIT_UNMERGED) != 0);
+	vcs_setn(state, "GIT_STAGED", (bits & GIT_STAGED) != 0);
+	vcs_setn(state, "GIT_UNSTAGED", (bits & GIT_UNSTAGED) != 0);
+	vcs_setn(state, "GIT_UNTRACKED", (bits & GIT_UNTRACKED) != 0);
+	vcs_setn(state, "GIT_UNMERGED", (bits & GIT_UNMERGED) != 0);
 }
 
 /* Publish what vcs_info just read. `branch` is NULL outside a repository
@@ -83,17 +88,17 @@ void	vcs_publish(t_shell *state, const char *branch, const char *root,
 		bits = 0;
 	}
 	n = git_counts(root);
-	vcs_setn(state, "HELLISH_GIT_DETACHED", root && *git_detached_cell());
+	vcs_setn(state, "GIT_DETACHED", root && *git_detached_cell());
 	if (!root)
 	{
 		branch = "";
 		root = "";
 	}
-	vcs_set(state, "HELLISH_GIT_BRANCH", branch);
-	vcs_set(state, "HELLISH_GIT_ROOT", root);
-	vcs_set(state, "HELLISH_GIT_DIR", gd);
+	vcs_set(state, "GIT_BRANCH", branch);
+	vcs_set(state, "GIT_ROOT", root);
+	vcs_set(state, "GIT_DIR", gd);
 	vcs_bits(state, bits);
-	vcs_setn(state, "HELLISH_GIT_AHEAD", n.ahead);
-	vcs_setn(state, "HELLISH_GIT_BEHIND", n.behind);
-	vcs_setn(state, "HELLISH_GIT_STASH", n.stash);
+	vcs_setn(state, "GIT_AHEAD", n.ahead);
+	vcs_setn(state, "GIT_BEHIND", n.behind);
+	vcs_setn(state, "GIT_STASH", n.stash);
 }

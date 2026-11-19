@@ -78,23 +78,19 @@ static int	errex_code(t_shell *state, char *cmd_name, char **path_of_exe)
 
 /* Validate a command given as a direct path (contains '/'): stat's own
    errno, EISDIR, or access's EACCES, each reported for what it is.  Shell
-   script extensions (.sh/.hell/.hellish) only need to be readable, not
+   script extensions (is_own_script) only need to be readable, not
    executable (the shell will interpret them directly), so we skip the
    X_OK check for those.  Everything else requires X_OK (POSIX). */
 int	handle_direct_path_error(t_shell *state, char *cmd_name,
 									char **path_of_exe)
 {
 	struct stat	st;
-	size_t		len;
 
 	if (stat(*path_of_exe, &st) == -1)
 		return (errex_code(state, cmd_name, path_of_exe));
 	if (S_ISDIR(st.st_mode))
 		return (errno = EISDIR, errex_code(state, cmd_name, path_of_exe));
-	len = ft_strlen(*path_of_exe);
-	if ((len >= 3 && ft_strcmp(*path_of_exe + len - 3, ".sh") == 0)
-		|| (len >= 5 && ft_strcmp(*path_of_exe + len - 5, ".hell") == 0)
-		|| (len >= 8 && ft_strcmp(*path_of_exe + len - 8, ".hellish") == 0))
+	if (is_own_script(*path_of_exe))
 		return (0);
 	if (access(*path_of_exe, X_OK) != 0)
 		return (errex_code(state, cmd_name, path_of_exe));

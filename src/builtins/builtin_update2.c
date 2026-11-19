@@ -54,13 +54,13 @@ int	update_now(t_shell *state, t_origin origin, char *repo)
 	(void)state;
 	got = fetch_latest_tag(latest, sizeof(latest));
 	if (got == 0)
-		return (ft_eprintf("hellish: could not reach the release source "
+		return (ft_eprintf("polish: could not reach the release source "
 				"(offline?)\n"), 1);
 	if (got < 0)
-		return (ft_eprintf("hellish: the release source published no "
+		return (ft_eprintf("polish: the release source published no "
 				"usable release\n"), 1);
 	if (hellish_version_cmp(latest, HELLISH_VERSION) <= 0)
-		return (ft_printf("hellish %s is already the latest release.\n",
+		return (ft_printf("polish %s is already the latest release.\n",
 				HELLISH_VERSION), 0);
 	if (update_warn_stale_session(latest))
 		return (0);

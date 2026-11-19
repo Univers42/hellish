@@ -1,6 +1,6 @@
 *This project has been created as part of the 42 curriculum by dlesieur, alcacere.*
 
-# hellish 🐚🔥
+# polish 🐚🔥
 
 ![shell](https://img.shields.io/badge/shell-POSIX%20%2B%20bashisms-e2543a)
 ![golden suite](https://img.shields.io/badge/golden%20suite-4248%20vs%20bash%20--posix-6f9e78)
@@ -8,7 +8,7 @@
 
 ## Description
 
-`hellish` is a from-scratch, almost-POSIX shell written in C. It started as
+`polish` is a from-scratch, almost-POSIX shell written in C. It started as
 42's shell project and grew well past the subject: it now diffs
 byte-for-byte against a pinned `bash --posix` on 4248 golden cases, races
 **#3 of 9** against real shells (faster than bash, zsh and fish), loads real
@@ -19,7 +19,13 @@ The goal: prove that one codebase can pair **minimalist-shell speed with
 bash-class features** — and stay readable, 42-norm-clean, and leak-free on
 two different allocators while doing it.
 
-**Full documentation: <https://univers42.github.io/hellish/>**
+**Full documentation: <https://univers42.github.io/polish/>**
+
+**Coming from hellish?** polish is hellish's name from 3.4.0. Existing setups
+keep working: `~/.hellishrc` is read when `~/.polishrc` does not exist, and a
+`HELLISH_X` variable is read when `POLISH_X` is unset. Old installs keep their
+`hellish` path, and `build/bin/hellish` is a symlink to `build/bin/polish`.
+Full table: [What's new — coming from hellish](wiki/whats-new.md#coming-from-hellish).
 
 ## Instructions
 
@@ -29,15 +35,15 @@ machine — it installs to `~/.local/bin` with an rc hook; then it lets you
 pick plugins):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Univers42/polish/main/install.sh | sh
 ```
 
 **From a source checkout:**
 
 ```sh
-git clone --recursive https://github.com/Univers42/hellish && cd hellish
-make OPT=1 all          # optimized build → build/bin/hellish
-./build/bin/hellish     # run it
+git clone --recursive https://github.com/Univers42/polish && cd polish
+make OPT=1 all          # optimized build → build/bin/polish
+./build/bin/polish      # run it
 make user-install       # no sudo: ~/.local/bin + rc hook (42 machines)
 make my_shell           # sudo: /usr/bin + login shell registration
 ```
@@ -78,7 +84,7 @@ competitors into one image so every shell races on identical ground.
 | choice | what we use | why |
 |---|---|---|
 | VMs vs **Docker** | Docker | test needs are per-process isolation + a throwaway filesystem, not a kernel; a container gives both in seconds where a VM costs minutes and GBs |
-| Secrets vs **env variables** | repo secrets in CI, env knobs at runtime | the shell itself holds no credentials; CI tokens (npm, GHCR) live in GitHub secrets, never in the tree — env vars configure behaviour (`HELLISH_*`), they never carry secrets |
+| Secrets vs **env variables** | repo secrets in CI, env knobs at runtime | the shell itself holds no credentials; CI tokens (npm, GHCR) live in GitHub secrets, never in the tree — env vars configure behaviour (`POLISH_*`), they never carry secrets |
 | Docker vs **host network** | isolated bridge + local fake servers | update/installer tests talk to a fake release server inside the container, so they prove the mechanism offline instead of testing GitHub's uptime |
 | Volumes vs **bind mounts** | neither in tests, bind mounts for dev caches | test containers are hermetic by design (state must die with them); only developer conveniences (build caches) bind-mount |
 
@@ -114,7 +120,7 @@ to build with an AI and still sign your own work.
 
 ## Documentation
 
-**[Docs site](https://univers42.github.io/hellish/)** ·
+**[Docs site](https://univers42.github.io/polish/)** ·
 [USER_DOC.md](USER_DOC.md) · [DEV_DOC.md](DEV_DOC.md) ·
 [RELEASE.md](RELEASE.md) · [CONTRIBUTING.md](CONTRIBUTING.md) ·
 [LICENSE](LICENSE) (MIT)

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "shell.h"
 #include "libft.h"
 #include <stdlib.h>
@@ -40,7 +41,7 @@ void	alloc_live_report(void)
 {
 	char	*n;
 
-	if (!getenv("HELLISH_ALLOC_STATS"))
+	if (!brand_getenv("ALLOC_STATS"))
 		return ;
 	n = ft_itoa((int)malloc_live_bytes());
 	ft_eprintf("[ft_malloc] live bytes after cleanup: %s\n", n);

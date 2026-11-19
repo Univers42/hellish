@@ -202,7 +202,7 @@
 <br>show or set process resource limits
 
 **`update`** — `update [--now|--check|--version]`
-<br>check for a newer hellish and install it
+<br>check for a newer polish and install it
 
 ## syntax
 
@@ -264,7 +264,7 @@ Only reachable when the dialect is armed (`set -o zsh`, `emulate zsh`, or sourci
 <br>define $fg[..] $bg[..] $fg_bold[..] $reset_color like zsh's colors
 
 **`compdef`** — `compdef [args ...]`
-<br>not supported: hellish has no zsh completion system
+<br>not supported: polish has no zsh completion system
 
 **`emulate`** — `emulate [-L] {zsh|sh|ksh|bash}`
 <br>switch dialect; in a function it reverts on return
@@ -288,7 +288,7 @@ Only reachable when the dialect is armed (`set -o zsh`, `emulate zsh`, or sourci
 <br>register a line-editor widget; key dispatch is not wired yet
 
 **`zmodload`** — `zmodload [args ...]`
-<br>not supported: hellish has no loadable modules
+<br>not supported: polish has no loadable modules
 
 **`zstyle`** — `zstyle [pattern style value ...]`
 <br>vcs_info formats/actionformats are honoured; the rest is stubbed

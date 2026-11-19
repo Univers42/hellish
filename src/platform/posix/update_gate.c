@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include <unistd.h>
 #include <time.h>
@@ -39,7 +40,7 @@ long	check_interval(const t_upd_state *s)
 {
 	const char	*ttl;
 
-	ttl = getenv("HELLISH_UPDATE_TTL");
+	ttl = brand_getenv("UPDATE_TTL");
 	if (ttl && *ttl)
 		return (ft_atoi(ttl));
 	if (update_available(s))

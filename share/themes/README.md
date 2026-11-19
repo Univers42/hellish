@@ -9,7 +9,7 @@ Themes are data, not code. Each is one `.hsh` file that sets `PS1` (or
     prompt save <name>  make it the default for new sessions
     prompt edit <name>  open it in $EDITOR
 
-Installed to `$XDG_CONFIG_HOME/hellish/themes/` by `tools/seed_hellishrc.sh`.
+Installed to `$XDG_CONFIG_HOME/polish/themes/` (or `hellish/themes/` on a pre-3.4 install) by `tools/seed_hellishrc.sh`.
 Yours once they are there: the seeder never overwrites a file it did not
 just create, so edits survive an upgrade.
 

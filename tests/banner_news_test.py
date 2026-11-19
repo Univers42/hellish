@@ -31,7 +31,7 @@ SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
                         os.path.join(ROOT, "build", "bin", "hellish"))
 FAILS = []
 ESC = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(\x07|\x1b\\)")
-LINK = "univers42.github.io/hellish/whats-new"
+LINK = "univers42.github.io/polish/whats-new"
 
 
 def check(name, ok, detail=""):

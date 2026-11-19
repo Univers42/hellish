@@ -38,16 +38,26 @@ jobs:
       # title.
       - name: Build the static release binary
         run: make static-verify
-      # The asset NAME is load-bearing and must not change: every installed
-      # hellish computes it as "hellish-linux-" + uname -m (x86_64), while
-      # `make static` names its output by docker's platform (amd64). Renaming
-      # the asset would 404 the updater on every machine already out there.
-      - name: Stage release binary + checksum
+      # The asset NAMES are load-bearing. Every installed hellish (<= 3.3.0)
+      # computes "hellish-linux-" + uname -m (x86_64); 3.4.0+ asks for
+      # "polish-linux-" + uname -m. So the ONE binary is published under
+      # both names, byte-identical, each with its own .sha256 -- dropping
+      # the hellish name would 404 the updater on every machine already out
+      # there, and nothing would say so. `make static` names its output by
+      # docker's platform (amd64), hence the copy.
+      - name: Stage release binary + checksums (both names)
         run: |
-          cp dist/hellish-linux-amd64 hellish-linux-x86_64
-          file hellish-linux-x86_64
+          set -eux
+          src=dist/polish-linux-amd64
+          [ -s "$src" ] || src=dist/hellish-linux-amd64
+          [ -s "$src" ] || { echo "no static binary in dist/" >&2; exit 1; }
+          cp "$src" polish-linux-x86_64
+          cp "$src" hellish-linux-x86_64
+          cmp polish-linux-x86_64 hellish-linux-x86_64
+          file polish-linux-x86_64
+          sha256sum polish-linux-x86_64 > polish-linux-x86_64.sha256
           sha256sum hellish-linux-x86_64 > hellish-linux-x86_64.sha256
-          cat hellish-linux-x86_64.sha256
+          cat polish-linux-x86_64.sha256 hellish-linux-x86_64.sha256
       # The install bundle: the proven install drivers, shipped beside the
       # binary so `curl | sh` reuses them instead of reimplementing preflight,
       # smoke-testing and never-clobber seeding. Layout mirrors the repo,
@@ -66,25 +76,55 @@ jobs:
       - name: The asset runs on an old glibc and with no readline
         run: |
           set -eux
-          docker run --rm -v "$PWD/hellish-linux-x86_64:/h:ro" debian:11-slim \
+          docker run --rm -v "$PWD/polish-linux-x86_64:/h:ro" debian:11-slim \
             /h -c 'echo ok $((20 + 22))'
-          docker run --rm -v "$PWD/hellish-linux-x86_64:/h:ro" ubuntu:24.04 \
+          docker run --rm -v "$PWD/polish-linux-x86_64:/h:ro" ubuntu:24.04 \
             /h -c 'echo ok $((20 + 22))'
-          docker run --rm -v "$PWD/hellish-linux-x86_64:/h:ro" alpine:latest \
+          docker run --rm -v "$PWD/polish-linux-x86_64:/h:ro" alpine:latest \
             /h -c 'echo ok $((20 + 22))'
+      # The gate before publishing: all four binary assets present and
+      # non-empty, the two binaries identical, each checksum matching.
+      - name: All four binary assets exist and agree
+        run: |
+          set -eux
+          for f in polish-linux-x86_64 polish-linux-x86_64.sha256 \
+                   hellish-linux-x86_64 hellish-linux-x86_64.sha256 \
+                   hellish-install-bundle.tar.gz; do
+            [ -s "$f" ] || { echo "missing release asset: $f" >&2; exit 1; }
+          done
+          cmp polish-linux-x86_64 hellish-linux-x86_64
+          sha256sum -c polish-linux-x86_64.sha256 hellish-linux-x86_64.sha256
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            polish-linux-x86_64
+            polish-linux-x86_64.sha256
             hellish-linux-x86_64
             hellish-linux-x86_64.sha256
             hellish-install-bundle.tar.gz
+          fail_on_unmatched_files: true
           generate_release_notes: true
           # A tag carrying a pre-release suffix must never become "latest":
           # the update check reads /releases/latest, so publishing a test
           # build as a full release would tell every installed hellish to
           # downgrade. contains('-') is the semver rule for a pre-release.
           prerelease: ${{ contains(github.ref_name, '-') }}
+      # ...and after: an upload that silently dropped one is caught here,
+      # not by the first updater that 404s on it.
+      - name: The published release carries all four binary assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -eu
+          names="$(gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            --json assets --jq '.assets[].name')"
+          printf '%s\n' "$names"
+          for f in polish-linux-x86_64 polish-linux-x86_64.sha256 \
+                   hellish-linux-x86_64 hellish-linux-x86_64.sha256; do
+            printf '%s\n' "$names" | grep -qxF "$f" \
+              || { echo "release $GITHUB_REF_NAME is missing $f" >&2; exit 1; }
+          done
 
   npm:
     name: publish to npm (needs NPM_TOKEN)

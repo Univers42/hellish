@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "rl_private.h"
 #include "env.h"
 #include <strings.h>
@@ -21,7 +22,7 @@ static int	hp_wanted(t_shell *state)
 {
 	t_env	*e;
 
-	e = env_get(&state->env, "HELLISH_HISTORY_PREFIX");
+	e = brand_env(state, "HISTORY_PREFIX");
 	if (!e || !e->value)
 		return (1);
 	if (!ft_strcmp(e->value, "0") || !strcasecmp(e->value, "off"))
@@ -39,7 +40,7 @@ static int	as_wanted(t_shell *state)
 	e = env_get(&state->env, "TERM");
 	if (!e || !e->value || !ft_strcmp(e->value, "dumb"))
 		return (0);
-	e = env_get(&state->env, "HELLISH_AUTOSUGGEST");
+	e = brand_env(state, "AUTOSUGGEST");
 	if (!e || !e->value)
 		return (0);
 	return (!ft_strcmp(e->value, "1") || !strcasecmp(e->value, "on"));
@@ -53,7 +54,7 @@ static int	sg_limit(t_shell *state)
 	t_env	*e;
 	size_t	i;
 
-	e = env_get(&state->env, "HELLISH_SUGGEST_MAX");
+	e = brand_env(state, "SUGGEST_MAX");
 	if (!e || !e->value || !e->value[0])
 		return (1000);
 	i = 0;
@@ -72,7 +73,7 @@ static bool	sg_wants_recent(t_shell *state)
 {
 	t_env	*e;
 
-	e = env_get(&state->env, "HELLISH_SUGGEST_STRATEGY");
+	e = brand_env(state, "SUGGEST_STRATEGY");
 	return (e && e->value && !ft_strcmp(e->value, "recent"));
 }
 

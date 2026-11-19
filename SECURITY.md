@@ -1,6 +1,6 @@
 # Security Policy
 
-`hellish` is an educational shell, but a shell is still a program that runs
+`polish` is an educational shell, but a shell is still a program that runs
 arbitrary commands, parses untrusted input, and manages file descriptors,
 signals, and memory — so we take memory-safety and execution bugs seriously.
 
@@ -22,7 +22,7 @@ Instead, use **GitHub's private vulnerability reporting**:
 
 1. Go to the repository's **Security** tab → **Report a vulnerability**
    (Security Advisories), or visit
-   `https://github.com/Univers42/hellish/security/advisories/new`.
+   `https://github.com/Univers42/polish/security/advisories/new`.
 2. Describe the issue, the impact, and the steps (or a minimal script) to
    reproduce it. A crashing input, an ASan trace, or a leak report is ideal.
 
@@ -48,4 +48,4 @@ anything that lets input do something the user did not intend.
   trust-sensitive, prefer the libc build (`make my_shell` already installs
   `OPT=1 SAFE=1` for exactly this reason).
 
-Thank you for helping keep `hellish` safe.
+Thank you for helping keep `polish` safe.

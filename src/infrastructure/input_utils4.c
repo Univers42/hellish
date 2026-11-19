@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "input_private.h"
 #include "parena.h"
 
@@ -83,7 +84,7 @@ static void	abort_on_syntax_error(t_shell *state)
 {
 	if (try_replay_exact(state))
 		return ;
-	if (getenv("HELLISH_DBG_CYCLE"))
+	if (brand_getenv("DBG_CYCLE"))
 		fprintf(stderr, "[CYCLE line0=%d line=%d]\n<<<%.*s>>>\n",
 			state->rl.cycle_line0, state->rl.line,
 			(int)state->input.len, (char *)state->input.ctx);

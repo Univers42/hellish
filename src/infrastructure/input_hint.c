@@ -64,7 +64,7 @@ void	zsh_brace_hint(t_shell *state, t_deque_tok *tt)
 	ft_eprintf("%s: a bare `}' closes a group only in zsh; "
 		"in bash it is an argument, and the group stayed open\n", where);
 	ft_eprintf("%s: hint: this looks like zsh -- start the file with "
-		"`emulate zsh', or save it as ~/.config/hellish/rc.d/NN-name.zsh\n",
+		"`emulate zsh', or save it as ~/.config/polish/rc.d/NN-name.zsh\n",
 		state->dft_ctx);
 	xfree(where);
 }

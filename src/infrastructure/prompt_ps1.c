@@ -16,7 +16,7 @@
 
 /* User-configurable prompts, bash syntax. Setting PS1 in ~/.hellishrc (or
    exporting it) replaces the built-in two-row prompt entirely; unset PS1
-   keeps the rich default as the "hellish theme". Escapes supported:
+   keeps the rich default as the "polish theme". Escapes supported:
    \u \h \H \w \W \$ \n \t \T \@ \d \e \a \r \\ \j \s \v \V \l \! \#
    \[ \] \nnn — unknown escapes pass through literally, exactly like
    bash. $NAME expands from
@@ -95,7 +95,7 @@ static bool	ps1_escape_misc(t_shell *state, t_string *out, char c)
 	if (c == ']')
 		return (vec_push_char(out, '\002'), true);
 	if (c == 's')
-		return (vec_push_str(out, "hellish"), true);
+		return (vec_push_str(out, "polish"), true);
 	if (c == 'v')
 		return (vec_push_str(out, HELLISH_VERSION), true);
 	if (c != 'j')

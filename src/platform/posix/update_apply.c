@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include "version.h"
 #include <sys/stat.h>
@@ -64,7 +65,7 @@ static int	move_into_place(const char *tmp, const char *target, int sudo)
 			return (0);
 		return (chmod(target, 0755) == 0);
 	}
-	ft_eprintf("hellish: %s is not writable; running:\n  sudo install -m "
+	ft_eprintf("polish: %s is not writable; running:\n  sudo install -m "
 		"755 <download> %s\n", target, target);
 	st = update_run_visible(argv);
 	unlink(tmp);
@@ -97,11 +98,11 @@ static int	tmp_path(const char *target, char *out, size_t n, int sudo)
 		dir = getenv("TMPDIR");
 		if (!dir || !*dir)
 			dir = "/tmp";
-		return (snprintf(out, n, "%s/hellish-update-%d", dir,
+		return (snprintf(out, n, "%s/" BRAND_NAME "-update-%d", dir,
 				(int)getpid()) < (int)n);
 	}
 	ft_strlcpy(out, target, n);
-	ft_strlcat(out, ".hellish-update", n);
+	ft_strlcat(out, "." BRAND_NAME "-update", n);
 	return (ft_strlen(out) + 1 < n);
 }
 
@@ -134,7 +135,7 @@ int	update_apply(const char *tag, const char *target, int sudo)
 	if (sha == 0)
 		return (unlink(tmp), 3);
 	if (sha < 0)
-		ft_eprintf("hellish: this release publishes no checksum — "
+		ft_eprintf("polish: this release publishes no checksum — "
 			"verifying by running the binary instead\n");
 	chmod(tmp, 0755);
 	if (!validate_binary(tmp, tag))

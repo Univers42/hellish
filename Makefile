@@ -173,7 +173,13 @@ LDLIBS      := -lreadline
 # `$(BIN_DIR)/$(BAPTIZE_SHELL)`, and an empty value makes that the *directory*
 # `build/bin/`, which already exists -- so `make` prints the banner, decides
 # there is nothing to do, and exits 0 without compiling a single file.
-BAPTIZE_SHELL ?= hellish
+BAPTIZE_SHELL ?= polish
+
+# The product was called hellish until 3.4.0. build/bin/hellish stays as a
+# symlink to the binary so the test suite, the tools and every muscle-memory
+# path keep working; the symlink resolves to the same file, so argv[0] (and the
+# `hellish:` error prefix the golden tests never diff) is unchanged for them.
+LEGACY_SHELL := hellish
 
 # ── Build configurations ────────────────────────────────────────────────────
 #
@@ -349,7 +355,7 @@ MAKEFLAGS := --no-print-directory -j$(NPROC)
 COMPILED := 0
 
 ##@ Build
-all: safe_banner $(BIN_DIR)/$(BAPTIZE_SHELL)  ## Build the shell → build/bin/hellish
+all: safe_banner $(BIN_DIR)/$(BAPTIZE_SHELL)  ## Build the shell → build/bin/polish
 
 # Announce the active allocator AND the build mode before building, so
 # neither is ever a surprise.
@@ -390,6 +396,8 @@ $(BIN_DIR)/$(BAPTIZE_SHELL): $(LIBFT_A) $(OBJS)
 			"$(BIN_DIR)/$(BAPTIZE_SHELL)" "$$prev" "$(MODE)-$(SAFE_TAG)" >&2; \
 	fi
 	$(CC) $(CFLAGS) $(OBJS) $(LIBFT_A) $(LDFLAGS) $(LDLIBS) -o $@
+	@if [ "$(BAPTIZE_SHELL)" != "$(LEGACY_SHELL)" ]; then \
+		ln -sfn $(BAPTIZE_SHELL) $(BIN_DIR)/$(LEGACY_SHELL); fi
 	@printf '%s\n' "$(MODE)-$(SAFE_TAG)" > $(MODE_STAMP)
 
 # Platform files implement module seams (the fork/spawn leaves), so they —
@@ -498,7 +506,7 @@ clean:  ## Remove object files, keep the binary
 # left behind is retried and fails the target as before.
 fclean: clean  ## Remove objects, the binary and libft's build trees
 	@printf "  \033[1;33m⚠\033[0m \033[1;37mRemoving binary\033[0m" >&2
-	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@rm -f $(BIN_DIR)/$(BAPTIZE_SHELL) $(BIN_DIR)/$(LEGACY_SHELL)
 	@printf "\r\033[K  \033[1;32m✓\033[0m \033[37mBinary removed\033[0m\n\n" >&2
 	@printf "  \033[1;35m●\033[0m \033[1;37mCleaning libft\033[0m" >&2
 	@$(MAKE) -C vendor/libft fclean SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
@@ -662,7 +670,7 @@ MY_SHELL_BIN = $(if $(filter 1,$(STATIC)),$(STATIC_OUT),$(BIN_DIR)/$(BAPTIZE_SHE
 # tools/fetch_release.sh). VERSION= and STATIC=1 are mutually exclusive:
 # STATIC builds a binary here, VERSION fetches one that already exists.
 VERSION ?=
-RELEASE_BIN := build/bin/hellish-release
+RELEASE_BIN := build/bin/polish-release
 ifneq ($(VERSION),)
 MY_SHELL_BIN = $(RELEASE_BIN)
 endif
@@ -700,15 +708,15 @@ my_shell:  ## sudo-install to /usr/bin and register as a login shell (VERSION=2.
 			SAFE=$(if $(filter command line,$(origin SAFE)),$(SAFE),1); \
 	fi
 	@echo "Seeding your config..."
-	@./tools/seed_hellishrc.sh
-	@./tools/register_shell.sh --bin $(MY_SHELL_BIN) --dest /usr/bin/hellish
-	@echo "Done. Log out and log back in to use hellish as your default shell."
+	@./tools/seed_hellishrc.sh --bin $(MY_SHELL_BIN)
+	@./tools/register_shell.sh --bin $(MY_SHELL_BIN) --dest /usr/bin/polish
+	@echo "Done. Log out and log back in to use polish as your default shell."
 	@echo 'if impatient, replace the shell in THIS terminal, no relog needed:'
-	@echo '    exec /usr/bin/hellish --login'
+	@echo "    exec $$(./tools/register_shell.sh --print-dest --dest /usr/bin/polish) --login"
 	@if [ -n "$(VERSION)" ]; then \
 		printf '\n  \033[1;33m!\033[0m installed the PUBLISHED v%s, not this working tree.\n' \
 			"$(VERSION)"; \
-		printf '    to reproduce a report from here:  hellish -c "update --now"\n'; \
+		printf '    to reproduce a report from here:  polish -c "update --now"\n'; \
 		printf '    to go back to your build:         make my-shell-uninstall && make my_shell\n\n'; \
 	fi
 
@@ -720,14 +728,14 @@ my_shell:  ## sudo-install to /usr/bin and register as a login shell (VERSION=2.
 # aborts without deleting anything: the reverse order can leave an account
 # whose login shell does not exist, which locks you out of ssh and every tty.
 my-shell-uninstall:  ## Undo make my_shell (keeps your ~/.hellishrc)
-	@./tools/register_shell.sh --uninstall --dest /usr/bin/hellish
+	@./tools/register_shell.sh --uninstall --dest /usr/bin/polish
 
 # ...and take the config too, for a genuinely clean slate. This is the one to
 # pair with VERSION= when reproducing a report: a stale ~/.cache/hellish
 # remembers which release it already told you about, so a reinstall of an old
 # version can start out believing it is current.
 my-shell-purge:  ## Undo make my_shell AND delete ~/.hellishrc + caches
-	@./tools/register_shell.sh --purge --dest /usr/bin/hellish
+	@./tools/register_shell.sh --purge --dest /usr/bin/polish
 
 # The same thing on a machine where you are not root -- a lab box, a shared
 # server, a 42 cluster account. `my_shell` cannot work there: it needs sudo to
@@ -779,11 +787,11 @@ user-uninstall:  ## Remove the rc hook and the binary
 # Cross-build with ARCH=arm64 -- that path needs binfmt/qemu registered:
 #   docker run --privileged --rm tonistiigi/binfmt --install all
 STATIC_ARCH ?= $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
-STATIC_OUT  := dist/hellish-linux-$(STATIC_ARCH)
+STATIC_OUT  := dist/polish-linux-$(STATIC_ARCH)
 
 ##@ Ship
-static:  ## Static musl binary via docker → dist/hellish-linux-<arch>
-	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding static hellish (linux/%s)\033[0m\n\n" \
+static:  ## Static musl binary via docker → dist/polish-linux-<arch>
+	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding static polish (linux/%s)\033[0m\n\n" \
 		"$(STATIC_ARCH)" >&2
 	@mkdir -p dist
 	DOCKER_BUILDKIT=1 docker build \
@@ -793,7 +801,7 @@ static:  ## Static musl binary via docker → dist/hellish-linux-<arch>
 		--output type=local,dest=dist/.static-$(STATIC_ARCH) \
 		$(if $(BUILD_FLAGS),--build-arg BUILD_FLAGS="$(BUILD_FLAGS)",) \
 		.
-	@mv dist/.static-$(STATIC_ARCH)/hellish $(STATIC_OUT)
+	@mv dist/.static-$(STATIC_ARCH)/polish $(STATIC_OUT)
 	@rm -rf dist/.static-$(STATIC_ARCH)
 	@chmod 755 $(STATIC_OUT)
 	@printf "\n  \033[1;32m✓\033[0m \033[1;37m%s\033[0m \033[90m(%s)\033[0m\n" \
@@ -957,6 +965,13 @@ doctor:  ## Which hellish is on PATH, and will `update` be able to install?
 cd-posix-test: all  ## --posix gates that cd extension off
 	@chmod +x $(TEST_DIR)/cd_posix_compare.sh
 	@HELLISH=$(BIN_DIR)/$(BAPTIZE_SHELL) bash $(TEST_DIR)/cd_posix_compare.sh
+
+# The 3.4.0 hellish -> polish rename, from the side of a user who updates:
+# legacy rc/XDG paths, HELLISH_* hooks and $HELLISH_GIT_* still work, the new
+# names win when both exist, and `update --version` still satisfies the
+# validate_binary rule frozen in every <= 3.3.0 updater in the field.
+brand-test: all  ## pty: old hellish installs survive the polish rename
+	@python3 $(TEST_DIR)/brand_compat_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Interactive multi-line history regression test (real pty): entries keep
 # their multi-line text in `history` and the file, and up-arrow recall of
@@ -1383,6 +1398,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
+	brand-test \
 	completion-test completion-posix-test \
 	readline-test anim-test git-prompt-test \
 	prompt-atomic-test expansion-sweep-test \

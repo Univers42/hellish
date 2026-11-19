@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include "sys.h"
 #include "version.h"
@@ -34,7 +35,8 @@ static int	exe_path(char *buf, size_t n)
 }
 
 /* Work out how this hellish was installed, from its own location:
-   a pnpm/npm global, a source checkout (…/build/bin/hellish), a container
+   a pnpm/npm global, a source checkout (…/build/bin/polish, or the
+   pre-3.4.0 hellish name a checkout still links), a container
    (/.dockerenv), or a plain standalone binary. */
 t_origin	detect_origin(char *repo, size_t n)
 {
@@ -48,7 +50,9 @@ t_origin	detect_origin(char *repo, size_t n)
 		return (ORIGIN_PNPM);
 	if (ft_strstr(path, "/node_modules/"))
 		return (ORIGIN_NPM);
-	build = (char *)ft_strstr(path, "/build/bin/hellish");
+	build = (char *)ft_strstr(path, "/build/bin/" BRAND_NAME);
+	if (!build)
+		build = (char *)ft_strstr(path, "/build/bin/" BRAND_LEGACY);
 	if (build)
 	{
 		*build = '\0';
@@ -120,9 +124,9 @@ int	run_origin_update(t_origin o, const char *repo, const char *tag)
 		return (update_selfupdate(o, tag));
 	origin_command(o, repo, cmd, sizeof(cmd));
 	if (o == ORIGIN_DOCKER)
-		return ((void)ft_printf("hellish: run this on the host:\n  %s\n",
+		return ((void)ft_printf("polish: run this on the host:\n  %s\n",
 				cmd), 0);
-	ft_eprintf("hellish: %s\n", cmd);
+	ft_eprintf("polish: %s\n", cmd);
 	pid = fork();
 	if (pid < 0)
 		return (1);

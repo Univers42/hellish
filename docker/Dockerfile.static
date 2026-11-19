@@ -12,7 +12,7 @@
 # The result has no interpreter and no shared-library dependencies at all.
 #
 # Not run directly -- `make static` drives it and copies the binary out:
-#     make static                 # -> dist/hellish-linux-<arch>
+#     make static                 # -> dist/polish-linux-<arch>
 #     make static ARCH=arm64      # cross-build (needs binfmt/qemu)
 # ============================================================================
 FROM alpine:3.20 AS build
@@ -46,15 +46,15 @@ RUN make fclean >/dev/null 2>&1 || true; \
 # and glibc's disagree on what they print for a static binary), whereas the
 # absence of a PT_INTERP segment and of any DT_NEEDED entry is the definition.
 RUN set -eux; \
-	if readelf -l build/bin/hellish | grep -q 'program interpreter'; then \
+	if readelf -l build/bin/polish | grep -q 'program interpreter'; then \
 		echo "FAIL: binary has a program interpreter (not static)" >&2; exit 1; \
 	fi; \
-	if readelf -d build/bin/hellish 2>/dev/null | grep -q 'NEEDED'; then \
+	if readelf -d build/bin/polish 2>/dev/null | grep -q 'NEEDED'; then \
 		echo "FAIL: binary still has shared library dependencies" >&2; exit 1; \
 	fi; \
 	HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
-		./build/bin/hellish -c 'echo static-ok $(uname -m)'
+		./build/bin/polish -c 'echo static-ok $(uname -m)'
 
 # Scratch stage so `docker build --output` writes ONLY the binary to the host.
 FROM scratch AS export
-COPY --from=build /hellish/build/bin/hellish /hellish
+COPY --from=build /hellish/build/bin/polish /polish

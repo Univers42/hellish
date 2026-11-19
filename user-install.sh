@@ -1,5 +1,5 @@
 #!/bin/sh
-# hellish user-install — make hellish your default shell WITHOUT root.
+# polish user-install — make polish your default shell WITHOUT root.
 #
 #   ./user-install.sh              install (or re-install; idempotent)
 #   ./user-install.sh --uninstall  put things back exactly as they were
@@ -16,25 +16,35 @@
 # The sudo-less route is the one every user already has: the login shell you
 # are stuck with reads an rc file when it starts, and that rc file can hand the
 # terminal over with `exec`. exec REPLACES the process, so this is not a
-# wrapper: `ps` shows hellish, $$ is hellish's pid, closing hellish closes the
+# wrapper: `ps` shows polish, $$ is polish's pid, closing polish closes the
 # tab, and there is no stray bash sitting underneath eating a signal. It is
 # also not an alias — you open a terminal and you are IN hellish, without
 # typing anything.
 #
 # The passwd entry stays untouched, and that is a feature, not a shortcut: it
 # is what keeps `ssh host 'some command'` working (non-interactive, so the hook
-# never fires) and leaves you a guaranteed way back in if hellish ever wedges.
+# never fires) and leaves you a guaranteed way back in if polish ever wedges.
 #
 # WHAT IT TOUCHES
 # ---------------
-#   1. $PREFIX/bin/hellish        the binary                 (default ~/.local)
-#   2. ~/.hellishrc               seeded from hellishrc.example, NEVER clobbered,
+#   1. $PREFIX/bin/polish         the binary                 (default ~/.local)
+#   2. ~/.polishrc                seeded from hellishrc.example, NEVER clobbered,
 #                                 plus one marker-delimited block that puts
 #                                 $PREFIX/bin on PATH
 #   3. <your login shell's rc>    one marker-delimited block, appended at the end
 #
 # Nothing else. Re-running replaces the block in place rather than stacking a
 # second copy, so this is safe to run on every rebuild.
+#
+# THE RENAME (hellish -> polish, 3.4.0)
+# -------------------------------------
+# A machine that already runs hellish keeps its paths: if $PREFIX/bin/hellish
+# exists, or the rc already carries the `# >>> hellish >>>` block, or the
+# binary being installed is itself a pre-3.4 hellish, the binary is
+# (re)installed as $PREFIX/bin/hellish and $PREFIX/bin/polish becomes a
+# symlink to it. The rc hook, the PATH and the binary's own updater all name
+# the old path, and two real binaries would mean `update` refreshes one while
+# the other goes stale -- so the new name is only ever an alias there.
 
 set -eu
 
@@ -42,12 +52,17 @@ PROG="$(basename "$0")"
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 PREFIX="${PREFIX:-$HOME/.local}"
-BIN_SRC="${BIN_SRC:-$REPO_ROOT/build/bin/hellish}"
+if [ -z "${BIN_SRC:-}" ]; then
+	BIN_SRC="$REPO_ROOT/build/bin/polish"
+	[ -x "$BIN_SRC" ] || BIN_SRC="$REPO_ROOT/build/bin/hellish"
+fi
 RC_TARGET="${RC_TARGET:-}"
 ACTION="install"
 
-BEGIN_MARK="# >>> hellish >>>"
-END_MARK="# <<< hellish <<<"
+LEGACY_BEGIN="# >>> hellish >>>"
+LEGACY_END="# <<< hellish <<<"
+BEGIN_MARK="# >>> polish >>>"
+END_MARK="# <<< polish <<<"
 
 # ── plumbing ──────────────────────────────────────────────────────────────
 red()  { printf '\033[1;31m%s\033[0m\n' "$*" >&2; }
@@ -58,12 +73,14 @@ die()  { red "$PROG: $*"; exit 1; }
 
 usage() {
 	cat >&2 <<EOF
-usage: $PROG [--uninstall] [--prefix DIR] [--bin PATH] [--rc FILE]
+usage: $PROG [--uninstall|--print-dest] [--prefix DIR] [--bin PATH] [--rc FILE]
 
-  --prefix DIR   where to put bin/hellish      (default: \$HOME/.local)
-  --bin PATH     which binary to install       (default: build/bin/hellish)
+  --prefix DIR   where to put bin/polish       (default: \$HOME/.local)
+  --bin PATH     which binary to install       (default: build/bin/polish)
   --rc FILE      rc file to hook               (default: your login shell's)
   --uninstall    remove the hook and the installed binary
+  --print-dest   print the path the binary would be installed at, and exit
+                 (bin/hellish on a machine that already has a hellish install)
 EOF
 	exit 2
 }
@@ -71,6 +88,7 @@ EOF
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--uninstall) ACTION="uninstall" ;;
+		--print-dest) ACTION="print-dest" ;;
 		--prefix) shift; [ $# -gt 0 ] || usage; PREFIX="$1" ;;
 		--bin)    shift; [ $# -gt 0 ] || usage; BIN_SRC="$1" ;;
 		--rc)     shift; [ $# -gt 0 ] || usage; RC_TARGET="$1" ;;
@@ -85,8 +103,8 @@ done
 # nobody ends up with a directory actually named '~'.
 untilde() {
 	case "$1" in
-		"~")   printf '%s\n' "$HOME" ;;
-		"~/"*) printf '%s\n' "$HOME/${1#\~/}" ;;
+		\~)    printf '%s\n' "$HOME" ;;
+		\~/*)  printf '%s\n' "$HOME/${1#\~/}" ;;
 		*)     printf '%s\n' "$1" ;;
 	esac
 }
@@ -97,7 +115,16 @@ if [ -n "$RC_TARGET" ]; then
 fi
 
 DEST_DIR="$PREFIX/bin"
-DEST="$DEST_DIR/hellish"
+LEGACY_DEST="$DEST_DIR/hellish"
+ALIAS=""
+
+# Every child we run gets both spellings of the quiet knobs: a 3.4.0+ binary
+# reads POLISH_* first, an older one only knows HELLISH_*.
+quiet() {
+	POLISH_NO_BANNER=1 HELLISH_NO_BANNER=1 \
+	POLISH_NO_UPDATE_CHECK=1 HELLISH_NO_UPDATE_CHECK=1 \
+	POLISH_NO_ANIM=1 HELLISH_NO_ANIM=1 "$@"
+}
 
 # ── which rc file does THIS user's login shell actually read? ─────────────
 #
@@ -107,13 +134,23 @@ DEST="$DEST_DIR/hellish"
 # starts. An exec there would replace your desktop session's shell. The
 # `case $- in *i*` guard in the hook already covers that, but not editing the
 # file at all is the belt to that suspenders.
-login_shell() {
+login_shell_path() {
 	_ls=""
 	if command -v getent >/dev/null 2>&1; then
 		_ls="$(getent passwd "$(id -un)" 2>/dev/null | cut -d: -f7)"
 	fi
 	[ -n "$_ls" ] || _ls="${SHELL:-/bin/sh}"
-	basename "$_ls"
+	printf '%s\n' "$_ls"
+}
+login_shell() { basename "$(login_shell_path)"; }
+
+# same_file A B -> 0 when both exist and resolve to one file. readlink -f
+# rather than test -ef, which POSIX sh does not define.
+# An empty resolution (a readlink with no -f) must not make every pair equal.
+same_file() {
+	[ -e "$1" ] && [ -e "$2" ] || return 1
+	_sf="$(readlink -f "$1" 2>/dev/null)"
+	[ -n "$_sf" ] && [ "$_sf" = "$(readlink -f "$2" 2>/dev/null)" ]
 }
 
 rc_for_shell() {
@@ -131,31 +168,57 @@ LOGIN_SHELL="$(login_shell)"
 if [ -z "$RC_TARGET" ]; then
 	RC_TARGET="$(rc_for_shell "$LOGIN_SHELL")"
 fi
+
+# ── which name does this install go by? (see THE RENAME, above) ───────────
+is_legacy_install() {
+	[ -e "$LEGACY_DEST" ] || [ -L "$LEGACY_DEST" ] && return 0
+	[ -n "$RC_TARGET" ] && [ -f "$RC_TARGET" ] \
+		&& grep -qxF "$LEGACY_BEGIN" "$RC_TARGET" && return 0
+	[ "$ACTION" != "uninstall" ] && [ -x "$BIN_SRC" ] || return 1
+	case "$(quiet "$BIN_SRC" --version </dev/null 2>/dev/null | head -1)" in
+	hellish[,\ ]*) return 0 ;;
+	esac
+	return 1
+}
+if is_legacy_install; then
+	DEST="$LEGACY_DEST"
+	ALIAS="$DEST_DIR/polish"
+else
+	DEST="$DEST_DIR/polish"
+fi
+if [ "$ACTION" = "print-dest" ]; then
+	printf '%s\n' "$DEST"
+	exit 0
+fi
+
 if [ -z "$RC_TARGET" ]; then
 	red "$PROG: don't know which rc file '$LOGIN_SHELL' reads."
 	if [ "$LOGIN_SHELL" = "fish" ]; then
 		red "fish uses its own syntax; add this to ~/.config/fish/config.fish:"
-		red "    if status is-interactive; and not set -q HELLISH_EXECD"
-		red "        set -x HELLISH_EXECD 1; set -x SHELL $DEST; exec $DEST"
+		red "    if status is-interactive; and not set -q POLISH_EXECD; and not set -q HELLISH_EXECD"
+		red "        set -x POLISH_EXECD 1; set -x HELLISH_EXECD 1"
+		red "        set -x SHELL $DEST; exec $DEST"
 		red "    end"
 	fi
 	die "point me at one explicitly:  $PROG --rc ~/.somerc"
 fi
 
-# Delete an existing hook block from stdin. Written so a half-removed block
+# Delete an existing hook block from stdin, under either marker spelling: an
+# rc must never carry two exec hooks. Written so a half-removed block
 # (someone deleted one marker by hand) still degrades to "leave it alone"
 # rather than eating the rest of the file.
 strip_block() {
-	awk -v b="$BEGIN_MARK" -v e="$END_MARK" '
-		$0 == e { skip = 0; next }
-		$0 == b { skip = 1 }
+	awk -v b="$BEGIN_MARK" -v e="$END_MARK" \
+		-v lb="$LEGACY_BEGIN" -v le="$LEGACY_END" '
+		$0 == e || $0 == le { skip = 0; next }
+		$0 == b || $0 == lb { skip = 1 }
 		skip    { next }
 		        { print }
 	'
 }
 
 has_block() {
-	[ -f "$1" ] && grep -qxF "$BEGIN_MARK" "$1"
+	[ -f "$1" ] && grep -qxF -e "$BEGIN_MARK" -e "$LEGACY_BEGIN" "$1"
 }
 
 # Two older generations of this block exist in the wild -- `hellish-default`
@@ -205,13 +268,25 @@ if [ "$ACTION" = "uninstall" ]; then
 	for _rc in "$RC_TARGET" "$HOME/.bashrc" "$HOME/.zshrc"; do
 		drop_legacy_hooks "$_rc"
 	done
-	if [ -e "$DEST" ]; then
-		rm -f "$DEST"
-		grn "removed $DEST"
-	fi
+	# Both names: either may be the binary, the other its alias. Neither
+	# goes while it is the account's login shell (a chsh someone did by
+	# hand) -- deleting that is a lockout only root can undo.
+	_login="$(login_shell_path)"
+	for _b in "$DEST_DIR/polish" "$DEST_DIR/hellish"; do
+		[ -e "$_b" ] || [ -L "$_b" ] || continue
+		if [ "$_login" = "$_b" ] || same_file "$_login" "$_b"; then
+			warn "$_b is your login shell ($_login) — NOT removing it"
+			warn "  chsh to another shell first, then re-run the uninstall"
+			continue
+		fi
+		rm -f "$_b"
+		grn "removed $_b"
+	done
 	# The rc file is the user's; only the block THIS script wrote comes out.
 	"$REPO_ROOT/tools/seed_hellishrc.sh" --strip-path >&2 || true
-	inf "~/.hellishrc left in place (it is yours; delete it by hand if you want)"
+	for _rc in "$HOME/.polishrc" "$HOME/.hellishrc"; do
+		[ -f "$_rc" ] && inf "$_rc left in place (it is yours; delete it by hand if you want)"
+	done
 	printf '\n  Open a NEW terminal and you are back in %s.\n\n' "$LOGIN_SHELL" >&2
 	exit 0
 fi
@@ -229,7 +304,22 @@ chmod 755 "$DEST.new"
 mv -f "$DEST.new" "$DEST"
 grn "installed $DEST"
 
-# ── 2. seed ~/.hellishrc ──────────────────────────────────────────────────
+# The new name on an old install: a relative symlink, swapped in by rename
+# for the same ETXTBSY reason as above. It replaces whatever is there --
+# including a stray real polish binary, which is exactly the second copy that
+# must not exist -- except a directory, which is not ours to touch.
+if [ -n "$ALIAS" ]; then
+	if [ -d "$ALIAS" ]; then
+		warn "$ALIAS is a directory — not linking polish to $DEST"
+	else
+		rm -f "$ALIAS.new"
+		ln -s hellish "$ALIAS.new"
+		mv -f "$ALIAS.new" "$ALIAS"
+		grn "linked $ALIAS -> hellish (the new name; one binary)"
+	fi
+fi
+
+# ── 2. seed the rc (~/.polishrc, or the ~/.hellishrc already there) ───────
 # Delegated, not inlined. This is the copy `make my_shell` did not have, so
 # the sudo route installed a shell with no config at all (issue #51); one
 # seeder called by both routes is what keeps them from drifting again.
@@ -237,7 +327,7 @@ grn "installed $DEST"
 # NOT necessarily on PATH (see the block the seeder writes), so without it
 # the shell starts but its own name does not resolve.
 "$REPO_ROOT/tools/seed_hellishrc.sh" --example "$REPO_ROOT/hellishrc.example" \
-	--path-dir "$DEST_DIR"
+	--path-dir "$DEST_DIR" --bin "$DEST"
 
 # ── 3. prove the binary works BEFORE anything execs it ────────────────────
 #
@@ -247,23 +337,27 @@ grn "installed $DEST"
 # written after the installed binary has demonstrably run a command, honoured
 # an exit status, and accepted input on a pipe.
 inf "smoke-testing $DEST"
-smoke_env() {
-	HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 "$@"
-}
 smoke_st=0
-smoke_env "$DEST" -c 'exit 42' >/dev/null 2>&1 || smoke_st=$?
+quiet "$DEST" -c 'exit 42' >/dev/null 2>&1 || smoke_st=$?
 [ "$smoke_st" = "42" ] || die "smoke test failed: '$DEST -c' returned $smoke_st, want 42"
 smoke_st=0
-printf 'exit 7\n' | smoke_env "$DEST" >/dev/null 2>&1 || smoke_st=$?
+printf 'exit 7\n' | quiet "$DEST" >/dev/null 2>&1 || smoke_st=$?
 [ "$smoke_st" = "7" ] || die "smoke test failed: piped input returned $smoke_st, want 7"
 grn "binary runs commands and reports status correctly"
 
-# A broken ~/.hellishrc cannot stop the shell from starting (it is sourced,
-# not exec'd), so this is a warning and not a hard failure — but you want to
-# hear about it now rather than wonder why your aliases are missing.
-if [ -f "$HOME/.hellishrc" ]; then
-	if ! smoke_env "$DEST" -c '. "$HOME/.hellishrc"' >/dev/null 2>&1; then
-		warn "~/.hellishrc reported errors when sourced — check it"
+# A broken rc cannot stop the shell from starting (it is sourced, not
+# exec'd), so this is a warning and not a hard failure — but you want to
+# hear about it now rather than wonder why your aliases are missing. The one
+# checked is the one the shell reads: ~/.polishrc when it exists, else
+# ~/.hellishrc (and only ~/.hellishrc for a pre-3.4 binary).
+USER_RC="$HOME/.polishrc"
+if [ -n "$ALIAS" ] || [ ! -e "$USER_RC" ]; then
+	USER_RC="$HOME/.hellishrc"
+fi
+[ -f "$USER_RC" ] || USER_RC="$HOME/.polishrc"
+if [ -f "$USER_RC" ]; then
+	if ! quiet "$DEST" -c ". \"\$1\"" sh "$USER_RC" >/dev/null 2>&1; then
+		warn "$USER_RC reported errors when sourced — check it"
 	fi
 fi
 
@@ -272,58 +366,72 @@ fi
 # supersedes it. Other rc files keep theirs until uninstall -- a hook in
 # ~/.bashrc may be the only reason a zsh user who execs bash ever reaches
 # hellish (issue #116), and that is their arrangement to change.
+#
+# One block, ever: a `# >>> hellish >>>` block from a pre-3.4 install is
+# REPLACED under its own marker (an older checkout's uninstaller still finds
+# it), never joined by a `# >>> polish >>>` one. Two exec hooks would be
+# harmless only by the luck of the first one exec'ing.
 [ -e "$RC_TARGET" ] || : > "$RC_TARGET"
 drop_legacy_hooks "$RC_TARGET"
+if grep -qxF "$LEGACY_BEGIN" "$RC_TARGET"; then
+	BEGIN_MARK="$LEGACY_BEGIN"
+	END_MARK="$LEGACY_END"
+fi
 cp -p "$RC_TARGET" "$RC_TARGET.hellish-bak"
 strip_block < "$RC_TARGET.hellish-bak" | trim_trailing_blanks > "$RC_TARGET.tmp"
 
 cat >> "$RC_TARGET.tmp" <<EOF
 
 $BEGIN_MARK
-# Added by hellish's user-install.sh. Everything between the markers is
+# Added by polish's user-install.sh. Everything between the markers is
 # regenerated on re-install and deleted by \`make user-uninstall\` — put your
 # own edits outside them.
 #
 # chsh(1) will not point at a shell that is missing from /etc/shells, and
 # only root writes that file. So the handover happens here instead: an
-# interactive shell replaces ITSELF with hellish. exec means no wrapper
-# process is left behind — hellish owns the terminal, the pid and the exit.
+# interactive shell replaces ITSELF with polish. exec means no wrapper
+# process is left behind — polish owns the terminal, the pid and the exit.
 #
 # This block sits at the END of the file on purpose: whatever you set up
 # above (PATH, nvm, proxies) is already in the environment, and exec carries
-# the environment across, so hellish starts with the setup you just built.
+# the environment across, so polish starts with the setup you just built.
 #
-# Ways out, in increasing order of permanence:
-#   HELLISH_NO_EXEC=1 <terminal>    one session in $LOGIN_SHELL
-#   touch ~/.hellish-disable        every new session, until you delete it
+# Ways out, in increasing order of permanence (the HELLISH_ spellings and
+# ~/.hellish-disable from before the rename work too):
+#   POLISH_NO_EXEC=1 <terminal>     one session in $LOGIN_SHELL
+#   touch ~/.polish-disable         every new session, until you delete it
 #   make user-uninstall             remove this block for good
 # And from another machine, since your passwd shell is untouched:
-#   ssh $(id -un)@\$(hostname) 'touch ~/.hellish-disable'
+#   ssh $(id -un)@\$(hostname) 'touch ~/.polish-disable'
 
 # The binary lives in a directory your login chain may not have on PATH:
 # ~/.profile adds ~/.local/bin only when it already exists at login, and on a
 # first install this run is what created it. The exec below uses an absolute
-# path, so the shell starts either way — but without this, \`hellish\` as a
-# COMMAND ("hellish update", "command -v hellish", any tool that looks the
-# shell up by name) is not found, here or inside hellish. Guarded, because
+# path, so the shell starts either way — but without this, \`polish\` as a
+# COMMAND ("polish update", "command -v polish", any tool that looks the
+# shell up by name) is not found, here or inside polish. Guarded, because
 # an rc gets re-sourced and an unguarded prepend stacks duplicates.
 case ":\$PATH:" in
 	*":$DEST_DIR:"*) ;;
 	*) PATH="$DEST_DIR:\$PATH"; export PATH ;;
 esac
 
-if [ -z "\${HELLISH_NO_EXEC-}" ] && [ -z "\${HELLISH_EXECD-}" ] \\
-	&& [ ! -e "\$HOME/.hellish-disable" ] && [ -x "$DEST" ]; then
+if [ -z "\${POLISH_NO_EXEC-}\${HELLISH_NO_EXEC-}" ] \\
+	&& [ -z "\${POLISH_EXECD-}\${HELLISH_EXECD-}" ] \\
+	&& [ ! -e "\$HOME/.polish-disable" ] && [ ! -e "\$HOME/.hellish-disable" ] \\
+	&& [ -x "$DEST" ]; then
 	case \$- in
 	*i*)
-		# Exported BEFORE the exec, so hellish and everything under it
+		# Exported BEFORE the exec, so the shell and everything under it
 		# inherits the marker. That is what lets you type \`$LOGIN_SHELL\`
-		# inside hellish and actually get $LOGIN_SHELL instead of bouncing
-		# straight back here.
+		# inside it and actually get $LOGIN_SHELL instead of bouncing
+		# straight back here. Both spellings: a pre-3.4 hook left in another
+		# rc only knows HELLISH_EXECD.
+		POLISH_EXECD=1
 		HELLISH_EXECD=1
-		export HELLISH_EXECD
+		export POLISH_EXECD HELLISH_EXECD
 		# So \$SHELL-respecting tools (tmux, vim's :shell, xdg-terminal)
-		# spawn hellish too, which is the other half of "default shell".
+		# spawn it too, which is the other half of "default shell".
 		SHELL="$DEST"
 		export SHELL
 		exec "$DEST"
@@ -347,14 +455,14 @@ grn "hooked $RC_TARGET (backup: $RC_TARGET.hellish-bak)"
 
 # ── done ──────────────────────────────────────────────────────────────────
 printf '
-  \033[1;37mhellish is now your default shell.\033[0m Open a new terminal — no logout needed.
+  \033[1;37mpolish is now your default shell.\033[0m Open a new terminal — no logout needed.
   In THIS one, right now:   \033[1;36mexec %s\033[0m
 
-  Your config lives in \033[1;36m~/.hellishrc\033[0m (sourced by every interactive
-  hellish, never by scripts or -c). Shell functions do not survive exec, so
+  Your config lives in \033[1;36m%s\033[0m (sourced by every interactive
+  shell, never by scripts or -c). Shell functions do not survive exec, so
   anything you had as a %s function — nvm, rbenv, conda — belongs in there
   too.
 
   Undo everything:          \033[1;36mmake user-uninstall\033[0m
 
-' "$DEST" "$LOGIN_SHELL" >&2
+' "$DEST" "$USER_RC" "$LOGIN_SHELL" >&2

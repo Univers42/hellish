@@ -146,7 +146,7 @@ used to contain is now handled in place:
 - readline's buffer is libc-malloc'd: the line is freed with `free()`, never
   `xfree`.
 
-`HELLISH_RL_FORK=1` in the environment restores the forked reader
+`POLISH_RL_FORK=1` in the environment restores the forked reader
 (`rl_fork.c`) for one release, as does a readline older than 8.0.
 
 ### 3.2 ANSI and multibyte width tracking for prompts

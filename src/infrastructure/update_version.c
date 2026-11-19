@@ -62,7 +62,7 @@ int	hellish_version_cmp(const char *a, const char *b)
    usable from a package manager, a Dockerfile or a CI probe. */
 void	print_version(void)
 {
-	ft_printf("hellish, version %s (%s)\n", HELLISH_VERSION, HELLISH_ASSET);
+	ft_printf("polish, version %s (%s)\n", HELLISH_VERSION, HELLISH_ASSET);
 	ft_printf("Release channel: https://github.com/%s\n", HELLISH_REPO);
 	ft_printf("An almost-POSIX shell, diffed byte-for-byte "
 		"against bash --posix.\n");

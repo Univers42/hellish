@@ -95,7 +95,7 @@ def session(home, script, extra=None, settle=1.0):
 
 
 def state_path(home):
-    return os.path.join(home, ".cache", "hellish", "state")
+    return os.path.join(home, ".cache", "polish", "state")
 
 
 def poke_state(home, **kw):
@@ -117,24 +117,24 @@ def main():
 
     # 9 -- the header is news, not furniture
     out = session(home, [(b"exit\n", 0.4)])
-    check("header: shown on a first-ever run", "hellish" in out,
+    check("header: shown on a first-ever run", "polish" in out,
           repr(out[:160]))
     out = session(home, [(b"exit\n", 0.4)])
     check("header: quiet on a second run the same day",
-          "Type `help'" not in out and out.count("hellish") <= 1,
+          "Type `help'" not in out and out.count("polish") <= 1,
           repr(out[:200]))
     poke_state(home, header_rev=999)
     out = session(home, [(b"exit\n", 0.4)])
-    check("header: back when its revision changes", "hellish" in out,
+    check("header: back when its revision changes", "polish" in out,
           repr(out[:160]))
     poke_state(home, header_ver="0.0.0")
     out = session(home, [(b"exit\n", 0.4)])
-    check("header: back after the shell is upgraded", "hellish" in out,
+    check("header: back after the shell is upgraded", "polish" in out,
           repr(out[:160]))
     yesterday = int(time.time()) - 86400 * 2
     poke_state(home, header_shown=yesterday)
     out = session(home, [(b"exit\n", 0.4)])
-    check("header: eligible again the next day", "hellish" in out,
+    check("header: eligible again the next day", "polish" in out,
           repr(out[:160]))
 
     # 3 -- a pending update must not touch a line being typed

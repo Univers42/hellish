@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "builtins_private.h"
 #include <unistd.h>
 
@@ -97,7 +98,7 @@ static void	print_one(t_shell *state, t_pflags *f, t_string *out, char *s)
 		while (p && *p)
 		{
 			if ((*p != '\001' && *p != '\002')
-				|| getenv("HELLISH_DBG_PROMPT_MARKS"))
+				|| brand_getenv("DBG_PROMPT_MARKS"))
 				vec_push_char(out, *p);
 			p++;
 		}

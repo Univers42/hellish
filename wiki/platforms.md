@@ -1,6 +1,6 @@
 # Platforms
 
-Where hellish is known to build and run, how that is proved, and what is
+Where polish is known to build and run, how that is proved, and what is
 still broken. If you hit a platform problem, this page should either
 already name it or be the place you add it.
 
@@ -162,7 +162,7 @@ What that gives up is drvfs coverage of the *build*, which was never the
 point; what it keeps is a separate step that runs the shell against a drvfs
 directory — glob it, read from it, `pwd` in it. Deliberately not the
 permission checks: `chmod 000` on drvfs without metadata support is a no-op,
-so a red there would be Windows telling the truth rather than hellish
+so a red there would be Windows telling the truth rather than polish
 getting it wrong.
 
 ## Things the matrix has already caught

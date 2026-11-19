@@ -65,7 +65,7 @@ cd "$ROOT"
 # benchmark. It does not fail; it just silently reports numbers ~6x too slow
 # (startup 15ms instead of 2.5ms) with no indication anything is wrong.
 # `make test` and `make bench` already rm the binary for exactly this reason.
-rm -f build/bin/hellish
+rm -f build/bin/polish build/bin/hellish
 make --no-print-directory all OPT=1 >/dev/null
 # Belt and braces: if what we just built still links ASan, refuse to publish
 # timings from it rather than quietly producing a slow, wrong report.

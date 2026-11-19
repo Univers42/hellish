@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "core.h"
 
 char	*read_file(const char *path);
@@ -35,7 +36,9 @@ int		exec_file_string(t_shell *state, char *str, const char *src);
 ** that has the last word over the plugin framework living in ~/.hellishrc
 ** (rc_load.c, rc_load_after, says what broke when it did not). */
 
-/* ~/.hellishrc is a sourced file in every sense: a parse error names it
+/* ~/.polishrc -- or ~/.hellishrc on a machine that has only that one, so an
+   upgrade from before the 3.4.0 rename keeps its config (brand_pick).
+   It is a sourced file in every sense: a parse error names it
    and its line (exec_file_string), and `return` ends it the way it ends
    ~/.bashrc instead of "can only `return' from a function". */
 static void	source_rc_file(t_shell *state, const char *home)
@@ -43,7 +46,8 @@ static void	source_rc_file(t_shell *state, const char *home)
 	char	*path;
 	char	*content;
 
-	path = ft_strjoin(home, "/.hellishrc");
+	path = brand_pick(ft_strjoin(home, "/." BRAND_NAME "rc"),
+			ft_strjoin(home, "/." BRAND_LEGACY "rc"));
 	if (!path)
 		return ;
 	content = read_file(path);

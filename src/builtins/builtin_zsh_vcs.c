@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "builtins_private.h"
 #include "prompt.h"
 
@@ -48,7 +49,7 @@ static const char	*style(t_shell *state, const char *var, const char *dflt)
 {
 	char	*v;
 
-	v = env_expand(state, (char *)var);
+	v = brand_expand(state, var);
 	if (!v || !*v)
 		return (dflt);
 	return (v);
@@ -112,18 +113,18 @@ int	builtin_vcs_info(t_shell *state, t_vec argv)
 	(void)argv;
 	vec_init(&out);
 	out.elem_size = 1;
-	*git_untracked_cell() = vcs_truthy(style(state, "HELLISH_VCS_UNTRACKED",
+	*git_untracked_cell() = vcs_truthy(style(state, "VCS_UNTRACKED",
 			NULL));
 	get_git_info(&branch, &v.bits);
 	v.branch = branch;
 	v.root = git_repo_root();
 	vcs_publish(state, branch, v.root, v.bits);
-	v.staged = style(state, "HELLISH_VCS_STAGED", "S");
-	v.unstaged = style(state, "HELLISH_VCS_UNSTAGED", "U");
-	if (!vcs_truthy(style(state, "HELLISH_VCS_CHECK", "false")))
+	v.staged = style(state, "VCS_STAGED", "S");
+	v.unstaged = style(state, "VCS_UNSTAGED", "U");
+	if (!vcs_truthy(style(state, "VCS_CHECK", "false")))
 		v.bits &= ~(GIT_STAGED | GIT_UNSTAGED);
 	if (branch && v.root)
-		vcs_expand(&out, style(state, "HELLISH_VCS_FORMAT", " (%b)"), &v);
+		vcs_expand(&out, style(state, "VCS_FORMAT", " (%b)"), &v);
 	vec_push_char(&out, '\0');
 	env_set(&state->env, env_create(ft_strdup("vcs_info_msg_0_"),
 			ft_strdup((char *)out.ctx), false));
@@ -140,9 +141,9 @@ int	builtin_zstyle(t_shell *state, t_vec argv)
 {
 	static const char *const	keys[] = {"formats", "actionformats",
 		"stagedstr", "unstagedstr", "check-for-changes", NULL};
-	static const char *const	vars[] = {"HELLISH_VCS_FORMAT",
-		"HELLISH_VCS_AFORMAT", "HELLISH_VCS_STAGED", "HELLISH_VCS_UNSTAGED",
-		"HELLISH_VCS_CHECK"};
+	static const char *const	vars[] = {"POLISH_VCS_FORMAT",
+		"POLISH_VCS_AFORMAT", "POLISH_VCS_STAGED", "POLISH_VCS_UNSTAGED",
+		"POLISH_VCS_CHECK"};
 	char						**av;
 	int							i;
 

@@ -60,7 +60,7 @@ class Publisher:
     def __init__(self, tag, payload):
         self.tag, self.payload = tag, payload
         self.sha = hashlib.sha256(payload).hexdigest()
-        self.asset = "hellish-linux-" + os.uname().machine
+        self.asset = "polish-linux-" + os.uname().machine
         pub = self
 
         class H(http.server.BaseHTTPRequestHandler):
@@ -132,7 +132,7 @@ def run_update_pty(binary, env):
         if not d:
             break
         out += d
-        if not picked and b"How should hellish update?" in out:
+        if not picked and b"How should polish update?" in out:
             os.write(fd, b"\r")
             picked = True
             continue

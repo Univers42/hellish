@@ -1,6 +1,6 @@
 {
   "name": "hellish-shell",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "hellish — a fast, POSIX-compliant shell, with horns",
   "bin": {
     "hellish": "bin/hellish.js"
@@ -24,11 +24,11 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Univers42/hellish.git"
+    "url": "git+https://github.com/Univers42/polish.git"
   },
-  "homepage": "https://github.com/Univers42/hellish#readme",
+  "homepage": "https://github.com/Univers42/polish#readme",
   "bugs": {
-    "url": "https://github.com/Univers42/hellish/issues"
+    "url": "https://github.com/Univers42/polish/issues"
   },
   "license": "MIT",
   "author": "LESdylan",

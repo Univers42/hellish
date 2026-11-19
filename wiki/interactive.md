@@ -1,9 +1,9 @@
 # Interactive Experience
 
-> **hellish at the prompt** — the part you actually live in.
+> **polish at the prompt** — the part you actually live in.
 > Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 
-hellish is built to be *comfortable*, not just correct. The lane we're chasing is
+polish is built to be *comfortable*, not just correct. The lane we're chasing is
 **"your bash, but it suggests, highlights, and is fast"** — fish-grade comfort without
 giving up bash compatibility or speed. This page covers what the prompt does today and
 what's landing next.
@@ -52,7 +52,7 @@ shopt -s lithist
 ```
 
 Both forms re-execute identically, and either survives a restart — the history
-file escapes embedded newlines. Put `shopt -s lithist` in `~/.hellishrc` to
+file escapes embedded newlines. Put `shopt -s lithist` in `~/.polishrc` to
 make it the default.
 
 ## Completion ✅
@@ -100,7 +100,7 @@ The fish/zsh-grade layer (menus, descriptions, fuzzy matching) is on the roadmap
 prompt that looks like the shell you already know. The rich two-row theme is one command away:
 `prompt` lists 29 themes, `prompt <name>` switches, `prompt save <name>` persists, and
 `PS1='\B'` is the old default by name. `prompt` is a shell function, not a builtin: the installer
-seeds it into `~/.config/hellish/rc.d/40-prompt-switch.hsh`, so `type prompt` says whether it is
+seeds it into `~/.config/polish/rc.d/40-prompt-switch.hsh`, so `type prompt` says whether it is
 loaded, and a shell run from a checkout loads it with
 `HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`.
 
@@ -110,15 +110,15 @@ loaded, and a shell run from a checkout loads it with
 `set -o zsh`, PS1 *is* PROMPT, as in zsh. `print -P` uses zsh's prompt
 formatter too, but it can re-interpret percent escapes in expanded variable
 contents; its output is not always an exact preview of the live prompt (issue
-[#134](https://github.com/Univers42/hellish/issues/134)).
+[#134](https://github.com/Univers42/polish/issues/134)).
 
 **What is live, and what is not.** `$VAR`, `${VAR…}`, `$?` and `$((…))` are expanded every time
 the prompt is drawn. Command substitution is not: `$(…)` and backquotes stay on screen as the
 text you wrote, because they would fork on every redraw. A computed segment is a variable set by
-a `HELLISH_PRECMD_FUNCS` hook (below), which runs once per prompt.
+a `POLISH_PRECMD_FUNCS` hook (below), which runs once per prompt.
 
 Bash's escape set is implemented — `\u \h \H \w \W \t \d \D{fmt} \T \@ \! \# \j \l \r \s \v \V
-\n \e \a \$ \\ \[ \] \nnn` — plus hellish's own: `\g` git branch, `\S` failure badge, `\p`
+\n \e \a \$ \\ \[ \] \nnn` — plus polish's own: `\g` git branch, `\S` failure badge, `\p`
 duration, `\J` jobs, `\U` pending update, `\B` the built-in prompt, `\I` the file being sourced.
 
 `${PS1@P}` prints what PS1 renders to. It is bash's prompt-expansion operator, and here it runs
@@ -126,34 +126,34 @@ the PS1 renderer itself, both escape languages included, so it cannot disagree w
 `prompt preview` draws PS1 themes with it. (`print -P` is zsh's, and like zsh's it reads a
 variable's value for `%` escapes again; a PS1 does not.)
 
-**`\A` is the one deliberate divergence.** In bash it is the 24-hour clock; in hellish it is the
+**`\A` is the one deliberate divergence.** In bash it is the 24-hour clock; in polish it is the
 animation frame, and it shipped first. `\D{%H:%M}` gives you bash's meaning. A bash PS1 pasted in
 with `\A` shows the glyph, or nothing while the animation is off, which is the default: the idle
 repaint that animates it has been reported to corrupt the prompt on some terminals and could not
 be reproduced on demand (`hellishrc.example`, "ANIMATION").
 
-Two hook arrays run around every command — `HELLISH_PRECMD_FUNCS` before each prompt,
-`HELLISH_PREEXEC_FUNCS` before the typed line, with the line as `$1`. They are arrays of function
+Two hook arrays run around every command — `POLISH_PRECMD_FUNCS` before each prompt,
+`POLISH_PREEXEC_FUNCS` before the typed line, with the line as `$1`. They are arrays of function
 names rather than strings of code so that two plugins can both attach; `$?` is preserved across
 them. See `hellishrc.example` section 5b.
 
 ## Update channel ✅
 
-hellish checks for newer releases in the background (once a day, never blocking the prompt — the
+polish checks for newer releases in the background (once a day, never blocking the prompt — the
 check runs in a detached child, so a slow or dead release server costs the shell nothing). You are
 told twice, and without asking: the welcome banner announces each new release once, and the prompt
 carries a quiet `⬆<version>` badge for as long as the update is actually pending. `update` checks on
 demand; `update --now` self-updates the binary.
 
-Opt out with `HELLISH_NO_UPDATE_CHECK=1`. The banner has one knob, `HELLISH_BANNER=0|1`, to force it
-off or on; `HELLISH_NO_BANNER=1` and `HELLISH_ALWAYS_BANNER=1` are the older names and still work.
+Opt out with `POLISH_NO_UPDATE_CHECK=1`. The banner has one knob, `POLISH_BANNER=0|1`, to force it
+off or on; `POLISH_NO_BANNER=1` and `POLISH_ALWAYS_BANNER=1` are the older names and still work.
 
 ---
 
 ## Roadmap — the differentiators
 
 These are the features that turn "a solid shell" into "a shell you choose." They build on
-infrastructure that already exists: hellish's **tokenizer emits typed tokens and tolerates
+infrastructure that already exists: polish's **tokenizer emits typed tokens and tolerates
 incomplete input**, which is exactly the "what to color" half of live highlighting.
 
 ### Syntax highlighting 🚧 *(Week 1)*
@@ -171,9 +171,9 @@ $ git commit -m "fix: close [[ ]] on metachar-adjacent ]]"
 
 ### Autosuggestions ✅ *(3.2)*
 
-Shipped in 3.2, opt-in with `export HELLISH_AUTOSUGGEST=1`. As you type, the history line you run
+Shipped in 3.2, opt-in with `export POLISH_AUTOSUGGEST=1`. As you type, the history line you run
 most that starts with the typed text is shown dimmed after the cursor; before 3.3 it was the newest
-one, which `HELLISH_SUGGEST_STRATEGY=recent` brings back. **→ / End / Ctrl-F** take it, **Alt-F**
+one, which `POLISH_SUGGEST_STRATEGY=recent` brings back. **→ / End / Ctrl-F** take it, **Alt-F**
 one word of it, and **Alt-N / Alt-P** show other matches. In 3.2, Up and Down also began searching
 the history by the text before the cursor. See [the hint keys](whats-new.md#inline-hints) and
 [how 3.3 ranks them](whats-new.md#hints-rank-what-you-run-most).
@@ -194,7 +194,7 @@ tracked separately; the readline-hook approach above delivers the experience fir
 ## Try it
 
 ```sh
-make OPT=1 all && ./build/bin/hellish
+make OPT=1 all && ./build/bin/polish
 ```
 
-See also: **[Bash Compatibility & Scripting](scripting.md)** · **[Performance & Robustness](performance.md)** · **[What hellish is + Install](product.md)**
+See also: **[Bash Compatibility & Scripting](scripting.md)** · **[Performance & Robustness](performance.md)** · **[What polish is + Install](product.md)**

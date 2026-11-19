@@ -1,11 +1,38 @@
-# hellish — Release Notes
+# polish — Release Notes
 
-> 🔥 **hellish** is a fast, almost‑POSIX shell written from scratch in C —
-> hackable, observable, and pleasant to live in.
+> **polish** (hellish until 3.3) is a fast, almost‑POSIX shell written from
+> scratch in C — hackable, observable, and pleasant to live in.
 
 This file tracks what's new in every release and shows you how to drive the
 shell. The welcome banner links to the guide for the latest one:
-[What's new](https://univers42.github.io/hellish/whats-new/).
+[What's new](https://univers42.github.io/polish/whats-new/).
+
+---
+
+## v3.4.0 — *hellish is now polish*
+
+**The guide: [What's new in 3.4](https://univers42.github.io/polish/whats-new/)**.
+
+- **The shell is called polish.** That covers the command, `~/.polishrc`,
+  `~/.config/polish/`, `/etc/polish/`, the `POLISH_*` settings, `*.polish`
+  scripts and the repository
+  ([Univers42/polish](https://github.com/Univers42/polish)).
+- **Existing hellish installs keep working.** `update --now` updates in
+  place. `~/.hellishrc`, `~/.config/hellish/`, `/etc/hellish/` and every
+  `HELLISH_*` setting are still read whenever the polish name is absent, and
+  the git prompt variables are set under both prefixes. The full table is in
+  the guide.
+- The installers keep an existing `hellish` path, adding a `polish`
+  symlink beside it, and never create a `~/.polishrc` that would shadow
+  your `~/.hellishrc`. A dry run of `register_shell.sh --purge` no longer
+  deletes anything.
+- Every release ships `polish-linux-x86_64` and, byte for byte the same,
+  `hellish-linux-x86_64`, which is what ≤ 3.3 updaters download.
+
+For maintainers: never create a repository named `Univers42/hellish`. Every
+≤ 3.3 install finds its updates through GitHub's redirect from that name, and
+a new repository there would end the redirect. The reasons are in
+[docs/adr/0001-rename-hellish-to-polish.md](docs/adr/0001-rename-hellish-to-polish.md).
 
 ---
 

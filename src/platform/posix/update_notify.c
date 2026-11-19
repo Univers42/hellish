@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include "version.h"
 #include <unistd.h>
@@ -60,7 +61,7 @@ void	update_notify_prompt(t_shell *state)
 
 	if (state->metinp != INP_RL || state->upd_notified)
 		return ;
-	if (getenv("HELLISH_NO_UPDATE_CHECK") || !isatty(STDERR_FILENO))
+	if (brand_getenv("NO_UPDATE_CHECK") || !isatty(STDERR_FILENO))
 		return ;
 	if (!update_state_load(&s) || !update_available(&s))
 		return ;

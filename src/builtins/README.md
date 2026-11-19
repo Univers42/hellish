@@ -2,10 +2,10 @@
 
 ## Overview
 
-`src/builtins/` implements the commands hellish runs without an `execve`.
+`src/builtins/` implements the commands polish runs without an `execve`.
 The module has grown far past the original seven: the dispatch table now
 registers seventy names, covering the POSIX special builtins, most of bash's,
-a set of zsh's, and two that are hellish's own (`pretty`, `update`). This file
+a set of zsh's, and two that are polish's own (`pretty`, `update`). This file
 explains how a name reaches its C function, when that function runs in the
 parent versus a fork, how to add one, and the design of the core builtins
 whose helpers are spread across many files.
@@ -211,7 +211,7 @@ occurrence of `old` with `new` in `$PWD` and cds there; `old` absent from
 `$PWD` is an error (`string not in pwd`). Three or more operands remain the
 bash `too many arguments` error (exit 1). Verified against zsh, not bash.
 
-In **POSIX mode** (`hellish --posix`, or `set -o posix` at runtime) the
+In **POSIX mode** (`polish --posix`, or `set -o posix` at runtime) the
 extension is disabled: two operands produce the bash `too many arguments`
 error (exit 1) like every other shell. The gate is `state->opt_posix`,
 checked in `builtin_cd`; POSIX-mode behaviour is diffed against
@@ -273,7 +273,7 @@ original process persists history (`manage_history`), calls `free_env`, then
 different pid and skips the teardown, so it can never double-free or rewrite
 the history file. `free_env` before `free_all_state` mirrors `off()`: the env
 is not part of `free_all_state`, and forgetting it leaked ~9.6 KB per `exit`
-that only the `HELLISH_ALLOC_STATS` oracle (#78) could see.
+that only the `POLISH_ALLOC_STATS` oracle (#78) could see.
 `shell_fatal_status` uses the same pid test to return bash's 127 (top-level
 `-c` shell) or 1.
 

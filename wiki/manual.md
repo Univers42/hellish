@@ -1,6 +1,6 @@
 # The manual
 
-> `man bash`, but `man hellish`: one page that answers "how do I invoke it,
+> `man bash`, but `man polish`: one page that answers "how do I invoke it,
 > what does it read at startup, what is the grammar, where does everything
 > live". The per-name detail lives in the generated
 > [builtins reference](builtins/index.md), which is the `help` builtin in
@@ -8,20 +8,20 @@
 
 ## NAME
 
-**hellish** — a from-scratch, almost-POSIX shell with bash compatibility,
+**polish** — a from-scratch, almost-POSIX shell with bash compatibility,
 an opt-in zsh dialect, and a line editor built on GNU readline.
 
 ## SYNOPSIS
 
 ```
-hellish [options] [script [arguments...]]
-hellish -c 'command'
-some-producer | hellish
+polish [options] [script [arguments...]]
+polish -c 'command'
+some-producer | polish
 ```
 
 ## DESCRIPTION
 
-hellish reads commands from a terminal, a script file, a `-c` string, or a
+polish reads commands from a terminal, a script file, a `-c` string, or a
 pipe, and executes them with bash's semantics — the test suite diffs it
 byte-for-byte against a pinned `bash --posix` on 4248 golden cases, so where
 the two disagree it is a bug here, not an opinion. Interactive sessions get
@@ -50,13 +50,13 @@ With a `script` operand the file is run non-interactively;
 Only **interactive** shells read startup files — never scripts, `-c`, or
 piped input, so tests and cron jobs stay clean. The chain, in order:
 
-1. `/etc/hellish/rc.d/*.hsh` — machine-wide drop-ins
-2. `$XDG_CONFIG_HOME/hellish/rc.d/*.hsh` — your drop-ins, lexical order
-3. `$XDG_CONFIG_HOME/hellish/plugins/*/plugin.hsh` — plugins ([how to install](plugins.md))
-4. `~/.hellishrc` — last, so it can override everything
+1. `/etc/polish/rc.d/*.hsh` — machine-wide drop-ins
+2. `$XDG_CONFIG_HOME/polish/rc.d/*.hsh` — your drop-ins, lexical order
+3. `$XDG_CONFIG_HOME/polish/plugins/*/plugin.hsh` — plugins ([how to install](plugins.md))
+4. `~/.polishrc` — last, so it can override everything
 
 A login shell (`--login`, or installed via `make my_shell`) first sources
-`/etc/profile` and `~/.profile` the way bash does — hellish advertises
+`/etc/profile` and `~/.profile` the way bash does — polish advertises
 `BASH_VERSION`, so a distribution's stock dotfile chain works unmodified.
 Sourcing a file ending in `.zsh` arms the [zsh dialect](#the-zsh-dialect)
 for that file.
@@ -96,8 +96,8 @@ Unconfigured, the prompt is zsh's own default — `hostname% ` — plus a
 self-spacing `⬆` badge when a release is pending. `prompt` lists 29 themes;
 `PS1` accepts **both** escape languages at once (bash `\u \w \$` and zsh
 `%n %~ %#`, literal percents preserved), and `PROMPT` keeps exact zsh
-semantics. Two hook arrays, `HELLISH_PRECMD_FUNCS` and
-`HELLISH_PREEXEC_FUNCS`, run around every interactive command. Details:
+semantics. Two hook arrays, `POLISH_PRECMD_FUNCS` and
+`POLISH_PREEXEC_FUNCS`, run around every interactive command. Details:
 [Interactive Experience](interactive.md).
 
 ## HISTORY
@@ -156,7 +156,7 @@ file ends). Armed, real oh-my-zsh plugins load: parameter-expansion flags
 (`${(f)x}` …), modifiers (`:h :t :r`), `setopt`, `print`, `autoload`,
 1-based arrays with slices and splices, glob qualifiers, anonymous
 functions, `always` blocks, and the `zle`/`bindkey` widget layer. The
-[plugin corpus](https://github.com/Univers42/hellish/blob/main/tests/plugin_corpus_test.py)
+[plugin corpus](https://github.com/Univers42/polish/blob/main/tests/plugin_corpus_test.py)
 is the acceptance test. See [Architecture](architecture.md#the-zsh-dialect).
 
 ## SHELL BUILTINS
@@ -171,18 +171,18 @@ inside the shell: `help` for the grouped list, `help NAME` for one,
 
 | variable | effect |
 |---|---|
-| `HELLISH_BANNER=0\|1` | force the welcome panel off / on |
-| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down walk plain history; default on = search by the text before the cursor; read at every prompt |
-| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion (off by default): the newest history line starting with the typed text, dim after the cursor; Right / End / Ctrl-F insert it, Alt-F / Ctrl-Right insert its next word (leading blanks + the run up to the next space or tab), Alt-N / Alt-P cycle through older / newer distinct matches (bell at either end, no wrap; any edit resets); never a line with control characters or a newline; read at every prompt |
-| `HELLISH_SUGGEST_MAX=N` | history lines the suggestion scans, newest first (default 1000; non-numeric or below 1 = default); read at every prompt |
-| `HELLISH_SUGGEST_STRATEGY=recent` | newest-first suggestions; default (unset/other) = frecency (run count weighted toward recent runs), also ordering `make <TAB>`; read at every prompt |
+| `POLISH_BANNER=0\|1` | force the welcome panel off / on |
+| `POLISH_HISTORY_PREFIX=0\|off` | Up/Down walk plain history; default on = search by the text before the cursor; read at every prompt |
+| `POLISH_AUTOSUGGEST=1\|on` | inline suggestion (off by default): the newest history line starting with the typed text, dim after the cursor; Right / End / Ctrl-F insert it, Alt-F / Ctrl-Right insert its next word (leading blanks + the run up to the next space or tab), Alt-N / Alt-P cycle through older / newer distinct matches (bell at either end, no wrap; any edit resets); never a line with control characters or a newline; read at every prompt |
+| `POLISH_SUGGEST_MAX=N` | history lines the suggestion scans, newest first (default 1000; non-numeric or below 1 = default); read at every prompt |
+| `POLISH_SUGGEST_STRATEGY=recent` | newest-first suggestions; default (unset/other) = frecency (run count weighted toward recent runs), also ordering `make <TAB>`; read at every prompt |
 | `POSTDISPLAY` | zle widgets only: the text painted after the cursor, i.e. the suggestion; assign it to show your own until the buffer next changes |
-| `HELLISH_NO_UPDATE_CHECK=1` | never check for releases; no badge |
-| `HELLISH_NO_ANIM=1` | skip the startup animation |
-| `HELLISH_ANIM=spinner\|pulse\|ember` | opt into a prompt animation |
-| `HELLISH_ALLOC_STATS=1` | print live heap bytes at exit (`SAFE=0` builds) |
-| `HELLISH_NO_EXEC=1` | user-install hook: stay in the login shell this once |
-| `HELLISH_PRECMD_FUNCS` / `HELLISH_PREEXEC_FUNCS` | hook arrays around every interactive command |
+| `POLISH_NO_UPDATE_CHECK=1` | never check for releases; no badge |
+| `POLISH_NO_ANIM=1` | skip the startup animation |
+| `POLISH_ANIM=spinner\|pulse\|ember` | opt into a prompt animation |
+| `POLISH_ALLOC_STATS=1` | print live heap bytes at exit (`SAFE=0` builds) |
+| `POLISH_NO_EXEC=1` | user-install hook: stay in the login shell this once |
+| `POLISH_PRECMD_FUNCS` / `POLISH_PREEXEC_FUNCS` | hook arrays around every interactive command |
 
 Plus the classics it honours: `PATH`, `HOME`, `PS1`/`PS2`/`PROMPT`, `IFS`,
 `CDPATH`, `EDITOR`, `HISTSIZE`, `SHLVL`, `OLDPWD`.
@@ -191,11 +191,11 @@ Plus the classics it honours: `PATH`, `HOME`, `PS1`/`PS2`/`PROMPT`, `IFS`,
 
 | path | role |
 |---|---|
-| `~/.hellishrc` | interactive startup, sourced last, never overwritten by installers |
-| `$XDG_CONFIG_HOME/hellish/{rc.d,themes,plugins}/` | drop-ins, the 29 themes, plugins |
+| `~/.polishrc` | interactive startup, sourced last, never overwritten by installers |
+| `$XDG_CONFIG_HOME/polish/{rc.d,themes,plugins}/` | drop-ins, the 29 themes, plugins |
 | `~/.hellish/` | the [plugin framework](plugins.md), if installed |
 | `~/.hellish_history` | history, multi-line-safe |
-| `~/.cache/hellish/` | update-check state |
+| `~/.cache/polish/` | update-check state |
 | `~/.hellish-disable` | its existence disables the user-install exec hook |
 
 ## EXIT STATUS

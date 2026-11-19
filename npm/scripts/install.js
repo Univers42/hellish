@@ -8,7 +8,12 @@ const path = require('path');
 const https = require('https');
 const { version } = require('../package.json');
 
-const REPO = 'Univers42/hellish';
+/* The repository was renamed to polish in 3.4.0; GitHub redirects the old
+ * slug, but the redirect disappears if anyone recreates Univers42/hellish.
+ * The asset stays hellish-linux-x86_64: every release publishes it beside
+ * polish-linux-x86_64 (same bytes), and this package still installs a
+ * `hellish` bin, so nothing a user typed before changes. */
+const REPO = 'Univers42/polish';
 const plat = process.platform;
 const arch = process.arch;
 

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "prompt_private.h"
 #include "update.h"
 #include "version.h"
@@ -43,7 +44,7 @@ const char	*prompt_update_tag(t_shell *state)
 	long		now;
 
 	if (!state || state->metinp != INP_RL
-		|| getenv("HELLISH_NO_UPDATE_CHECK"))
+		|| brand_getenv("NO_UPDATE_CHECK"))
 		return (NULL);
 	now = (long)time(NULL);
 	if (state->upd_seen && now - state->upd_seen < UPD_TAG_TTL)

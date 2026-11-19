@@ -96,7 +96,9 @@ static void	hook_each(t_shell *state, const char *val, const char *arg)
 	}
 }
 
-/* Run every hook named by VAR, then put $? back.
+/* Run every hook named in LIST, then put $? back. LIST is the borrowed
+** value of the hook variable; the caller resolves the name, so the branded
+** HELLISH_/POLISH_ lists (brand_expand) and zsh's own arrays share this.
 **
 ** The copy of the value is load-bearing twice over. env_expand hands back a
 ** pointer INTO the environment table, and a hook is a shell command: one
@@ -109,15 +111,14 @@ static void	hook_each(t_shell *state, const char *val, const char *arg)
 ** same frozen value #69 was reported for. PROMPT_COMMAND brackets this the
 ** same way in open_cycle.
 */
-void	run_hook_funcs(t_shell *state, char *var, const char *arg)
+void	run_hook_funcs(t_shell *state, char *list, const char *arg)
 {
 	t_execution_state	saved;
 	char				*val;
 
-	val = env_expand(state, var);
-	if (!val || !*val)
+	if (!list || !*list)
 		return ;
-	val = ft_strdup(val);
+	val = ft_strdup(list);
 	if (!val)
 		return ;
 	saved = state->last_cmd_st_exe;

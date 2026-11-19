@@ -1,10 +1,10 @@
-# hellish — Developer Documentation
+# polish — Developer Documentation
 
 How to set the environment up from scratch, build every configuration, run
 every test layer, and understand where Docker and the data live. End-user
 material is in [USER_DOC.md](USER_DOC.md); per-module design notes are in
 `src/<module>/README.md`; the full manual is the
-[docs site](https://univers42.github.io/hellish/).
+[docs site](https://univers42.github.io/polish/).
 
 ## 1. From scratch
 
@@ -13,10 +13,10 @@ material is in [USER_DOC.md](USER_DOC.md); per-module design notes are in
 configuration files or secrets are needed — the project has none.
 
 ```sh
-git clone --recursive https://github.com/Univers42/hellish && cd hellish
+git clone --recursive https://github.com/Univers42/polish && cd polish
 # forgot --recursive? →  git submodule update --init --recursive
 make            # prints the self-documenting help page (every target described)
-make all        # debug build (ASan) → build/bin/hellish
+make all        # debug build (ASan) → build/bin/polish
 ```
 
 Two submodules are required: `vendor/libft` (stdlib + the `ft_malloc`
@@ -41,15 +41,15 @@ Install the git hooks once: `./vendor/scripts/install-hooks.sh`
 - Flags are `-Wall -Wextra -Werror` — a warning is a build failure. Add flags
   with `EXTRA_CFLAGS=…`, never with `CFLAGS=…` (that would *replace* the set).
 
-Runtime knobs while developing: `HELLISH_ALLOC_STATS=1` (live-bytes at exit —
-the leak oracle on `SAFE=0`), `HELLISH_BANNER=0`, `HELLISH_NO_UPDATE_CHECK=1`,
+Runtime knobs while developing: `POLISH_ALLOC_STATS=1` (live-bytes at exit —
+the leak oracle on `SAFE=0`), `POLISH_BANNER=0`, `POLISH_NO_UPDATE_CHECK=1`,
 `--debug=lexer --debug=parser --debug=ast`.
 
 ## 3. Test layers (a green `make test` is not enough)
 
 | layer | run | covers |
 |---|---|---|
-| golden suite | `make test` (4248 cases) | `hellish -c` diffed vs **pinned bash 5.3.9** — run `make oracle` once to build it into `~/bash-5.3.9`; `make zsh-oracle` pins zsh 5.9 for the dialect tests |
+| golden suite | `make test` (4248 cases) | `polish -c` diffed vs **pinned bash 5.3.9** — run `make oracle` once to build it into `~/bash-5.3.9`; `make zsh-oracle` pins zsh 5.9 for the dialect tests |
 | whole scripts | `tests/run_scripts.sh` | real programs + ASan scrape |
 | hard corpus | `tests/hard/run.sh` | whole programs with timings |
 | pty / interactive | `make pty-test` | every `tests/*.py`, discovered by glob — a new test file is covered the moment it exists |
@@ -64,7 +64,7 @@ Gotchas that bite: the golden tester `chmod 000`s
 `tests/test_files/invalid_permission` (restore with `chmod 755` before git
 operations); new golden category files must be added to `test_lists` in
 `tests/tester` or they silently never run; leak checking is ASan on `SAFE=1`
-and `HELLISH_ALLOC_STATS=1` on `SAFE=0`.
+and `POLISH_ALLOC_STATS=1` on `SAFE=0`.
 
 ## 4. Docker — what each container proves
 
@@ -73,7 +73,7 @@ and `HELLISH_ALLOC_STATS=1` on `SAFE=0`.
 | `docker/Dockerfile.static` → `make static` | the **published release binary**: static musl build, no shared deps — runs on Debian 11, RHEL 8, stock ubuntu:24.04 alike |
 | `docker-compose.yml` → `make docker-test` | source builds on 11 distro rungs (glibc + musl × gcc + clang) |
 | `docker/Dockerfile.my-shell` → `make my-shell-test` | a real `make my_shell` as a non-root sudoer, then the update button — needs root-owned `/usr/bin`, `chsh`, `/etc/shells`: machine state a test must never touch on a developer's box |
-| `docker/Dockerfile.sshd` → `make ssh-shell-test` | hellish as sshd's login shell: ssh-cmd, scp, sftp, rsync, git-over-ssh diffed against bash |
+| `docker/Dockerfile.sshd` → `make ssh-shell-test` | polish as sshd's login shell: ssh-cmd, scp, sftp, rsync, git-over-ssh diffed against bash |
 | `docker/Dockerfile.installer` → `make installer-test` | `curl \| sh` install for both privilege worlds + plugin selection, against a **local fake release server** |
 | `docker/Dockerfile.agnostic` → `make agnostic-bench` | the 9-shell race: all competitors built into one image so every shell runs on identical ground |
 
@@ -87,7 +87,7 @@ container cannot be — macOS and WSL — is exactly where we use the `Platforms
 CI runners instead of Docker.
 
 **Secrets vs environment variables.** The shell itself manages no
-credentials, so nothing secret exists at runtime; `HELLISH_*` environment
+credentials, so nothing secret exists at runtime; `POLISH_*` environment
 variables are behaviour knobs, never secrets. The project's real secrets —
 the npm publish token, GHCR credentials — live in GitHub Actions **secrets**,
 injected only into the release workflow, never in the tree, an image layer,

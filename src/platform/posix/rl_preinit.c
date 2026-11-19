@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "rl_private.h"
 #include "zle.h"
 #include <locale.h>
@@ -79,7 +80,7 @@ static bool	rl_fork_wanted(void)
 {
 	const char	*v;
 
-	v = getenv("HELLISH_RL_FORK");
+	v = brand_getenv("RL_FORK");
 	return (v && v[0] == '1' && v[1] == '\0');
 }
 

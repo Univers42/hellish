@@ -1,6 +1,6 @@
-# Contributing to hellish
+# Contributing to polish
 
-Thanks for wanting to make `hellish` better. This shell holds itself to a high
+Thanks for wanting to make `polish` better. This shell holds itself to a high
 bar — it diffs byte-for-byte against `bash --posix`, runs under AddressSanitizer,
 and stays 42-norm clean — and contributions are expected to keep it there. The
 golden rule:
@@ -73,7 +73,7 @@ This is non-negotiable. **For every problem you find, add a test that covers it*
 class of bug can't sneak back through a slightly different door.
 
 - The suite lives in `tests/`. Each category is a plain file of one-command-per-
-  line cases; the harness runs each through `hellish -c` *and* `bash --posix` and
+  line cases; the harness runs each through `polish -c` *and* `bash --posix` and
   diffs stdout + exit status + any files written.
 - Larger programs go in `tests/scripts/*.sh` and `tests/hard/*.sh` (run as whole
   scripts vs bash).
@@ -88,7 +88,7 @@ A green suite on **both** allocator backends is required (see below).
 
 ### Behaviour the golden suite cannot express
 
-The golden suite diffs `stdout` + status of `hellish -c`. Anything that only
+The golden suite diffs `stdout` + status of `polish -c`. Anything that only
 exists in front of a terminal — readline, the prompt, history recall, job
 control's use of the tty — needs a pty, and those live in `tests/*.py`.
 
@@ -141,8 +141,8 @@ Run all of these from a clean tree. Every one must pass before you open a PR.
   — run your new cases and read the report. ASan/LSan are only valid on the
   **libc (`SAFE=1`)** build; for the `ft_malloc` side use its own oracle:
   ```sh
-  ASAN_OPTIONS=detect_leaks=1 ./build/bin/hellish your_test.sh   # SAFE=1
-  HELLISH_ALLOC_STATS=1 ./build/bin/hellish your_test.sh         # SAFE=0 (OPT)
+  ASAN_OPTIONS=detect_leaks=1 ./build/bin/polish your_test.sh   # SAFE=1
+  POLISH_ALLOC_STATS=1 ./build/bin/polish your_test.sh         # SAFE=0 (OPT)
   ```
 - [ ] **No crashes.** No segfaults, no `munmap_chunk`/`free()` aborts, no
   undefined behaviour — not on valid input and not on the stupid edge cases
@@ -160,7 +160,7 @@ investigate — do not paper over it.
 
 ## Code style & the norm
 
-`hellish` is a 42 project and follows the **42 Norm** (small functions, ≤ 5 per
+`polish` is a 42 project and follows the **42 Norm** (small functions, ≤ 5 per
 file, ≤ 80 columns, the standard header on every file, no `for`/ternaries, etc.).
 A couple of project-specific rules on top:
 

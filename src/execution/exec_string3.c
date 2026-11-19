@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "execution_private.h"
 #include "lexer.h"
 #include "parser.h"
@@ -93,7 +94,7 @@ static void	chunk_open(t_shell *state, const char *at, size_t len,
 		c->parser.res = RES_GETMOREINPUT;
 	else
 		parse_all(state, c);
-	if (getenv("HELLISH_DBG_CHUNKS"))
+	if (brand_getenv("DBG_CHUNKS"))
 		fprintf(stderr, "[chunk %zu-%zu res=%d]<<<%s>>>\n",
 			c->start, c->end, c->parser.res, c->spliced);
 }

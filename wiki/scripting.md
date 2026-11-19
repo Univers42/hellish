@@ -1,16 +1,16 @@
 # Bash Compatibility & Scripting
 
-> **hellish runs real scripts** — not a toy REPL.
+> **polish runs real scripts** — not a toy REPL.
 > Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 
 ## The proof: it built a Linux distribution
 
 The strongest compatibility claim a shell can make isn't a feature list — it's *running real-world
-scripts*. hellish was used as the **build-script interpreter for a complete Linux From Scratch
+scripts*. polish (then called hellish) was used as the **build-script interpreter for a complete Linux From Scratch
 build**: it drove `./configure`, autotools, gcc/glibc/binutils, and ~80 packages, producing a disk
 image that **boots** (`uname -r` → `6.6.32-dlesieur`, network up, SysVinit, clean shutdown).
 
-Most "write your own shell" projects die on the first `./configure`. hellish built an OS. That's the
+Most "write your own shell" projects die on the first `./configure`. polish built an OS. That's the
 bar this page documents against.
 
 ---
@@ -57,7 +57,7 @@ fruits+=(elderberry)     # append
 for f in "${fruits[@]}"; do echo "$f"; done   # one field per element, even quoted
 ```
 
-**Why it's a real change, not a bolt-on:** hellish's variable store is currently one string per name.
+**Why it's a real change, not a bolt-on:** polish's variable store is currently one string per name.
 Arrays add a value-vector + type tag to that store, subscript parsing on the assignment side, and
 `@`/`*` handling (with the subtle "`"${a[@]}"` splits to one field per element even when quoted"
 rule) on the expansion side — plus a `declare`/`typeset` builtin. The good news: bash arrays are
@@ -68,7 +68,7 @@ shell-local (never exported to the environment), so the `execve` path is untouch
 ## How compatibility is guaranteed
 
 Every fixed construct gets a permanent regression case, and a **conformance gate** diffs each
-construct under hellish vs. `bash --posix`:
+construct under polish vs. `bash --posix`:
 
 ```sh
 make -C vendor/42sh test          # the full suite (2481+ cases, growing)
@@ -80,4 +80,4 @@ every ✅ above.
 
 ---
 
-See also: **[Interactive Experience](interactive.md)** · **[Performance & Robustness](performance.md)** · **[What hellish is + Install](product.md)**
+See also: **[Interactive Experience](interactive.md)** · **[Performance & Robustness](performance.md)** · **[What polish is + Install](product.md)**
