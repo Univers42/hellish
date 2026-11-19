@@ -10,7 +10,7 @@ manual, see the [docs site](https://univers42.github.io/polish/).
 |---|---|
 | the shell | an almost-POSIX shell that runs your bash scripts and muscle memory — `polish`, `polish script.sh`, `polish -c 'cmd'` |
 | prompt themes | 29 named themes; `prompt` lists them, `prompt <name>` switches, `prompt save <name>` persists |
-| plugin framework | `~/.hellish/` with a `conf` manager — `conf list`, `conf on\|off <name>`, `hxp list`; plus oh-my-zsh plugin support through the zsh dialect |
+| plugin framework | `~/.polish/` with a `conf` manager — `conf list`, `conf on\|off <name>`, `hxp list`; plus oh-my-zsh plugin support through the zsh dialect |
 | completion | tab completion for commands/files/variables; `complete`/`compgen`/`compopt` specs behind `shopt -s progcomp` |
 | update channel | a daily background check; `update` on demand, `update --now` to self-update |
 
@@ -49,7 +49,8 @@ which are still read. Full table:
 - **Stop**: `exit` or Ctrl-D. If stopped jobs exist, the first exit warns
   and the second obeys — like bash.
 - **Skip the hook once** (user-install route): `POLISH_NO_EXEC=1 bash`.
-  Disable it entirely: `touch ~/.hellish-disable`.
+  Disable it entirely: `touch ~/.polish-disable` (a `~/.hellish-disable` from
+  before the rename still works).
 
 ## Uninstall
 
@@ -64,11 +65,11 @@ which are still read. Full table:
 | path | what it holds |
 |---|---|
 | `~/.polishrc` | your startup file (aliases, exports, `shopt`, PS1) — sourced by **interactive** shells only, never by scripts. Seeded from `hellishrc.example`, never overwritten |
-| `$XDG_CONFIG_HOME/polish/rc.d/` | drop-in config fragments, sourced in order **before** `~/.polishrc` — `*.hsh` with bash rules, `*.zsh` with zsh rules |
+| `$XDG_CONFIG_HOME/polish/rc.d/` | drop-in config fragments, sourced in name order **before** `~/.polishrc` — `*.hsh` and `*.sh` with bash rules, `*.zsh` with zsh rules, and an extension-less file whose first line is `#!/usr/bin/env polish` (or `hellish`). README, `*.txt` and `x~` backups are skipped |
 | `$XDG_CONFIG_HOME/polish/after.d/` | the same, sourced **after** `~/.polishrc` and the plugin framework — where the installer puts your imported `~/.zshrc`, so your own config has the last word |
 | `$XDG_CONFIG_HOME/polish/themes/` | the 29 prompt themes (yours to edit; edited ones are never clobbered by reinstall) |
-| `$XDG_CONFIG_HOME/polish/plugins/` | plugins as `<name>/plugin.hsh` |
-| `~/.hellish/` | the plugin framework (`conf`, `hxp`, its plugins and state) |
+| `$XDG_CONFIG_HOME/polish/plugins/` | plugins as `<name>/plugin.hsh`, `<name>/plugin.sh`, or a `<name>/plugin` with the shebang above |
+| `~/.polish/` | the plugin framework (`conf`, `hxp`, its plugins and state; config in `~/.polish/polish.conf`). An install from before 3.4.0 keeps `~/.hellish/` and `hellish.conf` |
 | history file | in `$HOME`, multi-line-safe; `shopt -s lithist` keeps newlines on recall |
 | `~/.cache/polish` | update-check state (which release was already announced) |
 
@@ -139,7 +140,8 @@ PS1='${BR:+($BR) }\w \$ '
 
 **`prompt` is a shell function, not a builtin.** The installer seeds it
 into `~/.config/polish/rc.d/40-prompt-switch.hsh`, next to the 29 themes
-in `~/.config/polish/themes/`. `type prompt` says whether it is loaded;
+in `~/.config/polish/themes/`. A theme is `NAME.hsh`, `NAME.sh`, or a
+bare `NAME` with the polish shebang. `type prompt` says whether it is loaded;
 from a checkout, `HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`
 loads it by hand.
 
