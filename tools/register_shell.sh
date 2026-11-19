@@ -1,6 +1,6 @@
 #!/bin/sh
 # ============================================================================
-# tools/register_shell.sh -- install hellish system-wide and make it the login
+# tools/register_shell.sh -- install polish system-wide and make it the login
 # shell, safely. This is the second half of `make my_shell`.
 #
 # WHY THIS EXISTS
@@ -43,18 +43,29 @@
 # user-install.sh uses, because it is the order that cannot lock you out.
 #
 #   tools/register_shell.sh --preflight        can this machine do it at all?
-#   tools/register_shell.sh --bin build/bin/hellish     install and register
+#   tools/register_shell.sh --bin build/bin/polish      install and register
 #   tools/register_shell.sh --dry-run --bin X  say what it would do, do nothing
 #   tools/register_shell.sh --uninstall        put the previous shell back
 #   tools/register_shell.sh --purge            ...and the config too
 #   tools/register_shell.sh --doctor           what is installed, and will it update?
+#   tools/register_shell.sh --print-dest       where an install would land
+#
+# THE RENAME (hellish -> polish, 3.4.0). The default destination is
+# /usr/bin/polish -- and so is any --dest ending in /polish -- UNLESS that
+# directory already holds a hellish install: a `hellish` file there, an
+# /etc/shells entry for it, it being the user's login shell, or the binary
+# being installed answering "hellish, version". Then the binary goes to
+# DIR/hellish, the path passwd, /etc/shells and its own updater already
+# name, and DIR/polish becomes a symlink to it. A second real binary would
+# be updated by nobody once the other one is the login shell.
+#   An explicit --dest with any other name is taken verbatim.
 # ============================================================================
 set -eu
 
 PROG="$(basename "$0")"
 
 BIN_SRC=""
-DEST="${DEST:-/usr/bin/hellish}"
+DEST="${DEST:-/usr/bin/polish}"
 TARGET_USER=""
 ACTION="register"
 DRY_RUN=0
@@ -73,12 +84,15 @@ usage: $PROG [--preflight|--uninstall|--doctor] [--bin PATH] [--dest PATH] [--us
 
   --preflight    check this machine CAN install a login shell, change nothing
   --bin PATH     the freshly built binary to install
-  --dest PATH    where it goes            (default: $DEST)
+  --dest PATH    where it goes            (default: $DEST, or
+                 /usr/bin/hellish on a machine that already has hellish)
   --user NAME    whose login shell to set (default: the invoking human)
   --dry-run      print every privileged action instead of running it
   --uninstall    restore the login shell, remove the binary and /etc/shells entry
-  --purge        ...and delete ~/.hellishrc, ~/.config/hellish, ~/.cache/hellish
+  --purge        ...and delete ~/.polishrc, ~/.config/polish, ~/.cache/polish
+                 (and their pre-3.4 hellish spellings)
   --doctor       report what is installed and whether updating will work
+  --print-dest   print where an install would land, change nothing
 EOF
 	exit 2
 }
@@ -88,6 +102,7 @@ while [ $# -gt 0 ]; do
 	--preflight) ACTION="preflight" ;;
 	--uninstall) ACTION="uninstall" ;;
 	--doctor)    ACTION="doctor" ;;
+	--print-dest) ACTION="print-dest" ;;
 	--purge)     ACTION="uninstall"; PURGE=1 ;;
 	--dry-run)   DRY_RUN=1 ;;
 	--bin)   shift; [ $# -gt 0 ] || usage; BIN_SRC="$1" ;;
@@ -182,17 +197,24 @@ preflight() {
 # The check user-install.sh has always had and this route never did. Once
 # chsh lands, this binary IS the login shell: if it is broken, ssh and every
 # tty die on connect and only root can put it back.
+#
+# Both spellings of the quiet knobs: a 3.4.0+ binary reads POLISH_* first,
+# an older one only knows HELLISH_*.
+quiet() {
+	POLISH_NO_BANNER=1 HELLISH_NO_BANNER=1 \
+	POLISH_NO_UPDATE_CHECK=1 HELLISH_NO_UPDATE_CHECK=1 \
+	POLISH_NO_ANIM=1 HELLISH_NO_ANIM=1 "$@"
+}
+
 smoke_test() {
 	_bin="$1"
 	inf "smoke-testing $_bin"
 	_st=0
-	HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
-		"$_bin" -c 'exit 42' >/dev/null 2>&1 || _st=$?
+	quiet "$_bin" -c 'exit 42' >/dev/null 2>&1 || _st=$?
 	[ "$_st" = "42" ] \
 		|| die "smoke test failed: '$_bin -c' returned $_st, want 42 — NOT registering it as your login shell"
 	_st=0
-	printf 'exit 7\n' | HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 \
-		HELLISH_NO_UPDATE_CHECK=1 "$_bin" >/dev/null 2>&1 || _st=$?
+	printf 'exit 7\n' | quiet "$_bin" >/dev/null 2>&1 || _st=$?
 	[ "$_st" = "7" ] \
 		|| die "smoke test failed: piped input returned $_st, want 7 — NOT registering it as your login shell"
 	grn "binary runs commands and reports status correctly"
@@ -268,6 +290,58 @@ current_shell_of() {
 	printf '%s' "$_line" | awk -F: '{ print $7 }'
 }
 
+# same_file A B -> 0 when both exist and resolve to one file. readlink -f
+# rather than test -ef, which POSIX sh does not define.
+# An empty resolution (a readlink with no -f) must not make every pair equal.
+same_file() {
+	[ -e "$1" ] && [ -e "$2" ] || return 1
+	_sf="$(readlink -f "$1" 2>/dev/null)"
+	[ -n "$_sf" ] && [ "$_sf" = "$(readlink -f "$2" 2>/dev/null)" ]
+}
+
+# is_shell_named_ours PATH -> 0 when PATH is a hellish or polish, by its own
+# name or by what it resolves to. Such a path is never a "previous shell":
+# restoring the login shell to one is restoring it to the thing being removed.
+is_shell_named_ours() {
+	case "$(basename "$1")" in hellish|polish) return 0 ;; esac
+	_r="$(readlink -f "$1" 2>/dev/null || true)"
+	case "$(basename "${_r:-$1}")" in hellish|polish) return 0 ;; esac
+	return 1
+}
+
+# Pick the real destination (see THE RENAME in the header).
+resolve_dest() {
+	case "$DEST" in */polish) ;; *) return 0 ;; esac
+	_old="${DEST%/polish}/hellish"
+	if [ -e "$_old" ] || [ -L "$_old" ] \
+		|| { [ -f /etc/shells ] && grep -qxF -- "$_old" /etc/shells; } \
+		|| [ "$(current_shell_of "$TARGET_USER")" = "$_old" ]; then
+		DEST="$_old"
+		return 0
+	fi
+	[ -n "$BIN_SRC" ] && [ -x "$BIN_SRC" ] || return 0
+	case "$(quiet "$BIN_SRC" --version </dev/null 2>/dev/null | head -1)" in
+	hellish[,\ ]*) DEST="$_old" ;;
+	esac
+}
+
+# DIR/polish -> hellish beside a DEST named hellish; nothing otherwise. Made
+# by rename, so a running polish keeps its inode, and it REPLACES a real
+# polish file there -- the second binary that must not exist. A directory
+# is not ours to touch.
+link_alias() {
+	[ "$(basename "$DEST")" = "hellish" ] || return 0
+	_al="$(dirname "$DEST")/polish"
+	if [ -d "$_al" ]; then
+		warn "$_al is a directory — not linking polish to $DEST"
+		return 0
+	fi
+	as_root rm -f "$_al.new"
+	as_root ln -s hellish "$_al.new"
+	as_root mv -f "$_al.new" "$_al"
+	grn "linked $_al -> hellish (the new name; one binary)"
+}
+
 # ── the actual registration ───────────────────────────────────────────────
 register() {
 	[ -n "$BIN_SRC" ] || die "--bin is required (which binary to install?)"
@@ -287,18 +361,27 @@ register() {
 	# into the passwd entry. A dest on a noexec mount, or a truncated copy,
 	# is caught here rather than at your next login.
 	[ "$DRY_RUN" = "1" ] || smoke_test "$DEST"
+	link_alias
 
 	ensure_in_etc_shells
 
 	_was="$(current_shell_of "$TARGET_USER")"
-	if [ "$_was" = "$DEST" ]; then
+	if [ "$_was" = "$DEST" ] || same_file "$_was" "$DEST"; then
 		grn "$TARGET_USER's login shell is already $DEST"
 		return 0
 	fi
-	# Remember the shell we replaced, so --uninstall is not a guess.
-	if [ "$DRY_RUN" != "1" ] && [ -n "$_was" ] && [ -n "${HOME:-}" ]; then
-		printf '%s\n' "$_was" > "$HOME/.hellish-previous-shell" 2>/dev/null \
-			|| true
+	# Remember the shell we replaced, so --uninstall is not a guess -- but
+	# never a hellish or polish one. Re-registering from a user-mode install
+	# (~/.local/bin/hellish as the shell) would otherwise record THAT, and
+	# the uninstall would "restore" the login shell to a binary it is about
+	# to delete, or that the user-mode uninstall deletes next. An earlier,
+	# good record is kept rather than overwritten with it. The file is named
+	# for the install it belongs to, so an older checkout's uninstaller still
+	# finds ~/.hellish-previous-shell on a hellish install.
+	if [ "$DRY_RUN" != "1" ] && [ -n "$_was" ] && [ -n "${HOME:-}" ] \
+		&& ! is_shell_named_ours "$_was"; then
+		printf '%s\n' "$_was" > "$HOME/.$(basename "$DEST")-previous-shell" \
+			2>/dev/null || true
 	fi
 
 	inf "setting $TARGET_USER's login shell to $DEST"
@@ -344,7 +427,7 @@ register() {
 #    than from a password prompt in the middle of their first update.
 doctor() {
 	_rc=0
-	inf "hellish install report"
+	inf "polish install report"
 
 	if [ ! -e "$DEST" ]; then
 		warn "nothing installed at $DEST"
@@ -356,11 +439,11 @@ doctor() {
 		# hand-written bash wrapper execing a hellish.real beside it. A report
 		# that says all-clear on a machine it did not understand is worse than
 		# no report, so an unreadable version is a finding.
-		_ver="$( "$DEST" -c 'update --version' 2>/dev/null | head -1 )"
+		_ver="$( quiet "$DEST" -c 'update --version' </dev/null 2>/dev/null | head -1 )"
 		case "$_ver" in
-		hellish\ *) grn "$DEST ($_ver)" ;;
+		hellish\ *|polish\ *) grn "$DEST ($_ver)" ;;
 		*)
-			warn "$DEST does not report a hellish version"
+			warn "$DEST does not report a polish (or hellish) version"
 			[ -n "$_ver" ] && warn "  it answered: $_ver"
 			# The shape this takes in practice: something at the canonical
 			# path that is not the shell -- a wrapper, a symlink to another
@@ -377,48 +460,52 @@ doctor() {
 		esac
 	fi
 
-	# Every hellish PATH can reach, in PATH order. `command -v` gives only the
-	# winner, which is exactly the copy that hides the problem.
+	# Every polish or hellish PATH can reach, in PATH order. `command -v`
+	# gives only the winner, which is exactly the copy that hides the problem.
+	# Both names, because a pre-3.4 install answers to both (polish is a
+	# symlink to it) and the dedup below folds that pair into one.
 	#
 	# Deduplicated by RESOLVED path, not by the name we walked to. /bin is a
 	# symlink to /usr/bin on every merged-/usr distro, so a single install
 	# shows up under both and the naive list reports "installed twice" on a
 	# machine with one copy -- a warning that is wrong is worse than none.
-	_found=""
+	# Collected straight into "$@" (doctor takes no arguments), so a PATH
+	# entry containing a space survives intact -- no re-splitting a string.
+	set --
 	_seen=""
 	_ifs="$IFS"; IFS=:
 	for _d in $PATH; do
 		[ -n "$_d" ] || _d=.
-		if [ -x "$_d/hellish" ]; then
-			_real="$(readlink -f "$_d/hellish" 2>/dev/null || echo "$_d/hellish")"
+		for _b in "$_d/polish" "$_d/hellish"; do
+			[ -x "$_b" ] || continue
+			_real="$(readlink -f "$_b" 2>/dev/null || echo "$_b")"
 			case " $_seen " in
 			*" $_real "*) ;;
-			*) _seen="$_seen $_real"; _found="$_found $_d/hellish" ;;
+			*) _seen="$_seen $_real"; set -- "$@" "$_b" ;;
 			esac
-		fi
+		done
 	done
 	IFS="$_ifs"
-	set -- $_found
 	if [ $# -eq 0 ]; then
-		red "$PROG: no hellish on your PATH at all"
+		red "$PROG: no polish on your PATH at all"
 		red "  installed at $DEST, but PATH cannot reach it."
 		red "  PATH=$PATH"
 		_rc=1
 	elif [ $# -gt 1 ]; then
-		warn "hellish exists $# times on PATH; you are running the FIRST:"
+		warn "the shell exists $# times on PATH; you are running the FIRST:"
 		for _p in "$@"; do
 			printf '      %s  (%s)\n' "$_p" \
-				"$( "$_p" -c 'update --version' 2>/dev/null || echo '?' )" >&2
+				"$( quiet "$_p" -c 'update --version' </dev/null 2>/dev/null || echo '?' )" >&2
 		done
 		warn "an \`update\` only replaces the one that is RUNNING, so the"
 		warn "others stay behind and look like an update that did nothing."
-		[ "$1" = "$DEST" ] || warn "remove $1, or run: hash -r"
+		same_file "$1" "$DEST" || warn "remove $1, or run: hash -r"
 		_rc=1
-	elif [ "$1" != "$DEST" ]; then
+	elif ! same_file "$1" "$DEST"; then
 		warn "PATH finds $1, but this installs to $DEST"
 		_rc=1
 	else
-		grn "PATH finds exactly one hellish, and it is $DEST"
+		grn "PATH finds exactly one polish, and it is $DEST"
 	fi
 
 	# What the next update will have to do. update_needs_sudo() asks the same
@@ -454,53 +541,113 @@ doctor() {
 # not a reason to throw it away. `make my_shell VERSION=…` uses --purge so
 # each reinstall starts from a genuinely clean machine.
 uninstall() {
-	_prev=""
-	[ -n "${HOME:-}" ] && [ -f "$HOME/.hellish-previous-shell" ] \
-		&& _prev="$(cat "$HOME/.hellish-previous-shell")"
-	[ -n "$_prev" ] || _prev="/bin/sh"
-	[ -x "$_prev" ] || _prev="/bin/sh"
+	_dir="$(dirname "$DEST")"
+	# What goes: DEST, and -- for a hellish/polish DEST -- the other name in
+	# the same directory, since one of the pair is the alias of the other.
+	case "$(basename "$DEST")" in
+	hellish|polish) _names="hellish polish" ;;
+	*) _names="$(basename "$DEST")" ;;
+	esac
 
+	# The shell to go back to. Neither record may name a hellish or polish:
+	# see register() -- restoring to one is restoring to what is removed.
+	_prev=""
+	for _f in "${HOME:-/nonexistent}/.polish-previous-shell" \
+		"${HOME:-/nonexistent}/.hellish-previous-shell"; do
+		[ -f "$_f" ] || continue
+		_p="$(head -n 1 "$_f")"
+		if [ -n "$_p" ] && [ -x "$_p" ] && ! is_shell_named_ours "$_p"; then
+			_prev="$_p"
+			break
+		fi
+	done
+	[ -n "$_prev" ] || _prev="/bin/sh"
+
+	# Compared by resolved file as well as by name: /bin/hellish on a
+	# merged-/usr box IS /usr/bin/hellish, and so is a polish symlink.
 	_now="$(current_shell_of "$TARGET_USER")"
-	if [ "$_now" = "$DEST" ]; then
+	if is_candidate "$_now"; then
 		inf "restoring $TARGET_USER's login shell to $_prev"
 		if ! as_root chsh -s "$_prev" -- "$TARGET_USER"; then
 			red "$PROG: could not restore the shell; run: sudo chsh -s $_prev $TARGET_USER"
 			die "NOTHING was removed -- $DEST is still in place, so you are not locked out."
 		fi
+		if [ "$DRY_RUN" != "1" ] \
+			&& is_candidate "$(current_shell_of "$TARGET_USER")"; then
+			die "chsh reported success but $TARGET_USER's shell is still $_now -- NOTHING was removed"
+		fi
 		grn "$TARGET_USER's login shell is $_prev again"
 	else
 		inf "$TARGET_USER's login shell is $_now, not $DEST — leaving it"
 	fi
-	[ -n "${HOME:-}" ] && rm -f "$HOME/.hellish-previous-shell"
+
+	# Nor anyone ELSE's. /usr/bin is shared: a second account that chsh'd
+	# to it would be locked out of ssh and every tty by the rm below.
+	# Caveat: sees only accounts `getent passwd` enumerates (else
+	# /etc/passwd). LDAP/SSSD directories that disable enumeration hide
+	# their users, so one of them can still be using the shell -- check
+	# with your directory's tools before uninstalling on such a host.
+	_held="$( { getent passwd 2>/dev/null || cat /etc/passwd 2>/dev/null; } \
+		| while IFS=: read -r _u _x _i _g _c _h _s; do
+			[ "$DRY_RUN" = "1" ] && [ "$_u" = "$TARGET_USER" ] && continue
+			if is_candidate "$_s"; then printf ' %s' "$_u"; fi
+		done )"
+	if [ -n "$_held" ]; then
+		red "$PROG: still the login shell of:$_held"
+		die "NOTHING was removed -- chsh those accounts to another shell first."
+	fi
+	if [ "$DRY_RUN" != "1" ] && [ -n "${HOME:-}" ]; then
+		rm -f "$HOME/.polish-previous-shell" "$HOME/.hellish-previous-shell"
+	fi
 
 	# Only now, with nothing pointing at it any more.
-	if [ -e "$DEST" ]; then
-		inf "removing $DEST"
-		as_root rm -f "$DEST"
-		[ -e "$DEST" ] && die "could not remove $DEST"
-		grn "removed $DEST"
-	else
-		inf "no binary at $DEST"
-	fi
+	_gone=0
+	for _n in $_names; do
+		_b="$_dir/$_n"
+		[ -e "$_b" ] || [ -L "$_b" ] || continue
+		inf "removing $_b"
+		as_root rm -f "$_b"
+		if [ "$DRY_RUN" != "1" ] && { [ -e "$_b" ] || [ -L "$_b" ]; }; then
+			die "could not remove $_b"
+		fi
+		grn "removed $_b"
+		_gone=1
+	done
+	[ "$_gone" = "1" ] || inf "no binary at $DEST"
 
 	# chsh refuses a shell that is not listed, so the entry has to go too or
 	# the next install thinks it is already registered.
-	if [ -f /etc/shells ] && grep -qxF -- "$DEST" /etc/shells; then
-		inf "removing $DEST from /etc/shells"
+	for _n in $_names; do
+		_b="$_dir/$_n"
+		if [ ! -f /etc/shells ] || ! grep -qxF -- "$_b" /etc/shells; then
+			continue
+		fi
+		inf "removing $_b from /etc/shells"
 		_tmp="$(mktemp)" || die "mktemp failed"
-		grep -vxF -- "$DEST" /etc/shells > "$_tmp" || true
+		grep -vxF -- "$_b" /etc/shells > "$_tmp" || true
 		as_root tee /etc/shells < "$_tmp" >/dev/null
 		rm -f "$_tmp"
-		grn "/etc/shells no longer lists $DEST"
-	fi
+		grn "/etc/shells no longer lists $_b"
+	done
 
+	# --dry-run covers this too: it promises to change nothing, and these are
+	# the one deletion here that no reinstall gives back.
 	if [ "$PURGE" = "1" ] && [ -n "${HOME:-}" ]; then
 		inf "purging config and cached update state"
-		rm -f "$HOME/.hellishrc" "$HOME/.hellish_history"
-		rm -rf "$HOME/.config/hellish" "$HOME/.cache/hellish"
+		for _n in polish hellish; do
+			for _p in "$HOME/.${_n}rc" "$HOME/.${_n}_history" \
+				"$HOME/.config/$_n" "$HOME/.cache/$_n"; do
+				[ -e "$_p" ] || [ -L "$_p" ] || continue
+				if [ "$DRY_RUN" = "1" ]; then
+					printf '  would remove: %s\n' "$_p" >&2
+				else
+					rm -rf -- "$_p"
+				fi
+			done
+		done
 		grn "config removed"
 	elif [ -n "${HOME:-}" ]; then
-		inf "kept your ~/.hellishrc (use --purge to remove it too)"
+		inf "kept your rc and config (use --purge to remove them too)"
 	fi
 
 	# The other install route puts a SECOND copy in ~/.local/bin, and it wins
@@ -510,18 +657,40 @@ uninstall() {
 	_ifs="$IFS"; IFS=:
 	for _d in $PATH; do
 		[ -n "$_d" ] || _d=.
-		[ "$_d/hellish" = "$DEST" ] && continue
-		[ -x "$_d/hellish" ] && _leftover="$_leftover $_d/hellish"
+		# By resolved dir too: /bin IS /usr/bin on a merged-/usr system.
+		{ [ "$_d" = "$_dir" ] || same_file "$_d" "$_dir"; } && continue
+		for _b in "$_d/polish" "$_d/hellish"; do
+			[ -x "$_b" ] && _leftover="$_leftover $_b"
+		done
 	done
 	IFS="$_ifs"
 	if [ -n "$_leftover" ]; then
-		warn "another hellish is still on your PATH:$_leftover"
+		warn "another copy of the shell is still on your PATH:$_leftover"
 		warn "that is probably \`make user-install\` — remove it with:"
 		warn "    make user-uninstall"
 	fi
 }
 
+# is_candidate PATH -> 0 when PATH is one of the files uninstall removes,
+# by name or by what it resolves to. Reads uninstall()'s _dir and _names.
+is_candidate() {
+	[ -n "$1" ] || return 1
+	for _cn in $_names; do
+		[ "$1" = "$_dir/$_cn" ] && return 0
+		same_file "$1" "$_dir/$_cn" && return 0
+	done
+	return 1
+}
+
+# Only the actions that act on a destination resolve one: --preflight
+# answers "can this machine do it at all" and must keep working with the
+# bare minimum of tools on PATH.
 case "$ACTION" in
+register|doctor|print-dest) resolve_dest ;;
+esac
+
+case "$ACTION" in
+print-dest) printf '%s\n' "$DEST" ;;
 preflight) preflight ;;
 register)  register ;;
 uninstall) uninstall ;;

@@ -65,10 +65,12 @@ def main():
     home = tempfile.mkdtemp()
     try:
         p = seed(home)
-        rc_path = os.path.join(home, ".hellishrc")
+        rc_path = os.path.join(home, ".polishrc")
         check("absent: the seeder succeeds", p.returncode == 0,
               "rc=%d %r" % (p.returncode, p.stderr[:200]))
-        check("absent: ~/.hellishrc is created", os.path.isfile(rc_path))
+        check("absent: ~/.polishrc is created", os.path.isfile(rc_path))
+        check("absent: no legacy ~/.hellishrc is created",
+              not os.path.exists(os.path.join(home, ".hellishrc")))
         if os.path.isfile(rc_path):
             with open(rc_path) as f:
                 got = f.read()
@@ -93,6 +95,10 @@ def main():
         with open(rc_path) as f:
             check("present: the existing rc is untouched", f.read() == mine,
                   "the seeder overwrote a user's config")
+        # A ~/.polishrc beside it would win (brand_pick) and silently stop
+        # the user's real config from loading after the 3.4.0 rename.
+        check("present: no ~/.polishrc shadows the legacy rc",
+              not os.path.exists(os.path.join(home, ".polishrc")))
     finally:
         shutil.rmtree(home, ignore_errors=True)
 
@@ -102,8 +108,9 @@ def main():
         p = seed(home, example=os.path.join(home, "nope.example"))
         check("no template: the seeder does not fail the install",
               p.returncode == 0, "rc=%d" % p.returncode)
-        check("no template: no empty ~/.hellishrc is left behind",
-              not os.path.exists(os.path.join(home, ".hellishrc")))
+        check("no template: no empty rc is left behind",
+              not os.path.exists(os.path.join(home, ".polishrc"))
+              and not os.path.exists(os.path.join(home, ".hellishrc")))
     finally:
         shutil.rmtree(home, ignore_errors=True)
 

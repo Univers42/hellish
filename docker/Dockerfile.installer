@@ -23,6 +23,10 @@
 #           an old checkout must still install the RELEASE.
 #   ines    no sudo, and her login shell is ZSH with a zsh-flavoured
 #           ~/.zshrc -- the 42 account, exactly as issued.
+#   lena    no sudo, set up as a <= 3.3.0 user-mode hellish install
+#           (scenario J): the rename must update it in place.
+#   kim     no sudo, with a hand-written ~/.polishrc (scenario K): the
+#           plugin framework must not shadow it.
 #
 # The "release" is a directory served by python3 -m http.server inside the
 # container: the static binary (built by `make static` before the image),
@@ -46,6 +50,8 @@ RUN useradd -m -s /bin/bash maxine \
 	&& useradd -m -s /bin/bash nora3 \
 	&& useradd -m -s /bin/bash nora4 \
 	&& useradd -m -s /bin/zsh ines \
+	&& useradd -m -s /bin/bash lena \
+	&& useradd -m -s /bin/bash kim \
 	&& printf 'maxine ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/maxine \
 	&& chmod 440 /etc/sudoers.d/maxine
 
@@ -62,10 +68,15 @@ COPY --from=plugins . /srv/hellishrc_plugins
 RUN set -eux; \
 	mkdir -p /srv/release/latest/download; \
 	# `make static` names by docker platform (amd64); the release renames to
-	# uname -m (x86_64). The fake channel mirrors the release, not the build.
-	cp dist/hellish-linux-amd64 /srv/release/latest/download/hellish-linux-x86_64; \
-	( cd /srv/release/latest/download && sha256sum hellish-linux-x86_64 \
-		> hellish-linux-x86_64.sha256 ); \
+	# uname -m (x86_64), and from 3.4.0 publishes the one binary under BOTH
+	# names, each with its own .sha256 -- the polish name for new installers,
+	# the hellish name for every updater already out there. The fake channel
+	# mirrors the release (release.yml), not the build.
+	cp dist/polish-linux-amd64 /srv/release/latest/download/polish-linux-x86_64; \
+	cp dist/polish-linux-amd64 /srv/release/latest/download/hellish-linux-x86_64; \
+	( cd /srv/release/latest/download \
+		&& sha256sum polish-linux-x86_64 > polish-linux-x86_64.sha256 \
+		&& sha256sum hellish-linux-x86_64 > hellish-linux-x86_64.sha256 ); \
 	mkdir -p /tmp/bundle/tools; \
 	cp user-install.sh hellishrc.example /tmp/bundle/; \
 	cp tools/register_shell.sh tools/seed_hellishrc.sh /tmp/bundle/tools/; \
@@ -85,7 +96,9 @@ RUN set -eux; \
 	# seeder ran. install.sh must take its drivers from RAW_BASE (main) on top
 	# of any bundle; /srv/release/raw stands in for raw.githubusercontent.
 	mkdir -p /srv/release/old/latest/download /tmp/oldbundle; \
-	cp /srv/release/latest/download/hellish-linux-x86_64* /srv/release/old/latest/download/; \
+	cp /srv/release/latest/download/polish-linux-x86_64* \
+		/srv/release/latest/download/hellish-linux-x86_64* \
+		/srv/release/old/latest/download/; \
 	tar -xzf /srv/release/latest/download/hellish-install-bundle.tar.gz -C /tmp/oldbundle; \
 	sed -i '2i echo "OLD-BUNDLE-SEEDER" >\&2' /tmp/oldbundle/tools/seed_hellishrc.sh; \
 	tar -czf /srv/release/old/latest/download/hellish-install-bundle.tar.gz -C /tmp/oldbundle .; \
@@ -104,6 +117,7 @@ RUN set -eux; \
 	# skips the download path -- the very path this image exists to test.
 	rm -f Makefile; rm -rf dist
 
-ENV HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
+ENV POLISH_NO_UPDATE_CHECK=1 POLISH_NO_BANNER=1 POLISH_NO_ANIM=1 \
+	HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1
 
 CMD ["/bin/sh", "/hellish/tests/installer_suite.sh"]

@@ -12,6 +12,11 @@
 #   1. the slug in version.h matches the repository we actually push to
 #   2. every distribution channel agrees with version.h
 #   3. the npm package version matches HELLISH_VERSION
+#   4. the release publishes BOTH binary names (polish- and hellish-), each
+#      with a .sha256: every <= 3.3.0 install updates from the hellish one
+#
+# The macros are read as POLISH_* or HELLISH_*: the rename (3.4.0) moves
+# version.h to the new spelling, and this check must not care which.
 #
 # Usage: bash tests/update_config_check.sh
 set -u
@@ -28,7 +33,12 @@ check() {
 }
 
 # 1. version.h vs the git remote --------------------------------------------
-slug=$(sed -n 's/^# *define HELLISH_REPO "\([^"]*\)".*/\1/p' incs/version.h)
+macro() {
+	sed -n -e "s/^# *define POLISH_$1 \"\([^\"]*\)\".*/\1/p" \
+		-e "s/^# *define HELLISH_$1 \"\([^\"]*\)\".*/\1/p" incs/version.h \
+		| head -1
+}
+slug=$(macro REPO)
 remote=$(git config --get remote.origin.url 2>/dev/null \
 	| sed -e 's#^git@github.com:##' -e 's#^https://github.com/##' -e 's#\.git$##')
 check "version.h HELLISH_REPO matches the git remote" "$slug" "$remote"
@@ -45,10 +55,27 @@ for f in Dockerfile npm/package.json npm/bin/hellish.js npm/README.md \
 	check "$f has no stale repo URL" "${bad:-0}" "0"
 done
 
+# The pre-rename slug only works through GitHub's redirect, which vanishes
+# the day anyone creates a repo by that name. hellishrc_plugins is a
+# different repository and keeps its name.
+for f in install.sh npm/package.json npm/README.md npm/scripts/install.js \
+	npm/bin/hellish.js Dockerfile docker/Dockerfile.release mkdocs.yml \
+	tools/fetch_release.sh; do
+	bad=$(grep -cE 'github\.com/Univers42/hellish([^a-z_]|$)' "$f" 2>/dev/null)
+	check "$f has no pre-rename repo URL" "${bad:-0}" "0"
+done
+
 # 3. the npm package version tracks version.h --------------------------------
-v=$(sed -n 's/^# *define HELLISH_VERSION "\([^"]*\)".*/\1/p' incs/version.h)
+v=$(macro VERSION)
 check "npm/package.json version" \
 	"$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' npm/package.json | head -1)" "$v"
+
+# 4. both asset names are published ------------------------------------------
+for a in polish-linux-x86_64 polish-linux-x86_64.sha256 \
+	hellish-linux-x86_64 hellish-linux-x86_64.sha256; do
+	n=$(grep -cxE "[[:space:]]+$a" .github/workflows/release.yml)
+	check "release.yml publishes $a" "$n" "1"
+done
 
 printf '\n%d check(s) failed\n' "$fails"
 [ "$fails" -eq 0 ]

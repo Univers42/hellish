@@ -51,9 +51,15 @@ def check(name, ok, detail=""):
         FAILS.append(name)
 
 
+HOME = tempfile.mkdtemp(prefix="register_shell_home_")
+
+
+# HOME is always a throwaway, never inherited. setdefault() left the real one
+# in place, and this script's purge path ignored --dry-run until 3.4.0 -- one
+# such run deleted a developer's ~/.hellishrc (2026-11-19).
 def run(args, env=None, **kw):
     e = dict(os.environ)
-    e.setdefault("HOME", "/tmp")
+    e["HOME"] = HOME
     if env:
         e.update(env)
     return subprocess.run(["sh", REG] + args, capture_output=True, text=True,

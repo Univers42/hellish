@@ -1,6 +1,6 @@
 #!/bin/sh
 # ============================================================================
-# tools/fetch_release.sh -- download a PUBLISHED hellish release binary.
+# tools/fetch_release.sh -- download a PUBLISHED polish (or hellish) release.
 #
 # Exists so `make my_shell VERSION=2.7.2` can put a real, old, released binary
 # on the machine instead of building HEAD. That is the only way to stand in
@@ -12,6 +12,10 @@
 #   tools/fetch_release.sh 2.7.2 /tmp/hellish-2.7.2
 #   tools/fetch_release.sh v2.7.2            # prints to stdout where it landed
 #
+# Releases from 3.4.0 publish polish-linux-<arch> AND hellish-linux-<arch>
+# (same bytes); older tags only the hellish name. So the polish asset is
+# tried first and the hellish one is the fallback, which reaches every tag.
+#
 # Verifies the published sha256 before handing the file back. A release binary
 # is about to become the caller's LOGIN SHELL; downloading one over the
 # network and installing it unverified is not something this repo should make
@@ -20,7 +24,7 @@
 set -eu
 
 PROG="$(basename "$0")"
-REPO="${HELLISH_REPO:-Univers42/hellish}"
+REPO="${POLISH_REPO:-${HELLISH_REPO:-Univers42/polish}}"
 
 red() { printf '\033[1;31m%s\033[0m\n' "$*" >&2; }
 grn() { printf '  \033[1;32m✓\033[0m %s\n' "$*" >&2; }
@@ -41,16 +45,21 @@ case "$ARCH" in
 x86_64|aarch64) ;;
 *) die "no release binary is published for $ARCH" ;;
 esac
-ASSET="hellish-linux-$ARCH"
 BASE="https://github.com/$REPO/releases/download/v$VER"
 
-[ -n "$OUT" ] || OUT="$(mktemp -t "hellish-$VER.XXXXXX")"
+[ -n "$OUT" ] || OUT="$(mktemp -t "polish-$VER.XXXXXX")"
 
 command -v curl >/dev/null 2>&1 || die "curl is required"
 
-inf "fetching v$VER ($ASSET)"
-curl -fsSL --proto '=https' --max-time 120 -o "$OUT" "$BASE/$ASSET" \
-	|| die "could not download $BASE/$ASSET
+ASSET=""
+for _a in "polish-linux-$ARCH" "hellish-linux-$ARCH"; do
+	inf "fetching v$VER ($_a)"
+	if curl -fsSL --proto '=https' --max-time 120 -o "$OUT" "$BASE/$_a"; then
+		ASSET="$_a"
+		break
+	fi
+done
+[ -n "$ASSET" ] || die "could not download $BASE/polish-linux-$ARCH (or hellish-linux-$ARCH)
   is v$VER a real release with a Linux binary? try: gh release list"
 
 # The checksum is published beside the asset. Missing is a weaker release, not
@@ -82,8 +91,10 @@ chmod 755 "$OUT"
 # NOT `if ! cmd; then _st=$?`: `!` inverts the status, so $? inside the branch
 # is 0/1 and never the 42 we asked for -- the check would fail against a
 # binary that ran perfectly. Same shape as register_shell.sh's smoke_test.
+# Both spellings of the quiet knobs: 3.4.0+ reads POLISH_*, older HELLISH_*.
 _st=0
-HELLISH_NO_BANNER=1 HELLISH_NO_ANIM=1 HELLISH_NO_UPDATE_CHECK=1 \
+POLISH_NO_BANNER=1 HELLISH_NO_BANNER=1 POLISH_NO_ANIM=1 HELLISH_NO_ANIM=1 \
+	POLISH_NO_UPDATE_CHECK=1 HELLISH_NO_UPDATE_CHECK=1 \
 	"$OUT" -c 'exit 42' >/dev/null 2>&1 || _st=$?
 if [ "$_st" != "42" ]; then
 	"$OUT" -c 'exit 42' 2>&1 | head -3 >&2

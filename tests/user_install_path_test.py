@@ -105,7 +105,7 @@ def run_in_shell(home, bindir, script):
     """Run `script` in the INSTALLED hellish, with a PATH lacking bindir."""
     env = dict(BASE_ENV)
     env["HOME"] = home
-    return subprocess.run([os.path.join(bindir, "hellish"), "-c", script],
+    return subprocess.run([os.path.join(bindir, "polish"), "-c", script],
                           env=env, capture_output=True, text=True, timeout=60)
 
 
@@ -116,8 +116,9 @@ def block_count(path, marker):
         return sum(1 for line in f if line.rstrip("\n") == marker)
 
 
-RC_MARK = "# >>> hellish path >>>"
-HOOK_MARK = "# >>> hellish >>>"
+RC_MARK = "# >>> polish path >>>"
+LEGACY_RC_MARK = "# >>> hellish path >>>"
+HOOK_MARK = "# >>> polish >>>"
 
 
 # ── 1. the reported bug, in the shape the user meets it ────────────────────
@@ -128,24 +129,24 @@ def test_name_resolves_after_install():
         r = install(home)
         check("installer succeeds", r.returncode == 0, r.stderr[-400:])
 
-        rc = os.path.join(home, ".hellishrc")
-        check("~/.hellishrc is seeded", os.path.isfile(rc))
+        rc = os.path.join(home, ".polishrc")
+        check("~/.polishrc is seeded", os.path.isfile(rc))
 
-        # The bug: sourcing ~/.hellishrc left PATH untouched, so the shell
+        # The bug: sourcing ~/.polishrc left PATH untouched, so the shell
         # could not find itself by name.
         got = run_in_shell(home, bindir,
-                           '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-                           'command -v hellish')
-        want = os.path.join(bindir, "hellish")
-        check("~/.hellishrc puts the install dir on PATH",
+                           '. "$HOME/.polishrc" >/dev/null 2>&1; '
+                           'command -v polish')
+        want = os.path.join(bindir, "polish")
+        check("~/.polishrc puts the install dir on PATH",
               got.stdout.strip() == want,
               "got %r, want %r" % (got.stdout.strip(), want))
 
         # ... and the same thing said the way a user says it.
         got = run_in_shell(home, bindir,
-                           '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-                           'hellish -c "echo REACHED-BY-NAME"')
-        check("`hellish` runs as a bare command name",
+                           '. "$HOME/.polishrc" >/dev/null 2>&1; '
+                           'polish -c "echo REACHED-BY-NAME"')
+        check("`polish` runs as a bare command name",
               "REACHED-BY-NAME" in got.stdout,
               "stdout=%r stderr=%r" % (got.stdout, got.stderr[-200:]))
     finally:
@@ -154,7 +155,7 @@ def test_name_resolves_after_install():
 
 # ── 2. the same thing, end to end, in a real terminal ──────────────────────
 def test_interactive_shell_finds_itself():
-    """An interactive hellish sources ~/.hellishrc; that is the real path
+    """An interactive hellish sources ~/.polishrc; that is the real path
     a user's session takes, and the only one that proves the rc is read at
     startup rather than merely being sourceable."""
     home = new_home()
@@ -169,10 +170,10 @@ def test_interactive_shell_finds_itself():
         if pid == 0:
             os.environ.clear()
             os.environ.update(env)
-            os.execv(os.path.join(bindir, "hellish"),
-                     [os.path.join(bindir, "hellish")])
+            os.execv(os.path.join(bindir, "polish"),
+                     [os.path.join(bindir, "polish")])
         time.sleep(0.8)
-        os.write(fd, b'command -v hellish\n')
+        os.write(fd, b'command -v polish\n')
         time.sleep(0.5)
         os.write(fd, b'exit\n')
 
@@ -197,7 +198,7 @@ def test_interactive_shell_finds_itself():
 
         text = re.sub(r"\x1b\[[0-9;?]*[A-Za-z]", "",
                       out.decode("utf-8", "replace"))
-        want = os.path.join(bindir, "hellish")
+        want = os.path.join(bindir, "polish")
         check("an interactive hellish resolves its own name", want in text,
               "pty output tail: %r" % text[-300:])
     finally:
@@ -212,9 +213,9 @@ def test_no_duplicate_path_entries():
         install(home)
         got = run_in_shell(
             home, bindir,
-            '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-            '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-            '. "$HOME/.hellishrc" >/dev/null 2>&1; echo "$PATH"')
+            '. "$HOME/.polishrc" >/dev/null 2>&1; '
+            '. "$HOME/.polishrc" >/dev/null 2>&1; '
+            '. "$HOME/.polishrc" >/dev/null 2>&1; echo "$PATH"')
         n = got.stdout.strip().split(":").count(bindir)
         check("three sources leave exactly one PATH entry", n == 1,
               "counted %d" % n)
@@ -235,10 +236,10 @@ def test_login_rc_hook_exports_path():
         # hook did to the environment BEFORE it would have exec'd.
         env["HELLISH_NO_EXEC"] = "1"
         got = subprocess.run(
-            ["/bin/sh", "-c", '. "$HOME/.bashrc"; command -v hellish'],
+            ["/bin/sh", "-c", '. "$HOME/.bashrc"; command -v polish'],
             env=env, capture_output=True, text=True, timeout=60)
         check("the login-rc hook puts the dir on PATH as well",
-              got.stdout.strip() == os.path.join(bindir, "hellish"),
+              got.stdout.strip() == os.path.join(bindir, "polish"),
               "got %r" % got.stdout.strip())
         check("the hook still parses as POSIX sh",
               subprocess.run(["/bin/sh", "-n", rc]).returncode == 0)
@@ -254,12 +255,12 @@ def test_custom_prefix_is_honoured():
         bindir = os.path.join(prefix, "bin")
         install(home, prefix=prefix)
         got = run_in_shell(home, bindir,
-                           '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-                           'command -v hellish')
+                           '. "$HOME/.polishrc" >/dev/null 2>&1; '
+                           'command -v polish')
         check("a custom --prefix is what lands in the block",
-              got.stdout.strip() == os.path.join(bindir, "hellish"),
+              got.stdout.strip() == os.path.join(bindir, "polish"),
               "got %r" % got.stdout.strip())
-        with open(os.path.join(home, ".hellishrc")) as f:
+        with open(os.path.join(home, ".polishrc")) as f:
             body = f.read()
         check("no hardcoded ~/.local/bin leaks into the block",
               os.path.join(home, ".local", "bin") not in body)
@@ -271,6 +272,8 @@ def test_custom_prefix_is_honoured():
 def test_existing_rc_is_not_clobbered():
     home = new_home()
     try:
+        # A pre-3.4 user's ~/.hellishrc stays THE rc: the seeder must add its
+        # block there (legacy marker) and never create a shadowing ~/.polishrc.
         rc = os.path.join(home, ".hellishrc")
         mine = ("# hand-written\nalias mine='echo SENTINEL-KEPT'\n"
                 "export MY_OWN_VAR=42\n")
@@ -283,12 +286,14 @@ def test_existing_rc_is_not_clobbered():
         check("every hand-written line survives",
               all(line in body for line in mine.strip().splitlines()))
         check("...and the PATH block was still added",
-              block_count(rc, RC_MARK) == 1)
+              block_count(rc, LEGACY_RC_MARK) == 1)
+        check("...and no ~/.polishrc shadows it",
+              not os.path.exists(os.path.join(home, ".polishrc")))
         got = run_in_shell(home, bindir,
                            '. "$HOME/.hellishrc" >/dev/null 2>&1; '
-                           'echo "$MY_OWN_VAR"; command -v hellish')
+                           'echo "$MY_OWN_VAR"; command -v polish')
         check("the merged rc still works",
-              got.stdout.split() == ["42", os.path.join(bindir, "hellish")],
+              got.stdout.split() == ["42", os.path.join(bindir, "polish")],
               "got %r" % got.stdout)
     finally:
         shutil.rmtree(home, ignore_errors=True)
@@ -298,11 +303,11 @@ def test_existing_rc_is_not_clobbered():
 def test_reinstall_is_idempotent():
     home = new_home()
     try:
-        rc = os.path.join(home, ".hellishrc")
+        rc = os.path.join(home, ".polishrc")
         hook = os.path.join(home, ".bashrc")
         for _ in range(3):
             install(home)
-        check("~/.hellishrc holds exactly one PATH block",
+        check("~/.polishrc holds exactly one PATH block",
               block_count(rc, RC_MARK) == 1,
               "found %d" % block_count(rc, RC_MARK))
         check("the login rc holds exactly one hook block",
@@ -310,7 +315,7 @@ def test_reinstall_is_idempotent():
               "found %d" % block_count(hook, HOOK_MARK))
         bindir = os.path.join(home, ".local", "bin")
         got = run_in_shell(home, bindir,
-                           '. "$HOME/.hellishrc" >/dev/null 2>&1; echo "$PATH"')
+                           '. "$HOME/.polishrc" >/dev/null 2>&1; echo "$PATH"')
         check("PATH still holds one copy after three installs",
               got.stdout.strip().split(":").count(bindir) == 1)
     finally:
@@ -321,7 +326,7 @@ def test_reinstall_is_idempotent():
 def test_uninstall_removes_only_our_block():
     home = new_home()
     try:
-        rc = os.path.join(home, ".hellishrc")
+        rc = os.path.join(home, ".polishrc")
         install(home)
         with open(rc, "a") as f:
             f.write("\nalias after='echo AFTER-THE-BLOCK'\n")
@@ -332,7 +337,7 @@ def test_uninstall_removes_only_our_block():
         check("the PATH block is gone", block_count(rc, RC_MARK) == 0)
         check("the user's own lines are not",
               "AFTER-THE-BLOCK" in body and "alias ll=" in body)
-        check("~/.hellishrc still parses",
+        check("~/.polishrc still parses",
               subprocess.run(["/bin/sh", "-n", rc]).returncode == 0)
         check("the hook block is gone too",
               block_count(os.path.join(home, ".bashrc"), HOOK_MARK) == 0)

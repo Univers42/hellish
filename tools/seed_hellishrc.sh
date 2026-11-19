@@ -1,8 +1,9 @@
 #!/bin/sh
 # ============================================================================
-# tools/seed_hellishrc.sh -- put hellishrc.example at ~/.hellishrc, once, and
-# keep the one block in it that the INSTALLER owns: the PATH entry for the
-# directory the binary actually landed in.
+# tools/seed_hellishrc.sh -- put hellishrc.example at ~/.polishrc (or, on a
+# machine that already has one, ~/.hellishrc), once, and keep the one block in
+# it that the INSTALLER owns: the PATH entry for the directory the binary
+# actually landed in.
 #
 # Why this is its own file. The seeding used to live inline in
 # user-install.sh, which meant it only happened on the no-sudo route. The
@@ -12,16 +13,26 @@
 # ever meant to exist. That is the first line of issue #51. One seeder,
 # called by both routes, is the only shape that cannot drift again.
 #
-# The one rule that matters: an EXISTING ~/.hellishrc is never touched. It
-# is the user's file, installers get re-run, and eating an edited config is
-# far worse than skipping a template. --path-dir does not break that rule:
-# it rewrites ONLY the text between its own markers, the same way
+# The one rule that matters: an EXISTING rc is never touched. It is the
+# user's file, installers get re-run, and eating an edited config is far
+# worse than skipping a template. --path-dir does not break that rule: it
+# rewrites ONLY the text between its own markers, the same way
 # user-install.sh manages its block in your login shell's rc.
 #
-#   tools/seed_hellishrc.sh                      seed $HOME/.hellishrc
-#   tools/seed_hellishrc.sh --home DIR           seed DIR/.hellishrc
+# Which rc. The shell was renamed hellish -> polish in 3.4.0 and reads
+# ~/.polishrc when it exists or when ~/.hellishrc does not, else ~/.hellishrc
+# (brand_pick, src/brand/brand.c). This seeder makes the same choice, so a
+# machine that has a ~/.hellishrc never grows a ~/.polishrc beside it: the
+# new file would win, and the user's real config would silently stop
+# loading. Same rule for ~/.config/polish vs ~/.config/hellish. A pre-3.4
+# binary (--bin answering "hellish, version") only knows the old names, so
+# it always gets them.
+#
+#   tools/seed_hellishrc.sh                      seed $HOME/.polishrc
+#   tools/seed_hellishrc.sh --home DIR           seed DIR/.polishrc
 #   tools/seed_hellishrc.sh --example FILE       use FILE as the template
 #   tools/seed_hellishrc.sh --path-dir DIR       ...and keep DIR on PATH
+#   tools/seed_hellishrc.sh --bin PATH           the binary that will read it
 #   tools/seed_hellishrc.sh --strip-path         drop the PATH block again
 #
 # Always exits 0 unless it was asked to do something impossible: a missing
@@ -33,6 +44,7 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TARGET_HOME="${HOME:-}"
 EXAMPLE="$REPO_ROOT/hellishrc.example"
 PATH_DIR=""
+BIN=""
 STRIP_PATH=0
 
 while [ $# -gt 0 ]; do
@@ -40,8 +52,9 @@ while [ $# -gt 0 ]; do
 	--home) TARGET_HOME="${2:-}"; shift 2 ;;
 	--example) EXAMPLE="${2:-}"; shift 2 ;;
 	--path-dir) PATH_DIR="${2:-}"; shift 2 ;;
+	--bin) BIN="${2:-}"; shift 2 ;;
 	--strip-path) STRIP_PATH=1; shift ;;
-	-h|--help) sed -n '3,28p' "$0"; exit 0 ;;
+	-h|--help) sed -n '3,41p' "$0"; exit 0 ;;
 	*) echo "seed_hellishrc: unknown argument: $1" >&2; exit 2 ;;
 	esac
 done
@@ -51,7 +64,36 @@ if [ -z "$TARGET_HOME" ]; then
 	exit 2
 fi
 
-RC="$TARGET_HOME/.hellishrc"
+# Every child we run gets both spellings of the quiet knobs: a 3.4.0+ binary
+# reads POLISH_* first, an older one only knows HELLISH_*.
+quiet() {
+	POLISH_NO_BANNER=1 HELLISH_NO_BANNER=1 \
+	POLISH_NO_UPDATE_CHECK=1 HELLISH_NO_UPDATE_CHECK=1 \
+	POLISH_NO_ANIM=1 HELLISH_NO_ANIM=1 "$@"
+}
+
+# The binary we seed for, if we were told: "hellish" for a pre-3.4 build
+# (its --version starts "hellish, version"), else "polish". No --bin, or a
+# binary that cannot answer, means the current one.
+BRAND="polish"
+if [ -n "$BIN" ] && [ -x "$BIN" ]; then
+	case "$(quiet "$BIN" --version </dev/null 2>/dev/null | head -1)" in
+	hellish[,\ ]*) BRAND="hellish" ;;
+	esac
+fi
+
+# pick NEW LEGACY -> the path the shell will actually read (see the header).
+pick() {
+	if [ "$BRAND" = "hellish" ]; then
+		printf '%s\n' "$2"
+	elif [ -e "$1" ] || [ ! -e "$2" ]; then
+		printf '%s\n' "$1"
+	else
+		printf '%s\n' "$2"
+	fi
+}
+
+RC="$(pick "$TARGET_HOME/.polishrc" "$TARGET_HOME/.hellishrc")"
 
 # Where the config tree goes. XDG_CONFIG_HOME is honoured only when it
 # actually lives UNDER the home being seeded.
@@ -62,13 +104,20 @@ RC="$TARGET_HOME/.hellishrc"
 # ~/.config. The first version of this did exactly that and created
 # ~/.config/hellish on my box while reporting that it had seeded a temp dir.
 case "${XDG_CONFIG_HOME:-}" in
-"$TARGET_HOME"/*) XDG="$XDG_CONFIG_HOME/hellish" ;;
-*) XDG="$TARGET_HOME/.config/hellish" ;;
+"$TARGET_HOME"/*) XDG_BASE="$XDG_CONFIG_HOME" ;;
+*) XDG_BASE="$TARGET_HOME/.config" ;;
 esac
+XDG="$(pick "$XDG_BASE/polish" "$XDG_BASE/hellish")"
 
-
-PATH_BEGIN='# >>> hellish path >>>'
-PATH_END='# <<< hellish path <<<'
+# The PATH block's markers follow the rc's own name, so a pre-3.4 uninstaller
+# still finds its block in ~/.hellishrc. Both spellings are stripped always:
+# one rc must never carry two blocks.
+LEGACY_PATH_BEGIN='# >>> hellish path >>>'
+LEGACY_PATH_END='# <<< hellish path <<<'
+case "$RC" in
+*/.hellishrc) PATH_BEGIN="$LEGACY_PATH_BEGIN"; PATH_END="$LEGACY_PATH_END" ;;
+*) PATH_BEGIN='# >>> polish path >>>'; PATH_END='# <<< polish path <<<' ;;
+esac
 
 # ── seeding ────────────────────────────────────────────────────────────────
 seed_rc() {
@@ -113,7 +162,7 @@ seed_prompt() {
 	fi
 	mkdir -p "$XDG/rc.d" "$XDG/plugins" 2>/dev/null || return 0
 	cat > "$XDG/rc.d/30-prompt.hsh" <<'PROMPT_EOF'
-# The prompt. Yours to edit -- hellish reads this file, it is not compiled in.
+# The prompt. Yours to edit -- polish reads this file, it is not compiled in.
 #
 #   \u user   \h host   \w cwd (~)   \W basename   \$ $ or #
 #   \U  a pending release, invisible otherwise
@@ -174,13 +223,14 @@ seed_themes() {
 }
 
 # ── the managed PATH block ─────────────────────────────────────────────────
-# Delete an existing block from stdin. A half-removed block (someone deleted
-# one marker by hand) degrades to "leave it alone" rather than eating the
-# rest of the file.
+# Delete an existing block from stdin, under either marker spelling. A
+# half-removed block (someone deleted one marker by hand) degrades to "leave
+# it alone" rather than eating the rest of the file.
 strip_path_block() {
-	awk -v b="$PATH_BEGIN" -v e="$PATH_END" '
-		$0 == e { skip = 0; next }
-		$0 == b { skip = 1 }
+	awk -v b="$PATH_BEGIN" -v e="$PATH_END" \
+		-v lb="$LEGACY_PATH_BEGIN" -v le="$LEGACY_PATH_END" '
+		$0 == e || $0 == le { skip = 0; next }
+		$0 == b || $0 == lb { skip = 1 }
 		skip    { next }
 		        { print }
 	'
@@ -203,7 +253,7 @@ write_path_block() {
 	cat >> "$RC.new" <<EOF
 
 $PATH_BEGIN
-# Added by hellish's installer. Everything between the markers is
+# Added by polish's installer. Everything between the markers is
 # regenerated on re-install and removed by \`make user-uninstall\` — put your
 # own edits outside them.
 #
@@ -211,17 +261,17 @@ $PATH_BEGIN
 # your login chain may well NOT have on PATH. Debian/Ubuntu's stock
 # ~/.profile adds ~/.local/bin only when that directory already exists at
 # login — and on a first install this is the run that created it. A
-# user-installed hellish is also exec'd from an interactive rc, so it is not
+# user-installed polish is also exec'd from an interactive rc, so it is not
 # a login shell and never reads /etc/profile or ~/.profile itself.
 #
 # The shell still STARTS without this (the rc hook execs an absolute path),
 # which is exactly why the gap was easy to miss: what broke was the NAME.
-# \`hellish\`, \`hellish update\`, \`command -v hellish\` and every tool that
+# \`polish\`, \`polish update\`, \`command -v polish\` and every tool that
 # looks the shell up by name answered "command not found" on a freshly
 # installed machine. See tests/user_install_path_test.py.
 #
 # The case guard is load-bearing: this file is re-sourced by every nested
-# interactive hellish, and an unguarded prepend stacks a fresh copy each
+# interactive shell, and an unguarded prepend stacks a fresh copy each
 # time until PATH is mostly duplicates.
 case ":\$PATH:" in
 	*":$_dir:"*) ;;
@@ -258,13 +308,18 @@ EOF
 	printf '  \033[1;32m✓\033[0m  %s puts %s on PATH\n' "$RC" "$_dir"
 }
 
-# rc_parses FILE -> 0 when the shell that will source FILE accepts it: the
-# hellish this install just put in place, else bash (whose syntax hellish
-# reads), else, for want of anything better, sh.
+# rc_parses FILE -> 0 when the shell that will source FILE accepts it: --bin,
+# else the polish (or pre-3.4 hellish) this install just put in place, else
+# bash (whose syntax the shell reads), else, for want of anything better, sh.
 rc_parses() {
-	if [ -n "$PATH_DIR" ] && [ -x "$PATH_DIR/hellish" ]; then
-		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
-			"$PATH_DIR/hellish" -n "$1" >/dev/null 2>&1
+	_sh="$BIN"
+	if [ -z "$_sh" ] && [ -n "$PATH_DIR" ]; then
+		for _sh in "$PATH_DIR/polish" "$PATH_DIR/hellish" ""; do
+			[ -x "$_sh" ] && break
+		done
+	fi
+	if [ -n "$_sh" ] && [ -x "$_sh" ]; then
+		quiet "$_sh" -n "$1" >/dev/null 2>&1
 	elif command -v bash >/dev/null 2>&1; then
 		bash -n "$1" >/dev/null 2>&1
 	else
@@ -272,12 +327,17 @@ rc_parses() {
 	fi
 }
 
+# Both rc names: an uninstall must not depend on which one this machine has.
 remove_path_block() {
-	[ -f "$RC" ] || return 0
-	grep -qxF "$PATH_BEGIN" "$RC" 2>/dev/null || return 0
-	strip_path_block < "$RC" | trim_trailing_blanks > "$RC.new" || return 1
-	mv -f "$RC.new" "$RC" || return 1
-	printf '  \033[1;32m✓\033[0m  removed the PATH block from %s\n' "$RC"
+	for _rc in "$TARGET_HOME/.polishrc" "$TARGET_HOME/.hellishrc"; do
+		[ -f "$_rc" ] || continue
+		grep -qxF -e "$PATH_BEGIN" -e "$LEGACY_PATH_BEGIN" "$_rc" 2>/dev/null \
+			|| continue
+		strip_path_block < "$_rc" | trim_trailing_blanks > "$_rc.new" \
+			|| return 1
+		mv -f "$_rc.new" "$_rc" || return 1
+		printf '  \033[1;32m✓\033[0m  removed the PATH block from %s\n' "$_rc"
+	done
 }
 
 if [ "$STRIP_PATH" = "1" ]; then

@@ -1,7 +1,10 @@
 # ═══════════════════════════════════════════════════════════════════════
-#  ~/.hellishrc — hellish interactive configuration
-#  Copy this file to ~/.hellishrc; it is sourced by every interactive
-#  hellish (never by scripts, -c, or piped input — tests stay clean).
+#  ~/.polishrc — polish interactive configuration
+#  Copy this file to ~/.polishrc; it is sourced by every interactive
+#  polish (never by scripts, -c, or piped input — tests stay clean).
+#  polish was called hellish before 3.4: with no ~/.polishrc it reads
+#  ~/.hellishrc, and every POLISH_* variable below also answers to its
+#  old HELLISH_* spelling (the only one a pre-3.4 binary knows).
 # ═══════════════════════════════════════════════════════════════════════
 
 # ── 0. COMING FROM ZSH? ───────────────────────────────────────────────
@@ -13,7 +16,7 @@
 #
 #   emulate zsh          as the FIRST LINE of this file: everything after
 #                        it is read with zsh rules (set -o zsh works too)
-#   ~/.config/hellish/rc.d/50-mine.zsh
+#   ~/.config/polish/rc.d/50-mine.zsh
 #                        a module with a .zsh extension is read with zsh
 #                        rules automatically -- no marker needed. The
 #                        installer offers to write one that loads your
@@ -25,7 +28,7 @@
 # first, then %F{...} and friends over the result).
 
 # ── 1. PROMPT ──────────────────────────────────────────────────────────
-# Unconfigured, hellish shows zsh's own default -- "hostname% " -- plus
+# Unconfigured, polish shows zsh's own default -- "hostname% " -- plus
 # the ⬆ badge when an update is pending. The rich two-row theme is one
 # command away (`prompt` lists them; PS1='\B' is the same theme by name).
 # Setting PS1 replaces the prompt entirely. Bash escape set:
@@ -47,7 +50,7 @@
 # EXACT zsh semantics (unknown escapes vanish, as zsh does); it wins over
 # PS1 when both are set, and `set -o zsh` gives PS1 those exact
 # semantics too, since in zsh PS1 and PROMPT are one parameter.
-# hellish extensions — all SELF-SPACING (invisible until relevant):
+# polish extensions — all SELF-SPACING (invisible until relevant):
 #   \g  git branch of the cwd (+ * when dirty), empty outside a repo
 #   \S  " ✘N" after a failing command, empty after success
 #   \p  " took N.Ns" once a command ran 2s or longer
@@ -56,8 +59,8 @@
 #       "update available" notice is said ONCE and then never again; this
 #       is the quiet marker that stays until you actually update. The
 #       built-in prompt shows it already -- add \U to a custom PS1 to keep
-#       it. Silenced by HELLISH_NO_UPDATE_CHECK like the rest.
-#   \A  an ANIMATED glyph (see HELLISH_ANIM below) — OPT-IN, off by
+#       it. Silenced by POLISH_NO_UPDATE_CHECK like the rest.
+#   \A  an ANIMATED glyph (see POLISH_ANIM below) — OPT-IN, off by
 #       default. (Shadows bash's \A 24h-clock escape; use \t for time.)
 # Live $VAR / ${VAR} expansion happens at every render, and so does $? and
 # the other single-character specials ($$, $!, $#, $1...). QUOTE PS1 WITH
@@ -77,7 +80,7 @@
 # variable in the prompt; the hook runs once per prompt, not per redraw:
 #
 #     _branch() { BR=$(git branch --show-current 2>/dev/null); }
-#     HELLISH_PRECMD_FUNCS=(_branch)
+#     POLISH_PRECMD_FUNCS=(_branch)
 #     PS1='${BR:+($BR) }\w \$ '
 
 # ── ANIMATION: OFF BY DEFAULT, AND THAT IS DELIBERATE ──────────────────
@@ -94,7 +97,7 @@
 # Styles, if you want to opt in anyway:
 #   spinner  braille spinner in blue        pulse  a ✦ breathing magenta
 #   ember    a ▲ flickering through fire    off    hide \A (default)
-HELLISH_ANIM=off
+POLISH_ANIM=off
 
 # Theme: "pure" (default) — a blank line for breathing room, then one
 # calm info line (bold blue path, grey branch, red failure badge, amber
@@ -102,11 +105,11 @@ HELLISH_ANIM=off
 # commands always start at the same column, and nothing appears unless
 # it carries information.
 #
-#     ~/Documents/hellish feat/rc-theming* ✘1 took 3.2s ⚙1
+#     ~/Documents/polish feat/rc-theming* ✘1 took 3.2s ⚙1
 #     ❯
 # The prompt now lives in its own file, not here:
 #
-#     ~/.config/hellish/rc.d/30-prompt.hsh
+#     ~/.config/polish/rc.d/30-prompt.hsh
 #
 # That is issue #74 -- "this prompt should exist in configuration so we can
 # retouch it and not in binary only". rc.d is loaded BEFORE this file, so
@@ -150,7 +153,7 @@ export LESS='-R'        # let pagers pass ANSI colors through
 # PATH — this TEMPLATE sets none, and the installer appends exactly one
 # block. Both halves matter, and they used to be one over-general rule.
 #
-# A LOGIN hellish (chsh, or --login) sources /etc/profile — and so the .sh
+# A LOGIN polish (chsh, or --login) sources /etc/profile — and so the .sh
 # snippets in /etc/profile.d, which is where your distro adds things like
 # /snap/bin — and then ~/.profile, which on Debian/Ubuntu is what puts
 # ~/.local/bin and ~/bin on PATH. All of that runs BEFORE this file. On
@@ -161,7 +164,7 @@ export LESS='-R'        # let pagers pass ANSI colors through
 # #51). That is why the template ships none.
 #
 # `make user-install` is the case that reasoning did NOT cover, and the
-# installer now fixes it at the end of this file instead. Hellish is exec'd
+# installer now fixes it at the end of this file instead. polish is exec'd
 # there from an INTERACTIVE rc, so it is not a login shell and reads
 # neither /etc/profile nor ~/.profile — and ~/.profile would not have
 # helped anyway, because it adds ~/.local/bin only when that directory
@@ -173,9 +176,9 @@ export LESS='-R'        # let pagers pass ANSI colors through
 # never fight your edits.
 #
 # You need a line of your own here only for a directory neither of those
-# covers, or one you want under hellish and nowhere else. If you add one,
+# covers, or one you want under polish and nowhere else. If you add one,
 # keep the case guard: this file is re-sourced by every nested interactive
-# hellish, and an unguarded prepend stacks a fresh copy each time until
+# polish, and an unguarded prepend stacks a fresh copy each time until
 # PATH is mostly duplicates.
 #
 # case ":$PATH:" in
@@ -211,8 +214,12 @@ up() {
 # ── 5b. HOOKS: RUN SOMETHING AROUND EVERY COMMAND ─────────────────────
 # Two arrays of FUNCTION NAMES. Everything named in them runs, in order.
 #
-#   HELLISH_PRECMD_FUNCS    just before each prompt is drawn
-#   HELLISH_PREEXEC_FUNCS   just before a typed line runs; $1 is the line
+#   POLISH_PRECMD_FUNCS     just before each prompt is drawn
+#   POLISH_PREEXEC_FUNCS    just before a typed line runs; $1 is the line
+#
+# Set ONE spelling of each: the shell runs POLISH_* when it is set and the
+# old HELLISH_* only when it is not, so a hook is never run twice -- and a
+# HELLISH_* array is ignored once a POLISH_* one exists.
 #
 # Arrays, and not one string of code, so that two plugins can both attach.
 # `trap ... DEBUG` holds exactly one handler: the second thing to install
@@ -221,10 +228,10 @@ up() {
 #
 #   note_dir()  { echo "[$PWD]"; }
 #   log_cmd()   { printf '%s\t%s\n' "$(date +%s)" "$1" >> ~/.cmdlog; }
-#   HELLISH_PRECMD_FUNCS=(note_dir)
-#   HELLISH_PREEXEC_FUNCS=(log_cmd)
+#   POLISH_PRECMD_FUNCS=(note_dir)
+#   POLISH_PREEXEC_FUNCS=(log_cmd)
 #
-# A plain string works too -- HELLISH_PRECMD_FUNCS='a b' -- for when you are
+# A plain string works too -- POLISH_PRECMD_FUNCS='a b' -- for when you are
 # adding one name and would rather not think about arrays.
 #
 # $? is saved and put back around the hooks, so a prompt with a status badge
@@ -276,7 +283,7 @@ up() {
 # pretty on case-blind-glob     # globs ignore case
 # pretty on hidden-glob         # * also matches dot-files
 
-# ── 8. HELLISH DIAGNOSTIC TOGGLES (for the curious) ───────────────────
-# HELLISH_ALLOC_STATS=1 hellish script.sh   # live heap bytes at exit
-# HELLISH_PROMPT_BENCH=1 hellish            # ns per prompt render
-# hellish --debug=lexer --debug=parser --debug=ast  # pipeline views
+# ── 8. POLISH DIAGNOSTIC TOGGLES (for the curious) ────────────────────
+# POLISH_ALLOC_STATS=1 polish script.sh     # live heap bytes at exit
+# POLISH_PROMPT_BENCH=1 polish              # ns per prompt render
+# polish --debug=lexer --debug=parser --debug=ast  # pipeline views
