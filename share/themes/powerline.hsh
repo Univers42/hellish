@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # powerline -- 256-colour segments with reverse-video separators
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

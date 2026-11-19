@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # emoji -- emoji are DOUBLE-width cells; wcwidth must agree
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

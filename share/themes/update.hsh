@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # update -- \U: invisible unless a release is pending
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

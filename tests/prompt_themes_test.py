@@ -357,6 +357,53 @@ def config_dir_cases():
     shutil.rmtree(empty)
 
 
+def theme_file_names_cases():
+    """A theme is named like any rc module: x.hsh, x.sh, or a bare x whose
+    shebang names polish or hellish -- the same rule src/core/rc_module.c
+    applies to rc.d. The negatives are the point: a README, a file for
+    another shell, an editor backup and a shadowed x.sh must not list."""
+    d = tempfile.mkdtemp(prefix="prompt_names_")
+    files = {
+        "a.hsh": 'PS1="A> "\n',
+        "b.sh": '#!/usr/bin/env polish\nPS1="B> "\n',
+        "c": '#!/usr/local/bin/hellish\r\nPS1="C> "\n',
+        "d": '#!/usr/bin/env -S polish\nPS1="D> "\n',
+        "README": 'PS1="NO> "\n',
+        "README.md": "# themes\n",
+        "bashy": '#!/bin/bash\nPS1="NO> "\n',
+        "notpolish": '#!/usr/bin/notpolish\nPS1="NO> "\n',
+        "a.sh": 'PS1="SHADOWED> "\n',
+        "e.hsh~": 'PS1="NO> "\n',
+    }
+    for name, body in files.items():
+        with open(os.path.join(d, name), "w") as f:
+            f.write(body)
+    env = {"HELLISH_THEMES": "", "POLISH_THEMES": d}
+    base = ". %s\n" % SWITCH
+    rc, out, _ = run(base + "prompt", env)
+    listed = out.decode().split()
+    check("names/lists-exactly-the-themes", listed == ["a", "b", "c", "d"],
+          "listed=%r" % listed)
+    for name, want in (("a", "A> "), ("b", "B> "), ("c", "C> "),
+                       ("d", "D> ")):
+        rc, out, _ = run(base + 'prompt %s && printf "%%s" "$PS1"' % name,
+                         env)
+        check("names/%s-applies" % name, out.decode() == want,
+              "out=%r" % out)
+    for name in ("README", "bashy", "notpolish"):
+        rc, out, _ = run(base + "prompt %s" % name, env)
+        check("names/%s-refused" % name, rc != 0, "rc=%d" % rc)
+    xdg = tempfile.mkdtemp(prefix="prompt_cfg_")
+    run(base + "prompt save c >/dev/null",
+        dict(env, XDG_CONFIG_HOME=xdg))
+    saved = os.path.join(xdg, "polish", "rc.d", "50-theme.hsh")
+    body = open(saved).read() if os.path.isfile(saved) else ""
+    check("names/save-sources-the-real-file", "/c\"" in body
+          and ".hsh\"" not in body.splitlines()[-1], "saved=%r" % body)
+    shutil.rmtree(xdg)
+    shutil.rmtree(d)
+
+
 def robustness_cases():
     """A prompt must never be able to end the session. It redraws on every
     keystroke, so a shell that exits over a typo in PS1 leaves the user with
@@ -425,6 +472,7 @@ def main():
     switch_cases()
     switcher_cases()
     config_dir_cases()
+    theme_file_names_cases()
     arith_cases()
     robustness_cases()
     churn_cases()

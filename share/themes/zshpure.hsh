@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # zshpure -- the pure theme in zsh's % syntax; must render identically
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # paramop -- ${x:-y} and friends: a default that survives an unset var
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

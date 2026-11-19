@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # rightaligned -- trailing pad: column arithmetic with no cursor movement
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

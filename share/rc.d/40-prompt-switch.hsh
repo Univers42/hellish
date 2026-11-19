@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # prompt -- switch prompt themes without restarting.
 #
 # A shell FUNCTION, not a builtin, because issue #74's point is that the
@@ -10,20 +11,68 @@
 #   prompt save <name>  make it the default for new sessions
 #   prompt edit <name>  open it in $EDITOR
 #
-# Themes are data: one .hsh file each, setting PS1 or PROMPT. See
+# Themes are data: one file each, setting PS1 or PROMPT. See
 # $HELLISH_THEMES/README.md.
 
 # The config dir the shell itself reads (brand_pick, src/brand/brand.c):
 # polish/ when it exists or hellish/ does not, else the pre-3.4 hellish/.
 # Hard-coding either name listed no themes at all on the other kind of
-# install. POLISH_THEMES wins over HELLISH_THEMES, like every other knob.
+# install. A set POLISH_THEMES wins over HELLISH_THEMES even when empty, as
+# brand_getenv does; empty then means the default.
 _prompt_cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 if [ -e "$_prompt_cfg/polish" ] || [ ! -e "$_prompt_cfg/hellish" ]; then
 	_prompt_cfg="$_prompt_cfg/polish"
 else
 	_prompt_cfg="$_prompt_cfg/hellish"
 fi
-HELLISH_THEMES="${POLISH_THEMES:-${HELLISH_THEMES:-$_prompt_cfg/themes}}"
+HELLISH_THEMES="${POLISH_THEMES-${HELLISH_THEMES-}}"
+HELLISH_THEMES="${HELLISH_THEMES:-$_prompt_cfg/themes}"
+
+# A theme is named like any module the shell loads (src/core/rc_module.c):
+# NAME.hsh, NAME.sh, or a bare NAME whose first line is a polish or hellish
+# shebang. Looked up in that order, so NAME.hsh shadows the other two.
+#
+# Caveat: the shebang test here is a glob, not the C loader's parse: it
+# accepts `#!/bin/sh polish` (polish as an ARGUMENT) and is fooled only that
+# way -- a bare file meant for another shell is still never listed.
+_prompt_ours() {
+	local l
+	IFS= read -r l < "$1" 2>/dev/null || return 1
+	case "$l" in
+	'#!polish'|'#!polish'[[:space:]]*|'#!hellish'|'#!hellish'[[:space:]]*) ;;
+	'#!'*[/[:blank:]]polish|'#!'*[/[:blank:]]polish[[:space:]]*) ;;
+	'#!'*[/[:blank:]]hellish|'#!'*[/[:blank:]]hellish[[:space:]]*) ;;
+	*) return 1 ;;
+	esac
+}
+
+_prompt_file() {
+	if [ -r "$HELLISH_THEMES/$1.hsh" ]; then
+		printf '%s\n' "$HELLISH_THEMES/$1.hsh"
+	elif [ -r "$HELLISH_THEMES/$1.sh" ]; then
+		printf '%s\n' "$HELLISH_THEMES/$1.sh"
+	elif [ -f "$HELLISH_THEMES/$1" ] && _prompt_ours "$HELLISH_THEMES/$1"; then
+		printf '%s\n' "$HELLISH_THEMES/$1"
+	else
+		return 1
+	fi
+}
+
+# The theme name a directory entry stands for, or failure. An entry that
+# _prompt_file would not pick for its own name (x.sh next to x.hsh) is
+# skipped, so a name is listed once and lists what `prompt x` would load.
+_prompt_name() {
+	local name
+	name="${1##*/}"
+	case "$name" in
+	.*|*~) return 1 ;;
+	*.hsh) name="${name%.hsh}" ;;
+	*.sh) name="${name%.sh}" ;;
+	*.*) return 1 ;;
+	esac
+	[ "$(_prompt_file "$name")" = "$1" ] || return 1
+	printf '%s\n' "$name"
+}
 
 # Switching has to clear BOTH spellings before sourcing the new theme.
 # A theme that sets PROMPT (the zsh syntax) and one that sets PS1 pick
@@ -32,23 +81,22 @@ HELLISH_THEMES="${POLISH_THEMES:-${HELLISH_THEMES:-$_prompt_cfg/themes}}"
 # silently keep rendering the old zsh theme, and look like the switch had
 # simply failed.
 prompt_apply() {
-	if [ ! -r "$HELLISH_THEMES/$1.hsh" ]; then
+	local f
+	if ! f="$(_prompt_file "$1")"; then
 		echo "prompt: no such theme: $1" >&2
 		echo "prompt: try 'prompt' for the list" >&2
 		return 1
 	fi
 	unset PS1 PROMPT PS2
-	. "$HELLISH_THEMES/$1.hsh"
+	. "$f"
 	HELLISH_THEME="$1"
 	return 0
 }
 
 prompt_list() {
 	local f name
-	for f in "$HELLISH_THEMES"/*.hsh; do
-		[ -e "$f" ] || continue
-		name="${f##*/}"
-		name="${name%.hsh}"
+	for f in "$HELLISH_THEMES"/*; do
+		name="$(_prompt_name "$f")" || continue
 		if [ "$name" = "$HELLISH_THEME" ]; then
 			printf '* %s\n' "$name"
 		else
@@ -81,10 +129,8 @@ prompt_list() {
 prompt_preview() {
 	local f name was
 	was="$HELLISH_THEME"
-	for f in "$HELLISH_THEMES"/*.hsh; do
-		[ -e "$f" ] || continue
-		name="${f##*/}"
-		name="${name%.hsh}"
+	for f in "$HELLISH_THEMES"/*; do
+		name="$(_prompt_name "$f")" || continue
 		prompt_apply "$name" >/dev/null 2>&1 || continue
 		printf '%-14s ' "$name"
 		if [ -n "${PROMPT:-}" ]; then
@@ -104,23 +150,23 @@ prompt_preview() {
 # it -- and a switcher that rewrote it would eventually eat a hand-edited
 # prompt. 50- sorts after 30-, so this wins on the next session.
 prompt_save() {
-	local dir
+	local dir f
 	prompt_apply "$1" || return 1
+	f="$(_prompt_file "$1")"
 	dir="$_prompt_cfg/rc.d"
 	mkdir -p "$dir" 2>/dev/null
 	{
 		echo "# Written by \`prompt save\`. Delete this file to go back to"
 		echo "# whatever 30-prompt.hsh sets."
 		echo "HELLISH_THEME=$1"
-		echo ". \"\${HELLISH_THEMES:-\${XDG_CONFIG_HOME:-\$HOME/.config}/${_prompt_cfg##*/}/themes}/$1.hsh\""
+		echo ". \"\${HELLISH_THEMES:-\${XDG_CONFIG_HOME:-\$HOME/.config}/${_prompt_cfg##*/}/themes}/${f##*/}\""
 	} > "$dir/50-theme.hsh"
 	echo "prompt: saved $1"
 }
 
 prompt_edit() {
 	local f
-	f="$HELLISH_THEMES/${1:-$HELLISH_THEME}.hsh"
-	if [ ! -e "$f" ]; then
+	if ! f="$(_prompt_file "${1:-$HELLISH_THEME}")"; then
 		echo "prompt: no such theme: ${1:-$HELLISH_THEME}" >&2
 		return 1
 	fi

@@ -1,6 +1,6 @@
 # Prompt themes
 
-Themes are data, not code. Each is one `.hsh` file that sets `PS1` (or
+Themes are data, not code. Each is one file (`NAME.hsh`, `NAME.sh`, or a bare `NAME` whose first line is `#!/usr/bin/env polish`) that sets `PS1` (or
 `PROMPT`, the zsh spelling), and `prompt <name>` sources it.
 
     prompt              list themes, marking the active one

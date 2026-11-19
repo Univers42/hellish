@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # ember -- 24-bit truecolour -- SGR 38;2;r;g;b, not the 256 palette
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # titled -- OSC 0 window title -- KNOWN-BROKEN width today (#72)
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

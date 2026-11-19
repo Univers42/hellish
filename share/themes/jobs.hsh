@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # jobs -- the job counter, which is 0 far more often than not
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

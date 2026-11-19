@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # zshpowerline -- powerline in zsh syntax -- %K background, %F foreground
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

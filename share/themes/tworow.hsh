@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # tworow -- two visible rows -- the column count resets at the newline
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

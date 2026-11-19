@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # githeavy -- every git badge at once; each self-spaces or vanishes
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

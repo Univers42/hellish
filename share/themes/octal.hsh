@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # octal -- \nnn octal escapes -- \052 is a literal asterisk
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

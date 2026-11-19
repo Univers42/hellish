@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # duration -- \p is empty under the threshold and a duration over it
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # classic -- bash's own default, byte for byte
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

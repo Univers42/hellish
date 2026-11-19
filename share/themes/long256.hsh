@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # long256 -- a very long prompt: 256 visible columns of escapes
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

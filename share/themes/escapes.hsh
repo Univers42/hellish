@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # escapes -- unknown escapes pass through literally, exactly like bash
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

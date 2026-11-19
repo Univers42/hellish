@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # quoteheavy -- nested quotes and a literal backslash in the format
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,
