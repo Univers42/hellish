@@ -25,6 +25,8 @@ whole.
 
   prompt    a half-typed line, ^C in the gap, then a command
   isearch   ^C in the gap inside a ^R search (the reported failure)
+  nsearch   the same inside Alt-P, whose context readline 8.3 frees too
+  M-x       the same inside execute-named-command
 
 Each runs with the in-process reader and with the forked one
 (HELLISH_RL_FORK=1), whose child inherits the same read.
@@ -279,7 +281,9 @@ def main():
     for label, extra in cells:
         for trigger, keys, what in (
                 (ord("x"), b"x; echo LEAK_$((6*7))", "prompt"),
-                (0x12, b"\x12ech", "isearch")):
+                (0x12, b"\x12ech", "isearch"),
+                (ord("p"), b"\x1bpech", "nsearch"),
+                (ord("x"), b"\x1bxbeg", "M-x")):
             r = scenario(label, shim, base, extra, trigger, keys, what)
             if r is None:
                 print("skip: the shell never stalled in the shim -- its own "

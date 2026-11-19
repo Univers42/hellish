@@ -171,11 +171,12 @@ $ git commit -m "fix: close [[ ]] on metachar-adjacent ]]"
 
 ### Autosuggestions ✅ *(3.2)*
 
-Shipped in 3.2, opt-in with `export HELLISH_AUTOSUGGEST=1`. As you type, the newest history line
-that starts with the typed text is shown dimmed after the cursor. **→ / End / Ctrl-F** take it,
-**Alt-F** one word of it, and **Alt-N / Alt-P** show other matches. In the same release, Up and
-Down search the history by the text before the cursor. See
-[What's new in 3.2](whats-new.md#inline-hints).
+Shipped in 3.2, opt-in with `export HELLISH_AUTOSUGGEST=1`. As you type, the history line you run
+most that starts with the typed text is shown dimmed after the cursor; before 3.3 it was the newest
+one, which `HELLISH_SUGGEST_STRATEGY=recent` brings back. **→ / End / Ctrl-F** take it, **Alt-F**
+one word of it, and **Alt-N / Alt-P** show other matches. In 3.2, Up and Down also began searching
+the history by the text before the cursor. See [the hint keys](whats-new.md#inline-hints) and
+[how 3.3 ranks them](whats-new.md#hints-rank-what-you-run-most).
 
 ### Completion polish 🚧 *(Week 1, time-boxed)*
 

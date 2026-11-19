@@ -97,6 +97,15 @@ typedef struct s_frame
 
 char	*rl_suggest_update(t_shell *state, int cols);
 char	*rl_suggest_live(t_rl *l);
+/* One candidate while ranking: the text points into hist_cmds and is only
+   good for the call that filled it. */
+typedef struct s_sg_ent
+{
+	const char	*text;
+	size_t		idx;
+	uint64_t	score;
+}	t_sg_ent;
+
 char	*rl_suggest_find(t_shell *state, t_rl *l);
 int		rl_suggest_accept(int count, int key);
 t_shell	*rl_suggest_ghost_state(void);
@@ -104,7 +113,8 @@ int		rl_suggest_bell(void);
 int		rl_suggest_word(int count, int key);
 int		rl_suggest_older(int count, int key);
 int		rl_suggest_newer(int count, int key);
-ssize_t	rl_suggest_scan(t_shell *state, t_rl *l, size_t from);
+size_t	rl_suggest_cands(t_shell *state, t_rl *l);
+size_t	rl_suggest_rank(t_shell *state, t_rl *l);
 void	rl_suggest_cyc_clear(t_rl *l);
 bool	rl_suggest_cyc_sync(t_shell *state, t_rl *l);
 void	rl_suggest_end(t_shell *state);
@@ -134,6 +144,20 @@ bool	rl_push_col(t_string *f, int n);
 # else
 #  define RL_INPROC_OK 0
 # endif
+
+/* The readers that keep a heap context on their stack, the ones readline
+   8.3 frees on SIGINT (rl_intr.c). The bit is spelled out for older
+   headers: a shared build runs on whatever libreadline.so.8 the machine
+   has, and before 8.3 the bit means nothing. */
+# ifndef RL_STATE_READSTR
+#  define RL_STATE_READSTR 0x10000000
+# endif
+# define RL_CXT_READERS 0x10000180
+
+/* rl_intr_cell: a ^C the filter kept from readline, not yet replayed. */
+# define RL_INTR_PARKED 2
+
+typedef volatile sig_atomic_t	t_intr;
 
 /* SIGWINCH during a read (rl_winch.c, rl_winch2.c). readline's own resize
    path calls rl_forced_update_display() as soon as a redisplay function is
@@ -165,12 +189,13 @@ int		rl_shell_leave(t_shell *state, t_rl_bracket *b);
 void	rl_prerow_arm(t_string *rows);
 FILE	*rl_out_open(void);
 int		rl_getc_hook(FILE *stream);
+void	rl_take_signals(void);
 int		rl_nsearch_reclaim(int c);
 int		rl_idle_timeout(void);
 int		rl_idle_fd(void);
 void	rl_idle_event(int r);
 void	rl_block(sigset_t *old);
-int		*rl_intr_cell(void);
+t_intr	*rl_intr_cell(void);
 int		*rl_editor_abort_cell(void);
 bool	rl_should_abort(void);
 int		rl_abort_value(void);

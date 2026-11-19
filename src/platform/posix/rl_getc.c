@@ -25,7 +25,7 @@
 ** is what bash does. This one can: a SIGINT that readline handled during
 ** the read, or any other reason to stop (rl_should_abort), makes it
 ** return READERR, readline's own "stop reading" answer (readline.c), and
-** readline() then returns NULL.
+** readline() then returns NULL. rl_intr.c is where the signal is taken.
 **
 ** It is also where the prompt's idle work runs -- the mascot animation
 ** ticks on a timeout -- since an rl_event_hook would make readline stop
@@ -36,24 +36,6 @@
 ** read by the prompt that comes up for it. The read is of the terminal's
 ** second, non-blocking descriptor where there is one (rl_keyfd.c), so the
 ** only place this ever waits is pselect. */
-
-/* A signal readline caught since the last look: let readline handle it
-   now -- cleanup, the application's handler, re-prep -- and remember an
-   interrupt, which ends this read. */
-static void	rl_take_signals(void)
-{
-	int	sig;
-
-	sig = rl_pending_signal();
-	if (!sig)
-		return ;
-	if (sig == SIGINT)
-	{
-		*rl_intr_cell() = 1;
-		rl_suggest_unpaint();
-	}
-	rl_check_signals();
-}
 
 static struct timespec	*rl_timeout(struct timespec *ts)
 {

@@ -74,7 +74,7 @@ RUN set -eux; \
 		done; \
 		rm -rf /var/lib/apt/lists/*; \
 	elif command -v pacman >/dev/null 2>&1; then \
-		pacman -Sy --noconfirm --needed base-devel readline git bash \
+		pacman -Sy --noconfirm --needed --overwrite '*' base-devel readline git bash \
 			python clang; \
 	elif command -v dnf >/dev/null 2>&1; then \
 		dnf -y install gcc clang make readline-devel ncurses-devel git \

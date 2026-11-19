@@ -132,6 +132,11 @@ used to contain is now handled in place:
   tick on its timeout. A `SIGINT` readline handled during the read makes it
   return `READERR`, readline's way to end its main loop, so `readline()`
   returns `NULL` and the read reports "interrupted" (`status == 2`).
+- A `SIGINT` while `^R`, `Alt-P` or `M-x` is up never reaches readline:
+  8.3 frees those readers' contexts on `SIGINT`, expecting the handler to
+  longjmp, and this reader returns instead. A filter in front of readline's
+  handler parks the signal, the reader unwinds on `EOF`, and the `^C` is
+  replayed in the main loop (`rl_intr.c`).
 - Shell code run from the editor -- widgets, completion functions -- goes
   through `rl_shell_exec` (`rl_editor.c`): readline's signal handlers come
   down for the call, the terminal settings and `$?` are put back, and

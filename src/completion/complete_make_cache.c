@@ -44,6 +44,7 @@ void	mk_clear(t_make_cache *c)
 	while (i < c->targets.len)
 		xfree(((char **)c->targets.ctx)[i++]);
 	xfree(c->targets.ctx);
+	xfree(c->order.ctx);
 	xfree(c->name);
 	ft_bzero(c, sizeof(*c));
 }

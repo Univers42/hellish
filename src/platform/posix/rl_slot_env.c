@@ -64,6 +64,18 @@ static int	sg_limit(t_shell *state)
 	return (ft_atoi(e->value));
 }
 
+/* HELLISH_SUGGEST_STRATEGY: how suggestions are ranked. Exactly `recent`
+   is newest first; unset, empty or anything else (typos included) is the
+   default, frecency, so a misspelt value never silently changes order to
+   the old one. */
+static bool	sg_wants_recent(t_shell *state)
+{
+	t_env	*e;
+
+	e = env_get(&state->env, "HELLISH_SUGGEST_STRATEGY");
+	return (e && e->value && !ft_strcmp(e->value, "recent"));
+}
+
 /* Interactive reads only, right before rl_preinit: note what is wanted and
 ** switch the slot hooks on. Doing it inside rl_preinit's caller keeps
 ** `bind -p` (which also runs rl_preinit, in -c mode) exactly as bash's.
@@ -76,4 +88,5 @@ void	rl_slot_sync(t_shell *state)
 	state->rl.feat_want[FEAT_HIST] = hp_wanted(state);
 	state->rl.feat_want[FEAT_ACCEPT] = as_wanted(state);
 	state->rl.sg_max = sg_limit(state);
+	state->rl.sg_recent = sg_wants_recent(state);
 }

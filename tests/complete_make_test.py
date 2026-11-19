@@ -96,7 +96,7 @@ def drain_idle(fd, chunks, quiet=0.35, cap=8.0):
     return chunks
 
 
-def spawn(cwd, home):
+def spawn(cwd, home, cols=200, extra=None):
     env = {
         "HOME": home, "PATH": "/usr/bin:/bin", "TERM": "xterm-256color",
         "LANG": "C.UTF-8", "PS1": "$ ",
@@ -106,6 +106,7 @@ def spawn(cwd, home):
         "ASAN_OPTIONS": "detect_leaks=%d" % (1 if ASAN else 0),
     }
     env.update(EXTRA)
+    env.update(extra or {})
     pid, fd = pty.fork()
     if pid == 0:
         # nothing may leave this block except _exit (see
@@ -118,16 +119,22 @@ def spawn(cwd, home):
         except BaseException:
             pass
         os._exit(127)
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 60, 200, 0, 0))
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", 60, cols, 0, 0))
     return pid, fd
 
 
-def session(cwd, steps, settle=0.6):
+def session(cwd, steps, settle=0.6, hist=None, env=None, cols=200):
     """Run `steps` (bytes to type, or a callable run between keystrokes)
-    in a fresh shell; return the output of each bytes step, in order."""
+    in a fresh shell; return the output of each bytes step, in order.
+    `hist` is the history the shell starts with, oldest first."""
     home = tempfile.mkdtemp(prefix="hellish_mk_home_")
     TMP.append(home)
-    pid, fd = spawn(cwd, home)
+    extra = dict(env or {})
+    if hist is not None:
+        extra["HISTFILE"] = os.path.join(home, "hist")
+        with open(extra["HISTFILE"], "w") as f:
+            f.write("".join(h + "\n" for h in hist))
+    pid, fd = spawn(cwd, home, cols, extra)
     chunks = []
     drain_idle(fd, chunks, quiet=0.4, cap=6.0)
     outs = []
@@ -175,6 +182,19 @@ def listing(out):
     if j >= 0:
         block = block[:j]
     return set(ANSI.sub("", block).split())
+
+
+def ordered(out):
+    """Like listing(), but in the order printed. Needs a terminal so
+    narrow (session(..., cols=10)) that readline prints one name a row."""
+    i = out.find("\a\r\n")
+    if i < 0:
+        return []
+    block = out[i + 3:]
+    j = block.find("\r\n$ ")
+    if j >= 0:
+        block = block[:j]
+    return ANSI.sub("", block).split()
 
 
 def line_is(out, want):
@@ -453,6 +473,86 @@ def cases():
                                             b.stdout, b.returncode))
 
 
+# `re` is run three times, `clean` twice and last, `test` once: frecency
+# says re, clean, test; the newest entry says clean, re, test.
+HIST = ["make re", "make test", "make re", "make clean", "make re",
+        "make clean"]
+RANKED = "all clean fclean lint re test".split()
+UNUSED = ["all", "fclean", "lint"]
+
+
+def ranked_listing(hist, typed=b"make ", env=None, files=None):
+    d = fixture(dict({mk: "".join("%s:\n" % t for t in RANKED)},
+                     **(files or {})))
+    out = session(d, [typed + b"\t\t\t"], hist=hist, env=env, cols=10)[0]
+    return ordered(out)
+
+
+def ranked_cases():
+    # 25
+    got = ranked_listing(HIST)
+    check("25 used targets by frecency, then the rest alphabetically",
+          got == ["re", "clean", "test"] + UNUSED, str(got))
+    got = ranked_listing(HIST, env={"HELLISH_SUGGEST_STRATEGY": "recent"})
+    check("25 STRATEGY=recent: used targets newest first",
+          got == ["clean", "re", "test"] + UNUSED, str(got))
+    got = ranked_listing([])
+    check("25 no history: alphabetical", got == RANKED, str(got))
+    got = ranked_listing(["echo re", "ls test", "cmake lint", "make"])
+    check("25 only invocations of make count", got == RANKED, str(got))
+    got = ranked_listing(["gmake lint", "/usr/bin/make test", "make lint"])
+    check("25 gmake and a path to make count",
+          got == ["lint", "test", "all", "clean", "fclean", "re"], str(got))
+    got = ranked_listing(["make re re re", "make lint test", "make test"])
+    check("25 a word repeated inside one entry counts once",
+          got == ["test", "lint", "re", "all", "clean", "fclean"], str(got))
+    out = comp_hist(HIST, b"make cl")
+    check("25 make cl<TAB> still completes", line_is(out, "make clean "),
+          repr(out[-80:]))
+
+    # 26
+    got = ranked_listing(["make re", "make re", "make re", "make fclean",
+                          "make test"], env={"HELLISH_SUGGEST_MAX": "2"})
+    check("26 the window bound applies to make too (MAX=2)",
+          got == ["test", "fclean", "all", "clean", "lint", "re"], str(got))
+
+    # 27
+    many = {"f%02d" % n: "x" for n in range(30)}
+    d = fixture(dict({mk: "".join("%s:\n" % t for t in RANKED)}, **many))
+    outs = session(d, [b"make \t\t\t", KILL, b"ls f\t\t\t", KILL,
+                       b"bas\t\t\t"], hist=HIST, cols=10)
+    mk_order = ordered(outs[0])
+    files = ordered(outs[2])
+    cmds = ordered(outs[4])
+    check("27 make TAB ranked", mk_order == ["re", "clean", "test"]
+          + UNUSED, str(mk_order))
+    check("27 then a filename TAB: sorted again, not left unsorted",
+          len(files) >= 30 and files == sorted(files), str(files[:8]))
+    check("27 then a command TAB: sorted again",
+          len(cmds) >= 2 and cmds == sorted(cmds), str(cmds[:8]))
+
+    # 28
+    d = fixture({mk: "all:\nclean:\n"})
+    outs = session(d, [b"shopt -s progcomp\n",
+                       b"complete -W 'zz yy' make\n", b"make \t\t\t"],
+                   hist=["make clean", "make all", "make clean"])
+    check("28 a user complete -W still wins over the ranking",
+          listing(outs[2]) == {"zz", "yy"}, str(sorted(listing(outs[2]))))
+
+    # 29
+    files = {"sub/Makefile": "s1:\n", "other.mk": "o1:\n"}
+    for typed in (b"make -C sub ", b"make -f other.mk "):
+        got = ranked_listing(HIST, typed, files=files)
+        check("29 %s keeps filenames with a history" % typed.decode(),
+              set(got) == {mk, "sub/", "other.mk"}
+              and got == sorted(got), str(got))
+
+
+def comp_hist(hist, typed):
+    d = fixture({mk: "".join("%s:\n" % t for t in RANKED)})
+    return session(d, [typed + b"\t"], hist=hist)[0]
+
+
 def main():
     if not os.access(SHELL, os.X_OK):
         sys.exit("complete_make_test: not executable: %s" % SHELL)
@@ -465,6 +565,8 @@ def main():
             EXTRA.clear()
             EXTRA.update(env)
             cases()
+            if not ASAN:
+                ranked_cases()
     finally:
         for d in TMP:
             shutil.rmtree(d, ignore_errors=True)

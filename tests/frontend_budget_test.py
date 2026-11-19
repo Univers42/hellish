@@ -46,6 +46,9 @@ FAILS = []
 MARK = b"#> "
 ENTERS = 20
 KEYS = 40
+ROUNDS = 12
+DIM = b"\x1b[2m"
+HIST_N = 1000
 TRACE_LINE = re.compile(r"^(\d+)\s+(\d+\.\d+)\s+([a-z_0-9]+)")
 
 # name -> (per Enter, per key, idle total, writes per resize phase)
@@ -63,6 +66,11 @@ BUDGET["in-process/as+rp"] = dict(BUDGET["in-process"], nomatch_write=2.2)
 BUDGET["in-process/as"] = dict(BUDGET["in-process"], nomatch_write=1.2)
 BUDGET["forked/as+rp"] = dict(BUDGET["forked"], nomatch_write=2.2)
 BUDGET["forked/as"] = dict(BUDGET["forked"], nomatch_write=1.2)
+# Frecency (#140): a history of 1000 distinct entries, all matching the
+# first key, so every Backspace ranks them all. Same per-key budget: the
+# ranking is CPU, and reuses its buffers instead of asking the kernel.
+BUDGET["in-process/frecent"] = dict(BUDGET["in-process"], nomatch_write=1.2)
+BUDGET["forked/frecent"] = dict(BUDGET["forked"], nomatch_write=1.2)
 SEED = "x" * 60
 AS_ON = {"HELLISH_AUTOSUGGEST": "1"}
 FORKING = ("clone", "clone3", "fork", "vfork", "pipe2", "pipe", "wait4",
@@ -77,7 +85,7 @@ def check(name, ok, detail=""):
 
 
 class Traced:
-    def __init__(self, home, trace, extra, seed=()):
+    def __init__(self, home, trace, extra, seed=(), hist=()):
         env = {
             "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
             "TERM": "xterm-256color", "LANG": "C.UTF-8", "LC_ALL": "C.UTF-8",
@@ -87,6 +95,10 @@ class Traced:
             "HISTFILE": "/dev/null", "ASAN_OPTIONS": "detect_leaks=0",
         }
         env.update(extra)
+        if hist:
+            env["HISTFILE"] = os.path.join(home, "hist")
+            with open(env["HISTFILE"], "w") as f:
+                f.write("".join(h + "\n" for h in hist))
         self.buf = bytearray()
         self.phases = []
         self.pid, self.fd = pty.fork()
@@ -148,6 +160,19 @@ class Traced:
         os.write(self.fd, b"\x15")
         self.settle()
 
+    def scanning(self):
+        """Forward keys and Backspace over a long history: each Backspace
+        ends a cached answer, so the ranking runs; forward keys must not."""
+        self.mark = len(self.buf)
+        for _ in range(ROUNDS):
+            for key in (b"x", b"x", b"x", b"x", b"\x7f"):
+                os.write(self.fd, key)
+                self.pump(0.03)
+        self.settle()
+        self.dim = DIM in bytes(self.buf[self.mark:])
+        os.write(self.fd, b"\x15")
+        self.settle()
+
     def idle(self):
         time.sleep(2.0)
 
@@ -184,14 +209,16 @@ def counts(lines, t0, t1):
     return c
 
 
-def cell(label, extra, base, seed=()):
+def cell(label, extra, base, seed=(), hist=()):
     trace = os.path.join(base, "trace-" + label.replace("/", "_"))
     home = tempfile.mkdtemp(dir=base)
-    s = Traced(home, trace, extra, seed)
+    s = Traced(home, trace, extra, seed, hist)
     s.phase("enter", s.enters)
     s.phase("idle", s.idle)
     s.phase("key", s.typing)
     s.phase("nomatch", lambda: s.typing(b"q"))
+    if hist:
+        s.phase("scan", s.scanning)
     s.phase("winch", s.winch_same)
     s.phase("rows", s.rows_only)
     s.close()
@@ -234,6 +261,19 @@ def cell(label, extra, base, seed=()):
         check("%s: a key with nothing to paint does at most %.1f writes"
               % (label, b["nomatch_write"]), n <= b["nomatch_write"],
               "%.1f per key" % n)
+    if hist:
+        n = sum(by["scan"].values()) / float(ROUNDS * 5)
+        w = by["scan"]["write"] / float(ROUNDS * 5)
+        print("#    %s: %d distinct entries, per key %.1f syscalls, "
+              "%.1f writes" % (label, len(hist), n, w))
+        check("%s: a key over %d distinct entries, Backspace included, "
+              "costs at most %d syscalls" % (label, len(hist), b["key"]),
+              n <= b["key"], "%.1f per key: %s" % (
+                  n, dict(by["scan"].most_common(6))))
+        check("%s: and at most %d writes" % (label, b["key_write"]),
+              w <= b["key_write"], "%.1f per key" % w)
+        check("%s: the ghost was painted over that history" % label,
+              s.dim, "no dim ghost in the output")
     check("%s: an idle prompt costs nothing" % label,
           sum(by["idle"].values()) == 0,
           "%d syscalls while idle: %s" % (sum(by["idle"].values()),
@@ -258,6 +298,10 @@ def main():
         cell("forked/as+rp", dict(AS_ON, HELLISH_RL_FORK="1"), base, seed)
         cell("forked/as", dict(AS_ON, RPROMPT="", HELLISH_RL_FORK="1"),
              base, seed)
+        hist = ["xxxx%04d" % n for n in range(HIST_N)]
+        cell("in-process/frecent", dict(AS_ON, RPROMPT=""), base, (), hist)
+        cell("forked/frecent", dict(AS_ON, RPROMPT="", HELLISH_RL_FORK="1"),
+             base, (), hist)
     finally:
         shutil.rmtree(base, ignore_errors=True)
     if FAILS:

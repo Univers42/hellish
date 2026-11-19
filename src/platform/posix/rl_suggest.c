@@ -12,7 +12,8 @@
 
 #include "rl_private.h"
 
-/* The inline suggestion: the newest history entry that starts with what
+/* The inline suggestion: the best-ranked history entry (frecency, or the
+** newest with HELLISH_SUGGEST_STRATEGY=recent) that starts with what
 ** is typed, shown dim after the cursor and never part of the line. This
 ** file decides WHAT may be suggested and WHEN; rl_suggest2.c turns it into
 ** the text and rl_rprompt.c paints it.
@@ -23,16 +24,16 @@
 ** is a C1 control in its UTF-8 form: running `printf '\e[31m'` once must
 ** not repaint every later prompt. */
 
-/* The newest of the last sg_max entries that starts with the first `n`
-   bytes of the line, is longer than it and is clean (rl_suggest_scan). */
+/* The best-ranked of the last sg_max entries that start with the line, are
+   longer than it and are clean (rl_suggest_rank), or NULL. */
 static char	*sg_scan(t_shell *state, t_rl *l)
 {
-	ssize_t	i;
+	char	**a;
 
-	i = rl_suggest_scan(state, l, state->hist.hist_cmds.len);
-	if (i < 0)
+	if (!rl_suggest_rank(state, l))
 		return (NULL);
-	return (((char **)state->hist.hist_cmds.ctx)[i]);
+	a = (char **)state->hist.hist_cmds.ctx;
+	return (a[*(size_t *)l->sg_rank.ctx]);
 }
 
 /* True when the last scan still answers for the line: the line extends the
@@ -54,9 +55,12 @@ static bool	sg_cached(t_rl *l, size_t n)
 ** Typing extends the line, and an entry that matches the longer line
 ** matched the shorter one too -- so when the line still starts with the one
 ** the last scan was for, the answer is the same entry as long as it still
-** matches (or "nothing" for good). That makes a key O(line) with no scan,
-** and a paste of 4 KB one scan instead of 4096. Anything else (a
-** Backspace, a recalled line) scans again. The history cannot change under
+** matches (or "nothing" for good). That holds for the frecency ranking as
+** well: an entry's score does not depend on the line, so the winner for
+** the shorter line, still matching, is the best of the smaller set too.
+** That makes a key O(line) with no scan, and a paste of 4 KB one scan
+** instead of 4096. Anything else (a Backspace, a recalled line) scans
+** again. The history cannot change under
 ** it: it only grows between reads, and the cache is dropped per read. */
 char	*rl_suggest_find(t_shell *state, t_rl *l)
 {

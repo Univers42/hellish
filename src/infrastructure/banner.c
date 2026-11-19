@@ -98,7 +98,7 @@ static void	build_left(const char **l)
 			" \xc2\xb7 a POSIX shell with bite";
 	l[i + 4] = cwd;
 	l[i + 5] = "";
-	l[i + 6] = "\033[38;5;245mthe 3.2 guide, with examples\033[0m";
+	l[i + 6] = "\033[38;5;245mthe 3.3 guide, with examples\033[0m";
 	l[i + 7] = guide_link();
 	l[i + 8] = NULL;
 }

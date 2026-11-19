@@ -13,7 +13,7 @@
 #include "banner_private.h"
 #include "shell.h"
 
-/* One row of "What's new in 3.2": the keys that reach a new feature, in
+/* One row of "What's new in 3.3": the keys that reach a new feature, in
    code-yellow, then what it does, in muted grey -- the shape of "Getting
    started", so each can be tried before the prompt even appears. Every
    row fits the 32 columns the right column has on an 80-column terminal.
@@ -26,16 +26,12 @@
    Returns 0 at the end of a group. */
 static int	news_row(char *dst, int n)
 {
-	static const char	*utf8[] = {"\xe2\x86\x91 \xe2\x86\x93       ",
-		"make <TAB>", "bind -x   ", "bindkey   ", "${var@P}  ", "$SRANDOM  ",
-		NULL, "\xe2\x86\x92 ^F End  ", "Alt-F     ", "Alt-N/P   ", NULL};
-	static const char	*ascii[] = {"Up Down   ", "make <TAB>", "bind -x   ",
-		"bindkey   ", "${var@P}  ", "$SRANDOM  ", NULL, "Right ^F  ",
-		"Alt-F     ", "Alt-N/P   ", NULL};
-	static const char	*what[] = {"history by prefix", "Makefile targets",
-		"key runs a command", "zsh binds now work", "render as a prompt",
-		"and $EPOCHREALTIME", NULL, "take the dim hint", "take one word",
-		"older/newer hint"};
+	static const char	*utf8[] = {"make <TAB>", NULL,
+		"\xe2\x86\x92 ^F End  ", "Alt-N/P   ", NULL};
+	static const char	*ascii[] = {"make <TAB>", NULL, "Right ^F  ",
+		"Alt-N/P   ", NULL};
+	static const char	*what[] = {"most-run first", NULL,
+		"take your most-run", "the next most-run"};
 	const char			**keys;
 
 	keys = ascii;
@@ -57,7 +53,7 @@ static void	news_block(const char **r, int *i, char nw[][192])
 	int	m;
 
 	r[(*i)++] = "\033[1;48;5;209;38;5;236m NEW \033[0m "
-		"\033[1;38;5;81mWhat's new in 3.2\033[0m";
+		"\033[1;38;5;81mWhat's new in 3.3\033[0m";
 	r[(*i)++] = "";
 	k = 0;
 	m = 0;
@@ -74,7 +70,7 @@ static void	news_block(const char **r, int *i, char nw[][192])
    (shown once). */
 void	build_right(const char **r)
 {
-	static char	nw[9][192];
+	static char	nw[3][192];
 	static char	status[192];
 	int			i;
 

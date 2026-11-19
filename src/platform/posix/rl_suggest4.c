@@ -53,7 +53,9 @@ void	rl_suggest_stale(void)
 
 /* The read is over (or about to start): nothing of the ghost, of the
    search it was found with or of a widget's POSTDISPLAY outlives it. The
-   history may have changed since, so the cache cannot either. */
+   history may have changed since, so the cache cannot either. The ranking
+   buffers are freed here too: they are reused by every key of one read,
+   never kept between reads. */
 void	rl_suggest_end(t_shell *state)
 {
 	t_rl	*l;
@@ -65,6 +67,10 @@ void	rl_suggest_end(t_shell *state)
 	xfree(l->sg_post_at);
 	xfree(l->sg_pub);
 	rl_suggest_cyc_clear(l);
+	xfree(l->sg_rank.ctx);
+	xfree(l->sg_scr.ctx);
+	l->sg_rank = (t_vec){};
+	l->sg_scr = (t_vec){};
 	l->sg_ent = NULL;
 	l->sg_prev = NULL;
 	l->sg_post = NULL;

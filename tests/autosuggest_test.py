@@ -16,6 +16,13 @@ next run of non-blank bytes. Cycling (Alt-N older, Alt-P newer): distinct
 matching entries, no wrap (bell at either end), reset by any edit. With no
 history ghost these keys are their stock readline functions.
 
+Ranking (HELLISH_SUGGEST_STRATEGY): by default the entry with the best
+frecency (how often and how recently its text was run; weight 2^16 halved
+per 64 newer entries, summed per distinct text, ties to the newest) is the
+ghost and the order Alt-N / Alt-P walk; `recent` is newest first. `model()`
+below is the same rule written again in Python, and the cases check the
+shell against it as well as against hand-computed answers.
+
 Usage: python3 autosuggest_test.py /path/to/hellish [case-name-part [inproc]]
 """
 import fcntl
@@ -47,6 +54,7 @@ CTRL_F, CTRL_U, CTRL_C, CTRL_D, CTRL_R, CTRL_G = (
     "\x06", "\x15", "\x03", "\x04", "\x12", "\x07")
 BKSP = "\x7f"
 ON = "HELLISH_AUTOSUGGEST=1"
+STRAT = "HELLISH_SUGGEST_STRATEGY"
 
 try:
     import pyte
@@ -717,14 +725,29 @@ def case_cycle(fork, tag):
 
 
 def case_cycle_dupes(fork, tag):
+    """The pre-frecency rule, pinned: HELLISH_SUGGEST_STRATEGY=recent."""
+    s = shell(fork, ["echo a1", "echo a2", "echo a1", "echo a3"],
+              env={STRAT: "recent"})
+    s.keys("echo a")
+    seen = [s.ghost()]
+    for _ in range(4):
+        s.keys(ALT_N)
+        seen.append(s.ghost())
+    check(tag + "30 C2 recent: distinct entries, once each, then the end",
+          seen == ["3", "1", "2", "2", "2"], repr(seen))
+    s.close()
+
+
+def case_cycle_dupes_frecent(fork, tag):
+    """Same history, default strategy: a1 was run twice, so it leads."""
     s = shell(fork, ["echo a1", "echo a2", "echo a1", "echo a3"])
     s.keys("echo a")
     seen = [s.ghost()]
     for _ in range(4):
         s.keys(ALT_N)
         seen.append(s.ghost())
-    check(tag + "30 C2 distinct entries, once each, then the end",
-          seen == ["3", "1", "2", "2", "2"], repr(seen))
+    check(tag + "30 C2 frecent: twice-run a1 first, once each, the end",
+          seen == ["1", "3", "2", "2", "2"], repr(seen))
     s.close()
 
 
@@ -945,6 +968,295 @@ def case_cycle_history_shrinks(fork, tag):
 
 
 
+def clean_text(t):
+    """The ghost's filter: no control byte, no DEL, no C1 (as UTF-8)."""
+    return not any(ord(c) < 0x20 or ord(c) == 0x7f or 0x80 <= ord(c) < 0xa0
+                   for c in t)
+
+
+def model(lines, prefix, strategy="frecent", mx=1000):
+    """The ranking, written again: distinct texts, best first."""
+    n = len(lines)
+    score, newest = {}, {}
+    for i in range(max(0, n - mx), n):
+        t = lines[i]
+        if not (t.startswith(prefix) and len(t) > len(prefix)
+                and clean_text(t)):
+            continue
+        if strategy == "recent":
+            score[t] = i + 1
+        else:
+            score[t] = score.get(t, 0) + (65536 >> min((n - 1 - i) // 64, 16))
+        newest[t] = i
+    return sorted(score, key=lambda t: (-score[t], -newest[t]))
+
+
+def seeded(fork, lines, env=None, **kw):
+    """A shell whose history is exactly `lines` (oldest first): nothing is
+    run, so no other entry is in it, and autosuggest is on from the start."""
+    home = tempfile.mkdtemp(prefix="autosuggest_")
+    with open(os.path.join(home, "hist"), "w") as f:
+        f.write("".join(line + "\n" for line in lines))
+    e = {"HELLISH_AUTOSUGGEST": "1"}
+    e.update(env or {})
+    return Session(home, fork=fork, env=e, **kw)
+
+
+def walk(s, typed, steps):
+    """The ghost after `typed`, then after each of `steps` Alt-N."""
+    s.keys(typed)
+    seen = [s.ghost()]
+    for _ in range(steps):
+        s.keys(ALT_N)
+        seen.append(s.ghost())
+    return seen
+
+
+# re is run three times, clean twice and newest, test once: frecency says
+# re, the newest entry says clean.
+ISSUE = ["make re", "make test", "make re", "make clean", "make re",
+         "make clean"]
+
+
+def case_frecent_issue(fork, tag):
+    s = seeded(fork, ISSUE)
+    got = walk(s, "make ", 3)
+    check(tag + "37 F1 frecent: the most-run command, not the newest",
+          got == ["re", "clean", "test", "test"], repr(got))
+    s.close()
+    s = seeded(fork, ISSUE, env={STRAT: "recent"})
+    got = walk(s, "make ", 3)
+    check(tag + "37 F1 recent: the newest, repeats collapsed",
+          got == ["clean", "re", "test", "test"], repr(got))
+    s.close()
+
+
+def case_frecent_recent(fork, tag):
+    lines = ["echo a1", "echo b1", "echo a2", "echo b2", "echo a3"]
+    s = seeded(fork, lines, env={STRAT: "recent"})
+    got = walk(s, "echo ", 4)
+    check(tag + "38 F2 recent is newest first, as before frecency",
+          got == ["a3", "b2", "a2", "b1", "a1"], repr(got))
+    s.close()
+
+
+def case_frecent_default(fork, tag):
+    for val in ("", "bogus", "RECENT", "recent "):
+        s = seeded(fork, ISSUE, env={STRAT: val})
+        got = walk(s, "make ", 0)
+        check(tag + "39 F3 %r is frecent" % val, got == ["re"], repr(got))
+        s.close()
+    s = seeded(fork, ISSUE)
+    got = walk(s, "make ", 0)
+    check(tag + "39 F3 unset is frecent", got == ["re"], repr(got))
+    s.close()
+
+
+def case_frecent_live(fork, tag):
+    s = seeded(fork, ISSUE)
+    steps = (("", "re"), (STRAT + "=recent", "clean"),
+             (STRAT + "=bogus", "re"), (STRAT + "=recent", "clean"),
+             ("unset " + STRAT, "re"))
+    for cmd, want in steps:
+        if cmd:
+            s.run(cmd)
+        got = walk(s, "make ", 0)
+        check(tag + "40 F4 after %r the ghost is %r" % (cmd, want),
+              got == [want], repr(got))
+        s.keys(CTRL_U)
+    s.close()
+
+
+def case_frecent_tie(fork, tag):
+    lines = ["echo x2", "echo x1", "echo x2", "echo x1"]
+    s = seeded(fork, lines)
+    got = walk(s, "echo x", 2)
+    check(tag + "41 F5 equal scores: the newest first",
+          got == ["1", "2", "2"], repr(got))
+    s.close()
+    s = seeded(fork, lines[1:] + ["echo x2"])
+    got = walk(s, "echo x", 2)
+    check(tag + "41 F5 equal scores, other way round",
+          got == ["2", "1", "1"], repr(got))
+    s.close()
+
+
+def decay_lines(total):
+    """fa twice at the very start, filler, fb newest: `total` entries."""
+    lines = ["echo fa", "true 0", "echo fa"]
+    lines += ["true %d" % n for n in range(1, total - 3)]
+    return lines + ["echo fb"]
+
+
+def case_frecent_decay(fork, tag):
+    # Two fa at ages total-1 and total-3. Weight 2^16 halves each 64 newer
+    # entries: at 66 entries (ages 65, 63) 2^15 + 2^16 beats fb's 2^16; at
+    # 67 (ages 66, 64) both have halved, 2^16 ties, and the newest wins.
+    for total, want in ((20, "fa"), (66, "fa"), (67, "fb"), (300, "fb")):
+        lines = decay_lines(total)
+        s = seeded(fork, lines)
+        got = walk(s, "echo f", 0)
+        check(tag + "42 F6 %d entries: %s wins" % (total, want),
+              got == [want[1]] and model(lines, "echo f")[0] == "echo " + want,
+              repr(got))
+        s.close()
+
+
+def case_frecent_window(fork, tag):
+    lines = ["echo wa", "echo wb", "echo wa", "echo wb", "echo wa",
+             "echo wc", "echo wb"]
+    s = seeded(fork, lines)
+    got = walk(s, "echo w", 0)
+    check(tag + "43 F7 whole history: wa 3, wb 3, wc 1: the tie goes to "
+          "the newest", got == ["b"], repr(got))
+    s.close()
+    s = seeded(fork, lines, env={"HELLISH_SUGGEST_MAX": "3"})
+    got = walk(s, "echo w", 3)
+    check(tag + "43 F7 MAX=3: wa, wc, wb once each, newest first",
+          got == ["b", "c", "a", "a"], repr(got))
+    s.close()
+    lines = ["echo wa", "echo wa", "echo wb", "echo wa", "echo wb",
+             "echo wc"]
+    s = seeded(fork, lines)
+    got = walk(s, "echo w", 0)
+    check(tag + "43 F7 MAX unset: wa x3 wins", got == ["a"], repr(got))
+    s.close()
+    s = seeded(fork, lines, env={"HELLISH_SUGGEST_MAX": "4"})
+    got = walk(s, "echo w", 2)
+    check(tag + "43 F7 MAX=4: the two older wa do not count, wb x2 wins",
+          got == ["b", "c", "a"], repr(got))
+    s.close()
+
+
+def case_frecent_cycle(fork, tag):
+    s = seeded(fork, ISSUE)
+    s.keys("make ")
+    order = []
+    for _ in range(3):
+        order.append(s.ghost())
+        s.keys(ALT_N)
+    check(tag + "44 F8 Alt-N follows the score", order == ["re", "clean",
+          "test"] and s.ghost() == "test", repr(order))
+    s.keys(ALT_N)
+    check(tag + "44 F8 bell at the last, ghost stays",
+          b"\a" in s.since() and s.ghost() == "test", repr(s.since()))
+    s.keys(ALT_P + ALT_P)
+    check(tag + "44 F8 Alt-P walks back to the best",
+          s.ghost() == "re" and s.row() == PROMPT + "make re",
+          repr(s.row()))
+    s.keys(ALT_P)
+    check(tag + "44 F8 bell at the best, no wrap",
+          b"\a" in s.since() and s.ghost() == "re", repr(s.since()))
+    s.close()
+
+
+def case_frecent_dirty(fork, tag):
+    lines = ["echo ok", "echo \x1b[31mred", "echo \x1b[31mred",
+             "echo \x1b[31mred", "echo ok2"]
+    s = seeded(fork, lines)
+    got = walk(s, "echo ", 3)
+    check(tag + "45 F9 a frequent entry holding ESC is never offered",
+          got == ["ok2", "ok", "ok", "ok"] and b"\x1b[31m" not in s.buf,
+          repr(got))
+    s.close()
+
+
+def case_frecent_history_shrinks(fork, tag):
+    s = seeded(fork, ISSUE)
+    s.run("bind -x '\"\\C-t\": history -c'")
+    s.keys("make ")
+    s.keys(ALT_N)
+    check(tag + "46 F10 cycled before the clear", s.ghost() == "clean",
+          repr(s.ghost()))
+    s.keys("\x14")
+    s.keys(ALT_N)
+    check(tag + "46 F10 no ghost survives a cleared history (Alt-N)",
+          s.ghost() == "" and s.alive(), repr(s.ghost()))
+    s.keys(CTRL_U + "make ")
+    s.keys(ALT_N + ALT_P)
+    check(tag + "46 F10 nor a cycle begun afterwards",
+          s.ghost() == "" and s.alive(), repr(s.ghost()))
+    s.keys("\x07\x15")
+    s.run("echo ok")
+    check(tag + "46 F10 the shell still runs lines",
+          "ok" in s.screen_text(), repr(s.screen_text()[-200:]))
+    s.close()
+
+
+def case_frecent_typing(fork, tag):
+    long_a = "echo abcdefghijklmnopqrstuvwxyz0123456789"
+    long_b = "echo abcdefgXYZ0123456789abcdefghij"
+    lines = [long_a, long_b, long_a, "echo abc", long_a]
+    s = seeded(fork, lines)
+    bad = []
+    for path in (long_a, long_b):
+        s.keys(CTRL_U + path[:4])
+        for k in range(5, len(path) + 1):
+            s.keys(path[k - 1])
+            want = model(lines, path[:k])
+            want = want[0][k:] if want else ""
+            if s.ghost() != want:
+                bad.append((path[:k], s.ghost(), want))
+    check(tag + "47 F11 typing forward: every ghost is the best match for "
+          "what is typed (%d keys)" % (len(long_a) + len(long_b) - 10),
+          not bad, repr(bad[:3]))
+    s.close()
+
+
+def random_history(rng):
+    words = ["alpha", "alps", "alt", "amber", "ant"]
+    n = rng.choice([8, 40, 70, 130, 200])
+    lines = []
+    for i in range(n):
+        w = rng.choice(words)
+        if rng.random() < 0.5:
+            lines.append("echo %s" % w)
+        else:
+            lines.append("echo %s %d" % (w, rng.randrange(3)))
+        if i and lines[-1] == lines[-2]:
+            lines[-1] += " x"
+    return lines
+
+
+def case_frecent_model(fork, tag):
+    import random
+    rng = random.Random(140 + int(fork))
+    for k in range(5):
+        lines = random_history(rng)
+        mx = rng.choice([1000, 1000, 50])
+        prefix = rng.choice(["echo ", "echo al", "echo a"])
+        s = seeded(fork, lines, env={"HELLISH_SUGGEST_MAX": str(mx)})
+        want = model(lines, prefix, mx=mx)
+        got = walk(s, prefix, len(want) + 1)
+        exp = [t[len(prefix):] for t in want]
+        exp = (exp + exp[-1:] * 2)[:len(want) + 2] if exp else [""]
+        exp = exp[:len(got)] if exp != [""] else [""] * len(got)
+        check(tag + "48 F12 random history %d (%d entries, max %d, %r): "
+              "the cycle equals the model" % (k, len(lines), mx, prefix),
+              got == exp, "got %r\nwant %r" % (got, exp))
+        s.close()
+
+
+
+def case_frecent_sorted_worst(fork, tag):
+    """20000 copies of one entry arrive already in ranking order, the worst
+    case of a last-element-pivot quicksort (O(n^2)): the first key must
+    still paint its ghost quickly."""
+    n = 20000
+    s = seeded(fork, ["ls -la"] * n + ["pwd"],
+               env={"HELLISH_SUGGEST_MAX": str(n + 1),
+                    "HISTSIZE": str(n + 10), "HISTFILESIZE": str(n + 10)})
+    s.mark = len(s.buf)
+    t0 = time.time()
+    os.write(s.fd, b"l")
+    s.until(lambda: s.ghost() == "s -la", 20.0)
+    dt = time.time() - t0
+    check(tag + "37 F13 sorted worst case paints within 1.5 s",
+          s.ghost() == "s -la" and dt < 1.5, "%r %.2fs" % (s.ghost(), dt))
+    s.close()
+
+
+
 CASES = (case_off_by_default, case_on, case_accept, case_enter_plain,
          case_newest, case_edit, case_cursor, case_interrupt,
          case_history_keys, case_search, case_vi, case_escape,
@@ -952,10 +1264,16 @@ CASES = (case_off_by_default, case_on, case_accept, case_enter_plain,
          case_paste, case_max, case_unset, case_user_bind,
          case_postdisplay, case_resize, case_dumb, case_word,
          case_word_ctrl_right, case_word_blanks, case_word_stock,
-         case_word_utf8, case_cycle, case_cycle_dupes, case_cycle_reset,
+         case_word_utf8, case_cycle, case_cycle_dupes,
+         case_cycle_dupes_frecent, case_cycle_reset,
          case_cycle_accept, case_cycle_max, case_cycle_stock,
          case_cycle_post, case_cycle_user_bind, case_cycle_off,
-         case_cycle_vi, case_cycle_history_shrinks)
+         case_cycle_vi, case_cycle_history_shrinks, case_frecent_issue,
+         case_frecent_recent, case_frecent_default, case_frecent_live,
+         case_frecent_tie, case_frecent_decay, case_frecent_window,
+         case_frecent_cycle, case_frecent_dirty,
+         case_frecent_history_shrinks, case_frecent_typing,
+         case_frecent_model, case_frecent_sorted_worst)
 
 
 def main():

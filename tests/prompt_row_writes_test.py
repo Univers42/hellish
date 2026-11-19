@@ -207,7 +207,10 @@ def main():
     rows = stream.count(GREEN.encode())
     check("the trace holds the prompt's last row", rows >= 6,
           "found it %d times in %d writes" % (rows, len(writes)))
-    whole = sum(1 for w in writes if GREEN.encode() + MARK in w)
+    # Rows, not writes: readline 8.3 before readline83-004 (Debian's 8.3-4)
+    # reprints a multibyte prompt from column 0 at once, so one write() holds
+    # the row twice, and counting writes reported that as 7 of 13 "split".
+    whole = sum(w.count(GREEN.encode() + MARK) for w in writes)
     check("readline's row reaches the tty in one write() each time",
           whole >= rows > 0,
           "%d of %d rows were whole inside a single write()" % (whole, rows))

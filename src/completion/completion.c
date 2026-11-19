@@ -101,13 +101,19 @@ char	*rl_dup_dollar(const char *name, size_t len)
 
    Only when no spec exists does a built-in provider get a turn (make
    targets, complete_make.c), so a user's `complete` always wins; a provider
-   that has nothing to offer answers NULL and the filenames come back. */
+   that has nothing to offer answers NULL and the filenames come back.
+
+   readline sorts the matches after this returns (postprocess_matches), so
+   a provider that returns an order of its own (make) can only switch the
+   sort off for that attempt; the flag is therefore set back on here, for
+   every attempt, or a later filename or command TAB would stay unsorted. */
 static char	**cmd_completion(const char *text, int start, int end)
 {
 	char	**spec;
 
 	rl_completion_append_character = ' ';
 	rl_completion_suppress_append = 0;
+	rl_sort_completion_matches = 1;
 	if (text[0] == '$' && !ft_strchr(text, '/'))
 		return (rl_attempted_completion_over = 1,
 			complete_variables(text, start, end));
