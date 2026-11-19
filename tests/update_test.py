@@ -49,7 +49,7 @@ class Publisher:
         self.payload = payload
         self.sha = sha_override or hashlib.sha256(payload).hexdigest()
         self.hang = hang
-        self.asset = "hellish-linux-" + os.uname().machine
+        self.asset = "polish-linux-" + os.uname().machine
         pub = self
 
         class H(http.server.BaseHTTPRequestHandler):
@@ -169,7 +169,7 @@ def main():
           and version_of(binary, pub.env(home)) == newer,
           "got %s want %s" % (version_of(binary, pub.env(home)), newer))
     check("no temp file left behind",
-          not os.path.exists(binary + ".hellish-update"))
+          not os.path.exists(binary + ".polish-update"))
     # The flag a human types must agree with what the updater believes it
     # installed. A binary that misreports its own version turns every later
     # "did the update work?" into guesswork.
@@ -181,7 +181,7 @@ def main():
     # the running process is still the old build, and re-offering an
     # update the user has already performed reads as if it had failed
     st = dict(l.rstrip("\n").split("=", 1)
-              for l in open(os.path.join(home, ".cache", "hellish", "state"))
+              for l in open(os.path.join(home, ".cache", "polish", "state"))
               if "=" in l)
     check("installing marks the update as announced",
           st.get("notified", "0") != "0", repr(st))

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "rl_private.h"
 #include "zle.h"
 
@@ -139,7 +140,8 @@ void	rl_prompt_repaint(t_shell *st, bool force)
 	if (!rp_idle_row(st, force))
 		return ;
 	rl_shell_enter(st, &b);
-	run_hook_funcs(st, "HELLISH_PROMPT_REFRESH_FUNCS", NULL);
+	run_hook_funcs(st, brand_expand(st, "PROMPT_REFRESH_FUNCS"),
+		NULL);
 	if (!rl_shell_leave(st, &b))
 		return ;
 	p = prompt_normal(st);

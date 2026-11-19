@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "shell.h"
 #include "env.h"
 #include "ft_builtins.h"
@@ -70,13 +71,16 @@ static void	source_one(t_shell *state, const char *path)
 	xfree(content);
 }
 
-/* Build the ordered file list for one root. */
-static void	add_root(t_shell *state, const char *root, t_vec *files)
+/* Build the ordered file list for one root. Takes ownership of `root`
+   (NULL is a root that does not exist, e.g. no $HOME). */
+static void	add_root(t_shell *state, char *root, t_vec *files)
 {
 	char	*dir;
 	size_t	first;
 
 	(void)state;
+	if (!root)
+		return ;
 	dir = path_join(root, "rc.d");
 	first = files->len;
 	if (dir)
@@ -91,6 +95,7 @@ static void	add_root(t_shell *state, const char *root, t_vec *files)
 	if (dir)
 		collect_plugins(dir, files);
 	xfree(dir);
+	xfree(root);
 	sort_strvec(files, first);
 }
 
@@ -100,7 +105,6 @@ static void	add_root(t_shell *state, const char *root, t_vec *files)
 void	rc_load_all(t_shell *state, const char *home)
 {
 	t_vec	files;
-	char	*xdg;
 	size_t	i;
 
 	if (state->option_flags & OPT_FLAG_NORC)
@@ -109,11 +113,9 @@ void	rc_load_all(t_shell *state, const char *home)
 		return (source_one(state, state->rcfile), (void)0);
 	vec_init(&files);
 	files.elem_size = sizeof(char *);
-	add_root(state, "/etc/hellish", &files);
-	xdg = xdg_config_hellish(state, home);
-	if (xdg)
-		add_root(state, xdg, &files);
-	xfree(xdg);
+	add_root(state, brand_pick(ft_strdup("/etc/" BRAND_NAME),
+			ft_strdup("/etc/" BRAND_LEGACY)), &files);
+	add_root(state, xdg_config_dir(state, home), &files);
 	i = 0;
 	while (i < files.len)
 	{
@@ -167,7 +169,7 @@ void	rc_load_after(t_shell *state, const char *home)
 
 	if (state->option_flags & OPT_FLAG_NORC || state->rcfile)
 		return ;
-	xdg = xdg_config_hellish(state, home);
+	xdg = xdg_config_dir(state, home);
 	if (!xdg)
 		return ;
 	dir = path_join(xdg, "after.d");

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "prompt_private.h"
 #include "env.h"
 
@@ -61,7 +62,7 @@ int	anim_style(t_shell *state)
 {
 	char	*s;
 
-	s = env_expand(state, "HELLISH_ANIM");
+	s = brand_expand(state, "ANIM");
 	if (!s || !*s)
 		return (0);
 	if (!ft_strcmp(s, "spinner"))

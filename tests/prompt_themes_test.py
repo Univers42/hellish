@@ -28,6 +28,7 @@ Usage: python3 prompt_themes_test.py [/path/to/hellish]
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -323,6 +324,39 @@ def switcher_cases():
           "rc=%d" % rc)
 
 
+def config_dir_cases():
+    """The switcher must find the themes wherever the seeder put them. 3.4.0
+    seeds a fresh install into polish/ but leaves a pre-3.4 hellish/ in
+    place; hard-coding hellish/ listed nothing on every new install, and
+    `prompt save` wrote a file the shell then never sourced."""
+    base = ". %s\n" % SWITCH
+    n = len(theme_names())
+    for brand, other in (("polish", "hellish"), ("hellish", "polish")):
+        xdg = tempfile.mkdtemp(prefix="prompt_cfg_")
+        os.makedirs(os.path.join(xdg, brand))
+        os.symlink(THEMES, os.path.join(xdg, brand, "themes"))
+        env = {"XDG_CONFIG_HOME": xdg, "HELLISH_THEMES": "",
+               "POLISH_THEMES": ""}
+        rc, out, _ = run(base + "prompt", env)
+        check("config/%s-dir-lists-all" % brand,
+              len(out.decode().strip().split("\n")) == n,
+              "out=%r" % out[:120])
+        run(base + "prompt save plain >/dev/null", env)
+        saved = os.path.join(xdg, brand, "rc.d", "50-theme.hsh")
+        check("config/%s-save-lands-in-its-dir" % brand,
+              os.path.isfile(saved)
+              and not os.path.exists(os.path.join(xdg, other)),
+              "files=%r" % [r for r, _, _ in os.walk(xdg)])
+        shutil.rmtree(xdg)
+    empty = tempfile.mkdtemp(prefix="prompt_cfg_")
+    rc, out, _ = run(base + "prompt", {"XDG_CONFIG_HOME": empty,
+                                       "HELLISH_THEMES": "/nonexistent",
+                                       "POLISH_THEMES": THEMES})
+    check("config/POLISH_THEMES-wins",
+          len(out.decode().strip().split("\n")) == n, "out=%r" % out[:120])
+    shutil.rmtree(empty)
+
+
 def robustness_cases():
     """A prompt must never be able to end the session. It redraws on every
     keystroke, so a shell that exits over a typo in PS1 leaves the user with
@@ -390,6 +424,7 @@ def main():
     osc_cases()
     switch_cases()
     switcher_cases()
+    config_dir_cases()
     arith_cases()
     robustness_cases()
     churn_cases()

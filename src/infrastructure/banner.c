@@ -64,9 +64,9 @@ static const char	*guide_link(void)
 {
 	if (header_use_unicode())
 		return ("\033[38;5;209m\xe2\x86\x92\033[0m "
-			"\033[4;38;5;81munivers42.github.io/hellish/whats-new\033[0m");
+			"\033[4;38;5;81munivers42.github.io/polish/whats-new\033[0m");
 	return ("\033[38;5;209m->\033[0m "
-		"\033[4;38;5;81munivers42.github.io/hellish/whats-new\033[0m");
+		"\033[4;38;5;81munivers42.github.io/polish/whats-new\033[0m");
 }
 
 /* The left column: a greeting, the 42 logo mascot, the hellish identity, the
@@ -92,9 +92,9 @@ static void	build_left(const char **l)
 	while (g_logo[++i])
 		l[i + 2] = g_logo[i];
 	l[i + 2] = "";
-	l[i + 3] = "hellish " HELLISH_VERSION " - a POSIX shell with bite";
+	l[i + 3] = "polish " HELLISH_VERSION " - a POSIX shell with bite";
 	if (header_use_unicode())
-		l[i + 3] = "hellish " HELLISH_VERSION
+		l[i + 3] = "polish " HELLISH_VERSION
 			" \xc2\xb7 a POSIX shell with bite";
 	l[i + 4] = cwd;
 	l[i + 5] = "";
@@ -123,7 +123,7 @@ void	show_welcome(t_shell *state)
 		return ;
 	if (!banner_should_show())
 		return ;
-	p.title = "hellish " HELLISH_VERSION;
+	p.title = "polish " HELLISH_VERSION;
 	p.logo_color = "\033[38;5;209m";
 	build_left(l);
 	build_right(r);

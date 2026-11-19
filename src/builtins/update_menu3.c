@@ -63,12 +63,12 @@ int	update_interactive(t_origin det, const char *repo, const char *tag)
 	sel = run_menu(ch, count, 0);
 	if (sel < 0)
 	{
-		ft_eprintf("hellish: update cancelled\n");
+		ft_eprintf("polish: update cancelled\n");
 		return (1);
 	}
 	r = "";
 	if (ch[sel].origin == ORIGIN_SOURCE)
 		r = repo;
-	ft_eprintf("hellish: %s\n", ch[sel].cmd);
+	ft_eprintf("polish: %s\n", ch[sel].cmd);
 	return (run_origin_update(ch[sel].origin, r, tag));
 }

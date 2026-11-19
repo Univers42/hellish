@@ -14,9 +14,16 @@
 #include "sys.h"
 #include "libft.h"
 
-/* Our own script extensions, run under this shell rather than /bin/sh. */
-static int	is_hellish_script(char *path, size_t len)
+/* Our own script extensions, run under this shell rather than /bin/sh.
+   .polish is the 3.4.0 name; .hellish and .hell stay recognised so scripts
+   written before the rename keep their interpreter. */
+int	is_own_script(const char *path)
 {
+	size_t	len;
+
+	len = ft_strlen(path);
+	if (len >= 7 && ft_strcmp(path + len - 7, ".polish") == 0)
+		return (1);
 	if (len >= 8 && ft_strcmp(path + len - 8, ".hellish") == 0)
 		return (1);
 	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
@@ -41,7 +48,7 @@ static char	*select_fallback_shell(char *path)
 	char	*self;
 
 	self = self_exe_path();
-	if (self && is_hellish_script(path, ft_strlen(path)))
+	if (self && is_own_script(path))
 		return (self);
 	return (FB_SH);
 }

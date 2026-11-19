@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -51,7 +52,7 @@ void	maybe_spawn_update_check(t_shell *state)
 
 	if (state->metinp != INP_RL || !isatty(STDOUT_FILENO))
 		return ;
-	if (getenv("HELLISH_NO_UPDATE_CHECK") || cache_is_fresh())
+	if (brand_getenv("NO_UPDATE_CHECK") || cache_is_fresh())
 		return ;
 	if (!claim_attempt())
 		return ;

@@ -79,6 +79,7 @@ t_execution_state	execute_cmd_bg(t_shell *state, t_executable_node *exe,
 						t_executable_cmd *cmd);
 bool				check_is_a_dir(char *path, bool *enoent);
 int					cmd_not_found(t_shell *state, char *cmd_name);
+int					is_own_script(const char *path);
 
 /* bash's hook for a command that PATH could not resolve. Debian/Ubuntu
    define it in /etc/bash.bashrc, and it is what turns "vim: command not

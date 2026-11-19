@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "shell.h"
 #include "env.h"
 
@@ -66,10 +67,12 @@ void	sort_strvec(t_vec *v, size_t from)
 	}
 }
 
-/* $XDG_CONFIG_HOME/hellish, else $HOME/.config/hellish. Honouring XDG is what
-   lets a user relocate the whole tree, which is the same property BASH_SOURCE
+/* $XDG_CONFIG_HOME/polish, else $HOME/.config/polish -- or the hellish
+   directory beside it when only that one exists (brand_pick: an install
+   from before the 3.4.0 rename keeps its tree). Honouring XDG is what lets
+   a user relocate the whole tree, which is the same property BASH_SOURCE
    gives an individual plugin. */
-char	*xdg_config_hellish(t_shell *state, const char *home)
+char	*xdg_config_dir(t_shell *state, const char *home)
 {
 	char	*xdg;
 	char	*base;
@@ -77,13 +80,15 @@ char	*xdg_config_hellish(t_shell *state, const char *home)
 
 	xdg = env_expand(state, "XDG_CONFIG_HOME");
 	if (xdg && *xdg)
-		return (path_join(xdg, "hellish"));
-	if (!home || !*home)
+		base = ft_strdup(xdg);
+	else if (home && *home)
+		base = path_join(home, ".config");
+	else
 		return (NULL);
-	base = path_join(home, ".config");
 	if (!base)
 		return (NULL);
-	out = path_join(base, "hellish");
+	out = brand_pick(path_join(base, BRAND_NAME),
+			path_join(base, BRAND_LEGACY));
 	xfree(base);
 	return (out);
 }

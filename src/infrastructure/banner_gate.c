@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include "version.h"
 #include <time.h>
@@ -51,9 +52,9 @@ static int	banner_env_pref(void)
 {
 	const char	*v;
 
-	if (getenv("HELLISH_NO_BANNER"))
+	if (brand_getenv("NO_BANNER"))
 		return (0);
-	v = getenv("HELLISH_BANNER");
+	v = brand_getenv("BANNER");
 	if (v && *v)
 	{
 		if (!ft_strcmp(v, "0") || !ft_strcmp(v, "no")
@@ -61,7 +62,7 @@ static int	banner_env_pref(void)
 			return (0);
 		return (1);
 	}
-	if (getenv("HELLISH_ALWAYS_BANNER"))
+	if (brand_getenv("ALWAYS_BANNER"))
 		return (1);
 	return (-1);
 }

@@ -100,7 +100,7 @@ class Publisher:
                 if self.path.endswith("/releases/latest"):
                     body = ('{"tag_name": "v%s"}' % ver).encode()
                 elif self.path.endswith(".sha256"):
-                    body = ("%s  hellish-linux-x86_64\n" % sha).encode()
+                    body = ("%s  polish-linux-x86_64\n" % sha).encode()
                 else:
                     body = blob
                 self.send_response(200)
@@ -155,7 +155,7 @@ def run_update_pty(binary, env, timeout=60):
         if not d:
             break
         out += d
-        if not picked and b"How should hellish update?" in out:
+        if not picked and b"How should polish update?" in out:
             os.write(fd, b"\r")
             picked = True
             continue

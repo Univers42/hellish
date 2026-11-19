@@ -20,7 +20,7 @@ void	menu_header(void)
 	hint = "(up/down, Enter, Esc)";
 	if (header_use_unicode())
 		hint = "(\xe2\x86\x91/\xe2\x86\x93 \xc2\xb7 Enter \xc2\xb7 Esc)";
-	ft_eprintf("\n\033[1;38;5;209m?\033[0m \033[1mHow should hellish "
+	ft_eprintf("\n\033[1;38;5;209m?\033[0m \033[1mHow should polish "
 		"update?\033[0m  \033[38;5;245m%s\033[0m\n\n", hint);
 }
 

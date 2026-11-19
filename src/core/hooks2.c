@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "shell.h"
 #include "helpers.h"
 #include "sh_input.h"
@@ -44,7 +45,7 @@ void	run_preexec(t_shell *state)
 	line = ft_strndup((char *)state->input.ctx, n);
 	if (!line)
 		return ;
-	run_hook_funcs(state, "HELLISH_PREEXEC_FUNCS", line);
+	run_hook_funcs(state, brand_expand(state, "PREEXEC_FUNCS"), line);
 	run_zsh_prompt_hooks(state, "preexec", line);
 	xfree(line);
 }
@@ -78,7 +79,7 @@ void	run_zsh_prompt_hooks(t_shell *state, const char *which,
 		set_cmd_status(state, saved);
 	}
 	if (!ft_strcmp(which, "precmd"))
-		run_hook_funcs(state, "precmd_functions", NULL);
+		run_hook_funcs(state, env_expand(state, "precmd_functions"), NULL);
 	else
-		run_hook_funcs(state, "preexec_functions", arg);
+		run_hook_funcs(state, env_expand(state, "preexec_functions"), arg);
 }

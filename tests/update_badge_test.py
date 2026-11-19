@@ -60,7 +60,7 @@ def current_version():
 
 
 def state(home, latest, notified=1):
-    d = os.path.join(home, ".cache", "hellish")
+    d = os.path.join(home, ".cache", "polish")
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, "state"), "w") as f:
         f.write("latest=%s\nchecked=%d\nnotified=%d\n"

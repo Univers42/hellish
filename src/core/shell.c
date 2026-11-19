@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "ft_builtins.h"
 #include "shell.h"
 #include "helpers.h"
@@ -99,7 +100,7 @@ static void	open_cycle(t_shell *state)
 	tty_snapshot_refresh();
 	winsize_follow_resize(state);
 	run_prompt_command(state);
-	run_hook_funcs(state, "HELLISH_PRECMD_FUNCS", NULL);
+	run_hook_funcs(state, brand_expand(state, "PRECMD_FUNCS"), NULL);
 	run_zsh_prompt_hooks(state, "precmd", NULL);
 	state->discard_line = false;
 }

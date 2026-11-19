@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "input_private.h"
 #include "prompt_private.h"
 #include "parena.h"
@@ -101,7 +102,7 @@ void	parse_and_execute_input(t_shell *state)
 
 	prepare_parser_and_prompt(state, &parser, &tt, &prompt);
 	get_more_input_parser(state, &parser, &prompt, &tt);
-	if (getenv("HELLISH_DBG_SPANS"))
+	if (brand_getenv("DBG_SPANS"))
 	{
 		fprintf(stderr, "[C %d-%d res=%d len=%zu]\n", state->rl.cycle_line0,
 			state->rl.line, parser.res, state->input.len);

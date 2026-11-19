@@ -2,4 +2,4 @@
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,
 # when this file is sourced, and stay frozen for the session.
-PS1='${HELLISH_TAG:-hellish} \w \$ '
+PS1='${HELLISH_TAG:-polish} \w \$ '

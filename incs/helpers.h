@@ -63,14 +63,14 @@ static inline bool	vec_str_ends_with_str(t_string *s, char *s2)
 bool	str_ends_with(const char *s, const char *suf);
 char	*path_join(const char *a, const char *b);
 void	sort_strvec(t_vec *v, size_t from);
-char	*xdg_config_hellish(t_shell *state, const char *home);
+char	*xdg_config_dir(t_shell *state, const char *home);
 void	collect(const char *dir, const char *suffix, t_vec *out);
 void	collect_plugins(const char *dir, t_vec *out);
 void	rc_load_all(t_shell *state, const char *home);
 void	rc_load_after(t_shell *state, const char *home);
 
 /* Composable rc hooks (src/core/hooks*.c). */
-void	run_hook_funcs(t_shell *state, char *var, const char *arg);
+void	run_hook_funcs(t_shell *state, char *list, const char *arg);
 void	run_prompt_command(t_shell *state);
 bool	exec_aborting(t_shell *state);
 void	hook_run_one(t_shell *state, const char *fn, const char *arg);

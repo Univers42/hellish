@@ -60,7 +60,7 @@ static void	news_block(const char **r, int *i, char nw[][192])
 	while (news_row(nw[m], k++))
 		r[(*i)++] = nw[m++];
 	r[(*i)++] = "";
-	r[(*i)++] = "  \033[38;5;223mexport HELLISH_AUTOSUGGEST=1\033[0m";
+	r[(*i)++] = "  \033[38;5;223mexport POLISH_AUTOSUGGEST=1\033[0m";
 	while (news_row(nw[m], k++))
 		r[(*i)++] = nw[m++];
 }

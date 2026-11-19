@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "update.h"
 #include "version.h"
 #include "sys.h"
@@ -26,7 +27,7 @@ void	update_api_url(char *out, size_t n)
 {
 	const char	*env;
 
-	env = getenv("HELLISH_UPDATE_API");
+	env = brand_getenv("UPDATE_API");
 	if (env && *env)
 		return ((void)ft_strlcpy(out, env, n));
 	ft_strlcpy(out, "https://api.github.com/repos/" HELLISH_REPO
@@ -47,7 +48,7 @@ int	update_asset_name(char *out, size_t n)
 	if (ft_strcmp(u.machine, "x86_64") != 0
 		&& ft_strcmp(u.machine, "aarch64") != 0)
 		return (0);
-	ft_strlcpy(out, "hellish-linux-", n);
+	ft_strlcpy(out, BRAND_NAME "-linux-", n);
 	ft_strlcat(out, u.machine, n);
 	return (1);
 }
@@ -58,7 +59,7 @@ int	update_asset_url(const char *tag, const char *asset, char *out, size_t n)
 {
 	const char	*base;
 
-	base = getenv("HELLISH_UPDATE_DL");
+	base = brand_getenv("UPDATE_DL");
 	if (!base || !*base)
 		base = "https://github.com/" HELLISH_REPO "/releases/download";
 	if (ft_strncmp(base, "https://", 8) != 0

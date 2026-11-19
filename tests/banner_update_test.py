@@ -90,7 +90,7 @@ def bump(v, part=1):
 
 def seed(cache, **kv):
     """Write a state file directly -- deterministic, and no network."""
-    d = os.path.join(cache, "hellish")
+    d = os.path.join(cache, "polish")
     os.makedirs(d, exist_ok=True)
     rec = {"latest": "", "checked": 0, "notified": 0, "header_shown": 0,
            "header_rev": 0, "header_ver": "", "announced": ""}
@@ -101,7 +101,7 @@ def seed(cache, **kv):
 
 
 def read_state(cache):
-    p = os.path.join(cache, "hellish", "state")
+    p = os.path.join(cache, "polish", "state")
     if not os.path.exists(p):
         return {}
     out = {}
@@ -112,9 +112,14 @@ def read_state(cache):
     return out
 
 
+# A throwaway HOME: inheriting the real one sourced the developer's own rc,
+# whose PS1 decided whether the badge test could pass at all.
+HOME = tempfile.mkdtemp(prefix="banner_update_home_")
+
+
 def session(cache, extra=None, settle=2.5, cmds=(b"echo MARK\n",)):
     """One interactive hellish on a pty; returns (screen, seconds-to-first-byte)."""
-    env = {"HOME": os.environ.get("HOME", "/tmp"), "PATH": os.environ["PATH"],
+    env = {"HOME": HOME, "PATH": os.environ["PATH"],
            "TERM": "xterm-256color", "LANG": "C.UTF-8",
            "XDG_CACHE_HOME": cache, "ASAN_OPTIONS": "detect_leaks=0",
            # No real network in any case here.

@@ -48,8 +48,8 @@ static int	confirm_elevation(const char *target)
 	char	buf[8];
 	ssize_t	r;
 
-	ft_eprintf("hellish: %s is owned by another user.\n", target);
-	ft_eprintf("  hellish would run: sudo install -m 755 <verified "
+	ft_eprintf("polish: %s is owned by another user.\n", target);
+	ft_eprintf("  polish would run: sudo install -m 755 <verified "
 		"download> %s\n", target);
 	ft_eprintf("  proceed? [y/N] ");
 	r = read(STDIN_FILENO, buf, sizeof(buf) - 1);
@@ -73,22 +73,22 @@ int	update_selfupdate(t_origin o, const char *tag)
 	int		rc;
 
 	if (!update_exe_path(target, sizeof(target)))
-		return (ft_eprintf("hellish: cannot locate my own binary\n"), 1);
+		return (ft_eprintf("polish: cannot locate my own binary\n"), 1);
 	sudo = (o == ORIGIN_BINARY_SYSTEM || update_needs_sudo(target));
 	if (sudo && !isatty(STDIN_FILENO))
-		return (ft_eprintf("hellish: %s needs elevation; run `update --now`"
+		return (ft_eprintf("polish: %s needs elevation; run `update --now`"
 				" from a terminal\n", target), 1);
 	if (sudo && !confirm_elevation(target))
-		return (ft_eprintf("hellish: update cancelled\n"), 1);
-	ft_eprintf("hellish: installing %s into %s…\n", tag, target);
+		return (ft_eprintf("polish: update cancelled\n"), 1);
+	ft_eprintf("polish: installing %s into %s…\n", tag, target);
 	rc = update_apply(tag, target, sudo);
 	if (rc != 0)
-		return (ft_eprintf("hellish: update failed — %s\n"
+		return (ft_eprintf("polish: update failed — %s\n"
 				"  the installed binary is unchanged.\n"
 				"  fallback: curl -fsSL https://raw.githubusercontent.com/"
 				HELLISH_REPO "/main/install.sh | sh\n", apply_error(rc)), 1);
 	update_mark_notified();
 	ft_printf("\033[32m✓\033[0m updated %s → %s\n", HELLISH_VERSION, tag);
-	ft_printf("  restart hellish (or open a new shell) to run it.\n");
+	ft_printf("  restart polish (or open a new shell) to run it.\n");
 	return (0);
 }

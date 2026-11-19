@@ -80,7 +80,7 @@ int	update_warn_stale_session(const char *latest)
 		return (0);
 	if (!update_exe_path(path, sizeof(path)))
 		return (0);
-	ft_eprintf("  \033[1;33m!\033[0m this session is running hellish %s, "
+	ft_eprintf("  \033[1;33m!\033[0m this session is running polish %s, "
 		"but %s\n    was replaced while it was open and now reports "
 		"\033[1m%s\033[0m.\n", HELLISH_VERSION, path, disk);
 	if (hellish_version_cmp(latest, disk) > 0)

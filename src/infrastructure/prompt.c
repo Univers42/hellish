@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "prompt_private.h"
 #include "env.h"
 
@@ -111,7 +112,7 @@ static void	maybe_bench(void)
 	t_string		r;
 	long long		i;
 
-	if (done || !getenv("HELLISH_PROMPT_BENCH"))
+	if (done || !brand_getenv("PROMPT_BENCH"))
 		return ;
 	done = 1;
 	i = -1;

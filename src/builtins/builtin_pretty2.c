@@ -121,7 +121,7 @@ int	pretty_list(t_shell *state)
 	ft_printf("  %-10s %s\n", "friendly",
 		"multiline-history, cd-spell, resize-aware");
 	ft_printf("  %-10s %s\n", "full", "every feature above");
-	ft_printf("\n`pretty -p` prints your current set as ~/.hellishrc"
+	ft_printf("\n`pretty -p` prints your current set as ~/.polishrc"
 		" lines.\n");
 	return (0);
 }

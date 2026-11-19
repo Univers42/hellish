@@ -84,7 +84,7 @@ void	help_print_list(void)
 	int					width;
 
 	width = get_cols();
-	ft_printf("\033[1mhellish\033[0m — these are built in. "
+	ft_printf("\033[1mpolish\033[0m — these are built in. "
 		"`help NAME` explains one, `help -s NAME` just its form.\n");
 	i = 0;
 	while (order[i])

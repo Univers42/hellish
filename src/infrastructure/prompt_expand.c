@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "brand.h"
 #include "prompt_private.h"
 #include "sh_input.h"
 #include <stdlib.h>
@@ -46,7 +47,7 @@ char	*prompt_expand_p(t_shell *state, const char *fmt)
 	out = ps1_render(state, (char *)conv.ctx);
 	xfree(conv.ctx);
 	s = (char *)out.ctx;
-	if (state->metinp == INP_RL || getenv("HELLISH_DBG_PROMPT_MARKS"))
+	if (state->metinp == INP_RL || brand_getenv("DBG_PROMPT_MARKS"))
 		return (s);
 	i = 0;
 	j = 0;

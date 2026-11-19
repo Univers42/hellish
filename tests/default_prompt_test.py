@@ -107,7 +107,7 @@ def main():
         sys.exit(2)
 
     home = tempfile.mkdtemp()
-    pfile = os.path.join(home, ".config", "hellish", "rc.d", "30-prompt.hsh")
+    pfile = os.path.join(home, ".config", "polish", "rc.d", "30-prompt.hsh")
     # It must land in the home we asked for, even though the ambient
     # XDG_CONFIG_HOME points somewhere else entirely. The question is
     # whether the seeder WROTE there, which is not the same as whether the
@@ -115,22 +115,23 @@ def main():
     # and asserting its absence failed on every machine that actually uses
     # hellish while passing on CI's empty $HOME -- a test that only ever
     # ran where it could not fail. Snapshot it and compare instead.
-    real = os.path.expanduser("~/.config/hellish/rc.d/30-prompt.hsh")
-    before = file_state(real)
+    reals = [os.path.expanduser("~/.config/%s/rc.d/30-prompt.hsh" % n)
+             for n in ("polish", "hellish")]
+    before = [file_state(r) for r in reals]
     try:
         seed(home)
         check("the seeder writes a prompt file", os.path.isfile(pfile),
               "expected %s" % pfile)
 
         check("seeding a temp home does not touch the real ~/.config",
-              file_state(real) == before,
-              "the seeder wrote to the developer's own config: %s" % real)
+              [file_state(r) for r in reals] == before,
+              "the seeder wrote to the developer's own config: %s" % reals)
 
         text = prompt_of(home)
         check("the prompt comes from that file, not the built-in theme",
               "\x1b[48;5;24" in text,
               "got %r -- an unstyled or built-in prompt means rc.d lost to "
-              "~/.hellishrc" % text[:180])
+              "~/.polishrc" % text[:180])
         # \h is the hostname up to the first dot, as in bash; a 42 machine
         # reports its FQDN (c1r17s4.42madrid.com) and the prompt shows c1r17s4.
         host = os.uname().nodename.split(".")[0]
@@ -155,10 +156,10 @@ def main():
             check("a re-run does not overwrite an edited prompt",
                   "EDITED>" in f.read(), "the seeder ate a user's edit")
 
-        # ~/.hellishrc still wins -- rc.d is a default, not a cage.
-        with open(os.path.join(home, ".hellishrc"), "a") as f:
+        # ~/.polishrc still wins -- rc.d is a default, not a cage.
+        with open(os.path.join(home, ".polishrc"), "a") as f:
             f.write("\nPS1='MINE> '\n")
-        check("~/.hellishrc still overrides rc.d",
+        check("~/.polishrc still overrides rc.d",
               "MINE>" in prompt_of(home), "got %r" % prompt_of(home)[:150])
     finally:
         shutil.rmtree(home, ignore_errors=True)

@@ -117,7 +117,7 @@ class Server:
 
 
 def seed(cache, **kv):
-    d = os.path.join(cache, "hellish")
+    d = os.path.join(cache, "polish")
     os.makedirs(d, exist_ok=True)
     rec = {"latest": "", "checked": 0, "notified": 0, "header_shown": 0,
            "header_rev": 0, "header_ver": "", "announced": "", "attempted": 0}
@@ -128,7 +128,7 @@ def seed(cache, **kv):
 
 
 def read_state(cache):
-    p = os.path.join(cache, "hellish", "state")
+    p = os.path.join(cache, "polish", "state")
     out = {}
     if os.path.exists(p):
         for line in open(p):
@@ -138,8 +138,13 @@ def read_state(cache):
     return out
 
 
+# A throwaway HOME: inheriting the real one sourced the developer's own rc,
+# whose PS1 decided whether the badge test could pass at all.
+HOME = tempfile.mkdtemp(prefix="update_freshness_home_")
+
+
 def session(cache, api, settle=3.0, cmds=(b"echo MARK\n",), env=None):
-    base = {"HOME": os.environ.get("HOME", "/tmp"), "PATH": os.environ["PATH"],
+    base = {"HOME": HOME, "PATH": os.environ["PATH"],
             "TERM": "xterm-256color", "LANG": "C.UTF-8",
             "XDG_CACHE_HOME": cache, "ASAN_OPTIONS": "detect_leaks=0",
             "HELLISH_UPDATE_API": api}
@@ -276,7 +281,7 @@ def main():
         check("six shells at once make exactly one request", srv.hits == 1,
               "%d requests -- one release per terminal" % srv.hits)
         check("the winner releases the claim when the fetch is over",
-              not os.path.isdir(os.path.join(cache, "hellish", "check.lock")),
+              not os.path.isdir(os.path.join(cache, "polish", "check.lock")),
               "check.lock is still held; no later check could run")
     finally:
         srv.stop()
@@ -290,7 +295,7 @@ def main():
         seed(cache, latest=RUNNING, checked=now - 3000, attempted=now - 3000,
              header_shown=now, header_rev=3, header_ver=RUNNING,
              announced=RUNNING)
-        os.makedirs(os.path.join(cache, "hellish", "check.lock"))
+        os.makedirs(os.path.join(cache, "polish", "check.lock"))
         session(cache, srv.url, settle=2.0)
         check("a claim held by another shell stops this one", srv.hits == 0,
               "asked %d times while another shell owned the check" % srv.hits)
@@ -306,7 +311,7 @@ def main():
         seed(cache, latest=RUNNING, checked=now - 3000, attempted=now - 3000,
              header_shown=now, header_rev=3, header_ver=RUNNING,
              announced=RUNNING)
-        lock = os.path.join(cache, "hellish", "check.lock")
+        lock = os.path.join(cache, "polish", "check.lock")
         os.makedirs(lock)
         os.utime(lock, (now - 3600, now - 3600))
         session(cache, srv.url, settle=2.5)
