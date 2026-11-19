@@ -257,11 +257,11 @@ trim_trailing_blanks() {
 # ── uninstall ─────────────────────────────────────────────────────────────
 if [ "$ACTION" = "uninstall" ]; then
 	if has_block "$RC_TARGET"; then
-		cp -p "$RC_TARGET" "$RC_TARGET.hellish-bak"
-		strip_block < "$RC_TARGET.hellish-bak" \
-			| trim_trailing_blanks > "$RC_TARGET.hellish-new"
-		mv "$RC_TARGET.hellish-new" "$RC_TARGET"
-		grn "removed the hook from $RC_TARGET (backup: $RC_TARGET.hellish-bak)"
+		cp -p "$RC_TARGET" "$RC_TARGET.polish-bak"
+		strip_block < "$RC_TARGET.polish-bak" \
+			| trim_trailing_blanks > "$RC_TARGET.polish-new"
+		mv "$RC_TARGET.polish-new" "$RC_TARGET"
+		grn "removed the hook from $RC_TARGET (backup: $RC_TARGET.polish-bak)"
 	else
 		inf "no hook found in $RC_TARGET — nothing to undo there"
 	fi
@@ -349,12 +349,14 @@ grn "binary runs commands and reports status correctly"
 # exec'd), so this is a warning and not a hard failure — but you want to
 # hear about it now rather than wonder why your aliases are missing. The one
 # checked is the one the shell reads: ~/.polishrc when it exists, else
-# ~/.hellishrc (and only ~/.hellishrc for a pre-3.4 binary).
-USER_RC="$HOME/.polishrc"
-if [ -n "$ALIAS" ] || [ ! -e "$USER_RC" ]; then
-	USER_RC="$HOME/.hellishrc"
-fi
-[ -f "$USER_RC" ] || USER_RC="$HOME/.polishrc"
+# ~/.hellishrc (brand_pick) -- under either binary name, so a kept
+# ~/.local/bin/hellish beside both rcs is checked against ~/.polishrc. Only a
+# pre-3.4 binary (--version "hellish, version") reads ~/.hellishrc alone.
+case "$(quiet "$DEST" --version </dev/null 2>/dev/null | head -1)" in
+hellish[,\ ]*) USER_RC="$HOME/.hellishrc" ;;
+*)	USER_RC="$HOME/.polishrc"
+	[ -e "$USER_RC" ] || USER_RC="$HOME/.hellishrc" ;;
+esac
 if [ -f "$USER_RC" ]; then
 	if ! quiet "$DEST" -c ". \"\$1\"" sh "$USER_RC" >/dev/null 2>&1; then
 		warn "$USER_RC reported errors when sourced — check it"
@@ -377,8 +379,8 @@ if grep -qxF "$LEGACY_BEGIN" "$RC_TARGET"; then
 	BEGIN_MARK="$LEGACY_BEGIN"
 	END_MARK="$LEGACY_END"
 fi
-cp -p "$RC_TARGET" "$RC_TARGET.hellish-bak"
-strip_block < "$RC_TARGET.hellish-bak" | trim_trailing_blanks > "$RC_TARGET.tmp"
+cp -p "$RC_TARGET" "$RC_TARGET.polish-bak"
+strip_block < "$RC_TARGET.polish-bak" | trim_trailing_blanks > "$RC_TARGET.tmp"
 
 cat >> "$RC_TARGET.tmp" <<EOF
 
@@ -451,7 +453,7 @@ if command -v "$LOGIN_SHELL" >/dev/null 2>&1; then
 fi
 
 mv "$RC_TARGET.tmp" "$RC_TARGET"
-grn "hooked $RC_TARGET (backup: $RC_TARGET.hellish-bak)"
+grn "hooked $RC_TARGET (backup: $RC_TARGET.polish-bak)"
 
 # ── done ──────────────────────────────────────────────────────────────────
 printf '

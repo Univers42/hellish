@@ -2,12 +2,14 @@
 """The plugin framework (hxp), end to end, as a test.
 
 What the installer actually gives a user is not one plugin file: it is
-~/.hellishrc, the framework under ~/.hellish (lib, rc.d, the catalog), the
+~/.polishrc, the framework under ~/.polish (lib, rc.d, the catalog), the
 builtin plugins it ships, the oh-my-zsh and git plugins it fetches, and a
-hellish.conf that switches them on. plugin_corpus_test.py proves each
-third-party FILE loads; this proves the CONFIGURATION a user ends up with
-loads, passes the framework's own suite, answers its management commands,
-and survives using what the plugins define.
+polish.conf that switches them on (an install from before the 3.4.0
+rename keeps ~/.hellishrc, ~/.hellish and hellish.conf, and this test takes
+either layout). plugin_corpus_test.py proves each third-party FILE
+loads; this proves the CONFIGURATION a user ends up with loads, passes
+the framework's own suite, answers its management commands, and survives
+using what the plugins define.
 
 WHY IT EXISTS. With every default plugin on, `man bash` segfaulted the
 interactive shell (exit 139) on a freshly installed machine. The plugin
@@ -19,20 +21,21 @@ and then USED it, so nothing could have noticed. This does.
 WHERE THE FRAMEWORK COMES FROM, in order:
     HXP_SRC=<checkout>     a clone of github.com/Univers42/hellishrc_plugins:
                            its own install.sh --home builds the sandbox
-    HXP_HOME=<dir>         an installed ~/.hellish (its ~/.hellishrc must
-                           sit beside it); the default is $HOME/.hellish
-                           when that exists -- so on a developer's machine
+    HXP_HOME=<dir>         an installed ~/.polish or ~/.hellish (its
+                           .polishrc / .hellishrc must sit beside it); the
+                           default is $HOME/.polish, then $HOME/.hellish,
+                           when one exists -- so on a developer's machine
                            this tests the configuration they actually run
     the cache              a tarball of the repo under $PLUGIN_CACHE,
                            downloaded once unless OFFLINE=1
     nothing                SKIP, out loud. A machine without the framework
                            and without a network has proven nothing.
 
-Everything runs in a throwaway HOME: the real ~/.hellish is copied, never
-touched, and hellish's own rc.d is not on the path, so the verdict is about
+Everything runs in a throwaway HOME: the real framework is copied, never
+touched, and the shell's own rc.d is not on the path, so the verdict is about
 the framework and not about whatever else this machine has configured.
 
-Usage: python3 hxp_framework_test.py [/path/to/hellish]
+Usage: python3 hxp_framework_test.py [/path/to/polish]
        PLUGIN_CACHE=<dir>   where to keep the framework tarball
        OFFLINE=1            never touch the network
 """
@@ -48,7 +51,7 @@ import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SHELL = os.path.abspath(sys.argv[1] if len(sys.argv) > 1
-                        else os.path.join(ROOT, "build", "bin", "hellish"))
+                        else os.path.join(ROOT, "build", "bin", "polish"))
 CACHE = os.environ.get(
     "PLUGIN_CACHE",
     os.path.join(os.environ.get("XDG_CACHE_HOME",
@@ -58,6 +61,9 @@ OFFLINE = os.environ.get("OFFLINE", "") not in ("", "0")
 REPO = "https://github.com/Univers42/hellishrc_plugins"
 TARBALL = REPO + "/archive/refs/heads/main.tar.gz"
 FAILS = []
+# (framework dir, loader) per brand, new name first: the installer picks the
+# polish pair unless only the legacy pair exists, and so does this test.
+LAYOUTS = ((".polish", ".polishrc"), (".hellish", ".hellishrc"))
 
 
 def check(name, ok, detail=""):
@@ -85,17 +91,50 @@ def crash_words(err, rc):
 def sandbox_env(home):
     """A HOME of our own and nothing inherited that could steer the load:
     the developer's HX_* registry, HELLISH_EXECD, a PAGER that waits for a
-    keypress. XDG_CONFIG_HOME points inside the sandbox so hellish's own
-    rc.d and after.d (90-zshrc.zsh would source the real ~/.zshrc) stay out."""
+    keypress. XDG_CONFIG_HOME points inside the sandbox so the shell's own
+    rc.d and after.d (90-zshrc.zsh would source the real ~/.zshrc) stay out.
+    HXP_RC names the loader the sandbox ended up with."""
+    rc = layout(home)
     return {
+        "HXP_RC": os.path.join(home, rc[1]) if rc else "",
         "HOME": home, "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "TERM": "xterm", "LC_ALL": "C", "USER": os.environ.get("USER", "u"),
         "XDG_CONFIG_HOME": os.path.join(home, ".config"),
         "XDG_CACHE_HOME": os.path.join(home, ".cache"),
+        "POLISH_NO_BANNER": "1", "POLISH_NO_UPDATE_CHECK": "1",
+        "POLISH_NO_ANIM": "1",
         "HELLISH_NO_BANNER": "1", "HELLISH_NO_UPDATE_CHECK": "1",
         "HELLISH_NO_ANIM": "1", "PAGER": "cat", "MANPAGER": "cat",
         "ASAN_OPTIONS": os.environ.get("ASAN_OPTIONS", ""),
     }
+
+
+def layout(home):
+    """The (framework dir, loader) pair installed under home, or None."""
+    for pair in LAYOUTS:
+        if (os.path.isdir(os.path.join(home, pair[0], "lib"))
+                and os.path.isfile(os.path.join(home, pair[1]))):
+            return pair
+    return None
+
+
+def installed_framework():
+    """(dir, loader path) of the developer's install, or None. HXP_HOME
+    may be any directory; its loader is the brand rc beside it."""
+    if os.environ.get("HXP_HOME"):
+        fw = os.environ["HXP_HOME"].rstrip("/")
+        cands = [os.path.join(os.path.dirname(fw), rc) for _, rc in LAYOUTS]
+    else:
+        home = os.path.expanduser("~")
+        pair = layout(home)
+        if not pair:
+            return None
+        fw = os.path.join(home, pair[0])
+        cands = [os.path.join(home, pair[1])]
+    for rc in cands:
+        if os.path.isdir(os.path.join(fw, "lib")) and os.path.isfile(rc):
+            return fw, rc
+    return None
 
 
 def run(home, script, cwd=None, timeout=180, argv=None):
@@ -136,18 +175,16 @@ def build_sandbox(home):
     """Returns a short description of where the framework came from, or
     None when there is nothing to test."""
     src = os.environ.get("HXP_SRC")
-    installed = os.environ.get("HXP_HOME") or os.path.join(
-        os.path.expanduser("~"), ".hellish")
+    installed = installed_framework()
     if src and os.path.isfile(os.path.join(src, "install.sh")):
         origin = "checkout %s" % src
-    elif (os.path.isdir(os.path.join(installed, "lib"))
-          and os.path.isfile(os.path.join(os.path.dirname(installed),
-                                          ".hellishrc"))):
-        shutil.copytree(installed, os.path.join(home, ".hellish"),
-                        symlinks=True)
-        shutil.copy(os.path.join(os.path.dirname(installed), ".hellishrc"),
-                    os.path.join(home, ".hellishrc"))
-        return "installed %s" % installed
+    elif installed:
+        fw, rc = installed
+        # keep the brand of the loader: a .hellishrc sources ~/.hellish
+        pair = LAYOUTS[1] if rc.endswith(".hellishrc") else LAYOUTS[0]
+        shutil.copytree(fw, os.path.join(home, pair[0]), symlinks=True)
+        shutil.copy(rc, os.path.join(home, pair[1]))
+        return "installed %s" % fw
     else:
         src = fetch_checkout()
         if not src:
@@ -156,8 +193,7 @@ def build_sandbox(home):
     p = subprocess.run(["sh", os.path.join(src, "install.sh"), "--home", home,
                         "--plugins", "all"], capture_output=True,
                        timeout=600, env=sandbox_env(home))
-    if p.returncode != 0 or not os.path.isfile(os.path.join(home,
-                                                            ".hellishrc")):
+    if p.returncode != 0 or not layout(home):
         print("framework installer failed: rc=%d %r" % (p.returncode,
                                                         p.stderr[-300:]))
         return None
@@ -166,7 +202,7 @@ def build_sandbox(home):
 
 # ------------------------------------------------------------------ checks
 
-LOAD = ('. "$HOME/.hellishrc"\n'
+LOAD = ('. "$HXP_RC"\n'
         'printf "loaded=%s errors=%s\\n" "${#HX_LOADED[@]}" '
         '"${#HX_ERRORS[@]}"\n'
         '[ "${#HX_ERRORS[@]}" -gt 0 ] && printf "%s\\n" "${HX_ERRORS[@]}"\n'
@@ -214,12 +250,13 @@ def main():
     try:
         origin = build_sandbox(home)
         if not origin:
-            print("\nSKIP: no framework (no HXP_SRC, no ~/.hellish, "
+            print("\nSKIP: no framework (no HXP_SRC, no ~/.polish, "
                   "nothing cached%s)" % (", offline" if OFFLINE else
                                          " and no network"))
             return 0
-        print("--- framework: %s" % origin)
-        plugdir = os.path.join(home, ".hellish", "plugins")
+        fwdir = os.path.join(home, layout(home)[0])
+        print("--- framework: %s (%s)" % (origin, os.path.basename(fwdir)))
+        plugdir = os.path.join(fwdir, "plugins")
         plugins = sorted(d for d in os.listdir(plugdir)
                          if os.path.isfile(os.path.join(plugdir, d,
                                                         "plugin.hsh")))
@@ -234,7 +271,7 @@ def main():
               "out=%r" % out[-400:])
 
         # 2. The framework's own suite, against the sandbox copy.
-        suite = os.path.join(home, ".hellish", "test", "run.hsh")
+        suite = os.path.join(fwdir, "test", "run.hsh")
         if os.path.isfile(suite):
             rc, out, err = run(home, "", argv=[suite], timeout=600)
             bad = crash_words(err, rc)

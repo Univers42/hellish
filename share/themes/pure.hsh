@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # pure -- sindresorhus/pure: path on one row, symbol on the next
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

@@ -16,7 +16,8 @@
 
 /* Our own script extensions, run under this shell rather than /bin/sh.
    .polish is the 3.4.0 name; .hellish and .hell stay recognised so scripts
-   written before the rename keep their interpreter. */
+   written before the rename keep their interpreter. .hsh is the config
+   module extension: a module run as ./x.hsh is read by us, not by sh. */
 int	is_own_script(const char *path)
 {
 	size_t	len;
@@ -29,6 +30,8 @@ int	is_own_script(const char *path)
 	if (len >= 5 && ft_strcmp(path + len - 5, ".hell") == 0)
 		return (1);
 	if (len >= 3 && ft_strcmp(path + len - 3, ".sh") == 0)
+		return (1);
+	if (len >= 4 && ft_strcmp(path + len - 4, ".hsh") == 0)
 		return (1);
 	return (0);
 }

@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # arith -- $((...)) arithmetic, evaluated at every render
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

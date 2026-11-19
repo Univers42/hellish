@@ -26,6 +26,18 @@ shell. The welcome banner links to the guide for the latest one:
   symlink beside it, and never create a `~/.polishrc` that would shadow
   your `~/.hellishrc`. A dry run of `register_shell.sh --purge` no longer
   deletes anything.
+- An install that `update --now` upgraded from 3.3 or earlier keeps only
+  the `hellish` command. Re-run the installer to add `polish`; it keeps
+  your path and config.
+- **A config module no longer has to end in `.hsh`.** In `rc.d/`,
+  `after.d/`, `plugins/` and `themes/`, `x.sh` loads too, and so does a
+  file with no extension whose first line is `#!/usr/bin/env polish` (or
+  `hellish`). A README, a `.txt`, an editor backup (`x~`) and a file for
+  another shell are still skipped. The shipped files carry the shebang,
+  and the installer writes `hellish` there instead on a machine with no
+  `polish` command.
+- A set `POLISH_X` now wins over `HELLISH_X` in the install scripts even
+  when it is empty, as it already did in the shell.
 - Every release ships `polish-linux-x86_64` and, byte for byte the same,
   `hellish-linux-x86_64`, which is what ≤ 3.3 updaters download.
 

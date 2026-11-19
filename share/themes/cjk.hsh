@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # cjk -- CJK is double-width too, and mixes with ASCII mid-line
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

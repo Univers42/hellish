@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # boxed -- box-drawing characters: single-width, non-ASCII, no combining
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

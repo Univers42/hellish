@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # wide -- a long path that will wrap on a narrow terminal
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

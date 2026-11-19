@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # minimal -- one character; the shortest prompt that is still a prompt
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

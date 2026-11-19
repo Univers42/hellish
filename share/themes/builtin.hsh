@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # builtin -- \B: the whole built-in theme, from one escape
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

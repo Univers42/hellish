@@ -377,10 +377,14 @@ register() {
 	# to delete, or that the user-mode uninstall deletes next. An earlier,
 	# good record is kept rather than overwritten with it. The file is named
 	# for the install it belongs to, so an older checkout's uninstaller still
-	# finds ~/.hellish-previous-shell on a hellish install.
+	# finds ~/.hellish-previous-shell on a hellish install. Only those two
+	# names: a custom --dest (/opt/x/sh42) wrote ~/.sh42-previous-shell,
+	# which no uninstall looks for.
+	_prev_name="polish"
+	[ "$(basename "$DEST")" = "hellish" ] && _prev_name="hellish"
 	if [ "$DRY_RUN" != "1" ] && [ -n "$_was" ] && [ -n "${HOME:-}" ] \
 		&& ! is_shell_named_ours "$_was"; then
-		printf '%s\n' "$_was" > "$HOME/.$(basename "$DEST")-previous-shell" \
+		printf '%s\n' "$_was" > "$HOME/.$_prev_name-previous-shell" \
 			2>/dev/null || true
 	fi
 

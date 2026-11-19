@@ -66,6 +66,10 @@ void	sort_strvec(t_vec *v, size_t from);
 char	*xdg_config_dir(t_shell *state, const char *home);
 void	collect(const char *dir, const char *suffix, t_vec *out);
 void	collect_plugins(const char *dir, t_vec *out);
+void	collect_modules(const char *dir, t_vec *out);
+bool	rc_is_module(const char *dir, const char *name);
+bool	rc_shebang_is_ours(const char *path);
+char	*rc_plugin_entry(const char *sub);
 void	rc_load_all(t_shell *state, const char *home);
 void	rc_load_after(t_shell *state, const char *home);
 

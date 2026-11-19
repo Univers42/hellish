@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # empty -- the degenerate case: a prompt of length zero
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # plain -- no colour, no escapes -- the control case
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

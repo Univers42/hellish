@@ -113,8 +113,9 @@ for tgt in up test; do
 		diff "$OUT/mk.$tgt.b" "$OUT/mk.$tgt.h" | head -8 | sed 's/^/    /'
 	fi
 done
+# The probe reports /proc/self/exe: build/bin/hellish resolves to polish.
 picked="$(run_in "$H" "$(dirname "$H"):" -c 'make -pn up 2>/dev/null' | sed -n 's/^SHELL := //p' | head -1)"
-if [ "$picked" = "$H" ]; then
+if [ "$picked" = "$(readlink -f "$H")" ]; then
 	ok=$((ok + 1)); printf 'ok    %-44s\n' "make picks hellish as SHELL"
 else
 	ko=$((ko + 1)); printf 'FAIL  %-44s picked %s\n' "make picks hellish as SHELL" "${picked:-nothing}"

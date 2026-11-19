@@ -95,6 +95,28 @@ pick() {
 
 RC="$(pick "$TARGET_HOME/.polishrc" "$TARGET_HOME/.hellishrc")"
 
+# The interpreter the copied modules' shebang names. share/ ships
+# `#!/usr/bin/env polish`; a machine with no `polish` command -- a pre-3.4
+# binary, or an old install the 3.3 updater upgraded in place, which keeps
+# only the hellish name -- gets `hellish` instead, so a module run as a
+# script still finds its shell. A fresh install has polish, and sees no
+# hellish name anywhere.
+has_cmd() {
+	for _d in "$PATH_DIR" "${BIN%/*}"; do
+		[ -n "$_d" ] && [ -x "$_d/$1" ] && return 0
+	done
+	command -v "$1" >/dev/null 2>&1
+}
+SHEBANG="polish"
+if [ "$BRAND" = "hellish" ] || { ! has_cmd polish && has_cmd hellish; }; then
+	SHEBANG="hellish"
+fi
+
+# copy_module SRC DEST: cp, with line 1 naming SHEBANG.
+copy_module() {
+	sed "1s|^#!/usr/bin/env polish\$|#!/usr/bin/env $SHEBANG|" "$1" > "$2"
+}
+
 # Where the config tree goes. XDG_CONFIG_HOME is honoured only when it
 # actually lives UNDER the home being seeded.
 #
@@ -123,6 +145,13 @@ esac
 seed_rc() {
 	if [ -e "$RC" ]; then
 		printf '  \033[1;34mi\033[0m  %s already exists — left untouched\n' "$RC"
+		return 0
+	fi
+	# A pre-3.4 --bin picks ~/.hellishrc even when ~/.polishrc exists. A
+	# second rc would split the config: the 3.4 upgrade reads only polishrc.
+	if [ -e "$TARGET_HOME/.polishrc" ]; then
+		printf '  \033[1;34mi\033[0m  %s exists — no %s seeded beside it\n' \
+			"$TARGET_HOME/.polishrc" "$RC"
 		return 0
 	fi
 
@@ -208,10 +237,12 @@ seed_themes() {
 		if [ -e "$XDG/themes/$(basename "$_f")" ]; then
 			_kept=$((_kept + 1))
 		else
-			cp "$_f" "$XDG/themes/" 2>/dev/null && _new=$((_new + 1))
+			copy_module "$_f" "$XDG/themes/$(basename "$_f")" 2>/dev/null \
+				&& _new=$((_new + 1))
 		fi
 	done
-	cp "$_src/rc.d/40-prompt-switch.hsh" "$XDG/rc.d/" 2>/dev/null
+	copy_module "$_src/rc.d/40-prompt-switch.hsh" \
+		"$XDG/rc.d/40-prompt-switch.hsh" 2>/dev/null
 	if [ "$_kept" -gt 0 ]; then
 		printf '  \033[1;32mok\033[0m  %s themes (%s new, %s of yours left alone)\n' \
 			"$XDG/themes" "$_new" "$_kept"

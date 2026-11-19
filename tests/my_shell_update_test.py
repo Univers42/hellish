@@ -31,6 +31,11 @@ RUNS AS max, INSIDE docker/Dockerfile.my-shell. Not runnable on a developer
 host, by design: it runs `make my_shell`, which rewrites /etc/shells and the
 caller's login shell.
 
+Since 3.4.0 the shell is polish: a fresh `make my_shell` installs
+/usr/bin/polish and no hellish file at all, while a published pre-3.4
+binary (the VERSION= phase) still lands as /usr/bin/hellish with a polish
+symlink beside it -- register_shell.sh's legacy path.
+
 Usage: python3 my_shell_update_test.py     (as the non-root user, in the image)
 """
 import hashlib
@@ -45,7 +50,9 @@ import threading
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEST = "/usr/bin/hellish"
+DEST = "/usr/bin/polish"
+LEGACY = "/usr/bin/hellish"
+ASSET = "polish-linux-x86_64"
 PASSWORD = "hunter2"
 FAILS = []
 
@@ -90,7 +97,7 @@ class Publisher:
                 if self.path.endswith("/releases/latest"):
                     body = ('{"tag_name": "v%s"}' % ver).encode()
                 elif self.path.endswith(".sha256"):
-                    body = ("%s  hellish-linux-x86_64\n" % sha).encode()
+                    body = ("%s  %s\n" % (sha, ASSET)).encode()
                 else:
                     body = blob
                 self.send_response(200)
@@ -148,7 +155,8 @@ def run_update_pty(binary, env, password, timeout=180):
         if not d:
             break
         out += d
-        if not picked and b"How should hellish update?" in out:
+        if not picked and (b"How should polish update?" in out
+                           or b"How should hellish update?" in out):
             os.write(fd, b"\r")
             picked = True
             continue
@@ -176,6 +184,11 @@ def run_update_pty(binary, env, password, timeout=180):
     return out.decode("utf-8", "replace")
 
 
+def ours_in(d):
+    """Files in D named after the shell, either brand."""
+    return sorted(f for f in os.listdir(d) if "polish" in f or "hellish" in f)
+
+
 def sh(cmd, **kw):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True,
                           **kw)
@@ -196,7 +209,7 @@ def have_network():
     """Can we reach the release API? Only the VERSION= phase needs it."""
     return subprocess.run(
         ["curl", "-fsS", "--max-time", "10", "-o", os.devnull,
-         "https://api.github.com/repos/Univers42/hellish/releases/latest"],
+         "https://api.github.com/repos/Univers42/polish/releases/latest"],
         capture_output=True).returncode == 0
 
 
@@ -247,14 +260,17 @@ def main():
     check("it runs", version_of(DEST) != "", "no version output")
 
     # The hypothesis this test exists to settle: PATH was never the problem.
-    which = sh("command -v hellish").stdout.strip()
-    check("`command -v hellish` finds it on PATH", which == DEST,
+    which = sh("command -v polish").stdout.strip()
+    check("`command -v polish` finds it on PATH", which == DEST,
           "PATH resolved to %r, want %r (PATH=%s)"
           % (which, DEST, os.environ.get("PATH", "")))
     shells = open("/etc/shells").read().splitlines()
     check("it is listed in /etc/shells", DEST in shells, shells)
     passwd_shell = sh("getent passwd max").stdout.strip().split(":")[-1]
     check("it is max's login shell", passwd_shell == DEST, passwd_shell)
+    # A new user gets polish and nothing named hellish (3.4.0).
+    check("a fresh install leaves no hellish file in /usr/bin",
+          not os.path.lexists(LEGACY), "found %s" % LEGACY)
 
     # The condition that broke the update: /usr/bin is root's, so a staging
     # path inside it is unwritable, and the replacement needs elevation.
@@ -312,10 +328,10 @@ def main():
               text[-500:])
         check("the installed binary is untouched", before == after)
         check("nothing is left behind in /usr/bin",
-              [f for f in os.listdir("/usr/bin") if "hellish" in f]
-              == ["hellish"])
+              ours_in("/usr/bin") == ["polish"], ours_in("/usr/bin"))
         check("nothing is left behind in /tmp",
-              [f for f in os.listdir("/tmp") if "hellish-update" in f] == [])
+              [f for f in os.listdir("/tmp") if "-update" in f
+               and ("polish" in f or "hellish" in f)] == [])
 
         section("the update button, elevation GRANTED (real password)")
         before = sha_of(DEST)
@@ -331,10 +347,10 @@ def main():
         check("it is still root-owned and executable",
               os.stat(DEST).st_uid == 0 and os.access(DEST, os.X_OK))
         check("nothing is left behind in /usr/bin",
-              [f for f in os.listdir("/usr/bin") if "hellish" in f]
-              == ["hellish"])
+              ours_in("/usr/bin") == ["polish"], ours_in("/usr/bin"))
         check("nothing is left behind in /tmp",
-              [f for f in os.listdir("/tmp") if "hellish-update" in f] == [])
+              [f for f in os.listdir("/tmp") if "-update" in f
+               and ("polish" in f or "hellish" in f)] == [])
     finally:
         pub.stop()
 
@@ -345,16 +361,19 @@ def main():
     r = sh("make my-shell-purge", cwd=ROOT)
     out = r.stdout + r.stderr
     check("`make my-shell-purge` succeeds", r.returncode == 0, out[-800:])
-    check("the binary is gone", not os.path.exists(DEST))
+    check("the binary is gone", not os.path.lexists(DEST)
+          and not os.path.lexists(LEGACY))
     check("the login shell is restored, not left pointing at a missing file",
           sh("getent passwd max").stdout.strip().split(":")[-1] != DEST)
     check("the /etc/shells entry is gone",
           DEST not in open("/etc/shells").read().splitlines())
     home = os.path.expanduser("~")
-    check("the config is purged",
-          not os.path.exists(os.path.join(home, ".hellishrc"))
-          and not os.path.isdir(os.path.join(home, ".config", "hellish"))
-          and not os.path.isdir(os.path.join(home, ".cache", "hellish")))
+    left = [p for b in ("polish", "hellish")
+            for p in (os.path.join(home, "." + b + "rc"),
+                      os.path.join(home, ".config", b),
+                      os.path.join(home, ".cache", b))
+            if os.path.lexists(p)]
+    check("the config is purged", left == [], left)
 
     section("make my_shell VERSION=… installs a published release")
     # The reproduction loop itself, pinned. `make my_shell VERSION=2.7.2` is
@@ -386,9 +405,17 @@ def main():
           "installed %r, wanted %r" % (version_of(DEST), old))
     check("it says so, so nobody debugs the wrong binary",
           "installed the PUBLISHED" in out, out[-400:])
+    # A pre-3.4 binary answers "hellish, version", so register_shell.sh puts
+    # it where its own updater looks -- /usr/bin/hellish -- and makes
+    # /usr/bin/polish a symlink to it: one binary, both names.
     check("and it is still a proper root-owned install",
-          os.path.isfile(DEST) and os.stat(DEST).st_uid == 0
-          and sh("getent passwd max").stdout.strip().split(":")[-1] == DEST)
+          os.path.isfile(LEGACY) and not os.path.islink(LEGACY)
+          and os.stat(LEGACY).st_uid == 0
+          and sh("getent passwd max").stdout.strip().split(":")[-1] == LEGACY,
+          "passwd: %s" % sh("getent passwd max").stdout.strip())
+    check("...with %s as a symlink to it" % DEST,
+          os.path.islink(DEST) and os.path.realpath(DEST) == LEGACY,
+          os.path.realpath(DEST))
 
     # VERSION= and STATIC=1 mean opposite things (fetch vs build); accepting
     # both would silently honour one of them.
@@ -402,21 +429,22 @@ def main():
     # is no longer reproducing anything and this test should be re-read.
     pub2 = Publisher("9.9.9", payload)
     try:
-        before = sha_of(DEST)
-        text = run_update_pty(DEST, pub2.env(), PASSWORD)
+        before = sha_of(LEGACY)
+        text = run_update_pty(LEGACY, pub2.env(), PASSWORD)
         check("v%s still fails to update itself (the reported bug)" % old,
               "update failed" in text, text[-500:])
         check("...and still blames the download, which is the #75 symptom",
               "the download failed" in text, text[-500:])
         check("...leaving the installed binary untouched",
-              before == sha_of(DEST))
+              before == sha_of(LEGACY))
     finally:
         pub2.stop()
 
     section("cleanup")
     if prime_sudo():
         sh("make my-shell-purge", cwd=ROOT)
-    check("the machine is left clean", not os.path.exists(DEST))
+    check("the machine is left clean",
+          ours_in("/usr/bin") == [], ours_in("/usr/bin"))
 
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)

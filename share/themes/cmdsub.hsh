@@ -1,3 +1,4 @@
+#!/usr/bin/env polish
 # cmdsub -- $(...) inside a prompt: deliberately NOT run, shown literally
 #
 # Single quotes matter: in double quotes $? and friends expand ONCE,

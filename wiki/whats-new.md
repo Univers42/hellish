@@ -3,8 +3,9 @@
 hellish is now **polish**. 3.4 renames the shell everywhere a new user sees
 it: the command, the config files, the `POLISH_*` settings and the
 repository, which is now
-[Univers42/polish](https://github.com/Univers42/polish). Nothing else
-changed, and an existing hellish install keeps working without edits.
+[Univers42/polish](https://github.com/Univers42/polish). Config modules
+also [no longer need the `.hsh` extension](#module-names). An existing
+hellish install keeps working without edits.
 [What came in 3.3](#what-came-in-33) follows further down.
 
 !!! tip "Get it"
@@ -17,8 +18,10 @@ changed, and an existing hellish install keeps working without edits.
 ## Coming from hellish
 
 `update --now` replaces the binary where it already is, so your login shell,
-`/etc/shells` and `$SHELL` keep the `hellish` path. Every old name is still
-read:
+`/etc/shells` and `$SHELL` keep the `hellish` path. An updater from 3.3 or
+earlier doesn't know the new name, so it adds no `polish` command. To get
+one, re-run the installer: it keeps the `hellish` binary and adds a `polish`
+symlink beside it. Every old name is still read:
 
 | You have | 3.4 reads | Rule |
 |---|---|---|
@@ -28,7 +31,7 @@ read:
 | `HELLISH_AUTOSUGGEST=1` and every other `HELLISH_*` | it | `POLISH_X` wins when it is set, even to empty |
 | `HELLISH_PRECMD_FUNCS`, `HELLISH_PREEXEC_FUNCS` | it | one prefix only, so a hook never runs twice |
 | `$HELLISH_GIT_BRANCH` and the other git prompt variables | it | set under both prefixes |
-| `script.hellish`, `script.hell` | run by polish | as are `.polish` and `.sh` |
+| `script.hellish`, `script.hell` | run by polish | as are `.polish`, `.hsh` and `.sh` |
 | `hellish -c "update --version"` | `polish 3.4.0` | |
 
 Don't keep both `~/.hellishrc` and `~/.polishrc`. Only `~/.polishrc` is read,
@@ -37,6 +40,24 @@ and the old file silently stops loading. To switch, rename it:
 
 What did not move: the history file, the npm package (`hellish-shell`, which
 still installs a `hellish` command), and the container image names.
+
+## Module names
+
+In `rc.d/`, `after.d/`, `plugins/` and `themes/`, polish loads:
+
+| File | Loaded |
+|---|---|
+| `20-aliases.hsh`, `20-aliases.sh` | yes, with bash rules |
+| `20-aliases.zsh` | yes, with zsh rules |
+| `20-aliases` starting `#!/usr/bin/env polish` | yes |
+| `20-aliases` starting `#!/usr/bin/env hellish` or `#!/usr/local/bin/hellish` | yes |
+| `README`, `notes.txt`, `20-aliases~`, `.hidden` | no |
+| `20-aliases` starting `#!/bin/bash` | no |
+
+Modules load in name order, whatever their extension. A plugin's entry file
+is `plugin.hsh`, else `plugin.sh`, else a `plugin` file with the shebang.
+The files the installer seeds carry `#!/usr/bin/env polish` on line 1, or
+`hellish` on a machine that has no `polish` command.
 
 Every change since 3.3.0:
 [v3.3.0...v3.4.0](https://github.com/Univers42/polish/compare/v3.3.0...v3.4.0).

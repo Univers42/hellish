@@ -64,13 +64,20 @@ LEGACY_ASSET="hellish-linux-x86_64"
 # Internal to the release, and the name older copies of this script ask
 # for -- so it keeps the old spelling rather than being published twice.
 BUNDLE="hellish-install-bundle.tar.gz"
-RELEASE_BASE="${POLISH_RELEASE_BASE:-${HELLISH_RELEASE_BASE:-https://github.com/$REPO/releases}}"
-RAW_BASE="${POLISH_RAW_BASE:-${HELLISH_RAW_BASE:-https://raw.githubusercontent.com/$REPO/main}}"
-PLUGINS_SRC="${POLISH_PLUGINS_SRC:-${HELLISH_PLUGINS_SRC:-https://github.com/Univers42/hellishrc_plugins}}"
+# knob NAME DEFAULT: POLISH_NAME when it is set -- even empty, as in
+# brand_getenv (src/brand/brand.c) -- else HELLISH_NAME; empty means DEFAULT.
+# `:-` let an empty POLISH_X fall through to a stale HELLISH_X.
+knob() {
+	eval "_knob=\${POLISH_$1-\${HELLISH_$1-}}"
+	printf '%s' "${_knob:-$2}"
+}
+RELEASE_BASE="$(knob RELEASE_BASE "https://github.com/$REPO/releases")"
+RAW_BASE="$(knob RAW_BASE "https://raw.githubusercontent.com/$REPO/main")"
+PLUGINS_SRC="$(knob PLUGINS_SRC https://github.com/Univers42/hellishrc_plugins)"
 
-MODE="${POLISH_INSTALL_MODE:-${HELLISH_INSTALL_MODE:-}}"
-PLUGINS="${POLISH_INSTALL_PLUGINS:-${HELLISH_INSTALL_PLUGINS:-}}"
-ZSHRC="${POLISH_IMPORT_ZSHRC:-${HELLISH_IMPORT_ZSHRC:-}}"
+MODE="$(knob INSTALL_MODE "")"
+PLUGINS="$(knob INSTALL_PLUGINS "")"
+ZSHRC="$(knob IMPORT_ZSHRC "")"
 ASSUME_YES=0
 VERSION=""
 LOGIN_SHELL=1
@@ -339,7 +346,7 @@ grep -q -- '--bin' "$SRC_ROOT/tools/seed_hellishrc.sh" 2>/dev/null \
 	&& SEED_ARGS="--bin"
 
 # Taken before the seeder runs: a ~/.polishrc that exists NOW is the user's,
-# and is never moved or shadowed below (only one this run seeds may be).
+# and is never moved (only one this run seeds may be, for an old framework).
 HAD_POLISHRC=0
 [ -e "$HOME/.polishrc" ] && HAD_POLISHRC=1
 
@@ -505,13 +512,6 @@ elif [ -z "$PLUGINS" ] \
 	fi
 fi
 
-# The framework installs its loader into ~/.hellishrc, which the shell
-# ignores while a ~/.polishrc exists. Moving the user's own rc out of the
-# way to make room is not ours to do, so the framework waits instead.
-if [ "$want_framework" = "1" ] && [ "$HAD_POLISHRC" = "1" ]; then
-	want_framework=0
-	say "plugin framework skipped: it installs into ~/.hellishrc, which polish ignores while your ~/.polishrc exists (to add it: merge ~/.polishrc into ~/.hellishrc, remove ~/.polishrc, re-run)"
-fi
 if [ "$want_framework" = "1" ]; then
 	say "setting up the plugin framework..."
 	FW="$WORK/hellishrc_plugins"
@@ -546,19 +546,29 @@ if [ "$want_framework" = "1" ]; then
 			mkdir -p "$FW" && tar -xzf "$WORK/fw.tgz" -C "$FW" --strip-components=1
 		fi ;;
 	esac
-	# The framework writes its loader to ~/.hellishrc -- it predates the
-	# rename. On a fresh install the seeder made ~/.polishrc, which the shell
-	# reads INSTEAD, so the loader would never run. Moving the rc to the
-	# legacy name first makes the shell fall back to it (it reads
-	# ~/.hellishrc when ~/.polishrc is absent), and the framework keeps the
-	# moved content as its rc.d/95-previous-rc.hsh, with a backup. Nothing
-	# is deleted; the seeder never recreates ~/.polishrc beside it. Only an
-	# rc seeded by THIS run moves (HAD_POLISHRC=0 is checked above).
-	if [ -f "$HOME/.polishrc" ] && [ ! -e "$HOME/.hellishrc" ]; then
-		mv "$HOME/.polishrc" "$HOME/.hellishrc"
-		say "moved ~/.polishrc to ~/.hellishrc, where the plugin framework installs (still read by polish)"
+	# A polish-aware framework (it names ~/.polishrc) installs into the rc
+	# the shell reads and picks shebangs by `command -v polish`, so it runs
+	# with the new binary's dir on PATH -- that is how a fresh install ends
+	# up with no hellish name at all. An older framework only knows
+	# ~/.hellishrc, which the shell ignores while ~/.polishrc exists: a
+	# polishrc this run seeded moves there (the framework keeps its content
+	# as rc.d/95-previous-rc.hsh); one the user already had is not ours to
+	# move, so that framework waits.
+	# Caveat: "polish-aware" is a grep for .polishrc in its installer -- a
+	# fork that only mentions the name in a comment is misread as aware.
+	if ! grep -q '\.polishrc' "$FW/install.sh" 2>/dev/null; then
+		if [ "$HAD_POLISHRC" = "1" ]; then
+			want_framework=0
+			say "plugin framework skipped: this version installs into ~/.hellishrc, which polish ignores while your ~/.polishrc exists"
+		elif [ -f "$HOME/.polishrc" ] && [ ! -e "$HOME/.hellishrc" ]; then
+			mv "$HOME/.polishrc" "$HOME/.hellishrc"
+			say "moved ~/.polishrc to ~/.hellishrc, where this framework version installs (still read by polish)"
+		fi
 	fi
-	sh "$FW/install.sh" --plugins "${PLUGINS:-all}"
+	if [ "$want_framework" = "1" ]; then
+		PATH="$(dirname "$DEST"):$PATH" sh "$FW/install.sh" \
+			--plugins "${PLUGINS:-all}"
+	fi
 fi
 
 # ── report ──────────────────────────────────────────────────────────────────
