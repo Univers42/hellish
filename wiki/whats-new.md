@@ -1,28 +1,65 @@
-# What's new in 3.3
+# What's new in 3.4
 
-hellish 3.3 ranks by what you run, not by what you ran last. The dim hint and
-`make <TAB>` put your most-run command first. This page shows how that works
-and which settings change it. Every example on it was run on a 3.3 build.
-[What came in 3.2](#what-came-in-32) follows further down.
+hellish is now **polish**. 3.4 renames the shell everywhere a new user sees
+it: the command, the config files, the `POLISH_*` settings and the
+repository, which is now
+[Univers42/polish](https://github.com/Univers42/polish). Nothing else
+changed, and an existing hellish install keeps working without edits.
+[What came in 3.3](#what-came-in-33) follows further down.
 
 !!! tip "Get it"
     Already running hellish? Type `update --now`. Otherwise install it:
 
     ```sh
-    curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
+    curl -fsSL https://raw.githubusercontent.com/Univers42/polish/main/install.sh | sh
     ```
 
-## At a glance
+## Coming from hellish
+
+`update --now` replaces the binary where it already is, so your login shell,
+`/etc/shells` and `$SHELL` keep the `hellish` path. Every old name is still
+read:
+
+| You have | 3.4 reads | Rule |
+|---|---|---|
+| `~/.hellishrc` | it, unchanged | `~/.polishrc` wins only once it exists |
+| `~/.config/hellish/` | it, unchanged | same rule for `~/.config/polish/` |
+| `/etc/hellish/` | it, unchanged | same rule for `/etc/polish/` |
+| `HELLISH_AUTOSUGGEST=1` and every other `HELLISH_*` | it | `POLISH_X` wins when it is set, even to empty |
+| `HELLISH_PRECMD_FUNCS`, `HELLISH_PREEXEC_FUNCS` | it | one prefix only, so a hook never runs twice |
+| `$HELLISH_GIT_BRANCH` and the other git prompt variables | it | set under both prefixes |
+| `script.hellish`, `script.hell` | run by polish | as are `.polish` and `.sh` |
+| `hellish -c "update --version"` | `polish 3.4.0` | |
+
+Don't keep both `~/.hellishrc` and `~/.polishrc`. Only `~/.polishrc` is read,
+and the old file silently stops loading. To switch, rename it:
+`mv ~/.hellishrc ~/.polishrc`.
+
+What did not move: the history file, the npm package (`hellish-shell`, which
+still installs a `hellish` command), and the container image names.
+
+Every change since 3.3.0:
+[v3.3.0...v3.4.0](https://github.com/Univers42/polish/compare/v3.3.0...v3.4.0).
+
+## What came in 3.3
+
+hellish 3.3 ranks by what you run, not by what you ran last. The dim hint and
+`make <TAB>` put your most-run command first. This section shows how that
+works and which settings change it. Every example in it was run on a 3.3
+build. Under polish, spell the settings `POLISH_*`; the `HELLISH_*` names
+below still work.
+
+### At a glance
 
 This is the table from the welcome banner, explained.
 
 | Keys | What it does | Needs |
 |---|---|---|
 | `make <TAB>` | [most-run targets first](#make-targets-you-run-first) | |
-| `→ ^F End` | [take the hint, now your most-run match](#hints-rank-what-you-run-most) | `export HELLISH_AUTOSUGGEST=1` |
-| `Alt-N/P` | [step through the matches in the same order](#hints-rank-what-you-run-most) | `export HELLISH_AUTOSUGGEST=1` |
+| `→ ^F End` | [take the hint, now your most-run match](#hints-rank-what-you-run-most) | `export POLISH_AUTOSUGGEST=1` |
+| `Alt-N/P` | [step through the matches in the same order](#hints-rank-what-you-run-most) | `export POLISH_AUTOSUGGEST=1` |
 
-## Hints rank what you run most
+### Hints rank what you run most
 
 With hints on, typing `make ` used to show the newest line that starts with
 it. It now shows the line you run most, weighted toward recent runs:
@@ -48,7 +85,7 @@ Two settings change the order:
   so the three `make re` above count as one run and the hint is `clean`.
   Repeats with another command between them still count.
 
-## make targets you run first
+### make targets you run first
 
 `make <TAB>` still reads the Makefile itself and never runs make. Targets you
 have run now come first, most-run first, and the rest follow alphabetically:
@@ -60,7 +97,7 @@ re      clean   all     fclean  test
 
 `HELLISH_SUGGEST_STRATEGY=recent` orders them newest first here too.
 
-## Fixed
+### Fixed
 
 In scripts:
 
