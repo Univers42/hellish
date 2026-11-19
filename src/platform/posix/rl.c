@@ -13,6 +13,41 @@
 #include "rl_private.h"
 #include "zle.h"
 #include <locale.h>
+#include "env.h"
+
+/* Dumb terminals (TERM=dumb) lack cursor positioning, so readline forces
+   horizontal scrolling. In Readline 8.1, horizontal scroll mode combined
+   with zero-width \001/\002 markers on a prompt longer than screen width
+   triggers a heap-buffer-overflow (#184). Strip invisible markers when
+   TERM=dumb to prevent readline from corrupting line buffer margins. */
+static bool	term_is_dumb(t_shell *state)
+{
+	t_env	*e;
+
+	if (!state)
+		return (false);
+	e = env_get(&state->env, "TERM");
+	return (e && e->value && !ft_strcmp(e->value, "dumb"));
+}
+
+static void	strip_invis_markers(char *s)
+{
+	size_t	r;
+	size_t	w;
+
+	if (!s)
+		return ;
+	r = 0;
+	w = 0;
+	while (s[r])
+	{
+		if (s[r] != '\001' && s[r] != '\002')
+			s[w++] = s[r];
+		r++;
+	}
+	s[w] = '\0';
+}
+
 
 /* Print every line of `prompt` except the last to rl_outstream, stripping the
    \001/\002 width markers (they must not reach the terminal). Returns the final
@@ -81,6 +116,8 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 	xfree(state->rl.shown_prompt);
 	state->rl.shown_prompt = ft_strdup(prompt);
 	row = split_prompt(prompt);
+	if (term_is_dumb(state))
+		strip_invis_markers(row);
 	state->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_rprompt_install(state);
 	rl_winch_arm();
