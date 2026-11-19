@@ -179,6 +179,13 @@ def main():
     check("a missing binary is reported clearly", p.returncode != 0
           and "no binary at" in (p.stderr + p.stdout), p.stderr[-200:])
 
+    # 7b. the previous-shell record is named for the brand, never for a
+    #     custom --dest: ~/.sh42-previous-shell is a file no uninstall reads.
+    check("the previous-shell file is not named after --dest",
+          'basename "$DEST")-previous-shell' not in src
+          and "$_prev_name-previous-shell" in src,
+          "a custom --dest strands the record the uninstall restores from")
+
     # 8. the wiring: my_shell must use THIS script, preflight FIRST, and must
     #    no longer reach into the submodule.
     with open(os.path.join(ROOT, "Makefile")) as f:

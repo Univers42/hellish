@@ -24,7 +24,9 @@
 set -eu
 
 PROG="$(basename "$0")"
-REPO="${POLISH_REPO:-${HELLISH_REPO:-Univers42/polish}}"
+# A set POLISH_REPO wins even when empty, as in brand_getenv (brand.c).
+REPO="${POLISH_REPO-${HELLISH_REPO-}}"
+REPO="${REPO:-Univers42/polish}"
 
 red() { printf '\033[1;31m%s\033[0m\n' "$*" >&2; }
 grn() { printf '  \033[1;32m✓\033[0m %s\n' "$*" >&2; }

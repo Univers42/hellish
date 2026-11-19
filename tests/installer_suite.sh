@@ -30,10 +30,12 @@
 #
 # The rename (hellish -> polish, 3.4.0): a FRESH user gets the polish names
 # (~/.local/bin/polish, /usr/bin/polish, ~/.polishrc, ~/.config/polish, the
-# `# >>> polish >>>` hook). The plugin framework predates the rename: it
-# lives in ~/.hellish/ and writes its loader to ~/.hellishrc, so those names
-# stay wherever the framework is involved. An existing hellish install keeps
-# its own names (J).
+# `# >>> polish >>>` hook). The plugin framework built into the image picks
+# the rest: a polish-aware one (its installer names ~/.polishrc) installs
+# ~/.polish/ + ~/.polishrc + polish.conf, so a fresh user sees no hellish name
+# at all; an older one only knows ~/.hellish/ + ~/.hellishrc. A, E, F and K
+# assert whichever contract that framework has (FW_AWARE below). An existing
+# hellish install keeps its own names (J).
 #
 # Everything hermetic: the "release" is a local server started here, serving
 # the binary under both asset names, their sha256s, the install bundle and
@@ -110,6 +112,15 @@ POLISH_PLUGINS_SRC=http://127.0.0.1:8377/hellishrc_plugins.tar.gz \
 POLISH_NO_BANNER=1 POLISH_NO_UPDATE_CHECK=1 POLISH_NO_ANIM=1 \
 HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1"
 
+# The same test install.sh makes (its Caveat applies here too).
+if grep -q '\.polishrc' /srv/hellishrc_plugins/install.sh; then
+	FW_AWARE=1 FWD=.polish FWRC=.polishrc FWRC_OTHER=.hellishrc FWCONF=polish.conf
+else
+	FW_AWARE=0 FWD=.hellish FWRC=.hellishrc FWRC_OTHER=.polishrc FWCONF=hellish.conf
+fi
+FWBLK=${FWRC#.}; FWBLK=${FWBLK%rc}
+echo "framework under test: ~/$FWD, ~/$FWRC, $FWCONF (polish-aware=$FW_AWARE)"
+
 # ── A: no sudo rights -> user mode, automatically ───────────────────────────
 echo "--- A: nora (no sudo) + --yes --plugins='git jump'"
 su nora -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins='git jump'" \
@@ -123,26 +134,34 @@ check "A: nothing landed in /usr/bin" \
 check "A: the binary answers"           answers nora "$NH/.local/bin/polish"
 check "A: rc hook block written"        grep -q "^# >>> polish >>>" "$NH/.bashrc"
 check "A: ...and no legacy hellish hook" sh -c "! grep -q '^# >>> hellish >>>' $NH/.bashrc"
-# The seeder made ~/.polishrc; the framework installs its loader into
-# ~/.hellishrc, which polish only reads while no ~/.polishrc exists. So the
-# installer moves the rc it seeded THIS run to ~/.hellishrc first, and the
-# framework keeps that content as rc.d/95-previous-rc.hsh.
-check "A: the seeded ~/.polishrc moved to ~/.hellishrc for the framework" \
-	grep -q "moved ~/.polishrc to ~/.hellishrc" /tmp/A.log
-check "A: ...so no ~/.polishrc shadows the framework's loader" no_file "$NH/.polishrc"
-check "A: ~/.hellishrc is there (the framework's loader)" test -f "$NH/.hellishrc"
-# The framework's installer replaces ~/.hellishrc with its loader and
-# preserves the seeded rc as rc.d/95-previous-rc.hsh -- so the PATH block
-# lives in one of the two, and both are loaded.
+# The seeder made ~/.polishrc. A polish-aware framework installs its loader
+# right there; an older one only knows ~/.hellishrc, which polish reads only
+# while no ~/.polishrc exists, so the installer first moves the rc it seeded
+# THIS run there. Either way the framework keeps the seeded content as
+# rc.d/95-previous-rc.hsh.
+if [ "$FW_AWARE" = 1 ]; then
+	check "A: nothing moved: the framework installs into ~/.polishrc" \
+		sh -c "! grep -q 'moved ~/.polishrc' /tmp/A.log"
+	check "A: ...and no file in HOME carries the hellish name" \
+		sh -c "[ -z \"\$(find $NH -iname '*hellish*' 2>/dev/null)\" ]"
+else
+	check "A: the seeded ~/.polishrc moved to ~/.hellishrc for the framework" \
+		grep -q "moved ~/.polishrc to ~/.hellishrc" /tmp/A.log
+fi
+check "A: ...so no ~/$FWRC_OTHER beside the framework's loader" no_file "$NH/$FWRC_OTHER"
+check "A: ~/$FWRC is the framework's loader" grep -q 'HX_HOME=' "$NH/$FWRC"
+# The framework's installer replaces the rc with its loader and preserves
+# the seeded rc as rc.d/95-previous-rc.hsh -- so the PATH block lives in
+# one of the two, and both are loaded.
 check "A: PATH block survives somewhere loaded" \
-	sh -c "grep -rq 'local/bin' $NH/.hellishrc $NH/.hellish/rc.d/ 2>/dev/null"
-check "A: framework installed"          test -d "$NH/.hellish/lib"
-check "A: chosen plugin present"        test -d "$NH/.hellish/plugins/git"
-check "A: unchosen builtin off in conf" grep -q "^feature net *off" "$NH/.hellish/hellish.conf"
+	sh -c "grep -rq 'local/bin' $NH/$FWRC $NH/$FWD/rc.d/ 2>/dev/null"
+check "A: framework installed"          test -d "$NH/$FWD/lib"
+check "A: chosen plugin present"        test -d "$NH/$FWD/plugins/git"
+check "A: unchosen builtin off in conf" grep -q "^feature net *off" "$NH/$FWD/$FWCONF"
 check "A: framework loads with 0 errors" \
-	su nora -c "$NH/.local/bin/polish -c '. ~/.hellishrc >/dev/null 2>&1; [ \${#HX_ERRORS[@]} -eq 0 ]'"
+	su nora -c "$NH/.local/bin/polish -c '. ~/$FWRC >/dev/null 2>&1; [ \${#HX_ERRORS[@]} -eq 0 ]'"
 check "A: conf sees git on" \
-	su nora -c "$NH/.local/bin/polish -c '. ~/.hellishrc >/dev/null 2>&1; conf list' | grep -q 'on  git'"
+	su nora -c "$NH/.local/bin/polish -c '. ~/$FWRC >/dev/null 2>&1; conf list' | grep -q 'on  git'"
 # A RE-RUN over the framework's own rc. ~/.hellishrc is now the loader,
 # whose `HX_LOADED=()` is bash syntax; the seeder used to validate the rc
 # with `sh -n` (dash), refuse its PATH block, and -- under the caller's
@@ -154,20 +173,20 @@ if su nora -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=non
 else
 	bad "A: a re-run over the framework rc completes" "exit $? -- $(grep -E 'would not parse|error' /tmp/A-rerun.log | head -1)"
 fi
-# ~/.hellishrc is the rc polish reads here, and the PATH block's markers
-# follow the rc's own name -- so it is the hellish-spelled block.
+# The loader is the rc polish reads here, and the PATH block's markers
+# follow the rc's own name.
 check "A: ...and the PATH block is written into it" \
-	sh -c "grep -q 'hellish path >>>' $NH/.hellishrc"
+	sh -c "grep -q '$FWBLK path >>>' $NH/$FWRC"
 check "A: ...exactly one PATH block in it" \
-	count_is 1 '^# >>> (polish|hellish) path >>>$' "$NH/.hellishrc"
+	count_is 1 '^# >>> (polish|hellish) path >>>$' "$NH/$FWRC"
 check "A: ...the rc hook is still in place, once" \
 	count_is 1 '^# >>> (polish|hellish) >>>$' "$NH/.bashrc"
-check "A: ...a re-run did not recreate ~/.polishrc" no_file "$NH/.polishrc"
-check "A: ...and the framework is still there" test -d "$NH/.hellish/lib"
-# The framework ships its own suite (~/.hellish/test/run.hsh); a user-mode
+check "A: ...a re-run did not create ~/$FWRC_OTHER" no_file "$NH/$FWRC_OTHER"
+check "A: ...and the framework is still there" test -d "$NH/$FWD/lib"
+# The framework ships its own suite (<framework>/test/run.hsh); a user-mode
 # install -- the 42 machine -- is where it must pass, because that is the
 # install with no /usr/bin binary for anything to hardcode.
-if su nora -c "$NH/.local/bin/polish $NH/.hellish/test/run.hsh" > /tmp/A-suite.log 2>&1; then
+if su nora -c "$NH/.local/bin/polish $NH/$FWD/test/run.hsh" > /tmp/A-suite.log 2>&1; then
 	ok "A: the framework's own test suite passes on a user install"
 else
 	bad "A: the framework's own test suite passes on a user install" \
@@ -186,7 +205,8 @@ check "B: login shell changed"          test "$(getent passwd maxine | cut -d: -
 check "B: the binary answers"           answers maxine /usr/bin/polish
 check "B: ~/.polishrc seeded"           test -f /home/maxine/.polishrc
 check "B: ...and no ~/.hellishrc beside it" no_file /home/maxine/.hellishrc
-check "B: no framework without asking"  test ! -d /home/maxine/.hellish
+check "B: no framework without asking" \
+	sh -c "[ ! -d /home/maxine/.polish/lib ] && [ ! -d /home/maxine/.hellish/lib ]"
 
 # ── C: the interactive path, through a real pty ─────────────────────────────
 # `script` gives the child a controlling tty, so install.sh's /dev/tty reads
@@ -197,7 +217,8 @@ printf 'n\nn\n' | su nora2 -c \
 	"cd /tmp && script -qec '$ENV_COMMON sh /hellish/install.sh' /dev/null" \
 	>/dev/null 2>&1 || bad "C: interactive install exited $?"
 check "C: binary installed"             test -x /home/nora2/.local/bin/polish
-check "C: framework declined -> absent" test ! -d /home/nora2/.hellish
+check "C: framework declined -> absent" \
+	sh -c "[ ! -d /home/nora2/.polish/lib ] && [ ! -d /home/nora2/.hellish/lib ]"
 
 # ── D: both uninstall routes ────────────────────────────────────────────────
 echo "--- D: uninstall puts both worlds back"
@@ -227,7 +248,7 @@ echo "--- E: hxp install z (real network; skips cleanly offline)"
 if curl -fsS -o /dev/null --max-time 10 https://raw.githubusercontent.com 2>/dev/null; then
 	su nora -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins=none" >/dev/null 2>&1
 	check "E: hxp install z fetches and wires" \
-		su nora -c "$NH/.local/bin/polish -c '. ~/.hellishrc >/dev/null 2>&1; hxp install z' && test -f $NH/.hellish/plugins/z/z.sh"
+		su nora -c "$NH/.local/bin/polish -c '. ~/$FWRC >/dev/null 2>&1; hxp install z' && test -f $NH/$FWD/plugins/z/z.sh"
 else
 	echo "skip E: no network"
 fi
@@ -250,8 +271,8 @@ check "F: the install neither hung nor failed (exit $st)" [ "$st" -eq 0 ]
 check "F: no username prompt reached the terminal" \
 	sh -c "! grep -q 'Username for' /tmp/F.log"
 check "F: framework arrived through the tarball fallback" \
-	test -d /home/nora3/.hellish/lib
-check "F: chosen plugins wired"          grep -q "^feature git *on" /home/nora3/.hellish/hellish.conf
+	test -d "/home/nora3/$FWD/lib"
+check "F: chosen plugins wired"          grep -q "^feature git *on" "/home/nora3/$FWD/$FWCONF"
 
 # ── G: the 42 world -- zsh login shell, a zsh-flavoured ~/.zshrc ────────────
 # ines logs into zsh (as every 42 account does) and has a ~/.zshrc written
@@ -480,38 +501,52 @@ else
 	bad "J: '<installed> update --version' prints exactly 'polish $REL_VER'" "got '$J_UPV'"
 fi
 
-# ── K: a hand-written ~/.polishrc is never shadowed by the framework ────────
-# The framework writes its loader to ~/.hellishrc, which polish ignores
-# while a ~/.polishrc exists. kim wrote her ~/.polishrc herself before any
-# installer ran, and asks for a plugin: the installer must neither move her
-# rc out of the way nor install a framework that would never load -- it
-# skips the framework and says so. The seeder's one licence still holds:
-# it may (re)write the PATH block between its own markers, so the rc is
-# compared byte for byte OUTSIDE that block (and the raw sha256 reported).
+# ── K: a hand-written ~/.polishrc is never lost to the framework ──────────
+# kim wrote her ~/.polishrc herself before any installer ran, and asks for a
+# plugin. The seeder's one licence holds either way: it may (re)write the
+# PATH block between its own markers, so her rc is compared byte for byte
+# OUTSIDE that block.
+#   polish-aware framework: it installs its loader into ~/.polishrc and,
+#     like it always did for a ~/.hellishrc, keeps hers twice -- verbatim
+#     as ~/.polishrc.pre-polish-<stamp>, and loading, after the framework,
+#     as rc.d/95-previous-rc.hsh.
+#   older framework: it writes ~/.hellishrc, which polish ignores while her
+#     ~/.polishrc exists, so the installer must neither move her rc nor
+#     install a framework that would never load -- it skips, and says so.
 echo "--- K: kim, a hand-written ~/.polishrc, asks for the git plugin"
 KH=/home/kim
 printf '# kim wrote this before any installer ran\nalias k="echo kim"  # K-USER-MARKER\n' \
 	> "$KH/.polishrc"
 chown kim:kim "$KH/.polishrc"
 cp "$KH/.polishrc" /tmp/K.polishrc.orig
-K_SUM="$(sha256sum < "$KH/.polishrc")"
 su kim -c "cd /tmp && $ENV_COMMON sh /hellish/install.sh --yes --plugins='git'" \
 	> /tmp/K.log 2>&1 || bad "K: install.sh exited $?" "$(tail -3 /tmp/K.log | tr '\n' ' ')"
 cat /tmp/K.log
-check "K: ~/.polishrc still exists, with her marker" \
-	grep -qF 'K-USER-MARKER' "$KH/.polishrc"
-check "K: ...byte-identical outside the installer's own PATH block" \
-	same_outside_path_block /tmp/K.polishrc.orig "$KH/.polishrc"
-if [ "$(sha256sum < "$KH/.polishrc")" = "$K_SUM" ]; then
-	echo "info K: ~/.polishrc sha256 unchanged"
-else
-	echo "info K: ~/.polishrc sha256 changed -- the diff is the seeder's PATH block:"
-	diff /tmp/K.polishrc.orig "$KH/.polishrc" | grep -E '^[<>] # (>>>|<<<)' || true
-fi
 check "K: NO ~/.hellishrc was created" no_file "$KH/.hellishrc"
-check "K: the log says the framework was skipped" \
-	grep -q "plugin framework skipped" /tmp/K.log
-check "K: ...and it really was (no ~/.hellish/lib)" test ! -d "$KH/.hellish/lib"
+if [ "$FW_AWARE" = 1 ]; then
+	K_BAK=
+	for f in "$KH"/.polishrc.pre-polish-*; do
+		[ -f "$f" ] && K_BAK=$f && break
+	done
+	check "K: her ~/.polishrc is kept as a backup" test -n "$K_BAK"
+	check "K: ...byte-identical outside the installer's own PATH block" \
+		same_outside_path_block /tmp/K.polishrc.orig "${K_BAK:-/nonexistent}"
+	check "K: ...and still loads, as rc.d/95-previous-rc.hsh" \
+		grep -qF 'K-USER-MARKER' "$KH/.polish/rc.d/95-previous-rc.hsh"
+	check "K: the framework went in, under polish names" \
+		sh -c "[ -d $KH/.polish/lib ] && grep -q '^feature git *on' $KH/.polish/polish.conf"
+	check "K: ...and her alias is defined by the framework's loader" \
+		su kim -c "$KH/.local/bin/polish -c '. ~/.polishrc >/dev/null 2>&1; alias k' | grep -q 'echo kim'"
+	check "K: ...with no ~/.hellish beside it" no_file "$KH/.hellish"
+else
+	check "K: ~/.polishrc still exists, with her marker" \
+		grep -qF 'K-USER-MARKER' "$KH/.polishrc"
+	check "K: ...byte-identical outside the installer's own PATH block" \
+		same_outside_path_block /tmp/K.polishrc.orig "$KH/.polishrc"
+	check "K: the log says the framework was skipped" \
+		grep -q "plugin framework skipped" /tmp/K.log
+	check "K: ...and it really was (no ~/.hellish/lib)" test ! -d "$KH/.hellish/lib"
+fi
 check "K: binary installed, as polish" test -x "$KH/.local/bin/polish"
 check "K: ...and it answers" answers kim "$KH/.local/bin/polish"
 

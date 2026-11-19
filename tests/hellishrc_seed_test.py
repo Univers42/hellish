@@ -52,6 +52,81 @@ def seed(home, example=EXAMPLE):
                           timeout=30)
 
 
+def fake_bin(path, version):
+    with open(path, "w") as f:
+        f.write('#!/bin/sh\n[ "$1" = --version ] && echo "%s"\nexit 0\n'
+                % version)
+    os.chmod(path, 0o755)
+
+
+def tool_sandbox():
+    """A PATH with the seeder's tools and NO polish or hellish: the dev box
+    running this has its own /usr/bin/hellish, which would decide every
+    shebang case below by accident."""
+    d = tempfile.mkdtemp(prefix="seed_path_")
+    for tool in ("sh", "sed", "awk", "grep", "mkdir", "cp", "mv", "rm", "cat",
+                 "head", "basename", "dirname", "date", "chmod", "bash",
+                 "printf", "tail", "ls"):
+        real = shutil.which(tool)
+        if real:
+            os.symlink(real, os.path.join(d, tool))
+    return d
+
+
+def shebang_cases():
+    """share/ ships `#!/usr/bin/env polish`; the seeder names the command
+    this machine really has, so a theme run as a script finds its shell. A
+    fresh install never sees the word hellish; an old install the 3.3
+    updater upgraded in place has no `polish` command and gets hellish."""
+    path = tool_sandbox()
+    cases = (("polish", "polish 3.4.0", "polish"),
+             ("hellish", "polish 3.4.0", "hellish"),
+             ("hellish", "hellish, version 3.3.0", "hellish"))
+    for name, version, want in cases:
+        home = tempfile.mkdtemp(prefix="seed_shebang_")
+        bindir = os.path.join(home, "bin")
+        os.makedirs(bindir)
+        fake_bin(os.path.join(bindir, name), version)
+        env = dict(os.environ, HOME=home, PATH=path)
+        env.pop("XDG_CONFIG_HOME", None)
+        p = subprocess.run(["sh", SEEDER, "--bin", os.path.join(bindir, name),
+                            "--path-dir", bindir], capture_output=True,
+                           text=True, env=env, timeout=60)
+        # A pre-3.4 binary reads ~/.config/hellish; every 3.4 one, polish.
+        brand = "hellish" if version.startswith("hellish") else "polish"
+        cfg = os.path.join(home, ".config", brand)
+        first = []
+        for sub in ("themes/plain.hsh", "rc.d/40-prompt-switch.hsh"):
+            f = os.path.join(cfg, sub)
+            first.append(open(f).readline() if os.path.isfile(f) else None)
+        label = "%s on PATH, %s" % (name, version.split()[0].rstrip(","))
+        check("shebang: %s -> %s" % (label, want),
+              p.returncode == 0 and first == ["#!/usr/bin/env %s\n" % want] * 2,
+              "rc=%d first=%r err=%r" % (p.returncode, first, p.stderr[-200:]))
+        if name == "polish":
+            hellish_named = [os.path.join(r, f) for r, ds, fs in os.walk(home)
+                             for f in fs + ds if "hellish" in f]
+            check("shebang: a fresh polish install has no hellish-named file",
+                  not hellish_named, repr(hellish_named))
+        shutil.rmtree(home, ignore_errors=True)
+
+    # A pre-3.4 --bin must not seed ~/.hellishrc beside a ~/.polishrc.
+    home = tempfile.mkdtemp(prefix="seed_shebang_")
+    open(os.path.join(home, ".polishrc"), "w").write("# mine\n")
+    fake_bin(os.path.join(home, "hellish"), "hellish, version 3.3.0")
+    env = dict(os.environ, HOME=home, PATH=path)
+    env.pop("XDG_CONFIG_HOME", None)
+    p = subprocess.run(["sh", SEEDER, "--bin", os.path.join(home, "hellish")],
+                       capture_output=True, text=True, env=env, timeout=60)
+    check("old --bin: no ~/.hellishrc seeded beside ~/.polishrc",
+          p.returncode == 0
+          and not os.path.exists(os.path.join(home, ".hellishrc"))
+          and open(os.path.join(home, ".polishrc")).read() == "# mine\n",
+          "rc=%d out=%r" % (p.returncode, p.stdout[-200:]))
+    shutil.rmtree(home, ignore_errors=True)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 def main():
     check("tools/seed_hellishrc.sh exists", os.path.isfile(SEEDER),
           "no seeder at %s" % SEEDER)
@@ -125,6 +200,7 @@ def main():
               "seed_hellishrc.sh" in f.read(),
               "the two routes have drifted apart again")
 
+    shebang_cases()
     print("\n%d checks failed" % len(FAILS))
     sys.exit(1 if FAILS else 0)
 

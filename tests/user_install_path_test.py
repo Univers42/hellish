@@ -131,6 +131,13 @@ def test_name_resolves_after_install():
 
         rc = os.path.join(home, ".polishrc")
         check("~/.polishrc is seeded", os.path.isfile(rc))
+        # A new user meets only the polish name: no hellish-named file, not
+        # even a backup (the rc backup was ~/.bashrc.hellish-bak until 3.4.0).
+        leaked = [os.path.relpath(os.path.join(d, n), home)
+                  for d, ds, fs in os.walk(home) for n in ds + fs
+                  if "hellish" in n.lower()]
+        check("no file in a fresh HOME carries the hellish name", not leaked,
+              "found %r" % leaked)
 
         # The bug: sourcing ~/.polishrc left PATH untouched, so the shell
         # could not find itself by name.
@@ -299,6 +306,30 @@ def test_existing_rc_is_not_clobbered():
         shutil.rmtree(home, ignore_errors=True)
 
 
+def test_rc_check_follows_the_rc_the_shell_reads():
+    """The post-install parse check must source the rc the shell reads. A
+    kept ~/.local/bin/hellish is still a 3.4 binary, which reads ~/.polishrc
+    when both exist; the check used to pick ~/.hellishrc for any legacy-named
+    install, so a broken ~/.polishrc passed silently."""
+    home = new_home()
+    try:
+        bindir = os.path.join(home, ".local", "bin")
+        os.makedirs(bindir)
+        shutil.copy(SHELL, os.path.join(bindir, "hellish"))
+        with open(os.path.join(home, ".polishrc"), "w") as f:
+            f.write("if then fi\n")
+        with open(os.path.join(home, ".hellishrc"), "w") as f:
+            f.write("export OK=1\n")
+        p = install(home)
+        out = p.stdout + p.stderr
+        check("a broken ~/.polishrc is reported on a hellish-named install",
+              ".polishrc reported errors" in out, out[-400:])
+        check("...and the ~/.hellishrc the shell ignores is not named",
+              ".hellishrc reported errors" not in out, out[-400:])
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+
+
 # ── 7. re-running an installer is normal; stacking blocks is not ──────────
 def test_reinstall_is_idempotent():
     home = new_home()
@@ -357,6 +388,7 @@ def main():
                test_login_rc_hook_exports_path,
                test_custom_prefix_is_honoured,
                test_existing_rc_is_not_clobbered,
+               test_rc_check_follows_the_rc_the_shell_reads,
                test_reinstall_is_idempotent,
                test_uninstall_removes_only_our_block):
         print("── %s" % fn.__name__)
