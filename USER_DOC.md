@@ -1,14 +1,14 @@
-# hellish — User Documentation
+# polish — User Documentation
 
 How to install it, use it, configure it, and check it is healthy. For
 building and hacking on it, see [DEV_DOC.md](DEV_DOC.md); for the full
-manual, see the [docs site](https://univers42.github.io/hellish/).
+manual, see the [docs site](https://univers42.github.io/polish/).
 
 ## What you get
 
 | service | what it is |
 |---|---|
-| the shell | an almost-POSIX shell that runs your bash scripts and muscle memory — `hellish`, `hellish script.sh`, `hellish -c 'cmd'` |
+| the shell | an almost-POSIX shell that runs your bash scripts and muscle memory — `polish`, `polish script.sh`, `polish -c 'cmd'` |
 | prompt themes | 29 named themes; `prompt` lists them, `prompt <name>` switches, `prompt save <name>` persists |
 | plugin framework | `~/.hellish/` with a `conf` manager — `conf list`, `conf on\|off <name>`, `hxp list`; plus oh-my-zsh plugin support through the zsh dialect |
 | completion | tab completion for commands/files/variables; `complete`/`compgen`/`compopt` specs behind `shopt -s progcomp` |
@@ -19,29 +19,36 @@ manual, see the [docs site](https://univers42.github.io/hellish/).
 **One command** (detects sudo rights, asks about plugins):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Univers42/polish/main/install.sh | sh
 ```
 
-- **With sudo** → installs to `/usr/bin/hellish`, adds it to `/etc/shells`,
+- **With sudo** → installs to `/usr/bin/polish`, adds it to `/etc/shells`,
   and offers to make it your login shell (`chsh`). Same as `make my_shell`.
 - **Without sudo** (42 school machines, shared boxes) → installs to
-  `~/.local/bin/hellish`, seeds `~/.hellishrc`, and adds a small hook to your
-  login shell's rc that `exec`s hellish for interactive sessions — a real
+  `~/.local/bin/polish`, seeds `~/.polishrc`, and adds a small hook to your
+  login shell's rc that `exec`s polish for interactive sessions — a real
   login shell, not an alias. Same as `make user-install`.
 - Non-interactive: `sh install.sh --yes --plugins=all` (or `none`, or a list:
   `--plugins="git jump z"`); force a mode with `--user` / `--system`.
 
 **From a source checkout:** `make user-install` (no sudo) or `make my_shell`
-(sudo). Or just run it without installing: `./build/bin/hellish` after
+(sudo). Or run it without installing: `./build/bin/polish` after
 `make OPT=1 all`.
+
+**Coming from hellish?** A machine that already has hellish keeps its paths:
+the installer reuses `/usr/bin/hellish` or `~/.local/bin/hellish` if present
+(a `polish` link is added beside it), and `~/.hellishrc` is read when
+`~/.polishrc` does not exist. `POLISH_X` settings win over `HELLISH_X` ones,
+which are still read. Full table:
+[What's new — coming from hellish](wiki/whats-new.md#coming-from-hellish).
 
 ## Start and stop
 
 - **Start**: open a new terminal (if installed as a login shell), or run
-  `hellish`.
+  `polish`.
 - **Stop**: `exit` or Ctrl-D. If stopped jobs exist, the first exit warns
   and the second obeys — like bash.
-- **Skip the hook once** (user-install route): `HELLISH_NO_EXEC=1 bash`.
+- **Skip the hook once** (user-install route): `POLISH_NO_EXEC=1 bash`.
   Disable it entirely: `touch ~/.hellish-disable`.
 
 ## Uninstall
@@ -49,51 +56,51 @@ curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh |
 | how you installed | how to undo |
 |---|---|
 | `install.sh` / `make my_shell` | `make my-shell-uninstall` (restores your login shell **before** removing the binary); `make my-shell-purge` also removes config + caches |
-| `install.sh` / `make user-install` | `make user-uninstall` — removes the rc hook and PATH block, leaves your `~/.hellishrc` |
+| `install.sh` / `make user-install` | `make user-uninstall` — removes the rc hook and PATH block, leaves your `~/.polishrc` |
 | npm | `npm uninstall -g hellish-shell` |
 
 ## Configuration — where everything lives
 
 | path | what it holds |
 |---|---|
-| `~/.hellishrc` | your startup file (aliases, exports, `shopt`, PS1) — sourced by **interactive** shells only, never by scripts. Seeded from `hellishrc.example`, never overwritten |
-| `$XDG_CONFIG_HOME/hellish/rc.d/` | drop-in config fragments, sourced in order **before** `~/.hellishrc` — `*.hsh` with bash rules, `*.zsh` with zsh rules |
-| `$XDG_CONFIG_HOME/hellish/after.d/` | the same, sourced **after** `~/.hellishrc` and the plugin framework — where the installer puts your imported `~/.zshrc`, so your own config has the last word |
-| `$XDG_CONFIG_HOME/hellish/themes/` | the 29 prompt themes (yours to edit; edited ones are never clobbered by reinstall) |
-| `$XDG_CONFIG_HOME/hellish/plugins/` | plugins as `<name>/plugin.hsh` |
+| `~/.polishrc` | your startup file (aliases, exports, `shopt`, PS1) — sourced by **interactive** shells only, never by scripts. Seeded from `hellishrc.example`, never overwritten |
+| `$XDG_CONFIG_HOME/polish/rc.d/` | drop-in config fragments, sourced in order **before** `~/.polishrc` — `*.hsh` with bash rules, `*.zsh` with zsh rules |
+| `$XDG_CONFIG_HOME/polish/after.d/` | the same, sourced **after** `~/.polishrc` and the plugin framework — where the installer puts your imported `~/.zshrc`, so your own config has the last word |
+| `$XDG_CONFIG_HOME/polish/themes/` | the 29 prompt themes (yours to edit; edited ones are never clobbered by reinstall) |
+| `$XDG_CONFIG_HOME/polish/plugins/` | plugins as `<name>/plugin.hsh` |
 | `~/.hellish/` | the plugin framework (`conf`, `hxp`, its plugins and state) |
 | history file | in `$HOME`, multi-line-safe; `shopt -s lithist` keeps newlines on recall |
-| `~/.cache/hellish` | update-check state (which release was already announced) |
+| `~/.cache/polish` | update-check state (which release was already announced) |
 
-No passwords or credentials are stored anywhere — hellish has none to manage.
+No passwords or credentials are stored anywhere — polish has none to manage.
 The files above are the complete list of what an install touches.
 
-**Coming from zsh** (every 42 account does): **hellish does not run your
+**Coming from zsh** (every 42 account does): **polish does not run your
 `~/.zshrc`**. It is code written for zsh — one began with `exec /bin/bash`,
 one ran `compinit` and twenty `zstyle`s — and a shell that is not zsh has
 no business executing it. The installer only appends its hook block to it
-(the `# >>> hellish >>>` … `# <<< hellish <<<` lines that hand the
+(the `# >>> polish >>>` … `# <<< polish <<<` lines that hand the
 terminal over); everything else in that file stays zsh's. Bring across
-the lines you want: aliases and exports go in `~/.hellishrc` as they are;
+the lines you want: aliases and exports go in `~/.polishrc` as they are;
 a zsh-flavoured snippet (`precmd() { vcs_info }`, `zstyle`,
-`PROMPT`/`RPROMPT`) goes in `~/.config/hellish/rc.d/50-mine.zsh` — the
-`.zsh` extension makes hellish read it with zsh rules — or under an
-`emulate zsh` first line in `~/.hellishrc`. `vcs_info`, `zstyle
+`PROMPT`/`RPROMPT`) goes in `~/.config/polish/rc.d/50-mine.zsh` — the
+`.zsh` extension makes polish read it with zsh rules — or under an
+`emulate zsh` first line in `~/.polishrc`. `vcs_info`, `zstyle
 ':vcs_info:*'`, `precmd`/`preexec`, `autoload` and `colors` all work there.
 
 If you want the whole file loaded anyway, ask for it by name:
-`sh install.sh --zshrc` writes `~/.config/hellish/after.d/90-zshrc.zsh`,
+`sh install.sh --zshrc` writes `~/.config/polish/after.d/90-zshrc.zsh`,
 which sources `~/.zshrc` in the zsh dialect, best effort, **after**
-`~/.hellishrc` so your zsh config keeps the last word. A plain re-run of the
+`~/.polishrc` so your zsh config keeps the last word. A plain re-run of the
 installer switches it off again (kept as `.off`). In that mode
-`source $ZSH/oh-my-zsh.sh` is understood: hellish loads the plugins your
+`source $ZSH/oh-my-zsh.sh` is understood: polish loads the plugins your
 `plugins=(…)` names and your `$ZSH_CUSTOM/*.zsh` — `gst`, `gco` and the
 rest of the git plugin work — skips what needs zsh's line editor
 (autosuggestions, syntax highlighting) silently, and keeps its own prompt
 (`prompt` picks one of 29); themes, `lib/` and the completion system stay
 zsh's.
 
-A syntax error in any file hellish loads is reported once, with the file
+A syntax error in any file polish loads is reported once, with the file
 and line, and the line itself — the same two lines bash prints — and the
 lines before it still run.
 
@@ -118,21 +125,21 @@ What is live at every render, and what is not:
 prompt escapes. If a variable contains `%` sequences, `print -rP "[${V}]"`
 can interpret them as prompt escapes even though the live prompt leaves the
 expanded value literal. Do not treat `print -P` output as an exact preview of
-variable-backed prompt segments; this mismatch is tracked in [issue #134](https://github.com/Univers42/hellish/issues/134).
+variable-backed prompt segments; this mismatch is tracked in [issue #134](https://github.com/Univers42/polish/issues/134).
 
 For a computed segment, set a variable from a hook and put the variable in
-the prompt. `HELLISH_PRECMD_FUNCS` runs once before each prompt
+the prompt. `POLISH_PRECMD_FUNCS` runs once before each prompt
 (`hellishrc.example`, section 5b):
 
 ```sh
 _branch() { BR=$(git branch --show-current 2>/dev/null); }
-HELLISH_PRECMD_FUNCS=(_branch)
+POLISH_PRECMD_FUNCS=(_branch)
 PS1='${BR:+($BR) }\w \$ '
 ```
 
 **`prompt` is a shell function, not a builtin.** The installer seeds it
-into `~/.config/hellish/rc.d/40-prompt-switch.hsh`, next to the 29 themes
-in `~/.config/hellish/themes/`. `type prompt` says whether it is loaded;
+into `~/.config/polish/rc.d/40-prompt-switch.hsh`, next to the 29 themes
+in `~/.config/polish/themes/`. `type prompt` says whether it is loaded;
 from a checkout, `HELLISH_THEMES=share/themes; . share/rc.d/40-prompt-switch.hsh`
 loads it by hand.
 
@@ -141,20 +148,20 @@ was there first. A bash `PS1` pasted in with `\A` shows the glyph — or
 nothing, since the animation is off by default — where bash shows `14:30`.
 Write `\D{%H:%M}` or `%T` for the clock.
 
-**The animation is off by default, on purpose.** `HELLISH_ANIM=spinner`
+**The animation is off by default, on purpose.** `POLISH_ANIM=spinner`
 (or `pulse`, `ember`) makes `\A` repaint the prompt row about ten times a
 second while the shell is idle. That repaint has been reported to corrupt
 the prompt on some terminals: an escape sequence printed as text
 (`8;2;90;96;106m`), or a cut glyph shown as `�`. It could not be
 reproduced on demand, so it ships off. If you turn it on and see that,
-`HELLISH_ANIM=off` is the fix.
+`POLISH_ANIM=off` is the fix.
 
 ## Check that it works
 
 ```sh
-hellish --version            # version + which repo the updater points at
-echo 'echo ok $((6*7))' | hellish    # prints: ok 42
-make doctor                  # from a checkout: which hellish PATH reaches,
+polish --version            # version + which repo the updater points at
+echo 'echo ok $((6*7))' | polish    # prints: ok 42
+make doctor                  # from a checkout: which polish PATH reaches,
                              # and whether `update` will need sudo
 update                       # ask the release channel by hand
 conf list                    # plugin framework: what is on and off
@@ -171,7 +178,7 @@ current directory (also `gmake`, `/usr/bin/make`, and behind `sudo`, `env X=1`,
 falls back to filenames). The file is parsed in the shell itself; make is never run.
 Targets you have run (history lines starting with `make` or `gmake`) come first,
 most-run (weighted toward recent runs) first;
-the rest follow alphabetically. With `HELLISH_SUGGEST_STRATEGY=recent` the
+the rest follow alphabetically. With `POLISH_SUGGEST_STRATEGY=recent` the
 run ones are ordered by how recently they ran.
 
 - Files read: the first regular file of `GNUmakefile`, `makefile`, `Makefile`
@@ -196,18 +203,18 @@ run ones are ordered by how recently they ran.
 
 | variable | effect |
 |---|---|
-| `HELLISH_BANNER=0\|1` | welcome panel off / on |
-| `HELLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
-| `HELLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the best-ranked history line (see `HELLISH_SUGGEST_STRATEGY`) that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
-| `HELLISH_SUGGEST_MAX=N` | how many of the newest history lines the suggestion looks at (default 1000; not a number, or below 1, is the default); read at every prompt |
-| `HELLISH_SUGGEST_STRATEGY=recent` | rank suggestions newest first; by default (unset or any other value) they are ranked by frecency: how often a line was run, weighted toward recent runs. Also orders `make <TAB>`. Read at every prompt |
-| `HELLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
-| `HELLISH_NO_ANIM=1` | no startup animation |
-| `HELLISH_NO_EXEC=1` | user-install hook: skip for this one session |
+| `POLISH_BANNER=0\|1` | welcome panel off / on |
+| `POLISH_HISTORY_PREFIX=0\|off` | Up/Down plain history; default is prefix search, read at every prompt |
+| `POLISH_AUTOSUGGEST=1\|on` | inline suggestion, off by default: the best-ranked history line (see `POLISH_SUGGEST_STRATEGY`) that starts with what you typed, shown dim after the cursor (see below); read at every prompt |
+| `POLISH_SUGGEST_MAX=N` | how many of the newest history lines the suggestion looks at (default 1000; not a number, or below 1, is the default); read at every prompt |
+| `POLISH_SUGGEST_STRATEGY=recent` | rank suggestions newest first; by default (unset or any other value) they are ranked by frecency: how often a line was run, weighted toward recent runs. Also orders `make <TAB>`. Read at every prompt |
+| `POLISH_NO_UPDATE_CHECK=1` | never check for updates, no badge |
+| `POLISH_NO_ANIM=1` | no startup animation |
+| `POLISH_NO_EXEC=1` | user-install hook: skip for this one session |
 
 ### Inline suggestion
 
-With `HELLISH_AUTOSUGGEST=1` (set it at the prompt or in the rc file) the
+With `POLISH_AUTOSUGGEST=1` (set it at the prompt or in the rc file) the
 newest history line that starts with what you have typed appears dim after
 the cursor. It is a hint, not part of the line: **Right**, **End** or
 **Ctrl-F** at the end of the line insert it; anywhere else, and when there
@@ -224,12 +231,12 @@ typed, and the hint is wiped from the screen.
 A word is the blanks at the front of the hint plus the run of characters up
 to the next space or tab (so `-m`, `a/b`, `x=1` are one word each). Alt-N
 and Alt-P step through distinct lines (same full text offered once), look
-at no more than `HELLISH_SUGGEST_MAX` entries, go in ranking order, ring the bell at the last and
+at no more than `POLISH_SUGGEST_MAX` entries, go in ranking order, ring the bell at the last and
 the first instead of wrapping, and start over from the best
 match as soon as the line is edited. Right after Alt-N inserts the line
 shown, not the best-ranked one. A hint a zle widget set as `POSTDISPLAY` is not
 cycled or taken by words. In vi insert mode Alt-F / Alt-N / Alt-P work the
-same (no Ctrl-Right). `unset HELLISH_AUTOSUGGEST`
+same (no Ctrl-Right). `unset POLISH_AUTOSUGGEST`
 (or `=0`) turns it off at the next prompt. A key you bound yourself
 (`bind` / `bindkey` / `.inputrc`) is never taken over.
 

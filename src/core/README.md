@@ -142,7 +142,7 @@ status.
 **`repl_shell()` (`shell.c`).** While `!should_exit`: `open_cycle()`
 (fresh `input`, `cmd_no++`, age the two exit flags, clear the unwind flag,
 and -- interactively only -- run `$PROMPT_COMMAND` with `$?` restored
-afterwards, then `HELLISH_PRECMD_FUNCS` and zsh `precmd` hooks);
+afterwards, then `POLISH_PRECMD_FUNCS` and zsh `precmd` hooks);
 `job_notify()`; `parse_and_execute_input()`
 (`src/infrastructure/input_utils2.c`: one full read+lex+parse+execute
 cycle); `run_pending_traps()`; then the per-cycle frees -- `free_redirects`,
@@ -190,8 +190,8 @@ operand, leaving `cli->i` on it:
   the same `apply_flag_letters` the builtin uses. An `o` consumes the next
   argv word (`cli_take_o` -> `set_long_option`), so `-oo a b` sets two.
 
-So `hellish -e -c '...'`, `hellish -o errexit script.sh` and
-`hellish --debug=parser --debug=lexer --verbose script.sh` all parse like
+So `polish -e -c '...'`, `polish -o errexit script.sh` and
+`polish --debug=parser --debug=lexer --verbose script.sh` all parse like
 `bash --posix ...`; flags are independent and simply OR together. `--posix`
 sets `OPT_FLAG_POSIX` and `state->opt_posix` (also toggleable at runtime
 with `set -o posix`), which disables extensions such as `cd old new`.
@@ -236,21 +236,21 @@ and piped input must never inherit your dotfile -- and loads, in order
 (issue #70):
 
 ```
-/etc/hellish/rc.d/*.hsh *.zsh                system-wide, lexical order
-$XDG_CONFIG_HOME/hellish/rc.d/*.hsh *.zsh    yours, lexical order
-$XDG_CONFIG_HOME/hellish/plugins/*/plugin.hsh
-~/.hellishrc                                 LAST, so it always wins
+/etc/polish/rc.d/*.hsh *.zsh                system-wide, lexical order
+$XDG_CONFIG_HOME/polish/rc.d/*.hsh *.zsh    yours, lexical order
+$XDG_CONFIG_HOME/polish/plugins/*/plugin.hsh
+~/.polishrc                                 LAST, so it always wins
 ```
 
 `rc_load_all` (`rc_load.c`) owns the first three; `collect`/
 `collect_plugins` (`rc_load_scan.c`) sort directory entries because
 `readdir` order differs per machine. A `.zsh` module is read in the zsh
 dialect and restored when it ends. `--norc` or `--rcfile=FILE` skips
-`~/.hellishrc`. Every file is sourced with `frame_push`, so
+`~/.polishrc`. Every file is sourced with `frame_push`, so
 `${BASH_SOURCE[0]}` names the file itself.
 
-Hooks (`hooks.c`, `hooks2.c`): `HELLISH_PRECMD_FUNCS` and
-`HELLISH_PREEXEC_FUNCS` are arrays of function *names*, not code strings,
+Hooks (`hooks.c`, `hooks2.c`): `POLISH_PRECMD_FUNCS` and
+`POLISH_PREEXEC_FUNCS` are arrays of function *names*, not code strings,
 so two plugins can both attach without one overwriting the other (#72).
 zsh's own `precmd`/`preexec` functions and `precmd_functions`/
 `preexec_functions` arrays are honoured too (#91), except when bash-preexec

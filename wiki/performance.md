@@ -3,7 +3,10 @@
 > **Fast enough to not think about, hard enough to trust.**
 > Status legend: ✅ shipped · 🚧 in progress · 📋 planned
 
-Speed is hellish's credibility. Most new/clean shells are *slower* than bash; hellish is
+> Measurements on this page predate the 3.4.0 rename (hellish -> polish); the
+> shell is the same and no number was changed.
+
+Speed is polish's credibility. Most new/clean shells are *slower* than bash; polish is
 **measurably faster than bash** while carrying a far richer feature set than the minimalist speed
 kings. This page shows the numbers (real, measured) and the engineering discipline behind them.
 
@@ -12,7 +15,7 @@ kings. This page shows the numbers (real, measured) and the engineering discipli
 ## vs. bash — faster, across the board ✅
 
 From the in-repo benchmark harness (`make bench`, best-of-N with h/b rounds interleaved and
-both shells pinned to one core — see the fairness note below), hellish (OPT, `-O3 -flto`,
+both shells pinned to one core — see the fairness note below), polish (OPT, `-O3 -flto`,
 `ft_malloc`) vs. `bash --posix`:
 
 | Suite | geomean (per-task) | wall (throughput) | W/T/L |
@@ -59,28 +62,28 @@ dash is the deliberately feature-barren `/bin/sh` speed king (no `[[ ]]`, no arr
 substitution, no interactive editing). It marks the floor, not a feature competitor. Quick
 single-run measurements on this host:
 
-| Metric | dash | hellish | note |
+| Metric | dash | polish | note |
 |---|---|---|---|
-| Binary size | 130 KB | 387 KB | dash: libc only; hellish: + readline/tinfo |
+| Binary size | 130 KB | 387 KB | dash: libc only; polish: + readline/tinfo |
 | Startup (`sh -c :`) | 1.30 ms | 1.50 ms | ~1.15× — and already faster than bash's |
-| POSIX loop → 200k | 0.129 s | **0.103 s** | **hellish now beats dash here** (was 3.2× slower) |
+| POSIX loop → 200k | 0.129 s | **0.103 s** | **polish now beats dash here** (was 3.2× slower) |
 
-hellish *does dash's job* (it ran an entire LFS build's `./configure` scripts) — and after the
+polish *does dash's job* (it ran an entire LFS build's `./configure` scripts) — and after the
 hot-path campaign it beats dash on tight POSIX loops while carrying readline, job control,
 `[[ ]]`, process substitution and the rest. (Numbers above re-measured on the same host, best of
 5-7 runs.)
 
 ## vs. the whole zoo — #2 of 9 ✅
 
-`make agnostic-bench` races hellish against every shell it can install in one docker image
+`make agnostic-bench` races polish against every shell it can install in one docker image
 (bash, dash, zsh, mksh, ksh93, yash, busybox ash, fish) on a portable POSIX workload set,
 output-checked against bash and ranked by per-workload geomean. After the forkless-cmdsub
 campaign:
 
-| # | shell | geomean | vs hellish |
+| # | shell | geomean | vs polish |
 |---|---|---|---|
 | 1 | ksh93 | 16.5 ms | 0.67× |
-| **2** | **hellish** | **24.8 ms** | **1.00×** |
+| **2** | **polish** | **24.8 ms** | **1.00×** |
 | 3 | dash | 24.8 ms | 1.00× |
 | 4 | busybox ash | 34.4 ms | 1.39× |
 | 5 | zsh | 51.3 ms | 2.07× |
@@ -89,7 +92,7 @@ campaign:
 | 8 | yash | 83.8 ms | 3.38× |
 | 9 | fish | 234.6 ms | 9.46× |
 
-hellish moved up from #3 (behind dash) to **#2**, edging dash on geomean and beating it ~7× on
+polish moved up from #3 (behind dash) to **#2**, edging dash on geomean and beating it ~7× on
 substitution-heavy workloads. Only ksh93 stays ahead — it runs functions and *all* command
 substitutions in-process (its `$(fib 18)` is ~94× faster than anyone's fork), a whole-shell
 architecture rather than a fast path.
@@ -132,7 +135,7 @@ impact:
 
 ## Robustness — the trust story ✅
 
-Speed means nothing if it crashes. hellish is held to a strict, automated bar:
+Speed means nothing if it crashes. polish is held to a strict, automated bar:
 
 - **2527+ tests** (`make test`) — a self-built suite that grows with every fix; all green.
 - **Conformance gate** — every shell construct diffed against `bash --posix`, **0 divergences**.
@@ -159,4 +162,4 @@ make test               # the full suite
 make norm               # norminette
 ```
 
-See also: **[Interactive Experience](interactive.md)** · **[Bash Compatibility & Scripting](scripting.md)** · **[What hellish is + Install](product.md)**
+See also: **[Interactive Experience](interactive.md)** · **[Bash Compatibility & Scripting](scripting.md)** · **[What polish is + Install](product.md)**

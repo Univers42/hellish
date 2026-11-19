@@ -1,9 +1,9 @@
 # Helpers Module
 
 The **helpers** module groups small, focused utilities used across the
-shell, and -- less obviously from the name -- it is where hellish's memory
+shell, and -- less obviously from the name -- it is where polish's memory
 model lives. If you need to know why a pointer can be freed twice safely,
-why `eval` in a loop does not grow memory, or why `HELLISH_ALLOC_STATS`
+why `eval` in a loop does not grow memory, or why `POLISH_ALLOC_STATS`
 prints a number, this is the directory.
 
 Public prototypes: `incs/helpers.h`; the arena: `incs/parena.h`; the case
@@ -131,7 +131,7 @@ key/value pairs, argv via `word_free`, the pooled array back to the pool),
 
 ### 2.5 The live-bytes oracle (`alloc_stats.c`)
 
-ASan and valgrind are blind to `ft_malloc`. With `HELLISH_ALLOC_STATS` set,
+ASan and valgrind are blind to `ft_malloc`. With `POLISH_ALLOC_STATS` set,
 `alloc_live_report()` prints the bytes still live on the `ft_malloc` heap
 after `free_all_state()`; a non-zero number is a leak the sanitizers cannot
 see. It is a no-op on the libc backend, selected by `HAVE_ALLOC_ORACLE` from

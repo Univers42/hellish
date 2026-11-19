@@ -1,13 +1,13 @@
-# The docs site: https://univers42.github.io/hellish/
+# The docs site: https://univers42.github.io/polish/
 #
 # The source of the site IS the wiki/ directory -- one set of pages, readable
 # on GitHub and rendered by MkDocs, so the two can never drift. Built and
 # deployed by .github/workflows/docs.yml on every push to main.
-site_name: hellish
+site_name: polish
 site_description: A from-scratch, almost-POSIX shell in C — minimalist-shell speed, bash-class features.
-site_url: https://univers42.github.io/hellish/
-repo_url: https://github.com/Univers42/hellish
-repo_name: Univers42/hellish
+site_url: https://univers42.github.io/polish/
+repo_url: https://github.com/Univers42/polish
+repo_name: Univers42/polish
 edit_uri: edit/main/wiki/
 
 docs_dir: wiki

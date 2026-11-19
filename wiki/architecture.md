@@ -1,7 +1,7 @@
 # Architecture
 
 > The whole shell in one breath, then where to read more. Each module under
-> [`src/`](https://github.com/Univers42/hellish/tree/main/src) carries its own
+> [`src/`](https://github.com/Univers42/polish/tree/main/src) carries its own
 > `README.md` with the real design notes — this page is the map, those are the
 > territory.
 
@@ -28,13 +28,13 @@ subsystem takes `t_shell *`. Subshells fork and the child inherits a copy.
 
 | stage | entry point | design notes |
 |---|---|---|
-| lifecycle / REPL | `src/core/shell.c` | [`src/core/README.md`](https://github.com/Univers42/hellish/blob/main/src/core/README.md) |
-| lexer | `tokenizer()` | [`src/lexer/README.md`](https://github.com/Univers42/hellish/blob/main/src/lexer/README.md) |
-| parser | `parse_tokens()` | [`src/parsing/README.md`](https://github.com/Univers42/hellish/blob/main/src/parsing/README.md) |
-| word reparser | `reparse_words()` | [`src/word_splitting/README.md`](https://github.com/Univers42/hellish/blob/main/src/word_splitting/README.md) |
-| heredoc | `gather_heredocs()` | [`src/heredoc/README.md`](https://github.com/Univers42/hellish/blob/main/src/heredoc/README.md) |
-| expander | `expand_simple_command()` | [`src/expander/README.md`](https://github.com/Univers42/hellish/blob/main/src/expander/README.md) |
-| executor | `execute_top_level()` | [`src/execution/README.md`](https://github.com/Univers42/hellish/blob/main/src/execution/README.md) |
+| lifecycle / REPL | `src/core/shell.c` | [`src/core/README.md`](https://github.com/Univers42/polish/blob/main/src/core/README.md) |
+| lexer | `tokenizer()` | [`src/lexer/README.md`](https://github.com/Univers42/polish/blob/main/src/lexer/README.md) |
+| parser | `parse_tokens()` | [`src/parsing/README.md`](https://github.com/Univers42/polish/blob/main/src/parsing/README.md) |
+| word reparser | `reparse_words()` | [`src/word_splitting/README.md`](https://github.com/Univers42/polish/blob/main/src/word_splitting/README.md) |
+| heredoc | `gather_heredocs()` | [`src/heredoc/README.md`](https://github.com/Univers42/polish/blob/main/src/heredoc/README.md) |
+| expander | `expand_simple_command()` | [`src/expander/README.md`](https://github.com/Univers42/polish/blob/main/src/expander/README.md) |
+| executor | `execute_top_level()` | [`src/execution/README.md`](https://github.com/Univers42/polish/blob/main/src/execution/README.md) |
 
 Other modules: `builtins` (65 names, O(1) hash dispatch), `environment`,
 `arith` (a self-contained lexer/parser/eval for `$(( ))`), `glob`, `alias`,
@@ -49,7 +49,7 @@ something arms the mode**: `set -o zsh`, `emulate zsh`, or sourcing a `.zsh`
 file (restored when the file finishes). There is no heuristic on file content —
 the golden suite pins the bash meaning of the same text by construction. See
 [Interactive Experience](interactive.md) and the plugin corpus in
-[`tests/plugin_corpus_test.py`](https://github.com/Univers42/hellish/blob/main/tests/plugin_corpus_test.py).
+[`tests/plugin_corpus_test.py`](https://github.com/Univers42/polish/blob/main/tests/plugin_corpus_test.py).
 
 ## The two allocators (SAFE)
 
@@ -64,7 +64,7 @@ cd tests && ./verify_alloc.sh   # builds BOTH heaps, proves output parity + zero
 
 `ft_malloc` (in the `vendor/libft` submodule) is a slab + big-alloc allocator
 with an O(1) free path; on `SAFE=0` its own live-bytes oracle
-(`HELLISH_ALLOC_STATS=1`) replaces ASan as the leak gate.
+(`POLISH_ALLOC_STATS=1`) replaces ASan as the leak gate.
 
 ## Build matrix
 
@@ -97,4 +97,4 @@ Nothing lands without all of these green from a clean tree:
 
 See also: **[Benchmarks](benchmarks.md)** · **[Performance](performance.md)** ·
 **[Platforms](platforms.md)** · the developer guide in
-[`DEV_DOC.md`](https://github.com/Univers42/hellish/blob/main/DEV_DOC.md)
+[`DEV_DOC.md`](https://github.com/Univers42/polish/blob/main/DEV_DOC.md)

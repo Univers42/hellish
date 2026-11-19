@@ -1,6 +1,6 @@
 # Plugins
 
-> hellish runs **real third-party plugins** — oh-my-zsh's, git's own scripts,
+> polish runs **real third-party plugins** — oh-my-zsh's, git's own scripts,
 > bash-preexec, z — and ships a plugin framework of its own with a catalog,
 > a manager (`hxp`), and per-feature toggles (`conf`). This page is the
 > user's tour; every screenshot below is real output, regenerated from the
@@ -12,12 +12,12 @@ The easiest moment is install time — the one-liner offers it and lets you
 pick plugins one by one (Enter takes the default):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/Univers42/hellish/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Univers42/polish/main/install.sh | sh
 ```
 
 ![The installer's plugin picker: one Y/n question per catalog entry](assets/images/docs/installer-choose.svg)
 
-Already installed hellish? The framework stands alone:
+Already installed polish? The framework stands alone:
 
 ```sh
 git clone https://github.com/Univers42/hellishrc_plugins && cd hellishrc_plugins
@@ -26,7 +26,7 @@ sh install.sh --plugins all      # everything the catalog defaults on
 sh install.sh --plugins "git jump omz-sudo"
 ```
 
-Your existing `~/.hellishrc` is never eaten: it is preserved as
+Your existing `~/.polishrc` is never eaten: it is preserved as
 `~/.hellish/rc.d/95-previous-rc.hsh` — still loaded, after the framework,
 exactly as before — plus a timestamped backup beside the original.
 
@@ -50,7 +50,7 @@ provides, needs, and whether anything is missing on this machine:
 ## The catalog — and installing more
 
 `hxp catalog` shows everything installable, installed or not. The externals
-are the plugins hellish's own test corpus proves on every CI run:
+are the plugins polish's own test corpus proves on every CI run:
 
 ![hxp catalog — builtins plus the proven external plugins](assets/images/docs/hxp-catalog.svg)
 
@@ -66,25 +66,25 @@ other plugin:
 | **classics** (plain sh/bash) | `git-completion` `git-prompt` `bash-preexec` `z` |
 
 A fetched `.zsh` file keeps its extension — sourcing a `.zsh` path is what
-arms hellish's [zsh dialect](architecture.md#the-zsh-dialect) for that file,
+arms polish's [zsh dialect](architecture.md#the-zsh-dialect) for that file,
 so a real oh-my-zsh plugin parses as zsh without any shim. Installing
 `git-completion` also arms `shopt -s progcomp`, because choosing a
 completion plugin *is* answering that question.
 
 ## Coming from zsh, or oh-my-zsh
 
-Every 42 account logs into zsh. **hellish does not run your `~/.zshrc`**:
+Every 42 account logs into zsh. **polish does not run your `~/.zshrc`**:
 it is code written for zsh — one began with `exec /bin/bash`, one ran
 `compinit` and twenty `zstyle`s — and a shell that is not zsh has no
-business executing it. Your aliases and git shortcuts come to hellish
-through the framework above and `~/.hellishrc`; the zsh config stays
+business executing it. Your aliases and git shortcuts come to polish
+through the framework above and `~/.polishrc`; the zsh config stays
 zsh's. (For three releases the installer imported it by default; issues
 #113–#116 are what that produced.)
 
 If you want it anyway, ask for it by name — `sh install.sh --zshrc` — and
-the file loads inside hellish in the zsh dialect, best effort, from
-`~/.config/hellish/after.d/90-zshrc.zsh`. `after.d` is sourced **after**
-`~/.hellishrc` and the framework, so your zsh config keeps the last word.
+the file loads inside polish in the zsh dialect, best effort, from
+`~/.config/polish/after.d/90-zshrc.zsh`. `after.d` is sourced **after**
+`~/.polishrc` and the framework, so your zsh config keeps the last word.
 In that mode `source $ZSH/oh-my-zsh.sh` is understood rather than refused:
 
 - the plugins your `plugins=(…)` names load, from `$ZSH_CUSTOM/plugins`
@@ -95,7 +95,7 @@ In that mode `source $ZSH/oh-my-zsh.sh` is understood rather than refused:
   `zsh-syntax-highlighting`, `history-substring-search`, `vi-mode`…) are
   skipped silently — nothing in them can work without ZLE;
 - themes, `lib/` and `compinit` are zsh's own and are not loaded. The
-  prompt is hellish's: `prompt` lists the 29 themes it ships.
+  prompt is polish's: `prompt` lists the 29 themes it ships.
 
 A plain re-run of the installer switches the import off again (the file is
 kept as `.off`). Any syntax error in that chain is reported once, with the
@@ -139,17 +139,17 @@ installer and `hxp install` both read that file.
 
 ## Bare-metal plugins, no framework
 
-The framework is optional. hellish's own rc loader sources
-`$XDG_CONFIG_HOME/hellish/plugins/*/plugin.hsh` on interactive startup, so
+The framework is optional. polish's own rc loader sources
+`$XDG_CONFIG_HOME/polish/plugins/*/plugin.hsh` on interactive startup, so
 a directory with a `plugin.hsh` is already a plugin. And any zsh or bash
-plugin can simply be sourced from `~/.hellishrc`:
+plugin can simply be sourced from `~/.polishrc`:
 
 ```sh
 source ~/plugins/git-prompt.sh          # plain bash: as-is
 source ~/plugins/sudo.plugin.zsh        # .zsh: the dialect arms itself
 ```
 
-The 13-plugin [corpus](https://github.com/Univers42/hellish/blob/main/tests/plugin_corpus_test.py)
+The 13-plugin [corpus](https://github.com/Univers42/polish/blob/main/tests/plugin_corpus_test.py)
 that CI runs against both the release and the ASan build is the honest list
 of what loads today — a plugin that starts working turns its row red until
 the expectation is updated, so that list cannot rot.
