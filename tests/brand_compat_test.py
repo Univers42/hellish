@@ -14,6 +14,9 @@ new one. Each case below is one thing such a user has on disk:
                                    and the hook runs ONCE, not once per prefix
   $HELLISH_GIT_* in a PS1       -> still published next to $POLISH_GIT_*
   foo.hellish (not executable)  -> still interpreted by us, like foo.polish
+  rc.d/x.sh, rc.d/x (shebang)   -> a module need not be called x.hsh: .sh
+                                   loads too, and a dot-less file loads when
+                                   its shebang names polish OR hellish
 
 and the one contract that is frozen in binaries already in the field: the
 <= 3.3.0 updater validates a downloaded binary by running
@@ -191,7 +194,7 @@ def test_script_extensions():
     is ours, else under /bin/sh (run_utils.c, is_own_script). `update` is a
     builtin only we have, so it tells the two interpreters apart."""
     h = fresh()
-    for ext in ("polish", "hellish", "hell"):
+    for ext in ("polish", "hellish", "hell", "hsh"):
         write(h + "/s." + ext, "update --version\n")
         os.chmod(h + "/s." + ext, 0o755)
         r = run_c(h, "./s." + ext)
@@ -204,6 +207,62 @@ def test_script_extensions():
     check("shebang-less .txt still goes to /bin/sh",
           not r.stdout.startswith("polish "), repr(r.stdout))
     shutil.rmtree(h)
+
+
+def test_module_names():
+    """rc.d, after.d and plugins/ pick modules by extension OR by shebang
+    (src/core/rc_module.c). The negatives matter as much: a README, a
+    bash-shebanged file, a .txt and an editor backup must never be sourced."""
+    h = fresh()
+    xdg = {"XDG_CONFIG_HOME": h + "/xdg"}
+    d = h + "/xdg/polish/"
+    write(d + "rc.d/20-a.hsh", "echo MOD-HSH\n")
+    write(d + "rc.d/30-b.sh", "x=sh\necho MOD-SH-${x^^}\n")
+    write(d + "rc.d/31-z.zsh", "x=zsh\necho MOD-ZSH-${(U)x}\n")
+    write(d + "rc.d/40-c", "#!/usr/bin/env polish\necho MOD-BARE-ENV\n")
+    write(d + "rc.d/41-d", "#!/usr/local/bin/hellish\necho MOD-BARE-OLD\n")
+    write(d + "rc.d/42-e", "#!/usr/bin/env -S polish\necho MOD-ENV-S\n")
+    write(d + "rc.d/43-f", "#!/usr/bin/env polish\r\necho MOD-CRLF\n")
+    write(d + "rc.d/README", "echo MOD-README\n")
+    write(d + "rc.d/50-g", "#!/bin/bash\necho MOD-BASH\n")
+    write(d + "rc.d/60-h.txt", "echo MOD-TXT\n")
+    write(d + "rc.d/70-i~", "#!/usr/bin/env polish\necho MOD-BACKUP\n")
+    write(d + "after.d/10-j.sh", "echo MOD-AFTER-SH\n")
+    write(d + "plugins/p1/plugin.sh", "echo PLUG-SH\n")
+    write(d + "plugins/p2/plugin", "#!/usr/bin/env hellish\necho PLUG-BARE\n")
+    write(d + "plugins/p3/plugin", "echo PLUG-NOSHEBANG\n")
+    write(d + "plugins/p4/plugin.hsh", "echo PLUG-HSH\n")
+    write(d + "plugins/p4/plugin.sh", "echo PLUG-SH-TWICE\n")
+    out = interactive(h, extra=xdg)
+    for tag in ("MOD-HSH", "MOD-SH-SH", "MOD-ZSH-ZSH", "MOD-BARE-ENV", "MOD-BARE-OLD",
+                "MOD-ENV-S", "MOD-CRLF", "MOD-AFTER-SH", "PLUG-SH",
+                "PLUG-BARE", "PLUG-HSH"):
+        check("module loads: " + tag, tag in out, out[-400:])
+    for tag in ("MOD-README", "MOD-BASH", "MOD-TXT", "MOD-BACKUP",
+                "PLUG-NOSHEBANG", "PLUG-SH-TWICE"):
+        check("not a module: " + tag, tag not in out, out[-400:])
+    order = [out.find(t) for t in ("MOD-HSH", "MOD-SH", "MOD-BARE-ENV")]
+    check("modules load in lexical order, whatever their extension",
+          -1 < order[0] < order[1] < order[2], repr(order))
+    shutil.rmtree(h)
+
+
+def test_install_knobs():
+    """install.sh's POLISH_X/HELLISH_X precedence is brand_getenv's: a set
+    POLISH_X wins even when empty (empty then means the default). `:-` let
+    an empty POLISH_X fall through to a stale HELLISH_X. Runs install.sh's
+    own knob(), cut out of the file, so a copy cannot drift."""
+    src = open(os.path.join(ROOT, "install.sh")).read()
+    fn = src[src.index("knob() {"):]
+    fn = fn[:fn.index("\n}\n") + 3]
+    for pre, want in (("unset POLISH_K; HELLISH_K=old", "old"),
+                      ("POLISH_K=; HELLISH_K=old", "dflt"),
+                      ("POLISH_K=new; HELLISH_K=old", "new"),
+                      ("unset POLISH_K HELLISH_K", "dflt")):
+        p = subprocess.run(["sh", "-c", "%s\n%s; knob K dflt" % (fn, pre)],
+                           capture_output=True, text=True, timeout=10)
+        check("install knob: %s -> %s" % (pre, want), p.stdout == want,
+              repr(p.stdout + p.stderr))
 
 
 def released_version():
@@ -238,6 +297,8 @@ def main():
     test_git_vars()
     test_rc_files()
     test_xdg_dirs()
+    test_module_names()
+    test_install_knobs()
     test_hook_prefixes()
     print("%d failure(s)" % len(FAILS) if FAILS else "all brand checks pass")
     return 1 if FAILS else 0

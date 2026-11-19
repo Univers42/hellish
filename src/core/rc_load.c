@@ -27,11 +27,15 @@ int		exec_file_string(t_shell *state, char *content, const char *src);
 ** `# >>> managed by ... >>>` marker convention had to exist at all. There was
 ** nowhere else to put anything.
 **
-**     /etc/hellish/rc.d/ *.hsh *.zsh          system-wide, lexical order
-**     $XDG_CONFIG_HOME/hellish/rc.d/ *.hsh *.zsh    yours, lexical order
-**     $XDG_CONFIG_HOME/hellish/plugins/ * /plugin.hsh
-**     ~/.hellishrc                            so it wins over the above
-**     $XDG_CONFIG_HOME/hellish/after.d/ *.hsh *.zsh  the late slot, below
+**     /etc/polish/rc.d/                       system-wide, lexical order
+**     $XDG_CONFIG_HOME/polish/rc.d/           yours, lexical order
+**     $XDG_CONFIG_HOME/polish/plugins/ * /plugin.hsh
+**     ~/.polishrc                             so it wins over the above
+**     $XDG_CONFIG_HOME/polish/after.d/        the late slot, below
+**
+** (each hellish-named on a pre-3.4 install: brand_pick.) A module is any
+** x.hsh, x.sh, x.zsh, or a dot-less x whose shebang names this shell
+** (rc_module.c says why the shebang, and not the name, decides).
 **
 ** Lexical order is why the convention is 10-env, 20-aliases, 30-prompt: it is
 ** the one ordering rule a user can see from `ls` without reading any code.
@@ -84,10 +88,7 @@ static void	add_root(t_shell *state, char *root, t_vec *files)
 	dir = path_join(root, "rc.d");
 	first = files->len;
 	if (dir)
-	{
-		collect(dir, ".hsh", files);
-		collect(dir, ".zsh", files);
-	}
+		collect_modules(dir, files);
 	xfree(dir);
 	sort_strvec(files, first);
 	dir = path_join(root, "plugins");
@@ -136,8 +137,8 @@ void	rc_load_all(t_shell *state, const char *home)
 ** rc.d loads first, so the import there broke the framework at every
 ** start.  A user's own zsh config is the last word in zsh (~/.zshrc IS
 ** the last file read), so it is the last word here too: the alias simply
-** wins, and nothing errors.  Same rules as rc.d otherwise: .hsh and .zsh,
-** lexical order, --norc and --rcfile skip it.
+** wins, and nothing errors.  Same rules as rc.d otherwise: the same
+** modules (rc_is_module), lexical order, --norc and --rcfile skip it.
 **
 ** Why an opt-in and not the default: a .zshrc is code written for zsh.
 ** One began with `exec /bin/bash` and hellish replaced itself with bash
@@ -150,8 +151,7 @@ static void	source_dir(t_shell *state, const char *dir)
 
 	vec_init(&files);
 	files.elem_size = sizeof(char *);
-	collect(dir, ".hsh", &files);
-	collect(dir, ".zsh", &files);
+	collect_modules(dir, &files);
 	sort_strvec(&files, 0);
 	i = 0;
 	while (i < files.len)

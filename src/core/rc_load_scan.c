@@ -44,7 +44,7 @@ void	collect(const char *dir, const char *suffix, t_vec *out)
 	closedir(d);
 }
 
-/* One candidate: plugins/<name>/plugin.hsh, kept only if it is readable. */
+/* One candidate: plugins/<name>/, kept only if it has an entry point. */
 static void	try_plugin(const char *dir, const char *name, t_vec *out)
 {
 	char	*sub;
@@ -53,15 +53,14 @@ static void	try_plugin(const char *dir, const char *name, t_vec *out)
 	sub = path_join(dir, name);
 	if (!sub)
 		return ;
-	p = path_join(sub, "plugin.hsh");
+	p = rc_plugin_entry(sub);
 	xfree(sub);
-	if (p && access(p, R_OK) == 0)
+	if (p)
 		vec_push(out, &p);
-	else
-		xfree(p);
 }
 
-/* plugins/<name>/plugin.hsh -- a plugin is a DIRECTORY, so it can ship data
+/* plugins/<name>/plugin.hsh (or .sh, or a shebanged `plugin`) -- a
+   plugin is a DIRECTORY, so it can ship data
    and sibling files next to its entry point. */
 void	collect_plugins(const char *dir, t_vec *out)
 {
