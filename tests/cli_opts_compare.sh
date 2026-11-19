@@ -120,14 +120,17 @@ fi
 # --version: exit 0, one greppable first line carrying the version, and it
 # must NOT read stdin or run a startup file (package managers and CI probe
 # with it). The version it prints has to be the one baked into version.h,
-# otherwise a release can ship a binary that misreports itself.
+# otherwise a release can ship a binary that misreports itself. Likewise the
+# name: BRAND_NAME from brand.h, whichever name (polish or the legacy hellish
+# symlink) the binary was started under.
 printf '\n\033[1m== --version ==\033[0m\n'
 want=$(grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' "$HERE/../incs/version.h" | head -1 | tr -d '"')
+brand=$(sed -n 's/^# define BRAND_NAME "\(.*\)"$/\1/p' "$HERE/../incs/brand.h")
 vout=$(printf 'echo SHOULD_NOT_RUN\n' | "$HELLISH" --version 2>&1); vrc=$?
 vfirst=$(printf '%s\n' "$vout" | head -1)
 for c in "exit status 0:$vrc:0" \
          "reports version.h version:$(printf '%s' "$vfirst" | grep -c "$want"):1" \
-         "first line names the shell:$(printf '%s' "$vfirst" | grep -c '^hellish'):1" \
+         "first line names the shell:$(printf '%s' "$vfirst" | grep -c "^${brand}[, ]"):1" \
          "does not execute stdin:$(printf '%s' "$vout" | grep -c SHOULD_NOT_RUN):0"; do
   name=${c%%:*}; rest=${c#*:}; got=${rest%%:*}; exp=${rest#*:}
   if [ "$got" = "$exp" ]; then

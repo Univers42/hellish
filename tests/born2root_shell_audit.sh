@@ -51,6 +51,9 @@ if [ ! -f "$B2R/Makefile" ]; then
 	exit 0
 fi
 [ -x "$H" ] || { echo "error: hellish not built at $H (run 'make' first)" >&2; exit 2; }
+# build/bin/hellish is a symlink to polish since 3.4.0; the shell reports
+# (and make's SHELL holds) the resolved path, so both are masked as SHELL.
+HR=$(readlink -f "$H")
 command -v cc >/dev/null 2>&1 || { echo "error: no C compiler for tests/tools/execlog*.c" >&2; exit 2; }
 mkdir -p "$ROOT/build"
 cc -shared -fPIC -O2 -o "$SO" "$ROOT"/tests/tools/execlog*.c -ldl || exit 2
@@ -157,13 +160,13 @@ for t in "${TARGETS[@]}"; do
 	run "b.$n" "$BASH_BIN" "$(dirname "$BASH_BIN"):" $t
 	hs=$(cut -f1 "$OUT/h.$n.scripts" | sort -u); bs=$(cut -f1 "$OUT/b.$n.scripts" | sort -u)
 	nsc=$(printf '%s\n' "$hs" | grep -c .)
-	nex=$(awk -F'\t' '$1=="hellish"{print $2}' "$OUT/h.$n.interp"); nex=${nex:-0}
+	nex=$(awk -F'\t' '$1=="polish"||$1=="hellish"{n+=$2} END{print n+0}' "$OUT/h.$n.interp")
 	# From hellish: every script under hellish, and no shell started by
 	# born2root's own code -- not by a recipe, not by a script.
 	if [ -s "$OUT/h.$n.offenders" ]; then
 		fail "make $t from hellish: $(wc -l < "$OUT/h.$n.offenders") shell(s) started by born2root itself"
 		cut -c1-150 "$OUT/h.$n.offenders" | sed 's/^/        /' | head -8
-	elif awk -F'\t' '$2 != "hellish" {bad = 1} END {exit !bad}' "$OUT/h.$n.scripts"; then
+	elif awk -F'\t' '$2 !~ /^(polish|hellish)(,(polish|hellish))*$/ {bad = 1} END {exit !bad}' "$OUT/h.$n.scripts"; then
 		fail "make $t from hellish: a script ran under something else"; sed 's/^/        /' "$OUT/h.$n.scripts" | head -8
 	else
 		pass "make $t from hellish: $nsc script(s) and $nex hellish exec(s), no bash/sh/dash started by born2root"
@@ -179,7 +182,7 @@ for t in "${TARGETS[@]}"; do
 		pass "make $t from bash: the same $nsc script(s), every one under bash"
 	fi
 	# And the same output (the shell's own path masked).
-	for s in h b; do sed -e "s|$H|SHELL|g; s|$BASH_BIN|SHELL|g; s|/usr/bin/bash|SHELL|g; s|/bin/bash|SHELL|g" "$OUT/$s.$n.out" > "$OUT/$s.$n.norm"; done
+	for s in h b; do sed -e "s|$H|SHELL|g; s|$HR|SHELL|g; s|$BASH_BIN|SHELL|g; s|/usr/bin/bash|SHELL|g; s|/bin/bash|SHELL|g" "$OUT/$s.$n.out" > "$OUT/$s.$n.norm"; done
 	if cmp -s "$OUT/h.$n.norm" "$OUT/b.$n.norm"; then pass "make $t: same output from both launchers ($(wc -l < "$OUT/h.$n.norm") lines)"
 	elif [ "$STRICT_OUT" = 1 ]; then
 		fail "make $t: output differs by launcher"; diff "$OUT/b.$n.norm" "$OUT/h.$n.norm" | head -8 | sed 's/^/        /'

@@ -134,8 +134,8 @@ for sh in "$BASH_BIN" "$H"; do
 		NO_COLOR=1 COLUMNS=80 LC_ALL=C \
 		HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 		timeout 180 "$sh" -c 'make -n all' </dev/null ) 2>"$OUT/mk.err" \
-		| sed -E -e 's#(/[A-Za-z0-9_./-]+/)?(hellish|bash) (setup|utils|generate)/#$SH \3/#g' \
-			-e "s#(/[A-Za-z0-9_./-]+/)?(hellish|bash) -c#\$SH -c#g" \
+		| sed -E -e 's#(/[A-Za-z0-9_./-]+/)?(polish|hellish|bash) (setup|utils|generate)/#$SH \3/#g' \
+			-e "s#(/[A-Za-z0-9_./-]+/)?(polish|hellish|bash) -c#\$SH -c#g" \
 			-e 's#SCRIPT_SH="[^"]*"#SCRIPT_SH="$SH"#g' \
 			-e 's#/tmp/tmp\.[A-Za-z0-9_]+#/tmp/tmp.X#g' >"$OUT/mk.$(basename "$sh")"
 	echo "${PIPESTATUS[0]}" >"$OUT/mk.$(basename "$sh").rc"
@@ -143,12 +143,14 @@ done
 bn="$(basename "$BASH_BIN")"; hn="$(basename "$H")"
 # The probe must have picked hellish when hellish launched make: that is
 # the whole point of born2root's SCRIPT_SH, and a hellish the probe rejects
-# would silently hand every script back to bash.
+# would silently hand every script back to bash. The probe reports the
+# executable it runs as (/proc/self/exe), so a `hellish` symlink to polish
+# is compared by the file it resolves to, not by its name.
 picked="$(cd "$B2R" && env -i PATH="$(dirname "$H"):$PATH" HOME="$FAKE_HOME" TERM=dumb \
 	HELLISH_NO_BANNER=1 HELLISH_NO_UPDATE_CHECK=1 HELLISH_NO_ANIM=1 \
 	timeout 60 "$H" -c 'make -n all' 2>/dev/null </dev/null \
 	| grep -m1 -oE 'SCRIPT_SH="[^"]+"' | sed -E 's/^SCRIPT_SH="(.*)"$/\1/')"
-if [ "$picked" != "$H" ]; then
+if [ "$picked" != "$(readlink -f "$H")" ]; then
 	ko=$((ko + 1)); fail=1
 	printf 'FAIL  %-44s probe picked %s\n' "make picks hellish as SCRIPT_SH" "${picked:-nothing}"
 else

@@ -7,7 +7,7 @@ One line per exec in <log>: pid, caller image, path, shebang, argv
 (\\x1f-joined). The interpreter of a file is what its shebang says (env X ->
 X), else the file itself. A shell is an OFFENDER when the corpus's own code
 started it: a file under <corpus-dir> interpreted by bash/sh/dash/zsh, or
-hellish/make/<launcher> exec'ing one by name. A third-party program that is
+polish/hellish/make/<launcher> exec'ing one by name. A third-party program that is
 itself a sh script (VBoxManage, xdg-settings, code) or spawns one is FOREIGN:
 reported, not charged to the corpus.
 
@@ -20,12 +20,16 @@ import os
 import sys
 
 SHELLS = {"bash", "sh", "dash", "zsh", "ksh", "mksh", "ash"}
+# Our shell under both brands: since 3.4.0 the binary is polish and hellish
+# is the legacy name (a symlink, or a pre-3.4 install), so an exec of either
+# is ours.
+OURS = {"polish", "polish.real", "hellish", "hellish.real"}
 
 
 def main():
     log, out, b2r, launcher = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
     b2r = os.path.abspath(b2r)
-    ours = {"hellish", "hellish.real", "make", os.path.basename(launcher)}
+    ours = OURS | {"make", os.path.basename(launcher)}
     scripts, offenders, foreign, interp = {}, [], [], {}
 
     def under(p):
@@ -49,7 +53,7 @@ def main():
             scripts.setdefault(shown, set()).add(name)
         # `<shell> script.sh args`: the script is argv's first non-option word
         # that is a file of the corpus; `<shell> -c '...'` is a recipe line.
-        if os.path.basename(path) in SHELLS | {"hellish", "hellish.real"}:
+        if os.path.basename(path) in SHELLS | OURS:
             rest = argv[1:]
             if rest and rest[0] == "-c":
                 scripts.setdefault("<recipe line>", set()).add(os.path.basename(path))
