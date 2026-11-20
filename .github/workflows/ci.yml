@@ -137,6 +137,43 @@ jobs:
           test -x build/bin/hellish
           ./build/bin/hellish -c 'printf "%s|%*d|%.*s\n" ok 5 42 2 abcdef'
 
+  # ── 42 Non-PIE ───────────────────────────────────────────────────────────
+  # On 42 machines, cc is clang linking non-PIE against Ubuntu 22.04's
+  # libreadline 8.1 built with -Bsymbolic-functions. Function addresses taken
+  # in code (&rl_forward_char) resolve to PLT stubs while keymaps store internal
+  # pointers, requiring rl_named_function lookup. This job validates that
+  # readline callbacks and keybindings behave correctly under this configuration.
+  nonpie:
+    name: 42 Non-PIE · clang (Ubuntu 22.04)
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - name: Install toolchain and dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential libreadline-dev git ca-certificates clang python3 python3-pip
+          python3 -m pip install --quiet pyte || true
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Compile non-PIE with clang
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          clang --version | head -1
+          if ! make all CC=clang EXTRA_CFLAGS=-fno-pie EXTRA_LDFLAGS=-no-pie > build.log 2>&1; then
+            echo "::error::Build failed for non-PIE clang"
+            sed 's/\x1b\[[0-9;]*[A-Za-z]//g; s/\x1bc//g; s/\r/\n/g' build.log | tail -120
+            exit 1
+          fi
+          test -x build/bin/polish || test -x build/bin/hellish
+      - name: Keybinding regression tests
+        run: |
+          BIN=$(test -x build/bin/polish && echo "build/bin/polish" || echo "build/bin/hellish")
+          python3 tests/history_prefix_search_test.py "$BIN"
+          python3 tests/autosuggest_test.py "$BIN"
+          python3 tests/rl_undo_leak_test.py "$BIN"
+
   # ── 42 Norm ──────────────────────────────────────────────────────────────
   norm:
     name: 42 Norm (norminette)
