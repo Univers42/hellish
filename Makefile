@@ -483,7 +483,9 @@ submodule update --init --checkout srcs/memory/ft_malloc\n" >&2; exit 1; }; \
 	fi
 	@printf "\n  \033[1;36m▸\033[0m \033[1;37mBuilding libft (-O3, %s)\033[0m\n\n" \
 		"$(if $(filter ft,$(SAFE_TAG)),ft_malloc,libc)" >&2
-	@$(MAKE) -C vendor/libft  SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG)
+	@$(MAKE) -C vendor/libft  SAFE=$(SAFE) BUILD_DIR=build-$(SAFE_TAG) \
+		EXTRA_CFLAGS="$(filter-out -fno-pie,$(EXTRA_CFLAGS))" \
+		EXTRA_LDFLAGS="$(filter-out -no-pie,$(EXTRA_LDFLAGS))"
 	@printf "\n" >&2
 
 clean:  ## Remove object files, keep the binary
