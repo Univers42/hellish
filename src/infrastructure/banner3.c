@@ -55,7 +55,9 @@ static void	ok_status(char *out, size_t n, t_sym s)
 }
 
 /* The status footer: a calm "up to date" line, or a vivid warning that a newer
-   release is out (read from the cached background check — no network here). */
+   release is out (read from the cached background check — no network here),
+   or that an old updater left this install without the polish command and
+   `update` adds it (update_brand.c). A newer release wins: --now adds it. */
 void	status_line(char *out, size_t n)
 {
 	char	latest[64];
@@ -66,6 +68,9 @@ void	status_line(char *out, size_t n)
 		&& hellish_version_cmp(latest, HELLISH_VERSION) > 0)
 		ft_snprintf(out, n, HP_WARN "%s %s available %s run update --now",
 			s.warn, latest, s.dash);
+	else if (update_missing_brand())
+		ft_snprintf(out, n, HP_WARN "%s no polish command %s run update",
+			s.warn, s.dash);
 	else
 		ok_status(out, n, s);
 }

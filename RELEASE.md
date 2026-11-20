@@ -9,6 +9,34 @@ shell. The welcome banner links to the guide for the latest one:
 
 ---
 
+## v3.4.1 — *an updated hellish install gets its `polish` command*
+
+Reported from a 3.2.0 install: `update` put 3.4.0 in `/usr/bin/hellish`,
+and then `polish` was "command not found". The banner also still said
+"What's new in 3.3". Every updater up to 3.3.0 replaces the one file it
+knows and has never heard of polish. That updater can't be changed after
+the fact, but the binary it installs can.
+
+- **3.4.1 adds `polish -> hellish` beside itself** when it runs as
+  `.../hellish` and no `polish` is there. In a directory you own
+  (`~/.local/bin`), the welcome banner adds it silently on your next login,
+  and `update` or `update --now` adds it and says so. That happens before
+  any network access, so it works offline. In a root-owned directory
+  (`/usr/bin`), the banner footer says "no polish command — run update",
+  and `update` shows `sudo ln -s hellish /usr/bin/polish` and runs it only
+  if you answer `y`. Without a terminal it only prints that line. An
+  existing `polish` is never touched. `update --check` and
+  `update --version` change nothing.
+- **The banner shows the 3.4 news**, in polish names only: `.polishrc`,
+  `POLISH_*`, and `rc.d/*.sh` modules.
+- `make legacy-update-test` installs the real published v3.2.0 and v3.3.0,
+  each with its own installer, three ways: system with sudo, user with a
+  bash login, and user with a zsh login. Each is then updated by its own
+  old updater, and the test checks that every one of them ends up with a
+  working `polish`. With 3.4.0 as the update, 7 of the v3.3.0 checks fail.
+
+---
+
 ## v3.4.0 — *hellish is now polish*
 
 **The guide: [What's new in 3.4](https://univers42.github.io/polish/whats-new/)**.
@@ -27,8 +55,7 @@ shell. The welcome banner links to the guide for the latest one:
   your `~/.hellishrc`. A dry run of `register_shell.sh --purge` no longer
   deletes anything.
 - An install that `update --now` upgraded from 3.3 or earlier keeps only
-  the `hellish` command. Re-run the installer to add `polish`; it keeps
-  your path and config.
+  the `hellish` command. 3.4.1 adds `polish` for you (see above).
 - **A config module no longer has to end in `.hsh`.** In `rc.d/`,
   `after.d/`, `plugins/` and `themes/`, `x.sh` loads too, and so does a
   file with no extension whose first line is `#!/usr/bin/env polish` (or

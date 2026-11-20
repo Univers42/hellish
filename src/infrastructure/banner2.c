@@ -13,30 +13,22 @@
 #include "banner_private.h"
 #include "shell.h"
 
-/* One row of "What's new in 3.3": the keys that reach a new feature, in
-   code-yellow, then what it does, in muted grey -- the shape of "Getting
-   started", so each can be tried before the prompt even appears. Every
-   row fits the 32 columns the right column has on an 80-column terminal.
-   Keys are padded to ten columns by hand (ft_snprintf pads bytes; an arrow
-   is three bytes in one column); the ASCII keys are for terminals where
-   header_use_unicode() says no. A NULL key ends a group: the always-on
-   features, then the hint keys, which need HELLISH_AUTOSUGGEST.
+/* One row of "What's new in 3.4": a name, in code-yellow, then what it
+   is, in muted grey -- the shape of "Getting started". Every row fits the
+   32 columns the right column has on an 80-column terminal; keys are
+   padded to ten. No row names hellish: a new user never had it. Someone
+   coming from it is told by the status footer, and only when their
+   install still lacks the polish command (update_brand.c).
    wiki/whats-new.md is the long form of this table and must stay in step
    with it; next release, replace both and bump HELLISH_HEADER_REV.
-   Returns 0 at the end of a group. */
+   Returns 0 past the last row. */
 static int	news_row(char *dst, int n)
 {
-	static const char	*utf8[] = {"make <TAB>", NULL,
-		"\xe2\x86\x92 ^F End  ", "Alt-N/P   ", NULL};
-	static const char	*ascii[] = {"make <TAB>", NULL, "Right ^F  ",
-		"Alt-N/P   ", NULL};
-	static const char	*what[] = {"most-run first", NULL,
-		"take your most-run", "the next most-run"};
-	const char			**keys;
+	static const char	*keys[] = {".polishrc ", "POLISH_*  ", "rc.d/*.sh ",
+		NULL};
+	static const char	*what[] = {"your config file", "your settings",
+		"loaded like .hsh"};
 
-	keys = ascii;
-	if (header_use_unicode())
-		keys = utf8;
 	if (!keys[n])
 		return (0);
 	ft_snprintf(dst, 192, "  \033[38;5;223m%s\033[0m "
@@ -44,25 +36,21 @@ static int	news_row(char *dst, int n)
 	return (1);
 }
 
-/* The news block: a salmon NEW badge on a cyan title, the always-on rows,
-   then the switch for hints and the keys that take them. `k` walks the
-   table across its group break; `m` the caller-owned backing rows. */
+/* The news block: a salmon NEW badge on a cyan title, then the rows.
+   `m` indexes both the table and the caller-owned backing rows. */
 static void	news_block(const char **r, int *i, char nw[][192])
 {
-	int	k;
 	int	m;
 
 	r[(*i)++] = "\033[1;48;5;209;38;5;236m NEW \033[0m "
-		"\033[1;38;5;81mWhat's new in 3.3\033[0m";
+		"\033[1;38;5;81mWhat's new in 3.4\033[0m";
 	r[(*i)++] = "";
-	k = 0;
 	m = 0;
-	while (news_row(nw[m], k++))
-		r[(*i)++] = nw[m++];
-	r[(*i)++] = "";
-	r[(*i)++] = "  \033[38;5;223mexport POLISH_AUTOSUGGEST=1\033[0m";
-	while (news_row(nw[m], k++))
-		r[(*i)++] = nw[m++];
+	while (news_row(nw[m], m))
+	{
+		r[(*i)++] = nw[m];
+		m++;
+	}
 }
 
 /* The right column: getting-started tips, what is new in this release,

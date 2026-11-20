@@ -58,6 +58,9 @@ depends on keeps working:
 - The `hellish-linux-x86_64` asset, the `Univers42/hellish` redirect and the
   `<word> <version>` shape of `update --version` are permanent public contracts.
   `make brand-test` guards the last one.
+- A ≤ 3.3.0 updater installs 3.4 as `.../hellish` and adds no `polish` command. Since 3.4.1,
+  the binary adds the `polish -> hellish` symlink itself (`src/platform/posix/update_brand.c`,
+  `make legacy-update-test`).
 - `src/brand/` and the legacy branches in the installers can be removed only when no ≤ 3.3.0
   install is left, and nothing measures that. Treat it as never.
 - Internal identifiers (`hellish_version_cmp`, `HELLISH_VERSION`, file names like

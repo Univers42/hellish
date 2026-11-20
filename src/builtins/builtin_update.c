@@ -99,18 +99,31 @@ static int	do_check(t_shell *state, t_origin origin, char *repo, int ask)
    validates a download by running `<bin> -c "update --version"` and
    comparing everything after the FIRST space to the tag minus its `v`.
    One word, one space, the bare version, nothing else -- "polish 3.4.0".
-   tests/brand_compat_test.sh replays that check. */
+   tests/brand_compat_test.sh replays that check.
+
+   `update` and `--now` also add the polish command a <= 3.3.0 updater
+   could not (update_brand.c): in a user-owned dir before the network, so
+   it works offline; the sudo question for a root-owned one only after the
+   update's own, which keeps that one the first [y/N] asked.
+   `--check` stays read-only. */
 int	builtin_update(t_shell *state, t_vec argv)
 {
 	char		repo[512];
 	t_origin	origin;
 	char		**av;
+	int			st;
 
 	av = (char **)argv.ctx;
 	if (argv.len > 1 && !ft_strcmp(av[1], "--version"))
 		return (ft_printf(BRAND_NAME " %s\n", HELLISH_VERSION), 0);
 	origin = detect_origin(repo, sizeof(repo));
-	if (argv.len > 1 && !ft_strcmp(av[1], "--now"))
-		return (update_now(state, origin, repo));
-	return (do_check(state, origin, repo, argv.len == 1));
+	if (argv.len > 1 && ft_strcmp(av[1], "--now"))
+		return (do_check(state, origin, repo, 0));
+	update_add_brand(origin, BRAND_TELL);
+	if (argv.len > 1)
+		st = update_now(state, origin, repo);
+	else
+		st = do_check(state, origin, repo, 1);
+	update_add_brand(origin, BRAND_ASK);
+	return (st);
 }
