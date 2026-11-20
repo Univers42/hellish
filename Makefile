@@ -950,6 +950,15 @@ installer-test: static  ## docker: curl|sh installer, sudo AND no-sudo + plugin 
 		-t hellish:installer .
 	docker run --rm hellish:installer
 
+# A real v3.2.0 and v3.3.0 install (system+sudo, user+bash, user+zsh), updated
+# by its own old updater to this build, must end up with a working `polish` command.
+legacy-update-test: static  ## docker: pre-rename installs get polish after updating
+	@set -e; for v in v3.2.0 v3.3.0; do \
+		docker build -q --build-arg OLD=$$v -f docker/Dockerfile.legacy-update \
+			-t hellish:legacy-update-$$v . >/dev/null; \
+		docker run --rm hellish:legacy-update-$$v; \
+	done
+
 # The same report `make my_shell` prints at the end, on demand. Answers the
 # two questions behind every "the update did nothing" report: WHICH hellish
 # does PATH actually reach, and can its directory be written to.
@@ -974,6 +983,7 @@ cd-posix-test: all  ## --posix gates that cd extension off
 # validate_binary rule frozen in every <= 3.3.0 updater in the field.
 brand-test: all  ## pty: old hellish installs survive the polish rename
 	@python3 $(TEST_DIR)/brand_compat_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
+	@python3 $(TEST_DIR)/update_brand_test.py $(BIN_DIR)/$(BAPTIZE_SHELL)
 
 # Interactive multi-line history regression test (real pty): entries keep
 # their multi-line text in `history` and the file, and up-arrow recall of
@@ -1398,6 +1408,7 @@ geoman: all  ## External 42 minishell tester, as an independent cross-check
 	smoke docker-clean cd-zsh-test cd-posix-test my-shell-test doctor \
 	docs-builtins born2root-test born2root-vm born2root-docker inception-test \
 	my-shell-uninstall my-shell-purge ssh-shell-test installer-test \
+	legacy-update-test \
 	agnostic-bench \
 	hist-test history-opts-test history-matrix-test pty-test git-star-test \
 	brand-test \

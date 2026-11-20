@@ -182,6 +182,17 @@ int			update_exe_path(char *buf, size_t n);
    writable. */
 int			update_needs_sudo(const char *path);
 
+/* The 3.4 rename for installs an old updater upgraded in place: the
+   running binary is .../hellish with no polish beside it. See
+   update_brand.c. QUIET: link a user-owned dir, say nothing (banner);
+   TELL: the same, announced; ASK: also offer sudo for a root-owned one. */
+# define BRAND_QUIET 0
+# define BRAND_TELL 1
+# define BRAND_ASK 2
+
+int			update_missing_brand(void);
+int			update_add_brand(t_origin o, int mode);
+
 /* Download release `tag`, verify it, and atomically replace the running
    binary. Returns 0 on success, non-zero on any failure -- and on failure
    the installed binary is guaranteed untouched. */

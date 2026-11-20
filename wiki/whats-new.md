@@ -19,9 +19,16 @@ hellish install keeps working without edits.
 
 `update --now` replaces the binary where it already is, so your login shell,
 `/etc/shells` and `$SHELL` keep the `hellish` path. An updater from 3.3 or
-earlier doesn't know the new name, so it adds no `polish` command. To get
-one, re-run the installer: it keeps the `hellish` binary and adds a `polish`
-symlink beside it. Every old name is still read:
+earlier doesn't know the new name, so the binary it installs adds `polish`
+beside `hellish`, as a symlink:
+
+| Installed in | You get `polish` |
+|---|---|
+| a directory you own (`~/.local/bin`) | on your next login, silently, or when you type `update` |
+| a root-owned directory (`/usr/bin`) | the banner says "no polish command — run update"; `update` asks before it runs `sudo ln -s hellish /usr/bin/polish` |
+
+You can also run that `sudo ln -s` line yourself. An existing `polish` is
+never replaced. Every old name is still read:
 
 | You have | 3.4 reads | Rule |
 |---|---|---|
@@ -32,7 +39,7 @@ symlink beside it. Every old name is still read:
 | `HELLISH_PRECMD_FUNCS`, `HELLISH_PREEXEC_FUNCS` | it | one prefix only, so a hook never runs twice |
 | `$HELLISH_GIT_BRANCH` and the other git prompt variables | it | set under both prefixes |
 | `script.hellish`, `script.hell` | run by polish | as are `.polish`, `.hsh` and `.sh` |
-| `hellish -c "update --version"` | `polish 3.4.0` | |
+| `hellish -c "update --version"` | `polish 3.4.1` | |
 
 Don't keep both `~/.hellishrc` and `~/.polishrc`. Only `~/.polishrc` is read,
 and the old file silently stops loading. To switch, rename it:
@@ -40,6 +47,16 @@ and the old file silently stops loading. To switch, rename it:
 
 What did not move: the history file, the npm package (`hellish-shell`, which
 still installs a `hellish` command), and the container image names.
+
+## The banner
+
+This is the table from the welcome banner, explained.
+
+| Banner | Means |
+|---|---|
+| `.polishrc` your config file | `~/.polishrc`, read at every interactive start |
+| `POLISH_*` your settings | `POLISH_AUTOSUGGEST=1` and the rest, set in it or exported |
+| `rc.d/*.sh` loaded like .hsh | a [module](#module-names) may end in `.sh`, or have no extension |
 
 ## Module names
 

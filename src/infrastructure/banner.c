@@ -98,7 +98,7 @@ static void	build_left(const char **l)
 			" \xc2\xb7 a POSIX shell with bite";
 	l[i + 4] = cwd;
 	l[i + 5] = "";
-	l[i + 6] = "\033[38;5;245mthe 3.3 guide, with examples\033[0m";
+	l[i + 6] = "\033[38;5;245mthe 3.4 guide, with examples\033[0m";
 	l[i + 7] = guide_link();
 	l[i + 8] = NULL;
 }
@@ -112,17 +112,21 @@ static void	build_left(const char **l)
    all is banner_should_show()'s call, knob included -- this function used to
    read HELLISH_NO_BANNER itself as well, which meant the "should it show"
    rule lived in two places and only one of them learned about
-   HELLISH_BANNER. */
+   HELLISH_BANNER. A user-owned install an old updater left without the
+   polish command gets it here, silently, as the installer would have made
+   it; a root-owned one is left to `update`, which the footer names. */
 void	show_welcome(t_shell *state)
 {
 	const char	*l[20];
 	const char	*r[24];
 	t_panel		p;
+	char		repo[512];
 
 	if (state->metinp != INP_RL || !isatty(STDERR_FILENO))
 		return ;
 	if (!banner_should_show())
 		return ;
+	update_add_brand(detect_origin(repo, sizeof(repo)), BRAND_QUIET);
 	p.title = "polish " HELLISH_VERSION;
 	p.logo_color = "\033[38;5;209m";
 	build_left(l);

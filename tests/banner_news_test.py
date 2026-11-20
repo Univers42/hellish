@@ -97,7 +97,9 @@ def panel(name, cols, lang, bar, clip):
     bad = [r for r in framed if len(r) != cols]
     check(name + "/every-row-is-%d-wide" % cols, not bad, repr(bad[:2]))
     cells = news_cells(rows, bar)
-    check(name + "/news-block-found", len(cells) > 5, repr(cells))
+    # The heading plus at least three rows; blank spacer cells don't count.
+    check(name + "/news-block-found",
+          len([c for c in cells if c.strip()]) >= 4, repr(cells))
     cut = [c for c in cells if c.rstrip().endswith(clip)]
     check(name + "/no-news-row-clipped", not cut, repr(cut))
     check(name + "/guide-link-whole", any(LINK in r for r in framed),

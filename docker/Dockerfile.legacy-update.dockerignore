@@ -1,0 +1,5 @@
+# Build context for docker/Dockerfile.legacy-update: only the static binary
+# it serves as the new release and the test that drives it.
+*
+!dist/polish-linux-amd64
+!tests/legacy_update_test.py

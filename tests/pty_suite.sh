@@ -64,16 +64,23 @@ pattern=""
 # that genuinely cannot run in this job, with the reason attached -- a skip
 # without a reason is just a test nobody runs.
 skip_reason() {
-	# This one is skipped BEFORE the PTY_SUITE_ALL override, and stays
+	# These two are skipped BEFORE the PTY_SUITE_ALL override, and stay
 	# skipped through it. Every other skip here is about a test being
-	# uninformative in this job; this one would run `make my_shell` on the
-	# machine invoking it and change the caller's LOGIN SHELL. An override
-	# flag meaning "run the ones that are merely unhelpful" must not also
-	# mean "rewrite my /etc/passwd entry". It runs as `make my-shell-test`,
-	# in a container built for it.
+	# uninformative in this job; these would change the machine invoking
+	# them: my_shell_update_test runs `make my_shell` and changes the
+	# caller's LOGIN SHELL, legacy_update_test installs old releases into
+	# /usr/bin as root. An override flag meaning "run the ones that are
+	# merely unhelpful" must not also mean "rewrite my /etc/passwd entry".
+	# Each runs in a container built for it.
 	if [ "$1" = "my_shell_update_test.py" ]; then
 		echo "installs a login shell; runs as \`make my-shell-test\`"\
 		     "in docker/Dockerfile.my-shell, never on a host."
+		return 0
+	fi
+	if [ "$1" = "legacy_update_test.py" ]; then
+		echo "installs old releases as root into /usr/bin; runs as"\
+		     "\`make legacy-update-test\` in"\
+		     "docker/Dockerfile.legacy-update, never on a host."
 		return 0
 	fi
 	[ "${PTY_SUITE_ALL:-0}" = "1" ] && return 1

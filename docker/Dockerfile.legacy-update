@@ -1,0 +1,45 @@
+# The 3.4 rename from the side of someone who installed hellish BEFORE it:
+# the real old installer puts the real old binary in place (--build-arg
+# OLD=v3.3.0 by default; the Makefile also runs v3.2.0, the reporter's) --
+# system mode with sudo (/usr/bin/hellish, chsh) and user mode for a bash and
+# a zsh login (~/.local/bin/hellish plus the rc exec hook) -- then the real
+# old updater installs THIS build, and tests/legacy_update_test.py checks every
+# one of them ends up with a working `polish` command.
+#
+# Network is used at build time only, to fetch the published old release
+# assets and installer; the run serves them and this build from 127.0.0.1.
+#
+#   make legacy-update-test
+FROM ubuntu:24.04
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+		ca-certificates curl sudo python3 zsh util-linux; \
+	rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -s /bin/bash sami \
+	&& printf 'sami ALL=(ALL) NOPASSWD: ALL\n' > /etc/sudoers.d/sami \
+	&& chmod 440 /etc/sudoers.d/sami \
+	&& useradd -m -s /bin/bash bea \
+	&& useradd -m -s /bin/zsh zoe \
+	&& touch /home/zoe/.zshrc && chown zoe:zoe /home/zoe/.zshrc
+
+ARG OLD=v3.3.0
+ENV LEGACY_VERSION=$OLD
+RUN set -eux; \
+	d=/srv/old/latest/download; mkdir -p "$d"; \
+	for a in hellish-linux-x86_64 hellish-linux-x86_64.sha256 \
+		hellish-install-bundle.tar.gz; do \
+		curl -fsSL -o "$d/$a" \
+			"https://github.com/Univers42/polish/releases/download/$OLD/$a"; \
+	done; \
+	curl -fsSL -o /srv/install-old.sh \
+		"https://raw.githubusercontent.com/Univers42/polish/$OLD/install.sh"
+
+COPY dist/polish-linux-amd64 /srv/new/polish
+COPY tests/legacy_update_test.py /srv/legacy_update_test.py
+
+# detect_origin() reads /.dockerenv before it looks at who owns the binary,
+# and would call every install here "docker" -- same as Dockerfile.my-shell.
+CMD ["/bin/sh", "-c", "rm -f /.dockerenv && exec python3 /srv/legacy_update_test.py"]

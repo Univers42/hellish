@@ -15,7 +15,7 @@
 
 /* The single source of truth for the running shell's version. Bumped in step
    with the git tag / GitHub release / npm package / docker image. */
-# define HELLISH_VERSION "3.4.0"
+# define HELLISH_VERSION "3.4.1"
 
 /* Where releases live; used by the `update` builtin and the daily check. */
 # define HELLISH_REPO "Univers42/polish"
@@ -30,6 +30,6 @@
 /* Bumped whenever the welcome header itself changes what it says. The
    header is shown once a day, but a new revision is new information, so
    it is shown again immediately rather than waiting for tomorrow. */
-# define HELLISH_HEADER_REV 5
+# define HELLISH_HEADER_REV 6
 
 #endif
