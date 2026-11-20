@@ -13,7 +13,7 @@
 #
 # Not run directly -- `make static` drives it and copies the binary out:
 #     make static                 # -> dist/polish-linux-<arch>
-#     make static ARCH=arm64      # cross-build (needs binfmt/qemu)
+#     make static STATIC_ARCH=arm64  # cross-build (needs binfmt/qemu)
 # ============================================================================
 FROM alpine:3.20 AS build
 
