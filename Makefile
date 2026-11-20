@@ -786,7 +786,7 @@ user-uninstall:  ## Remove the rc hook and the binary
 # the same file runs on Alpine, Debian, Ubuntu, Arch and the 42 machines alike.
 #
 # Needs BuildKit for --output (docker >= 18.09; standard on any current docker).
-# Cross-build with ARCH=arm64 -- that path needs binfmt/qemu registered:
+# Cross-build with STATIC_ARCH=arm64 -- that path needs binfmt/qemu registered:
 #   docker run --privileged --rm tonistiigi/binfmt --install all
 STATIC_ARCH ?= $(shell uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
 STATIC_OUT  := dist/polish-linux-$(STATIC_ARCH)
