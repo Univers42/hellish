@@ -125,6 +125,7 @@ bool	rl_suggest_gate(t_rl *l, int cols);
 size_t	rl_ghost_fit(const char *s, int avail, int *used);
 int		rl_prompt_cols(t_rl *l);
 void	rl_rprompt_hook(void);
+void	rl_fix_dumb_prompt(t_shell *state, char *prompt);
 int		rl_text_end(t_rl *l);
 int		rl_text_col(t_rl *l);
 bool	rl_rp_fits(t_rl *l, int cols, int end);

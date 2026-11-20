@@ -13,7 +13,6 @@
 #include "rl_private.h"
 #include "zle.h"
 #include <locale.h>
-
 /* Print every line of `prompt` except the last to rl_outstream, stripping the
    \001/\002 width markers (they must not reach the terminal). Returns the final
    line. readline only ever sees a single-line prompt, which avoids the cursor
@@ -81,6 +80,7 @@ char	*rl_editor_enter(t_shell *state, char *prompt)
 	xfree(state->rl.shown_prompt);
 	state->rl.shown_prompt = ft_strdup(prompt);
 	row = split_prompt(prompt);
+	rl_fix_dumb_prompt(state, row);
 	state->rl.rp_prompt_w = visible_width_cstr(row);
 	rl_rprompt_install(state);
 	rl_winch_arm();
